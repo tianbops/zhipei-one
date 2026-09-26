@@ -149,3 +149,12 @@ export async function onRequestPost({request,env}){
     }
   },oldId?200:201);
 }
+
+export async function onRequestGet(){
+  return json({
+    success:true,
+    service:"Zhipei One",
+    endpoint:"bootstrap",
+    method:"POST_REQUIRED"
+  },405);
+}
