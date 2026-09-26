@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>智配One · 管理后台</title><link rel="stylesheet" href="css/app.css"></head>
+<body><main class="auth-shell"><section class="auth-card" style="max-width:720px"><img src="assets/logo.png" class="logo" alt="智配One"><h1>管理后台</h1><p id="who">正在验证管理员身份…</p>
+<div id="message" class="message"></div>
+<section><h2>线路管理</h2><form id="routeForm"><label>线路名称<input id="routeName" placeholder="例如 17号线" required></label><button type="submit">创建线路</button></form><div id="routes">加载中…</div></section>
+<hr><section><h2>用户管理</h2><div id="users">加载中…</div></section>
+<p><button id="logout" type="button">退出登录</button></p></section></main>
+<script>
+const $=id=>document.getElementById(id),msg=t=>{ $('message').textContent=t||'' };
+async function api(url,opt={}){const r=await fetch(url,{credentials:'same-origin',...opt});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'请求失败');return d}
+async function load(){try{const me=await api('/api/me');if(me.user?.role!=='admin')throw new Error('当前账号不是系统管理员');$('who').textContent='管理员：'+(me.user.username||'');const [rs,us]=await Promise.all([api('/api/routes'),api('/api/admin/users')]);$('routes').innerHTML=rs.routes.length?rs.routes.map(r=>'<p>'+r.name+' · '+(r.status||'active')+'</p>').join(''):'暂无线路';$('users').innerHTML=us.users.length?us.users.map(u=>'<p>'+u.username+' · '+(u.role||'user')+' · '+(u.disabled?'已停用':'正常')+'</p>').join(''):'暂无用户';}catch(e){msg(e.message);setTimeout(()=>location.replace('/'),800)}}
+$('routeForm').addEventListener('submit',async e=>{e.preventDefault();try{await api('/api/routes',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:$('routeName').value.trim()})});$('routeName').value='';msg('线路创建成功');load()}catch(e){msg(e.message)}});
+$('logout').onclick=async()=>{await fetch('/api/logout',{method:'POST',credentials:'same-origin'}).catch(()=>{});location.replace('/')};load();
+</script></body></html>
