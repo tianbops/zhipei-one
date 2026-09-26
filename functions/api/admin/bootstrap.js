@@ -1,6 +1,5 @@
-import {json,body} from "./_json.js";
-import {get,set,newId} from "./_redis.js";
-import {hash} from "./login.js";
+import {json,body} from "../_json.js";
+import {get,set,newId} from "../_redis.js";
+import {hash} from "../login.js";
 function normalize(v){return String(v||"").trim()}
-async function userById(env,id){const raw=await get(env,"user:"+id);if(!raw)return null;try{return typeof raw==="string"?JSON.parse(raw):raw}catch{return null}}
 export async function onRequestPost({request,env}){const input=await body(request);const username=normalize(input.username);const password=String(input.password||"");const setupKey=normalize(input.setupKey);if(!username||!password||!setupKey)return json({success:false,error:"初始化参数不完整"},400);if(env.ADMIN_SETUP_KEY&&setupKey!==env.ADMIN_SETUP_KEY)return json({success:false,error:"初始化校验失败"},403);const existing=await get(env,"user:index:"+username.toLowerCase());if(existing)return json({success:false,error:"管理员账号已存在"},409);const id=newId();const user={id,username,name:"系统管理员",role:"admin",disabled:false,boundRouteId:null,routeDuty:null,sessionVersion:1,passwordHash:await hash(password),createdAt:new Date().toISOString()};await set(env,"user:"+id,user);await set(env,"user:index:"+username.toLowerCase(),id);return json({success:true,user:{id,username,role:"admin"}})}
