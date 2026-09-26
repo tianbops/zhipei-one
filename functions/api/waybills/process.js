@@ -25,6 +25,20 @@ function extract(rawText){
   return {date,vehicle,totalWeight,totalQuantity,stores};
 }
 
+
+function standardizeStore(item){
+  const rawName=clean(item.rawName||item.name);
+  return {...item,rawName,name:clean(item.name||rawName),standardizedName:normalized(rawName),sourceLine:clean(item.sourceLine)};
+}
+function validateResult(order){
+  const errors=[];
+  if(!order.date)errors.push("缺少运单日期");
+  if(!order.vehicle)errors.push("缺少车辆信息");
+  if(!Array.isArray(order.stores)||!order.stores.length)errors.push("没有规划门店");
+  const seen=new Set();for(const s of order.stores||[]){const k=s.storeId?"id:"+s.storeId:"pending:"+normalized(s.rawName);if(seen.has(k))errors.push("规划结果存在重复门店");seen.add(k)}
+  if((order.stores||[]).some((s,i)=>s.routeOrder!==i+1))errors.push("线路顺序不连续");
+  return {valid:errors.length===0,errors};
+}
 function similarity(a,b){
   const x=normalized(a),y=normalized(b);if(!x||!y)return 0;if(x===y)return 1;if(x.includes(y)||y.includes(x))return Math.min(x.length,y.length)/Math.max(x.length,y.length);
   const sx=new Set([...x]),sy=new Set([...y]);let common=0;for(const c of sx)if(sy.has(c))common++;return common/(new Set([...sx,...sy]).size||1);
@@ -51,8 +65,9 @@ export async function onRequestPost({request,env}){
   if(!recognizedText){const ocrStarted=Date.now();try{ocr=await recognizeImage(env,file);recognizedText=ocr.rawText;ocrMs=Date.now()-ocrStarted}catch(e){return json({success:false,code:e.code||"OCR_FAILED",message:e.message||"OCR识别失败",jobId:e.jobId||null},e.code==="OCR_NOT_CONFIGURED"?503:422)}}
   const recognizedMs=Date.now()-started;const baseStarted=Date.now();const baseStores=await base(env,routeId);const baseMs=Date.now()-baseStarted;
   const extractedStarted=Date.now();const extracted=extract(recognizedText);const extractMs=Date.now()-extractedStarted;if(!extracted.stores.length)return json({success:false,code:"EXTRACT_EMPTY",message:"未提取到门店，请检查运单内容"},422);
-  const matchStarted=Date.now();const matched=match(extracted.stores,baseStores);const matchMs=Date.now()-matchStarted;const dedupeStarted=Date.now();const d=dedupe(matched);const dedupeMs=Date.now()-dedupeStarted;const planStarted=Date.now();const planned=plan(d.items);const planMs=Date.now()-planStarted;const pending=planned.filter(x=>x.pending);
-  const order={id:newId(),routeId,date:clean(form.get("date"))||extracted.date||null,vehicle:clean(form.get("vehicle"))||extracted.vehicle||null,totalQuantity:number(form.get("totalQuantity"))??extracted.totalQuantity,totalWeight:number(form.get("totalWeight"))??extracted.totalWeight,stores:planned,rawText:recognizedText,stage:"PLANNED",pipeline:["RECOGNIZED","EXTRACTED","MATCHED","DEDUPED","PLANNED"],summary:{original:extracted.stores.length,total:planned.length,matched:planned.length-pending.length,pending:pending.length,correction:planned.filter(x=>x.correction).length,merged:d.merged,newStores:0},timing:{recognizedMs,ocrMs,baseMs,extractMs,matchMs,dedupeMs,planMs,totalMs:Date.now()-started},ocr:ocr?{provider:"PaddleOCR",model:ocr.model,jobId:ocr.jobId,lineCount:ocr.lineCount}:null,createdBy:user.id,createdAt:new Date().toISOString()};
+  const standardized=extracted.stores.map(standardizeStore);const matchStarted=Date.now();const matched=match(standardized,baseStores);const matchMs=Date.now()-matchStarted;const dedupeStarted=Date.now();const d=dedupe(matched);const dedupeMs=Date.now()-dedupeStarted;const planStarted=Date.now();const planned=plan(d.items);const planMs=Date.now()-planStarted;const pending=planned.filter(x=>x.pending);
+  const order={id:newId(),routeId,date:clean(form.get("date"))||extracted.date||null,vehicle:clean(form.get("vehicle"))||extracted.vehicle||null,totalQuantity:number(form.get("totalQuantity"))??extracted.totalQuantity,totalWeight:number(form.get("totalWeight"))??extracted.totalWeight,stores:planned,rawText:recognizedText,stage:"PLANNED",pipeline:["RECOGNIZED","EXTRACTED","STANDARDIZED","MATCHED","DEDUPED","PLANNED","VALIDATED"],summary:{original:extracted.stores.length,total:planned.length,matched:planned.length-pending.length,pending:pending.length,correction:planned.filter(x=>x.correction).length,merged:d.merged,newStores:0},timing:{recognizedMs,ocrMs,baseMs,extractMs,matchMs,dedupeMs,planMs,totalMs:Date.now()-started},ocr:ocr?{provider:"PaddleOCR",model:ocr.model,jobId:ocr.jobId,lineCount:ocr.lineCount}:null,createdBy:user.id,createdAt:new Date().toISOString()};
+  const validation=validateResult(order);order.validation=validation;
   await set(env,"waybill:"+order.id,order);await set(env,"route:"+routeId+":orders:latest",order);
   return json({success:true,waybill:order,pipeline:order.pipeline,summary:order.summary});
 }
