@@ -1,6 +1,11 @@
 import {json,body} from "./_json.js";
 import {get,set,newId} from "./_redis.js";
-import {hash} from "./login.js";
+
+async function hash(value){
+  const data=new TextEncoder().encode(value);
+  const digest=await crypto.subtle.digest("SHA-256",data);
+  return [...new Uint8Array(digest)].map(x=>x.toString(16).padStart(2,"0")).join("");
+}
 
 function validUsername(v){
   return /^[A-Za-z0-9_]{3,32}$/.test(v);
