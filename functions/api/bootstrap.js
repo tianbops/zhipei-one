@@ -41,6 +41,7 @@ async function hasActiveAdmin(env){
 }
 
 export async function onRequestPost({request,env}){
+  try{
   const input=await body(request);
 
   const username=String(input.username||"").trim();
@@ -153,6 +154,9 @@ export async function onRequestPost({request,env}){
       role:"admin"
     }
   },oldId?200:201);
+  }catch(error){
+    return json({success:false,error:"BOOTSTRAP_INTERNAL_ERROR",detail:String(error?.message||error||"unknown")},500);
+  }
 }
 
 export async function onRequestGet(){
