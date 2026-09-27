@@ -21,9 +21,8 @@ export async function onRequestPost({request,env}){
   if(!Array.isArray(input.confirmations))return json({success:false,code:"CONFIRMATIONS_REQUIRED",error:"确认项目必须是数组"},400);
 
   const confirmations=input.confirmations;
-  const confirmRequestId=clean(input.confirmRequestId);
-  let requestLock=null;
-  if(confirmRequestId){const doneKey="waybill:"+waybillId+":confirm:"+confirmRequestId;const existing=await get(env,doneKey);if(existing)return json({success:true,waybill:order,learning:"DUPLICATE_REQUEST"});requestLock=doneKey+":lock";const locked=await command(env,["SET",requestLock,"1","NX","EX","60"]);if(locked!=="OK")return json({success:false,code:"CONFIRM_REQUEST_BUSY",error:"确认请求正在处理中，请稍后再试"},409);}
+  const confirmRequestId=clean(input.confirmRequestId);if(!confirmRequestId)return json({success:false,code:"CONFIRM_REQUEST_ID_REQUIRED",error:"缺少确认请求ID"},400);
+  const doneKey="waybill:"+waybillId+":confirm:"+confirmRequestId;const existing=await get(env,doneKey);if(existing)return json({success:true,waybill:order,learning:"DUPLICATE_REQUEST"});const requestLock=doneKey+":lock";const locked=await command(env,["SET",requestLock,"1","NX","EX","60"]);if(locked!=="OK")return json({success:false,code:"CONFIRM_REQUEST_BUSY",error:"确认请求正在处理中，请稍后再试"},409);
   const stores=[...(order.stores||[])];
   const base=order.routeId===TEMP_DISPATCH_ID?{routeId:order.routeId,version:1,stores:[]}:await loadBase(env,order.routeId);
   const learned=[];
@@ -65,6 +64,6 @@ export async function onRequestPost({request,env}){
   const confirmedNow=new Date().toISOString();if(pending===0){order.confirmedAt=confirmedNow;order.confirmedBy=user.id;}else{order.lastConfirmedAt=confirmedNow;order.lastConfirmedBy=user.id;}order.confirmRequestId=confirmRequestId||null;
   if(learned.length&&order.routeId!==TEMP_DISPATCH_ID){base.version=(Number(base.version)||1)+1;base.updatedAt=new Date().toISOString();base.updatedBy=user.id;await set(env,"route:"+order.routeId+":base",base)}
   for(const item of learned){await learnGlobal(env,{...item,routeId:order.routeId,waybillId:order.id,userId:user.id})}
-  await set(env,"waybill:"+order.id,order);if(order.date===todayCN())await set(env,"route:"+order.routeId+":orders:today",order);await set(env,"route:"+order.routeId+":orders:latest",order);
+  await set(env,"waybill:"+order.id,order);await set(env,doneKey,"1");if(order.date===todayCN())await set(env,"route:"+order.routeId+":orders:today",order);await set(env,"route:"+order.routeId+":orders:latest",order);
   return json({success:true,waybill:order,learning:learned.length?"RECORDED":"NONE"});
 }
