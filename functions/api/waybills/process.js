@@ -5,7 +5,7 @@ import {canUseRoute} from "../_permissions.js";
 import {TEMP_DISPATCH_ID} from "../dispatch.js";
 import {recognizeImage} from "./ocr.js";
 import {findGlobalMatches} from "../_global-learning.js";
-import {clean,normalizeStoreName,correctionKey,matchStores} from "./_store-match.js";
+import {clean,formatCompareKey,matchStores} from "./_store-match.js";
 
 const todayCN=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 const number=v=>{const n=Number(v);return Number.isFinite(n)?n:null};
@@ -59,21 +59,17 @@ function extract(rawText){
   return {date,vehicle,totalWeight,stores};
 }
 
-function standardizeStore(item){
-  const rawName=clean(item.rawName||item.name);
-  return {...item,rawName,name:clean(item.name||rawName),standardizedName:normalizeStoreName(rawName),sourceLine:clean(item.sourceLine)};
-}
 function validateResult(order){
   const errors=[];
   if(!order.date)errors.push("缺少运单日期");
   if(!order.vehicle)errors.push("缺少车辆信息");
   if(!Array.isArray(order.stores)||!order.stores.length)errors.push("没有规划门店");
-  const seen=new Set();for(const s of order.stores||[]){const k=s.storeId?"id:"+s.storeId:"pending:"+normalizeStoreName(s.rawName);if(seen.has(k))errors.push("规划结果存在重复门店");seen.add(k)}
+  const seen=new Set();for(const s of order.stores||[]){const k=s.storeId?"id:"+s.storeId:"pending:"+formatCompareKey(s.rawName);if(seen.has(k))errors.push("规划结果存在重复门店");seen.add(k)}
   if((order.stores||[]).some((s,i)=>s.routeOrder!==i+1))errors.push("线路顺序不连续");
   return {valid:errors.length===0,errors};
 }
 function dedupe(items){const seen=new Set(),out=[];let merged=0;for(const s of items){const key=s.storeId?"id:"+s.storeId:"pending:"+normalizeStoreName(s.rawName);if(seen.has(key)){merged++;continue}seen.add(key);out.push(s)}return{items:out,merged}}
-function plan(items,useRouteOrder=true){const list=useRouteOrder?[...items].sort((a,b)=>(number(a.routeOrder)??100000)-(number(b.routeOrder)??100000)||normalizeStoreName(a.name).localeCompare(normalizeStoreName(b.name),"zh-CN")):[...items];return list.map((s,i)=>({...s,routeOrder:i+1}))}
+function plan(items,useRouteOrder=true){const list=useRouteOrder?[...items].sort((a,b)=>(number(a.routeOrder)??100000)-(number(b.routeOrder)??100000)||formatCompareKey(a.name).localeCompare(normalizeStoreName(b.name),"zh-CN")):[...items];return list.map((s,i)=>({...s,routeOrder:i+1}))}
 
 export async function onRequestPost({request,env}){
   const user=await currentUser(request,env);if(!user)return json({success:false,error:"未登录"},401);if(user.role==="admin"||!canUseRoute(user))return json({success:false,error:"无权处理运单"},403);
@@ -84,8 +80,8 @@ export async function onRequestPost({request,env}){
   if(!recognizedText){const ocrStarted=Date.now();try{ocr=await recognizeImage(env,file);recognizedText=ocr.rawText;ocrMs=Date.now()-ocrStarted}catch(e){return json({success:false,code:e.code||"OCR_FAILED",message:e.message||"OCR识别失败",jobId:e.jobId||null},e.code==="OCR_NOT_CONFIGURED"?503:422)}}
   const recognizedMs=Date.now()-started;const baseStarted=Date.now();const baseStores=routeId===TEMP_DISPATCH_ID?[]:await base(env,routeId);const baseMs=Date.now()-baseStarted;
   const extractedStarted=Date.now();const extracted=extract(recognizedText);const extractMs=Date.now()-extractedStarted;if(!extracted.stores.length)return json({success:false,code:"EXTRACT_EMPTY",message:"未提取到门店，请检查运单内容"},422);
-  const standardized=extracted.stores.map(standardizeStore);const matchStarted=Date.now();const locallyMatched=matchStores(standardized,baseStores);const globalCandidates=await findGlobalMatches(env,locallyMatched.filter(x=>x.pending));const globalMap=new Map(globalCandidates.map(x=>[x.rawName+"|"+(x.sourceLine||""),x]));const matched=locallyMatched.map(x=>{if(!x.pending)return x;const g=globalMap.get(x.rawName+"|"+(x.sourceLine||""));if(!g||g.globalMatchStatus!=="matched")return x;const standard=clean(g.name)||x.rawName;return {...x,...g,name:standard,correction:correctionKey(x.rawName)!==correctionKey(standard),pending:false,matchStatus:"matched",matchMethod:g.globalMatchMethod,routeOrder:100000};});const matchMs=Date.now()-matchStarted;const dedupeStarted=Date.now();const d=dedupe(matched);const dedupeMs=Date.now()-dedupeStarted;const planStarted=Date.now();const useRouteOrder=routeId!==TEMP_DISPATCH_ID&&baseStores.length>0;const planned=plan(d.items,useRouteOrder);const planMs=Date.now()-planStarted;const pending=planned.filter(x=>x.pending);
-  const formWeight=number(form.get("totalWeight"));const effectiveWeight=formWeight!=null&&formWeight>0?formWeight:extracted.totalWeight;const order={schemaVersion:"2",id:newId(),routeId,date:clean(form.get("date"))||extracted.date||null,vehicle:clean(form.get("vehicle"))||extracted.vehicle||null,totalWeight:effectiveWeight,stores:planned,rawText:recognizedText,stage:"PLANNED",pipeline:["RECOGNIZED","EXTRACTED","STANDARDIZED","MATCHED","DEDUPED","PLANNED","VALIDATED"],summary:{original:extracted.stores.length,total:planned.length,matched:planned.length-pending.length,pending:pending.length,correction:planned.filter(x=>x.correction).length,merged:d.merged,newStores:0},timing:{recognizedMs,ocrMs,baseMs,extractMs,matchMs,dedupeMs,planMs,totalMs:Date.now()-started},ocr:ocr?{provider:"PaddleOCR",model:ocr.model,jobId:ocr.jobId,lineCount:ocr.lineCount}:null,createdBy:user.id,createdAt:new Date().toISOString()};
+  const matchStarted=Date.now();const locallyMatched=matchStores(extracted.stores,baseStores);const globalCandidates=await findGlobalMatches(env,locallyMatched.filter(x=>x.pending));const globalMap=new Map(globalCandidates.map(x=>[x.rawName+"|"+(x.sourceLine||""),x]));const matched=locallyMatched.map(x=>{if(!x.pending)return x;const g=globalMap.get(x.rawName+"|"+(x.sourceLine||""));if(!g||g.globalMatchStatus!=="matched")return x;const standard=clean(g.name)||x.rawName;return {...x,...g,name:standard,correction:correctionKey(x.rawName)!==correctionKey(standard),pending:false,matchStatus:"matched",matchMethod:g.globalMatchMethod,routeOrder:100000};});const matchMs=Date.now()-matchStarted;const dedupeStarted=Date.now();const d=dedupe(matched);const dedupeMs=Date.now()-dedupeStarted;const planStarted=Date.now();const useRouteOrder=routeId!==TEMP_DISPATCH_ID&&baseStores.length>0;const planned=plan(d.items,useRouteOrder);const planMs=Date.now()-planStarted;const pending=planned.filter(x=>x.pending);
+  const formWeight=number(form.get("totalWeight"));const effectiveWeight=formWeight!=null&&formWeight>0?formWeight:extracted.totalWeight;const order={schemaVersion:"2",id:newId(),routeId,date:clean(form.get("date"))||extracted.date||null,vehicle:clean(form.get("vehicle"))||extracted.vehicle||null,totalWeight:effectiveWeight,stores:planned,rawText:recognizedText,stage:"PLANNED",pipeline:["RECOGNIZED","EXTRACTED","MATCHED","DEDUPED","PLANNED","VALIDATED"],summary:{original:extracted.stores.length,total:planned.length,matched:planned.length-pending.length,pending:pending.length,correction:planned.filter(x=>x.correction).length,merged:d.merged,newStores:0},timing:{recognizedMs,ocrMs,baseMs,extractMs,matchMs,dedupeMs,planMs,totalMs:Date.now()-started},ocr:ocr?{provider:"PaddleOCR",model:ocr.model,jobId:ocr.jobId,lineCount:ocr.lineCount}:null,createdBy:user.id,createdAt:new Date().toISOString()};
   const validation=validateResult(order);order.validation=validation;
   await set(env,"waybill:"+order.id,order);await set(env,"route:"+routeId+":orders:latest",order);if(order.date===todayCN())await set(env,"route:"+routeId+":orders:today",order);
   return json({success:true,waybill:order,pipeline:order.pipeline,summary:order.summary});
