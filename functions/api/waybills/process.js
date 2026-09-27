@@ -12,6 +12,9 @@ const normalized=v=>{let s=clean(v);try{s=s.normalize("NFKC")}catch{}return s.re
 const correctionKey=v=>normalized(v).replace(/(?:jm|a|q)[-_ ]?\d{3,12}/gi,"");
 const number=v=>{const n=Number(v);return Number.isFinite(n)?n:null};
 const matchKey=v=>normalized(v).replace(/(?:jm|a|q)[-_ ]?\d{3,12}/gi,"");
+// Identity matching only uses name/originalName/aliases. Auxiliary data such as
+// note/navigation must never be concatenated into an identity key.
+const identityKeys=v=>{const raw=clean(v);const keys=new Set();const add=x=>{const k=normalized(x);if(k)keys.add(k);const mk=matchKey(x);if(mk)keys.add(mk)};add(raw);return [...keys]};
 
 function extract(rawText){
   const stores=[]; let date=null,vehicle=null,totalWeight=null;
@@ -94,13 +97,13 @@ function match(items,baseStores){
       if(!byBusinessCode.has(code))byBusinessCode.set(code,s);
       else if(byBusinessCode.get(code)?.storeId!==s.storeId)byBusinessCode.set(code,null);
     }
-    for(const k of [s.name,s.originalName,...(Array.isArray(s.aliases)?s.aliases:[])].map(normalized).filter(Boolean)){
-      if(!exact.has(k))exact.set(k,s);
-      else if(exact.get(k)?.storeId!==s.storeId)exact.set(k,null);
-    }
-    for(const k of [s.name,s.originalName,...(Array.isArray(s.aliases)?s.aliases:[])].map(matchKey).filter(Boolean)){
-      if(!byMatchKey.has(k))byMatchKey.set(k,s);
-      else if(byMatchKey.get(k)?.storeId!==s.storeId)byMatchKey.set(k,null);
+    for(const field of [s.name,s.originalName,...(Array.isArray(s.aliases)?s.aliases:[])]){
+      for(const k of identityKeys(field)){
+        if(!exact.has(k))exact.set(k,s);
+        else if(exact.get(k)?.storeId!==s.storeId)exact.set(k,null);
+        if(!byMatchKey.has(k))byMatchKey.set(k,s);
+        else if(byMatchKey.get(k)?.storeId!==s.storeId)byMatchKey.set(k,null);
+      }
     }
   }
   return items.map((x,i)=>{
@@ -126,7 +129,7 @@ function match(items,baseStores){
     // 3) Exact normalized text absorbs formatting-only OCR noise. Do not
     //    let it override a known conflicting business code.
     if(!target){
-      const exactTarget=exact.get(normalized(rawName))||byMatchKey.get(matchKey(rawName));
+      const exactTarget=identityKeys(rawName).map(k=>exact.get(k)||byMatchKey.get(k)).find(Boolean)||null;
       if(exactTarget){
         const candidateCode=businessStoreCode(exactTarget.name)||businessStoreCode(exactTarget.originalName);
         if(!incomingCode||!candidateCode||candidateCode===incomingCode){
