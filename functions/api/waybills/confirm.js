@@ -40,7 +40,7 @@ export async function onRequestPost({request,env}){
     if(target){
       if(rawName&&normalized(rawName)!==normalized(target.name)&&!(target.aliases||[]).includes(rawName))target.aliases=[...(target.aliases||[]),rawName];
     }
-    item.storeId=storeId;item.name=standardName;item.originalName=clean(target?.originalName)||rawName;item.pending=false;item.matchStatus="matched";item.matchMethod=target?"confirmed":"confirmed-global";item.correction=normalized(rawName)!==normalized(standardName);
+    item.storeId=storeId;item.name=standardName;item.routeOrder=Number(target?.routeOrder)||item.routeOrder;item.originalName=clean(target?.originalName)||rawName;item.pending=false;item.matchStatus="matched";item.matchMethod=target?"confirmed":"confirmed-global";item.correction=normalized(rawName)!==normalized(standardName);
     learned.push({storeId,rawName,standardName,originalName:item.originalName,navigation:target?.navigation||null});
   }
 
