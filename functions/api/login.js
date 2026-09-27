@@ -8,7 +8,16 @@ export async function onRequestPost({request,env}){
  if(!username||!password)return json({success:false,error:"请输入账号和密码",code:"LOGIN_CREDENTIALS_REQUIRED"},400);
  const index=await get(env,"user:index:"+username.toLowerCase());
  if(!index)return json({success:false,error:"账号或密码错误",code:"LOGIN_INVALID_CREDENTIALS"},401);
- const raw=await get(env,"user:"+index);
+ let raw=await get(env,"user:"+index);
+ if(!raw){
+  const idsRaw=await get(env,"users:index");
+  let ids=[];try{ids=JSON.parse(idsRaw||"[]")}catch{ids=[]}
+  for(const id of Array.isArray(ids)?ids:[]){
+   const candidate=await get(env,"user:"+id);
+   if(!candidate)continue;
+   try{const parsed=JSON.parse(candidate);if(String(parsed.username||"").toLowerCase()===username.toLowerCase()){raw=candidate;break}}catch{}
+  }
+ }
  if(!raw)return json({success:false,error:"账号数据异常",code:"LOGIN_USER_DATA_INVALID"},500);
  let user;try{user=JSON.parse(raw)}catch{return json({success:false,error:"账号数据异常",code:"LOGIN_USER_DATA_INVALID"},500)}
  if(user.disabled)return json({success:false,error:"账号已停用",code:"LOGIN_USER_DISABLED"},403);
