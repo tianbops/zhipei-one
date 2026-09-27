@@ -79,19 +79,19 @@ export function matchStores(items,baseStores){
       const key=normalizeStoreName(rawName);
       const exact=byName.get(key)||null;
       if(exact){
-        const candidateCode=businessStoreCode(exact.name)||businessStoreCode(exact.originalName);
-        if(!incomingCode||!candidateCode||candidateCode===incomingCode){
-          target=exact;
-          method="exact";
-        }
+        // Exact identity-key hits include explicit aliases. An alias may carry
+        // a different legacy/business code from the canonical name, so do not
+        // reject an explicit data-defined alias match because of code mismatch.
+        target=exact;
+        method="exact";
       }
     }
 
     let candidates=[];
     if(!target){
       candidates=baseStores.map(store=>{
-        const candidateCode=businessStoreCode(store?.name)||businessStoreCode(store?.originalName);
-        if(incomingCode&&candidateCode&&incomingCode!==candidateCode)return null;
+        const candidateCodes=identityFields(store).map(businessStoreCode).filter(Boolean);
+        if(incomingCode&&candidateCodes.length&&!candidateCodes.includes(incomingCode))return null;
         const score=Math.max(...identityFields(store).map(field=>similarity(rawName,field)),0);
         return {store,score};
       }).filter(Boolean).sort((a,b)=>b.score-a.score).slice(0,5);
