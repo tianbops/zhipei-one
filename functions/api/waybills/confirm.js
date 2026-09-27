@@ -55,7 +55,7 @@ export async function onRequestPost({request,env}){
   const finalStores=ordered.map((s,i)=>({...s,routeOrder:i+1}));
   const pending=finalStores.filter(s=>s.pending).length;
   order.stores=finalStores;order.stage=pending?"PLANNED":"CONFIRMED";order.summary={...(order.summary||{}),total:finalStores.length,matched:finalStores.length-pending,pending,correction:finalStores.filter(s=>s.correction).length,merged:(order.summary?.merged||0)+merged};
-  order.confirmedAt=new Date().toISOString();order.confirmedBy=user.id;order.confirmRequestId=confirmRequestId||null;
+  const confirmedNow=new Date().toISOString();if(pending===0){order.confirmedAt=confirmedNow;order.confirmedBy=user.id;}else{order.lastConfirmedAt=confirmedNow;order.lastConfirmedBy=user.id;}order.confirmRequestId=confirmRequestId||null;
   if(learned.length&&order.routeId!==TEMP_DISPATCH_ID){base.version=(Number(base.version)||1)+1;base.updatedAt=new Date().toISOString();base.updatedBy=user.id;await set(env,"route:"+order.routeId+":base",base)}
   for(const item of learned){await learnGlobal(env,{...item,routeId:order.routeId,waybillId:order.id,userId:user.id})}
   await set(env,"waybill:"+order.id,order);if(order.date===todayCN())await set(env,"route:"+order.routeId+":orders:today",order);await set(env,"route:"+order.routeId+":orders:latest",order);
