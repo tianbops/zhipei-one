@@ -9,6 +9,7 @@ import {clean,normalizeStoreName,correctionKey,matchStores} from "./_store-match
 
 const todayCN=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 const number=v=>{const n=Number(v);return Number.isFinite(n)?n:null};
+async function base(env,id){const raw=await get(env,"route:"+id+":base");if(!raw)return[];try{const x=typeof raw==="string"?JSON.parse(raw):raw;return Array.isArray(x.stores)?x.stores:[]}catch{return[]}}
 
 function extract(rawText){
   const stores=[]; let date=null,vehicle=null,totalWeight=null;
