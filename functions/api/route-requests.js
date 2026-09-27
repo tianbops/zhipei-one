@@ -3,12 +3,12 @@ import {currentUser} from "./_auth.js";
 import {get,set,command,newId} from "./_redis.js";
 import {getRoute,validDuty} from "./_route.js";
 function parse(v){try{return typeof v==="string"?JSON.parse(v):v}catch{return null}}
-async function request(env,id){return parse(await get(env,"route-request:"+id))}
+async function loadRequest(env,id){return parse(await get(env,"route-request:"+id))}
 async function list(env){return parse(await get(env,"route-requests:index"))||[]}
 export async function onRequestGet({request,env}){
  const user=await currentUser(request,env);if(!user)return json({success:false,error:"未登录"},401);
  const ids=await list(env);const items=[];
- for(const id of Array.isArray(ids)?ids:[]){const x=await request(env,id);if(!x)continue;if(user.role==="admin"?x.status==="pending":x.userId===user.id)items.push(x)}
+ for(const id of Array.isArray(ids)?ids:[]){const x=await loadRequest(env,id);if(!x)continue;if(user.role==="admin"?x.status==="pending":x.userId===user.id)items.push(x)}
  return json({success:true,requests:items});
 }
 export async function onRequestPost({request,env}){
