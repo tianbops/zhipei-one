@@ -20,7 +20,7 @@ export async function findGlobalMatches(env,items){
  const keys=items.map(x=>normalizeLearningName(x.rawName||x.name));
  const idLists=await aliasesFor(env,keys);
  const ids=[...new Set(idLists.flat().filter(Boolean))];
- const recs=await recordsFor(env,ids);const byId=new Map(recs.filter(Boolean).map(r=>[r.storeId,r]));
+ const recs=await recordsFor(env,ids);const byId=new Map(recs.filter(r=>r&&r.status==="VERIFIED").map(r=>[r.storeId,r]));
  return items.map((item,i)=>{const rawName=clean(item.rawName||item.name),list=idLists[i]||[];let target=null,method=null;if(item.storeId&&byId.has(item.storeId)){target=byId.get(item.storeId);method="global-identity"}else if(list.length===1&&byId.has(list[0])){target=byId.get(list[0]);method="global-alias"}return target?{...item,storeId:target.storeId,name:target.standardName||rawName,originalName:target.originalName||rawName,globalMatchStatus:"matched",globalMatchMethod:method,pending:false}:{...item,globalMatchStatus:"unresolved"}})
 }
 export async function learnGlobal(env,input){
