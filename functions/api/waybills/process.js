@@ -78,7 +78,7 @@ function similarity(a,b){
 }
 async function base(env,id){const raw=await get(env,"route:"+id+":base");if(!raw)return[];try{const x=typeof raw==="string"?JSON.parse(raw):raw;return Array.isArray(x.stores)?x.stores:[]}catch{return[]}}
 function businessStoreCode(v){
-  const m=clean(v).match(/(?:^|[^A-Z0-9])(JM|A|Q)[-_ ]?(\\d{3,12})(?=$|[^A-Z0-9])/i);
+  const m=clean(v).match(/(?:^|[^A-Z0-9])(JM|A|Q)[-_ ]?(\d{3,12})(?=$|[^A-Z0-9])/i);
   return m?(m[1]+m[2]).toUpperCase():null;
 }
 function match(items,baseStores){
