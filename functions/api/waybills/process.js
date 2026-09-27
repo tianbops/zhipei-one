@@ -143,7 +143,7 @@ function match(items,baseStores){
       for(const s of baseStores){
         const candidateCode=businessStoreCode(s.name)||businessStoreCode(s.originalName);
         if(incomingCode&&candidateCode&&candidateCode!==incomingCode)continue;
-        const sc=Math.max(similarity(rawName,s.name),similarity(rawName,s.originalName));
+        const sc=Math.max(similarity(rawName,s.name),similarity(rawName,s.originalName),...(Array.isArray(s.aliases)?s.aliases.map(alias=>similarity(rawName,alias)):[]));
         if(sc>bs){second=bs;bs=sc;best=s}
         else if(sc>second)second=sc;
       }
