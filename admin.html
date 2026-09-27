@@ -59,6 +59,18 @@
 </section>
 
 <section class="admin-card">
+<h2>邀请码管理 <span>控制业务账号注册</span></h2>
+<form id="inviteForm">
+<div class="invite-grid">
+<label>使用次数<input id="inviteMaxUses" type="number" min="1" max="9999" value="1" required></label>
+<label>有效期<input id="inviteExpiresAt" type="datetime-local"></label>
+</div>
+<div class="invite-actions"><button type="submit">生成邀请码</button></div>
+</form>
+<div id="invites" class="admin-list" style="margin-top:12px">加载中…</div>
+</section>
+
+<section class="admin-card">
 <h2>用户管理 <span>账号与状态</span></h2>
 <div id="users" class="admin-list">加载中…</div>
 </section>
