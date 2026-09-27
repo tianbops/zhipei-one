@@ -36,8 +36,15 @@ export async function onRequestPost({request,env}){
     if(!target)target=base.stores.find(s=>normalized(s.name)===normalized(c.standardName||"")||normalized(s.originalName)===normalized(c.standardName||""))||null;
     const standardName=clean(c.standardName)||clean(target?.name)||rawName;
     if(!target&&order.routeId!==TEMP_DISPATCH_ID){
-      target={storeId:newId(),originalName:rawName,name:standardName,aliases:[],navigation:null,routeOrder:base.stores.length+1,note:""};
-      base.stores.push(target);
+      const globals=await findGlobalMatches(env,[{rawName:standardName}]);
+      const globalTarget=globals[0]?.globalMatchStatus==="matched"?globals[0]:null;
+      if(globalTarget){
+        target={storeId:clean(globalTarget.storeId),originalName:clean(globalTarget.originalName)||rawName,name:clean(globalTarget.name)||standardName,aliases:Array.isArray(globalTarget.aliases)?globalTarget.aliases:[],navigation:globalTarget.navigation||null,routeOrder:base.stores.length+1,note:""};
+        base.stores.push(target);
+      }else{
+        target={storeId:newId(),originalName:rawName,name:standardName,aliases:[],navigation:null,routeOrder:base.stores.length+1,note:""};
+        base.stores.push(target);
+      }
     }
     const storeId=clean(target?.storeId)||requestedId||newId();
     if(target){
