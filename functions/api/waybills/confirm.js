@@ -1,0 +1,57 @@
+import {json,body} from "../_json.js";
+import {currentUser} from "../_auth.js";
+import {get,set,newId} from "../_redis.js";
+import {canMaintainRoute,requireBusinessUser} from "../_permissions.js";
+import {TEMP_DISPATCH_ID} from "../dispatch.js";
+import {learnGlobal} from "../_global-learning.js";
+
+const clean=v=>String(v??"").trim();
+const todayCN=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+const normalized=v=>clean(v).replace(/[\u3000\s]+/g,"").replace(/[（）()【】\[\]{}<>《》“”"'‘’]/g,"").replace(/[·•、,，。；;:：!！?？\-_—]/g,"").replace(/Ⅱl|Il|II|ⅱ/gi,"II").toLowerCase();
+
+async function load(env,id){const raw=await get(env,"waybill:"+id);if(!raw)return null;try{return typeof raw==="string"?JSON.parse(raw):raw}catch{return null}}
+async function loadBase(env,id){const raw=await get(env,"route:"+id+":base");if(!raw)return {routeId:id,version:1,stores:[]};try{const x=typeof raw==="string"?JSON.parse(raw):raw;return {...x,routeId:id,stores:Array.isArray(x.stores)?x.stores:[]}}catch{return{routeId:id,version:1,stores:[]}}}
+
+export async function onRequestPost({request,env}){
+  const gate=await requireBusinessUser(request,env);if(gate.response)return gate.response;
+  const user=gate.user;const input=await body(request);const waybillId=clean(input.waybillId);if(!waybillId)return json({success:false,code:"WAYBILL_ID_REQUIRED",error:"缺少运单ID"},400);
+  const order=await load(env,waybillId);if(!order)return json({success:false,code:"WAYBILL_NOT_FOUND",error:"运单不存在"},404);
+  if(order.stage==="CONFIRMED")return json({success:true,waybill:order,learning:"ALREADY_CONFIRMED"});
+  if(order.routeId!==TEMP_DISPATCH_ID&&!canMaintainRoute(user,order.routeId))return json({success:false,code:"BASE_MAINTENANCE_FORBIDDEN",error:"无权确认并维护该线路数据资料"},403);
+  if(!Array.isArray(input.confirmations))return json({success:false,code:"CONFIRMATIONS_REQUIRED",error:"确认项目必须是数组"},400);
+
+  const confirmations=input.confirmations;
+  const stores=[...(order.stores||[])];
+  const base=order.routeId===TEMP_DISPATCH_ID?{routeId:order.routeId,version:1,stores:[]}:await loadBase(env,order.routeId);
+  const learned=[];
+  for(const c of confirmations){
+    const index=Number(c.index);if(!Number.isInteger(index)||index<0||index>=stores.length)continue;
+    const item=stores[index];if(!item.pending&&!clean(c.storeId))continue;
+    const rawName=clean(item.rawName||item.name);let target=null;
+    const requestedId=clean(c.storeId);
+    if(requestedId)target=base.stores.find(s=>clean(s.storeId)===requestedId)||null;
+    if(!target)target=base.stores.find(s=>normalized(s.name)===normalized(c.standardName||"")||normalized(s.originalName)===normalized(c.standardName||""))||null;
+    const standardName=clean(c.standardName)||clean(target?.name)||rawName;
+    if(!target&&order.routeId!==TEMP_DISPATCH_ID){
+      target={storeId:newId(),originalName:rawName,name:standardName,aliases:[],navigation:null,routeOrder:base.stores.length+1,note:""};
+      base.stores.push(target);
+    }
+    const storeId=clean(target?.storeId)||requestedId||newId();
+    if(target){
+      if(rawName&&normalized(rawName)!==normalized(target.name)&&!(target.aliases||[]).includes(rawName))target.aliases=[...(target.aliases||[]),rawName];
+    }
+    item.storeId=storeId;item.name=standardName;item.originalName=clean(target?.originalName)||rawName;item.pending=false;item.matchStatus="matched";item.matchMethod=target?"confirmed":"confirmed-global";item.correction=normalized(rawName)!==normalized(standardName);
+    learned.push({storeId,rawName,standardName,originalName:item.originalName,navigation:target?.navigation||null});
+  }
+
+  const seen=new Set();const deduped=[];let merged=0;
+  for(const item of stores){const key=item.storeId?"id:"+item.storeId:"pending:"+normalized(item.rawName);if(seen.has(key)){merged++;continue}seen.add(key);deduped.push(item)}
+  const finalStores=deduped.map((s,i)=>({...s,routeOrder:i+1}));
+  const pending=finalStores.filter(s=>s.pending).length;
+  order.stores=finalStores;order.stage=pending?"PLANNED":"CONFIRMED";order.summary={...(order.summary||{}),total:finalStores.length,matched:finalStores.length-pending,pending,correction:finalStores.filter(s=>s.correction).length,merged:(order.summary?.merged||0)+merged};
+  order.confirmedAt=new Date().toISOString();order.confirmedBy=user.id;order.confirmRequestId=clean(input.confirmRequestId)||null;
+  if(!pending&&order.routeId!==TEMP_DISPATCH_ID){base.version=(Number(base.version)||1)+1;base.updatedAt=new Date().toISOString();base.updatedBy=user.id;await set(env,"route:"+order.routeId+":base",base)}
+  for(const item of learned){await learnGlobal(env,{...item,routeId:order.routeId,waybillId:order.id,userId:user.id})}
+  await set(env,"waybill:"+order.id,order);if(order.date===todayCN())await set(env,"route:"+order.routeId+":orders:today",order);await set(env,"route:"+order.routeId+":orders:latest",order);
+  return json({success:true,waybill:order,learning:learned.length?"RECORDED":"NONE"});
+}
