@@ -8,7 +8,7 @@ import {findGlobalMatches} from "../_global-learning.js";
 
 const clean=v=>String(v??"").trim();
 const todayCN=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
-const normalized=v=>{let s=clean(v);try{s=s.normalize("NFKC")}catch{}return s.replace(/[\u3000\s\u200B\u200C\u200D\uFEFF]+/g,"").replace(/[（）()【】\[\]{}<>《》“”"'‘’]/g,"").replace(/[·•、,，。；;:：!！?？\-_—]/g,"").replace(/Ⅱl|Il|II|ⅱ/gi,"II").toLowerCase()};
+const normalized=v=>{let s=clean(v);try{s=s.normalize("NFKC")}catch{}return s.replace(/[\p{Z}\p{Cf}\p{P}\p{S}]+/gu,"").replace(/Ⅱl|Il|II|ⅱ/gi,"II").toLowerCase()};
 const correctionKey=v=>normalized(v).replace(/(?:jm|a|q)[-_ ]?\d{3,12}/gi,"");
 const number=v=>{const n=Number(v);return Number.isFinite(n)?n:null};
 const matchKey=v=>normalized(v).replace(/(?:jm|a|q)[-_ ]?\d{3,12}/gi,"");
