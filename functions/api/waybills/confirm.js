@@ -59,9 +59,14 @@ export async function onRequestPost({request,env}){
 
   const seen=new Set();const deduped=[];let merged=0;
   for(const item of stores){const key=item.storeId?"id:"+item.storeId:"pending:"+normalized(item.rawName);if(seen.has(key)){merged++;continue}seen.add(key);deduped.push(item)}
-  const known=deduped.filter(s=>s.storeId&&Number.isFinite(Number(s.routeOrder))&&Number(s.routeOrder)<100000);
-  const unknown=deduped.filter(s=>!known.includes(s));
-  const ordered=order.routeId===TEMP_DISPATCH_ID||base.stores.length===0?deduped:[...known.sort((a,b)=>(Number(a.routeOrder)-Number(b.routeOrder))),...unknown];
+  let ordered=deduped;
+  if(order.routeId!==TEMP_DISPATCH_ID&&base.stores.length){
+    const routeOrderById=new Map(base.stores.filter(s=>s&&s.storeId).map(s=>[clean(s.storeId),Number(s.routeOrder)]));
+    const known=deduped.filter(s=>s.storeId&&Number.isFinite(routeOrderById.get(clean(s.storeId))));
+    const unknown=deduped.filter(s=>!known.includes(s));
+    known.forEach(s=>{s.routeOrder=routeOrderById.get(clean(s.storeId))});
+    ordered=[...known.sort((a,b)=>a.routeOrder-b.routeOrder),...unknown];
+  }
   const finalStores=ordered.map((s,i)=>({...s,routeOrder:i+1}));
   const pending=finalStores.filter(s=>s.pending).length;
   order.stores=finalStores;order.stage=pending?"PLANNED":"CONFIRMED";order.summary={...(order.summary||{}),total:finalStores.length,matched:finalStores.length-pending,pending,correction:finalStores.filter(s=>s.correction).length,merged:(order.summary?.merged||0)+merged};
