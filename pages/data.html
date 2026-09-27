@@ -5,7 +5,7 @@
 <header class="topbar"><strong>数据资料</strong><a href="/home.html">返回</a></header>
 <section class="card"><h2 id="title">数据资料</h2><p id="hint">加载中…</p><div id="summary" class="message"></div></section>
 <section class="card" id="tools" style="display:none"><div style="display:flex;gap:10px;justify-content:flex-end"><button id="importBtn" type="button">导入数据资料</button></div><p style="margin:10px 0 0;color:#8A97A5;font-size:13px;line-height:1.6">可粘贴按配送顺序排列的门店名单，也可选择文本文件导入。导入保存后会整体替换当前线路数据资料。</p></section>
-<section class="card"><div id="stores">加载中…</div></section>
+<section class="card"><div id="stores">加载中…</div><div id="maintainTools" style="display:none;margin-top:12px;grid-template-columns:1fr 1fr;gap:10px"><button id="addStore" type="button">新增门店</button><button id="saveStores" type="button">保存修改</button></div></section>
 <div id="importBox" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:20;padding:16px;box-sizing:border-box"><div style="max-width:620px;margin:5vh auto 0;background:#18212B;border:1px solid #2A3540;border-radius:16px;padding:18px;max-height:90vh;overflow:auto"><h3 style="margin:0 0 12px">导入数据资料</h3><p style="color:#8A97A5;font-size:13px;line-height:1.6">每行一家门店。支持“01、门店名称”、导航：https://…、备注：…；保存后按当前顺序生成门店编号。</p><input id="importFile" type="file" accept=".txt,.csv,.json,text/plain,text/csv,application/json" style="width:100%;margin:8px 0 12px"><textarea id="importText" style="width:100%;min-height:280px;box-sizing:border-box;border:1px solid #2A3540;border-radius:12px;background:#10161D;color:#E8EDF2;padding:12px;font-size:15px;line-height:1.6" placeholder="01、江北胡汪洋经销商
 导航：https://...
 备注：由经销商代送
@@ -16,7 +16,7 @@
 const $=id=>document.getElementById(id);
 async function api(u,o={}){const r=await fetch(u,{credentials:"same-origin",...o});const d=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(d.error||d.message||"请求失败");e.code=d.code||"HTTP_"+r.status;e.detail=d.detail||"";throw e}return d}
 function err(e){return(e.code?"["+e.code+"] ":"")+e.message+(e.detail?" · "+e.detail:"")}
-let routeId="",canMaintain=false,stores=[],importing=false;
+let routeId="",canMaintain=false,stores=[],importing=false,baseVersion=1,saving=false;
 function cleanName(v){return String(v||"").trim().replace(/^[、.．)）\\-\s]+|[、.．\\-\s]+$/g,"").trim()}
 function parseImport(text){const raw=String(text||"").trim();if(raw.startsWith("[")||raw.startsWith("{")){try{const j=JSON.parse(raw),a=Array.isArray(j)?j:(Array.isArray(j.stores)?j.stores:[]);if(a.length)return a.map((x,i)=>({storeId:String(x.storeId||"").trim(),originalName:String(x.originalName||x.name||x.displayName||"").trim(),name:String(x.name||x.displayName||x.originalName||"").trim(),aliases:Array.isArray(x.aliases)?x.aliases:[],navigation:x.navigation||"",routeOrder:i+1,note:String(x.note||"").trim()})).filter(x=>x.name)}catch{}}const lines=String(text||"").replace(/\r/g,"").split("\n").map(x=>x.trim()).filter(Boolean),out=[];let cur=null;const push=()=>{if(cur?.name){cur.name=cleanName(cur.name);if(cur.name)out.push(cur)}cur=null};for(let line of lines){const nav=line.match(/(?:导航\s*[:：]?\s*)?(https?:\/\/[^\s）)]+)/i);if(nav){if(!cur){const before=line.slice(0,nav.index).trim();if(before)cur={name:before,nav:"",note:""}}if(cur)cur.nav=nav[1].trim();line=(line.slice(0,nav.index)+line.slice(nav.index+nav[0].length)).trim();if(!line)continue}if(/^备注\s*[:：]/i.test(line)){if(cur)cur.note=line.replace(/^备注\s*[:：]\s*/i,"").trim();continue}const m=line.match(/^\d+\s*[、.．)）-]?\s*(.+)$/);if(m){push();cur={name:m[1].trim(),nav:"",note:""};continue}if(!cur)cur={name:line,nav:"",note:""};else cur.name+=" "+line}push();const seen=new Set();return out.filter(x=>{const k=x.name.replace(/[\s　]+/g,"").toLowerCase();if(!k||seen.has(k))return false;seen.add(k);return true}).map((x,i)=>({storeId:"",originalName:x.name,name:x.name,aliases:[],navigation:/^https?:\/\//i.test(x.nav)?x.nav:"",routeOrder:i+1,note:x.note||""}))}
 function updatePreview(){const p=parseImport($("importText").value);$("importPreview").textContent=p.length?"已识别 "+p.length+" 家门店，保存后将整体替换当前数据资料。":"尚未识别到有效门店"}
@@ -31,7 +31,7 @@ async function load(){
   if(!routeId){$("hint").textContent="请先在首页选择调度线路";$("stores").textContent="暂无可查看的数据资料";return}
   if(routeId==="__temporary__"){$("title").textContent="临时线路 · 数据资料";$("hint").textContent="临时线路不建立正式数据资料";$("summary").textContent="临时线路";$("stores").textContent="临时线路使用全局学习识别门店，规划按运单原始顺序排列。";return}
   const x=await api("/api/base?routeId="+encodeURIComponent(routeId));
-  canMaintain=!!x.canMaintain; $("tools").style.display=canMaintain?"block":"none"; stores=Array.isArray(x.base?.stores)?x.base.stores:[];
+  canMaintain=!!x.canMaintain; $("tools").style.display=canMaintain?"block":"none"; $("maintainTools").style.display=canMaintain?"grid":"none"; stores=Array.isArray(x.base?.stores)?x.base.stores:[];baseVersion=Number(x.base?.version)||1;
   $("title").textContent=(x.route?.name||"当前线路")+" · 数据资料";
   $("hint").textContent=canMaintain?"你正在维护该线路的数据资料":"当前为查看模式，你不是该线路维护人员，不能修改数据资料";
   $("summary").textContent=stores.length+"家门店"+(x.base?.version?" · 版本 "+x.base.version:"");
