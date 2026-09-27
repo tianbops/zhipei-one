@@ -4,7 +4,4 @@ export async function command(env,parts){const r=redis(env);if(!r)throw new Erro
 export async function get(env,key){return command(env,["GET",PREFIX+key])}
 export async function set(env,key,value){return command(env,["SET",PREFIX+key,typeof value==="string"?value:JSON.stringify(value)])}
 export async function del(env,key){return command(env,["DEL",PREFIX+key])}
-export function cookieName(){return COOKIE}
-export function sessionCookie(token,maxAge=604800){return COOKIE+"="+encodeURIComponent(token)+"; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age="+maxAge}
-export function clearSessionCookie(){return COOKIE+"=; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=0"}
-export function newId(){return crypto.randomUUID()}
+export function cookieName(){return COOKIE}export function sessionCookie(token,maxAge=604800){return COOKIE+"="+encodeURIComponent(token)+"; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age="+maxAge}export function clearSessionCookie(){return COOKIE+"=; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=0"}export function newId(){return crypto.randomUUID()}
