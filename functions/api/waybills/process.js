@@ -2,6 +2,7 @@ import {json} from "../_json.js";
 import {currentUser} from "../_auth.js";
 import {get,set,newId} from "../_redis.js";
 import {canUseRoute} from "../_permissions.js";
+import {TEMP_DISPATCH_ID} from "../dispatch.js";
 import {recognizeImage} from "./ocr.js";
 
 const clean=v=>String(v??"").trim();
@@ -10,20 +11,19 @@ const normalized=v=>clean(v).replace(/[\u3000\s]+/g,"").replace(/[（）()【】
 const number=v=>{const n=Number(v);return Number.isFinite(n)?n:null};
 
 function extract(rawText){
-  const stores=[]; let date=null,vehicle=null,totalWeight=null,totalQuantity=null;
+  const stores=[]; let date=null,vehicle=null,totalWeight=null;
   for(const line of clean(rawText).split(/\r?\n+/).map(x=>x.trim()).filter(Boolean).slice(0,5000)){
     const dm=line.match(/(20\d{2}[-/.年]\d{1,2}[-/.月]\d{1,2}日?)/);
     if(!date&&dm){const p=dm[1].replace(/[年月/.]/g,"-").replace(/日$/,"").split("-").map(x=>x.padStart(2,"0"));if(p.length===3)date=p.join("-")}
     const vm=line.match(/(?:车牌|车辆|车号)\s*[:：]?\s*([\u4e00-\u9fa5A-Z]{1,3}[A-Z0-9]{5,8})/i); if(!vehicle&&vm)vehicle=vm[1];
     const wm=line.match(/(?:总重量|重量)\s*[:：]?\s*([\d.]+)\s*(?:吨|t|T)?/); if(wm)totalWeight=number(wm[1]);
-    const qm=line.match(/(?:总数量|数量|件数)\s*[:：]?\s*(\d+(?:\.\d+)?)/); if(qm)totalQuantity=number(qm[1]);
     if(/^(日期|时间|车牌|车辆|车号|总重量|重量|总数量|数量|件数)\b/i.test(line))continue;
     let value=line.replace(/^\s*(?:\d{1,4}[.)、:：-]|[①②③④⑤⑥⑦⑧⑨⑩])\s*/,"").replace(/^\s*(?:门店|客户)\s*[:：]?\s*/,"").trim();
     const idm=value.match(/\b(?:JM|A|Q)[-_ ]?\d{3,12}\b/i); const storeId=idm?idm[0].replace(/[ -]/g,"").toUpperCase():null;
     const name=value.replace(/\b(?:JM|A|Q)[-_ ]?\d{3,12}\b/i,"").replace(/\s*[|→>-]\s*$/,"").trim();
     if(name.length>=2&&/[\u4e00-\u9fa5A-Za-z]/.test(name))stores.push({rawName:name,sourceLine:line,storeId});
   }
-  return {date,vehicle,totalWeight,totalQuantity,stores};
+  return {date,vehicle,totalWeight,stores};
 }
 
 
@@ -64,10 +64,10 @@ export async function onRequestPost({request,env}){
   const rawText=clean(form.get("rawText")),file=form.get("file");if(!rawText&&!(file instanceof File))return json({success:false,error:"请选择运单"},400);
   const started=Date.now();let ocr=null,recognizedText=rawText,ocrMs=0;
   if(!recognizedText){const ocrStarted=Date.now();try{ocr=await recognizeImage(env,file);recognizedText=ocr.rawText;ocrMs=Date.now()-ocrStarted}catch(e){return json({success:false,code:e.code||"OCR_FAILED",message:e.message||"OCR识别失败",jobId:e.jobId||null},e.code==="OCR_NOT_CONFIGURED"?503:422)}}
-  const recognizedMs=Date.now()-started;const baseStarted=Date.now();const baseStores=await base(env,routeId);const baseMs=Date.now()-baseStarted;
+  const recognizedMs=Date.now()-started;const baseStarted=Date.now();const baseStores=routeId===TEMP_DISPATCH_ID?[]:await base(env,routeId);const baseMs=Date.now()-baseStarted;
   const extractedStarted=Date.now();const extracted=extract(recognizedText);const extractMs=Date.now()-extractedStarted;if(!extracted.stores.length)return json({success:false,code:"EXTRACT_EMPTY",message:"未提取到门店，请检查运单内容"},422);
   const standardized=extracted.stores.map(standardizeStore);const matchStarted=Date.now();const matched=match(standardized,baseStores);const matchMs=Date.now()-matchStarted;const dedupeStarted=Date.now();const d=dedupe(matched);const dedupeMs=Date.now()-dedupeStarted;const planStarted=Date.now();const planned=plan(d.items);const planMs=Date.now()-planStarted;const pending=planned.filter(x=>x.pending);
-  const order={schemaVersion:"2",id:newId(),routeId,date:clean(form.get("date"))||extracted.date||null,vehicle:clean(form.get("vehicle"))||extracted.vehicle||null,totalQuantity:number(form.get("totalQuantity"))??extracted.totalQuantity,totalWeight:number(form.get("totalWeight"))??extracted.totalWeight,stores:planned,rawText:recognizedText,stage:"PLANNED",pipeline:["RECOGNIZED","EXTRACTED","STANDARDIZED","MATCHED","DEDUPED","PLANNED","VALIDATED"],summary:{original:extracted.stores.length,total:planned.length,matched:planned.length-pending.length,pending:pending.length,correction:planned.filter(x=>x.correction).length,merged:d.merged,newStores:0},timing:{recognizedMs,ocrMs,baseMs,extractMs,matchMs,dedupeMs,planMs,totalMs:Date.now()-started},ocr:ocr?{provider:"PaddleOCR",model:ocr.model,jobId:ocr.jobId,lineCount:ocr.lineCount}:null,createdBy:user.id,createdAt:new Date().toISOString()};
+  const order={schemaVersion:"2",id:newId(),routeId,date:clean(form.get("date"))||extracted.date||null,vehicle:clean(form.get("vehicle"))||extracted.vehicle||null,totalWeight:number(form.get("totalWeight"))??extracted.totalWeight,stores:planned,rawText:recognizedText,stage:"PLANNED",pipeline:["RECOGNIZED","EXTRACTED","STANDARDIZED","MATCHED","DEDUPED","PLANNED","VALIDATED"],summary:{original:extracted.stores.length,total:planned.length,matched:planned.length-pending.length,pending:pending.length,correction:planned.filter(x=>x.correction).length,merged:d.merged,newStores:0},timing:{recognizedMs,ocrMs,baseMs,extractMs,matchMs,dedupeMs,planMs,totalMs:Date.now()-started},ocr:ocr?{provider:"PaddleOCR",model:ocr.model,jobId:ocr.jobId,lineCount:ocr.lineCount}:null,createdBy:user.id,createdAt:new Date().toISOString()};
   const validation=validateResult(order);order.validation=validation;
   await set(env,"waybill:"+order.id,order);await set(env,"route:"+routeId+":orders:latest",order);if(order.date===todayCN())await set(env,"route:"+routeId+":orders:today",order);
   return json({success:true,waybill:order,pipeline:order.pipeline,summary:order.summary});
