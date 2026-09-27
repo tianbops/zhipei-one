@@ -100,7 +100,7 @@ function match(items,baseStores){
   return items.map((x,i)=>{
     const rawName=clean(x.rawName||x.name);
     const incomingId=clean(x.storeId);
-    const incomingCode=businessStoreCode(incomingId)||businessStoreCode(x.sourceLine)||businessStoreCode(x.rawName)||businessStoreCode(x.name);
+    const incomingCode=businessStoreCode(incomingId)||businessStoreCode(x.rawName)||businessStoreCode(x.name);
     let target=null,method=null;
 
     // 1) Internal Store ID, when the OCR record already carries the same ID.
