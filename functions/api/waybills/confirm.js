@@ -48,7 +48,10 @@ export async function onRequestPost({request,env}){
     }
     const storeId=clean(target?.storeId)||requestedId||newId();
     if(target){
-      if(rawName&&normalized(rawName)!==normalized(target.name)&&!(target.aliases||[]).includes(rawName))target.aliases=[...(target.aliases||[]),rawName];
+      if(target){
+ const aliases=Array.isArray(target.aliases)?target.aliases:[];
+ if(rawName&&normalized(rawName)!==normalized(target.name)&&!aliases.includes(rawName))target.aliases=[...aliases,rawName];
+}
     }
     item.storeId=storeId;item.name=standardName;item.routeOrder=Number(target?.routeOrder)||item.routeOrder;item.originalName=clean(target?.originalName)||rawName;item.pending=false;item.matchStatus="matched";item.matchMethod=target?"confirmed":"confirmed-global";item.correction=normalized(rawName)!==normalized(standardName);
     learned.push({storeId,rawName,standardName,originalName:item.originalName,navigation:target?.navigation||null});
