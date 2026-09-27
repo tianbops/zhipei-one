@@ -13,20 +13,50 @@ const number=v=>{const n=Number(v);return Number.isFinite(n)?n:null};
 
 function extract(rawText){
   const stores=[]; let date=null,vehicle=null,totalWeight=null;
-  for(const line of clean(rawText).split(/\r?\n+/).map(x=>x.trim()).filter(Boolean).slice(0,5000)){
-    const dm=line.match(/(20\d{2}[-/.年]\d{1,2}[-/.月]\d{1,2}日?)/);
-    if(!date&&dm){const p=dm[1].replace(/[年月/.]/g,"-").replace(/日$/,"").split("-").map(x=>x.padStart(2,"0"));if(p.length===3)date=p.join("-")}
-    const vm=line.match(/(?:车牌|车辆|车号)\s*[:：]?\s*([\u4e00-\u9fa5A-Z]{1,3}[A-Z0-9]{5,8})/i); if(!vehicle&&vm)vehicle=vm[1];
-    const wm=line.match(/(?:总重量|重量)\s*[:：]?\s*([\d.]+)\s*(?:吨|t|T)?/); if(wm)totalWeight=number(wm[1]);
-    if(/^(日期|时间|车牌|车辆|车号|总重量|重量|总数量|数量|件数)\b/i.test(line))continue;
-    let value=line.replace(/^\s*(?:\d{1,4}[.)、:：-]|[①②③④⑤⑥⑦⑧⑨⑩])\s*/,"").replace(/^\s*(?:门店|客户)\s*[:：]?\s*/,"").trim();
-    const idm=value.match(/\b(?:JM|A|Q)[-_ ]?\d{3,12}\b/i); const storeId=idm?idm[0].replace(/[ -]/g,"").toUpperCase():null;
-    const name=value.replace(/\b(?:JM|A|Q)[-_ ]?\d{3,12}\b/i,"").replace(/\s*[|→>-]\s*$/,"").trim();
-    if(name.length>=2&&/[\u4e00-\u9fa5A-Za-z]/.test(name))stores.push({rawName:name,sourceLine:line,storeId});
+  const lines=clean(rawText).split(/\r?\n+/).map(x=>x.trim()).filter(Boolean).slice(0,5000);
+  const full=lines.join(" ");
+  const dm=full.match(/(20\d{2}[-/.年]\d{1,2}[-/.月]\d{1,2}日?)/);
+  if(dm){const p=dm[1].replace(/[年月/.]/g,"-").replace(/日$/,"").split("-").map(x=>x.padStart(2,"0"));if(p.length===3)date=p.join("-")}
+  const vm=full.match(/(?:车牌|车辆|车号)\s*[:：]?\s*([\u4e00-\u9fa5A-Z]{1,3}[A-Z0-9]{5,8})/i);
+  if(vm)vehicle=vm[1];
+  const wm=full.match(/(?:总重量|重量)\s*[:：]?\s*([\d.]+)\s*(?:吨|t|T)?/);
+  if(wm)totalWeight=number(wm[1]);
+
+  const waybillTail=/ZW\d{8}[A-Z0-9]+/ig;
+  const cleanStoreName=value=>clean(value)
+    .replace(/^[\s|>→]+|[\s|>→]+$/g,"")
+    .replace(/^[-:：]+/,"")
+    .replace(waybillTail,"")
+    .trim();
+
+  const addRouteText=text=>{
+    const parts=clean(text).split(/\s*(?:->|→|＞)\s*/).map(cleanStoreName).filter(Boolean);
+    for(const part of parts){
+      const idm=part.match(/\b(?:JM|A|Q)[-_ ]?\d{3,12}\b/i);
+      const storeId=idm?idm[0].replace(/[ -]/g,"").toUpperCase():null;
+      const name=cleanStoreName(part.replace(/\b(?:JM|A|Q)[-_ ]?\d{3,12}\b/i,""));
+      if(name.length>=2&&/[\u4e00-\u9fa5A-Za-z]/.test(name))stores.push({rawName:name,sourceLine:text,storeId});
+    }
+  };
+
+  const firstArrow=full.search(/\s*(?:->|→|＞)\s*/);
+  if(firstArrow>=0){
+    let routeText=full;
+    const percentMatches=[...full.matchAll(/\(?\s*\d+(?:\.\d+)?\s*%\s*\)?/g)];
+    if(percentMatches.length){
+      const last=percentMatches[percentMatches.length-1];
+      if(last.index<firstArrow)routeText=full.slice(last.index+last[0].length);
+    }
+    addRouteText(routeText);
+  }else{
+    for(const line of lines){
+      if(/^(?:运单列表|订单列表|运输日期|日期|时间|车牌号?|车辆|车号|额定装载|额定载重|额定体积|主司机|司机|送货员|承运订单|总重量|总数量|数量|件数|总体积)/i.test(line))continue;
+      const cleaned=line.replace(/(?:运单列表订单列表|承运订单.*?)(?=[\u4e00-\u9fa5])/g,"").trim();
+      if(cleaned) addRouteText(cleaned);
+    }
   }
   return {date,vehicle,totalWeight,stores};
 }
-
 
 function standardizeStore(item){
   const rawName=clean(item.rawName||item.name);
