@@ -10,8 +10,9 @@ async function registerAtomically(env,{id,username,name,passwordHash,inviteCode}
  const userKey="zp:user:"+id;
  const usersIndexKey="zp:users:index";
  const user={id,username,name,role:"user",disabled:false,boundRouteId:null,routeDuty:null,dispatchRouteId:null,sessionVersion:1,passwordHash,createdAt:new Date().toISOString()};
- const script="local raw=redis.call('GET',KEYS[1]); if not raw then return -1 end; local c=cjson.decode(raw); if c.enabled==false then return -2 end; if c.expiresAt and c.expiresAt~='' then local exp=string.sub(c.expiresAt,1,19); local now=os.date('!%Y-%m-%dT%H:%M:%S'); if exp<=now then return -3 end end; local used=tonumber(c.usedCount or 0) or 0; local max=tonumber(c.maxUses or 0) or 0; if max>0 and used>=max then return -4 end; if redis.call('GET',KEYS[2]) then return -5 end; c.usedCount=used+1; redis.call('SET',KEYS[1],cjson.encode(c)); redis.call('SET',KEYS[3],ARGV[1]); redis.call('SET',KEYS[2],ARGV[2]); local ids=redis.call('GET',KEYS[4]); local arr={}; if ids then arr=cjson.decode(ids); end; if type(arr)~='table' then arr={} end; table.insert(arr,ARGV[3]); redis.call('SET',KEYS[4],cjson.encode(arr)); return 1";
- return command(env,["EVAL",script,"4",codeKey,userIndexKey,userKey,usersIndexKey,JSON.stringify(user),username,id]);
+ const script="local raw=redis.call('GET',KEYS[1]); if not raw then return -1 end; local c=cjson.decode(raw); if c.enabled==false then return -2 end; if c.expiresAt and c.expiresAt~='' and ARGV[4] >= string.sub(c.expiresAt,1,19) then return -3 end; local used=tonumber(c.usedCount or 0) or 0; local max=tonumber(c.maxUses or 0) or 0; if max>0 and used>=max then return -4 end; if redis.call('GET',KEYS[2]) then return -5 end; c.usedCount=used+1; redis.call('SET',KEYS[1],cjson.encode(c)); redis.call('SET',KEYS[3],ARGV[1]); redis.call('SET',KEYS[2],ARGV[2]); local ids=redis.call('GET',KEYS[4]); local arr={}; if ids then arr=cjson.decode(ids); end; if type(arr)~='table' then arr={} end; table.insert(arr,ARGV[3]); redis.call('SET',KEYS[4],cjson.encode(arr)); return 1";
+ const now=new Date().toISOString().slice(0,19);
+ return command(env,["EVAL",script,"4",codeKey,userIndexKey,userKey,usersIndexKey,JSON.stringify(user),username,id,now]);
 }
 
 export async function onRequestPost({request,env}){
