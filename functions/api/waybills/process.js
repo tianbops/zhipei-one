@@ -84,7 +84,7 @@ function businessStoreCode(v){
   return m?(m[1]+m[2]).toUpperCase():null;
 }
 function match(items,baseStores){
-  const exact=new Map(),byId=new Map(),byBusinessCode=new Map();
+  const exact=new Map(),byMatchKey=new Map(),byId=new Map(),byBusinessCode=new Map();
   for(const s of baseStores){
     const sid=clean(s.storeId);
     if(sid)byId.set(sid,s);
@@ -97,6 +97,10 @@ function match(items,baseStores){
     for(const k of [s.name,s.originalName,...(Array.isArray(s.aliases)?s.aliases:[])].map(normalized).filter(Boolean)){
       if(!exact.has(k))exact.set(k,s);
       else if(exact.get(k)?.storeId!==s.storeId)exact.set(k,null);
+    }
+    for(const k of [s.name,s.originalName,...(Array.isArray(s.aliases)?s.aliases:[])].map(matchKey).filter(Boolean)){
+      if(!byMatchKey.has(k))byMatchKey.set(k,s);
+      else if(byMatchKey.get(k)?.storeId!==s.storeId)byMatchKey.set(k,null);
     }
   }
   return items.map((x,i)=>{
@@ -122,7 +126,7 @@ function match(items,baseStores){
     // 3) Exact normalized text absorbs formatting-only OCR noise. Do not
     //    let it override a known conflicting business code.
     if(!target){
-      const exactTarget=exact.get(normalized(rawName));
+      const exactTarget=exact.get(normalized(rawName))||byMatchKey.get(matchKey(rawName));
       if(exactTarget){
         const candidateCode=businessStoreCode(exactTarget.name)||businessStoreCode(exactTarget.originalName);
         if(!incomingCode||!candidateCode||candidateCode===incomingCode){
