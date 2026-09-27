@@ -9,7 +9,7 @@ function safe(c){return {id:c.id,code:c.code,enabled:c.enabled!==false,maxUses:c
 export async function onRequestGet({request,env}){
  const actor=await currentUser(request,env);if(!admin(actor))return json({success:false,error:"无权限"},403);
  const raw=await get(env,"invite-codes:index");let ids=[];try{ids=raw?(typeof raw==="string"?JSON.parse(raw):raw):[]}catch{}
- const codes=[];for(const id of Array.isArray(ids)?ids:[]){const r=await get(env,"invite-code:"+id);if(r){try{codes.push(safe(typeof r==="string"?JSON.parse(r):r))}catch{}}}
+ const codes=[];for(const id of Array.isArray(ids)?ids:[]){const r=await get(env,"invite-code:code:"+id);if(r){try{codes.push(safe(typeof r==="string"?JSON.parse(r):r))}catch{}}}
  return json({success:true,codes});
 }
 
@@ -26,8 +26,8 @@ export async function onRequestPost({request,env}){
   return json({success:true,code:safe(c)},201);
  }
  if(action==="disable"||action==="enable"){
-  const id=String(input.id||"");const raw=await get(env,"invite-code:"+id);if(!raw)return json({success:false,error:"邀请码不存在"},404);
-  const c=typeof raw==="string"?JSON.parse(raw):raw;c.enabled=action==="enable";await set(env,"invite-code:"+id,c);return json({success:true,code:safe(c)});
+  const id=String(input.id||"");const indexRaw=await get(env,"invite-codes:index");let ids=[];try{ids=indexRaw?(typeof indexRaw==="string"?JSON.parse(indexRaw):indexRaw):[]}catch{}const all=Array.isArray(ids)?ids:[];let raw=null;for(const item of all){const x=await get(env,"invite-code:"+item);if(x){const obj=typeof x==="string"?JSON.parse(x):x;if(obj.id===id){raw=await get(env,"invite-code:code:"+obj.code);break}}}if(!raw)return json({success:false,error:"邀请码不存在"},404);
+  const c=typeof raw==="string"?JSON.parse(raw):raw;c.enabled=action==="enable";await set(env,"invite-code:code:"+c.code,c);await set(env,"invite-code:"+c.id,c);return json({success:true,code:safe(c)});
  }
  return json({success:false,error:"不支持的操作"},400);
 }
