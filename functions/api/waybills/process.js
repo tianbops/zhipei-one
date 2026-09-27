@@ -79,11 +79,55 @@ function similarity(a,b){
 async function base(env,id){const raw=await get(env,"route:"+id+":base");if(!raw)return[];try{const x=typeof raw==="string"?JSON.parse(raw):raw;return Array.isArray(x.stores)?x.stores:[]}catch{return[]}}
 function match(items,baseStores){
   const exact=new Map(),byId=new Map();
-  for(const s of baseStores){if(clean(s.storeId))byId.set(clean(s.storeId),s);for(const k of [s.name,s.originalName,...(Array.isArray(s.aliases)?s.aliases:[])].flatMap(v=>[normalized(v),matchKey(v)]).filter(Boolean)){if(!exact.has(k))exact.set(k,s);else if(exact.get(k)?.storeId!==s.storeId)exact.set(k,null)}}
-  return items.map((x,i)=>{const rawName=clean(x.rawName||x.name);let target=(x.storeId&&byId.get(clean(x.storeId)))||exact.get(normalized(rawName))||exact.get(matchKey(rawName))||null,method=target?(x.storeId&&byId.get(clean(x.storeId))?"identity":"exact"):null;
-    if(!target){let best=null,bs=0,second=0;for(const s of baseStores){const sc=Math.max(similarity(rawName,s.name),similarity(rawName,s.originalName));if(sc>bs){second=bs;bs=sc;best=s}else if(sc>second)second=sc}if(best&&bs>=.86&&bs-second>=.08){target=best;method="similarity"}}
+  for(const s of baseStores){
+    const sid=clean(s.storeId);
+    if(sid)byId.set(sid,s);
+    for(const k of [s.name,s.originalName,...(Array.isArray(s.aliases)?s.aliases:[])].map(normalized).filter(Boolean)){
+      if(!exact.has(k))exact.set(k,s);
+      else if(exact.get(k)?.storeId!==s.storeId)exact.set(k,null);
+    }
+  }
+  return items.map((x,i)=>{
+    const rawName=clean(x.rawName||x.name);
+    const incomingId=clean(x.storeId);
+    let target=null,method=null;
+
+    // 1) Store ID is the strongest local identity signal.
+    if(incomingId&&byId.has(incomingId)){
+      target=byId.get(incomingId);
+      method="identity";
+    }
+
+    // 2) Exact text can absorb formatting noise, but it must not override
+    //    a different identity-bearing Store ID.
+    if(!target){
+      const exactTarget=exact.get(normalized(rawName));
+      if(exactTarget){
+        const candidateId=clean(exactTarget.storeId);
+        if(!incomingId||!candidateId||candidateId===incomingId){
+          target=exactTarget;
+          method="exact";
+        }
+      }
+    }
+
+    // 3) Similarity is only a candidate signal. If both sides carry IDs
+    //    and they differ, never auto-match; send it to confirmation.
+    if(!target){
+      let best=null,bs=0,second=0;
+      for(const s of baseStores){
+        const candidateId=clean(s.storeId);
+        if(incomingId&&candidateId&&candidateId!==incomingId)continue;
+        const sc=Math.max(similarity(rawName,s.name),similarity(rawName,s.originalName));
+        if(sc>bs){second=bs;bs=sc;best=s}
+        else if(sc>second)second=sc;
+      }
+      if(best&&bs>=.86&&bs-second>=.08){target=best;method="similarity"}
+    }
+
     if(!target)return{...x,rawName,name:rawName,storeId:null,routeOrder:100000+i,matchStatus:"pending",matchMethod:null,correction:false,pending:true};
-    const standard=clean(target.name)||rawName;return{...x,rawName,storeId:clean(target.storeId),name:standard,originalName:clean(target.originalName)||rawName,routeOrder:number(target.routeOrder)||i+1,matchStatus:"matched",matchMethod:method,correction:matchKey(rawName)!==matchKey(standard),pending:false};
+    const standard=clean(target.name)||rawName;
+    return{...x,rawName,storeId:clean(target.storeId),name:standard,originalName:clean(target.originalName)||rawName,routeOrder:number(target.routeOrder)||i+1,matchStatus:"matched",matchMethod:method,correction:normalized(rawName)!==normalized(standard),pending:false};
   });
 }
 function dedupe(items){const seen=new Set(),out=[];let merged=0;for(const s of items){const key=s.storeId?"id:"+s.storeId:"pending:"+normalized(s.rawName);if(seen.has(key)){merged++;continue}seen.add(key);out.push(s)}return{items:out,merged}}
