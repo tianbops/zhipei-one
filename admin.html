@@ -63,7 +63,7 @@
 </section>
 
 <div class="admin-footer">
-<button id="logout" type="button">退出登录</button>
+<button id="reset" type="button">清理测试数据</button><button id="logout" type="button" style="margin-top:8px">退出登录</button>
 </div>
 </div>
 </main>
@@ -89,6 +89,7 @@ await api('/api/routes',{method:'POST',headers:{'content-type':'application/json
 $('routeName').value='';msg('线路创建成功');await load();
 }catch(e){msg(e.message)}
 });
+$('reset').onclick=async()=>{if(!confirm('确定清理全部测试数据吗？将删除所有测试用户、线路、基准库、运单、历史、绑定和学习数据，仅保留当前管理员。'))return;try{msg('正在清理…');const r=await api('/api/admin/reset',{method:'POST'});msg(r.message||'清理完成');await load();}catch(e){msg(e.message)}};
 $('logout').onclick=async()=>{await fetch('/api/logout',{method:'POST',credentials:'same-origin'}).catch(()=>{});location.replace('/')};
 load();
 </script>
