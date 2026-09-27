@@ -13,6 +13,7 @@ async function load(env,id){const raw=await get(env,"waybill:"+id);if(!raw)retur
 async function loadBase(env,id){const raw=await get(env,"route:"+id+":base");if(!raw)return {routeId:id,version:1,stores:[]};try{const x=typeof raw==="string"?JSON.parse(raw):raw;return {...x,routeId:id,stores:Array.isArray(x.stores)?x.stores:[]}}catch{return{routeId:id,version:1,stores:[]}}}
 
 export async function onRequestPost({request,env}){
+ try{
   const gate=await requireBusinessUser(request,env);if(gate.response)return gate.response;
   const user=gate.user;const input=await body(request);const waybillId=clean(input.waybillId);if(!waybillId)return json({success:false,code:"WAYBILL_ID_REQUIRED",error:"缺少运单ID"},400);
   const order=await load(env,waybillId);if(!order)return json({success:false,code:"WAYBILL_NOT_FOUND",error:"运单不存在"},404);
@@ -66,4 +67,7 @@ export async function onRequestPost({request,env}){
   for(const item of learned){await learnGlobal(env,{...item,routeId:order.routeId,waybillId:order.id,userId:user.id})}
   await set(env,"waybill:"+order.id,order);await set(env,doneKey,"1");if(order.date===todayCN())await set(env,"route:"+order.routeId+":orders:today",order);await set(env,"route:"+order.routeId+":orders:latest",order);
   return json({success:true,waybill:order,learning:learned.length?"RECORDED":"NONE"});
+ }catch(e){
+  return json({success:false,code:e?.code||"CONFIRM_INTERNAL_ERROR",error:e?.message||"确认待定门店失败"},500);
+ }
 }
