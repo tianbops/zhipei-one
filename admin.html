@@ -1,14 +1,96 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>智配One · 管理后台</title><link rel="stylesheet" href="css/app.css"></head>
-<body><main class="auth-shell"><section class="auth-card" style="max-width:720px"><img src="assets/logo.png" class="logo" alt="智配One"><h1>管理后台</h1><p id="who">正在验证管理员身份…</p>
-<div id="message" class="message"></div>
-<section><h2>线路管理</h2><form id="routeForm"><label>线路名称<input id="routeName" placeholder="例如 17号线" required></label><button type="submit">创建线路</button></form><div id="routes">加载中…</div></section>
-<hr><section><h2>用户管理</h2><div id="users">加载中…</div></section>
-<p><button id="logout" type="button">退出登录</button></p></section></main>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>智配One · 管理后台</title>
+<link rel="stylesheet" href="css/app.css">
+<style>
+.admin-shell{min-height:100dvh;padding:20px 14px 32px;background:#05070a}
+.admin-panel{width:min(100%,620px);margin:0 auto}
+.admin-head{display:flex;align-items:center;gap:12px;padding:10px 4px 20px}
+.admin-head .logo{width:36px;height:36px;object-fit:contain;flex:none}
+.admin-head h1{margin:0;font-size:22px;line-height:1.2}
+.admin-head p{margin:4px 0 0;color:#9da8b3;font-size:13px}
+.admin-card{background:#18212b;border:1px solid #27323d;border-radius:16px;padding:18px;margin-bottom:14px}
+.admin-card h2{margin:0 0 14px;font-size:17px}
+.admin-card h2 span{color:#8f9aa6;font-size:12px;font-weight:400;margin-left:6px}
+.admin-form{display:flex;gap:10px;align-items:end}
+.admin-form label{flex:1;margin:0}
+.admin-form input{height:46px;margin-top:6px}
+.admin-form button{width:104px;height:46px;padding:0;font-size:15px;flex:none}
+.admin-list{display:grid;gap:8px}
+.admin-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:50px;padding:10px 12px;background:#10171e;border:1px solid #26313b;border-radius:11px}
+.admin-main{min-width:0}
+.admin-name{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.admin-meta{margin-top:4px;color:#8f9aa6;font-size:12px}
+.admin-badge{flex:none;padding:4px 8px;border-radius:8px;background:#26313c;color:#b8c2cc;font-size:12px}
+.admin-empty{padding:18px 4px;color:#8f9aa6;font-size:13px}
+.admin-footer{text-align:center;padding:4px 0 0}
+.admin-footer button{width:100%;height:46px}
+.admin-message{min-height:20px;margin:-2px 2px 12px;font-size:13px}
+@media (max-width:480px){
+.admin-shell{padding:12px 12px 24px}
+.admin-head{padding:8px 3px 16px}
+.admin-card{padding:16px;margin-bottom:12px}
+.admin-form{gap:8px}
+.admin-form button{width:92px}
+}
+</style>
+</head>
+<body>
+<main class="admin-shell">
+<div class="admin-panel">
+<header class="admin-head">
+<img src="assets/logo.png" class="logo" alt="智配One">
+<div><h1>管理后台</h1><p id="who">正在验证管理员身份…</p></div>
+</header>
+
+<div id="message" class="message admin-message"></div>
+
+<section class="admin-card">
+<h2>线路管理 <span>创建配送线路</span></h2>
+<form id="routeForm" class="admin-form">
+<label>线路名称<input id="routeName" placeholder="例如 17号线" required></label>
+<button type="submit">创建线路</button>
+</form>
+<div id="routes" class="admin-list" style="margin-top:12px">加载中…</div>
+</section>
+
+<section class="admin-card">
+<h2>用户管理 <span>账号与状态</span></h2>
+<div id="users" class="admin-list">加载中…</div>
+</section>
+
+<div class="admin-footer">
+<button id="logout" type="button">退出登录</button>
+</div>
+</div>
+</main>
 <script>
 const $=id=>document.getElementById(id),msg=t=>{ $('message').textContent=t||'' };
 async function api(url,opt={}){const r=await fetch(url,{credentials:'same-origin',...opt});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'请求失败');return d}
-async function load(){try{const me=await api('/api/me');if(me.user?.role!=='admin')throw new Error('当前账号不是系统管理员');$('who').textContent='管理员：'+(me.user.username||'');const [rs,us]=await Promise.all([api('/api/routes'),api('/api/admin/users')]);$('routes').innerHTML=rs.routes.length?rs.routes.map(r=>'<p>'+r.name+' · '+(r.status||'active')+'</p>').join(''):'暂无线路';$('users').innerHTML=us.users.length?us.users.map(u=>'<p>'+u.username+' · '+(u.role||'user')+' · '+(u.disabled?'已停用':'正常')+'</p>').join(''):'暂无用户';}catch(e){msg(e.message);setTimeout(()=>location.replace('/'),800)}}
-$('routeForm').addEventListener('submit',async e=>{e.preventDefault();try{await api('/api/routes',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:$('routeName').value.trim()})});$('routeName').value='';msg('线路创建成功');load()}catch(e){msg(e.message)}});
-$('logout').onclick=async()=>{await fetch('/api/logout',{method:'POST',credentials:'same-origin'}).catch(()=>{});location.replace('/')};load();
-</script></body></html>
+function routeRow(r){return '<div class="admin-row"><div class="admin-main"><div class="admin-name">'+r.name+'</div><div class="admin-meta">线路状态</div></div><span class="admin-badge">'+(r.status||'active')+'</span></div>'}
+function userRow(u){return '<div class="admin-row"><div class="admin-main"><div class="admin-name">'+u.username+'</div><div class="admin-meta">'+(u.role||'user')+'</div></div><span class="admin-badge">'+(u.disabled?'已停用':'正常')+'</span></div>'}
+async function load(){
+try{
+const me=await api('/api/me');
+if(me.user?.role!=='admin')throw new Error('当前账号不是系统管理员');
+$('who').textContent='管理员：'+(me.user.username||'');
+const [rs,us]=await Promise.all([api('/api/routes'),api('/api/admin/users')]);
+$('routes').innerHTML=rs.routes.length?rs.routes.map(routeRow).join(''):'<div class="admin-empty">暂无线路</div>';
+$('users').innerHTML=us.users.length?us.users.map(userRow).join(''):'<div class="admin-empty">暂无用户</div>';
+}catch(e){msg(e.message);setTimeout(()=>location.replace('/'),800)}
+}
+$('routeForm').addEventListener('submit',async e=>{
+e.preventDefault();
+try{
+await api('/api/routes',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:$('routeName').value.trim()})});
+$('routeName').value='';msg('线路创建成功');await load();
+}catch(e){msg(e.message)}
+});
+$('logout').onclick=async()=>{await fetch('/api/logout',{method:'POST',credentials:'same-origin'}).catch(()=>{});location.replace('/')};
+load();
+</script>
+</body>
+</html>
