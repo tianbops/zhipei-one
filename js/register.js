@@ -34,7 +34,7 @@ form?.addEventListener("submit",async e=>{
       })
     });
     const d=await r.json().catch(()=>({}));
-    if(!r.ok)throw new Error(d.error||"注册失败，请稍后重试");
+    if(!r.ok){const code=d.code||("HTTP_"+r.status);const detail=d.detail?(" · "+d.detail):"";throw new Error("["+code+"] "+(d.error||"注册失败")+detail)}
     message.textContent=d.message||"注册成功，请返回登录";
     setTimeout(()=>location.replace("/"),900);
   }catch(err){
