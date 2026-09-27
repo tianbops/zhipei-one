@@ -1,2 +1,22 @@
 :root{color-scheme:dark;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#05070a;color:#fff}
 *{box-sizing:border-box}body{margin:0;background:#05070a}.shell{width:min(100% - 32px,560px);margin:auto;padding:24px 0 48px}.brand{text-align:center;padding:32px 0 24px}.brand img{width:72px;height:72px;object-fit:contain}.brand h1{margin:12px 0 2px;font-size:26px}.brand p{margin:0;color:#9da8b3}.topbar{display:flex;justify-content:space-between;align-items:center;padding:12px 0 20px}.card{background:#18212b;border:1px solid #27323d;border-radius:16px;padding:20px;margin-bottom:16px}label{display:block;margin:0 0 14px;color:#b8c2cc}input{display:block;width:100%;margin-top:7px;padding:13px;border:1px solid #394652;border-radius:10px;background:#0e141a;color:#fff}button,.grid a{display:block;width:100%;padding:13px 16px;border:0;border-radius:10px;background:#26313c;color:#fff;text-align:center;font-size:16px;text-decoration:none;cursor:pointer}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.text-button{width:auto;padding:6px 0;background:none;color:#b8c2cc;font-size:14px}.message{min-height:20px;color:#b8c2cc}.message.error{color:#ffb4ab}
+/* 临时移动端登录页：测试阶段，保持业务逻辑不变 */
+.auth-shell{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px 16px;background:#05070a}
+.auth-card{width:min(100%,380px);padding:28px 22px 24px;background:#18212b;border:1px solid #27323d;border-radius:18px;box-shadow:0 12px 36px rgba(0,0,0,.28)}
+.auth-card .logo{display:block;width:52px;height:52px;margin:0 auto 14px;object-fit:contain}
+.auth-card h1{text-align:center;margin:0;font-size:25px;line-height:1.25}
+.auth-card>p{text-align:center;margin:6px 0 22px;color:#9da8b3;font-size:13px}
+.auth-card form{margin:0}
+.auth-card label{font-size:14px;margin-bottom:14px}
+.auth-card input{height:48px;margin-top:7px;padding:0 14px;font-size:16px;outline:none}
+.auth-card input:focus{border-color:#536273}
+.auth-card .message{min-height:22px;margin:2px 0 8px;font-size:14px;line-height:20px}
+.auth-card button{height:48px;padding:0 16px;font-size:16px}
+.auth-card>p:last-child{margin:18px 0 0}
+.auth-card a{color:#b8c2cc;text-decoration:none}
+@media (max-height:600px){
+.auth-shell{align-items:flex-start;padding-top:18px}
+.auth-card{padding-top:20px}
+.auth-card .logo{width:44px;height:44px;margin-bottom:10px}
+.auth-card>p{margin-bottom:16px}
+}
