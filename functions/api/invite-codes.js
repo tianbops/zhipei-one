@@ -9,7 +9,7 @@ function safe(c){return {id:c.id,code:c.code,enabled:c.enabled!==false,maxUses:c
 export async function onRequestGet({request,env}){
  const actor=await currentUser(request,env);if(!admin(actor))return json({success:false,error:"无权限"},403);
  const raw=await get(env,"invite-codes:index");let ids=[];try{ids=raw?(typeof raw==="string"?JSON.parse(raw):raw):[]}catch{}
- const codes=[];for(const id of Array.isArray(ids)?ids:[]){const r=await get(env,"invite-code:code:"+id);if(r){try{codes.push(safe(typeof r==="string"?JSON.parse(r):r))}catch{}}}
+ const codes=[];for(const id of Array.isArray(ids)?ids:[]){const base=await get(env,"invite-code:"+id);if(base){try{const b=typeof base==="string"?JSON.parse(base):base;const r=await get(env,"invite-code:code:"+b.code);if(r)codes.push(safe(typeof r==="string"?JSON.parse(r):r))}catch{}}}
  return json({success:true,codes});
 }
 
