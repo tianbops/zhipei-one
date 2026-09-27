@@ -1,4 +1,4 @@
-const clean=v=>String(v??"").trim();
+export const clean=v=>String(v??"").trim();
 
 export const normalizeStoreName=v=>{
   let s=clean(v);
