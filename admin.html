@@ -24,7 +24,7 @@
 .admin-main{min-width:0}
 .admin-name{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .admin-meta{margin-top:4px;color:#8f9aa6;font-size:12px}
-.admin-badge{flex:none;padding:4px 8px;border-radius:8px;background:#26313c;color:#b8c2cc;font-size:12px}
+.admin-badge{flex:none;padding:4px 8px;border-radius:8px;background:#26313c;color:#b8c2cc;font-size:12px}.admin-row button.admin-badge{border:0;cursor:pointer;min-width:48px}.admin-row button.admin-badge:hover{filter:brightness(.96)}
 .admin-empty{padding:18px 4px;color:#8f9aa6;font-size:13px}
 .invite-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.invite-grid label{margin:0}.invite-grid input{height:44px;margin-top:6px}.invite-actions{display:flex;gap:8px;margin-top:10px}.invite-actions button{height:44px;flex:1}.invite-code{font-family:ui-monospace,monospace;letter-spacing:.5px}.invite-copy{margin-top:5px;color:#b8c2cc;font-size:12px}
 .admin-footer{text-align:center;padding:4px 0 0}
@@ -85,16 +85,18 @@ const $=id=>document.getElementById(id),msg=t=>{ $('message').textContent=t||'' 
 async function api(url,opt={}){const r=await fetch(url,{credentials:'same-origin',...opt});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'请求失败');return d}
 function routeRow(r){return '<div class="admin-row"><div class="admin-main"><div class="admin-name">'+r.name+'</div><div class="admin-meta">线路状态</div></div><span class="admin-badge">'+(r.status||'active')+'</span></div>'}
 function userRow(u){return '<div class="admin-row"><div class="admin-main"><div class="admin-name">'+u.username+'</div><div class="admin-meta">'+(u.role||'user')+'</div></div><span class="admin-badge">'+(u.disabled?'已停用':'正常')+'</span></div>'}
+function routeRequestRow(x){const duty=x.duty==='driver'?'司机':x.duty==='delivery'?'配送':'未知岗位';const created=x.createdAt?new Date(x.createdAt).toLocaleString():'—';return '<div class="admin-row"><div class="admin-main"><div class="admin-name">'+(x.name||x.username||'未知用户')+' · '+duty+'</div><div class="admin-meta">账号：'+(x.username||'—')+' · 线路：'+(x.routeName||'未知线路')+' · 申请：'+created+'</div></div><div style="display:flex;gap:6px;flex:none"><button type="button" class="admin-badge" data-request-id="'+x.id+'" data-request-action="reject">驳回</button><button type="button" class="admin-badge" data-request-id="'+x.id+'" data-request-action="approve">批准</button></div></div>'}
+function renderRouteRequests(items){$('routeRequests').innerHTML=items.length?items.map(routeRequestRow).join(''):'<div class="admin-empty">暂无待审核申请</div>';document.querySelectorAll('[data-request-id]').forEach(b=>b.onclick=async()=>{const action=b.dataset.requestAction;const label=action==='approve'?'批准':'驳回';if(!confirm('确定'+label+'该线路申请吗？'))return;try{msg('正在'+label+'…');await api('/api/admin/route-requests',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({requestId:b.dataset.requestId,action})});msg('审核已'+(action==='approve'?'批准':'驳回'));await load()}catch(e){msg(e.message)}})}
 function inviteRow(c){const used=(c.usedCount||0)+'/'+c.maxUses;const expired=c.expiresAt&&Date.parse(c.expiresAt)<=Date.now();const state=!c.enabled?'已停用':expired?'已过期':(c.maxUses>0&&c.usedCount>=c.maxUses)?'已用完':'可用';return '<div class="admin-row"><div class="admin-main"><div class="admin-name invite-code">'+c.code+'</div><div class="invite-copy">使用 '+used+' · '+(c.expiresAt?new Date(c.expiresAt).toLocaleString():'长期有效')+'</div></div><button type="button" class="admin-badge" data-invite-id="'+c.id+'" data-invite-action="'+(c.enabled?'disable':'enable')+'">'+state+'</button></div>'}
 async function load(){
 try{
 const me=await api('/api/me');
 if(me.user?.role!=='admin')throw new Error('当前账号不是系统管理员');
 $('who').textContent='管理员：'+(me.user.username||'');
-const [rs,us,ics]=await Promise.all([api('/api/routes'),api('/api/admin/users'),api('/api/admin/invite-codes')]);
+const [rs,us,ics,rr]=await Promise.all([api('/api/routes'),api('/api/admin/users'),api('/api/admin/invite-codes'),api('/api/admin/route-requests')]);
 $('routes').innerHTML=rs.routes.length?rs.routes.map(routeRow).join(''):'<div class="admin-empty">暂无线路</div>';
 $('users').innerHTML=us.users.length?us.users.map(userRow).join(''):'<div class="admin-empty">暂无用户</div>';
-$('invites').innerHTML=ics.codes.length?ics.codes.map(inviteRow).join(''):'<div class="admin-empty">暂无邀请码</div>';document.querySelectorAll('[data-invite-id]').forEach(b=>b.onclick=async()=>{try{await api('/api/admin/invite-codes',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:b.dataset.inviteAction,id:b.dataset.inviteId})});await load()}catch(e){msg(e.message)}});
+$('invites').innerHTML=ics.codes.length?ics.codes.map(inviteRow).join(''):'<div class="admin-empty">暂无邀请码</div>';renderRouteRequests(rr.requests||[]);document.querySelectorAll('[data-invite-id]').forEach(b=>b.onclick=async()=>{try{await api('/api/admin/invite-codes',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:b.dataset.inviteAction,id:b.dataset.inviteId})});await load()}catch(e){msg(e.message)}});
 }catch(e){msg(e.message);setTimeout(()=>location.replace('/'),800)}
 }
 $('routeForm').addEventListener('submit',async e=>{
