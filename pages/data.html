@@ -15,6 +15,7 @@ async function load(){
  try{
   const d=await api("/api/dispatch"); routeId=d.dispatchRoute?.id||"";
   if(!routeId){$("hint").textContent="请先在首页选择调度线路";$("stores").textContent="暂无可查看的数据资料";return}
+  if(routeId==="__temporary__"){$("title").textContent="临时线路 · 数据资料";$("hint").textContent="临时线路不建立正式数据资料";$("summary").textContent="临时线路";$("stores").textContent="临时线路使用全局学习识别门店，规划按运单原始顺序排列。";return}
   const x=await api("/api/base?routeId="+encodeURIComponent(routeId));
   canMaintain=!!x.canMaintain; stores=Array.isArray(x.base?.stores)?x.base.stores:[];
   $("title").textContent=(x.route?.name||"当前线路")+" · 数据资料";
