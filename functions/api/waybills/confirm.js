@@ -20,7 +20,9 @@ export async function onRequestPost({request,env}){
   if(order.routeId!==TEMP_DISPATCH_ID&&!canMaintainRoute(user,order.routeId))return json({success:false,code:"BASE_MAINTENANCE_FORBIDDEN",error:"无权确认并维护该线路数据资料"},403);
   if(!Array.isArray(input.confirmations))return json({success:false,code:"CONFIRMATIONS_REQUIRED",error:"确认项目必须是数组"},400);
 
-  const confirmations=input.confirmations;\n  const confirmRequestId=clean(input.confirmRequestId);\n  if(confirmRequestId){const marker=await command(env,["SET","waybill:"+waybillId+":confirm:"+confirmRequestId,"1","NX","EX","86400"]);if(marker!=="OK")return json({success:true,waybill:order,learning:"DUPLICATE_REQUEST"});}
+  const confirmations=input.confirmations;
+  const confirmRequestId=clean(input.confirmRequestId);
+  if(confirmRequestId){const marker=await command(env,["SET","waybill:"+waybillId+":confirm:"+confirmRequestId,"1","NX","EX","86400"]);if(marker!=="OK")return json({success:true,waybill:order,learning:"DUPLICATE_REQUEST"});}
   const stores=[...(order.stores||[])];
   const base=order.routeId===TEMP_DISPATCH_ID?{routeId:order.routeId,version:1,stores:[]}:await loadBase(env,order.routeId);
   const learned=[];
@@ -46,7 +48,10 @@ export async function onRequestPost({request,env}){
 
   const seen=new Set();const deduped=[];let merged=0;
   for(const item of stores){const key=item.storeId?"id:"+item.storeId:"pending:"+normalized(item.rawName);if(seen.has(key)){merged++;continue}seen.add(key);deduped.push(item)}
-  const known=deduped.filter(s=>s.storeId&&Number.isFinite(Number(s.routeOrder))&&Number(s.routeOrder)<100000);\n  const unknown=deduped.filter(s=>!known.includes(s));\n  const ordered=order.routeId===TEMP_DISPATCH_ID||base.stores.length===0?deduped:[...known.sort((a,b)=>(Number(a.routeOrder)-Number(b.routeOrder))),...unknown];\n  const finalStores=ordered.map((s,i)=>({...s,routeOrder:i+1}));
+  const known=deduped.filter(s=>s.storeId&&Number.isFinite(Number(s.routeOrder))&&Number(s.routeOrder)<100000);
+  const unknown=deduped.filter(s=>!known.includes(s));
+  const ordered=order.routeId===TEMP_DISPATCH_ID||base.stores.length===0?deduped:[...known.sort((a,b)=>(Number(a.routeOrder)-Number(b.routeOrder))),...unknown];
+  const finalStores=ordered.map((s,i)=>({...s,routeOrder:i+1}));
   const pending=finalStores.filter(s=>s.pending).length;
   order.stores=finalStores;order.stage=pending?"PLANNED":"CONFIRMED";order.summary={...(order.summary||{}),total:finalStores.length,matched:finalStores.length-pending,pending,correction:finalStores.filter(s=>s.correction).length,merged:(order.summary?.merged||0)+merged};
   order.confirmedAt=new Date().toISOString();order.confirmedBy=user.id;order.confirmRequestId=confirmRequestId||null;
