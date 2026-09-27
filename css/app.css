@@ -3,7 +3,7 @@
 /* 临时移动端登录页：测试阶段，保持业务逻辑不变 */
 .auth-shell{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px 16px;background:#05070a}
 .auth-card{width:min(100%,380px);padding:28px 22px 24px;background:#18212b;border:1px solid #27323d;border-radius:18px;box-shadow:0 12px 36px rgba(0,0,0,.28)}
-.auth-card .logo{display:block;width:52px;height:52px;margin:0 auto 14px;object-fit:contain}
+.auth-card .logo{display:block;width:40px;height:40px;margin:0 auto 10px;object-fit:contain}
 .auth-card h1{text-align:center;margin:0;font-size:25px;line-height:1.25}
 .auth-card>p{text-align:center;margin:6px 0 22px;color:#9da8b3;font-size:13px}
 .auth-card form{margin:0}
