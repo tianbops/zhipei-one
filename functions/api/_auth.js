@@ -1,6 +1,6 @@
 import {get} from "./_redis.js";
 export async function currentUser(request,env){
- const token=(request.headers.get("authorization")||"").replace(/^Bearer\\s+/i,"")||readSession(request);
+ const token=(request.headers.get("authorization")||"").replace(/^Bearer\s+/i,"")||readSession(request);
  if(!token) return null;
  const session=await get(env,"session:"+token);
  if(!session) return null;
@@ -17,7 +17,7 @@ export async function currentUser(request,env){
 }
 function readSession(request){
  const raw=request.headers.get("cookie")||"";
- const m=raw.match(/(^|;\\s*)zp_session=([^;]+)/);
+ const m=raw.match(/(^|;\s*)zp_session=([^;]+)/);
  return m?decodeURIComponent(m[2]):"";
 }
 export function requireUser(request,env){
