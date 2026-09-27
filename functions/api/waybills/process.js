@@ -77,11 +77,21 @@ function similarity(a,b){
   const sx=new Set([...x]),sy=new Set([...y]);let common=0;for(const c of sx)if(sy.has(c))common++;return common/(new Set([...sx,...sy]).size||1);
 }
 async function base(env,id){const raw=await get(env,"route:"+id+":base");if(!raw)return[];try{const x=typeof raw==="string"?JSON.parse(raw):raw;return Array.isArray(x.stores)?x.stores:[]}catch{return[]}}
+function businessStoreCode(v){
+  const m=clean(v).match(/(?:^|[^A-Z0-9])(JM|A|Q)[-_ ]?(\\d{3,12})(?=$|[^A-Z0-9])/i);
+  return m?(m[1]+m[2]).toUpperCase():null;
+}
 function match(items,baseStores){
-  const exact=new Map(),byId=new Map();
+  const exact=new Map(),byId=new Map(),byBusinessCode=new Map();
   for(const s of baseStores){
     const sid=clean(s.storeId);
     if(sid)byId.set(sid,s);
+    const codes=[s.storeId,s.name,s.originalName,...(Array.isArray(s.aliases)?s.aliases:[])]
+      .map(businessStoreCode).filter(Boolean);
+    for(const code of codes){
+      if(!byBusinessCode.has(code))byBusinessCode.set(code,s);
+      else if(byBusinessCode.get(code)?.storeId!==s.storeId)byBusinessCode.set(code,null);
+    }
     for(const k of [s.name,s.originalName,...(Array.isArray(s.aliases)?s.aliases:[])].map(normalized).filter(Boolean)){
       if(!exact.has(k))exact.set(k,s);
       else if(exact.get(k)?.storeId!==s.storeId)exact.set(k,null);
@@ -90,34 +100,43 @@ function match(items,baseStores){
   return items.map((x,i)=>{
     const rawName=clean(x.rawName||x.name);
     const incomingId=clean(x.storeId);
+    const incomingCode=businessStoreCode(incomingId)||businessStoreCode(x.sourceLine)||businessStoreCode(x.rawName)||businessStoreCode(x.name);
     let target=null,method=null;
 
-    // 1) Store ID is the strongest local identity signal.
+    // 1) Internal Store ID, when the OCR record already carries the same ID.
     if(incomingId&&byId.has(incomingId)){
       target=byId.get(incomingId);
       method="identity";
     }
 
-    // 2) Exact text can absorb formatting noise, but it must not override
-    //    a different identity-bearing Store ID.
+    // 2) External/business store code is also an identity signal.
+    //    Same code can match despite OCR formatting noise; different codes
+    //    are never allowed to auto-match merely because names are similar.
+    if(!target&&incomingCode&&byBusinessCode.has(incomingCode)){
+      target=byBusinessCode.get(incomingCode)||null;
+      if(target)method="identity-code";
+    }
+
+    // 3) Exact normalized text absorbs formatting-only OCR noise. Do not
+    //    let it override a known conflicting business code.
     if(!target){
       const exactTarget=exact.get(normalized(rawName));
       if(exactTarget){
-        const candidateId=clean(exactTarget.storeId);
-        if(!incomingId||!candidateId||candidateId===incomingId){
+        const candidateCode=businessStoreCode(exactTarget.name)||businessStoreCode(exactTarget.originalName);
+        if(!incomingCode||!candidateCode||candidateCode===incomingCode){
           target=exactTarget;
           method="exact";
         }
       }
     }
 
-    // 3) Similarity is only a candidate signal. If both sides carry IDs
-    //    and they differ, never auto-match; send it to confirmation.
+    // 4) Similarity is only an identity candidate. If both sides carry
+    //    different business codes, keep it pending for explicit confirmation.
     if(!target){
       let best=null,bs=0,second=0;
       for(const s of baseStores){
-        const candidateId=clean(s.storeId);
-        if(incomingId&&candidateId&&candidateId!==incomingId)continue;
+        const candidateCode=businessStoreCode(s.name)||businessStoreCode(s.originalName);
+        if(incomingCode&&candidateCode&&candidateCode!==incomingCode)continue;
         const sc=Math.max(similarity(rawName,s.name),similarity(rawName,s.originalName));
         if(sc>bs){second=bs;bs=sc;best=s}
         else if(sc>second)second=sc;
