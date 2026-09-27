@@ -60,19 +60,19 @@ function extract(rawText){
 
 function standardizeStore(item){
   const rawName=clean(item.rawName||item.name);
-  return {...item,rawName,name:clean(item.name||rawName),standardizedName:normalized(rawName),sourceLine:clean(item.sourceLine)};
+  return {...item,rawName,name:clean(item.name||rawName),standardizedName:normalizeStoreName(rawName),sourceLine:clean(item.sourceLine)};
 }
 function validateResult(order){
   const errors=[];
   if(!order.date)errors.push("缺少运单日期");
   if(!order.vehicle)errors.push("缺少车辆信息");
   if(!Array.isArray(order.stores)||!order.stores.length)errors.push("没有规划门店");
-  const seen=new Set();for(const s of order.stores||[]){const k=s.storeId?"id:"+s.storeId:"pending:"+normalized(s.rawName);if(seen.has(k))errors.push("规划结果存在重复门店");seen.add(k)}
+  const seen=new Set();for(const s of order.stores||[]){const k=s.storeId?"id:"+s.storeId:"pending:"+normalizeStoreName(s.rawName);if(seen.has(k))errors.push("规划结果存在重复门店");seen.add(k)}
   if((order.stores||[]).some((s,i)=>s.routeOrder!==i+1))errors.push("线路顺序不连续");
   return {valid:errors.length===0,errors};
 }
-function dedupe(items){const seen=new Set(),out=[];let merged=0;for(const s of items){const key=s.storeId?"id:"+s.storeId:"pending:"+normalized(s.rawName);if(seen.has(key)){merged++;continue}seen.add(key);out.push(s)}return{items:out,merged}}
-function plan(items,useRouteOrder=true){const list=useRouteOrder?[...items].sort((a,b)=>(number(a.routeOrder)??100000)-(number(b.routeOrder)??100000)||normalized(a.name).localeCompare(normalized(b.name),"zh-CN")):[...items];return list.map((s,i)=>({...s,routeOrder:i+1}))}
+function dedupe(items){const seen=new Set(),out=[];let merged=0;for(const s of items){const key=s.storeId?"id:"+s.storeId:"pending:"+normalizeStoreName(s.rawName);if(seen.has(key)){merged++;continue}seen.add(key);out.push(s)}return{items:out,merged}}
+function plan(items,useRouteOrder=true){const list=useRouteOrder?[...items].sort((a,b)=>(number(a.routeOrder)??100000)-(number(b.routeOrder)??100000)||normalizeStoreName(a.name).localeCompare(normalizeStoreName(b.name),"zh-CN")):[...items];return list.map((s,i)=>({...s,routeOrder:i+1}))}
 
 export async function onRequestPost({request,env}){
   const user=await currentUser(request,env);if(!user)return json({success:false,error:"未登录"},401);if(user.role==="admin"||!canUseRoute(user))return json({success:false,error:"无权处理运单"},403);
