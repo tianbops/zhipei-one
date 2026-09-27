@@ -1,3 +1,4 @@
+const menuButton=document.getElementById("menuButton");const menuPanel=document.getElementById("menuPanel");menuButton?.addEventListener("click",e=>{e.stopPropagation();const open=menuPanel.hidden;menuPanel.hidden=!open;menuButton.setAttribute("aria-expanded",String(open))});document.addEventListener("click",e=>{if(menuPanel&&!menuPanel.hidden&&!menuPanel.contains(e.target)&&e.target!==menuButton){menuPanel.hidden=true;menuButton.setAttribute("aria-expanded","false")}});
 const status=document.getElementById("status");const file=document.getElementById("waybill");const process=document.getElementById("process");const routeSelect=document.getElementById("routeSelect");const routeMessage=document.getElementById("routeMessage");
 const stages=["识别","提取","匹配","去重","规划"];
 function showStage(i){status.className="message";status.textContent=i<stages.length?"正在"+stages[i]+"…":"处理完成"}
