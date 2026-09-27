@@ -1,6 +1,6 @@
 import {json,body} from "../_json.js";
 import {currentUser} from "../_auth.js";
-import {get,set,newId} from "../_redis.js";
+import {get,set,newId,command} from "../_redis.js";
 import {canMaintainRoute,requireBusinessUser} from "../_permissions.js";
 import {TEMP_DISPATCH_ID} from "../dispatch.js";
 import {learnGlobal} from "../_global-learning.js";
@@ -20,7 +20,7 @@ export async function onRequestPost({request,env}){
   if(order.routeId!==TEMP_DISPATCH_ID&&!canMaintainRoute(user,order.routeId))return json({success:false,code:"BASE_MAINTENANCE_FORBIDDEN",error:"无权确认并维护该线路数据资料"},403);
   if(!Array.isArray(input.confirmations))return json({success:false,code:"CONFIRMATIONS_REQUIRED",error:"确认项目必须是数组"},400);
 
-  const confirmations=input.confirmations;
+  const confirmations=input.confirmations;\n  const confirmRequestId=clean(input.confirmRequestId);\n  if(confirmRequestId){const marker=await command(env,["SET","waybill:"+waybillId+":confirm:"+confirmRequestId,"1","NX","EX","86400"]);if(marker!=="OK")return json({success:true,waybill:order,learning:"DUPLICATE_REQUEST"});}
   const stores=[...(order.stores||[])];
   const base=order.routeId===TEMP_DISPATCH_ID?{routeId:order.routeId,version:1,stores:[]}:await loadBase(env,order.routeId);
   const learned=[];
@@ -46,10 +46,10 @@ export async function onRequestPost({request,env}){
 
   const seen=new Set();const deduped=[];let merged=0;
   for(const item of stores){const key=item.storeId?"id:"+item.storeId:"pending:"+normalized(item.rawName);if(seen.has(key)){merged++;continue}seen.add(key);deduped.push(item)}
-  const finalStores=deduped.map((s,i)=>({...s,routeOrder:i+1}));
+  const known=deduped.filter(s=>s.storeId&&Number.isFinite(Number(s.routeOrder))&&Number(s.routeOrder)<100000);\n  const unknown=deduped.filter(s=>!known.includes(s));\n  const ordered=order.routeId===TEMP_DISPATCH_ID||base.stores.length===0?deduped:[...known.sort((a,b)=>(Number(a.routeOrder)-Number(b.routeOrder))),...unknown];\n  const finalStores=ordered.map((s,i)=>({...s,routeOrder:i+1}));
   const pending=finalStores.filter(s=>s.pending).length;
   order.stores=finalStores;order.stage=pending?"PLANNED":"CONFIRMED";order.summary={...(order.summary||{}),total:finalStores.length,matched:finalStores.length-pending,pending,correction:finalStores.filter(s=>s.correction).length,merged:(order.summary?.merged||0)+merged};
-  order.confirmedAt=new Date().toISOString();order.confirmedBy=user.id;order.confirmRequestId=clean(input.confirmRequestId)||null;
+  order.confirmedAt=new Date().toISOString();order.confirmedBy=user.id;order.confirmRequestId=confirmRequestId||null;
   if(learned.length&&order.routeId!==TEMP_DISPATCH_ID){base.version=(Number(base.version)||1)+1;base.updatedAt=new Date().toISOString();base.updatedBy=user.id;await set(env,"route:"+order.routeId+":base",base)}
   for(const item of learned){await learnGlobal(env,{...item,routeId:order.routeId,waybillId:order.id,userId:user.id})}
   await set(env,"waybill:"+order.id,order);if(order.date===todayCN())await set(env,"route:"+order.routeId+":orders:today",order);await set(env,"route:"+order.routeId+":orders:latest",order);
