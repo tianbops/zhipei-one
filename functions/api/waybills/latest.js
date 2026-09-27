@@ -14,6 +14,12 @@ export async function onRequestGet({request,env}){
   try{const waybill=typeof raw==="string"?JSON.parse(raw):raw;if(!validWaybill(waybill)||waybill.routeId!==routeId)return json({success:true,waybill:null});return json({success:true,waybill})}catch{return json({success:false,code:"WAYBILL_DATA_INVALID",error:"运单数据异常"},500)}
  }
  const todayRaw=await get(env,"route:"+routeId+":orders:today");if(todayRaw){try{const todayWaybill=typeof todayRaw==="string"?JSON.parse(todayRaw):todayRaw;if(validWaybill(todayWaybill)&&todayWaybill.routeId===routeId&&todayWaybill.date===todayCN())return json({success:true,waybill:todayWaybill})}catch{}}
- const raw=await get(env,"route:"+routeId+":orders:latest");if(!raw)return json({success:true,waybill:null});
+ const raw=await get(env,"route:"+routeId+":orders:latest");
+ if(!raw){
+  let cursor="0",found=null;
+  do{const r=await command(env,["SCAN",cursor,"MATCH","zp:waybill:*","COUNT","100"]);cursor=String(r?.[0]??"0");for(const key of (r?.[1]||[])){const v=await get(env,String(key).replace(/^zp:/,""));try{const w=typeof v==="string"?JSON.parse(v):v;if(validWaybill(w)&&w.routeId===routeId&&w.date===todayCN()&&(!found||String(w.createdAt||"")>String(found.createdAt||"")))found=w}catch{}}}while(cursor!=="0");
+  if(found){await set(env,"route:"+routeId+":orders:today",found);return json({success:true,waybill:found})}
+  return json({success:true,waybill:null});
+ }
  try{const waybill=typeof raw==="string"?JSON.parse(raw):raw;if(!validWaybill(waybill))return json({success:true,waybill:null,code:"WAYBILL_LEGACY_DATA_IGNORED",message:"检测到旧版或异常今日运单数据，已忽略"});if(waybill.date!==todayCN())return json({success:true,waybill:null});await set(env,"route:"+routeId+":orders:today",waybill);return json({success:true,waybill})}catch{return json({success:false,code:"WAYBILL_LATEST_DATA_INVALID",error:"当日运单数据异常"},500)}
 }
