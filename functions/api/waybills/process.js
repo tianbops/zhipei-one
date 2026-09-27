@@ -5,6 +5,7 @@ import {canUseRoute} from "../_permissions.js";
 import {recognizeImage} from "./ocr.js";
 
 const clean=v=>String(v??"").trim();
+const todayCN=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 const normalized=v=>clean(v).replace(/[\u3000\s]+/g,"").replace(/[（）()【】\[\]{}<>《》“”"'‘’]/g,"").replace(/[·•、,，。；;:：!！?？\-_—]/g,"").replace(/Ⅱl|Il|II|ⅱ/gi,"II").toLowerCase();
 const number=v=>{const n=Number(v);return Number.isFinite(n)?n:null};
 
@@ -68,6 +69,6 @@ export async function onRequestPost({request,env}){
   const standardized=extracted.stores.map(standardizeStore);const matchStarted=Date.now();const matched=match(standardized,baseStores);const matchMs=Date.now()-matchStarted;const dedupeStarted=Date.now();const d=dedupe(matched);const dedupeMs=Date.now()-dedupeStarted;const planStarted=Date.now();const planned=plan(d.items);const planMs=Date.now()-planStarted;const pending=planned.filter(x=>x.pending);
   const order={schemaVersion:"2",id:newId(),routeId,date:clean(form.get("date"))||extracted.date||null,vehicle:clean(form.get("vehicle"))||extracted.vehicle||null,totalQuantity:number(form.get("totalQuantity"))??extracted.totalQuantity,totalWeight:number(form.get("totalWeight"))??extracted.totalWeight,stores:planned,rawText:recognizedText,stage:"PLANNED",pipeline:["RECOGNIZED","EXTRACTED","STANDARDIZED","MATCHED","DEDUPED","PLANNED","VALIDATED"],summary:{original:extracted.stores.length,total:planned.length,matched:planned.length-pending.length,pending:pending.length,correction:planned.filter(x=>x.correction).length,merged:d.merged,newStores:0},timing:{recognizedMs,ocrMs,baseMs,extractMs,matchMs,dedupeMs,planMs,totalMs:Date.now()-started},ocr:ocr?{provider:"PaddleOCR",model:ocr.model,jobId:ocr.jobId,lineCount:ocr.lineCount}:null,createdBy:user.id,createdAt:new Date().toISOString()};
   const validation=validateResult(order);order.validation=validation;
-  await set(env,"waybill:"+order.id,order);await set(env,"route:"+routeId+":orders:latest",order);
+  await set(env,"waybill:"+order.id,order);await set(env,"route:"+routeId+":orders:latest",order);if(order.date===todayCN())await set(env,"route:"+routeId+":orders:today",order);
   return json({success:true,waybill:order,pipeline:order.pipeline,summary:order.summary});
 }
