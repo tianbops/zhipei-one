@@ -36,7 +36,7 @@ export async function onRequestPost({request,env}){
   const confirmRequestId=clean(input.confirmRequestId);if(!confirmRequestId)return json({success:false,code:"CONFIRM_REQUEST_ID_REQUIRED",error:"缺少确认请求ID"},400);
   const doneKey="waybill:"+waybillId+":confirm:"+confirmRequestId;const existing=await get(env,doneKey);if(existing)return json({success:true,waybill:order,learning:"DUPLICATE_REQUEST"});requestLock=doneKey+":lock";const locked=await command(env,["SET",requestLock,"1","NX","EX","60"]);if(locked!=="OK"){requestLock=null;return json({success:false,code:"CONFIRM_REQUEST_BUSY",error:"确认请求正在处理中，请稍后再试"},409)}
   waybillLock="waybill:"+waybillId+":confirm-lock";const waybillLocked=await command(env,["SET",waybillLock,"1","NX","EX","60"]);if(waybillLocked!=="OK"){await releaseLock(env,requestLock);requestLock=null;waybillLock=null;return json({success:false,code:"CONFIRM_REQUEST_BUSY",error:"该运单正在确认处理中，请稍后再试"},409)}
-  if(order.routeId!==TEMP_DISPATCH_ID){routeBaseLock="route:"+order.routeId+":base-confirm-lock";const baseLocked=await command(env,["SET",routeBaseLock,"1","NX","EX","120"]);if(baseLocked!=="OK"){await releaseLock(env,waybillLock);waybillLock=null;await command(env,["DEL",requestLock]);requestLock=null;routeBaseLock=null;return json({success:false,code:"BASE_UPDATE_BUSY",error:"该线路数据资料正在被其他确认操作更新，请稍后重试"},409)}}
+  if(order.routeId!==TEMP_DISPATCH_ID){routeBaseLock="route:"+order.routeId+":base-confirm-lock";const baseLocked=await command(env,["SET",routeBaseLock,"1","NX","EX","120"]);if(baseLocked!=="OK"){await releaseLock(env,waybillLock);waybillLock=null;await releaseLock(env,requestLock);requestLock=null;routeBaseLock=null;return json({success:false,code:"BASE_UPDATE_BUSY",error:"该线路数据资料正在被其他确认操作更新，请稍后重试"},409)}}
   const stores=[...(order.stores||[])];
   const base=order.routeId===TEMP_DISPATCH_ID?{routeId:order.routeId,version:1,stores:[]}:await loadBase(env,order.routeId);
   const learned=[];
@@ -50,7 +50,7 @@ export async function onRequestPost({request,env}){
     if(action==="merge"&&requestedId)target=base.stores.find(s=>clean(s.storeId)===requestedId)||null;
     if(action==="merge"&&!target)target=base.stores.find(s=>normalized(s.name)===normalized(c.standardName||"")||normalized(s.originalName)===normalized(c.standardName||""))||null;
     if(action==="merge"&&!target){
-      await command(env,["DEL",waybillLock]);waybillLock=null;
+      await releaseLock(env,waybillLock);waybillLock=null;
       await command(env,["DEL",requestLock]);requestLock=null;
       return json({success:false,code:"MERGE_TARGET_NOT_FOUND",error:"指定的已有门店不存在于当前线路资料，请重新选择“合并”或“新增”"},409);
     }
@@ -120,7 +120,7 @@ export async function onRequestPost({request,env}){
   await command(env,["DEL",requestLock]);requestLock=null;
   return json({success:true,waybill:order,learning:learningStatus,indexSync});
  }catch(e){
-  try{if(baseChanged&&baseSnapshot&&routeBaseLock)await set(env,"route:"+order.routeId+":base",baseSnapshot);if(routeBaseLock)await command(env,["DEL",routeBaseLock]);if(waybillLock)await command(env,["DEL",waybillLock]);if(requestLock)await command(env,["DEL",requestLock]);}catch{}
+  try{if(baseChanged&&baseSnapshot&&routeBaseLock)await set(env,"route:"+order.routeId+":base",baseSnapshot);if(routeBaseLock)await releaseLock(env,routeBaseLock);if(waybillLock)await releaseLock(env,waybillLock);if(requestLock)await releaseLock(env,requestLock);}catch{}
   return json({success:false,code:e?.code||"CONFIRM_INTERNAL_ERROR",error:e?.message||"确认待定门店失败"},500);
  }
 }
