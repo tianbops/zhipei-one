@@ -35,12 +35,23 @@ export async function learnGlobal(env,input){
   if(current.standardName&&current.standardName!==standardName){current.conflicts=Number(current.conflicts||0)+1;current.status="CONFLICT"}else current.standardName=standardName;
   current.aliases=Array.isArray(current.aliases)?current.aliases:[];const nk=normalizeLearningName(rawName);if(nk&&nk!==normalizeLearningName(current.standardName)&&!current.aliases.some(x=>normalizeLearningName(x)===nk))current.aliases.push(rawName);
   if(current.status!=="CONFLICT"){current.confirmations=Number(current.confirmations||0)+1;if(current.confirmations>=2)current.status="VERIFIED"}current.updatedAt=new Date().toISOString();
-  await command(env,["HSET","zp:"+RECORDS,storeId,JSON.stringify(current)]);
   const aliasKeys=[normalizeLearningName(current.standardName),nk].filter(Boolean);
-  for(const key of aliasKeys){const old=parse(await command(env,["HGET","zp:"+ALIASES,key]),[]);if(!old.includes(storeId))await command(env,["HSET","zp:"+ALIASES,key,JSON.stringify([...old,storeId])])}
+  const aliasValues=[];
+  for(const key of aliasKeys){const oldAliases=parse(await command(env,["HGET","zp:"+ALIASES,key]),[]);aliasValues.push([key,oldAliases.includes(storeId)?oldAliases:[...oldAliases,storeId]])}
   const event={id:newId(),type:"CONFIRMED",storeId,rawName,standardName,routeId:routeId||null,waybillId:waybillId||null,userId:clean(input.userId)||null,createdAt:new Date().toISOString()};
-  await command(env,["RPUSH","zp:"+EVENTS,JSON.stringify(event)]);await command(env,["LTRIM","zp:"+EVENTS,"-5000","-1"]);const version=Number(await command(env,["INCR","zp:"+META+":version"]));
-  await set(env,META,{schemaVersion:"2",version});if(eventKey)await set(env,eventKey,event.id);return{record:current,event,duplicate:false}
+  const script=`local eventKey=ARGV[1]
+if eventKey~="__none__" and redis.call("GET",eventKey) then return {"DUPLICATE"} end
+redis.call("HSET",KEYS[1],ARGV[2],ARGV[3])
+local n=4
+for i=1,tonumber(ARGV[4]) do local k=ARGV[n];local v=ARGV[n+1];redis.call("HSET",KEYS[2],k,v);n=n+2 end
+redis.call("RPUSH",KEYS[3],ARGV[n]);redis.call("LTRIM",KEYS[3],"-5000","-1")
+local version=redis.call("INCR",KEYS[4])
+if eventKey~="__none__" then redis.call("SET",eventKey,ARGV[n+2]) end
+return {"OK",tostring(version)}`;
+  const args=[eventKey||"__none__",storeId,JSON.stringify(current),String(aliasValues.length),...aliasValues.flatMap(([k,v])=>[k,JSON.stringify(v)]),JSON.stringify(event),JSON.stringify({schemaVersion:"2",version:0}),event.id];
+  const result=await command(env,["EVAL",script,"5","zp:"+RECORDS,"zp:"+ALIASES,"zp:"+EVENTS,"zp:"+META+":version","zp:"+META,...args]);
+  if(Array.isArray(result)&&result[0]==="DUPLICATE")return{record:current,event:null,duplicate:true};
+  return{record:current,event,duplicate:false}
  }finally{await del(env,LOCK).catch(()=>{})}
 }
 export async function seedRouteStores(env,routeId,stores){
