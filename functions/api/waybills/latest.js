@@ -37,17 +37,23 @@ export async function onRequestGet({request,env}){
   try{const waybill=typeof raw==="string"?JSON.parse(raw):raw;if(!validWaybill(waybill)||waybill.routeId!==routeId)return json({success:true,waybill:null});return json({success:true,waybill})}catch{return json({success:false,code:"WAYBILL_DATA_INVALID",error:"运单数据异常"},500)}
  }
  const repairKey="route:"+routeId+":orders:index-repair";
+ const repairInvalidKey=repairKey+":invalid";
  const repair=await command(env,["SMEMBERS","zp:"+repairKey]);
  if(Array.isArray(repair)&&repair.length){
   for(const repairId of repair){
-   const rawRepair=await get(env,"waybill:"+clean(repairId));
+   const repairIdClean=clean(repairId);
+   const rawRepair=await get(env,"waybill:"+repairIdClean);
    let w=null;
    try{w=typeof rawRepair==="string"?JSON.parse(rawRepair):rawRepair}catch{}
-   if(!validWaybill(w)||w.routeId!==routeId)continue;
+   if(!validWaybill(w)||w.routeId!==routeId){
+    await command(env,["HSET","zp:"+repairInvalidKey,repairIdClean,JSON.stringify({status:"INVALID",waybillId:repairIdClean,routeId,reason:rawRepair?"INVALID_WAYBILL":"WAYBILL_MISSING",markedAt:new Date().toISOString()})]).catch(()=>{});
+    await command(env,["SREM","zp:"+repairKey,repairIdClean]).catch(()=>{});
+    continue;
+   }
    try{
     await writeIfNewer(env,"route:"+routeId+":orders:latest",w);
     if(w.date===todayCN())await writeIfNewer(env,"route:"+routeId+":orders:today",w);
-    await command(env,["SREM","zp:"+repairKey,clean(repairId)]);
+    await command(env,["SREM","zp:"+repairKey,repairIdClean]);
    }catch{}
   }
  }
