@@ -80,7 +80,7 @@ export async function onRequestPost({request,env}){
 
   let learning="RECORDED";
   try{
-   const learned=await learnGlobal(env,{storeId:target.storeId,rawName,standardName:target.name,originalName:target.originalName,navigation:target.navigation,routeId,waybillId:clean(input.waybillId),userId:user.id});
+   const learned=await learnGlobal(env,{storeId:target.storeId,rawName,standardName:target.name,originalName:target.originalName,navigation:target.navigation,routeId,waybillId:clean(input.waybillId),learningEventId,userId:user.id});
    learning=learned.duplicate?"DUPLICATE_IGNORED":"RECORDED";
    await command(env,["HDEL",repairKey,repairField]);
   }catch(error){
