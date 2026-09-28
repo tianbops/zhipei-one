@@ -112,7 +112,7 @@ export async function onRequestPost({request,env}){
   try{
     if(order.date===todayCN())await set(env,"route:"+order.routeId+":orders:today",order);
     await set(env,"route:"+order.routeId+":orders:latest",order);
-  }catch{indexSync="DEFERRED"}
+  }catch{indexSync="DEFERRED";try{await set(env,"route:"+order.routeId+":orders:index-repair",order.id)}catch{}}
   if(routeBaseLock){await command(env,["DEL",routeBaseLock]);routeBaseLock=null}
   await command(env,["DEL",waybillLock]);waybillLock=null;
   await command(env,["DEL",requestLock]);requestLock=null;
