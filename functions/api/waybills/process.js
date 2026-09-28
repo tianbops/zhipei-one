@@ -145,6 +145,7 @@ export async function onRequestPost({request,env}){
     if(order.date===todayCN())await set(env,"route:"+routeId+":orders:today",order);
   }catch{
     indexSync="DEFERRED";
+    try{await set(env,"route:"+routeId+":orders:index-repair",order.id)}catch{}
   }
   return json({success:true,waybill:order,pipeline:order.pipeline,summary:order.summary,indexSync});
 }
