@@ -46,8 +46,14 @@ for(const item of pending){
   add.style.cssText="text-align:left;padding:10px 12px;background:#18212b;border:1px solid #35404c;border-radius:8px;color:#fff";
   add.onclick=()=>{
     selections.set(item.i,{action:"new"});
-    Array.from(list.children).forEach(el=>el.style.borderColor="#35404c");
+    Array.from(list.children).forEach(el=>{
+      el.style.borderColor="#35404c";
+      el.style.background="#18212b";
+    });
     add.style.borderColor="#7f8b98";
+    add.style.background="#202b36";
+    add.textContent="✓ 新增："+(item.x.rawName||item.x.name||"该门店");
+    submitState();
   };
   list.appendChild(add);
 
@@ -69,6 +75,13 @@ submit.onclick=async()=>{
     submit.disabled=false;confirmBtn.disabled=false;confirmBtn.textContent="确认"+pending.length+"家待定门店";summary.textContent=e.message||"确认失败";
   }
 };
+function submitState(){
+  const complete=selections.size===pending.length;
+  submit.disabled=!complete;
+  submit.textContent=complete?"确认已选择的门店":"请完成全部待定门店选择";
+  submit.style.opacity=complete?"1":"0.55";
+}
+submitState();
 panel.appendChild(submit);confirmBtn.parentElement.appendChild(panel);confirmBtn.style.display="none"}
 try{const url=id&&source==="process"?"/api/waybills/latest?id="+encodeURIComponent(id):"/api/waybills/latest";const r=await fetch(url,{credentials:"same-origin"});const d=await r.json();if(!r.ok||!d.success||!d.waybill){summary.textContent="暂无当日运单";return}order=d.waybill;render()}catch(e){summary.textContent="运单读取失败"}})();
 </script></body></html>
