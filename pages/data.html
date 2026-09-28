@@ -40,7 +40,7 @@ async function load(){
   $("title").textContent=(x.route?.name||"当前线路")+" · 数据资料";
   $("hint").textContent=canMaintain?"你正在维护该线路的数据资料":"当前为查看模式，你不是该线路维护人员，不能修改数据资料";
   $("summary").textContent=stores.length+"家门店"+(x.base?.version?" · 版本 "+x.base.version:"");
-  $("stores").innerHTML=stores.length?stores.slice().sort((a,b)=>(a.routeOrder||0)-(b.routeOrder||0)).map((s,i)=>"<div class=\"request-row\"><strong>"+(s.routeOrder||i+1)+". "+(s.name||s.originalName||"未命名门店")+"</strong>"+(s.aliases?.length?"<div>别名："+s.aliases.join("、")+"</div>":"")+(s.navigation?"<div>导航："+String(s.navigation)+"</div>":"")+(s.note?"<div>备注："+s.note+"</div>":"")+"</div>").join(""):"暂无门店数据";
+  render();
  }catch(e){$("hint").textContent=err(e);$("stores").textContent="数据资料加载失败"}
 }
 load();
