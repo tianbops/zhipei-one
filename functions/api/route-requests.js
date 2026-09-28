@@ -8,7 +8,7 @@ async function list(env){const raw=await get(env,"route-requests:index");if(!raw
 export async function onRequestGet({request,env}){
  const user=await currentUser(request,env);if(!user)return json({success:false,error:"未登录"},401);
  let ids;try{ids=await list(env)}catch{return json({success:false,code:"ROUTE_REQUEST_INDEX_INVALID",error:"线路申请索引数据异常，请联系管理员处理"},409)} const items=[];
- for(const id of Array.isArray(ids)?ids:[]){const x=await loadRequest(env,id);if(!x)continue;if(user.role==="admin"?x.status==="pending":x.userId===user.id)items.push(x)}
+ for(const id of Array.isArray(ids)?ids:[]){if(typeof id!=="string"||!id)return json({success:false,code:"ROUTE_REQUEST_INDEX_INVALID",error:"线路申请索引数据异常，请联系管理员处理"},409);const x=await loadRequest(env,id);if(!x)return json({success:false,code:"ROUTE_REQUEST_DATA_INVALID",error:"线路申请索引包含缺失或损坏的申请记录，请联系管理员处理"},409);if(typeof x.id!=="string"||x.id!==id||typeof x.userId!=="string"||typeof x.routeId!=="string"||!validDuty(x.duty)||!["pending","approved","rejected"].includes(x.status))return json({success:false,code:"ROUTE_REQUEST_DATA_INVALID",error:"线路申请数据异常，请联系管理员处理"},409);if(user.role==="admin"?x.status==="pending":x.userId===user.id)items.push(x)}
  return json({success:true,requests:items});
 }
 export async function onRequestPost({request,env}){
