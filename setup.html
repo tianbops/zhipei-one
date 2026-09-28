@@ -1,5 +1,20 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>智配One · 系统初始化</title><link rel="stylesheet" href="css/app.css"></head><body><main class="auth-shell"><section class="auth-card"><img src="assets/logo.png" class="logo" alt="智配One"><h1>系统初始化</h1><p>仅用于建立智配One系统管理员</p><form id="bootstrapForm"><h2>建立系统管理员</h2><label>管理员账号<input id="username" autocomplete="username" required></label><label>管理员名称<input id="name" value="系统管理员"></label><label>管理员密码<input id="password" type="password" autocomplete="new-password" minlength="6" required></label><button type="submit">建立管理员</button></form><div id="message" class="message" aria-live="polite"></div><p><a href="/">返回登录</a></p></section></main><script>
-const msg=document.getElementById("message"),form=document.getElementById("bootstrapForm");
-async function readResponse(r){const text=await r.text();let data=null;try{data=JSON.parse(text)}catch{}return{data,text};}
-form.addEventListener("submit",async e=>{e.preventDefault();const username=document.getElementById("username").value.trim(),name=document.getElementById("name").value.trim(),password=document.getElementById("password").value;try{const r=await fetch("/api/bootstrap",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({username,name,password})});const result=await readResponse(r);if(!result.data){const preview=result.text.replace(/\s+/g," ").slice(0,160);throw new Error("服务器返回非JSON（HTTP "+r.status+"）"+(preview?"："+preview:""));}const d=result.data;if(!r.ok)throw new Error(d.detail?d.error+"："+d.detail:(d.error||"建立失败"));msg.textContent="管理员建立成功，请返回登录。";form.reset();document.getElementById("name").value="系统管理员";}catch(e){msg.textContent=e.message||"建立失败";}});
-</script></body></html>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="refresh" content="0;url=/admin-bootstrap.html">
+<title>智配One · 初始化管理员</title>
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<main class="auth-shell">
+<section class="auth-card">
+<img src="/assets/logo.png" class="logo" alt="智配One">
+<h1>正在进入管理员初始化</h1>
+<p><a href="/admin-bootstrap.html">如果没有自动跳转，请点击这里</a></p>
+</section>
+</main>
+<script>location.replace('/admin-bootstrap.html');</script>
+</body>
+</html>
