@@ -24,6 +24,7 @@ export async function onRequestPost({request,env}){
   const confirmations=input.confirmations;
   const confirmRequestId=clean(input.confirmRequestId);if(!confirmRequestId)return json({success:false,code:"CONFIRM_REQUEST_ID_REQUIRED",error:"缺少确认请求ID"},400);
   const doneKey="waybill:"+waybillId+":confirm:"+confirmRequestId;const existing=await get(env,doneKey);if(existing)return json({success:true,waybill:order,learning:"DUPLICATE_REQUEST"});const requestLock=doneKey+":lock";const locked=await command(env,["SET",requestLock,"1","NX","EX","60"]);if(locked!=="OK")return json({success:false,code:"CONFIRM_REQUEST_BUSY",error:"确认请求正在处理中，请稍后再试"},409);
+  const waybillLock="waybill:"+waybillId+":confirm-lock";const waybillLocked=await command(env,["SET",waybillLock,"1","NX","EX","60"]);if(waybillLocked!=="OK"){await command(env,["DEL",requestLock]);return json({success:false,code:"CONFIRM_REQUEST_BUSY",error:"该运单正在确认处理中，请稍后再试"},409)}
   const stores=[...(order.stores||[])];
   const base=order.routeId===TEMP_DISPATCH_ID?{routeId:order.routeId,version:1,stores:[]}:await loadBase(env,order.routeId);
   const learned=[];
