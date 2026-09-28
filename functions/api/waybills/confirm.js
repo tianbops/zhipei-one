@@ -81,9 +81,10 @@ export async function onRequestPost({request,env}){
   const confirmedNow=new Date().toISOString();if(pending===0){order.confirmedAt=confirmedNow;order.confirmedBy=user.id;}else{order.lastConfirmedAt=confirmedNow;order.lastConfirmedBy=user.id;}order.confirmRequestId=confirmRequestId||null;
   if(learned.length&&order.routeId!==TEMP_DISPATCH_ID){base.version=(Number(base.version)||1)+1;base.updatedAt=new Date().toISOString();base.updatedBy=user.id;await set(env,"route:"+order.routeId+":base",base)}
   for(const item of learned){await learnGlobal(env,{...item,routeId:order.routeId,waybillId:order.id,userId:user.id})}
-  await set(env,"waybill:"+order.id,order);await set(env,doneKey,"1");if(order.date===todayCN())await set(env,"route:"+order.routeId+":orders:today",order);await set(env,"route:"+order.routeId+":orders:latest",order);
+  await set(env,"waybill:"+order.id,order);await set(env,doneKey,"1");await command(env,["DEL",waybillLock]);await command(env,["DEL",requestLock]);if(order.date===todayCN())await set(env,"route:"+order.routeId+":orders:today",order);await set(env,"route:"+order.routeId+":orders:latest",order);
   return json({success:true,waybill:order,learning:learned.length?"RECORDED":"NONE"});
  }catch(e){
+  try{if(typeof waybillLock!=="undefined")await command(env,["DEL",waybillLock]);if(typeof requestLock!=="undefined")await command(env,["DEL",requestLock]);}catch{}
   return json({success:false,code:e?.code||"CONFIRM_INTERNAL_ERROR",error:e?.message||"确认待定门店失败"},500);
  }
 }
