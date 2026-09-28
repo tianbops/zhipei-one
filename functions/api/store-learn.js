@@ -72,7 +72,8 @@ export async function onRequestPost({request,env}){
   const data={routeId,version:(Number(b.version)||1)+1,updatedAt:new Date().toISOString(),updatedBy:user.id,stores:b.stores};
   const repairKey="zp:route:"+routeId+":learning-repair";
   const repairField=[target.storeId,formatCompareKey(rawName)].join("|");
-  const repairItem={storeId:target.storeId,rawName,standardName:target.name,originalName:target.originalName,navigation:target.navigation,routeId,waybillId:clean(input.waybillId),userId:user.id};
+  const learningEventId=newId();
+  const repairItem={storeId:target.storeId,rawName,standardName:target.name,originalName:target.originalName,navigation:target.navigation,routeId,waybillId:clean(input.waybillId),learningEventId,userId:user.id};
   const persistScript='local okBase=redis.call("SET",KEYS[1],ARGV[1]); if not okBase then return 0 end; redis.call("HSET",KEYS[2],ARGV[2],ARGV[3]); return 1';
   const persisted=await command(env,["EVAL",persistScript,"2","zp:route:"+routeId+":base",repairKey,JSON.stringify(data),repairField,JSON.stringify(repairItem)]);
   if(Number(persisted)!==1)throw Object.assign(new Error("线路数据资料提交失败"),{code:"BASE_COMMIT_FAILED"});
