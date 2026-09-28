@@ -12,7 +12,6 @@ const normalized=v=>clean(v).replace(/[\u3000\s]+/g,"").replace(/[（）()【】
 async function releaseLock(env,lock){if(!lock?.key||!lock?.token)return;await command(env,["EVAL","if redis.call(\"GET\",KEYS[1])==ARGV[1] then return redis.call(\"DEL\",KEYS[1]) else return 0 end","1","zp:"+lock.key,lock.token]).catch(()=>{})}
 async function load(env,id){const raw=await get(env,"waybill:"+id);if(!raw)return null;try{return typeof raw==="string"?JSON.parse(raw):raw}catch{return null}}
 async function loadBase(env,id){const raw=await get(env,"route:"+id+":base");if(!raw)throw Object.assign(new Error("线路数据资料尚未建立"),{code:"BASE_NOT_FOUND"});let x;try{x=typeof raw==="string"?JSON.parse(raw):raw}catch{throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"})}if(!x||!Array.isArray(x.stores))throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"});return {...x,routeId:id}}
-const LEARNING_REPAIR_TTL=86400;
 async function queueLearningRepairs(env,waybillId,items){
  if(!waybillId||!items.length)return;
  const key="zp:waybill:"+waybillId+":learning-repair";
@@ -21,7 +20,6 @@ async function queueLearningRepairs(env,waybillId,items){
   if(!field)continue;
   await command(env,["HSET",key,field,JSON.stringify(item)]);
  }
- await command(env,["EXPIRE",key,String(LEARNING_REPAIR_TTL)]);
 }
 async function retryLearningRepairs(env,waybillId,userId){
  const key="waybill:"+waybillId+":learning-repair";
@@ -116,7 +114,7 @@ export async function onRequestPost({request,env}){
 }
     }
     item.storeId=storeId;item.name=action==="new"?rawName:(clean(target?.name)||standardName);item.routeOrder=Number(target?.routeOrder)||item.routeOrder;item.originalName=clean(target?.originalName)||rawName;item.pending=false;item.matchStatus="matched";item.matchMethod=action==="new"?"confirmed-new":(target?"confirmed":"confirmed-global");item.correction=action==="new"?false:normalized(rawName)!==normalized(standardName);
-    learned.push({storeId,rawName,standardName:clean(target?.name)||item.name,originalName:item.originalName,navigation:target?.navigation||null});
+    learned.push({storeId,rawName,standardName:clean(target?.name)||item.name,originalName:item.originalName,navigation:target?.navigation||null,routeId:order.routeId});
   }
 
   const seen=new Set();const deduped=[];let merged=0;
