@@ -53,7 +53,7 @@ export async function onRequestPost({request,env}){
       await command(env,["DEL",requestLock]);requestLock=null;
       return json({success:false,code:"MERGE_TARGET_NOT_FOUND",error:"指定的已有门店不存在于当前线路资料，请重新选择“合并”或“新增”"},409);
     }
-    const standardName=clean(c.standardName)||clean(target?.name)||rawName;
+    const standardName=action==="merge"?clean(target?.name)||rawName:(clean(c.standardName)||rawName);
     if(action==="new"&&order.routeId!==TEMP_DISPATCH_ID){
       const duplicate=base.stores.find(s=>normalized(s.name)===normalized(rawName)||normalized(s.originalName)===normalized(rawName)||(Array.isArray(s.aliases)&&s.aliases.some(a=>normalized(a)===normalized(rawName))));
       if(duplicate){
@@ -86,8 +86,8 @@ export async function onRequestPost({request,env}){
  if(rawName&&normalized(rawName)!==normalized(target.name)&&!aliases.includes(rawName))target.aliases=[...aliases,rawName];
 }
     }
-    item.storeId=storeId;item.name=action==="new"?rawName:standardName;item.routeOrder=Number(target?.routeOrder)||item.routeOrder;item.originalName=clean(target?.originalName)||rawName;item.pending=false;item.matchStatus="matched";item.matchMethod=action==="new"?"confirmed-new":(target?"confirmed":"confirmed-global");item.correction=action==="new"?false:normalized(rawName)!==normalized(standardName);
-    learned.push({storeId,rawName,standardName:item.name,originalName:item.originalName,navigation:target?.navigation||null});
+    item.storeId=storeId;item.name=action==="new"?rawName:(clean(target?.name)||standardName);item.routeOrder=Number(target?.routeOrder)||item.routeOrder;item.originalName=clean(target?.originalName)||rawName;item.pending=false;item.matchStatus="matched";item.matchMethod=action==="new"?"confirmed-new":(target?"confirmed":"confirmed-global");item.correction=action==="new"?false:normalized(rawName)!==normalized(standardName);
+    learned.push({storeId,rawName,standardName:clean(target?.name)||item.name,originalName:item.originalName,navigation:target?.navigation||null});
   }
 
   const seen=new Set();const deduped=[];let merged=0;
