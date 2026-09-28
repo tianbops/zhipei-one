@@ -1,4 +1,4 @@
-# 智配One / Zhipei One
+# 智配One
 
 全新重建基线。
 
