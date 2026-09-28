@@ -32,10 +32,10 @@ function extract(rawText){
   const addRouteText=text=>{
     const parts=clean(text).split(/\s*(?:->|→|＞)\s*/).map(cleanStoreName).filter(Boolean);
     for(const part of parts){
-      const idm=part.match(/\b(?:JM|A|Q)[-_ ]?\d{3,12}\b/i);
-      const storeId=idm?idm[0].replace(/[ -]/g,"").toUpperCase():null;
+      const idm=part.match(/\b(?:JM|A|Q)[\p{Pd}_ ]?\d{3,12}\b/i);
+      const storeId=idm?idm[0].replace(/[\p{Pd} ]/gu,"").toUpperCase():null;
       const rawName=cleanStoreName(part);
-      const name=cleanStoreName(part.replace(/\b(?:JM|A|Q)[-_ ]?\d{3,12}\b/i,""));
+      const name=cleanStoreName(part.replace(/\b(?:JM|A|Q)[\p{Pd}_ ]?\d{3,12}\b/i,""));
       if(name.length>=2&&/[\u4e00-\u9fa5A-Za-z]/.test(name))stores.push({rawName, name, sourceLine:text, storeId});
     }
   };
