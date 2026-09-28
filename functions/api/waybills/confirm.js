@@ -29,8 +29,8 @@ async function retryLearningRepairs(env,waybillId,userId){
  if(locked!=="OK")return"DEFERRED";
  try{
   const raw=await command(env,["HGETALL","zp:"+key]);
-  const entries=[];
-  for(let i=0;i<(raw?.length||0);i+=2){const field=raw[i],value=raw[i+1];let item;try{item=typeof value==="string"?JSON.parse(value):value}catch{item=null}if(field&&item)entries.push([field,item])}
+  const entries=[];const invalidKey="zp:"+key+":invalid";
+  for(let i=0;i<(raw?.length||0);i+=2){const field=raw[i],value=raw[i+1];if(!field||!value)continue;let item=null;try{item=typeof value==="string"?JSON.parse(value):value}catch{}if(!item||typeof item.storeId!=="string"||!item.storeId||typeof item.rawName!=="string"||!item.rawName||typeof item.standardName!=="string"||!item.standardName){await command(env,["HSET",invalidKey,field,JSON.stringify({status:"INVALID",field,raw:value,markedAt:new Date().toISOString()})]);await command(env,["HDEL",key,field]);continue}entries.push([field,item])}
   for(const [field,item] of entries){
    try{await learnGlobal(env,{...item,routeId:item.routeId,waybillId,userId:item.userId||userId});await command(env,["HDEL","zp:"+key,field])}catch{}
   }
