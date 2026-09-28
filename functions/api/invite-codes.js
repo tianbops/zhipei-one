@@ -23,14 +23,27 @@ export async function onRequestPost({request,env}){
   const id=newId();const code=("ZP-"+crypto.randomUUID().replaceAll("-","").slice(0,10)).toUpperCase();
   const c={id,code,enabled:true,maxUses,usedCount:0,expiresAt,createdAt:new Date().toISOString(),createdBy:actor.id};
   const indexKey="zp:invite-codes:index",idKey="zp:invite-code:"+id,codeKey="zp:invite-code:code:"+code;
-  const script="local raw=redis.call('GET',KEYS[1]); local ids={}; if raw then local ok,v=pcall(cjson.decode,raw); if ok and type(v)=='table' then ids=v end end; for _,x in ipairs(ids) do if x==ARGV[1] then return 2 end end; if redis.call('GET',KEYS[3]) then return 3 end; redis.call('SET',KEYS[2],ARGV[2]); redis.call('SET',KEYS[3],ARGV[3]); table.insert(ids,ARGV[1]); redis.call('SET',KEYS[1],cjson.encode(ids)); return 1";
+  const script="local raw=redis.call('GET',KEYS[1]); local ids={}; if raw then local ok,v=pcall(cjson.decode,raw); if not ok or type(v)~='table' then return 4 end; ids=v end; for _,x in ipairs(ids) do if x==ARGV[1] then return 2 end end; if redis.call('GET',KEYS[3]) then return 3 end; redis.call('SET',KEYS[2],ARGV[2]); redis.call('SET',KEYS[3],ARGV[3]); table.insert(ids,ARGV[1]); redis.call('SET',KEYS[1],cjson.encode(ids)); return 1";
   const result=Number(await command(env,["EVAL",script,"3",indexKey,idKey,codeKey,id,JSON.stringify(c),JSON.stringify({...c,id})]));
-  if(result!==1)return json({success:false,error:"邀请码创建失败，请稍后重试"},500);
+  if(result===4)return json({success:false,code:"INVITE_INDEX_INVALID",error:"邀请码索引数据异常，请联系管理员处理"},409); if(result!==1)return json({success:false,error:"邀请码创建失败，请稍后重试"},500);
   return json({success:true,code:safe(c)},201);
  }
  if(action==="disable"||action==="enable"){
-  const id=String(input.id||"");const indexRaw=await get(env,"invite-codes:index");let ids=[];try{ids=indexRaw?(typeof indexRaw==="string"?JSON.parse(indexRaw):indexRaw):[]}catch{}const all=Array.isArray(ids)?ids:[];let raw=null;for(const item of all){const x=await get(env,"invite-code:"+item);if(x){const obj=typeof x==="string"?JSON.parse(x):x;if(obj.id===id){raw=await get(env,"invite-code:code:"+obj.code);break}}}if(!raw)return json({success:false,error:"邀请码不存在"},404);
-  const c=typeof raw==="string"?JSON.parse(raw):raw;c.enabled=action==="enable";await set(env,"invite-code:code:"+c.code,c);await set(env,"invite-code:"+c.id,c);return json({success:true,code:safe(c)});
+  const id=String(input.id||"").trim(); if(!id)return json({success:false,error:"邀请码参数无效"},400);
+  const indexRaw=await get(env,"invite-codes:index"); let ids=[];
+  if(indexRaw){try{ids=typeof indexRaw==="string"?JSON.parse(indexRaw):indexRaw}catch{return json({success:false,code:"INVITE_INDEX_INVALID",error:"邀请码索引数据异常，请联系管理员处理"},409)} if(!Array.isArray(ids))return json({success:false,code:"INVITE_INDEX_INVALID",error:"邀请码索引数据异常，请联系管理员处理"},409)}
+  let target=null;
+  for(const item of ids){const x=await get(env,"invite-code:"+item); if(!x)continue; try{const obj=typeof x==="string"?JSON.parse(x):x;if(obj?.id===id){target=obj;break}}catch{return json({success:false,code:"INVITE_DATA_INVALID",error:"邀请码数据异常，请联系管理员处理"},409)}}
+  if(!target)return json({success:false,error:"邀请码不存在"},404);
+  const key="zp:invite-code:"+id,codeKey="zp:invite-code:code:"+target.code,now=new Date().toISOString();
+  const script="local a=redis.call('GET',KEYS[1]); local b=redis.call('GET',KEYS[2]); if not a or not b then return 2 end; local okA,c=pcall(cjson.decode,a); local okB,d=pcall(cjson.decode,b); if not okA or type(c)~='table' or not okB or type(d)~='table' then return 4 end; if c.id~=ARGV[2] or d.id~=ARGV[2] or c.code~=d.code then return 5 end; c.enabled=ARGV[1]=='1'; d.enabled=c.enabled; redis.call('SET',KEYS[1],cjson.encode(c)); redis.call('SET',KEYS[2],cjson.encode(d)); return 1";
+  const result=Number(await command(env,["EVAL",script,"2",key,codeKey,action==="enable"?"1":"0",id,now]));
+  if(result===2)return json({success:false,error:"邀请码不存在"},404);
+  if(result===4)return json({success:false,code:"INVITE_DATA_INVALID",error:"邀请码数据异常，请联系管理员处理"},409);
+  if(result===5)return json({success:false,code:"INVITE_DATA_INCONSISTENT",error:"邀请码数据不一致，请联系管理员处理"},409);
+  if(result!==1)return json({success:false,error:"邀请码状态已变化，请刷新后重试"},409);
+  const next={...target,enabled:action==="enable"};
+  return json({success:true,code:safe(next)});
  }
  return json({success:false,error:"不支持的操作"},400);
 }
