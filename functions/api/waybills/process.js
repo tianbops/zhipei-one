@@ -1,6 +1,6 @@
 import {json} from "../_json.js";
 import {currentUser} from "../_auth.js";
-import {get,set,newId} from "../_redis.js";
+import {get,set,command,newId} from "../_redis.js";
 import {canUseRoute} from "../_permissions.js";
 import {TEMP_DISPATCH_ID} from "../dispatch.js";
 import {getRoute} from "../_route.js";
