@@ -25,10 +25,18 @@ const identityFields=s=>[
 const correctionCompareKey=v=>
   formatCompareKey(identityValue(v)).replace(/(?:jm|a|q)\d{3,12}/gi,"");
 
+const correctionOCRKey=v=>correctionCompareKey(v)
+  .replace(/客服/g,"客户")
+  .replace(/(^|[^\\p{L}])i类/gu,"$1ii类");
+
 const isFormatOnlyDifference=(raw,target)=>{
   const rawKey=correctionCompareKey(raw);
   if(!rawKey)return true;
-  return identityFields(target).some(field=>correctionCompareKey(field)===rawKey);
+  return identityFields(target).some(field=>{
+    const targetKey=correctionCompareKey(field);
+    if(targetKey===rawKey)return true;
+    return correctionOCRKey(raw)===correctionOCRKey(field);
+  });
 };
 
 const similarity=(a,b)=>{
