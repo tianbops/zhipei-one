@@ -27,7 +27,7 @@ export async function learnGlobal(env,input){
  const storeId=clean(input.storeId),rawName=clean(input.rawName||input.name),standardName=clean(input.standardName||input.name||rawName),routeId=clean(input.routeId),waybillId=clean(input.waybillId);
  if(!storeId||!rawName||!standardName)throw new Error("GLOBAL_LEARNING_INPUT_INVALID");
  const eventKey=waybillId?["learning-event",routeId,waybillId,storeId,normalizeLearningName(rawName)].join(":"):"";
- const lock=await command(env,["SET","zp:"+LOCK,"1","NX","EX","30"]);if(lock!=="OK")throw new Error("GLOBAL_LEARNING_BUSY");
+ const lockToken=newId();const lock=await command(env,["SET","zp:"+LOCK,lockToken,"NX","EX","30"]);if(lock!=="OK")throw new Error("GLOBAL_LEARNING_BUSY");
  try{
   await ensureMeta(env);
   if(eventKey&&await get(env,eventKey)){const old=parse(await command(env,["HGET","zp:"+RECORDS,storeId]),null);return{record:old,event:null,duplicate:true}}
@@ -53,7 +53,7 @@ return {"OK",tostring(version)}`;
   const result=await command(env,["EVAL",script,"5","zp:"+RECORDS,"zp:"+ALIASES,"zp:"+EVENTS,"zp:"+META+":version","zp:"+META,...args]);
   if(Array.isArray(result)&&result[0]==="DUPLICATE")return{record:current,event:null,duplicate:true};
   return{record:current,event,duplicate:false}
- }finally{await del(env,LOCK).catch(()=>{})}
+ }finally{await command(env,["EVAL",'if redis.call("GET",KEYS[1])==ARGV[1] then return redis.call("DEL",KEYS[1]) else return 0 end',"1","zp:"+LOCK,lockToken]).catch(()=>{})}
 }
 export async function seedRouteStores(env,routeId,stores){
  await ensureMeta(env);let changed=false;
