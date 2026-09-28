@@ -22,7 +22,10 @@ export async function onRequestPost({request,env}){
   if(input.expiresAt&&Number.isNaN(Date.parse(input.expiresAt)))return json({success:false,error:"有效期格式错误"},400);
   const id=newId();const code=("ZP-"+crypto.randomUUID().replaceAll("-","").slice(0,10)).toUpperCase();
   const c={id,code,enabled:true,maxUses,usedCount:0,expiresAt,createdAt:new Date().toISOString(),createdBy:actor.id};
-  await set(env,"invite-code:"+id,c);await set(env,"invite-code:code:"+code,{...c,id});const raw=await get(env,"invite-codes:index");let ids=[];try{ids=raw?(typeof raw==="string"?JSON.parse(raw):raw):[]}catch{}if(!Array.isArray(ids))ids=[];ids.push(id);await set(env,"invite-codes:index",ids);
+  const indexKey="zp:invite-codes:index",idKey="zp:invite-code:"+id,codeKey="zp:invite-code:code:"+code;
+  const script="local raw=redis.call('GET',KEYS[1]); local ids={}; if raw then local ok,v=pcall(cjson.decode,raw); if ok and type(v)=='table' then ids=v end end; for _,x in ipairs(ids) do if x==ARGV[1] then return 2 end end; if redis.call('GET',KEYS[3]) then return 3 end; redis.call('SET',KEYS[2],ARGV[2]); redis.call('SET',KEYS[3],ARGV[3]); table.insert(ids,ARGV[1]); redis.call('SET',KEYS[1],cjson.encode(ids)); return 1";
+  const result=Number(await command(env,["EVAL",script,"3",indexKey,idKey,codeKey,id,JSON.stringify(c),JSON.stringify({...c,id})]));
+  if(result!==1)return json({success:false,error:"邀请码创建失败，请稍后重试"},500);
   return json({success:true,code:safe(c)},201);
  }
  if(action==="disable"||action==="enable"){
