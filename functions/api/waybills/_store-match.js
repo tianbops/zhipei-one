@@ -109,13 +109,6 @@ export function matchStores(items,baseStores){
         return {store,score};
       }).filter(Boolean).sort((a,b)=>b.score-a.score).slice(0,5);
 
-      const best=candidates[0];
-      const second=candidates[1]?.score||0;
-      if(best&&best.score>=0.86&&best.score-second>=0.08){
-        target=best.store;
-        method="data-similarity";
-        candidates=[];
-      }
     }
 
     if(!target){
