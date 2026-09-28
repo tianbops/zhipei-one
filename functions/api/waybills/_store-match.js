@@ -107,7 +107,7 @@ export function matchStores(items,baseStores){
         if(incomingCode&&candidateCodes.length&&!candidateCodes.includes(incomingCode))return null;
         const score=Math.max(...identityFields(store).map(field=>similarity(rawName,field)),0);
         return {store,score};
-      }).filter(Boolean).sort((a,b)=>b.score-a.score).slice(0,5);
+      }).filter(x=>x&&x.score>=0.86).sort((a,b)=>b.score-a.score).slice(0,5);
 
     }
 
