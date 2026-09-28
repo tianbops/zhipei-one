@@ -108,7 +108,14 @@ export async function onRequestPost({request,env}){
   await set(env,"waybill:"+order.id,order);await set(env,doneKey,"1");
   let learningStatus=learned.length?"RECORDED":"NONE";
   if(learned.length){try{for(const item of learned)await learnGlobal(env,{...item,routeId:order.routeId,waybillId:order.id,userId:user.id})}catch(e){learningStatus="DEFERRED";}}
-let indexSync="OK";try{if(order.date===todayCN())await set(env,"route:"+order.routeId+":orders:today",order);await set(env,"route:"+order.routeId+":orders:latest",order)}catch{indexSync="DEFERRED"}if(routeBaseLock){await command(env,["DEL",routeBaseLock]);routeBaseLock=null}await command(env,["DEL",waybillLock]);waybillLock=null;await command(env,["DEL",requestLock]);requestLock=null;}
+  let indexSync="OK";
+  try{
+    if(order.date===todayCN())await set(env,"route:"+order.routeId+":orders:today",order);
+    await set(env,"route:"+order.routeId+":orders:latest",order);
+  }catch{indexSync="DEFERRED"}
+  if(routeBaseLock){await command(env,["DEL",routeBaseLock]);routeBaseLock=null}
+  await command(env,["DEL",waybillLock]);waybillLock=null;
+  await command(env,["DEL",requestLock]);requestLock=null;
   return json({success:true,waybill:order,learning:learningStatus,indexSync});
  }catch(e){
   try{if(routeBaseLock)await command(env,["DEL",routeBaseLock]);if(waybillLock)await command(env,["DEL",waybillLock]);if(requestLock)await command(env,["DEL",requestLock]);}catch{}
