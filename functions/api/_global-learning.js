@@ -25,9 +25,9 @@ export async function findGlobalMatches(env,items){
  return items.map((item,i)=>{const rawName=clean(item.rawName||item.name),list=idLists[i]||[];let target=null,method=null;if(item.storeId&&byId.has(item.storeId)){target=byId.get(item.storeId);method="global-identity"}else if(list.length===1&&byId.has(list[0])){target=byId.get(list[0]);method="global-alias"}return target?{...item,storeId:target.storeId,name:target.standardName||rawName,originalName:target.originalName||rawName,globalMatchStatus:"matched",globalMatchMethod:method,pending:false}:{...item,globalMatchStatus:"unresolved"}})
 }
 export async function learnGlobal(env,input){
- const storeId=clean(input.storeId),rawName=clean(input.rawName||input.name),standardName=clean(input.standardName||input.name||rawName),routeId=clean(input.routeId),waybillId=clean(input.waybillId);
+ const storeId=clean(input.storeId),rawName=clean(input.rawName||input.name),standardName=clean(input.standardName||input.name||rawName),routeId=clean(input.routeId),waybillId=clean(input.waybillId),learningEventId=clean(input.learningEventId);
  if(!storeId||!rawName||!standardName)throw new Error("GLOBAL_LEARNING_INPUT_INVALID");
- const eventKey=waybillId?["learning-event",routeId,waybillId,storeId,normalizeLearningName(rawName)].join(":"):"";
+ const eventKey=learningEventId?["learning-event",learningEventId].join(":"):waybillId?["learning-event",routeId,waybillId,storeId,normalizeLearningName(rawName)].join(":"):"";
  const lockToken=newId();const lock=await command(env,["SET","zp:"+LOCK,lockToken,"NX","EX","30"]);if(lock!=="OK")throw new Error("GLOBAL_LEARNING_BUSY");
  try{
   await ensureMeta(env,{lockHeld:true});
