@@ -1,89 +1,13 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>运单详情 · 智配One</title><link rel="stylesheet" href="/css/app.css"></head><body><main class="shell"><header class="topbar"><strong>运单详情</strong><a class="text-button" href="/home.html">返回</a></header><section class="card"><h2 id="title">运单详情</h2><p id="summary" class="message">正在读取运单…</p><div id="stores"></div><pre id="diagnostics" style="display:none;margin-top:14px;padding:12px;white-space:pre-wrap;overflow:auto;max-height:420px;border:1px solid #303943;border-radius:10px;background:#11171d;color:#B8C2CC;font-size:12px"></pre><div id="actions" style="display:none;margin-top:16px"><button id="confirm" type="button">确认待定门店</button></div></section></main><script>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>运单详情 · 智配One</title><link rel="stylesheet" href="/css/app.css"></head><body><main class="shell"><header class="topbar"><strong>运单详情</strong><a class="text-button" href="/home.html">返回</a></header><section class="card"><h2 id="title" class="detail-title">运单详情</h2><p id="summary" class="summary">正在读取运单…</p><div id="stores" class="store-list"></div><pre id="diagnostics" class="diagnostics"></pre><div id="actions" class="detail-actions" style="display:none"><button id="confirm" class="primary-btn" type="button">确认待定门店</button></div></section></main><script>
 (async()=>{const summary=document.getElementById("summary"),stores=document.getElementById("stores"),diagnostics=document.getElementById("diagnostics"),actions=document.getElementById("actions"),confirmBtn=document.getElementById("confirm"),params=new URLSearchParams(location.search),id=params.get("id"),source=params.get("source");let order=null;
-function esc(v){return String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
-function escAttr(v){return esc(v).replace(/\'/g,"&#39;")}
-function safeNav(v){const s=String(v??"").trim();try{const u=new URL(s,location.origin);return /^(https?:)$/.test(u.protocol)?u.href:""}catch{return""}}
+function esc(v){return String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}function escAttr(v){return esc(v).replace(/'/g,"&#39;")}function safeNav(v){const s=String(v??"").trim();try{const u=new URL(s,location.origin);return /^(https?:)$/.test(u.protocol)?u.href:""}catch{return""}}
 function render(){const w=order,s=w.summary||{},pending=(w.stores||[]).filter(x=>x.pending);summary.textContent=[w.date||"日期待确认",(s.total??0)+"家 · "+(w.totalWeight??0)+"t",(s.original??0)===s.total?"":"原始"+s.original+"家",s.correction?"更正"+s.correction+"家":"",s.merged?"合并"+s.merged+"家":"",s.newStores?"新增"+s.newStores+"家":"",pending.length?"待定"+pending.length+"家":""].filter(Boolean).join("  · ");
 stores.innerHTML=(w.stores||[]).map((x,i)=>{const name=String(x.name||x.rawName||"未识别门店"),nav=safeNav(x.navigation);const label=String(i+1).padStart(2,"0")+" "+esc(name);return '<div class="store-row"><span>'+ (nav?'<a class="store-nav" href="'+escAttr(nav)+'" target="_blank" rel="noopener">'+label+"</a>":label)+'</span><small>'+ (x.pending?"待定":esc(x.storeId||""))+"</small></div>"}).join("");
 if(params.get("diagnostic")==="1"){const d=w.diagnostics||{};diagnostics.style.display="block";diagnostics.textContent=JSON.stringify({summary:s,extractCount:d.extractCount,extractItems:d.extractItems,localMatchedCount:d.localMatchedCount,localPendingCount:d.localPendingCount,localPendingItems:d.localPendingItems,dedupeBefore:d.dedupeBefore,dedupeAfter:d.dedupeAfter,merged:d.merged,dedupeConflicts:d.dedupeConflicts,dedupeRemoved:d.dedupeRemoved,correctionItems:d.correctionItems,plannedCount:d.plannedCount,finalCount:d.finalCount,finalItems:d.finalItems},null,2)} actions.style.display=pending.length?"block":"none";confirmBtn.textContent=pending.length?"确认"+pending.length+"家待定门店":"确认";if(id&&source==="process")history.replaceState(null,"","/pages/order_detail.html?id="+encodeURIComponent(w.id))}
-confirmBtn.onclick=async()=>{if(!order)return;
-const pending=(order.stores||[]).map((x,i)=>({x,i})).filter(v=>v.x.pending);
-if(!pending.length)return;
-const panel=document.createElement("div");
-panel.style.cssText="margin-top:14px;padding:12px;border:1px solid #303943;border-radius:10px;background:#11171d";
-const selections=new Map();
-
-for(const item of pending){
-  const box=document.createElement("div");
-  box.style.marginBottom="16px";
-  const title=document.createElement("div");
-  title.textContent="待确认："+(item.x.rawName||item.x.name||"未识别门店");
-  title.style.cssText="margin-bottom:8px;font-weight:600";
-  box.appendChild(title);
-
-  const hint=document.createElement("div");
-  hint.textContent="发现相似门店，请确认：合并到已有门店，或作为新增门店。";
-  hint.style.cssText="margin-bottom:8px;color:#B8C2CC;font-size:13px";
-  box.appendChild(hint);
-
-  const list=document.createElement("div");
-  list.style.cssText="display:grid;gap:7px";
-
-  for(const cand of Array.isArray(item.x.candidates)?item.x.candidates:[]){
-    const b=document.createElement("button");
-    b.type="button";
-    b.textContent="合并："+(cand.name||cand.storeId||"未命名门店")+(cand.score!=null?"  · 相似度 "+cand.score:"");
-    b.style.cssText="text-align:left;padding:10px 12px;background:#18212b;border:1px solid #35404c;border-radius:8px;color:#fff";
-    b.onclick=()=>{
-      selections.set(item.i,{action:"merge",storeId:cand.storeId,standardName:cand.name});
-      Array.from(list.children).forEach(el=>el.style.borderColor="#35404c");
-      b.style.borderColor="#7f8b98";
-    };
-    list.appendChild(b);
-  }
-
-  const add=document.createElement("button");
-  add.type="button";
-  add.textContent="新增："+(item.x.rawName||item.x.name||"该门店");
-  add.style.cssText="text-align:left;padding:10px 12px;background:#18212b;border:1px solid #35404c;border-radius:8px;color:#fff";
-  add.onclick=()=>{
-    selections.set(item.i,{action:"new"});
-    Array.from(list.children).forEach(el=>{
-      el.style.borderColor="#35404c";
-      el.style.background="#18212b";
-    });
-    add.style.borderColor="#7f8b98";
-    add.style.background="#202b36";
-    add.textContent="✓ 新增："+(item.x.rawName||item.x.name||"该门店");
-    submitState();
-  };
-  list.appendChild(add);
-
-  box.appendChild(list);
-  panel.appendChild(box);
-}
-const submit=document.createElement("button");
-submit.type="button";submit.textContent="确认选择";submit.style.cssText="width:100%;margin-top:4px";
-submit.onclick=async()=>{
-  if(selections.size!==pending.length){summary.textContent="请为每个相似门店选择“合并”或“新增”";return}
-  submit.disabled=true;confirmBtn.disabled=true;confirmBtn.textContent="正在确认…";
-  const confirmations=pending.map(item=>({index:item.i,...selections.get(item.i)}));
-  try{
-    const r=await fetch("/api/waybills/confirm",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({waybillId:order.id,confirmations,confirmRequestId:crypto.randomUUID()})});
-    const text=await r.text();let d=null;try{d=JSON.parse(text)}catch{throw new Error("服务器未返回JSON（HTTP "+r.status+"）")}
-    if(!r.ok||!d.success)throw new Error((d?.code?"["+d.code+"] ":"")+(d?.error||d?.message||"确认失败"));
-    order=d.waybill;panel.remove();render();
-  }catch(e){
-    submit.disabled=false;confirmBtn.disabled=false;confirmBtn.textContent="确认"+pending.length+"家待定门店";summary.textContent=e.message||"确认失败";
-  }
-};
-function submitState(){
-  const complete=selections.size===pending.length;
-  submit.disabled=!complete;
-  submit.textContent=complete?"确认已选择的门店":"请完成全部待定门店选择";
-  submit.style.opacity=complete?"1":"0.55";
-}
-submitState();
-panel.appendChild(submit);confirmBtn.parentElement.appendChild(panel);confirmBtn.style.display="none"}
+confirmBtn.onclick=async()=>{if(!order)return;const pending=(order.stores||[]).map((x,i)=>({x,i})).filter(v=>v.x.pending);if(!pending.length)return;const panel=document.createElement("div");panel.className="confirm-panel";const selections=new Map();
+for(const item of pending){const box=document.createElement("div");box.className="pending-box";const title=document.createElement("div");title.className="pending-title";title.textContent="待确认："+(item.x.rawName||item.x.name||"未识别门店");box.appendChild(title);const hint=document.createElement("div");hint.textContent="请选择合并到已有门店，或作为新增门店。";hint.className="message";box.appendChild(hint);const list=document.createElement("div");list.className="candidate-list";
+for(const cand of Array.isArray(item.x.candidates)?item.x.candidates:[]){const b=document.createElement("button");b.type="button";b.className="choice-btn";b.textContent="合并："+(cand.name||cand.storeId||"未命名门店")+(cand.score!=null?"  · 相似度 "+cand.score:"");b.onclick=()=>{selections.set(item.i,{action:"merge",storeId:cand.storeId,standardName:cand.name});Array.from(list.children).forEach(el=>el.classList.remove("selected"));b.classList.add("selected");submitState()};list.appendChild(b)}
+const add=document.createElement("button");add.type="button";add.className="choice-btn";add.textContent="新增："+(item.x.rawName||item.x.name||"该门店");add.onclick=()=>{selections.set(item.i,{action:"new"});Array.from(list.children).forEach(el=>el.classList.remove("selected"));add.classList.add("selected");submitState()};list.appendChild(add);box.appendChild(list);panel.appendChild(box)}
+const submit=document.createElement("button");submit.type="button";submit.className="primary-btn confirm-submit";submit.onclick=async()=>{if(selections.size!==pending.length){summary.textContent="请为每个待定门店完成选择";return}submit.disabled=true;confirmBtn.disabled=true;confirmBtn.textContent="正在确认…";const confirmations=pending.map(item=>({index:item.i,...selections.get(item.i)}));try{const r=await fetch("/api/waybills/confirm",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({waybillId:order.id,confirmations,confirmRequestId:crypto.randomUUID()})});const t=await r.text();let d=null;try{d=JSON.parse(t)}catch{throw new Error("服务器未返回JSON（HTTP "+r.status+"）")}if(!r.ok||!d.success)throw new Error((d?.code?"["+d.code+"] ":"")+(d?.error||d?.message||"确认失败"));order=d.waybill;panel.remove();render()}catch(e){submit.disabled=false;confirmBtn.disabled=false;confirmBtn.textContent="确认"+pending.length+"家待定门店";summary.textContent=e.message||"确认失败"}};function submitState(){const complete=selections.size===pending.length;submit.disabled=!complete;submit.textContent=complete?"确认已选择的门店":"请完成全部待定门店选择";submit.style.opacity=complete?"1":".55"}submitState();panel.appendChild(submit);confirmBtn.parentElement.appendChild(panel);confirmBtn.style.display="none"}
 try{const url=id&&source==="process"?"/api/waybills/latest?id="+encodeURIComponent(id):"/api/waybills/latest";const r=await fetch(url,{credentials:"same-origin"});const d=await r.json();if(!r.ok||!d.success||!d.waybill){summary.textContent="暂无当日运单";return}order=d.waybill;render()}catch(e){summary.textContent="运单读取失败"}})();
 </script></body></html>
