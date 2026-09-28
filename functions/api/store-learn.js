@@ -55,12 +55,18 @@ export async function onRequestPost({request,env}){
   }
 
   const data={routeId,version:(Number(b.version)||1)+1,updatedAt:new Date().toISOString(),updatedBy:user.id,stores:b.stores};
-  await set(env,"route:"+routeId+":base",data);
+  const repairKey="zp:route:"+routeId+":learning-repair";
+  const repairField=[target.storeId,formatCompareKey(rawName)].join("|");
+  const repairItem={storeId:target.storeId,rawName,standardName:target.name,originalName:target.originalName,navigation:target.navigation,routeId,waybillId:clean(input.waybillId),userId:user.id};
+  const persistScript='local okBase=redis.call("SET",KEYS[1],ARGV[1]); if not okBase then return 0 end; redis.call("HSET",KEYS[2],ARGV[2],ARGV[3]); return 1';
+  const persisted=await command(env,["EVAL",persistScript,"2","zp:route:"+routeId+":base",repairKey,JSON.stringify(data),repairField,JSON.stringify(repairItem)]);
+  if(Number(persisted)!==1)throw Object.assign(new Error("线路数据资料提交失败"),{code:"BASE_COMMIT_FAILED"});
 
   let learning="RECORDED";
   try{
    const learned=await learnGlobal(env,{storeId:target.storeId,rawName,standardName:target.name,originalName:target.originalName,navigation:target.navigation,routeId,waybillId:clean(input.waybillId),userId:user.id});
    learning=learned.duplicate?"DUPLICATE_IGNORED":"RECORDED";
+   await command(env,["HDEL",repairKey,repairField]);
   }catch(error){
    // 线路基准库已经成功提交；全局学习属于辅助数据，失败不能回滚业务主数据。
    // 后续可依据 DEFERRED 状态补偿全局学习，避免出现“全局已写入而线路被回滚”的反向不一致。
