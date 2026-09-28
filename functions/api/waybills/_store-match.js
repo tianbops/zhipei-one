@@ -23,7 +23,7 @@ const identityFields=s=>[
 ].map(identityValue).filter(Boolean);
 
 const correctionCompareKey=v=>
-  formatCompareKey(v).replace(/(?:jm|a|q)\d{3,12}/gi,"");
+  formatCompareKey(identityValue(v)).replace(/(?:jm|a|q)\d{3,12}/gi,"");
 
 const similarity=(a,b)=>{
   const x=formatCompareKey(a),y=formatCompareKey(b);
