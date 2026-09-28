@@ -105,9 +105,11 @@ export async function onRequestPost({request,env}){
   order.stores=finalStores;order.stage=pending?"PLANNED":"CONFIRMED";order.summary={...(order.summary||{}),total:finalStores.length,matched:finalStores.length-pending,pending,correction:finalStores.filter(s=>s.correction).length,merged:(order.summary?.merged||0)+merged,newStores:finalStores.filter(s=>s.matchMethod==="confirmed-new").length};
   const confirmedNow=new Date().toISOString();if(pending===0){order.confirmedAt=confirmedNow;order.confirmedBy=user.id;}else{order.lastConfirmedAt=confirmedNow;order.lastConfirmedBy=user.id;}order.confirmRequestId=confirmRequestId||null;
   if(learned.length&&order.routeId!==TEMP_DISPATCH_ID){base.version=(Number(base.version)||1)+1;base.updatedAt=new Date().toISOString();base.updatedBy=user.id;await set(env,"route:"+order.routeId+":base",base)}
-  for(const item of learned){await learnGlobal(env,{...item,routeId:order.routeId,waybillId:order.id,userId:user.id})}
-  await set(env,"waybill:"+order.id,order);await set(env,doneKey,"1");if(routeBaseLock){await command(env,["DEL",routeBaseLock]);routeBaseLock=null}await command(env,["DEL",waybillLock]);waybillLock=null;await command(env,["DEL",requestLock]);requestLock=null;if(order.date===todayCN())await set(env,"route:"+order.routeId+":orders:today",order);await set(env,"route:"+order.routeId+":orders:latest",order);
-  return json({success:true,waybill:order,learning:learned.length?"RECORDED":"NONE"});
+  await set(env,"waybill:"+order.id,order);await set(env,doneKey,"1");
+  let learningStatus=learned.length?"RECORDED":"NONE";
+  if(learned.length){try{for(const item of learned)await learnGlobal(env,{...item,routeId:order.routeId,waybillId:order.id,userId:user.id})}catch(e){learningStatus="DEFERRED";}}
+if(routeBaseLock){await command(env,["DEL",routeBaseLock]);routeBaseLock=null}await command(env,["DEL",waybillLock]);waybillLock=null;await command(env,["DEL",requestLock]);requestLock=null;if(order.date===todayCN())await set(env,"route:"+order.routeId+":orders:today",order);await set(env,"route:"+order.routeId+":orders:latest",order);
+  return json({success:true,waybill:order,learning:learningStatus});
  }catch(e){
   try{if(routeBaseLock)await command(env,["DEL",routeBaseLock]);if(waybillLock)await command(env,["DEL",waybillLock]);if(requestLock)await command(env,["DEL",requestLock]);}catch{}
   return json({success:false,code:e?.code||"CONFIRM_INTERNAL_ERROR",error:e?.message||"确认待定门店失败"},500);
