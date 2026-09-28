@@ -11,6 +11,7 @@ const normalized=v=>clean(v).replace(/[\u3000\s]+/g,"").replace(/[（）()【】
 
 async function releaseLock(env,lock){if(!lock?.key||!lock?.token)return;await command(env,["EVAL","if redis.call(\"GET\",KEYS[1])==ARGV[1] then return redis.call(\"DEL\",KEYS[1]) else return 0 end","1","zp:"+lock.key,lock.token]).catch(()=>{})}
 async function load(env,id){const raw=await get(env,"waybill:"+id);if(!raw)return null;try{return typeof raw==="string"?JSON.parse(raw):raw}catch{return null}}
+async function writeIndexIfNewer(env,key,waybill){const script=`local incoming=cjson.decode(ARGV[1]);local raw=redis.call("GET",KEYS[1]);if raw then local ok,current=pcall(cjson.decode,raw);if ok and type(current)=="table" and current.routeId==incoming.routeId and current.createdAt and incoming.createdAt and tostring(current.createdAt)>=tostring(incoming.createdAt) then return 0 end end;redis.call("SET",KEYS[1],ARGV[1]);return 1`;return command(env,["EVAL",script,"1","zp:"+key,JSON.stringify(waybill)])}
 async function loadBase(env,id){const raw=await get(env,"route:"+id+":base");if(!raw)throw Object.assign(new Error("线路数据资料尚未建立"),{code:"BASE_NOT_FOUND"});let x;try{x=typeof raw==="string"?JSON.parse(raw):raw}catch{throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"})}if(!x||!Array.isArray(x.stores))throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"});return {...x,routeId:id}}
 async function queueLearningRepairs(env,waybillId,items){
  if(!waybillId||!items.length)return;
@@ -141,8 +142,8 @@ export async function onRequestPost({request,env}){
   let learningStatus=learned.length?await retryLearningRepairs(env,order.id,user.id):"NONE";
   let indexSync="OK";
   try{
-    if(order.date===todayCN())await set(env,"route:"+order.routeId+":orders:today",order);
-    await set(env,"route:"+order.routeId+":orders:latest",order);
+    if(order.date===todayCN())await writeIndexIfNewer(env,"route:"+order.routeId+":orders:today",order);
+    await writeIndexIfNewer(env,"route:"+order.routeId+":orders:latest",order);
   }catch{indexSync="DEFERRED";try{await command(env,["SADD","zp:route:"+order.routeId+":orders:index-repair",order.id])}catch{}}
   if(routeBaseLock){await releaseLock(env,routeBaseLock);routeBaseLock=null}
   await releaseLock(env,waybillLock);waybillLock=null;
