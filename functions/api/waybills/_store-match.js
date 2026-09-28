@@ -14,11 +14,13 @@ export const businessStoreCode=v=>{
   return m?(m[1]+m[2]).toUpperCase():null;
 };
 
+const identityValue=v=>clean(v).split(/\s*[•·]\s*/)[0].trim();
+
 const identityFields=s=>[
   s?.name,
   s?.originalName,
   ...(Array.isArray(s?.aliases)?s.aliases:[])
-].map(clean).filter(Boolean);
+].map(identityValue).filter(Boolean);
 
 const correctionCompareKey=v=>
   formatCompareKey(v).replace(/(?:jm|a|q)\d{3,12}/gi,"");
