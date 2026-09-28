@@ -2,9 +2,9 @@ import {json,body} from "./_json.js";
 import {currentUser} from "./_auth.js";
 import {get,set,newId,command} from "./_redis.js";
 import {getRoute,saveRoute,routeId,cleanRouteName} from "./_route.js";
-async function list(env){const raw=await get(env,"routes:index");if(!raw)return [];try{return typeof raw==="string"?JSON.parse(raw):raw}catch{return []}}
+async function list(env){const raw=await get(env,"routes:index");if(!raw)return [];try{const v=typeof raw==="string"?JSON.parse(raw):raw;if(!Array.isArray(v))throw new Error("INVALID_INDEX");return v}catch{throw Object.assign(new Error("ROUTES_INDEX_INVALID"),{code:"ROUTES_INDEX_INVALID"})}}
 async function writeList(env,items){return set(env,"routes:index",items)}
-export async function onRequestGet({request,env}){const user=await currentUser(request,env);if(!user)return json({success:false,error:"未登录"},401);const ids=await list(env);const routes=[];for(const id of ids){const r=await getRoute(env,id);if(r)routes.push({id:r.id,name:r.name,status:r.status||"active",driverUserId:r.driverUserId||null,deliveryUserId:r.deliveryUserId||null})}return json({success:true,routes})}
+export async function onRequestGet({request,env}){const user=await currentUser(request,env);if(!user)return json({success:false,error:"未登录"},401);let ids;try{ids=await list(env)}catch{return json({success:false,code:"ROUTES_INDEX_INVALID",error:"线路索引数据异常，请联系管理员处理"},409)}const routes=[];for(const id of ids){const r=await getRoute(env,id);if(r)routes.push({id:r.id,name:r.name,status:r.status||"active",driverUserId:r.driverUserId||null,deliveryUserId:r.deliveryUserId||null})}return json({success:true,routes})}
 export async function onRequestPost({request,env}){const user=await currentUser(request,env);if(!user)return json({success:false,error:"未登录"},401);if(user.role!=="admin")return json({success:false,error:"无权限"},403);const input=await body(request);const name=cleanRouteName(input.name);if(!name)return json({success:false,error:"请输入线路名称"},400);const id=routeId(),now=new Date().toISOString();
 const route={id,name,status:"active",driverUserId:null,deliveryUserId:null,createdAt:now};
 const routeKey="zp:route:"+id,baseKey="zp:route:"+id+":base",indexKey="zp:routes:index";
