@@ -30,8 +30,13 @@ function extract(rawText){
     .trim();
 
   const addRouteText=text=>{
+    const hasWaybillCode=/\bZW\d{8}[A-Z0-9]+\b/i.test(text);
     const parts=clean(text).split(/\s*(?:-\s*>|→|＞)\s*/).map(cleanStoreName).filter(Boolean);
-    for(const part of parts){
+    for(let partIndex=0;partIndex<parts.length;partIndex++){
+      let part=parts[partIndex];
+      if(hasWaybillCode&&partIndex===parts.length-1){
+        part=part.replace(/\s+\d{5,}(?:\s+\d{5,})*\s*$/g,"").trim();
+      }
       const idm=part.match(/\b(?:JM|A|Q)[\p{Pd}_ ]?\d{3,12}\b/i);
       const storeId=idm?idm[0].replace(/[\p{Pd} ]/gu,"").toUpperCase():null;
       const rawName=cleanStoreName(part);
