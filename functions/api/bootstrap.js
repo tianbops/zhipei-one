@@ -162,7 +162,7 @@ export async function onRequestPost({request,env}){
 export async function onRequestGet(){
   return json({
     success:true,
-    service:"Zhipei One",
+    service:"智配One",
     endpoint:"bootstrap",
     method:"POST_REQUIRED"
   },405);
