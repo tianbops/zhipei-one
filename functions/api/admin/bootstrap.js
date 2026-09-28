@@ -29,7 +29,7 @@ export async function onRequestPost({request,env}){
     const userKey="zp:user:"+id;
     const usersIndexKey="zp:users:index";
 
-    const script=`local idsRaw=redis.call('GET',KEYS[1]); local ids={}; if idsRaw then local ok,v=pcall(cjson.decode,idsRaw); if not ok or type(v)~='table' then return 4 end; ids=v end; for _,uid in ipairs(ids) do local raw=redis.call('GET','zp:user:'..uid); if raw then local ok,u=pcall(cjson.decode,raw); if not ok then return 5 end; if u.role=='admin' then return 2 end end end; if redis.call('GET',KEYS[2]) then return 3 end; redis.call('SET',KEYS[3],ARGV[1]); redis.call('SET',KEYS[2],ARGV[2]); table.insert(ids,ARGV[3]); redis.call('SET',KEYS[1],cjson.encode(ids)); return 1`;
+    const script=`local idsRaw=redis.call('GET',KEYS[1]); local ids={}; if idsRaw then local ok,v=pcall(cjson.decode,idsRaw); if not ok or type(v)~='table' then return 4 end; ids=v end; for _,uid in ipairs(ids) do local raw=redis.call('GET','zp:user:'..uid); if not raw then return 5 end; local ok,u=pcall(cjson.decode,raw); if not ok or type(u)~='table' then return 5 end; if u.role=='admin' then return 2 end end; if redis.call('GET',KEYS[2]) then return 3 end; redis.call('SET',KEYS[3],ARGV[1]); redis.call('SET',KEYS[2],ARGV[2]); table.insert(ids,ARGV[3]); redis.call('SET',KEYS[1],cjson.encode(ids)); return 1`;
     const result=Number(await command(env,["EVAL",script,"3",usersIndexKey,userIndexKey,userKey,userJson,id,id]));
 
     if(result===2)return json({success:false,error:"系统管理员已存在，请直接登录"},409);
