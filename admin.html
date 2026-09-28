@@ -81,7 +81,7 @@
 </section>
 
 <div class="admin-footer">
-<button id="reset" type="button">清理测试数据</button><button id="logout" type="button" style="margin-top:8px">退出登录</button>
+<button id="logout" type="button">退出登录</button>
 </div>
 </div>
 </main>
@@ -113,7 +113,6 @@ $('routeName').value='';msg('线路创建成功');await load();
 }catch(e){msg(e.message)}
 });
 $('inviteForm').addEventListener('submit',async e=>{e.preventDefault();try{const v=$('inviteExpiresAt').value;const r=await api('/api/admin/invite-codes',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'create',maxUses:Number($('inviteMaxUses').value),expiresAt:v?new Date(v).toISOString():null})});msg('邀请码已生成：'+r.code.code);$('inviteExpiresAt').value='';await load()}catch(e){msg(e.message)}});
-$('reset').onclick=async()=>{if(!confirm('确定清理全部测试数据吗？将删除所有测试用户、线路、基准库、运单、历史、绑定和学习数据，仅保留当前管理员。'))return;try{msg('正在清理…');const r=await api('/api/admin/reset',{method:'POST'});msg(r.message||'清理完成');await load();}catch(e){msg(e.message)}};
 $('logout').onclick=async()=>{await fetch('/api/logout',{method:'POST',credentials:'same-origin'}).catch(()=>{});location.replace('/')};
 load();
 </script>
