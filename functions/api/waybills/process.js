@@ -127,7 +127,7 @@ function plan(items,useRouteOrder=true){const list=useRouteOrder?[...items].sort
 export async function onRequestPost({request,env}){
   const user=await currentUser(request,env);if(!user)return json({success:false,error:"未登录"},401);if(user.role==="admin"||!canUseRoute(user))return json({success:false,error:"无权处理运单"},403);
   let form;try{form=await request.formData()}catch{return json({success:false,error:"运单提交格式错误"},400)}
-  const routeId=clean(form.get("routeId")||user.dispatchRouteId||user.boundRouteId);if(!routeId)return json({success:false,error:"请先选择调度线路"},400);
+  const requestedRouteId=clean(form.get("routeId"));const routeId=clean(user.dispatchRouteId||user.boundRouteId);if(!routeId)return json({success:false,error:"请先选择调度线路"},400);if(requestedRouteId&&requestedRouteId!==routeId)return json({success:false,code:"DISPATCH_ROUTE_MISMATCH",error:"提交线路与当前调度线路不一致，请刷新后重试"},403);
   const rawText=clean(form.get("rawText")),file=form.get("file");if(!rawText&&!(file instanceof File))return json({success:false,error:"请选择运单"},400);
   const started=Date.now();let ocr=null,recognizedText=rawText,ocrMs=0;
   if(!recognizedText){const ocrStarted=Date.now();try{ocr=await recognizeImage(env,file);recognizedText=ocr.rawText;ocrMs=Date.now()-ocrStarted}catch(e){return json({success:false,code:e.code||"OCR_FAILED",message:e.message||"OCR识别失败",jobId:e.jobId||null},e.code==="OCR_NOT_CONFIGURED"?503:422)}}
