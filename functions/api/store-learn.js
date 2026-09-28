@@ -8,9 +8,10 @@ import {getRoute} from "./_route.js";
 
 async function base(env,id){
  const raw=await get(env,"route:"+id+":base");
- if(!raw)return{routeId:id,version:1,stores:[]};
- try{const x=typeof raw==="string"?JSON.parse(raw):raw;return{...x,routeId:id,stores:Array.isArray(x.stores)?x.stores:[]}}
- catch{return{routeId:id,version:1,stores:[]}}
+ if(!raw)throw Object.assign(new Error("线路数据资料尚未建立"),{code:"BASE_NOT_FOUND"});
+ let x;try{x=typeof raw==="string"?JSON.parse(raw):raw}catch{throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"})}
+ if(!x||!Array.isArray(x.stores))throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"});
+ return{...x,routeId:id};
 }
 const clean=x=>String(x??"").trim().slice(0,100);
 
