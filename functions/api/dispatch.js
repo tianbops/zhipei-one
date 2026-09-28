@@ -1,6 +1,6 @@
 import {json,body} from "./_json.js";
 import {currentUser} from "./_auth.js";
-import {get,set} from "./_redis.js";
+import {get,command} from "./_redis.js";
 import {getRoute} from "./_route.js";
 
 export const TEMP_DISPATCH_ID="__temporary__";
@@ -25,15 +25,11 @@ export async function onRequestPost({request,env}){
  const routeId=String(input.routeId||"").trim();
  if(!routeId)return json({success:false,error:"请选择调度线路"},400);
 
- if(routeId===TEMP_DISPATCH_ID){
-  user.dispatchRouteId=TEMP_DISPATCH_ID;
-  await set(env,"user:"+user.id,user);
-  return json({success:true,dispatchRoute:{id:TEMP_DISPATCH_ID,name:"临时线路",type:"temporary"}});
- }
-
- const route=await getRoute(env,routeId);
- if(!route||route.status!=="active")return json({success:false,error:"线路不存在或已停用"},404);
- user.dispatchRouteId=route.id;
- await set(env,"user:"+user.id,user);
- return json({success:true,dispatchRoute:{id:route.id,name:route.name,type:"route"}});
+ const route=routeId===TEMP_DISPATCH_ID?null:await getRoute(env,routeId);
+ if(routeId!==TEMP_DISPATCH_ID&&(!route||route.status!=="active"))return json({success:false,error:"线路不存在或已停用"},404);
+ const script=`local raw=redis.call("GET",KEYS[1]);if not raw then return -1 end;local ok,u=pcall(cjson.decode,raw);if not ok or type(u)~="table" then return -2 end;if u.id~=ARGV[1] or u.disabled==true or u.role=="admin" then return -3 end;u.dispatchRouteId=ARGV[2];redis.call("SET",KEYS[1],cjson.encode(u));return 1`;
+ const result=await command(env,["EVAL",script,"1","zp:user:"+user.id,user.id,routeId]);
+ if(Number(result)===-1||Number(result)===-3)return json({success:false,error:"用户状态已变化，请重新登录"},409);
+ if(Number(result)===-2)return json({success:false,error:"用户数据异常"},409);
+ return json({success:true,dispatchRoute:routeId===TEMP_DISPATCH_ID?{id:TEMP_DISPATCH_ID,name:"临时线路",type:"temporary"}:{id:route.id,name:route.name,type:"route"}});
 }
