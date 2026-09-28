@@ -136,7 +136,6 @@ export async function onRequestPost({request,env}){
   const commitScript='local okOrder,order=pcall(cjson.decode,ARGV[1]); if not okOrder or type(order)~="table" then return 2 end; local rawDone=redis.call("GET",KEYS[2]); if rawDone then return 3 end; redis.call("SET",KEYS[1],ARGV[1]); redis.call("SET",KEYS[2],"1"); local okItems,items=pcall(cjson.decode,ARGV[2]); if not okItems or type(items)~="table" then return 4 end; for _,item in ipairs(items) do if type(item)=="table" and type(item.field)=="string" and item.field~="" and type(item.value)=="string" then redis.call("HSET",KEYS[3],item.field,item.value) end end; return 1';
   const commitResult=await command(env,["EVAL",commitScript,"3","zp:waybill:"+order.id,"zp:"+doneKey,"zp:waybill:"+order.id+":learning-repair",JSON.stringify(order),JSON.stringify(learningEntries)]);
   if(Number(commitResult)!==1)throw new Error("WAYBILL_COMMIT_FAILED");
-  if(commitResult!=="OK")throw new Error("WAYBILL_COMMIT_FAILED");
   let learningStatus=learned.length?await retryLearningRepairs(env,order.id,user.id):"NONE";
   let indexSync="OK";
   try{
