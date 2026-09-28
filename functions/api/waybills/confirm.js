@@ -23,6 +23,15 @@ export async function onRequestPost({request,env}){
   if(!Array.isArray(input.confirmations))return json({success:false,code:"CONFIRMATIONS_REQUIRED",error:"确认项目必须是数组"},400);
 
   const confirmations=input.confirmations;
+  const pendingIndexes=new Set((order.stores||[]).map((s,i)=>s?.pending?i:null).filter(i=>i!==null));
+  const submittedIndexes=new Set();
+  for(const c of confirmations){
+    const index=Number(c?.index);if(!Number.isInteger(index)||!pendingIndexes.has(index))continue;
+    if(submittedIndexes.has(index))return json({success:false,code:"CONFIRMATION_DUPLICATE_INDEX",error:"同一待定门店不能重复确认"},400);
+    const action=clean(c?.action);if(action!=="merge"&&action!=="new")return json({success:false,code:"CONFIRMATION_ACTION_INVALID",error:"待定门店必须选择合并或新增"},400);
+    submittedIndexes.add(index);
+  }
+  if(submittedIndexes.size!==pendingIndexes.size)return json({success:false,code:"CONFIRMATIONS_INCOMPLETE",error:"请完成全部待定门店选择"},400);
   const confirmRequestId=clean(input.confirmRequestId);if(!confirmRequestId)return json({success:false,code:"CONFIRM_REQUEST_ID_REQUIRED",error:"缺少确认请求ID"},400);
   const doneKey="waybill:"+waybillId+":confirm:"+confirmRequestId;const existing=await get(env,doneKey);if(existing)return json({success:true,waybill:order,learning:"DUPLICATE_REQUEST"});requestLock=doneKey+":lock";const locked=await command(env,["SET",requestLock,"1","NX","EX","60"]);if(locked!=="OK"){requestLock=null;return json({success:false,code:"CONFIRM_REQUEST_BUSY",error:"确认请求正在处理中，请稍后再试"},409)}
   waybillLock="waybill:"+waybillId+":confirm-lock";const waybillLocked=await command(env,["SET",waybillLock,"1","NX","EX","60"]);if(waybillLocked!=="OK"){await command(env,["DEL",requestLock]);requestLock=null;waybillLock=null;return json({success:false,code:"CONFIRM_REQUEST_BUSY",error:"该运单正在确认处理中，请稍后再试"},409)}
@@ -41,7 +50,11 @@ export async function onRequestPost({request,env}){
     const standardName=clean(c.standardName)||clean(target?.name)||rawName;
     if(action==="new"&&order.routeId!==TEMP_DISPATCH_ID){
       const duplicate=base.stores.find(s=>normalized(s.name)===normalized(rawName)||normalized(s.originalName)===normalized(rawName)||(Array.isArray(s.aliases)&&s.aliases.some(a=>normalized(a)===normalized(rawName))));
-      if(duplicate)return json({success:false,code:"STORE_ALREADY_EXISTS",error:"该门店已存在于线路数据资料，不能重复新增",storeId:clean(duplicate.storeId),storeName:clean(duplicate.name||duplicate.originalName)},409);
+      if(duplicate){
+        await command(env,["DEL",waybillLock]);waybillLock=null;
+        await command(env,["DEL",requestLock]);requestLock=null;
+        return json({success:false,code:"STORE_ALREADY_EXISTS",error:"该门店已存在于线路数据资料，不能重复新增",storeId:clean(duplicate.storeId),storeName:clean(duplicate.name||duplicate.originalName)},409);
+      }
       target={storeId:newId(),originalName:rawName,name:rawName,aliases:[],navigation:null,routeOrder:base.stores.length+1,note:""};
       base.stores.push(target);
     }
