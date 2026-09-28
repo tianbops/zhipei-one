@@ -8,7 +8,7 @@ function safe(c){return {id:c.id,code:c.code,enabled:c.enabled!==false,maxUses:c
 
 export async function onRequestGet({request,env}){
  const actor=await currentUser(request,env);if(!admin(actor))return json({success:false,error:"无权限"},403);
- const raw=await get(env,"invite-codes:index");let ids=[];try{ids=raw?(typeof raw==="string"?JSON.parse(raw):raw):[]}catch{}
+ const raw=await get(env,"invite-codes:index");let ids=[];try{ids=raw?(typeof raw==="string"?JSON.parse(raw):raw):[]}catch{return json({success:false,code:"INVITE_INDEX_INVALID",error:"邀请码索引数据异常，请联系管理员处理"},409)}if(!Array.isArray(ids))return json({success:false,code:"INVITE_INDEX_INVALID",error:"邀请码索引数据异常，请联系管理员处理"},409)
  const codes=[];for(const id of Array.isArray(ids)?ids:[]){const base=await get(env,"invite-code:"+id);if(base){try{const b=typeof base==="string"?JSON.parse(base):base;const r=await get(env,"invite-code:code:"+b.code);if(r)codes.push(safe(typeof r==="string"?JSON.parse(r):r))}catch{}}}
  return json({success:true,codes});
 }
@@ -51,6 +51,6 @@ export async function onRequestPost({request,env}){
 // Atomically validate and consume one use. Returns code id on success, null otherwise.
 export async function consumeInviteCode(env,code){
  const key="zp:invite-code:code:"+normalize(code);
- const script="local raw=redis.call('GET',KEYS[1]); if not raw then return 0 end; local c=cjson.decode(raw); if c.enabled==false then return 0 end; if c.expiresAt and c.expiresAt~='' then local exp=string.sub(c.expiresAt,1,19); local now=os.date('!%Y-%m-%dT%H:%M:%S'); if exp<=now then return 0 end end; local used=tonumber(c.usedCount or 0) or 0; local max=tonumber(c.maxUses or 0) or 0; if max>0 and used>=max then return 0 end; c.usedCount=used+1; redis.call('SET',KEYS[1],cjson.encode(c)); return 1";
+ const script="local raw=redis.call('GET',KEYS[1]); if not raw then return 0 end; local ok,c=pcall(cjson.decode,raw); if not ok or type(c)~='table' then return 0 end; if c.enabled==false then return 0 end; if c.expiresAt and c.expiresAt~='' then local exp=string.sub(c.expiresAt,1,19); local now=os.date('!%Y-%m-%dT%H:%M:%S'); if exp<=now then return 0 end end; local used=tonumber(c.usedCount or 0) or 0; local max=tonumber(c.maxUses or 0) or 0; if max>0 and used>=max then return 0 end; c.usedCount=used+1; redis.call('SET',KEYS[1],cjson.encode(c)); return 1";
  return (await command(env,["EVAL",script,"1",key]))===1;
 }
