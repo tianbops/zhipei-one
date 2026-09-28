@@ -59,7 +59,7 @@ export async function onRequestPost({request,env}){
       const duplicate=base.stores.find(s=>normalized(s.name)===normalized(rawName)||normalized(s.originalName)===normalized(rawName)||(Array.isArray(s.aliases)&&s.aliases.some(a=>normalized(a)===normalized(rawName))));
       if(duplicate){
         await releaseLock(env,waybillLock);waybillLock=null;
-        await command(env,["DEL",requestLock]);requestLock=null;
+        await releaseLock(env,requestLock);requestLock=null;
         return json({success:false,code:"STORE_ALREADY_EXISTS",error:"该门店已存在于线路数据资料，不能重复新增",storeId:clean(duplicate.storeId),storeName:clean(duplicate.name||duplicate.originalName)},409);
       }
       target={storeId:newId(),originalName:rawName,name:rawName,aliases:[],navigation:null,routeOrder:base.stores.length+1,note:""};
@@ -116,8 +116,8 @@ export async function onRequestPost({request,env}){
     await set(env,"route:"+order.routeId+":orders:latest",order);
   }catch{indexSync="DEFERRED";try{await set(env,"route:"+order.routeId+":orders:index-repair",order.id)}catch{}}
   if(routeBaseLock){await releaseLock(env,routeBaseLock);routeBaseLock=null}
-  await command(env,["DEL",waybillLock]);waybillLock=null;
-  await command(env,["DEL",requestLock]);requestLock=null;
+  await releaseLock(env,waybillLock);waybillLock=null;
+  await releaseLock(env,requestLock);requestLock=null;
   return json({success:true,waybill:order,learning:learningStatus,indexSync});
  }catch(e){
   try{if(baseChanged&&baseSnapshot&&routeBaseLock)await set(env,"route:"+order.routeId+":base",baseSnapshot);if(routeBaseLock)await releaseLock(env,routeBaseLock);if(waybillLock)await releaseLock(env,waybillLock);if(requestLock)await releaseLock(env,requestLock);}catch{}
