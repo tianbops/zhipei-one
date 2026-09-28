@@ -27,8 +27,8 @@ const correctionCompareKey=v=>
 
 const correctionOCRKey=v=>correctionCompareKey(v)
   .replace(/客服/g,"客户")
+  .replace(/(^|[^\p{L}])iii类/giu,"$1ii类")
   .replace(/(^|[^\p{L}])i类/giu,"$1ii类");
-.replace(/(^|[^\p{L}])iii类/giu,"$1ii类")
 
 const isFormatOnlyDifference=(raw,target)=>{
   const rawKey=correctionCompareKey(raw);
