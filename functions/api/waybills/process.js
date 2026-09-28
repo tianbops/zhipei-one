@@ -68,7 +68,28 @@ function validateResult(order){
   if((order.stores||[]).some((s,i)=>s.routeOrder!==i+1))errors.push("线路顺序不连续");
   return {valid:errors.length===0,errors};
 }
-function dedupe(items){const seen=new Set(),out=[];let merged=0;for(const s of items){const key=s.storeId?"id:"+s.storeId:"pending:"+formatCompareKey(s.rawName);if(seen.has(key)){merged++;continue}seen.add(key);out.push(s)}return{items:out,merged}}
+function dedupe(items){
+  const seen=new Map(),out=[],conflicts=[];
+  let merged=0;
+  for(const s of items){
+    const identityKey=formatCompareKey(s.name||s.rawName);
+    let key=s.storeId?"id:"+s.storeId:"pending:"+identityKey;
+    if(s.storeId&&seen.has(key)){
+      const previous=seen.get(key);
+      const previousIdentity=formatCompareKey(previous.name||previous.rawName);
+      if(previousIdentity!==identityKey){
+        key="id-conflict:"+s.storeId+":"+identityKey;
+        conflicts.push({storeId:s.storeId,firstName:previous.name||previous.rawName,conflictName:s.name||s.rawName});
+      }else{
+        merged++;
+        continue;
+      }
+    }
+    seen.set(key,s);
+    out.push(s);
+  }
+  return{items:out,merged,conflicts};
+}
 function plan(items,useRouteOrder=true){const list=useRouteOrder?[...items].sort((a,b)=>(number(a.routeOrder)??100000)-(number(b.routeOrder)??100000)||formatCompareKey(a.name).localeCompare(formatCompareKey(b.name),"zh-CN")):[...items];return list.map((s,i)=>({...s,routeOrder:i+1}))}
 
 export async function onRequestPost({request,env}){
@@ -82,7 +103,7 @@ export async function onRequestPost({request,env}){
   const extractedStarted=Date.now();const extracted=extract(recognizedText);const extractMs=Date.now()-extractedStarted;if(!extracted.stores.length)return json({success:false,code:"EXTRACT_EMPTY",message:"未提取到门店，请检查运单内容"},422);
   const matchStarted=Date.now();const locallyMatched=matchStores(extracted.stores,baseStores);const hasRouteBase=routeId!==TEMP_DISPATCH_ID&&baseStores.length>0;const globalCandidates=hasRouteBase?[]:await findGlobalMatches(env,locallyMatched.filter(x=>x.pending));const globalMap=new Map(globalCandidates.map(x=>[x.rawName+"|"+(x.sourceLine||""),x]));const matched=locallyMatched.map(x=>{if(!x.pending)return x;const g=globalMap.get(x.rawName+"|"+(x.sourceLine||""));if(!g||g.globalMatchStatus!=="matched")return x;const standard=clean(g.name)||x.rawName;return {...x,...g,name:standard,correction:formatCompareKey(x.rawName)!==formatCompareKey(standard),pending:false,matchStatus:"matched",matchMethod:g.globalMatchMethod,routeOrder:100000};});const matchMs=Date.now()-matchStarted;const dedupeStarted=Date.now();const d=dedupe(matched);const dedupeMs=Date.now()-dedupeStarted;const planStarted=Date.now();const useRouteOrder=routeId!==TEMP_DISPATCH_ID&&baseStores.length>0;const planned=plan(d.items,useRouteOrder);const planMs=Date.now()-planStarted;const pending=planned.filter(x=>x.pending);
   const formWeight=number(form.get("totalWeight"));const effectiveWeight=formWeight!=null&&formWeight>0?formWeight:extracted.totalWeight;const order={schemaVersion:"2",id:newId(),routeId,date:clean(form.get("date"))||extracted.date||null,vehicle:clean(form.get("vehicle"))||extracted.vehicle||null,totalWeight:effectiveWeight,stores:planned,rawText:recognizedText,stage:"PLANNED",pipeline:["RECOGNIZED","EXTRACTED","MATCHED","DEDUPED","PLANNED","VALIDATED"],summary:{original:extracted.stores.length,total:planned.length,matched:planned.length-pending.length,pending:pending.length,correction:planned.filter(x=>x.correction).length,merged:d.merged,newStores:0},timing:{recognizedMs,ocrMs,baseMs,extractMs,matchMs,dedupeMs,planMs,totalMs:Date.now()-started},ocr:ocr?{provider:"PaddleOCR",model:ocr.model,jobId:ocr.jobId,lineCount:ocr.lineCount}:null,createdBy:user.id,createdAt:new Date().toISOString()};
-  const validation=validateResult(order);order.validation=validation;order.diagnostics={matchMode:hasRouteBase?"ROUTE_BASE":"GLOBAL_LEARNING",baseStoreCount:baseStores.length,extractCount:extracted.stores.length,extractItems:extracted.stores.map((s,i)=>({index:i+1,rawName:s.rawName,name:s.name,storeId:s.storeId||null})),localMatchedCount:locallyMatched.filter(x=>!x.pending).length,localPendingCount:locallyMatched.filter(x=>x.pending).length,localPendingItems:locallyMatched.filter(x=>x.pending).map(x=>({rawName:x.rawName,candidates:x.candidates||[]})),globalMatchedCount:matched.filter(x=>!x.pending&&x.matchMethod==="global-alias"||!x.pending&&x.matchMethod==="global-identity").length,globalPendingCount:matched.filter(x=>x.pending).length,dedupeBefore:matched.length,dedupeAfter:d.items.length,merged:d.merged,plannedCount:planned.length,finalCount:order.stores.length,finalItems:planned.map((s,i)=>({index:i+1,rawName:s.rawName,name:s.name,storeId:s.storeId||null,pending:!!s.pending,matchMethod:s.matchMethod||null,routeOrder:s.routeOrder}))};
+  const validation=validateResult(order);order.validation=validation;order.diagnostics={matchMode:hasRouteBase?"ROUTE_BASE":"GLOBAL_LEARNING",baseStoreCount:baseStores.length,extractCount:extracted.stores.length,extractItems:extracted.stores.map((s,i)=>({index:i+1,rawName:s.rawName,name:s.name,storeId:s.storeId||null})),localMatchedCount:locallyMatched.filter(x=>!x.pending).length,localPendingCount:locallyMatched.filter(x=>x.pending).length,localPendingItems:locallyMatched.filter(x=>x.pending).map(x=>({rawName:x.rawName,candidates:x.candidates||[]})),globalMatchedCount:matched.filter(x=>!x.pending&&x.matchMethod==="global-alias"||!x.pending&&x.matchMethod==="global-identity").length,globalPendingCount:matched.filter(x=>x.pending).length,dedupeBefore:matched.length,dedupeAfter:d.items.length,merged:d.merged,dedupeConflicts:d.conflicts,plannedCount:planned.length,finalCount:order.stores.length,finalItems:planned.map((s,i)=>({index:i+1,rawName:s.rawName,name:s.name,storeId:s.storeId||null,pending:!!s.pending,matchMethod:s.matchMethod||null,routeOrder:s.routeOrder}))};
   await set(env,"waybill:"+order.id,order);await set(env,"route:"+routeId+":orders:latest",order);if(order.date===todayCN())await set(env,"route:"+routeId+":orders:today",order);
   return json({success:true,waybill:order,pipeline:order.pipeline,summary:order.summary});
 }
