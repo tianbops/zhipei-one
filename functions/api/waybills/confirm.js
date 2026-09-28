@@ -115,7 +115,7 @@ export async function onRequestPost({request,env}){
 }
     }
     item.storeId=storeId;item.name=action==="new"?rawName:(clean(target?.name)||standardName);item.routeOrder=Number(target?.routeOrder)||item.routeOrder;item.originalName=clean(target?.originalName)||rawName;item.pending=false;item.matchStatus="matched";item.matchMethod=action==="new"?"confirmed-new":(target?"confirmed":"confirmed-global");item.correction=action==="new"?false:normalized(rawName)!==normalized(standardName);
-    learned.push({storeId,rawName,standardName:clean(target?.name)||item.name,originalName:item.originalName,navigation:target?.navigation||null,routeId:order.routeId});
+    learned.push({storeId,rawName,standardName:clean(target?.name)||item.name,originalName:item.originalName,navigation:target?.navigation||null,routeId:order.routeId,learningEventId:newId()});
   }
 
   const seen=new Set();const deduped=[];let merged=0;
