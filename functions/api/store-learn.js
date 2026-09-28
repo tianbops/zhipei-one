@@ -28,11 +28,13 @@ export async function onRequestPost({request,env}){
  if(!rawName)return json({success:false,error:"门店名称不能为空"},400);
 
  const lockKey="route:"+routeId+":base-confirm-lock";
- const locked=await command(env,["SET","zp:"+lockKey,"1","NX","EX","120"]);
+ const lockToken=newId();
+ const locked=await command(env,["SET","zp:"+lockKey,lockToken,"NX","EX","120"]);
  if(locked!=="OK")return json({success:false,error:"该线路数据资料正在更新，请稍后重试",code:"BASE_UPDATE_BUSY"},409);
 
  try{
   const b=await base(env,routeId);
+  const baseSnapshot=JSON.parse(JSON.stringify(b));
   let target=null;
   const existingId=clean(input.storeId);
   if(existingId)target=b.stores.find(s=>s.storeId===existingId);
@@ -41,9 +43,15 @@ export async function onRequestPost({request,env}){
    target=b.stores.find(s=>[s.name,s.originalName,...(Array.isArray(s.aliases)?s.aliases:[])].some(v=>formatCompareKey(v)===rawKey));
   }
   if(!target){
+   const rawKey=formatCompareKey(rawName);
+   const conflict=b.stores.find(s=>s?.storeId!==existingId&&[s?.name,s?.originalName,...(Array.isArray(s?.aliases)?s.aliases:[])].some(v=>formatCompareKey(v)===rawKey));
+   if(conflict)return json({success:false,code:"STORE_IDENTITY_CONFLICT",error:"该名称已属于其他门店，请使用正确的storeId或确认门店身份",storeId:conflict.storeId||null,name:conflict.name||conflict.originalName||rawName},409);
    target={storeId:newId(),originalName:rawName,name:rawName,aliases:[],navigation:clean(input.navigation)||null,routeOrder:b.stores.length+1,note:"",learnedAt:new Date().toISOString()};
    b.stores.push(target);
   }else if(rawName!==target.name&&!target.aliases?.includes(rawName)){
+   const rawKey=formatCompareKey(rawName);
+   const conflict=b.stores.find(s=>s?.storeId!==target.storeId&&[s?.name,s?.originalName,...(Array.isArray(s?.aliases)?s.aliases:[])].some(v=>formatCompareKey(v)===rawKey));
+   if(conflict)return json({success:false,code:"STORE_IDENTITY_CONFLICT",error:"该名称已属于其他门店，不能作为当前门店别名",storeId:conflict.storeId||null,name:conflict.name||conflict.originalName||rawName},409);
    target.aliases=[...(target.aliases||[]),rawName];
   }
 
@@ -56,11 +64,14 @@ export async function onRequestPost({request,env}){
    learning=learned.duplicate?"DUPLICATE_IGNORED":"RECORDED";
   }catch(error){
    if(error?.message==="GLOBAL_LEARNING_BUSY")learning="DEFERRED";
-   else throw error;
+   else{
+    await set(env,"route:"+routeId+":base",baseSnapshot).catch(()=>{});
+    throw error;
+   }
   }
 
   return json({success:true,store:target,base:data,globalLearning:learning});
  }finally{
-  await command(env,["DEL","zp:"+lockKey]).catch(()=>{});
+  await command(env,["EVAL",'if redis.call("GET",KEYS[1])==ARGV[1] then return redis.call("DEL",KEYS[1]) else return 0 end',"1","zp:"+lockKey,lockToken]).catch(()=>{});
  }
 }
