@@ -1,2 +1,2 @@
 import {json} from "./_json.js";
-export async function onRequest(){return json({success:true,service:"Zhipei One",status:"ok"})}
+export async function onRequest(){return json({success:true,service:"智配One",status:"ok"})}
