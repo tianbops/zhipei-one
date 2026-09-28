@@ -42,10 +42,11 @@ export async function learnGlobal(env,input){
   const script=`local eventKey=ARGV[1]
 if eventKey~="__none__" and redis.call("GET",eventKey) then return {"DUPLICATE"} end
 redis.call("HSET",KEYS[1],ARGV[2],ARGV[3])
-local n=4
+local n=5
 for i=1,tonumber(ARGV[4]) do local k=ARGV[n];local v=ARGV[n+1];redis.call("HSET",KEYS[2],k,v);n=n+2 end
 redis.call("RPUSH",KEYS[3],ARGV[n]);redis.call("LTRIM",KEYS[3],"-5000","-1")
 local version=redis.call("INCR",KEYS[4])
+redis.call("SET",KEYS[5],cjson.encode({schemaVersion="2",version=version}))
 if eventKey~="__none__" then redis.call("SET",eventKey,ARGV[n+2]) end
 return {"OK",tostring(version)}`;
   const args=[eventKey||"__none__",storeId,JSON.stringify(current),String(aliasValues.length),...aliasValues.flatMap(([k,v])=>[k,JSON.stringify(v)]),JSON.stringify(event),JSON.stringify({schemaVersion:"2",version:0}),event.id];
