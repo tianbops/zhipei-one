@@ -30,7 +30,7 @@ function extract(rawText){
     .trim();
 
   const addRouteText=text=>{
-    const parts=clean(text).split(/\s*(?:->|→|＞)\s*/).map(cleanStoreName).filter(Boolean);
+    const parts=clean(text).split(/\s*(?:-\s*>|→|＞)\s*/).map(cleanStoreName).filter(Boolean);
     for(const part of parts){
       const idm=part.match(/\b(?:JM|A|Q)[\p{Pd}_ ]?\d{3,12}\b/i);
       const storeId=idm?idm[0].replace(/[\p{Pd} ]/gu,"").toUpperCase():null;
