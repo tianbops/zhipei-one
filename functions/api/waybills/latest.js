@@ -14,9 +14,28 @@ export async function onRequestGet({request,env}){
   try{const waybill=typeof raw==="string"?JSON.parse(raw):raw;if(!validWaybill(waybill)||waybill.routeId!==routeId)return json({success:true,waybill:null});return json({success:true,waybill})}catch{return json({success:false,code:"WAYBILL_DATA_INVALID",error:"运单数据异常"},500)}
  }
  const repairKey="route:"+routeId+":orders:index-repair";
- const repair=await get(env,repairKey);
- const scanCurrentDay=async()=>{let cursor="0",found=null;do{const r=await command(env,["SCAN",cursor,"MATCH","zp:waybill:*","COUNT","100"]);cursor=String(r?.[0]??"0");for(const key of (r?.[1]||[])){const v=await get(env,String(key).replace(/^zp:/,""));try{const w=typeof v==="string"?JSON.parse(v):v;if(validWaybill(w)&&w.routeId===routeId&&w.date===todayCN()&&(!found||String(w.createdAt||"")>String(found.createdAt||"")))found=w}catch{}}}while(cursor!=="0");return found};
- if(repair){const found=await scanCurrentDay();if(found){try{await set(env,"route:"+routeId+":orders:latest",found);await set(env,"route:"+routeId+":orders:today",found);await del(env,repairKey);return json({success:true,waybill:found,indexSync:"REPAIRED"})}catch{return json({success:true,waybill:found,indexSync:"DEFERRED"})}}try{await del(env,repairKey)}catch{}}
+ const repair=await command(env,["SMEMBERS","zp:"+repairKey]);
+ if(Array.isArray(repair)&&repair.length){
+  let repairedAny=false;
+  for(const repairId of repair){
+   const rawRepair=await get(env,"waybill:"+clean(repairId));
+   let w=null;
+   try{w=typeof rawRepair==="string"?JSON.parse(rawRepair):rawRepair}catch{}
+   if(!validWaybill(w)||w.routeId!==routeId)continue;
+   try{
+    const currentLatestRaw=await get(env,"route:"+routeId+":orders:latest");
+    let currentLatest=null;try{currentLatest=typeof currentLatestRaw==="string"?JSON.parse(currentLatestRaw):currentLatestRaw}catch{}
+    if(!validWaybill(currentLatest)||currentLatest.routeId!==routeId||String(w.createdAt||"")>String(currentLatest.createdAt||""))await set(env,"route:"+routeId+":orders:latest",w);
+    if(w.date===todayCN()){
+     const currentTodayRaw=await get(env,"route:"+routeId+":orders:today");
+     let currentToday=null;try{currentToday=typeof currentTodayRaw==="string"?JSON.parse(currentTodayRaw):currentTodayRaw}catch{}
+     if(!validWaybill(currentToday)||currentToday.routeId!==routeId||String(w.createdAt||"")>String(currentToday.createdAt||""))await set(env,"route:"+routeId+":orders:today",w);
+    }
+    await command(env,["SREM","zp:"+repairKey,clean(repairId)]);
+    repairedAny=true;
+   }catch{}
+  }
+ }
  const todayRaw=await get(env,"route:"+routeId+":orders:today");
  let todayWaybill=null;if(todayRaw){try{const x=typeof todayRaw==="string"?JSON.parse(todayRaw):todayRaw;if(validWaybill(x)&&x.routeId===routeId&&x.date===todayCN())todayWaybill=x}catch{}}
  const raw=await get(env,"route:"+routeId+":orders:latest");
