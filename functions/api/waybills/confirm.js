@@ -67,7 +67,6 @@ export async function onRequestPost({request,env}){
   if(order.routeId!==TEMP_DISPATCH_ID){routeBaseLock={key:"route:"+order.routeId+":base-confirm-lock",token:newId()};const baseLocked=await command(env,["SET","zp:"+routeBaseLock.key,routeBaseLock.token,"NX","EX","120"]);if(baseLocked!=="OK"){await releaseLock(env,waybillLock);waybillLock=null;await releaseLock(env,requestLock);requestLock=null;routeBaseLock=null;return json({success:false,code:"BASE_UPDATE_BUSY",error:"该线路数据资料正在被其他确认操作更新，请稍后重试"},409)}}
   const stores=[...(order.stores||[])];
   const base=order.routeId===TEMP_DISPATCH_ID?{routeId:order.routeId,version:1,stores:[]}:await loadBase(env,order.routeId);
-  if(order.routeId!==TEMP_DISPATCH_ID)baseSnapshot=JSON.parse(JSON.stringify(base));
   const learned=[];
   for(const c of confirmations){
     const index=Number(c.index);if(!Number.isInteger(index)||index<0||index>=stores.length)continue;
