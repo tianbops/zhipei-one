@@ -12,6 +12,34 @@ const normalized=v=>clean(v).replace(/[\u3000\s]+/g,"").replace(/[（）()【】
 async function releaseLock(env,lock){if(!lock?.key||!lock?.token)return;await command(env,["EVAL","if redis.call(\"GET\",KEYS[1])==ARGV[1] then return redis.call(\"DEL\",KEYS[1]) else return 0 end","1","zp:"+lock.key,lock.token]).catch(()=>{})}
 async function load(env,id){const raw=await get(env,"waybill:"+id);if(!raw)return null;try{return typeof raw==="string"?JSON.parse(raw):raw}catch{return null}}
 async function loadBase(env,id){const raw=await get(env,"route:"+id+":base");if(!raw)throw Object.assign(new Error("线路数据资料尚未建立"),{code:"BASE_NOT_FOUND"});let x;try{x=typeof raw==="string"?JSON.parse(raw):raw}catch{throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"})}if(!x||!Array.isArray(x.stores))throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"});return {...x,routeId:id}}
+const LEARNING_REPAIR_TTL=86400;
+async function queueLearningRepairs(env,waybillId,items){
+ if(!waybillId||!items.length)return;
+ const key="zp:waybill:"+waybillId+":learning-repair";
+ for(const item of items){
+  const field=[clean(item.storeId),normalized(item.rawName||item.name)].join("|");
+  if(!field)continue;
+  await command(env,["HSET",key,field,JSON.stringify(item)]);
+ }
+ await command(env,["EXPIRE",key,String(LEARNING_REPAIR_TTL)]);
+}
+async function retryLearningRepairs(env,waybillId,userId){
+ const key="waybill:"+waybillId+":learning-repair";
+ const lock={key:key+":lock",token:newId()};
+ const locked=await command(env,["SET","zp:"+lock.key,lock.token,"NX","EX","60"]);
+ if(locked!=="OK")return"DEFERRED";
+ try{
+  const raw=await command(env,["HGETALL","zp:"+key]);
+  const entries=[];
+  for(let i=0;i<(raw?.length||0);i+=2){const field=raw[i],value=raw[i+1];let item;try{item=typeof value==="string"?JSON.parse(value):value}catch{item=null}if(field&&item)entries.push([field,item])}
+  for(const [field,item] of entries){
+   try{await learnGlobal(env,{...item,routeId:item.routeId,waybillId,userId:item.userId||userId});await command(env,["HDEL","zp:"+key,field])}catch{}
+  }
+  const remaining=Number(await command(env,["HLEN","zp:"+key]))||0;
+  if(remaining===0)await command(env,["DEL","zp:"+key]);
+  return remaining?"DEFERRED":"RECORDED";
+ }finally{await releaseLock(env,lock)}
+}
 
 export async function onRequestPost({request,env}){
  let requestLock=null,waybillLock=null,routeBaseLock=null,baseSnapshot=null,baseChanged=false,order=null;
@@ -20,7 +48,7 @@ export async function onRequestPost({request,env}){
   const user=gate.user;const input=await body(request);const waybillId=clean(input.waybillId);if(!waybillId)return json({success:false,code:"WAYBILL_ID_REQUIRED",error:"缺少运单ID"},400);
   order=await load(env,waybillId);if(!order)return json({success:false,code:"WAYBILL_NOT_FOUND",error:"运单不存在"},404);
   if(order.routeId!==TEMP_DISPATCH_ID&&!canMaintainRoute(user,order.routeId))return json({success:false,code:"BASE_MAINTENANCE_FORBIDDEN",error:"无权确认并维护该线路数据资料"},403);
-  if(order.stage==="CONFIRMED")return json({success:true,waybill:order,learning:"ALREADY_CONFIRMED"});
+  if(order.stage==="CONFIRMED"){const learning=await retryLearningRepairs(env,waybillId,user.id);return json({success:true,waybill:order,learning:learning==="RECORDED"?"ALREADY_CONFIRMED":"DEFERRED"});}
   if(!Array.isArray(input.confirmations))return json({success:false,code:"CONFIRMATIONS_REQUIRED",error:"确认项目必须是数组"},400);
 
   const confirmations=input.confirmations;
@@ -106,10 +134,10 @@ export async function onRequestPost({request,env}){
   order.stores=finalStores;order.stage=pending?"PLANNED":"CONFIRMED";order.summary={...(order.summary||{}),total:finalStores.length,matched:finalStores.length-pending,pending,correction:finalStores.filter(s=>s.correction).length,merged:(order.summary?.merged||0)+merged,newStores:finalStores.filter(s=>s.matchMethod==="confirmed-new").length};
   const confirmedNow=new Date().toISOString();if(pending===0){order.confirmedAt=confirmedNow;order.confirmedBy=user.id;}else{order.lastConfirmedAt=confirmedNow;order.lastConfirmedBy=user.id;}order.confirmRequestId=confirmRequestId||null;
   if(learned.length&&order.routeId!==TEMP_DISPATCH_ID){baseSnapshot=JSON.parse(JSON.stringify(base));base.version=(Number(base.version)||1)+1;base.updatedAt=new Date().toISOString();base.updatedBy=user.id;await set(env,"route:"+order.routeId+":base",base);baseChanged=true}
+  if(learned.length)await queueLearningRepairs(env,order.id,learned);
   const commitResult=await command(env,["EVAL",'redis.call("SET",KEYS[1],ARGV[1]);redis.call("SET",KEYS[2],"1");return "OK"', "2","zp:waybill:"+order.id,"zp:"+doneKey,JSON.stringify(order)]);
   if(commitResult!=="OK")throw new Error("WAYBILL_COMMIT_FAILED");
-  let learningStatus=learned.length?"RECORDED":"NONE";
-  if(learned.length){try{for(const item of learned)await learnGlobal(env,{...item,routeId:order.routeId,waybillId:order.id,userId:user.id})}catch(e){learningStatus="DEFERRED";}}
+  let learningStatus=learned.length?await retryLearningRepairs(env,order.id,user.id):"NONE";
   let indexSync="OK";
   try{
     if(order.date===todayCN())await set(env,"route:"+order.routeId+":orders:today",order);
