@@ -32,9 +32,15 @@ export async function onRequestPost({request,env}){
     const item=stores[index];if(!item.pending&&!clean(c.storeId))continue;
     const rawName=clean(item.rawName||item.name);let target=null;
     const requestedId=clean(c.storeId);
-    if(requestedId)target=base.stores.find(s=>clean(s.storeId)===requestedId)||null;
-    if(!target)target=base.stores.find(s=>normalized(s.name)===normalized(c.standardName||"")||normalized(s.originalName)===normalized(c.standardName||""))||null;
+    const action=clean(c.action)||"merge";
+    if(action!=="merge"&&action!=="new")continue;
+    if(action==="merge"&&requestedId)target=base.stores.find(s=>clean(s.storeId)===requestedId)||null;
+    if(action==="merge"&&!target)target=base.stores.find(s=>normalized(s.name)===normalized(c.standardName||"")||normalized(s.originalName)===normalized(c.standardName||""))||null;
     const standardName=clean(c.standardName)||clean(target?.name)||rawName;
+    if(action==="new"&&order.routeId!==TEMP_DISPATCH_ID){
+      target={storeId:newId(),originalName:rawName,name:rawName,aliases:[],navigation:null,routeOrder:base.stores.length+1,note:""};
+      base.stores.push(target);
+    }
     if(!target&&order.routeId!==TEMP_DISPATCH_ID){
       const globals=await findGlobalMatches(env,[{rawName:standardName}]);
       const globalTarget=globals[0]?.globalMatchStatus==="matched"?globals[0]:null;
@@ -53,8 +59,8 @@ export async function onRequestPost({request,env}){
  if(rawName&&normalized(rawName)!==normalized(target.name)&&!aliases.includes(rawName))target.aliases=[...aliases,rawName];
 }
     }
-    item.storeId=storeId;item.name=standardName;item.routeOrder=Number(target?.routeOrder)||item.routeOrder;item.originalName=clean(target?.originalName)||rawName;item.pending=false;item.matchStatus="matched";item.matchMethod=target?"confirmed":"confirmed-global";item.correction=normalized(rawName)!==normalized(standardName);
-    learned.push({storeId,rawName,standardName,originalName:item.originalName,navigation:target?.navigation||null});
+    item.storeId=storeId;item.name=action==="new"?rawName:standardName;item.routeOrder=Number(target?.routeOrder)||item.routeOrder;item.originalName=clean(target?.originalName)||rawName;item.pending=false;item.matchStatus="matched";item.matchMethod=action==="new"?"confirmed-new":(target?"confirmed":"confirmed-global");item.correction=action==="new"?false:normalized(rawName)!==normalized(standardName);
+    learned.push({storeId,rawName,standardName:item.name,originalName:item.originalName,navigation:target?.navigation||null});
   }
 
   const seen=new Set();const deduped=[];let merged=0;
@@ -69,7 +75,7 @@ export async function onRequestPost({request,env}){
   }
   const finalStores=ordered.map((s,i)=>({...s,routeOrder:i+1}));
   const pending=finalStores.filter(s=>s.pending).length;
-  order.stores=finalStores;order.stage=pending?"PLANNED":"CONFIRMED";order.summary={...(order.summary||{}),total:finalStores.length,matched:finalStores.length-pending,pending,correction:finalStores.filter(s=>s.correction).length,merged:(order.summary?.merged||0)+merged};
+  order.stores=finalStores;order.stage=pending?"PLANNED":"CONFIRMED";order.summary={...(order.summary||{}),total:finalStores.length,matched:finalStores.length-pending,pending,correction:finalStores.filter(s=>s.correction).length,merged:(order.summary?.merged||0)+merged,newStores:finalStores.filter(s=>s.matchMethod==="confirmed-new").length};
   const confirmedNow=new Date().toISOString();if(pending===0){order.confirmedAt=confirmedNow;order.confirmedBy=user.id;}else{order.lastConfirmedAt=confirmedNow;order.lastConfirmedBy=user.id;}order.confirmRequestId=confirmRequestId||null;
   if(learned.length&&order.routeId!==TEMP_DISPATCH_ID){base.version=(Number(base.version)||1)+1;base.updatedAt=new Date().toISOString();base.updatedBy=user.id;await set(env,"route:"+order.routeId+":base",base)}
   for(const item of learned){await learnGlobal(env,{...item,routeId:order.routeId,waybillId:order.id,userId:user.id})}
