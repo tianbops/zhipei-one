@@ -15,6 +15,20 @@ async function base(env,id){
 }
 const clean=x=>String(x??"").trim().slice(0,100);
 
+async function retryRouteLearningRepairs(env,routeId){
+ const key="zp:route:"+routeId+":learning-repair";
+ const raw=await command(env,["HGETALL",key]);
+ for(let i=0;i<(raw?.length||0);i+=2){
+  const field=raw[i],value=raw[i+1];if(!field||!value)continue;
+  let item;try{item=typeof value==="string"?JSON.parse(value):value}catch{continue}
+  if(!item?.storeId||!item?.rawName||!item?.standardName)continue;
+  try{await learnGlobal(env,item);await command(env,["HDEL",key,field])}catch{}
+ }
+ const remaining=Number(await command(env,["HLEN",key]))||0;
+ if(remaining===0)await command(env,["DEL",key]);
+ return remaining;
+}
+
 export async function onRequestPost({request,env}){
  const user=await currentUser(request,env);
  if(!user)return json({success:false,error:"未登录"},401);
@@ -33,6 +47,7 @@ export async function onRequestPost({request,env}){
  if(locked!=="OK")return json({success:false,error:"该线路数据资料正在更新，请稍后重试",code:"BASE_UPDATE_BUSY"},409);
 
  try{
+  await retryRouteLearningRepairs(env,routeId);
   const b=await base(env,routeId);
   let target=null;
   const existingId=clean(input.storeId);
