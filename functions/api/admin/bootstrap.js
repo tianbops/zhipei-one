@@ -29,15 +29,17 @@ export async function onRequestPost({request,env}){
     const userKey="zp:user:"+id;
     const usersIndexKey="zp:users:index";
 
-    const script=`local idsRaw=redis.call('GET',KEYS[1]); local ids={}; if idsRaw then local ok,v=pcall(cjson.decode,idsRaw); if ok and type(v)=='table' then ids=v end end; for _,uid in ipairs(ids) do local raw=redis.call('GET','zp:user:'..uid); if raw then local ok,u=pcall(cjson.decode,raw); if ok and u.role=='admin' and u.disabled~=true then return 2 end end end; if redis.call('GET',KEYS[2]) then return 3 end; redis.call('SET',KEYS[3],ARGV[1]); redis.call('SET',KEYS[2],ARGV[2]); table.insert(ids,ARGV[3]); redis.call('SET',KEYS[1],cjson.encode(ids)); return 1`;
+    const script=`local idsRaw=redis.call('GET',KEYS[1]); local ids={}; if idsRaw then local ok,v=pcall(cjson.decode,idsRaw); if not ok or type(v)~='table' then return 4 end; ids=v end; for _,uid in ipairs(ids) do local raw=redis.call('GET','zp:user:'..uid); if raw then local ok,u=pcall(cjson.decode,raw); if not ok then return 5 end; if u.role=='admin' then return 2 end end end; if redis.call('GET',KEYS[2]) then return 3 end; redis.call('SET',KEYS[3],ARGV[1]); redis.call('SET',KEYS[2],ARGV[2]); table.insert(ids,ARGV[3]); redis.call('SET',KEYS[1],cjson.encode(ids)); return 1`;
     const result=Number(await command(env,["EVAL",script,"3",usersIndexKey,userIndexKey,userKey,userJson,id,id]));
 
     if(result===2)return json({success:false,error:"系统管理员已存在，请直接登录"},409);
     if(result===3)return json({success:false,error:"管理员账号已存在"},409);
+    if(result===4)return json({success:false,error:"用户索引数据异常，无法安全初始化管理员"},409);
+    if(result===5)return json({success:false,error:"用户数据异常，无法安全初始化管理员"},409);
     if(result!==1)return json({success:false,error:"管理员初始化失败"},409);
 
     return json({success:true,user:{id,username,role:"admin"}},201);
   }catch(error){
-    return json({success:false,error:"ADMIN_BOOTSTRAP_INTERNAL_ERROR",detail:String(error?.message||error||"unknown")},500);
+    return json({success:false,error:"管理员初始化服务异常，请稍后重试",code:"ADMIN_BOOTSTRAP_INTERNAL_ERROR"},500);
   }
 }
