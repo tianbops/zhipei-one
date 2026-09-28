@@ -15,8 +15,9 @@ export async function onRequestPost({request,env}){const actor=await currentUser
  if(!rawRoute)return json({success:false,code:"BOUND_ROUTE_MISSING",error:"用户绑定线路不存在，无法安全停用账号"},409);
  let route;try{route=typeof rawRoute==="string"?JSON.parse(rawRoute):rawRoute}catch{return json({success:false,code:"BOUND_ROUTE_INVALID",error:"用户绑定线路数据异常，无法安全停用账号"},409)}
  const nextRoute={...route};
- if(u.routeDuty==="driver"&&nextRoute.driverUserId===u.id)nextRoute.driverUserId=null;
- if(u.routeDuty==="delivery"&&nextRoute.deliveryUserId===u.id)nextRoute.deliveryUserId=null;
+ if(u.routeDuty==="driver"){if(nextRoute.driverUserId!==u.id)return json({success:false,code:"BOUND_ROUTE_INCONSISTENT",error:"用户与线路岗位绑定数据不一致，无法安全停用账号"},409);nextRoute.driverUserId=null;
+ }else if(u.routeDuty==="delivery"){if(nextRoute.deliveryUserId!==u.id)return json({success:false,code:"BOUND_ROUTE_INCONSISTENT",error:"用户与线路岗位绑定数据不一致，无法安全停用账号"},409);nextRoute.deliveryUserId=null;
+ }else{return json({success:false,code:"BOUND_ROUTE_DUTY_INVALID",error:"用户绑定岗位数据异常，无法安全停用账号"},409)}
  const nextUser={...u,disabled:true,boundRouteId:null,routeDuty:null,sessionVersion:(u.sessionVersion??1)+1};
  const result=Number(await command(env,["EVAL","local rr=redis.call('GET',KEYS[1]); local uu=redis.call('GET',KEYS[2]); if not rr or not uu then return 2 end; local r=cjson.decode(rr); local old=cjson.decode(uu); if old.disabled==true then return 3 end; if old.boundRouteId~=ARGV[3] or old.routeDuty~=ARGV[4] then return 4 end; redis.call('SET',KEYS[1],ARGV[1]); redis.call('SET',KEYS[2],ARGV[2]); return 1","2","zp:route:"+boundRouteId,"zp:user:"+id,JSON.stringify(nextRoute),JSON.stringify(nextUser),boundRouteId,u.routeDuty]));
  if(result!==1)return json({success:false,code:"USER_DISABLE_STATE_CHANGED",error:"账号状态已发生变化，请刷新后重试"},409);
