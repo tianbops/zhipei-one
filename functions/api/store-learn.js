@@ -17,11 +17,16 @@ const clean=x=>String(x??"").trim().slice(0,100);
 
 async function retryRouteLearningRepairs(env,routeId){
  const key="zp:route:"+routeId+":learning-repair";
+ const invalidKey=key+":invalid";
  const raw=await command(env,["HGETALL",key]);
  for(let i=0;i<(raw?.length||0);i+=2){
   const field=raw[i],value=raw[i+1];if(!field||!value)continue;
-  let item;try{item=typeof value==="string"?JSON.parse(value):value}catch{await command(env,["HSET",key,field,JSON.stringify({status:"INVALID",field,raw:value,markedAt:new Date().toISOString()})]);continue}
-  if(!item?.storeId||!item?.rawName||!item?.standardName){await command(env,["HSET",key,field,JSON.stringify({status:"INVALID",field,raw:value,markedAt:new Date().toISOString()})]);continue;}
+  let item=null;try{item=typeof value==="string"?JSON.parse(value):value}catch{}
+  if(!item||!item?.storeId||!item?.rawName||!item?.standardName){
+   await command(env,["HSET",invalidKey,field,JSON.stringify({status:"INVALID",field,raw:value,markedAt:new Date().toISOString()})]);
+   await command(env,["HDEL",key,field]);
+   continue;
+  }
   try{await learnGlobal(env,item);await command(env,["HDEL",key,field])}catch{}
  }
  const remaining=Number(await command(env,["HLEN",key]))||0;
