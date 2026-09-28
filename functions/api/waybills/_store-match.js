@@ -55,6 +55,7 @@ export function matchStores(items,baseStores){
   const byId=new Map();
   const byCode=new Map();
   const byIdentityKey=new Map();
+  const byOCRKey=new Map();
 
   for(const store of stores){
     const id=clean(store?.storeId);
@@ -65,6 +66,8 @@ export function matchStores(items,baseStores){
       if(!key)continue;
       const current=byIdentityKey.get(key);
       byIdentityKey.set(key,current&&current.storeId!==store.storeId?null:store);
+      const ocrKey=correctionOCRKey(field);
+      if(ocrKey){const currentOCR=byOCRKey.get(ocrKey);byOCRKey.set(ocrKey,currentOCR&&currentOCR.storeId!==store.storeId?null:store)}
     }
 
     for(const field of [store?.storeId,store?.name,store?.originalName,...(Array.isArray(store?.aliases)?store.aliases:[])]){
@@ -97,6 +100,14 @@ export function matchStores(items,baseStores){
       if(exact){
         target=exact;
         method="data-exact";
+      }
+    }
+
+    if(!target){
+      const ocrExact=byOCRKey.get(correctionOCRKey(rawName))||null;
+      if(ocrExact){
+        target=ocrExact;
+        method="data-ocr-format-exact";
       }
     }
 
