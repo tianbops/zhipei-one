@@ -13,7 +13,7 @@ async function load(env,id){const raw=await get(env,"waybill:"+id);if(!raw)retur
 async function loadBase(env,id){const raw=await get(env,"route:"+id+":base");if(!raw)return {routeId:id,version:1,stores:[]};try{const x=typeof raw==="string"?JSON.parse(raw):raw;return {...x,routeId:id,stores:Array.isArray(x.stores)?x.stores:[]}}catch{return{routeId:id,version:1,stores:[]}}}
 
 export async function onRequestPost({request,env}){
- let requestLock=null,waybillLock=null,routeBaseLock=null;
+ let requestLock=null,waybillLock=null,routeBaseLock=null,baseSnapshot=null,baseChanged=false;
  try{
   const gate=await requireBusinessUser(request,env);if(gate.response)return gate.response;
   const user=gate.user;const input=await body(request);const waybillId=clean(input.waybillId);if(!waybillId)return json({success:false,code:"WAYBILL_ID_REQUIRED",error:"缺少运单ID"},400);
@@ -104,7 +104,7 @@ export async function onRequestPost({request,env}){
   const pending=finalStores.filter(s=>s.pending).length;
   order.stores=finalStores;order.stage=pending?"PLANNED":"CONFIRMED";order.summary={...(order.summary||{}),total:finalStores.length,matched:finalStores.length-pending,pending,correction:finalStores.filter(s=>s.correction).length,merged:(order.summary?.merged||0)+merged,newStores:finalStores.filter(s=>s.matchMethod==="confirmed-new").length};
   const confirmedNow=new Date().toISOString();if(pending===0){order.confirmedAt=confirmedNow;order.confirmedBy=user.id;}else{order.lastConfirmedAt=confirmedNow;order.lastConfirmedBy=user.id;}order.confirmRequestId=confirmRequestId||null;
-  if(learned.length&&order.routeId!==TEMP_DISPATCH_ID){base.version=(Number(base.version)||1)+1;base.updatedAt=new Date().toISOString();base.updatedBy=user.id;await set(env,"route:"+order.routeId+":base",base)}
+  if(learned.length&&order.routeId!==TEMP_DISPATCH_ID){baseSnapshot=JSON.parse(JSON.stringify(base));base.version=(Number(base.version)||1)+1;base.updatedAt=new Date().toISOString();base.updatedBy=user.id;await set(env,"route:"+order.routeId+":base",base);baseChanged=true}
   await set(env,"waybill:"+order.id,order);await set(env,doneKey,"1");
   let learningStatus=learned.length?"RECORDED":"NONE";
   if(learned.length){try{for(const item of learned)await learnGlobal(env,{...item,routeId:order.routeId,waybillId:order.id,userId:user.id})}catch(e){learningStatus="DEFERRED";}}
@@ -118,7 +118,7 @@ export async function onRequestPost({request,env}){
   await command(env,["DEL",requestLock]);requestLock=null;
   return json({success:true,waybill:order,learning:learningStatus,indexSync});
  }catch(e){
-  try{if(routeBaseLock)await command(env,["DEL",routeBaseLock]);if(waybillLock)await command(env,["DEL",waybillLock]);if(requestLock)await command(env,["DEL",requestLock]);}catch{}
+  try{if(baseChanged&&baseSnapshot&&routeBaseLock)await set(env,"route:"+order.routeId+":base",baseSnapshot);if(routeBaseLock)await command(env,["DEL",routeBaseLock]);if(waybillLock)await command(env,["DEL",waybillLock]);if(requestLock)await command(env,["DEL",requestLock]);}catch{}
   return json({success:false,code:e?.code||"CONFIRM_INTERNAL_ERROR",error:e?.message||"确认待定门店失败"},500);
  }
 }
