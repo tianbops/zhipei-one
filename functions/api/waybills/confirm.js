@@ -18,8 +18,8 @@ export async function onRequestPost({request,env}){
   const gate=await requireBusinessUser(request,env);if(gate.response)return gate.response;
   const user=gate.user;const input=await body(request);const waybillId=clean(input.waybillId);if(!waybillId)return json({success:false,code:"WAYBILL_ID_REQUIRED",error:"缺少运单ID"},400);
   const order=await load(env,waybillId);if(!order)return json({success:false,code:"WAYBILL_NOT_FOUND",error:"运单不存在"},404);
-  if(order.stage==="CONFIRMED")return json({success:true,waybill:order,learning:"ALREADY_CONFIRMED"});
   if(order.routeId!==TEMP_DISPATCH_ID&&!canMaintainRoute(user,order.routeId))return json({success:false,code:"BASE_MAINTENANCE_FORBIDDEN",error:"无权确认并维护该线路数据资料"},403);
+  if(order.stage==="CONFIRMED")return json({success:true,waybill:order,learning:"ALREADY_CONFIRMED"});
   if(!Array.isArray(input.confirmations))return json({success:false,code:"CONFIRMATIONS_REQUIRED",error:"确认项目必须是数组"},400);
 
   const confirmations=input.confirmations;
