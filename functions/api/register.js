@@ -38,6 +38,6 @@ export async function onRequestPost({request,env}){
   if(result!==1)return json({success:false,error:"注册失败，请稍后重试"},500);
   return json({success:true,message:"注册成功，请登录",user:{id,username,name,role:"user"}},201);
  }catch(error){
-  return json({success:false,error:"注册服务异常，请稍后重试",code:"REGISTER_INTERNAL_ERROR",detail:error?.message||"UNKNOWN_ERROR"},500);
+  return json({success:false,error:"注册服务异常，请稍后重试",code:"REGISTER_INTERNAL_ERROR"},500);
  }
 }
