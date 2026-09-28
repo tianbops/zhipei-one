@@ -10,6 +10,11 @@ import {clean,formatCompareKey,matchStores,businessStoreCode} from "./_store-mat
 
 const todayCN=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 const number=v=>{const n=Number(v);return Number.isFinite(n)?n:null};
+async function writeIfNewer(env,key,waybill){
+  const script=`local incoming=cjson.decode(ARGV[1]); local raw=redis.call("GET",KEYS[1]); if raw then local ok,current=pcall(cjson.decode,raw); if ok and type(current)=="table" and current.routeId==incoming.routeId and current.createdAt and incoming.createdAt and tostring(current.createdAt)>=tostring(incoming.createdAt) then return 0 end end; redis.call("SET",KEYS[1],ARGV[1]); return 1`;
+  return command(env,["EVAL",script,"1","zp:"+key,JSON.stringify(waybill)]);
+}
+
 async function base(env,id){const raw=await get(env,"route:"+id+":base");if(!raw)throw Object.assign(new Error("线路数据资料尚未建立"),{code:"BASE_NOT_FOUND"});let x;try{x=typeof raw==="string"?JSON.parse(raw):raw}catch{throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"})}if(!x||!Array.isArray(x.stores))throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"});return x.stores}
 
 function extract(rawText){
@@ -141,8 +146,8 @@ export async function onRequestPost({request,env}){
   await set(env,"waybill:"+order.id,order);
   let indexSync="OK";
   try{
-    await set(env,"route:"+routeId+":orders:latest",order);
-    if(order.date===todayCN())await set(env,"route:"+routeId+":orders:today",order);
+    await writeIfNewer(env,"route:"+routeId+":orders:latest",order);
+    if(order.date===todayCN())await writeIfNewer(env,"route:"+routeId+":orders:today",order);
   }catch{
     indexSync="DEFERRED";
     try{await command(env,["SADD","zp:route:"+routeId+":orders:index-repair",order.id])}catch{}
