@@ -25,6 +25,12 @@ const identityFields=s=>[
 const correctionCompareKey=v=>
   formatCompareKey(identityValue(v)).replace(/(?:jm|a|q)\d{3,12}/gi,"");
 
+const isFormatOnlyDifference=(raw,target)=>{
+  const rawKey=correctionCompareKey(raw);
+  if(!rawKey)return true;
+  return identityFields(target).some(field=>correctionCompareKey(field)===rawKey);
+};
+
 const similarity=(a,b)=>{
   const x=formatCompareKey(a),y=formatCompareKey(b);
   if(!x||!y)return 0;
@@ -137,7 +143,7 @@ export function matchStores(items,baseStores){
       routeOrder:Number(target.routeOrder)||index+1,
       matchStatus:"matched",
       matchMethod:method,
-      correction:correctionCompareKey(rawName)!==correctionCompareKey(standard),
+      correction:!isFormatOnlyDifference(rawName,target),
       pending:false,
       candidates:[]
     };
