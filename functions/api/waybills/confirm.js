@@ -65,6 +65,7 @@ export async function onRequestPost({request,env}){
   if(order.routeId!==TEMP_DISPATCH_ID){routeBaseLock={key:"route:"+order.routeId+":base-confirm-lock",token:newId()};const baseLocked=await command(env,["SET","zp:"+routeBaseLock.key,routeBaseLock.token,"NX","EX","120"]);if(baseLocked!=="OK"){await releaseLock(env,waybillLock);waybillLock=null;await releaseLock(env,requestLock);requestLock=null;routeBaseLock=null;return json({success:false,code:"BASE_UPDATE_BUSY",error:"该线路数据资料正在被其他确认操作更新，请稍后重试"},409)}}
   const stores=[...(order.stores||[])];
   const base=order.routeId===TEMP_DISPATCH_ID?{routeId:order.routeId,version:1,stores:[]}:await loadBase(env,order.routeId);
+  if(order.routeId!==TEMP_DISPATCH_ID)baseSnapshot=JSON.parse(JSON.stringify(base));
   const learned=[];
   for(const c of confirmations){
     const index=Number(c.index);if(!Number.isInteger(index)||index<0||index>=stores.length)continue;
@@ -131,7 +132,7 @@ export async function onRequestPost({request,env}){
   const pending=finalStores.filter(s=>s.pending).length;
   order.stores=finalStores;order.stage=pending?"PLANNED":"CONFIRMED";order.summary={...(order.summary||{}),total:finalStores.length,matched:finalStores.length-pending,pending,correction:finalStores.filter(s=>s.correction).length,merged:(order.summary?.merged||0)+merged,newStores:finalStores.filter(s=>s.matchMethod==="confirmed-new").length};
   const confirmedNow=new Date().toISOString();if(pending===0){order.confirmedAt=confirmedNow;order.confirmedBy=user.id;}else{order.lastConfirmedAt=confirmedNow;order.lastConfirmedBy=user.id;}order.confirmRequestId=confirmRequestId||null;
-  if(learned.length&&order.routeId!==TEMP_DISPATCH_ID){baseSnapshot=JSON.parse(JSON.stringify(base));base.version=(Number(base.version)||1)+1;base.updatedAt=new Date().toISOString();base.updatedBy=user.id;baseWriteVersion=base.version;await set(env,"route:"+order.routeId+":base",base);baseChanged=true}
+  if(learned.length&&order.routeId!==TEMP_DISPATCH_ID){base.version=(Number(base.version)||1)+1;base.updatedAt=new Date().toISOString();base.updatedBy=user.id;baseWriteVersion=base.version;await set(env,"route:"+order.routeId+":base",base);baseChanged=true}
   const learningEntries=learned.map(item=>({field:[clean(item.storeId),normalized(item.rawName||item.name)].join("|"),value:JSON.stringify(item)})).filter(x=>x.field);
   const commitScript='local okOrder,order=pcall(cjson.decode,ARGV[1]); if not okOrder or type(order)~="table" then return 2 end; local rawDone=redis.call("GET",KEYS[2]); if rawDone then return 3 end; redis.call("SET",KEYS[1],ARGV[1]); redis.call("SET",KEYS[2],"1"); local okItems,items=pcall(cjson.decode,ARGV[2]); if not okItems or type(items)~="table" then return 4 end; for _,item in ipairs(items) do if type(item)=="table" and type(item.field)=="string" and item.field~="" and type(item.value)=="string" then redis.call("HSET",KEYS[3],item.field,item.value) end end; return 1';
   const commitResult=await command(env,["EVAL",commitScript,"3","zp:waybill:"+order.id,"zp:"+doneKey,"zp:waybill:"+order.id+":learning-repair",JSON.stringify(order),JSON.stringify(learningEntries)]);
