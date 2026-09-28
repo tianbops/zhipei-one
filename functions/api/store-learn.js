@@ -34,7 +34,6 @@ export async function onRequestPost({request,env}){
 
  try{
   const b=await base(env,routeId);
-  const baseSnapshot=JSON.parse(JSON.stringify(b));
   let target=null;
   const existingId=clean(input.storeId);
   if(existingId)target=b.stores.find(s=>s.storeId===existingId);
@@ -63,11 +62,9 @@ export async function onRequestPost({request,env}){
    const learned=await learnGlobal(env,{storeId:target.storeId,rawName,standardName:target.name,originalName:target.originalName,navigation:target.navigation,routeId,waybillId:clean(input.waybillId),userId:user.id});
    learning=learned.duplicate?"DUPLICATE_IGNORED":"RECORDED";
   }catch(error){
-   if(error?.message==="GLOBAL_LEARNING_BUSY")learning="DEFERRED";
-   else{
-    await set(env,"route:"+routeId+":base",baseSnapshot).catch(()=>{});
-    throw error;
-   }
+   // 线路基准库已经成功提交；全局学习属于辅助数据，失败不能回滚业务主数据。
+   // 后续可依据 DEFERRED 状态补偿全局学习，避免出现“全局已写入而线路被回滚”的反向不一致。
+   learning="DEFERRED";
   }
 
   return json({success:true,store:target,base:data,globalLearning:learning});
