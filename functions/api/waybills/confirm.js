@@ -47,6 +47,11 @@ export async function onRequestPost({request,env}){
     if(action!=="merge"&&action!=="new")continue;
     if(action==="merge"&&requestedId)target=base.stores.find(s=>clean(s.storeId)===requestedId)||null;
     if(action==="merge"&&!target)target=base.stores.find(s=>normalized(s.name)===normalized(c.standardName||"")||normalized(s.originalName)===normalized(c.standardName||""))||null;
+    if(action==="merge"&&!target){
+      await command(env,["DEL",waybillLock]);waybillLock=null;
+      await command(env,["DEL",requestLock]);requestLock=null;
+      return json({success:false,code:"MERGE_TARGET_NOT_FOUND",error:"指定的已有门店不存在于当前线路资料，请重新选择“合并”或“新增”"},409);
+    }
     const standardName=clean(c.standardName)||clean(target?.name)||rawName;
     if(action==="new"&&order.routeId!==TEMP_DISPATCH_ID){
       const duplicate=base.stores.find(s=>normalized(s.name)===normalized(rawName)||normalized(s.originalName)===normalized(rawName)||(Array.isArray(s.aliases)&&s.aliases.some(a=>normalized(a)===normalized(rawName))));
@@ -62,8 +67,12 @@ export async function onRequestPost({request,env}){
       const globals=await findGlobalMatches(env,[{rawName:standardName}]);
       const globalTarget=globals[0]?.globalMatchStatus==="matched"?globals[0]:null;
       if(globalTarget){
-        target={storeId:clean(globalTarget.storeId),originalName:clean(globalTarget.originalName)||rawName,name:clean(globalTarget.name)||standardName,aliases:Array.isArray(globalTarget.aliases)?globalTarget.aliases:[],navigation:globalTarget.navigation||null,routeOrder:base.stores.length+1,note:""};
-        base.stores.push(target);
+        target=base.stores.find(s=>clean(s.storeId)===clean(globalTarget.storeId))||null;
+        if(!target){
+          target={storeId:clean(globalTarget.storeId),originalName:clean(globalTarget.originalName)||rawName,name:clean(globalTarget.name)||standardName,aliases:Array.isArray(globalTarget.aliases)?globalTarget.aliases:[],navigation:globalTarget.navigation||null,routeOrder:base.stores.length+1,note:""};
+          base.stores.push(target);
+        }
+
       }else{
         target={storeId:newId(),originalName:rawName,name:standardName,aliases:[],navigation:null,routeOrder:base.stores.length+1,note:""};
         base.stores.push(target);
