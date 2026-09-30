@@ -6,6 +6,8 @@ document.addEventListener("click",e=>{if(menuPanel&&!menuPanel.hidden&&!menuPane
 const status=$("status"),overlay=$("uploadArea"),cancel=$("sourceCancel");
 const routeMessage=$("todayStatus"),todayRoute=$("todayRoute"),todayCount=$("todayCount"),todayWeight=$("todayWeight"),dot=$("statusDot");
 let dispatchRouteId="";
+const setEmptyToday=()=>{todayCount.textContent="暂无运单";todayWeight.textContent="";if(dot)dot.textContent="0";todayRoute.textContent="";todayRoute.hidden=true;document.querySelector(".task-card")?.classList.add("no-waybill")};
+const setHasToday=()=>{todayRoute.hidden=false;document.querySelector(".task-card")?.classList.remove("no-waybill")};
 
 function closeUpload(){if(overlay){overlay.hidden=true;overlay.setAttribute("aria-hidden","true");document.body.classList.remove("sheet-open")}}
 function openUpload(){if(overlay){overlay.hidden=false;overlay.setAttribute("aria-hidden","false");document.body.classList.add("sheet-open")}}
@@ -105,16 +107,17 @@ async function loadHome(){
     const wd=await wRes.json().catch(()=>({}));
     const w=wRes.ok&&wd.success?wd.waybill:null;
     if(w&&w.routeId===dispatchRouteId){
+      setHasToday();
       const total=Number(w.summary?.total)||Number(w.stores?.length)||0;
       todayCount.textContent=total+"家";
       todayWeight.textContent=(Math.round((Number(w.totalWeight)||0)*100)/100).toFixed(2)+"t";
       if(dot)dot.textContent="1";
     }else{
-      todayCount.textContent="暂无运单";todayWeight.textContent="";if(dot)dot.textContent="0";
+      setEmptyToday();
     }
   }catch(e){
-    todayRoute.textContent="暂无法读取线路";
-    todayCount.textContent="暂无运单";todayWeight.textContent="";if(dot)dot.textContent="0";
+    todayRoute.textContent="";todayRoute.hidden=true;
+    setEmptyToday();
   }
 }
 loadHome();
