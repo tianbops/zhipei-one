@@ -143,3 +143,18 @@
 .today-summary{display:flex;align-items:baseline;gap:10px;white-space:nowrap}.today-summary strong{font-size:18px}.today-summary span{font-size:15px;color:#B8C2CC}@media(max-width:380px){.today-summary{gap:8px}.today-summary strong{font-size:17px}.today-summary span{font-size:14px}}
 
 .delivery-man{width:150px;height:112px;display:flex;align-items:flex-end;justify-content:flex-end;color:#B8C2CC;opacity:.9}.delivery-man svg{width:150px;height:112px;overflow:visible}.home-status,.today-status{min-height:20px}.upload-sheet{border:1px solid #2A3540;box-shadow:none}.source-option{min-height:72px}.source-option:active{background:#26313C}.upload-cancel-btn{min-height:48px}
+
+
+/* 今日配送信息层级：标题 → 线路 → 日期 → 数据，避免无数据时出现重复占位 */
+.task-card{padding-top:18px;padding-bottom:17px}
+.task-title{display:block}
+.task-name{height:26px;justify-content:flex-start;gap:9px}
+.status-dot{width:20px;height:20px;min-width:20px;font-size:10px;line-height:20px}
+.task-route{margin-top:5px;max-width:100%;font-size:13px;line-height:20px;color:#B8C2CC;font-weight:600}
+.task-main{margin-top:13px;align-items:end}
+.today-date{font-size:13px;line-height:20px;color:#7F8A95}
+.today-summary{margin-top:2px;gap:8px;line-height:24px}
+.today-summary strong{font-size:18px;line-height:24px}
+.today-summary span{font-size:14px;line-height:24px}
+.today-status{margin-top:3px}
+@media(max-width:380px){.task-route{font-size:12px}.task-main{margin-top:11px}.today-date{font-size:12px}.today-summary strong{font-size:17px}.today-summary span{font-size:13px}}
