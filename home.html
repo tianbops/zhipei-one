@@ -1,20 +1,29 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>智配One</title><link rel="stylesheet" href="/css/app.css"></head><body><main class="shell">
-<header class="topbar"><strong>智配One</strong><div class="menu-wrap"><button id="menuButton" class="menu-button" type="button" aria-label="打开菜单" aria-expanded="false">☰</button><div id="menuPanel" class="menu-panel" hidden><a href="/pages/route_apply.html">线路申请</a><a href="/pages/data.html">数据资料</a><button id="logout" type="button">退出登录</button></div></div></header>
-<section class="card task-card" id="todayTask" hidden><div class="task-head"><strong>今日任务</strong><span id="taskRoute"></span></div><div class="task-main"><div><p id="taskStores">暂无运单</p><p id="taskWeight">重量：0.00t</p></div><span class="task-icons" aria-hidden="true">◉ ◌</span></div></section><section class="card route-card"><div class="route-label">当前调度线路</div><select id="routeSelect" class="route-select" aria-label="当前调度线路"><option value="">加载线路…</option><option value="__temporary__">临时线路</option></select><p id="routeMessage" class="message">选择今天实际使用的线路。</p></section>
-<section class="card upload-card"><div class="upload-head"><h2>上传运单</h2></div><div class="pipeline"><span>识别</span><i>→</i><span>提取</span><i>→</i><span>匹配</span><i>→</i><span>去重</span><i>→</i><span>规划</span></div>
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>智配One</title><link rel="stylesheet" href="/css/app.css"></head>
+<body><main class="shell home-shell">
+<header class="topbar home-topbar"><div><strong>智配One</strong><p>智能配送 · 一路领先</p></div><div class="menu-wrap"><button id="menuButton" class="menu-button" type="button" aria-label="打开菜单" aria-expanded="false">☰</button><div id="menuPanel" class="menu-panel" hidden>
+<a href="/pages/route_apply.html">线路变更</a><a href="/pages/data.html">数据中心</a><a href="/pages/account.html">账号设置</a><button id="logout" type="button">退出登录</button></div></div></header>
+
+<section class="card task-card" id="todayTask" hidden><div class="task-head"><strong>今日任务</strong><span id="taskRoute"></span></div><div class="task-main"><div><p id="taskStores">暂无运单</p><p id="taskWeight">重量：0.00t</p></div><span class="task-icons" aria-hidden="true">◉ ◌</span></div></section>
+
+<section class="card route-card"><div class="route-label">当前调度线路</div><select id="routeSelect" class="route-select" aria-label="当前调度线路"><option value="">加载线路…</option></select><p id="routeMessage" class="message">选择今天实际使用的线路。</p></section>
+
+<section class="card upload-card home-upload">
+<div class="upload-head"><h2>上传运单</h2></div>
+<div class="pipeline"><span>识别</span><i>→</i><span>提取</span><i>→</i><span>匹配</span><i>→</i><span>去重</span><i>→</i><span>规划</span></div>
 <input id="waybill" class="file-input" type="file" accept="image/*,.pdf">
 <div class="file-pick" id="filePick" role="button" tabindex="0" aria-label="选择运单来源"><strong id="filePickTitle">选择运单文件</strong><span id="filePickHint">拍摄、相册或文件</span></div>
-<input id="cameraInput" class="file-input" type="file" accept="image/*" capture="environment">
-<input id="photoInput" class="file-input" type="file" accept="image/*">
-<input id="documentInput" class="file-input" type="file" accept="image/*,.pdf">
+<input id="cameraInput" class="file-input" type="file" accept="image/*" capture="environment"><input id="photoInput" class="file-input" type="file" accept="image/*"><input id="documentInput" class="file-input" type="file" accept="image/*,.pdf">
 <p id="fileName" class="file-name">支持图片或 PDF</p>
-<div id="sourceSheet" class="source-sheet" hidden>
-  <div class="source-sheet-panel" role="dialog" aria-modal="true" aria-labelledby="sourceSheetTitle">
-    <div class="source-sheet-head"><strong id="sourceSheetTitle">选择运单来源</strong><button id="sourceCancel" type="button">取消</button></div>
-    <button class="source-option" data-source="camera" type="button">拍摄<small>使用摄像头拍摄运单</small></button>
-    <button class="source-option" data-source="photo" type="button">相册<small>从手机相册选择图片</small></button>
-    <button class="source-option" data-source="document" type="button">文件<small>选择图片或 PDF 文件</small></button>
-  </div>
-</div><button id="process" class="primary-btn" type="button">开始处理</button><p id="status" class="message" aria-live="polite"></p></section>
-<nav class="grid"><a href="/pages/today.html">当日运单</a><a href="/pages/history.html">历史查询</a></nav>
+<div id="sourceSheet" class="source-sheet" hidden><div class="source-sheet-panel" role="dialog" aria-modal="true" aria-labelledby="sourceSheetTitle">
+<div class="source-sheet-head"><strong id="sourceSheetTitle">选择运单来源</strong><button id="sourceCancel" type="button">取消</button></div>
+<button class="source-option" data-source="camera" type="button">拍摄<small>使用摄像头拍摄运单</small></button>
+<button class="source-option" data-source="photo" type="button">相册<small>从手机相册选择图片</small></button>
+<button class="source-option" data-source="document" type="button">文件<small>选择图片或 PDF 文件</small></button>
+</div></div>
+<button id="process" class="primary-btn" type="button">开始处理</button><p id="status" class="message" aria-live="polite"></p>
+</section>
+
+<nav class="home-actions"><a class="home-action" href="/pages/today.html">当日运单</a><a class="home-action" href="/pages/history.html">历史查询</a></nav>
 </main><script src="/js/home.js"></script></body></html>
