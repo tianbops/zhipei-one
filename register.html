@@ -8,37 +8,62 @@
 <style>
 .password-field{position:relative}
 .password-field input{padding-right:52px}
-.password-toggle{position:absolute;right:10px;bottom:0;width:40px;height:50px;padding:0;border:0;background:transparent;color:#8f9aa6;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.password-toggle{position:absolute;right:6px;bottom:0;width:40px;height:48px;padding:0;border:0;background:transparent;color:#8f9aa6;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .password-toggle:hover{color:#d5dce2}
 .password-toggle svg{width:20px;height:20px;pointer-events:none}
+.register-title{margin:0 0 6px;text-align:center;font-size:24px;line-height:30px;font-weight:500;color:#fff}
+.register-subtitle{margin:0 0 22px;text-align:center;color:#9DA8B3;font-size:13px;line-height:20px}
 </style>
 </head>
 <body>
-<main class="auth-shell">
-<section class="auth-card">
-<img src="/assets/logo.png" class="logo" alt="智配One">
-<h1>注册</h1>
-<p>创建业务账号</p>
-<form id="registerForm">
-<label>账号<input id="username" autocomplete="username" required maxlength="32"></label>
-<label>名称<input id="name" autocomplete="name" maxlength="40" placeholder="可选"></label>
-<label>邀请码<input id="inviteCode" autocomplete="off" required maxlength="64" placeholder="请输入管理员提供的邀请码"></label>
-<label class="password-field">密码
-<input id="password" type="password" autocomplete="new-password" minlength="6" required>
+<main class="login-shell">
+<section class="login-card">
+<div class="login-brand">
+<img src="/assets/logo.png" class="login-logo" alt="智配One">
+</div>
+
+<h1 class="register-title">注册</h1>
+<p class="register-subtitle">创建业务账号</p>
+
+<form id="registerForm" class="login-form">
+<label class="login-field">
+<span>账号</span>
+<input id="username" autocomplete="username" placeholder="请输入账号" required maxlength="32">
+</label>
+
+<label class="login-field">
+<span>名称</span>
+<input id="name" autocomplete="name" placeholder="可选" maxlength="40">
+</label>
+
+<label class="login-field">
+<span>邀请码</span>
+<input id="inviteCode" autocomplete="off" placeholder="请输入管理员提供的邀请码" required maxlength="64">
+</label>
+
+<label class="login-field password-field">
+<span>密码</span>
+<input id="password" type="password" autocomplete="new-password" placeholder="请输入密码" minlength="6" required>
 <button type="button" class="password-toggle" data-password-toggle="password" aria-label="显示密码" aria-pressed="false">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.2 12s3.2-5 9.8-5 9.8 5 9.8 5-3.2 5-9.8 5-9.8-5-9.8-5Z"/><circle cx="12" cy="12" r="2.5"/></svg>
 </button>
 </label>
-<label class="password-field">确认密码
-<input id="confirmPassword" type="password" autocomplete="new-password" minlength="6" required>
+
+<label class="login-field password-field">
+<span>确认密码</span>
+<input id="confirmPassword" type="password" autocomplete="new-password" placeholder="请再次输入密码" minlength="6" required>
 <button type="button" class="password-toggle" data-password-toggle="confirmPassword" aria-label="显示密码" aria-pressed="false">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.2 12s3.2-5 9.8-5 9.8 5 9.8 5-3.2 5-9.8 5-9.8-5-9.8-5Z"/><circle cx="12" cy="12" r="2.5"/></svg>
 </button>
 </label>
-<div id="registerMessage" class="message"></div>
-<button id="registerButton" class="primary-btn" type="submit">注册</button>
+
+<div id="registerMessage" class="login-message" role="alert"></div>
+<button id="registerButton" class="login-submit" type="submit">注册</button>
 </form>
-<p><a href="/">返回登录</a></p>
+
+<div class="login-links">
+<a href="/">返回登录</a>
+</div>
 </section>
 </main>
 <script src="/js/register.js"></script>
