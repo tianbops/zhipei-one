@@ -172,3 +172,23 @@
 .task-date{margin:0;text-align:right;white-space:nowrap;color:#7F8A95;font-size:13px;font-weight:500}
 .task-route{margin-top:5px}
 @media(max-width:380px){.task-date{font-size:12px}}
+
+/* 首页信息可读性：整体字号放大，配送人物视觉位置略下移 */
+.task-title{font-size:20px;line-height:27px}
+.task-name{height:28px}
+.status-dot{width:22px;height:22px;min-width:22px;font-size:11px;line-height:22px}
+.task-route{font-size:14px;line-height:22px}
+.task-main{margin-top:15px}
+.today-date,.task-date{font-size:14px;line-height:22px}
+.today-summary{gap:9px;line-height:27px}
+.today-summary strong{font-size:19px;line-height:27px}
+.today-summary span{font-size:15px;line-height:27px}
+.delivery-man{transform:translateY(7px)}
+.today-status{font-size:12px;line-height:20px}
+@media(max-width:380px){
+  .task-title{font-size:19px;line-height:26px}
+  .task-route{font-size:13px;line-height:21px}
+  .today-date,.task-date{font-size:13px;line-height:21px}
+  .today-summary strong{font-size:18px}.today-summary span{font-size:14px}
+  .delivery-man{transform:translateY(6px)}
+}
