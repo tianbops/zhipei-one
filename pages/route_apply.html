@@ -9,20 +9,24 @@
 <link rel="stylesheet" href="/css/business-pages.css">
 </head>
 <body>
-<main class="page2">
+<main class="page2 route-apply-page">
 <header class="page2-head"><a class="page2-back" href="/home.html">返回</a><h1>线路申请</h1><span></span></header>
 <section class="page2-card">
   <h2>当前线路绑定</h2>
   <p id="binding" class="message">读取中…</p>
   <button id="unbind" class="secondary-btn" type="button" hidden>解除线路绑定</button>
 </section>
-<section class="page2-card">
-  <h2>申请维护线路</h2>
+<section class="page2-card maintain-card" id="maintainCard">
+  <button class="collapse-head" id="maintainToggle" type="button" aria-expanded="false" aria-controls="maintainBody">
+    <span>申请维护线路</span><span class="collapse-icon" aria-hidden="true">⌄</span>
+  </button>
+  <div id="maintainBody" class="collapse-body" hidden>
   <p class="message">选择你负责维护的线路和岗位，提交后由管理员审核。</p>
   <label class="page2-label">线路<select id="route"><option value="">加载中…</option></select></label>
   <label class="page2-label">岗位<select id="duty"><option value="driver">司机</option><option value="delivery">配送</option></select></label>
   <button id="submit" class="primary-btn" type="button">提交申请</button>
   <p id="message" class="message" aria-live="polite"></p>
+  </div>
 </section>
 <section class="page2-card">
   <h2>申请记录</h2>
@@ -31,6 +35,8 @@
 </main>
 <script>
 const $=id=>document.getElementById(id);
+const maintainToggle=$("maintainToggle"),maintainBody=$("maintainBody");
+maintainToggle?.addEventListener("click",()=>{const open=maintainBody.hidden;maintainBody.hidden=!open;maintainToggle.setAttribute("aria-expanded",String(open));maintainToggle.querySelector(".collapse-icon").textContent=open?"⌃":"⌄"});
 async function api(u,o={}){const r=await fetch(u,{credentials:"same-origin",cache:"no-store",...o}),d=await r.json().catch(()=>({}));if(!r.ok){const x=new Error(d.error||d.message||"请求失败");x.code=d.code||"HTTP_"+r.status;throw x}return d}
 function msg(e){return (e.code?"["+e.code+"] ":"")+(e.message||"请求失败")}
 async function load(){
