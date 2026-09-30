@@ -139,3 +139,5 @@
   .source-menu-options{gap:7px}
   .source-option{height:62px;min-height:62px}
 }
+
+.today-summary{display:flex;align-items:baseline;gap:10px;white-space:nowrap}.today-summary strong{font-size:18px}.today-summary span{font-size:15px;color:#B8C2CC}@media(max-width:380px){.today-summary{gap:8px}.today-summary strong{font-size:17px}.today-summary span{font-size:14px}}
