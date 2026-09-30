@@ -38,7 +38,7 @@ function render(){
  if(pending.length){const b=document.createElement('button');b.id='confirmPendingBtn';b.type='button';b.className='order-pending-fab';b.textContent='确认'+pending.length+'家待定门店';b.onclick=openConfirm;document.body.appendChild(b)}
 }
 
-function setMenu(open){menuOpen=open;$('menuPanel').hidden=!open}
+function setMenu(open){menuOpen=open;$('menuPanel').hidden=!open;$('menuBtn').setAttribute('aria-expanded',String(open))}
 async function load(){
  const url=id?'/api/waybills/latest?id='+encodeURIComponent(id):'/api/waybills/latest';
  const r=await fetch(url,{credentials:'same-origin',cache:'no-store'}), d=await r.json().catch(()=>({}));
@@ -78,13 +78,13 @@ function openConfirm(){
 
 $('backBtn').onclick=()=>{setMenu(false);if(history.length>1)history.back();else location.replace('/home.html')};
 $('menuBtn').onclick=e=>{e.stopPropagation();setMenu(!menuOpen)};
-$('editRouteBtn').onclick=()=>location.href='/pages/route_edit.html';
+$('editRouteBtn').onclick=()=>location.href='/pages/data.html';
 $('shareBtn').onclick=async()=>{
  setMenu(false);if(!order)return;
  const s=order.summary||{},text='智配One\n'+(order.date||'')+'\n'+(order.routeName||order.routeId||'当前线路')+'\n'+(s.total||order.stores?.length||0)+'家 · '+fmtWeight(order.totalWeight)+'t';
  try{if(navigator.share)await navigator.share({title:'当日运单',text});else{await navigator.clipboard?.writeText(text);alert('已复制运单摘要')}}catch{}
 };
-$('logoutBtn').onclick=async()=>{setMenu(false);if(!confirm('确定退出登录吗？'))return;try{await fetch('/api/logout',{method:'POST',credentials:'same-origin'})}finally{location.replace('/')}};
+$('logoutBtn').onclick=async()=>{setMenu(false);if(!confirm('确定退出登录吗？'))return;try{await fetch('/api/logout',{method:'POST',credentials:'same-origin',cache:'no-store'})}finally{location.replace('/')}};
 $('closeConfirm').onclick=()=>$('confirmDialog').hidden=true;
 $('cancelConfirm').onclick=()=>$('confirmDialog').hidden=true;
 $('confirmDialog').addEventListener('click',e=>{if(e.target===$('confirmDialog'))$('confirmDialog').hidden=true});

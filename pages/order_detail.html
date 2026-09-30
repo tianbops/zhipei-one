@@ -5,17 +5,19 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>运单详情 · 智配One</title>
 <link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/mobile-ui.css">
 <link rel="stylesheet" href="/css/order_detail.css">
 </head>
 <body>
-<main class="shell">
+<main class="shell order-detail-page">
   <header class="topbar">
     <button id="backBtn" class="text-button" type="button">返回</button>
     <strong>运单详情</strong>
-    <button id="menuBtn" class="text-button" type="button">☰</button>
+    <button id="menuBtn" class="text-button" type="button" aria-label="打开运单菜单" aria-expanded="false">☰</button>
   </header>
-  <div id="menuPanel" hidden>
-    <button id="editRouteBtn" type="button">线路维护</button>
+  <div id="menuPanel" class="order-menu" hidden>
+    <div id="menuRoute" class="order-menu-route">当前线路</div>
+    <button id="editRouteBtn" type="button">线路数据</button>
     <button id="shareBtn" type="button">分享</button>
     <button id="logoutBtn" type="button">退出登录</button>
   </div>
@@ -38,8 +40,8 @@
     <strong>确认待定门店</strong>
     <div id="pendingList"></div>
     <div class="dialog-actions">
-      <button id="cancelConfirm" type="button">取消</button>
-      <button id="submitConfirm" class="primary-btn" type="button" disabled>请完成全部选择</button>
+      <button id="cancelConfirm" class="cancel" type="button">取消</button>
+      <button id="submitConfirm" class="primary-btn confirm-submit" type="button" disabled>请完成全部选择</button>
     </div>
     <button id="closeConfirm" type="button" hidden>关闭</button>
   </div>
