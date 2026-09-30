@@ -1,8 +1,7 @@
 import {json,body} from "./_json.js";
 import {currentUser} from "./_auth.js";
-import {get,command} from "./_redis.js";
+import {get,command,sessionCookie} from "./_redis.js";
 import {hash} from "./login.js";
-import {sessionCookie} from "./_redis.js";
 
 function validUsername(v){return /^[A-Za-z0-9_\-.]{3,32}$/.test(v)}
 
