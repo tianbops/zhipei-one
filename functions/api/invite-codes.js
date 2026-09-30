@@ -18,8 +18,8 @@ export async function onRequestPost({request,env}){
  const input=await body(request);const action=String(input.action||"");
  if(action==="create"){
   const requestedUses=Number(input.maxUses); const maxUses=Number.isFinite(requestedUses)?Math.max(0,Math.min(9999,Math.floor(requestedUses))):1;
-  const expiresAt=input.expiresAt?new Date(input.expiresAt).toISOString():null;
   if(input.expiresAt&&Number.isNaN(Date.parse(input.expiresAt)))return json({success:false,error:"有效期格式错误"},400);
+  const expiresAt=input.expiresAt?new Date(input.expiresAt).toISOString():null;
   const id=newId();const code=("ZP-"+crypto.randomUUID().replaceAll("-","").slice(0,10)).toUpperCase();
   const c={id,code,enabled:true,maxUses,usedCount:0,expiresAt,createdAt:new Date().toISOString(),createdBy:actor.id};
   const indexKey="zp:invite-codes:index",idKey="zp:invite-code:"+id,codeKey="zp:invite-code:code:"+code;
