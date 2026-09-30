@@ -57,6 +57,59 @@ return {"OK",tostring(version)}`;
   return{record:current,event,duplicate:false}
  }finally{await command(env,["EVAL",'if redis.call("GET",KEYS[1])==ARGV[1] then return redis.call("DEL",KEYS[1]) else return 0 end',"1","zp:"+LOCK,lockToken]).catch(()=>{})}
 }
+
+export async function resolveGlobalConflict(env,input){
+ const storeId=clean(input.storeId),standardName=clean(input.standardName),userId=clean(input.userId);
+ if(!storeId||!standardName)throw new Error("GLOBAL_CONFLICT_RESOLUTION_INPUT_INVALID");
+ const lockToken=newId(),locked=await command(env,["SET","zp:"+LOCK,lockToken,"NX","EX","30"]);
+ if(locked!=="OK")throw new Error("GLOBAL_LEARNING_BUSY");
+ try{
+  await ensureMeta(env,{lockHeld:true});
+  const raw=await command(env,["HGET","zp:"+RECORDS,storeId]),record=parse(raw,null);
+  if(!record)return{resolved:false,code:"GLOBAL_RECORD_NOT_FOUND"};
+  if(record.status!=="CONFLICT")return{resolved:false,code:"GLOBAL_RECORD_NOT_CONFLICT"};
+  const canonicalKey=normalizeLearningName(standardName);
+  if(!canonicalKey)throw new Error("GLOBAL_CONFLICT_RESOLUTION_INPUT_INVALID");
+  const existingRaw=await command(env,["HGET","zp:"+ALIASES,canonicalKey]),existing=parse(existingRaw,null);
+  if(existingRaw!==null&&existingRaw!==undefined&&(!Array.isArray(existing)||existing.some(id=>typeof id!=="string"||!id.trim())))throw new Error("GLOBAL_ALIAS_DATA_INVALID");
+  const owners=Array.isArray(existing)?existing.filter(id=>id!==storeId):[];
+  if(owners.length)return{resolved:false,code:"GLOBAL_CANONICAL_NAME_CONFLICT",storeIds:owners};
+  const previousStandardName=record.standardName||"";
+  record.standardName=standardName;
+  record.aliases=[];
+  record.status="CANDIDATE";
+  record.confirmations=0;
+  record.updatedAt=new Date().toISOString();
+  record.resolvedAt=record.updatedAt;
+  record.resolvedBy=userId||null;
+  const event={id:newId(),type:"CONFLICT_RESOLVED",storeId,standardName,previousStandardName,routeId:null,waybillId:null,userId:userId||null,createdAt:record.updatedAt};
+  const script=`local cursor="0"
+repeat
+ local scan=redis.call("HSCAN",KEYS[2],cursor,"COUNT","200")
+ cursor=scan[1]
+ local vals=scan[2]
+ for i=1,#vals,2 do
+  local key=vals[i]
+  local ok,parsed=pcall(cjson.decode,vals[i+1])
+  if ok and type(parsed)=="table" then
+   local next={}
+   for _,id in ipairs(parsed) do if id~=ARGV[1] then table.insert(next,id) end end
+   if #next==0 then redis.call("HDEL",KEYS[2],key) else redis.call("HSET",KEYS[2],key,cjson.encode(next)) end
+  end
+ end
+until cursor=="0"
+redis.call("HSET",KEYS[1],ARGV[1],ARGV[2])
+redis.call("HSET",KEYS[2],ARGV[3],ARGV[4])
+redis.call("RPUSH",KEYS[3],ARGV[5])
+redis.call("LTRIM",KEYS[3],"-5000","-1")
+local version=redis.call("INCR",KEYS[4])
+redis.call("SET",KEYS[5],cjson.encode({schemaVersion="2",version=version}))
+return tostring(version)`;
+  const version=Number(await command(env,["EVAL",script,"5","zp:"+RECORDS,"zp:"+ALIASES,"zp:"+EVENTS,"zp:"+META+":version","zp:"+META,storeId,JSON.stringify(record),canonicalKey,JSON.stringify([storeId]),JSON.stringify(event)]));
+  return{resolved:true,record,event,version};
+ }finally{await command(env,["EVAL",'if redis.call("GET",KEYS[1])==ARGV[1] then return redis.call("DEL",KEYS[1]) else return 0 end',"1","zp:"+LOCK,lockToken]).catch(()=>{})}
+}
+
 export async function seedRouteStores(env,routeId,stores){
  const lockToken=newId();const locked=await command(env,["SET","zp:"+LOCK,lockToken,"NX","EX","60"]);if(locked!=="OK")throw new Error("GLOBAL_LEARNING_BUSY");
  try{await ensureMeta(env,{lockHeld:true});let changed=false;
