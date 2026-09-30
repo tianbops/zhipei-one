@@ -2,15 +2,15 @@
 <html lang="zh-CN">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>智配One · 数据中心</title><link rel="stylesheet" href="/css/app.css"></head>
 <body><main class="shell">
-<header class="topbar"><strong>数据中心</strong><a href="/home.html">返回</a></header>
+<header class="topbar"><strong>数据中心</strong><a class="text-button" href="/home.html">返回</a></header>
 <section class="card"><h2 id="title">线路数据</h2><p id="hint">加载中…</p><div id="summary" class="message"></div></section>
-<section class="card" id="tools" style="display:none"><div style="display:flex;gap:10px;justify-content:flex-end"><button id="importBtn" type="button">导入数据资料</button></div><p style="margin:10px 0 0;color:#8A97A5;font-size:13px;line-height:1.6">可粘贴按配送顺序排列的门店名单，也可选择文本文件导入。导入保存后会整体替换当前线路数据资料。</p></section>
-<section class="card"><div id="stores">加载中…</div><div id="maintainTools" style="display:none;margin-top:12px;grid-template-columns:1fr 1fr;gap:10px"><button id="addStore" type="button">新增门店</button><button id="saveStores" type="button">保存修改</button></div></section>
-<div id="importBox" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:20;padding:16px;box-sizing:border-box"><div style="max-width:620px;margin:5vh auto 0;background:#18212B;border:1px solid #2A3540;border-radius:16px;padding:18px;max-height:90vh;overflow:auto"><h3 style="margin:0 0 12px">导入数据资料</h3><p style="color:#8A97A5;font-size:13px;line-height:1.6">每行一家门店。支持“01、门店名称”、导航：https://…、备注：…；保存后按当前顺序生成门店编号。</p><input id="importFile" type="file" accept=".txt,.csv,.json,text/plain,text/csv,application/json" style="width:100%;margin:8px 0 12px"><textarea id="importText" style="width:100%;min-height:280px;box-sizing:border-box;border:1px solid #2A3540;border-radius:12px;background:#10161D;color:#E8EDF2;padding:12px;font-size:15px;line-height:1.6" placeholder="01、江北胡汪洋经销商
+<section class="card data-tools" id="tools" style="display:none"><div class="data-toolbar"><button id="importBtn" class="secondary-btn" type="button">导入数据资料</button></div><p class="data-help">可粘贴按配送顺序排列的门店名单，也可选择文本文件导入。导入保存后会整体替换当前线路数据资料。</p></section>
+<section class="card"><div id="stores">加载中…</div><div id="maintainTools" class="data-maintain" style="display:none"><button id="addStore" class="secondary-btn" type="button">新增门店</button><button id="saveStores" class="primary-btn data-save" type="button">保存修改</button></div></section>
+<div id="importBox" class="data-import" style="display:none"><div class="data-import-panel"><h3 style="margin:0 0 12px">导入数据资料</h3><p class="data-help">每行一家门店。支持“01、门店名称”、导航：https://…、备注：…；保存后按当前顺序生成门店编号。</p><input id="importFile" class="data-file" type="file" accept=".txt,.csv,.json,text/plain,text/csv,application/json"><textarea id="importText" class="data-textarea" placeholder="01、江北胡汪洋经销商
 导航：https://...
 备注：由经销商代送
 
-02、渝北中景隆贸易有限公司"></textarea><div id="importPreview" style="margin:10px 0;color:#8A97A5;font-size:13px"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px"><button id="importCancel" type="button">取消</button><button id="importSave" type="button">保存导入</button></div></div></div>
+02、渝北中景隆贸易有限公司"></textarea><div id="importPreview" class="data-help data-preview"></div><div class="data-import-actions"><button id="importCancel" type="button">取消</button><button id="importSave" type="button">保存导入</button></div></div></div>
 </main>
 <script>
 const $=id=>document.getElementById(id);
