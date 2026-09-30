@@ -132,16 +132,6 @@ async function processSelectedFile(file){
     renderProcessingProgress(100);
     location.replace("/pages/order_detail.html?id="+encodeURIComponent(result.waybill.id)+"&source=process");
   }catch(e){
-      if(e?.name==="AbortError")throw Error("运单处理超时，请检查OCR服务后重试");
-      throw e;
-    }finally{
-      clearTimeout(timer);
-    }
-    const d=await r.json().catch(()=>({}));
-    if(!r.ok||!d.success)throw Error(d.message||d.error||"处理失败");
-    setPipelineStage(5,"已完成");
-    location.replace("/pages/order_detail.html?id="+encodeURIComponent(d.waybill.id)+"&source=process");
-  }catch(e){
     processingFile=false;
     if(overlay){overlay.hidden=true;overlay.setAttribute("aria-hidden","true");document.body.classList.remove("sheet-open");resetProcessingUI()}
     status.textContent=e.message||"处理失败";
