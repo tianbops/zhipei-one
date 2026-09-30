@@ -1,0 +1,29 @@
+/* 智配One · 业务页面 2.0 */
+.page2{width:min(100%,430px);min-height:100dvh;margin:0 auto;padding:max(14px,env(safe-area-inset-top)) 16px calc(30px + env(safe-area-inset-bottom))}
+.page2-head{height:54px;display:grid;grid-template-columns:44px 1fr 44px;align-items:center;margin-bottom:10px}
+.page2-head h1{margin:0;text-align:center;font-size:18px;line-height:24px;font-weight:700}
+.page2-back{width:44px;height:44px;border:0;border-radius:12px;background:transparent;color:#B8C2CC;font-size:14px}
+.page2-menu{width:44px;height:44px;border:1px solid #2A3540;border-radius:12px;background:#18212B;color:#fff}
+.page2-card{background:#18212B;border:1px solid #2A3540;border-radius:16px;padding:16px;margin-bottom:10px}
+.page2-card h2{margin:0 0 8px;font-size:16px;line-height:22px}
+.page2-label{display:block;margin-top:13px;color:#B8C2CC;font-size:13px}
+.page2-label select,.page2-label input,.page2-label textarea{display:block;width:100%;min-height:48px;margin-top:6px;padding:0 12px;border:1px solid #35414D;border-radius:11px;background:#11171D;color:#fff}
+.page2-primary,.page2-secondary{width:100%;min-height:48px;margin-top:14px;border-radius:11px;font-size:15px}
+.page2-primary{border:0;background:#26313C;color:#fff}
+.page2-secondary{border:1px solid #35414D;background:#11171D;color:#fff}
+.page2-primary:disabled,.page2-secondary:disabled{opacity:.45}
+.page2-muted{margin:0;color:#B8C2CC;font-size:13px;line-height:20px}
+.page2-soft{margin:4px 0 0;color:#7F8A95;font-size:12px;line-height:18px}
+.page2-state{padding:28px 10px;text-align:center;color:#7F8A95;font-size:13px}
+.page2-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.page2-row:last-child{border-bottom:0}
+.page2-row strong{font-size:14px;line-height:20px}
+.page2-row span{color:#B8C2CC;font-size:13px}
+.page2-status{display:inline-flex;align-items:center;min-height:24px;padding:0 8px;border-radius:7px;background:#26313C;color:#D5DCE2;font-size:11px}
+.page2-danger{color:#FF8278!important}
+.page2-summary{display:flex;align-items:baseline;gap:8px;margin-top:10px}
+.page2-summary strong{font-size:22px}
+.page2-summary span{color:#B8C2CC;font-size:13px}
+.page2-list{margin-top:6px}
+.page2-list .store-row{min-height:54px;padding:10px 2px}
+@media(max-width:380px){.page2{padding-left:12px;padding-right:12px}.page2-card{padding:15px}}
