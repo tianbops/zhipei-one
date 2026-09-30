@@ -1,8 +1,11 @@
 import {json,body} from "../_json.js";
 import {currentUser} from "../_auth.js";
-import {resolveGlobalConflict} from "../_global-learning.js";
+import {resolveGlobalConflict,listGlobalConflicts} from "../_global-learning.js";
 
 function admin(u){return u&&u.role==="admin"}
+
+
+export async function onRequestGet({request,env}){const actor=await currentUser(request,env);if(!admin(actor))return json({success:false,error:"无权限"},403);const url=new URL(request.url);const limit=Math.min(200,Math.max(1,Number(url.searchParams.get("limit")||"100")));const cursor=String(url.searchParams.get("cursor")||"0");try{const result=await listGlobalConflicts(env,{limit,cursor});return json({success:true,...result})}catch(e){return json({success:false,code:"GLOBAL_CONFLICT_LIST_FAILED",error:"全局学习冲突读取失败"},500)}}
 
 export async function onRequestPost({request,env}){
  const actor=await currentUser(request,env);
