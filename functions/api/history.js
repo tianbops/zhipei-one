@@ -153,6 +153,8 @@ export async function onRequestDelete({request,env}){
   }finally{await command(env,["EVAL",'if redis.call("GET",KEYS[1])==ARGV[1] then return redis.call("DEL",KEYS[1]) else return 0 end',"1",monthLock,monthToken]).catch(()=>{})}
  }
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return json({success:false,code:"DATE_INVALID",error:"日期格式错误"},400);
+ const range=historyRange(todayCN());
+ if(!inRange(date,range))return json({success:false,code:"DATE_OUT_OF_RANGE",error:"日期不在历史查询范围内"},400);
  const key=historyKey(routeId,date);
  const waybillId=clean(await get(env,key));
  if(!waybillId)return json({success:true,deleted:false});
