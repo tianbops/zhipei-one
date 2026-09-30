@@ -158,3 +158,11 @@
 .today-summary span{font-size:14px;line-height:24px}
 .today-status{margin-top:3px}
 @media(max-width:380px){.task-route{font-size:12px}.task-main{margin-top:11px}.today-date{font-size:12px}.today-summary strong{font-size:17px}.today-summary span{font-size:13px}}
+
+/* 无运单状态：保留右侧配送人物原位，仅收紧左侧信息层级 */
+.task-route[hidden]{display:none}
+.task-card.no-waybill .task-main{margin-top:13px}
+.task-card.no-waybill .today-summary{margin-top:2px}
+.task-card.no-waybill .today-summary strong{font-size:15px;color:#B8C2CC;font-weight:600}
+.task-card.no-waybill .today-summary span{display:none}
+@media(max-width:380px){.task-card.no-waybill .today-summary strong{font-size:14px}}
