@@ -9,12 +9,11 @@
 </head>
 <body>
 <main class="shell home-shell">
-  <header class="topbar home-topbar">
+  <header class="home-header">
     <div class="home-brand">
       <strong>智配One</strong>
-      <p>智能配送·一路领先</p>
+      <span>智能配送 · 一路领先</span>
     </div>
-
     <div class="menu-wrap">
       <button id="menuButton" class="menu-button home-menu" type="button" aria-label="打开菜单" aria-expanded="false">☰</button>
       <div id="menuPanel" class="menu-panel home-menu-panel" hidden>
@@ -27,23 +26,25 @@
   </header>
 
   <section class="today-section" aria-labelledby="todayTitle">
-    <article class="card today-card">
+    <article class="today-card">
       <div class="today-copy">
-        <h1 id="todayTitle" class="today-title">今日配送</h1>
-        <p id="todayRoute" class="today-route today-route-empty">正在读取配送线路…</p>
-
-        <div class="today-summary">
-          <p id="todayCount" class="today-count">暂无运单</p>
-          <p id="todayWeight" class="today-weight"></p>
-          <div id="todayMetrics" class="today-metrics"></div>\n          <p id="todayStatus" class="route-message" aria-live="polite"></p>
+        <div class="today-heading">
+          <span class="today-dot" aria-hidden="true"></span>
+          <h1 id="todayTitle">今日配送</h1>
         </div>
-
-        <div class="route-picker">
-          <select id="routeSelect" aria-label="当前配送线路">
-            <option value="">加载线路…</option>
-          </select>
-          <p id="routeMessage" class="route-message"></p>
+        <p id="todayRoute" class="today-route">正在读取配送线路…</p>
+        <div class="today-info">
+          <div class="today-stat">
+            <span id="todayCount" class="today-count">—</span>
+            <small>门店</small>
+          </div>
+          <div class="today-divider" aria-hidden="true"></div>
+          <div class="today-stat">
+            <span id="todayWeight" class="today-weight">—</span>
+            <small>重量</small>
+          </div>
         </div>
+        <p id="todayStatus" class="today-status" aria-live="polite"></p>
       </div>
 
       <svg class="delivery-illustration" viewBox="0 0 122 122" aria-hidden="true">
@@ -54,54 +55,56 @@
         <path class="pin" d="M84 26c0-5 8-5 8 0 0 3-4 6-4 6s-4-3-4-6Z"/>
         <circle class="dot" cx="88" cy="26" r="1.1"/>
         <circle class="dot" cx="103" cy="55" r="1.1"/>
-
         <circle class="line" cx="43" cy="35" r="8"/>
         <path class="line" d="M36 34c2-7 13-8 16-1M37 44c3 5 9 8 14 5"/>
         <path class="line" d="M43 43v19M36 49l-7 15M49 49l10 13"/>
         <path class="line" d="M39 62l-7 22M48 62l7 20"/>
         <path class="line" d="M28 64h14M55 64h13"/>
-
         <path class="line" d="M59 62h27v34H59z"/>
         <path class="line" d="M86 67h10v29H86M64 68h18v7H64M64 78h18v7H64"/>
         <path class="line" d="M55 96h41"/>
         <circle class="line" cx="65" cy="101" r="5"/>
         <circle class="line" cx="88" cy="101" r="5"/>
-        <path class="line" d="M59 96l-8-16"/>
-        <path class="line" d="M51 80h10"/>
+        <path class="line" d="M59 96l-8-16M51 80h10"/>
       </svg>
     </article>
   </section>
 
-  <nav class="home-actions" aria-label="主要功能">
-    <a class="home-action" href="#" id="uploadAction">
-      <span class="home-action-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path d="M5 7h3l1.5-2h5L16 7h3v12H5z"/><circle cx="12" cy="13" r="3.5"/></svg>
+  <section class="home-primary" aria-label="上传运单">
+    <button class="upload-main" id="uploadAction" type="button">
+      <span class="upload-main-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M12 16V5M8 9l4-4 4 4"/><path d="M5 13v5h14v-5"/></svg>
       </span>
-      <span class="home-action-copy">
-        <span class="home-action-title">上传运单</span>
-        <span class="home-action-sub">拍摄、相册或文件</span>
+      <span class="upload-main-copy">
+        <strong>上传运单</strong>
+        <small>拍摄、相册或文件</small>
       </span>
-      <span class="home-action-arrow" aria-hidden="true">›</span>
-    </a>
+      <span class="upload-main-arrow" aria-hidden="true">›</span>
+    </button>
+    <div class="pipeline" aria-label="处理流程">
+      <span>识别</span><i>→</i><span>提取</span><i>→</i><span>匹配</span><i>→</i><span>去重</span><i>→</i><span>规划</span>
+    </div>
+    <p id="status" class="home-status" aria-live="polite"></p>
+  </section>
 
+  <nav class="home-actions" aria-label="其他功能">
     <a class="home-action" href="/pages/today.html">
       <span class="home-action-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24"><path d="M7 3h10v18H7z"/><path d="M9.5 7h5M9.5 11h5M9.5 15h3"/></svg>
       </span>
       <span class="home-action-copy">
-        <span class="home-action-title">今日运单</span>
-        <span class="home-action-sub">查看今日配送任务</span>
+        <strong>当日运单</strong>
+        <small>查看今日配送任务</small>
       </span>
       <span class="home-action-arrow" aria-hidden="true">›</span>
     </a>
-
     <a class="home-action" href="/pages/history.html">
       <span class="home-action-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2M5 5l-2 2M3 7h3"/></svg>
       </span>
       <span class="home-action-copy">
-        <span class="home-action-title">历史查询</span>
-        <span class="home-action-sub">查看历史配送记录</span>
+        <strong>历史查询</strong>
+        <small>查看历史配送记录</small>
       </span>
       <span class="home-action-arrow" aria-hidden="true">›</span>
     </a>
@@ -123,8 +126,6 @@
         <button class="source-option" data-source="document" type="button">文件<small>选择图片或 PDF 文件</small></button>
       </div>
     </div>
-    <button id="process" class="primary-btn" type="button">开始处理</button>
-    <p id="status" class="message" aria-live="polite"></p>
   </section>
 </main>
 <script src="/js/home.js"></script>
