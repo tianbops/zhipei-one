@@ -86,7 +86,6 @@ async function load(){
  try{
   const x=await api("/api/me"),me=x.user||{};
   $("username").textContent=me.username||"—";
-  $("role").textContent=me.role==="system_admin"||me.role==="admin"?"管理员":"业务用户";
   $("newUsername").value=me.username||"";
   if(me.role==="system_admin"||me.role==="admin")$("dangerCard").hidden=true;
  }catch(e){show("message",e)}
