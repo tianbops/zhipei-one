@@ -130,19 +130,21 @@ function dedupe(items){
 }
 function plan(items,useRouteOrder=true){const list=useRouteOrder?[...items].sort((a,b)=>(number(a.routeOrder)??100000)-(number(b.routeOrder)??100000)||formatCompareKey(a.name).localeCompare(formatCompareKey(b.name),"zh-CN")):[...items];return list.map((s,i)=>({...s,routeOrder:i+1}))}
 
-export async function onRequestPost({request,env}){
+async function runProcess({request,env,emit=()=>{}}){
+  emit(3,"运单已接收");
   const user=await currentUser(request,env);if(!user)return json({success:false,error:"未登录"},401);if(user.role==="admin"||!canUseRoute(user))return json({success:false,error:"无权处理运单"},403);
   let form;try{form=await request.formData()}catch{return json({success:false,error:"运单提交格式错误"},400)}
-  const requestedRouteId=clean(form.get("routeId"));const routeId=clean(user.dispatchRouteId||user.boundRouteId);if(!routeId)return json({success:false,error:"请先选择调度线路"},400);if(requestedRouteId&&requestedRouteId!==routeId)return json({success:false,code:"DISPATCH_ROUTE_MISMATCH",error:"提交线路与当前调度线路不一致，请刷新后重试"},403);
+  const requestedRouteId=clean(form.get("routeId"));const routeId=clean(user.dispatchRouteId||user.boundRouteId);if(!routeId){emit(0,"等待配送线路");return json({success:false,error:"请先选择调度线路"},400);}if(requestedRouteId&&requestedRouteId!==routeId){emit(0,"线路校验失败");return json({success:false,code:"DISPATCH_ROUTE_MISMATCH",error:"提交线路与当前调度线路不一致，请刷新后重试"},403);}
   if(routeId!==TEMP_DISPATCH_ID){const route=await getRoute(env,routeId);if(!route||route.status!=="active")return json({success:false,code:"DISPATCH_ROUTE_INACTIVE",error:"当前调度线路不存在或已停用，请重新选择线路"},409)}
-  const rawText=clean(form.get("rawText")),file=form.get("file");if(!rawText&&!(file instanceof File))return json({success:false,error:"请选择运单"},400);
+  const rawText=clean(form.get("rawText")),file=form.get("file");if(!rawText&&!(file instanceof File)){emit(0,"未找到运单");return json({success:false,error:"请选择运单"},400);}
   const started=Date.now();let ocr=null,recognizedText=rawText,ocrMs=0;
-  if(!recognizedText){const ocrStarted=Date.now();try{ocr=await recognizeImage(env,file);recognizedText=ocr.rawText;ocrMs=Date.now()-ocrStarted}catch(e){return json({success:false,code:e.code||"OCR_FAILED",message:e.message||"OCR识别失败",jobId:e.jobId||null},e.code==="OCR_NOT_CONFIGURED"?503:422)}}
-  const recognizedMs=Date.now()-started;const baseStarted=Date.now();let baseStores=[];let baseAvailable=false;if(routeId!==TEMP_DISPATCH_ID){try{baseStores=await base(env,routeId);baseAvailable=Array.isArray(baseStores)&&baseStores.length>0}catch(e){if(e?.code!=="BASE_NOT_FOUND")return json({success:false,code:e.code||"BASE_DATA_INVALID",message:e.message||"线路数据资料读取失败"},409)}}const baseMs=Date.now()-baseStarted;
-  const extractedStarted=Date.now();const extracted=extract(recognizedText);const rawExtractCount=extracted.stores.length;extracted.stores=splitByRouteBase(extracted.stores,baseStores);const splitExtractCount=extracted.stores.length;const extractMs=Date.now()-extractedStarted;if(!extracted.stores.length)return json({success:false,code:"EXTRACT_EMPTY",message:"未提取到门店，请检查运单内容"},422);
-  const rawExtractItems=extracted.stores.map((s,i)=>({index:i+1,rawName:s.rawName,name:s.name,storeId:s.storeId||null,sourceLine:s.sourceLine||null}));const matchStarted=Date.now();const locallyMatched=matchStores(extracted.stores,baseStores);const hasRouteBase=baseAvailable;const globalCandidates=hasRouteBase?[]:await findGlobalMatches(env,locallyMatched.filter(x=>x.pending));const globalMap=new Map(globalCandidates.map(x=>[x.rawName+"|"+(x.sourceLine||""),x]));const matched=locallyMatched.map(x=>{if(!x.pending)return x;const g=globalMap.get(x.rawName+"|"+(x.sourceLine||""));if(!g||g.globalMatchStatus!=="matched")return x;const standard=clean(g.name)||x.rawName;return {...x,...g,name:standard,correction:formatCompareKey(x.rawName)!==formatCompareKey(standard),pending:false,matchStatus:"matched",matchMethod:g.globalMatchMethod,routeOrder:100000};});const matchMs=Date.now()-matchStarted;const dedupeStarted=Date.now();const d=dedupe(matched);const dedupeMs=Date.now()-dedupeStarted;const planStarted=Date.now();const useRouteOrder=baseAvailable;const planned=plan(d.items,useRouteOrder);const planMs=Date.now()-planStarted;const pending=planned.filter(x=>x.pending);
+  if(!recognizedText){const ocrStarted=Date.now();emit(8,"正在识别运单…");try{ocr=await recognizeImage(env,file,p=>emit(8+Math.round(Number(p||0)*0.18),"正在识别运单…"));recognizedText=ocr.rawText;ocrMs=Date.now()-ocrStarted}catch(e){return json({success:false,code:e.code||"OCR_FAILED",message:e.message||"OCR识别失败",jobId:e.jobId||null},e.code==="OCR_NOT_CONFIGURED"?503:422)}}
+  const recognizedMs=Date.now()-started;const baseStarted=Date.now();let baseStores=[];let baseAvailable=false;if(routeId!==TEMP_DISPATCH_ID){try{baseStores=await base(env,routeId);baseAvailable=Array.isArray(baseStores)&&baseStores.length>0}catch(e){if(e?.code!=="BASE_NOT_FOUND")return json({success:false,code:e.code||"BASE_DATA_INVALID",message:e.message||"线路数据资料读取失败"},409)}}const baseMs=Date.now()-baseStarted;emit(28,baseAvailable?"已读取线路基准":"未建立线路基准，转入全局学习");
+  const extractedStarted=Date.now();const extracted=extract(recognizedText);const rawExtractCount=extracted.stores.length;extracted.stores=splitByRouteBase(extracted.stores,baseStores);const splitExtractCount=extracted.stores.length;const extractMs=Date.now()-extractedStarted;emit(42,`已提取 ${extracted.stores.length} 家门店`);if(!extracted.stores.length)return json({success:false,code:"EXTRACT_EMPTY",message:"未提取到门店，请检查运单内容"},422);
+  const rawExtractItems=extracted.stores.map((s,i)=>({index:i+1,rawName:s.rawName,name:s.name,storeId:s.storeId||null,sourceLine:s.sourceLine||null}));const matchStarted=Date.now();const locallyMatched=matchStores(extracted.stores,baseStores);const hasRouteBase=baseAvailable;const globalCandidates=hasRouteBase?[]:await findGlobalMatches(env,locallyMatched.filter(x=>x.pending));const globalMap=new Map(globalCandidates.map(x=>[x.rawName+"|"+(x.sourceLine||""),x]));const matched=locallyMatched.map(x=>{if(!x.pending)return x;const g=globalMap.get(x.rawName+"|"+(x.sourceLine||""));if(!g||g.globalMatchStatus!=="matched")return x;const standard=clean(g.name)||x.rawName;return {...x,...g,name:standard,correction:formatCompareKey(x.rawName)!==formatCompareKey(standard),pending:false,matchStatus:"matched",matchMethod:g.globalMatchMethod,routeOrder:100000};});const matchMs=Date.now()-matchStarted;emit(62,hasRouteBase?"已完成线路基准匹配":"已完成全局学习匹配");const dedupeStarted=Date.now();const d=dedupe(matched);const dedupeMs=Date.now()-dedupeStarted;emit(76,`已完成去重${d.merged?`，合并 ${d.merged} 家`:""}`);const planStarted=Date.now();const useRouteOrder=baseAvailable;const planned=plan(d.items,useRouteOrder);const planMs=Date.now()-planStarted;const pending=planned.filter(x=>x.pending);emit(88,`已完成线路规划，共 ${planned.length} 家`);
   const formWeight=number(form.get("totalWeight"));const effectiveWeight=formWeight!=null&&formWeight>0?formWeight:extracted.totalWeight;const order={schemaVersion:"2",id:newId(),routeId,date:clean(form.get("date"))||extracted.date||null,vehicle:clean(form.get("vehicle"))||extracted.vehicle||null,totalWeight:effectiveWeight,stores:planned,rawText:recognizedText,stage:"PLANNED",pipeline:["RECOGNIZED","EXTRACTED","MATCHED","DEDUPED","PLANNED","VALIDATED"],summary:{original:rawExtractCount,total:planned.length,matched:planned.length-pending.length,pending:pending.length,correction:planned.filter(x=>x.correction).length,merged:d.merged,newStores:0},timing:{recognizedMs,ocrMs,baseMs,extractMs,matchMs,dedupeMs,planMs,totalMs:Date.now()-started},ocr:ocr?{provider:"PaddleOCR",model:ocr.model,jobId:ocr.jobId,lineCount:ocr.lineCount}:null,createdBy:user.id,createdAt:new Date().toISOString()};
   const validation=validateResult(order);order.validation=validation;if(!validation.valid)return json({success:false,code:"WAYBILL_VALIDATION_FAILED",error:"运单规划结果校验失败，请重新处理运单",validation},422);order.diagnostics={matchMode:hasRouteBase?"ROUTE_BASE":"GLOBAL_LEARNING",baseStoreCount:baseStores.length,rawExtractCount,extractCount:extracted.stores.length,splitExtractCount,rawExtractItems,extractItems:extracted.stores.map((s,i)=>({index:i+1,rawName:s.rawName,name:s.name,storeId:s.storeId||null})),localMatchedCount:locallyMatched.filter(x=>!x.pending).length,localPendingCount:locallyMatched.filter(x=>x.pending).length,localPendingItems:locallyMatched.filter(x=>x.pending).map(x=>({rawName:x.rawName,candidates:x.candidates||[]})),globalMatchedCount:matched.filter(x=>!x.pending&&(x.matchMethod==="global-alias"||x.matchMethod==="global-identity")).length,globalPendingCount:hasRouteBase?0:matched.filter(x=>x.pending).length,finalPendingCount:pending.length,dedupeBefore:matched.length,dedupeAfter:d.items.length,merged:d.merged,dedupeConflicts:d.conflicts,dedupeRemoved:d.removed,correctionItems:planned.filter(x=>x.correction).map((s,i)=>({rawName:s.rawName,name:s.name,storeId:s.storeId||null,matchMethod:s.matchMethod||null})),plannedCount:planned.length,finalCount:order.stores.length,finalItems:planned.map((s,i)=>({index:i+1,rawName:s.rawName,name:s.name,storeId:s.storeId||null,pending:!!s.pending,matchMethod:s.matchMethod||null,routeOrder:s.routeOrder}))};
+  emit(94,"正在保存运单");
   await set(env,"waybill:"+order.id,order);
   let indexSync="OK";
   try{
@@ -152,5 +154,24 @@ export async function onRequestPost({request,env}){
     indexSync="DEFERRED";
     try{await command(env,["SADD","zp:route:"+routeId+":orders:index-repair",order.id])}catch{}
   }
+  emit(100,"处理完成");
   return json({success:true,waybill:order,pipeline:order.pipeline,summary:order.summary,indexSync});
+}
+
+export async function onRequestPost({request,env}){
+  const user=await currentUser(request,env);if(!user)return json({success:false,error:"未登录"},401);
+  if(new URL(request.url).searchParams.get("stream")!=="1")return runProcess({request,env});
+  const encoder=new TextEncoder();
+  const streamBody=new ReadableStream({start(controller){
+    const emit=(progress,message)=>controller.enqueue(encoder.encode(JSON.stringify({type:"progress",progress,message})+"\\n"));
+    runProcess({request,env,emit}).then(async response=>{
+      let payload={};try{payload=await response.clone().json()}catch{}
+      controller.enqueue(encoder.encode(JSON.stringify({type:"result",...payload})+"\\n"));
+      controller.close();
+    }).catch(error=>{
+      controller.enqueue(encoder.encode(JSON.stringify({type:"result",success:false,error:error?.message||"处理失败"})+"\\n"));
+      controller.close();
+    });
+  }});
+  return new Response(streamBody,{status:200,headers:{"Content-Type":"application/x-ndjson; charset=utf-8","Cache-Control":"no-store","X-Accel-Buffering":"no"}});
 }
