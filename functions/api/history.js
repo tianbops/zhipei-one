@@ -29,9 +29,10 @@ async function readHistoryIds(env,routeId){
  do{
   const r=await command(env,["SCAN",cursor,"MATCH","zp:route:"+routeId+":history:*","COUNT","100"]);
   cursor=String(r?.[0]??"0");
+  const prefix="zp:route:"+routeId+":history:";
   for(const key of (r?.[1]||[])){
-   const m=String(key).match(new RegExp("^zp:route:"+routeId.replace(/[.*+?^{}()|[\]\\]/g,"\\\\$&")+":history:(\\\\d{4}-\\\\d{2}-\\\\d{2})$"));
-   if(m)ids.push({date:m[1],key});
+   const text=String(key);if(!text.startsWith(prefix))continue;
+   const date=text.slice(prefix.length);if(/^\d{4}-\d{2}-\d{2}$/.test(date))ids.push({date,key:text});
   }
  }while(cursor!=="0");
  return ids;
