@@ -7,6 +7,7 @@ const clean=v=>String(v??"").trim();
 const todayCN=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 const validWaybill=x=>!!x&&x.schemaVersion==="2"&&typeof x.id==="string"&&typeof x.routeId==="string"&&Array.isArray(x.stores)&&!!x.summary;
 const activeWaybill=x=>validWaybill(x)&&x.historyStatus!=="SUPERSEDED";
+const effectiveWaybill=x=>activeWaybill(x)&&x.stage==="CONFIRMED";
 const isPrimaryWaybillKey=key=>/^zp:waybill:[^:]+$/.test(String(key));
 
 async function writeIfNewer(env,key,waybill){
@@ -24,7 +25,7 @@ async function scanCurrentDay(env,routeId){
    const v=await get(env,String(key).replace(/^zp:/,""));
    try{
     const w=typeof v==="string"?JSON.parse(v):v;
-    if(activeWaybill(w)&&w.routeId===routeId&&w.date===todayCN()&&(!found||String(w.createdAt||"")>String(found.createdAt||"")))found=w;
+    if((confirmedOnly?effectiveWaybill(w):activeWaybill(w))&&w.routeId===routeId&&w.date===todayCN()&&(!found||String(w.createdAt||"")>String(found.createdAt||"")))found=w;
    }catch{}
   }
  }while(cursor!=="0");
@@ -34,10 +35,10 @@ async function scanCurrentDay(env,routeId){
 export async function onRequestGet({request,env}){
  const user=await currentUser(request,env);if(!user)return json({success:false,error:"未登录"},401);
  if(user.role==="admin"||!canUseRoute(user))return json({success:false,error:"无权查看配送业务"},403);
- const url=new URL(request.url),id=clean(url.searchParams.get("id")),routeId=clean(user.dispatchRouteId||user.boundRouteId);if(!routeId)return json({success:true,waybill:null});
+ const url=new URL(request.url),id=clean(url.searchParams.get("id")),confirmedOnly=url.searchParams.get("confirmed")==="1",routeId=clean(user.dispatchRouteId||user.boundRouteId);if(!routeId)return json({success:true,waybill:null});
  if(id){
   const raw=await get(env,"waybill:"+id);if(!raw)return json({success:true,waybill:null});
-  try{const waybill=typeof raw==="string"?JSON.parse(raw):raw;if(!activeWaybill(waybill)||waybill.routeId!==routeId)return json({success:true,waybill:null});return json({success:true,waybill})}catch{return json({success:false,code:"WAYBILL_DATA_INVALID",error:"运单数据异常"},500)}
+  try{const waybill=typeof raw==="string"?JSON.parse(raw):raw;if((confirmedOnly?!effectiveWaybill(waybill):!activeWaybill(waybill))||waybill.routeId!==routeId)return json({success:true,waybill:null});return json({success:true,waybill})}catch{return json({success:false,code:"WAYBILL_DATA_INVALID",error:"运单数据异常"},500)}
  }
  const repairKey="route:"+routeId+":orders:index-repair";
  const repairInvalidKey=repairKey+":invalid";
@@ -48,12 +49,12 @@ export async function onRequestGet({request,env}){
    const rawRepair=await get(env,"waybill:"+repairIdClean);
    let w=null;
    try{w=typeof rawRepair==="string"?JSON.parse(rawRepair):rawRepair}catch{}
-   if(!validWaybill(w)||w.routeId!==routeId){
+   if(!validWaybill(w)||w.routeId!==routeId||(confirmedOnly&&!effectiveWaybill(w))){
     await command(env,["HSET","zp:"+repairInvalidKey,repairIdClean,JSON.stringify({status:"INVALID",waybillId:repairIdClean,routeId,reason:rawRepair?"INVALID_WAYBILL":"WAYBILL_MISSING",markedAt:new Date().toISOString()})]).catch(()=>{});
     await command(env,["SREM","zp:"+repairKey,repairIdClean]).catch(()=>{});
     continue;
    }
-   if(w.historyStatus==="SUPERSEDED"){
+   if(w.historyStatus==="SUPERSEDED"||confirmedOnly&&!effectiveWaybill(w)){
     await command(env,["SREM","zp:"+repairKey,repairIdClean]).catch(()=>{});
     continue;
    }
@@ -66,12 +67,12 @@ export async function onRequestGet({request,env}){
  }
  const todayRaw=await get(env,"route:"+routeId+":orders:today");
  let todayWaybill=null;
- if(todayRaw){try{const x=typeof todayRaw==="string"?JSON.parse(todayRaw):todayRaw;if(activeWaybill(x)&&x.routeId===routeId&&x.date===todayCN())todayWaybill=x}catch{}}
+ if(todayRaw){try{const x=typeof todayRaw==="string"?JSON.parse(todayRaw):todayRaw;if((confirmedOnly?effectiveWaybill(x):activeWaybill(x))&&x.routeId===routeId&&x.date===todayCN())todayWaybill=x}catch{}}
  const raw=await get(env,"route:"+routeId+":orders:latest");
  if(raw){
   try{
    const latestWaybill=typeof raw==="string"?JSON.parse(raw):raw;
-   if(activeWaybill(latestWaybill)&&latestWaybill.routeId===routeId&&latestWaybill.date===todayCN()){
+   if((confirmedOnly?effectiveWaybill(latestWaybill):activeWaybill(latestWaybill))&&latestWaybill.routeId===routeId&&latestWaybill.date===todayCN()){
     if(!todayWaybill||String(latestWaybill.createdAt||"")>String(todayWaybill.createdAt||"")){
      try{await writeIfNewer(env,"route:"+routeId+":orders:today",latestWaybill);return json({success:true,waybill:latestWaybill})}
      catch{return json({success:true,waybill:latestWaybill,indexSync:"DEFERRED"})}
