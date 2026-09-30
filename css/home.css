@@ -212,3 +212,7 @@
  .today-summary strong{font-size:19px}.today-summary span{font-size:15px}.today-status{font-size:12px}
  .function-btn{font-size:15px}
 }
+
+/* 配送人物图片再向下 */
+.delivery-man{transform:translateY(13px)}
+@media(max-width:380px){.delivery-man{transform:translateY(12px)}}
