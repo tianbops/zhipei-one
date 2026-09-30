@@ -13,15 +13,45 @@ $("uploadAction")?.addEventListener("click",openUpload);
 cancel?.addEventListener("click",closeUpload);
 overlay?.addEventListener("click",e=>{if(e.target===overlay)closeUpload()});
 
-function chooseFile(source){
+async function ensureDispatchRoute(){
+  if(dispatchRouteId)return true;
+  try{
+    const r=await fetch("/api/dispatch",{credentials:"same-origin",cache:"no-store"});
+    const d=await r.json().catch(()=>({}));
+    if(r.ok&&d.success&&d.dispatchRoute?.id){
+      dispatchRouteId=d.dispatchRoute.id;
+      if(todayRoute)todayRoute.textContent=d.dispatchRoute.name||"当前配送线路";
+      return true;
+    }
+  }catch{}
+  return false;
+}
+
+async function chooseFile(source){
+  const ready=await ensureDispatchRoute();
+  if(!ready){
+    status.textContent="请先选择今天实际使用的配送线路";
+    status.className="home-status error";
+    return;
+  }
   const input=source==="camera"?$("cameraInput"):source==="photo"?$("photoInput"):$("documentInput");
-  input?.click();
+  if(!input)return;
+  // 允许连续选择同一张运单时也能再次触发 change。
+  input.value="";
+  input.click();
 }
 document.querySelectorAll(".source-option").forEach(btn=>btn.addEventListener("click",()=>chooseFile(btn.dataset.source)));
 
 async function processSelectedFile(file){
-  if(!file||!dispatchRouteId){status.textContent="当前没有可用的配送线路";status.className="home-status error";return}
-  closeUpload();status.textContent="正在处理…";status.className="home-status";
+  if(!file)return;
+  if(!(await ensureDispatchRoute())){
+    status.textContent="请先选择今天实际使用的配送线路";
+    status.className="home-status error";
+    return;
+  }
+  closeUpload();
+  status.textContent="正在识别运单并执行提取、匹配、去重、规划…";
+  status.className="home-status";
   try{
     const fd=new FormData();fd.append("file",file);fd.append("routeId",dispatchRouteId);
     const r=await fetch("/api/waybills/process",{method:"POST",body:fd,credentials:"same-origin"});
