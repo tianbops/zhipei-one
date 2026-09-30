@@ -1,6 +1,6 @@
 import {json,body} from "../_json.js";
 import {currentUser} from "../_auth.js";
-import {resolveGlobalConflict} from "./_global-learning.js";
+import {resolveGlobalConflict} from "../_global-learning.js";
 
 function admin(u){return u&&u.role==="admin"}
 
