@@ -4,7 +4,7 @@
 <body><main class="page2 account-page">
 <header class="page2-head"><a class="page2-back" href="/home.html">返回</a><h1>账号设置</h1><span></span></header>
 
-<section class="page2-card">
+<section class="page2-card account-info-card">
   <h2>账号信息</h2>
   <div class="account-row"><span>用户名</span><strong id="username">读取中…</strong></div>
   <div class="account-row"><span>角色</span><strong id="role">读取中…</strong></div>
@@ -12,7 +12,7 @@
 
 <section class="page2-card account-edit-card">
   <button class="account-collapse-head" id="usernameToggle" type="button" aria-expanded="false" aria-controls="usernameBody">
-    <span>修改用户名</span><span class="account-collapse-icon" aria-hidden="true">⌄</span>
+    <span>用户名</span><span class="account-collapse-icon" aria-hidden="true">⌄</span>
   </button>
   <div id="usernameBody" class="account-collapse-body" hidden>
     <label class="page2-label">新用户名<input id="newUsername" type="text" autocomplete="username" maxlength="32" placeholder="3-32位字母、数字、下划线、短横线或点"></label>
@@ -24,15 +24,28 @@
 
 <section class="page2-card account-edit-card">
   <button class="account-collapse-head" id="passwordToggle" type="button" aria-expanded="false" aria-controls="passwordBody">
-    <span>修改密码</span><span class="account-collapse-icon" aria-hidden="true">⌄</span>
+    <span>密码与安全</span><span class="account-collapse-icon" aria-hidden="true">⌄</span>
   </button>
   <div id="passwordBody" class="account-collapse-body" hidden>
     <label class="page2-label">当前密码<input id="currentPassword" type="password" autocomplete="current-password" placeholder="请输入当前密码"></label>
     <label class="page2-label">新密码<input id="newPassword" type="password" autocomplete="new-password" minlength="6" maxlength="128" placeholder="至少6位"></label>
     <label class="page2-label">确认新密码<input id="confirmPassword" type="password" autocomplete="new-password" minlength="6" maxlength="128" placeholder="再次输入新密码"></label>
-    <p class="page2-soft">修改后当前登录状态会失效，需要重新登录。</p>
+    <p class="page2-soft">修改后所有登录状态都会失效，需要重新登录。</p>
     <button id="passwordBtn" class="page2-primary" type="button">保存新密码</button>
     <p id="passwordMessage" class="message" aria-live="polite"></p>
+  </div>
+</section>
+
+<section id="dangerCard" class="page2-card account-danger-card">
+  <button id="dangerToggle" class="account-collapse-head account-danger-head" type="button" aria-expanded="false" aria-controls="dangerBody">
+    <span>危险操作</span><span class="account-collapse-icon" aria-hidden="true">⌄</span>
+  </button>
+  <div id="dangerBody" class="account-collapse-body" hidden>
+    <div class="account-danger-box">
+      <strong>注销账号</strong>
+      <p>注销后将永久删除当前账号、线路绑定和待处理的线路申请。线路本身、线路基准资料及已产生的业务数据不会因个人账号注销而删除。</p>
+      <button id="deleteAccountBtn" class="page2-danger-btn" type="button">注销账号</button>
+    </div>
   </div>
 </section>
 
@@ -41,6 +54,20 @@
   <p id="message" class="message"></p>
 </section>
 </main>
+
+<div id="deleteDialog" class="account-dialog-bg" hidden>
+  <div class="account-dialog" role="dialog" aria-modal="true" aria-labelledby="deleteDialogTitle">
+    <h2 id="deleteDialogTitle">确认注销账号</h2>
+    <p>此操作无法撤销。请输入当前密码确认注销。</p>
+    <label class="page2-label">当前密码<input id="deletePassword" type="password" autocomplete="current-password" placeholder="请输入当前密码"></label>
+    <p id="deleteMessage" class="message" aria-live="polite"></p>
+    <div class="account-dialog-actions">
+      <button id="deleteCancel" class="page2-secondary" type="button">取消</button>
+      <button id="deleteConfirm" class="page2-danger-btn" type="button">确认注销</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const $=id=>document.getElementById(id);
 function toggle(toggle,body){
@@ -49,17 +76,23 @@ function toggle(toggle,body){
   const icon=toggle.querySelector(".account-collapse-icon");if(icon)icon.textContent=open?"⌃":"⌄";
  });
 }
-toggle($("usernameToggle"),$("usernameBody"));toggle($("passwordToggle"),$("passwordBody"));
+toggle($("usernameToggle"),$("usernameBody"));
+toggle($("passwordToggle"),$("passwordBody"));
+toggle($("dangerToggle"),$("dangerBody"));
+
 async function api(u,o={}){const r=await fetch(u,{credentials:"same-origin",cache:"no-store",...o});const d=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(d.error||d.message||"请求失败");e.code=d.code||"HTTP_"+r.status;throw e}return d}
 function show(id,e){$(id).textContent=(e.code?"["+e.code+"] ":"")+(e.message||"请求失败")}
+
 async function load(){
  try{
   const x=await api("/api/me"),me=x.user||{};
   $("username").textContent=me.username||"—";
   $("role").textContent=me.role==="system_admin"||me.role==="admin"?"管理员":"业务用户";
   $("newUsername").value=me.username||"";
+  if(me.role==="system_admin"||me.role==="admin")$("dangerCard").hidden=true;
  }catch(e){show("message",e)}
 }
+
 $("renameBtn").onclick=async()=>{
  const username=$("newUsername").value.trim();
  if(!/^[A-Za-z0-9_\\-.]{3,32}$/.test(username)){$("renameMessage").textContent="用户名需为3-32位字母、数字、下划线、短横线或点";return}
@@ -70,6 +103,7 @@ $("renameBtn").onclick=async()=>{
   setTimeout(()=>location.replace("/"),900);
  }catch(e){show("renameMessage",e);$("renameBtn").disabled=false}
 };
+
 $("passwordBtn").onclick=async()=>{
  const currentPassword=$("currentPassword").value,newPassword=$("newPassword").value,confirmPassword=$("confirmPassword").value;
  if(!currentPassword||!newPassword||!confirmPassword){$("passwordMessage").textContent="请完整填写密码";return}
@@ -83,6 +117,23 @@ $("passwordBtn").onclick=async()=>{
   setTimeout(()=>location.replace("/"),900);
  }catch(e){show("passwordMessage",e);$("passwordBtn").disabled=false}
 };
-$("logout").onclick=async()=>{await fetch("/api/logout",{method:"POST",credentials:"same-origin"});location.replace("/")};
+
+$("logout").onclick=async()=>{try{await fetch("/api/logout",{method:"POST",credentials:"same-origin"})}finally{location.replace("/")}};
+
+const dialog=$("deleteDialog");
+function closeDelete(){dialog.hidden=true;$("deletePassword").value="";$("deleteMessage").textContent="";$("deleteConfirm").disabled=false}
+$("deleteAccountBtn").onclick=()=>{dialog.hidden=false;setTimeout(()=>$("deletePassword").focus(),50)};
+$("deleteCancel").onclick=closeDelete;
+dialog.addEventListener("click",e=>{if(e.target===dialog)closeDelete()});
+$("deleteConfirm").onclick=async()=>{
+ const password=$("deletePassword").value;
+ if(!password){$("deleteMessage").textContent="请输入当前密码";return}
+ $("deleteConfirm").disabled=true;$("deleteMessage").textContent="正在注销…";
+ try{
+  await api("/api/account-settings",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"delete",password})});
+  $("deleteMessage").textContent="账号已注销，即将返回登录页面…";
+  setTimeout(()=>location.replace("/"),700);
+ }catch(e){show("deleteMessage",e);$("deleteConfirm").disabled=false}
+};
 load();
 </script></body></html>
