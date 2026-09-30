@@ -49,7 +49,7 @@ export async function onRequestGet({request,env}){
  if(routeId!==(clean(user.dispatchRouteId)||clean(user.boundRouteId)))return json({success:false,error:"无权查看该线路历史"},403);
 
  if(date){
-  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date))return json({success:false,code:"DATE_INVALID",error:"日期格式错误"},400);
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return json({success:false,code:"DATE_INVALID",error:"日期格式错误"},400);
   const id=await get(env,historyKey(routeId,date));
   if(!id)return json({success:true,routeId,date,waybill:null});
   const waybill=await readWaybill(env,clean(id));
