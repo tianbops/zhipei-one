@@ -44,7 +44,7 @@
 .choice-btn.selected{border-color:#B8C1C8;background:#26313C}.choice-btn:active{background:#26313C}
 .order-dialog-actions{display:flex;gap:8px;padding:12px 14px;border-top:1px solid rgba(255,255,255,.06)}
 .order-dialog-actions button{flex:1;height:44px;border-radius:11px;border:0;font-size:14px;font-weight:650}
-.order-dialog-actions .secondary-btn{background:#26313C;color:#E3E8ED}.order-dialog-actions .primary-btn{background:#B8C1C8;color:#0B1015}
+.order-dialog-actions .secondary-btn{background:#11171D;color:#E3E8ED;border:1px solid #35404C}.order-dialog-actions .primary-btn{background:#26313C;color:#fff;border:0}.order-dialog-actions .primary-btn:disabled{opacity:.45}
 @media(max-width:430px){.order-shell{padding-left:10px;padding-right:10px}.order-summary-main{font-size:22px}.order-route-card{padding-left:10px;padding-right:10px}}
 @media(max-height:700px){.order-shell{padding-top:6px}.order-topbar{height:42px;flex-basis:42px;margin-bottom:7px}.order-icon-btn{width:38px;height:38px}.order-summary-card{padding:10px 12px;margin-bottom:8px}.order-summary-main{margin-top:2px}.order-metrics{margin-top:5px}.order-route-card{padding-top:10px}.order-store-item{padding-top:8px;padding-bottom:8px;min-height:52px}}
 
