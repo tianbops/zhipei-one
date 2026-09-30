@@ -192,3 +192,23 @@
   .today-summary strong{font-size:18px}.today-summary span{font-size:14px}
   .delivery-man{transform:translateY(6px)}
 }
+
+/* 首页文字第二次放大：保持图片与布局位置不变 */
+.home-brand strong{font-size:22px}
+.home-brand span{font-size:12px}
+.task-title{font-size:21px;line-height:28px}
+.task-name{height:29px}
+.status-dot{width:23px;height:23px;min-width:23px;font-size:11px;line-height:23px}
+.task-route{font-size:15px;line-height:23px}
+.today-date,.task-date{font-size:15px;line-height:23px}
+.today-summary{line-height:29px}
+.today-summary strong{font-size:20px;line-height:29px}
+.today-summary span{font-size:16px;line-height:29px}
+.today-status{font-size:13px;line-height:21px}
+.function-btn{font-size:16px}
+@media(max-width:380px){
+ .home-brand strong{font-size:21px}.home-brand span{font-size:11px}
+ .task-title{font-size:20px}.task-route{font-size:14px}.today-date,.task-date{font-size:14px}
+ .today-summary strong{font-size:19px}.today-summary span{font-size:15px}.today-status{font-size:12px}
+ .function-btn{font-size:15px}
+}
