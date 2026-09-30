@@ -53,6 +53,8 @@ export async function onRequestGet({request,env}){
 
  if(date){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return json({success:false,code:"DATE_INVALID",error:"日期格式错误"},400);
+  const range=historyRange(todayCN());
+  if(!inRange(date,range))return json({success:false,code:"DATE_OUT_OF_RANGE",error:"日期不在历史查询范围内"},400);
   const id=await get(env,historyKey(routeId,date));
   if(!id)return json({success:true,routeId,date,waybill:null});
   const waybill=await readWaybill(env,clean(id));
@@ -114,6 +116,8 @@ export async function onRequestDelete({request,env}){
  if(!routeId||routeId!==currentRoute)return json({success:false,error:"无权操作该线路历史"},403);
  if(month){
   if(!/^\d{4}-\d{2}$/.test(month))return json({success:false,code:"MONTH_INVALID",error:"月份格式错误"},400);
+  const range=historyRange(todayCN());
+  if(!monthInRange(month,range))return json({success:false,code:"MONTH_OUT_OF_RANGE",error:"月份不在历史查询范围内"},400);
   const monthLock="zp:route:"+routeId+":history-delete-month-lock:"+month,monthToken=crypto.randomUUID();
   if(await command(env,["SET",monthLock,monthToken,"NX","EX","120"])!=="OK")return json({success:false,code:"HISTORY_DELETE_BUSY",error:"该月份历史记录正在处理中，请稍后再试"},409);
   let deleted=0,deletedWaybills=0;
