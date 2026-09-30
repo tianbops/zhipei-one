@@ -6,6 +6,7 @@ import {canUseRoute} from "../_permissions.js";
 const clean=v=>String(v??"").trim();
 const todayCN=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 const validWaybill=x=>!!x&&x.schemaVersion==="2"&&typeof x.id==="string"&&typeof x.routeId==="string"&&Array.isArray(x.stores)&&!!x.summary;
+const isPrimaryWaybillKey=key=>/^zp:waybill:[^:]+$/.test(String(key));
 
 async function writeIfNewer(env,key,waybill){
  const script=`local incoming=cjson.decode(ARGV[1]); local raw=redis.call("GET",KEYS[1]); if raw then local ok,current=pcall(cjson.decode,raw); if ok and type(current)=="table" and current.routeId==incoming.routeId and current.createdAt and incoming.createdAt and tostring(current.createdAt)>=tostring(incoming.createdAt) then return 0 end end; redis.call("SET",KEYS[1],ARGV[1]); return 1`;
@@ -18,6 +19,7 @@ async function scanCurrentDay(env,routeId){
   const r=await command(env,["SCAN",cursor,"MATCH","zp:waybill:*","COUNT","100"]);
   cursor=String(r?.[0]??"0");
   for(const key of (r?.[1]||[])){
+   if(!isPrimaryWaybillKey(key))continue;
    const v=await get(env,String(key).replace(/^zp:/,""));
    try{
     const w=typeof v==="string"?JSON.parse(v):v;
