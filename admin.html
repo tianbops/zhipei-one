@@ -31,13 +31,14 @@ async function load(){
   $("who").textContent="管理员："+m.user.username;
   $("userMeta").textContent=m.user.username;
   try{
-    const [r,u,q,i]=await Promise.all([
-      api("/api/routes?adminLoad="+Date.now()),
+    const r=await api("/api/routes?adminLoad="+Date.now());
+    S.routes=r.routes||[];
+    const [u,q,i]=await Promise.all([
       api("/api/admin/users?adminLoad="+Date.now()),
       api("/api/admin/route-requests?adminLoad="+Date.now()),
       api("/api/invite-codes?adminLoad="+Date.now())
     ]);
-    S.routes=r.routes||[];S.users=u.users||[];S.requests=q.requests||[];S.invites=i.codes||[];
+    S.users=u.users||[];S.requests=q.requests||[];S.invites=i.codes||[];
     renderUsers();renderRoutes();renderRequests();renderInvites();
   }catch(e){
     toast("管理员身份已验证，但部分数据读取失败："+(e.message||"请稍后重试"));
