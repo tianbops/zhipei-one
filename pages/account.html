@@ -95,7 +95,7 @@ async function load(){
 
 $("renameBtn").onclick=async()=>{
  const username=$("newUsername").value.trim();
- if(!/^[A-Za-z0-9_\\-.]{3,32}$/.test(username)){$("renameMessage").textContent="用户名需为3-32位字母、数字、下划线、短横线或点";return}
+ if(!/^[-A-Za-z0-9_.]{3,32}$/.test(username)){$("renameMessage").textContent="用户名需为3-32位字母、数字、下划线、短横线或点";return}
  $("renameBtn").disabled=true;$("renameMessage").textContent="保存中…";
  try{
   await api("/api/account-settings",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"rename",username})});
