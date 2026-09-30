@@ -42,3 +42,14 @@
 .route-apply-page .page2-label select{min-height:44px;margin-top:5px}
 .route-apply-page .primary-btn,.route-apply-page .secondary-btn{min-height:44px}
 @media(max-width:380px){.route-apply-page .page2-card{padding:12px}.route-apply-page .maintain-card{padding:0}.route-apply-page .collapse-head{min-height:46px;padding:0 12px}.route-apply-page .collapse-body{padding:0 12px 12px}}
+
+/* 账号设置：保持业务页风格，编辑项默认收起 */
+.account-page .account-edit-card{padding:0;overflow:hidden}
+.account-page .account-collapse-head{width:100%;min-height:48px;padding:0 16px;border:0;background:transparent;color:#fff;display:flex;align-items:center;justify-content:space-between;text-align:left;font-size:15px;font-weight:700}
+.account-page .account-collapse-icon{color:#B8C2CC;font-size:20px;line-height:1;transition:transform .18s ease}
+.account-page .account-collapse-body{padding:0 16px 16px}
+.account-page .account-collapse-body[hidden]{display:none}
+.account-page .page2-label{margin-top:11px}
+.account-page .page2-primary{min-height:46px}
+.account-page .message{margin:8px 0 0;font-size:13px;line-height:20px}
+@media(max-width:380px){.account-page .account-collapse-head{min-height:46px;padding:0 15px}.account-page .account-collapse-body{padding:0 15px 15px}}
