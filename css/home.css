@@ -259,3 +259,13 @@
  .processing-steps{margin-top:17px}
  .processing-steps li{height:42px}
 }
+
+/* 一体化运单处理进度：文案 + 全局百分比 + 单线移动点 */
+.upload-processing{padding:8px 2px 6px}
+.processing-title{color:#F2F5F7;text-align:center;font-size:18px;font-weight:700;line-height:28px;letter-spacing:.1px}
+#processingPercent{display:inline-block;margin-left:4px;font-variant-numeric:tabular-nums;color:#B8C2CC;font-weight:650}
+.processing-progress{position:relative;width:100%;height:22px;margin:22px 0 5px}
+.processing-progress-line{position:absolute;left:0;right:0;top:10px;height:2px;border-radius:2px;background:#35414D;display:block}
+.processing-progress-line:before{content:"";position:absolute;left:0;top:0;width:var(--progress,0%);height:2px;border-radius:2px;background:#B8C2CC}
+.processing-progress-line i{position:absolute;left:var(--progress,0%);top:50%;width:10px;height:10px;margin:-4px 0 0 -5px;border-radius:50%;background:#F2F5F7;box-shadow:0 0 0 2px rgba(255,255,255,.08)}
+@media(max-width:380px){.processing-title{font-size:17px}.processing-progress{margin-top:20px}}
