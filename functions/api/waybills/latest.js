@@ -6,7 +6,7 @@ import {canUseRoute} from "../_permissions.js";
 const clean=v=>String(v??"").trim();
 const todayCN=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 const validWaybill=x=>!!x&&x.schemaVersion==="2"&&typeof x.id==="string"&&typeof x.routeId==="string"&&Array.isArray(x.stores)&&!!x.summary;
-const activeWaybill=x=>validWaybill(x)&&x.historyStatus!=="SUPERSEDED;
+const activeWaybill=x=>validWaybill(x)&&x.historyStatus!=="SUPERSEDED"
 const isPrimaryWaybillKey=key=>/^zp:waybill:[^:]+$/.test(String(key));
 
 async function writeIfNewer(env,key,waybill){
