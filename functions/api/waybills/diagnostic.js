@@ -5,6 +5,7 @@ import {canUseRoute} from "../_permissions.js";
 
 const clean=v=>String(v??"").trim();
 const parse=v=>{try{return typeof v==="string"?JSON.parse(v):v}catch{return null}};
+const isPrimaryWaybillKey=key=>/^zp:waybill:[^:]+$/.test(String(key));
 
 export async function onRequestGet({request,env}){
   const user=await currentUser(request,env);
@@ -24,6 +25,7 @@ export async function onRequestGet({request,env}){
     const result=await command(env,["SCAN",cursor,"MATCH","zp:waybill:*","COUNT","100"]);
     cursor=String(result?.[0]??"0");
     for(const key of Array.isArray(result?.[1])?result[1]:[]){
+      if(!isPrimaryWaybillKey(key))continue;
       const id=String(key).replace(/^zp:/,"").replace(/^waybill:/,"");
       const raw=await get(env,"waybill:"+id);
       const w=parse(raw);
