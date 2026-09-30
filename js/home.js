@@ -31,14 +31,7 @@ const todayMetrics=$("todayMetrics");
 const uploadAction=$("uploadAction");
 const sourceSheet=$("sourceSheet");
 const sourceCancel=$("sourceCancel");
-const processButton=$("process");
-const status=$("status");
-const file=$("waybill");
-const sourceInputs={
-  camera:$("cameraInput"),
-  photo:$("photoInput"),
-  document:$("documentInput")
-};
+const todayStatus=$("todayStatus");
 
 function closeSourceSheet(){
   if(sourceSheet){
@@ -63,35 +56,37 @@ sourceCancel?.addEventListener("click",closeSourceSheet);
 sourceSheet?.addEventListener("click",e=>{
   if(e.target===sourceSheet)closeSourceSheet();
 });
+
+function setStatus(text,error=false){
+  if(!todayStatus)return;
+  todayStatus.textContent=text||"";
+  todayStatus.classList.toggle("error",!!error);
+}
+function chooseFile(source){
+  const input=document.createElement("input");
+  input.type="file";
+  input.accept=source==="document"?"image/*,.pdf":"image/*";
+  if(source==="camera")input.capture="environment";
+  input.hidden=true;
+  document.body.appendChild(input);
+  input.addEventListener("change",async()=>{
+    const selected=input.files?.[0];
+    input.remove();
+    if(selected)await processSelectedFile(selected);
+  },{once:true});
+  input.click();
+}
 sourceSheet?.querySelectorAll(".source-option").forEach(btn=>{
   btn.addEventListener("click",()=>{
+    const source=btn.dataset.source;
     closeSourceSheet();
-    sourceInputs[btn.dataset.source]?.click();
+    chooseFile(source);
   });
 });
 
-function setSelectedFile(input){
-  const selected=input?.files?.[0];
-  if(!selected)return;
-  try{
-    const dt=new DataTransfer();
-    dt.items.add(selected);
-    file.files=dt.files;
-  }catch{
-    file._selectedFile=selected;
-  }
-  processSelectedFile();
-}
-Object.values(sourceInputs).forEach(input=>input?.addEventListener("change",()=>setSelectedFile(input)));
-file?.addEventListener("change",()=>processSelectedFile());
-
 const stages=["识别","提取","匹配","去重","规划"];
-function showStatus(text,error=false){
-  status.textContent=text||"";
-  status.className=error?"message error":"message";
-}
 function showStage(i){
-  showStatus(i<stages.length?"正在"+stages[i]+"…":"处理完成");
+  setStatus(i<stages.length?"正在"+stages[i]+"…":"处理完成");
 }
 
 async function loadRoutes(){
@@ -198,15 +193,14 @@ async function loadToday(){
   }
 }
 
-async function processSelectedFile(){
-  const selected=file?.files?.[0]||file?._selectedFile;
+async function processSelectedFile(selected){
   if(!selected)return;
   if(!routeSelect?.value){
-    showStatus("请先选择配送线路",true);
+    setStatus("请先选择配送线路",true);
     return;
   }
-  processButton.disabled=true;
   uploadAction?.classList.add("disabled");
+  uploadAction?.setAttribute("aria-disabled","true");
   showStage(0);
   try{
     const fd=new FormData();
@@ -221,14 +215,12 @@ async function processSelectedFile(){
     showStage(stages.length);
     location.replace("/pages/order_detail.html?id="+encodeURIComponent(d.waybill.id)+"&source=process");
   }catch(e){
-    showStatus(e.message||"处理失败",true);
+    setStatus(e.message||"处理失败",true);
   }finally{
-    processButton.disabled=false;
     uploadAction?.classList.remove("disabled");
+    uploadAction?.removeAttribute("aria-disabled");
   }
 }
-
-processButton?.addEventListener("click",processSelectedFile);
 
 (async()=>{
   try{
