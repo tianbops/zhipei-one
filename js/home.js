@@ -107,7 +107,7 @@ async function loadHome(){
     if(w&&w.routeId===dispatchRouteId){
       const total=Number(w.summary?.total)||Number(w.stores?.length)||0;
       todayCount.textContent=total+"家";
-      todayWeight.textContent="重量："+(Math.round((Number(w.totalWeight)||0)*100)/100).toFixed(2)+"t";
+      todayWeight.textContent=(Math.round((Number(w.totalWeight)||0)*100)/100).toFixed(2)+"t";
       if(dot)dot.textContent="1";
     }else{
       todayCount.textContent="无数据";todayWeight.textContent="无数据";if(dot)dot.textContent="0";
