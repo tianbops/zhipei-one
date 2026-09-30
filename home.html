@@ -69,7 +69,7 @@
     </a>
   </nav>
 
-  <div id="uploadArea" class="upload-overlay" aria-hidden="true">
+  <div id="uploadArea" class="upload-overlay" hidden aria-hidden="true">
     <div class="upload-sheet">
       <div class="sheet-handle" aria-hidden="true"></div>
       <div class="upload-source-menu active" id="uploadSourceMenu">
@@ -93,6 +93,11 @@
     </div>
   </div>
   <p id="status" class="home-status" aria-live="polite"></p>
+  <input id="waybill" type="file" accept="image/*,.pdf" hidden>
+  <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden>
+  <input id="photoInput" type="file" accept="image/*" hidden>
+  <input id="documentInput" type="file" accept="image/*,.pdf" hidden>
+  <button id="process" type="button" hidden>开始处理</button>
 </main>
 <script src="/js/home.js"></script>
 </body>
