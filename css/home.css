@@ -1,58 +1,15 @@
-/* 智配One · 首页 UI 2.0 */
-.home-shell{padding:18px 0 calc(30px + env(safe-area-inset-bottom))}
-.home-header{display:flex;align-items:center;justify-content:space-between;min-height:58px;padding:0 2px 14px}
-.home-brand strong{display:block;font-size:22px;line-height:28px;font-weight:700;letter-spacing:.1px}
-.home-brand span{display:block;margin-top:2px;color:var(--muted);font-size:12px;line-height:18px}
-.home-menu{width:42px;height:42px;font-size:23px;color:#fff}
-.home-menu-panel{top:48px;width:166px}
-
-.today-section{margin-top:2px}
-.today-card{position:relative;overflow:hidden;min-height:220px;padding:20px 18px;background:var(--card);border:1px solid var(--line);border-radius:16px}
-.today-copy{position:relative;z-index:2;padding-right:108px}
-.today-heading{display:flex;align-items:center;gap:8px}
-.today-heading h1{margin:0;font-size:19px;line-height:26px;font-weight:600}
-.today-dot{width:7px;height:7px;border-radius:50%;background:#B8C2CC;flex:none}
-.today-route{margin:8px 0 0;color:#fff;font-size:15px;line-height:22px}
-.today-info{display:flex;align-items:center;margin-top:28px}
-.today-stat{display:flex;align-items:baseline;gap:7px}
-.today-stat span{font-size:27px;line-height:34px;font-weight:600}
-.today-stat small{color:var(--muted);font-size:12px}
-.today-divider{width:1px;height:25px;margin:0 17px;background:#35404C}
-.today-status{min-height:18px;margin:8px 0 0;color:var(--muted);font-size:11px;line-height:18px}
-.today-status.error{color:#FFB4AB}
-.delivery-illustration{position:absolute;right:7px;bottom:7px;width:116px;height:116px;opacity:.72;pointer-events:none}
-.delivery-illustration .line{fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.delivery-illustration .accent{fill:none;stroke:#7F8A95;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.delivery-illustration .dot{fill:#B8C2CC}
-.delivery-illustration .pin{fill:none;stroke:#B8C2CC;stroke-width:2}
-
-.home-primary{margin-top:12px}
-.upload-main{display:flex;align-items:center;gap:13px;width:100%;min-height:66px;padding:10px 14px;border:1px solid #35404C;border-radius:14px;background:#202B36;color:#fff;text-align:left;cursor:pointer}
-.upload-main:active{background:#2A3540}
-.upload-main.disabled{opacity:.45;pointer-events:none}
-.upload-main-icon{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:11px;background:#2B3743;flex:none}
-.upload-main-icon svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.upload-main-copy{min-width:0;flex:1}
-.upload-main-copy strong{display:block;font-size:16px;line-height:22px;font-weight:500}
-.upload-main-copy small{display:block;margin-top:2px;color:var(--muted);font-size:11px;line-height:17px}
-.upload-main-arrow{color:#A2ADB8;font-size:24px;line-height:1}
-.pipeline{display:flex;align-items:center;justify-content:center;gap:5px;margin-top:10px;color:var(--muted);font-size:10px;line-height:18px}
-.pipeline span{padding:2px 5px;border-radius:6px;background:#11171D}
-.pipeline i{font-style:normal;color:#65717D}
-.home-status{min-height:18px;margin:6px 2px 0;color:var(--muted);font-size:11px;line-height:18px;text-align:center}
-.home-status.error{color:#FFB4AB}
-
-.home-actions{display:grid;gap:10px;margin-top:12px}
-.home-action{display:flex;align-items:center;gap:13px;min-height:60px;padding:10px 14px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:#fff;text-decoration:none}
+/* 智配One · 首页 1.0 视觉与布局 */
+.home-shell{padding-top:10px}
+.home-topbar{min-height:64px;padding-bottom:14px}
+.home-topbar>div:first-child p{margin:4px 0 0;color:var(--muted);font-size:12px;line-height:18px}
+.home-upload{margin-top:2px}
+.home-actions{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:2px}
+.home-action{display:flex;align-items:center;justify-content:center;height:64px;border:1px solid var(--line);border-radius:16px;background:var(--card);color:#fff;text-decoration:none;font-size:17px;font-weight:500}
 .home-action:active{background:#202B36}
-.home-action-icon{display:flex;align-items:center;justify-content:center;flex:none;width:38px;height:38px;border-radius:11px;background:#26313C;color:#fff}
-.home-action-icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.home-action-copy{min-width:0;flex:1}
-.home-action-copy strong{display:block;font-size:16px;line-height:22px;font-weight:500}
-.home-action-copy small{display:block;margin-top:2px;color:var(--muted);font-size:11px;line-height:17px}
-.home-action-arrow{color:#8D98A4;font-size:23px;line-height:1}
+.home-upload .primary-btn{height:52px;border-radius:13px;font-size:16px}
+.home-upload .file-pick{min-height:56px}
+.home-upload .pipeline{margin-top:10px;margin-bottom:14px}
 
-.home-upload{display:none}
 .source-sheet{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.62);display:flex;align-items:flex-end;padding:0}
 .source-sheet[hidden]{display:none}
 .source-sheet-panel{width:100%;max-width:560px;margin:auto auto 0;padding:10px 14px calc(14px + env(safe-area-inset-bottom));background:var(--card);border:1px solid var(--line);border-bottom:0;border-radius:18px 18px 0 0}
@@ -65,12 +22,6 @@
 .sheet-open{overflow:hidden}
 
 @media(max-width:380px){
-  .home-shell{padding-top:14px}
-  .today-card{min-height:210px;padding:18px 16px}
-  .today-copy{padding-right:96px}
-  .today-info{margin-top:24px}
-  .today-stat span{font-size:25px}
-  .delivery-illustration{width:104px;height:104px;right:3px}
-  .pipeline{gap:2px}
-  .pipeline span{padding:2px 4px}
+  .home-actions{gap:10px}
+  .home-action{height:60px;font-size:16px}
 }
