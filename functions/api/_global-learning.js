@@ -33,10 +33,11 @@ export async function learnGlobal(env,input){
   await ensureMeta(env,{lockHeld:true});
   if(eventKey&&await get(env,eventKey)){const old=parse(await command(env,["HGET","zp:"+RECORDS,storeId]),null);return{record:old,event:null,duplicate:true}}
   const current=parse(await command(env,["HGET","zp:"+RECORDS,storeId]),null)||{storeId,standardName,originalName:clean(input.originalName||rawName),aliases:[],navigation:input.navigation||null,status:"CANDIDATE",confirmations:0,conflicts:0,createdAt:new Date().toISOString()};
-  if(current.standardName&&current.standardName!==standardName){current.conflicts=Number(current.conflicts||0)+1;current.status="CONFLICT"}else current.standardName=standardName;
-  current.aliases=Array.isArray(current.aliases)?current.aliases:[];const nk=normalizeLearningName(rawName);if(nk&&nk!==normalizeLearningName(current.standardName)&&!current.aliases.some(x=>normalizeLearningName(x)===nk))current.aliases.push(rawName);
+  let conflictDetected=false;
+  if(current.standardName&&current.standardName!==standardName){current.conflicts=Number(current.conflicts||0)+1;current.status="CONFLICT";conflictDetected=true}else current.standardName=standardName;
+  current.aliases=Array.isArray(current.aliases)?current.aliases:[];const nk=normalizeLearningName(rawName);if(!conflictDetected&&nk&&nk!==normalizeLearningName(current.standardName)&&!current.aliases.some(x=>normalizeLearningName(x)===nk))current.aliases.push(rawName);
   if(current.status!=="CONFLICT"){if(current.status==="ROUTE_REFERENCE")current.status="CANDIDATE";current.confirmations=Number(current.confirmations||0)+1;if(current.confirmations>=2)current.status="VERIFIED"}current.updatedAt=new Date().toISOString();
-  const aliasKeys=[normalizeLearningName(current.standardName),nk].filter(Boolean);
+  const aliasKeys=[normalizeLearningName(current.standardName),...(conflictDetected?[]:[nk])].filter(Boolean);
   const aliasValues=[];
   for(const key of aliasKeys){const oldRaw=await command(env,["HGET","zp:"+ALIASES,key]);const oldParsed=parse(oldRaw,null);if(oldRaw!==null&&oldRaw!==undefined&&(!Array.isArray(oldParsed)||oldParsed.some(id=>typeof id!=="string"||!id.trim())))throw new Error("GLOBAL_ALIAS_DATA_INVALID");const oldAliases=Array.isArray(oldParsed)?oldParsed:[];aliasValues.push([key,oldAliases.includes(storeId)?oldAliases:[...oldAliases,storeId]])}
   const event={id:newId(),type:"CONFIRMED",storeId,rawName,standardName,routeId:routeId||null,waybillId:waybillId||null,userId:clean(input.userId)||null,createdAt:new Date().toISOString()};
