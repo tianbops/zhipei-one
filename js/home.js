@@ -9,19 +9,25 @@ let dispatchRouteId="";
 const setEmptyToday=()=>{todayCount.textContent="暂无运单";todayWeight.textContent="";if(dot)dot.textContent="0";todayRoute.textContent="";todayRoute.hidden=true;document.querySelector(".task-card")?.classList.add("no-waybill")};
 const setHasToday=()=>{todayRoute.hidden=false;document.querySelector(".task-card")?.classList.remove("no-waybill")};
 
-const processingPanel=$("uploadProcessing"),sourceMenu=$("uploadSourceMenu"),processingSubtitle=$("processingSubtitle"),processingFoot=$("processingFoot");
+const processingPanel=$("uploadProcessing"),sourceMenu=$("uploadSourceMenu"),processingPercent=$("processingPercent"),processingProgress=$("processingProgressDot");
+let processingProgressValue=0;
+function renderProcessingProgress(value){
+  processingProgressValue=Math.max(0,Math.min(100,Math.round(Number(value)||0)));
+  if(processingPercent)processingPercent.textContent=processingProgressValue+"%";
+  const line=processingProgress?.closest(".processing-progress-line");
+  if(line)line.style.setProperty("--progress",processingProgressValue+"%");
+  const bar=processingProgress?.closest(".processing-progress");
+  if(bar)bar.setAttribute("aria-valuenow",String(processingProgressValue));
+}
 function resetProcessingUI(){
   if(!processingPanel||!sourceMenu)return;
   sourceMenu.hidden=false;processingPanel.hidden=true;
-  processingSubtitle.textContent="请保持页面打开";processingFoot.textContent="正在提交，请稍候…";
-  processingPanel.querySelectorAll(".processing-steps li").forEach((li,i)=>{li.classList.remove("active","done")});
+  renderProcessingProgress(0);
 }
 function showProcessingUI(){
   if(!processingPanel||!sourceMenu)return;
   sourceMenu.hidden=true;processingPanel.hidden=false;
-  processingPanel.querySelectorAll(".processing-steps li").forEach((li,i)=>{li.classList.toggle("active",i===0);li.classList.remove("done")});
-  processingSubtitle.textContent="系统正在完成识别、提取、匹配、去重与规划";
-  processingFoot.textContent="正在识别运单…";
+  renderProcessingProgress(0);
 }
 function closeUpload(){
   if(processingFile)return;
@@ -31,9 +37,8 @@ function openUpload(){
   if(overlay){resetProcessingUI();overlay.hidden=false;overlay.setAttribute("aria-hidden","false");document.body.classList.add("sheet-open")}
 }
 function setPipelineStage(index,text){
-  if(!processingPanel)return;
-  processingPanel.querySelectorAll(".processing-steps li").forEach((li,i)=>{li.classList.toggle("done",i<index);li.classList.toggle("active",i===index)});
-  if(processingFoot)processingFoot.textContent=text;
+  const checkpoints=[8,28,48,68,88,100];
+  renderProcessingProgress(checkpoints[Math.max(0,Math.min(5,index))]);
 }
 $("uploadAction")?.addEventListener("click",openUpload);
 cancel?.addEventListener("click",closeUpload);
@@ -83,7 +88,6 @@ async function processSelectedFile(file){
       status.className="home-status error";
       return;
     }
-    setProcessingStage("正在提交运单…");
     showProcessingUI();
     document.querySelectorAll(".source-option").forEach(b=>b.disabled=true);
     if(processingPanel)processingPanel.querySelectorAll(".processing-steps li").forEach(li=>li.classList.remove("active","done"));
@@ -104,7 +108,7 @@ async function processSelectedFile(file){
     }
     const d=await r.json().catch(()=>({}));
     if(!r.ok||!d.success)throw Error(d.message||d.error||"处理失败");
-    setPipelineStage(5,"识别、提取、匹配、去重、规划已完成，正在呈现结果…");
+    setPipelineStage(5,"已完成");
     location.replace("/pages/order_detail.html?id="+encodeURIComponent(d.waybill.id)+"&source=process");
   }catch(e){
     processingFile=false;
