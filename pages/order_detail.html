@@ -1,1 +1,49 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>运单详情 · 智配One</title><link rel="stylesheet" href="/css/app.css">\n<link rel="stylesheet" href="/css/order_detail.css"></head><body><main class="shell"><header class="topbar"><strong>运单详情</strong><a class="text-button" href="/home.html">返回</a></header><section class="card"><h2 id="title" class="detail-title">运单详情</h2><p id="summary" class="summary">正在读取运单…</p><div id="stores" class="store-list"></div><pre id="diagnostics" class="diagnostics"></pre><div id="actions" class="detail-actions" style="display:none"><button id="confirm" class="primary-btn" type="button">确认待定门店</button></div></section></main><script src="/js/order_detail.js"></script></body></html>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>运单详情 · 智配One</title>
+<link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/order_detail.css">
+</head>
+<body>
+<main class="shell">
+  <header class="topbar">
+    <button id="backBtn" class="text-button" type="button">返回</button>
+    <strong>运单详情</strong>
+    <button id="menuBtn" class="text-button" type="button">☰</button>
+  </header>
+  <div id="menuPanel" hidden>
+    <button id="editRouteBtn" type="button">线路维护</button>
+    <button id="shareBtn" type="button">分享</button>
+    <button id="logoutBtn" type="button">退出登录</button>
+  </div>
+  <section class="card">
+    <div class="detail-head">
+      <div>
+        <h2 id="routeName" class="detail-title">当前线路</h2>
+        <p id="orderDate" class="summary">正在读取运单…</p>
+        <p id="vehicle" class="summary"></p>
+      </div>
+      <div class="detail-total"><strong id="storeCount">0</strong><span>家</span><strong id="totalWeight">0.00</strong><span>t</span></div>
+    </div>
+    <div id="metrics" class="metrics"></div>
+    <div id="routeList" class="store-list"></div>
+    <pre id="diagnostics" class="diagnostics" hidden></pre>
+  </section>
+</main>
+<div id="confirmDialog" class="dialog" hidden>
+  <div class="dialog-panel">
+    <strong>确认待定门店</strong>
+    <div id="pendingList"></div>
+    <div class="dialog-actions">
+      <button id="cancelConfirm" type="button">取消</button>
+      <button id="submitConfirm" class="primary-btn" type="button" disabled>请完成全部选择</button>
+    </div>
+    <button id="closeConfirm" type="button" hidden>关闭</button>
+  </div>
+</div>
+<script src="/js/order_detail.js"></script>
+</body>
+</html>
