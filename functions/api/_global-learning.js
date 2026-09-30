@@ -58,6 +58,9 @@ return {"OK",tostring(version)}`;
  }finally{await command(env,["EVAL",'if redis.call("GET",KEYS[1])==ARGV[1] then return redis.call("DEL",KEYS[1]) else return 0 end',"1","zp:"+LOCK,lockToken]).catch(()=>{})}
 }
 
+
+export async function listGlobalConflicts(env,{limit=100,cursor="0"}={}){const size=Math.min(200,Math.max(1,Number(limit)||100));let cur=String(cursor||"0");const out=[];do{const r=await command(env,["HSCAN","zp:"+RECORDS,cur,"COUNT",String(Math.min(200,size*2))]);cur=String(r?.[0]??"0");const data=Array.isArray(r?.[1])?r[1]:[];for(let i=0;i<data.length;i+=2){const rec=parse(data[i+1],null);if(rec&&rec.status==="CONFLICT")out.push(rec);if(out.length>=size)break}if(out.length>=size||cur==="0")break}while(true);out.sort((a,b)=>String(b.updatedAt||b.createdAt||"").localeCompare(String(a.updatedAt||a.createdAt||"")));return{records:out,cursor:cur,hasMore:cur!=="0"}}
+
 export async function resolveGlobalConflict(env,input){
  const storeId=clean(input.storeId),standardName=clean(input.standardName),userId=clean(input.userId);
  if(!storeId||!standardName)throw new Error("GLOBAL_CONFLICT_RESOLUTION_INPUT_INVALID");
