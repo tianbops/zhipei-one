@@ -2,7 +2,7 @@ import {json,body} from "./_json.js";
 import {currentUser} from "./_auth.js";
 import {command,get,set,newId} from "./_redis.js";
 
-function admin(u){return u&&u.role==="admin"}
+function admin(u){return u&&(u.role==="system_admin"||u.role==="admin")}
 function normalize(v){return String(v||"").trim().toUpperCase()}
 function safe(c){return {id:c.id,code:c.code,enabled:c.enabled!==false,maxUses:c.maxUses,usedCount:c.usedCount||0,expiresAt:c.expiresAt||null,createdAt:c.createdAt||null}}
 
