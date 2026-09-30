@@ -216,3 +216,21 @@
 /* 配送人物图片再向下 */
 .delivery-man{transform:translateY(13px)}
 @media(max-width:380px){.delivery-man{transform:translateY(12px)}}
+
+
+/* 三横菜单：移动端触控优化 */
+.home-menu-button svg{width:22px;height:22px;display:block;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round}
+.home-menu-button:focus-visible{outline:2px solid rgba(255,255,255,.28);outline-offset:2px}
+.home-menu-panel{width:224px;padding:6px;border-radius:16px;background:#18212B;border-color:#2A3540;box-shadow:0 14px 34px rgba(0,0,0,.46)}
+.home-menu-current{min-height:44px;padding:0 12px;color:#7F8A95;font-size:12px;font-weight:600}
+.home-menu-panel a,.home-menu-panel button{height:48px;min-height:48px;padding:0 12px;gap:11px;border-radius:11px;font-size:14px;font-weight:600}
+.home-menu-panel a:active,.home-menu-panel button:active{background:#26313C;transform:scale(.985)}
+.menu-item-icon{width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;color:#B8C2CC}
+.menu-item-icon svg{width:20px;height:20px;display:block;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.home-menu-panel button{color:#FF8278}
+.home-menu-panel button .menu-item-icon{color:#FF8278}
+.menu-divider{height:1px;margin:5px 7px;background:rgba(255,255,255,.07)}
+@media(max-width:380px){
+ .home-menu-panel{right:-2px;width:218px;padding:5px}
+ .home-menu-panel a,.home-menu-panel button{height:48px;min-height:48px}
+}
