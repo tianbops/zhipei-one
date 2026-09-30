@@ -110,11 +110,11 @@ async function loadHome(){
       todayWeight.textContent=(Math.round((Number(w.totalWeight)||0)*100)/100).toFixed(2)+"t";
       if(dot)dot.textContent="1";
     }else{
-      todayCount.textContent="无数据";todayWeight.textContent="无数据";if(dot)dot.textContent="0";
+      todayCount.textContent="暂无运单";todayWeight.textContent="";if(dot)dot.textContent="0";
     }
   }catch(e){
     todayRoute.textContent="暂无法读取线路";
-    todayCount.textContent="无数据";todayWeight.textContent="无数据";if(dot)dot.textContent="0";
+    todayCount.textContent="暂无运单";todayWeight.textContent="";if(dot)dot.textContent="0";
   }
 }
 loadHome();
