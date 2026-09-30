@@ -234,3 +234,28 @@
  .home-menu-panel{right:-2px;width:218px;padding:5px}
  .home-menu-panel a,.home-menu-panel button{height:48px;min-height:48px}
 }
+
+
+/* 运单处理：移动端底部操作面板与阶段呈现 */
+.upload-overlay{align-items:flex-end;padding:0;background:rgba(0,0,0,.68);backdrop-filter:none}
+.upload-sheet{width:100%;max-width:430px;margin:0 auto;padding:10px 16px calc(14px + env(safe-area-inset-bottom));border-radius:20px 20px 0 0;background:#151D26;border:1px solid #2A3540;border-bottom:0;box-shadow:0 -12px 36px rgba(0,0,0,.32)}
+.sheet-handle{margin-bottom:13px}
+.upload-processing[hidden]{display:none}
+.processing-title{color:#F2F5F7;text-align:center;font-size:18px;font-weight:700;line-height:25px}
+.processing-subtitle{margin-top:4px;color:#7F8A95;text-align:center;font-size:12px;line-height:18px}
+.processing-steps{list-style:none;margin:20px 0 8px;padding:0}
+.processing-steps li{height:44px;display:flex;align-items:center;gap:11px;color:#7F8A95;font-size:14px;font-weight:600;border-bottom:1px solid rgba(255,255,255,.055)}
+.processing-steps li:last-child{border-bottom:0}
+.processing-steps .step-mark{width:20px;height:20px;min-width:20px;border:1.5px solid #52606D;border-radius:50%;position:relative}
+.processing-steps li.active{color:#F2F5F7}
+.processing-steps li.active .step-mark{border-color:#B8C2CC}
+.processing-steps li.active .step-mark:after{content:"";position:absolute;width:7px;height:7px;border-radius:50%;background:#B8C2CC;left:5px;top:5px}
+.processing-steps li.done{color:#B8C2CC}
+.processing-steps li.done .step-mark{border-color:#B8C2CC}
+.processing-steps li.done .step-mark:after{content:"✓";position:absolute;left:3px;top:-1px;font-size:13px;line-height:20px;color:#B8C2CC}
+.processing-foot{margin-top:9px;min-height:20px;color:#9AA6B2;text-align:center;font-size:12px;line-height:20px}
+@media(max-width:380px){
+ .upload-sheet{padding-left:15px;padding-right:15px}
+ .processing-steps{margin-top:17px}
+ .processing-steps li{height:42px}
+}
