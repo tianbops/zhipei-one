@@ -82,6 +82,8 @@ function setProcessingStage(text){processingStage=text;status.textContent=text;s
 async function processSelectedFile(file){
   if(!file||processingFile)return;
   processingFile=true;
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),60000);
   try{
     if(!(await ensureDispatchRoute())){
       status.textContent="请先选择今天实际使用的配送线路";
@@ -90,13 +92,10 @@ async function processSelectedFile(file){
     }
     showProcessingUI();
     document.querySelectorAll(".source-option").forEach(b=>b.disabled=true);
-    if(processingPanel)processingPanel.querySelectorAll(".processing-steps li").forEach(li=>li.classList.remove("active","done"));
     const fd=new FormData();
     fd.append("file",file);
     fd.append("routeId",dispatchRouteId);
     renderProcessingProgress(3);
-    const controller=new AbortController();
-    const timer=setTimeout(()=>controller.abort(),60000);
     let r;
     try{
       r=await fetch("/api/waybills/process?stream=1",{method:"POST",body:fd,credentials:"same-origin",signal:controller.signal});
@@ -128,46 +127,13 @@ async function processSelectedFile(file){
     }catch(e){
       if(e?.name==="AbortError")throw Error("运单处理超时，请检查OCR服务后重试");
       throw e;
-    }finally{
-      clearTimeout(timer);
     }
   }catch(e){
-      if(e?.name==="AbortError")throw Error("运单处理超时，请检查OCR服务后重试");
-      throw e;
-    }finally{
-      clearTimeout(timer);
-    }
-    if(!r.ok)throw Error("运单处理服务暂时不可用，请重试");
-    const reader=r.body?.getReader();
-    if(!reader)throw Error("当前浏览器不支持实时处理进度");
-    const decoder=new TextDecoder();
-    let buffer="",result=null;
-    while(true){
-      const chunk=await reader.read();
-      if(chunk.done)break;
-      buffer+=decoder.decode(chunk.value,{stream:true});
-      const lines=buffer.split("\n");
-      buffer=lines.pop()||"";
-      for(const line of lines){
-        if(!line.trim())continue;
-        let event;try{event=JSON.parse(line)}catch{continue}
-        if(event.type==="progress")renderProcessingProgress(event.progress);
-        else if(event.type==="result")result=event;
-      }
-    }
-    buffer+=decoder.decode();
-    if(buffer.trim()){
-      try{const event=JSON.parse(buffer);if(event.type==="result")result=event}catch{}
-    }
-    if(!result?.success)throw Error(result?.message||result?.error||"处理失败");
-    renderProcessingProgress(100);
-    location.replace("/pages/order_detail.html?id="+encodeURIComponent(result.waybill.id)+"&source=process");
-  }catch(e){
-    processingFile=false;
     if(overlay){overlay.hidden=true;overlay.setAttribute("aria-hidden","true");document.body.classList.remove("sheet-open");resetProcessingUI()}
     status.textContent=e.message||"处理失败";
     status.className="home-status error";
   }finally{
+    clearTimeout(timer);
     document.querySelectorAll(".source-option").forEach(b=>b.disabled=false);
     processingFile=false;
   }
