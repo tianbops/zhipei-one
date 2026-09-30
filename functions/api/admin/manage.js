@@ -3,7 +3,7 @@ import {currentUser} from "../_auth.js";
 import {get,set,command} from "../_redis.js";
 import {hash} from "../login.js";
 
-function admin(u){return u&&u.role==="admin"}
+function admin(u){return u&&(u.role==="system_admin"||(u.role==="system_admin"||(u.role==="system_admin"||u.role==="admin")))}
 function validUsername(v){return /^[A-Za-z0-9_]{3,32}$/.test(v)}
 
 export async function onRequestPost({request,env}){
