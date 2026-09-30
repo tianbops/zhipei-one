@@ -12,5 +12,36 @@ function addInvite(){open("生成邀请码","设置使用次数和有效期",'<d
 function editUser(){open("修改用户名","输入新的管理员用户名",'<div class="field"><label>新用户名</label><input id="nu" value="'+esc(S.me.username)+'"></div>',"保存",false,async()=>{await api("/api/admin/manage",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"rename",username:nu.value.trim()})});close();toast("用户名已修改，请重新登录");setTimeout(()=>location.replace("/"),700)})}
 function editPass(){open("修改密码","修改后需要重新登录",'<div class="field"><label>当前密码</label><input id="op" type="password"></div><div class="field"><label>新密码</label><input id="np" type="password"></div><div class="field"><label>确认新密码</label><input id="cp" type="password"></div>',"保存",false,async()=>{if(np.value.length<6||np.value!==cp.value)return toast("请检查新密码");await api("/api/admin/manage",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"password",currentPassword:op.value,password:np.value})});close();toast("密码已修改，请重新登录");setTimeout(()=>location.replace("/"),700)})}
 function resetData(){open("重置数据","将清除所有业务数据和普通用户。","管理员账号和系统基础配置不会被清除。\n\n重置后，业务数据需要重新建立和学习。","下一步",true,async()=>{close();open("确认重置数据","确定要重置所有业务数据吗？","此操作无法撤销。","确定",true,async()=>{close();open("验证管理员","请输入管理员密码",'<div class="field"><label>管理员密码</label><input id="rp" type="password"></div>',"重置",true,async()=>{await api("/api/admin/manage",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"reset",password:rp.value})});close();toast("数据已重置");load()})})})}
-async function load(){$("who").textContent="正在验证身份…";try{const m=await api("/api/me?adminCheck="+Date.now());if(m.user?.role!=="system_admin"&&m.user?.role!=="admin")throw Error("当前账号不是管理员");S.me=m.user;$("who").textContent="管理员："+m.user.username;$("userMeta").textContent=m.user.username;const [r,u,q,i]=await Promise.all([api("/api/routes?adminLoad="+Date.now()),api("/api/admin/users?adminLoad="+Date.now()),api("/api/admin/route-requests?adminLoad="+Date.now()),api("/api/invite-codes?adminLoad="+Date.now())]);S.routes=r.routes||[];S.users=u.users||[];S.requests=q.requests||[];S.invites=i.codes||[];renderUsers();renderRoutes();renderRequests();renderInvites();loadGlobalConflicts()}catch(e){$("who").textContent="身份验证失败："+(e.message||"请重新登录");setTimeout(()=>location.replace("/"),900)}}$("search").oninput=renderUsers;document.addEventListener("click",e=>{if(!e.target.closest(".row,.route,.dialog"))closeSwipes()});document.querySelectorAll(".page").forEach(p=>p.addEventListener("scroll",closeSwipes,{passive:true}));$("addRoute").onclick=addRoute;$("addInvite").onclick=addInvite;$("editUser").onclick=editUser;$("editPass").onclick=editPass;$("reset").onclick=resetData;$("logout").onclick=()=>open("退出登录","确定要退出当前管理员账号吗？","","确定",false,async()=>{await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"});close();location.replace("/")});document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>page(Number(b.dataset.i)));let sx,sy;$("viewport").addEventListener("touchstart",e=>{if(!dlg.hidden)return;sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});$("viewport").addEventListener("touchend",e=>{if(!dlg.hidden)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.35){if(dx<0&&S.page<5)page(S.page+1);if(dx>0&&S.page>0)page(S.page-1)}} ,{passive:true});load();
+async function load(){
+  $("who").textContent="正在验证身份…";
+  let m;
+  try{
+    m=await api("/api/me?adminCheck="+Date.now());
+  }catch(e){
+    $("who").textContent="身份验证失败："+(e.message||"请重新登录");
+    setTimeout(()=>location.replace("/"),1200);
+    return;
+  }
+  if(m.user?.role!=="system_admin"&&m.user?.role!=="admin"){
+    $("who").textContent="当前账号无管理员权限";
+    setTimeout(()=>location.replace("/"),1200);
+    return;
+  }
+  S.me=m.user;
+  $("who").textContent="管理员："+m.user.username;
+  $("userMeta").textContent=m.user.username;
+  try{
+    const [r,u,q,i]=await Promise.all([
+      api("/api/routes?adminLoad="+Date.now()),
+      api("/api/admin/users?adminLoad="+Date.now()),
+      api("/api/admin/route-requests?adminLoad="+Date.now()),
+      api("/api/invite-codes?adminLoad="+Date.now())
+    ]);
+    S.routes=r.routes||[];S.users=u.users||[];S.requests=q.requests||[];S.invites=i.codes||[];
+    renderUsers();renderRoutes();renderRequests();renderInvites();loadGlobalConflicts();
+  }catch(e){
+    toast("管理员身份已验证，但部分数据读取失败："+(e.message||"请稍后重试"));
+    renderUsers();renderRoutes();renderRequests();renderInvites();
+  }
+}$("search").oninput=renderUsers;document.addEventListener("click",e=>{if(!e.target.closest(".row,.route,.dialog"))closeSwipes()});document.querySelectorAll(".page").forEach(p=>p.addEventListener("scroll",closeSwipes,{passive:true}));$("addRoute").onclick=addRoute;$("addInvite").onclick=addInvite;$("editUser").onclick=editUser;$("editPass").onclick=editPass;$("reset").onclick=resetData;$("logout").onclick=()=>open("退出登录","确定要退出当前管理员账号吗？","","确定",false,async()=>{await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"});close();location.replace("/")});document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>page(Number(b.dataset.i)));let sx,sy;$("viewport").addEventListener("touchstart",e=>{if(!dlg.hidden)return;sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});$("viewport").addEventListener("touchend",e=>{if(!dlg.hidden)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.35){if(dx<0&&S.page<5)page(S.page+1);if(dx>0&&S.page>0)page(S.page-1)}} ,{passive:true});load();
 </script></body></html>
