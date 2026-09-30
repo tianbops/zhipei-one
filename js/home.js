@@ -9,8 +9,32 @@ let dispatchRouteId="";
 const setEmptyToday=()=>{todayCount.textContent="暂无运单";todayWeight.textContent="";if(dot)dot.textContent="0";todayRoute.textContent="";todayRoute.hidden=true;document.querySelector(".task-card")?.classList.add("no-waybill")};
 const setHasToday=()=>{todayRoute.hidden=false;document.querySelector(".task-card")?.classList.remove("no-waybill")};
 
-function closeUpload(){if(overlay){overlay.hidden=true;overlay.setAttribute("aria-hidden","true");document.body.classList.remove("sheet-open")}}
-function openUpload(){if(overlay){overlay.hidden=false;overlay.setAttribute("aria-hidden","false");document.body.classList.add("sheet-open")}}
+const processingPanel=$("uploadProcessing"),sourceMenu=$("uploadSourceMenu"),processingSubtitle=$("processingSubtitle"),processingFoot=$("processingFoot");
+function resetProcessingUI(){
+  if(!processingPanel||!sourceMenu)return;
+  sourceMenu.hidden=false;processingPanel.hidden=true;
+  processingSubtitle.textContent="请保持页面打开";processingFoot.textContent="正在提交，请稍候…";
+  processingPanel.querySelectorAll(".processing-steps li").forEach((li,i)=>{li.classList.remove("active","done")});
+}
+function showProcessingUI(){
+  if(!processingPanel||!sourceMenu)return;
+  sourceMenu.hidden=true;processingPanel.hidden=false;
+  processingPanel.querySelectorAll(".processing-steps li").forEach((li,i)=>{li.classList.toggle("active",i===0);li.classList.remove("done")});
+  processingSubtitle.textContent="系统正在完成识别、提取、匹配、去重与规划";
+  processingFoot.textContent="正在识别运单…";
+}
+function closeUpload(){
+  if(processingFile)return;
+  if(overlay){overlay.hidden=true;overlay.setAttribute("aria-hidden","true");document.body.classList.remove("sheet-open");resetProcessingUI()}
+}
+function openUpload(){
+  if(overlay){resetProcessingUI();overlay.hidden=false;overlay.setAttribute("aria-hidden","false");document.body.classList.add("sheet-open")}
+}
+function setPipelineStage(index,text){
+  if(!processingPanel)return;
+  processingPanel.querySelectorAll(".processing-steps li").forEach((li,i)=>{li.classList.toggle("done",i<index);li.classList.toggle("active",i===index)});
+  if(processingFoot)processingFoot.textContent=text;
+}
 $("uploadAction")?.addEventListener("click",openUpload);
 cancel?.addEventListener("click",closeUpload);
 overlay?.addEventListener("click",e=>{if(e.target===overlay)closeUpload()});
@@ -60,11 +84,13 @@ async function processSelectedFile(file){
       return;
     }
     setProcessingStage("正在提交运单…");
+    showProcessingUI();
     document.querySelectorAll(".source-option").forEach(b=>b.disabled=true);
+    if(processingPanel)processingPanel.querySelectorAll(".processing-steps li").forEach(li=>li.classList.remove("active","done"));
     const fd=new FormData();
     fd.append("file",file);
     fd.append("routeId",dispatchRouteId);
-    setProcessingStage("正在识别 → 提取 → 匹配 → 去重 → 规划…");
+    setPipelineStage(0,"正在识别运单…");
     const controller=new AbortController();
     const timer=setTimeout(()=>controller.abort(),60000);
     let r;
@@ -78,9 +104,11 @@ async function processSelectedFile(file){
     }
     const d=await r.json().catch(()=>({}));
     if(!r.ok||!d.success)throw Error(d.message||d.error||"处理失败");
+    setPipelineStage(5,"识别、提取、匹配、去重、规划已完成，正在呈现结果…");
     location.replace("/pages/order_detail.html?id="+encodeURIComponent(d.waybill.id)+"&source=process");
   }catch(e){
-    closeUpload();
+    processingFile=false;
+    if(overlay){overlay.hidden=true;overlay.setAttribute("aria-hidden","true");document.body.classList.remove("sheet-open");resetProcessingUI()}
     status.textContent=e.message||"处理失败";
     status.className="home-status error";
   }finally{
