@@ -121,6 +121,7 @@ async function processSelectedFile(file){
       if(buffer.trim()){
         try{const event=JSON.parse(buffer);if(event.type==="result")result=event}catch{}
       }
+      if(!result)throw Error("处理连接中断，请重试");
       if(!result?.success)throw Error(result?.message||result?.error||"处理失败");
       renderProcessingProgress(100);
       location.replace("/pages/order_detail.html?id="+encodeURIComponent(result.waybill.id)+"&source=process");
