@@ -46,30 +46,45 @@ function chooseFile(source){
 document.querySelectorAll(".source-option").forEach(btn=>btn.addEventListener("click",()=>chooseFile(btn.dataset.source)));
 
 let processingFile=false;
+let processingStage="";
+function setProcessingStage(text){processingStage=text;status.textContent=text;status.className="home-status processing";}
 async function processSelectedFile(file){
   if(!file||processingFile)return;
   processingFile=true;
-  if(!(await ensureDispatchRoute())){
-    status.textContent="请先选择今天实际使用的配送线路";
-    status.className="home-status error";
-    return;
-  }
-  closeUpload();
-  status.textContent="正在识别运单并执行提取、匹配、去重、规划…";
-  status.className="home-status";
   try{
-    const fd=new FormData();fd.append("file",file);fd.append("routeId",dispatchRouteId);
+    if(!(await ensureDispatchRoute())){
+      status.textContent="请先选择今天实际使用的配送线路";
+      status.className="home-status error";
+      return;
+    }
+    setProcessingStage("正在提交运单…");
+    document.querySelectorAll(".source-option").forEach(b=>b.disabled=true);
+    const fd=new FormData();
+    fd.append("file",file);
+    fd.append("routeId",dispatchRouteId);
+    setProcessingStage("正在识别 → 提取 → 匹配 → 去重 → 规划…");
     const controller=new AbortController();
-    const timer=setTimeout(()=>controller.abort(),35000);
+    const timer=setTimeout(()=>controller.abort(),60000);
     let r;
-    try{r=await fetch("/api/waybills/process",{method:"POST",body:fd,credentials:"same-origin",signal:controller.signal});}
-    catch(e){if(e?.name==="AbortError")throw Error("运单处理超时，请检查OCR服务后重试");throw e}
-    finally{clearTimeout(timer)}
+    try{
+      r=await fetch("/api/waybills/process",{method:"POST",body:fd,credentials:"same-origin",signal:controller.signal});
+    }catch(e){
+      if(e?.name==="AbortError")throw Error("运单处理超时，请检查OCR服务后重试");
+      throw e;
+    }finally{
+      clearTimeout(timer);
+    }
     const d=await r.json().catch(()=>({}));
     if(!r.ok||!d.success)throw Error(d.message||d.error||"处理失败");
     location.replace("/pages/order_detail.html?id="+encodeURIComponent(d.waybill.id)+"&source=process");
-  }catch(e){status.textContent=e.message||"处理失败";status.className="home-status error"}
-  finally{processingFile=false}
+  }catch(e){
+    closeUpload();
+    status.textContent=e.message||"处理失败";
+    status.className="home-status error";
+  }finally{
+    document.querySelectorAll(".source-option").forEach(b=>b.disabled=false);
+    processingFile=false;
+  }
 }
 ["cameraInput","photoInput","documentInput"].forEach(id=>$(id)?.addEventListener("change",e=>processSelectedFile(e.target.files?.[0])));
 
