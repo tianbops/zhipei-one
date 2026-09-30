@@ -54,11 +54,11 @@ export async function onRequestGet({request,env}){
     await command(env,["SREM","zp:"+repairKey,repairIdClean]).catch(()=>{});
     continue;
    }
-   if(confirmedOnly&&!effectiveWaybill(w))continue;
-   if(w.historyStatus==="SUPERSEDED"||confirmedOnly&&!effectiveWaybill(w)){
+   if(w.historyStatus==="SUPERSEDED"){
     await command(env,["SREM","zp:"+repairKey,repairIdClean]).catch(()=>{});
     continue;
    }
+   if(confirmedOnly&&!effectiveWaybill(w))continue;
    try{
     await writeIfNewer(env,"route:"+routeId+":orders:latest",w);
     if(w.date===todayCN())await writeIfNewer(env,"route:"+routeId+":orders:today",w);
