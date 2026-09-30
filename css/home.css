@@ -1,0 +1,51 @@
+/* 智配One 首页 UI 2.0
+   首页专用样式：仅承载布局与视觉，不放业务逻辑。
+*/
+.home-shell{padding:14px 0 calc(28px + env(safe-area-inset-bottom))}
+.home-topbar{min-height:58px;padding:0 2px 12px}
+.home-brand strong{display:block;font-size:22px;line-height:28px;font-weight:700;letter-spacing:.1px}
+.home-brand p{margin:2px 0 0;color:var(--muted);font-size:12px;line-height:18px}
+.home-menu{width:42px;height:42px;font-size:23px}
+.home-menu-panel{top:48px;width:166px}
+
+.today-section{margin-top:4px}
+.today-card{position:relative;overflow:hidden;min-height:248px;padding:20px 18px;background:var(--card)}
+.today-copy{position:relative;z-index:2;padding-right:118px}
+.today-title{margin:0;font-size:19px;line-height:26px;font-weight:600}
+.today-route{margin:5px 0 0;color:#fff;font-size:15px;line-height:22px}
+.today-route-empty{color:var(--muted)}
+.today-summary{margin:22px 0 0}
+.today-count{margin:0;font-size:27px;line-height:34px;font-weight:600}
+.today-weight{margin:4px 0 0;color:var(--muted);font-size:13px;line-height:20px}
+.today-metrics{display:flex;flex-wrap:wrap;gap:5px 15px;margin-top:8px;color:var(--muted);font-size:12px;line-height:19px}
+.today-metrics:empty{display:none}
+
+.route-picker{position:relative;z-index:3;margin-top:15px;width:100%;max-width:245px}
+.route-picker select{width:100%;height:40px;padding:0 34px 0 12px;border:1px solid var(--line);border-radius:10px;background:#11171D;color:#fff;font:inherit;font-size:13px;appearance:auto}
+.route-picker select:disabled{opacity:.55}
+.route-message{min-height:18px;margin:5px 0 0;color:var(--muted);font-size:11px;line-height:18px}
+
+.delivery-illustration{position:absolute;right:8px;bottom:5px;width:122px;height:122px;opacity:.72;pointer-events:none}
+.delivery-illustration .line{fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.delivery-illustration .accent{fill:none;stroke:#7F8A95;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.delivery-illustration .dot{fill:#B8C2CC}
+.delivery-illustration .pin{fill:none;stroke:#B8C2CC;stroke-width:2}
+
+.home-actions{display:grid;gap:10px;margin-top:12px}
+.home-action{display:flex;align-items:center;gap:13px;min-height:62px;padding:10px 14px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:#fff;text-decoration:none}
+.home-action:active{background:#202B36}
+.home-action-icon{display:flex;align-items:center;justify-content:center;flex:none;width:38px;height:38px;border-radius:11px;background:#26313C;color:#fff}
+.home-action-icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.home-action-copy{min-width:0;flex:1}
+.home-action-title{display:block;font-size:16px;line-height:22px;font-weight:500}
+.home-action-sub{display:block;margin-top:2px;color:var(--muted);font-size:11px;line-height:17px}
+.home-action-arrow{color:#8D98A4;font-size:23px;line-height:1}
+
+.home-upload{display:none}
+@media(max-width:380px){
+  .today-card{min-height:238px;padding:18px 16px}
+  .today-copy{padding-right:104px}
+  .delivery-illustration{width:108px;height:108px;right:3px}
+  .today-summary{margin-top:18px}
+  .today-count{font-size:25px}
+}
