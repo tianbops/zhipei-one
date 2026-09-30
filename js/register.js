@@ -3,9 +3,23 @@ const message=document.getElementById("registerMessage");
 const button=document.getElementById("registerButton");
 
 document.querySelectorAll("[data-password-toggle]").forEach(toggle=>{
+  const input=document.getElementById(toggle.dataset.passwordToggle);
+  if(!input)return;
+
+  const syncVisibility=()=>{
+    toggle.hidden=input.value.length===0;
+    if(toggle.hidden && input.type==="text"){
+      input.type="password";
+      toggle.setAttribute("aria-pressed","false");
+      toggle.setAttribute("aria-label","显示密码");
+    }
+  };
+
+  toggle.hidden=input.value.length===0;
+  input.addEventListener("input",syncVisibility);
+
   toggle.addEventListener("click",()=>{
-    const input=document.getElementById(toggle.dataset.passwordToggle);
-    if(!input)return;
+    if(input.value.length===0)return;
     const visible=input.type==="text";
     input.type=visible?"password":"text";
     toggle.setAttribute("aria-pressed",String(!visible));
