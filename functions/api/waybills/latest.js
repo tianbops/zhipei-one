@@ -37,7 +37,7 @@ export async function onRequestGet({request,env}){
  const url=new URL(request.url),id=clean(url.searchParams.get("id")),routeId=clean(user.dispatchRouteId||user.boundRouteId);if(!routeId)return json({success:true,waybill:null});
  if(id){
   const raw=await get(env,"waybill:"+id);if(!raw)return json({success:true,waybill:null});
-  try{const waybill=typeof raw==="string"?JSON.parse(raw):raw;if(!validWaybill(waybill)||waybill.routeId!==routeId)return json({success:true,waybill:null});return json({success:true,waybill})}catch{return json({success:false,code:"WAYBILL_DATA_INVALID",error:"运单数据异常"},500)}
+  try{const waybill=typeof raw==="string"?JSON.parse(raw):raw;if(!activeWaybill(waybill)||waybill.routeId!==routeId)return json({success:true,waybill:null});return json({success:true,waybill})}catch{return json({success:false,code:"WAYBILL_DATA_INVALID",error:"运单数据异常"},500)}
  }
  const repairKey="route:"+routeId+":orders:index-repair";
  const repairInvalidKey=repairKey+":invalid";
