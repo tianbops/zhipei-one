@@ -17,7 +17,7 @@ const startOfYear=date=>date.slice(0,4)+"-01-01";
 const historyRange=today=>({start:startOfYear(today),end:addMonths(today,1)});
 const inRange=(date,range)=>date>=range.start&&date<=range.end;
 const monthInRange=(month,range)=>month>=range.start.slice(0,7)&&month<=range.end.slice(0,7);
-const validWaybill=x=>!!x&&x.schemaVersion==="2"&&typeof x.id==="string"&&typeof x.routeId==="string"&&Array.isArray(x.stores)&&!!x.summary&&x.stage==="CONFIRMED";
+const validWaybill=x=>!!x&&x.schemaVersion==="2"&&typeof x.id==="string"&&typeof x.routeId==="string"&&Array.isArray(x.stores)&&!!x.summary&&x.stage==="CONFIRMED"&&x.historyStatus!=="SUPERSEDED";
 const historyKey=(routeId,date)=>"zp:route:"+routeId+":history:"+date;
 
 async function readWaybill(env,id){
