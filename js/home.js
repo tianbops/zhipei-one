@@ -27,11 +27,14 @@ async function ensureDispatchRoute(){
   return false;
 }
 
-async function chooseFile(source){
-  const ready=await ensureDispatchRoute();
-  if(!ready){
-    status.textContent="请先选择今天实际使用的配送线路";
-    status.className="home-status error";
+function chooseFile(source){
+  // 保持文件选择器调用在用户点击手势内，避免 Android 浏览器因异步等待而拦截相册/相机。
+  if(!dispatchRouteId){
+    status.textContent="正在读取当前配送线路…";
+    status.className="home-status";
+    ensureDispatchRoute().then(ready=>{
+      if(!ready){status.textContent="请先选择今天实际使用的配送线路";status.className="home-status error";}
+    });
     return;
   }
   const input=source==="camera"?$("cameraInput"):source==="photo"?$("photoInput"):$("documentInput");
@@ -42,8 +45,10 @@ async function chooseFile(source){
 }
 document.querySelectorAll(".source-option").forEach(btn=>btn.addEventListener("click",()=>chooseFile(btn.dataset.source)));
 
+let processingFile=false;
 async function processSelectedFile(file){
-  if(!file)return;
+  if(!file||processingFile)return;
+  processingFile=true;
   if(!(await ensureDispatchRoute())){
     status.textContent="请先选择今天实际使用的配送线路";
     status.className="home-status error";
@@ -54,11 +59,17 @@ async function processSelectedFile(file){
   status.className="home-status";
   try{
     const fd=new FormData();fd.append("file",file);fd.append("routeId",dispatchRouteId);
-    const r=await fetch("/api/waybills/process",{method:"POST",body:fd,credentials:"same-origin"});
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),35000);
+    let r;
+    try{r=await fetch("/api/waybills/process",{method:"POST",body:fd,credentials:"same-origin",signal:controller.signal});}
+    catch(e){if(e?.name==="AbortError")throw Error("运单处理超时，请检查OCR服务后重试");throw e}
+    finally{clearTimeout(timer)}
     const d=await r.json().catch(()=>({}));
     if(!r.ok||!d.success)throw Error(d.message||d.error||"处理失败");
     location.replace("/pages/order_detail.html?id="+encodeURIComponent(d.waybill.id)+"&source=process");
   }catch(e){status.textContent=e.message||"处理失败";status.className="home-status error"}
+  finally{processingFile=false}
 }
 ["cameraInput","photoInput","documentInput"].forEach(id=>$(id)?.addEventListener("change",e=>processSelectedFile(e.target.files?.[0])));
 
