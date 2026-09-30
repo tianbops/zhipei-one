@@ -40,5 +40,44 @@ export async function onRequestPost({request,env}){
     return json({success:true});
   }
 
+  if(action==="reset"){
+    const password=String(input.password||"");
+    if(!password)return json({success:false,error:"请输入管理员密码"},400);
+    if(actor.passwordHash!==await hash(password))return json({success:false,error:"管理员密码错误"},403);
+
+    const keep=new Set([
+      "zp:user:"+String(actor.id),
+      "zp:user:index:"+String(actor.username||"").toLowerCase(),
+      "zp:users:index"
+    ]);
+    const authorization=(request.headers.get("authorization")||"").replace(/^Bearer\s+/i,"").trim();
+    const cookie=request.headers.get("cookie")||"";
+    const m=cookie.match(/(?:^|;\s*)zp_session=([^;]+)/);
+    const sessionToken=authorization|| (m?decodeURIComponent(m[1]):"");
+    if(sessionToken)keep.add("zp:session:"+sessionToken);
+
+    let cursor="0";
+    let deleted=0;
+    do{
+      const scan=await command(env,["SCAN",cursor,"MATCH","zp:*","COUNT","200"]);
+      cursor=String(scan?.[0]??"0");
+      const keys=Array.isArray(scan?.[1])?scan[1]:[];
+      const remove=keys.filter(k=>{
+        if(keep.has(k))return false;
+        if(k.startsWith("zp:system:"))return false;
+        if(k.startsWith("zp:config:"))return false;
+        if(k.startsWith("zp:settings:"))return false;
+        return true;
+      });
+      if(remove.length){
+        await command(env,["DEL",...remove]);
+        deleted+=remove.length;
+      }
+    }while(cursor!=="0");
+
+    await set(env,"users:index",[actor.id]);
+    return json({success:true,deleted});
+  }
+
   return json({success:false,error:"不支持的操作"},400);
 }
