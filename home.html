@@ -73,6 +73,18 @@
         </div>
         <button id="sourceCancel" class="upload-cancel-btn" type="button">取消</button>
       </div>
+      <div class="upload-processing" id="uploadProcessing" hidden aria-live="polite">
+        <div class="processing-title">正在处理运单</div>
+        <div class="processing-subtitle" id="processingSubtitle">请保持页面打开</div>
+        <ol class="processing-steps" id="processingSteps">
+          <li data-stage="识别"><span class="step-mark"></span><span>识别</span></li>
+          <li data-stage="提取"><span class="step-mark"></span><span>提取</span></li>
+          <li data-stage="匹配"><span class="step-mark"></span><span>匹配</span></li>
+          <li data-stage="去重"><span class="step-mark"></span><span>去重</span></li>
+          <li data-stage="规划"><span class="step-mark"></span><span>规划</span></li>
+        </ol>
+        <div class="processing-foot" id="processingFoot">正在提交，请稍候…</div>
+      </div>
     </div>
   </div>
   <p id="status" class="home-status" aria-live="polite"></p>
