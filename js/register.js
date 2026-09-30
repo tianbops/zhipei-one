@@ -42,7 +42,6 @@ form?.addEventListener("submit",async e=>{
       headers:{"content-type":"application/json"},
       body:JSON.stringify({
         username:document.getElementById("username").value.trim(),
-        name:document.getElementById("name").value.trim(),
         password,
         inviteCode:document.getElementById("inviteCode").value.trim()
       })
