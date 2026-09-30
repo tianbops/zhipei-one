@@ -40,32 +40,28 @@
     <span>危险操作</span><span class="account-collapse-icon" aria-hidden="true">⌄</span>
   </button>
   <div id="dangerBody" class="account-collapse-body" hidden>
-    <div class="account-danger-box">
+    <div id="deletePrompt" class="account-danger-box">
       <strong>注销账号</strong>
       <p>注销后将永久删除当前账号、线路绑定和待处理的线路申请。线路本身、线路基准资料及已产生的业务数据不会因个人账号注销而删除。</p>
       <button id="deleteAccountBtn" class="page2-danger-btn" type="button">注销账号</button>
     </div>
+    <div id="deleteConfirmPanel" class="account-delete-confirm" hidden>
+      <strong>确认注销账号</strong>
+      <p>此操作无法撤销。请输入当前密码确认注销。</p>
+      <label class="page2-label">当前密码<input id="deletePassword" type="password" autocomplete="current-password" placeholder="请输入当前密码"></label>
+      <p id="deleteMessage" class="message" aria-live="polite"></p>
+      <div class="account-dialog-actions">
+        <button id="deleteCancel" class="page2-secondary" type="button">取消</button>
+        <button id="deleteConfirm" class="page2-danger-btn" type="button">确认注销</button>
+      </div>
+    </div>
   </div>
 </section>
-
 <section class="page2-card">
   <button id="logout" class="page2-primary account-logout" type="button">退出登录</button>
   <p id="message" class="message"></p>
 </section>
 </main>
-
-<div id="deleteDialog" class="account-dialog-bg" hidden>
-  <div class="account-dialog" role="dialog" aria-modal="true" aria-labelledby="deleteDialogTitle">
-    <h2 id="deleteDialogTitle">确认注销账号</h2>
-    <p>此操作无法撤销。请输入当前密码确认注销。</p>
-    <label class="page2-label">当前密码<input id="deletePassword" type="password" autocomplete="current-password" placeholder="请输入当前密码"></label>
-    <p id="deleteMessage" class="message" aria-live="polite"></p>
-    <div class="account-dialog-actions">
-      <button id="deleteCancel" class="page2-secondary" type="button">取消</button>
-      <button id="deleteConfirm" class="page2-danger-btn" type="button">确认注销</button>
-    </div>
-  </div>
-</div>
 
 <script>
 const $=id=>document.getElementById(id);
@@ -118,11 +114,10 @@ $("passwordBtn").onclick=async()=>{
 
 $("logout").onclick=async()=>{try{await fetch("/api/logout",{method:"POST",credentials:"same-origin"})}finally{location.replace("/")}};
 
-const dialog=$("deleteDialog");
-function closeDelete(){dialog.hidden=true;$("deletePassword").value="";$("deleteMessage").textContent="";$("deleteConfirm").disabled=false}
-$("deleteAccountBtn").onclick=()=>{dialog.hidden=false;setTimeout(()=>$("deletePassword").focus(),50)};
+const deletePrompt=$("deletePrompt"),deleteConfirmPanel=$("deleteConfirmPanel");
+function closeDelete(){deleteConfirmPanel.hidden=true;deletePrompt.hidden=false;$("deletePassword").value="";$("deleteMessage").textContent="";$("deleteConfirm").disabled=false}
+$("deleteAccountBtn").onclick=()=>{deletePrompt.hidden=true;deleteConfirmPanel.hidden=false;setTimeout(()=>$("deletePassword").focus(),50)};
 $("deleteCancel").onclick=closeDelete;
-dialog.addEventListener("click",e=>{if(e.target===dialog)closeDelete()});
 $("deleteConfirm").onclick=async()=>{
  const password=$("deletePassword").value;
  if(!password){$("deleteMessage").textContent="请输入当前密码";return}
