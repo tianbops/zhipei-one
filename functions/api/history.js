@@ -99,3 +99,44 @@ export async function onRequestGet({request,env}){
   history:dates
  });
 }
+
+export async function onRequestDelete({request,env}){
+ const user=await currentUser(request,env);
+ if(!user)return json({success:false,error:"未登录"},401);
+ if(user.role==="admin"||!canUseRoute(user))return json({success:false,error:"无权删除历史数据"},403);
+ const url=new URL(request.url);
+ const routeId=clean(url.searchParams.get("routeId")||user.dispatchRouteId||user.boundRouteId);
+ const date=clean(url.searchParams.get("date"));
+ const currentRoute=clean(user.dispatchRouteId)||clean(user.boundRouteId);
+ if(!routeId||routeId!==currentRoute)return json({success:false,error:"无权操作该线路历史"},403);
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return json({success:false,code:"DATE_INVALID",error:"日期格式错误"},400);
+ const key=historyKey(routeId,date);
+ const waybillId=clean(await get(env,key));
+ if(!waybillId)return json({success:true,deleted:false});
+ const raw=await get(env,"waybill:"+waybillId);
+ let order=null;try{order=typeof raw==="string"?JSON.parse(raw):raw}catch{}
+ if(!order||order.routeId!==routeId||order.date!==date||order.stage!=="CONFIRMED"){
+  await command(env,["DEL",key]);
+  return json({success:true,deleted:false,indexSync:"INVALID_REMOVED"});
+ }
+ const lockKey="zp:route:"+routeId+":history-delete-lock:"+date,token=crypto.randomUUID();
+ if(await command(env,["SET",lockKey,token,"NX","EX","60"])!=="OK")return json({success:false,code:"HISTORY_DELETE_BUSY",error:"该历史记录正在处理中，请稍后再试"},409);
+ try{
+  if(clean(await get(env,key))!==waybillId)return json({success:false,code:"HISTORY_CHANGED",error:"历史记录已发生变化，请刷新后重试"},409);
+  const extra=[];
+  for(const indexName of ["route:"+routeId+":orders:today","route:"+routeId+":orders:latest"]){
+   const indexRaw=await get(env,indexName);let indexed=null;try{indexed=typeof indexRaw==="string"?JSON.parse(indexRaw):indexRaw}catch{}
+   if(indexed?.id===waybillId)extra.push("zp:"+indexName);
+  }
+  await command(env,["DEL",key,...extra]);
+  const keys=["zp:waybill:"+waybillId];let cursor="0";
+  do{
+   const s=await command(env,["SCAN",cursor,"MATCH","zp:waybill:"+waybillId+":*","COUNT","100"]);
+   cursor=String(s?.[0]??"0");if(Array.isArray(s?.[1]))keys.push(...s[1]);
+  }while(cursor!=="0");
+  const unique=[...new Set(keys)];if(unique.length)await command(env,["DEL",...unique]);
+  return json({success:true,deleted:true,waybillId,deletedKeys:unique.length});
+ }finally{
+  await command(env,["EVAL",'if redis.call("GET",KEYS[1])==ARGV[1] then return redis.call("DEL",KEYS[1]) else return 0 end',"1",lockKey,token]).catch(()=>{});
+ }
+}
