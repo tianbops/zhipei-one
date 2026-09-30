@@ -166,3 +166,9 @@
 .task-card.no-waybill .today-summary strong{font-size:15px;color:#B8C2CC;font-weight:600}
 .task-card.no-waybill .today-summary span{display:none}
 @media(max-width:380px){.task-card.no-waybill .today-summary strong{font-size:14px}}
+
+/* 今日配送与日期同排：左标题，右日期 */
+.task-title{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.task-date{margin:0;text-align:right;white-space:nowrap;color:#7F8A95;font-size:13px;font-weight:500}
+.task-route{margin-top:5px}
+@media(max-width:380px){.task-date{font-size:12px}}
