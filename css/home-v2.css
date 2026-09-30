@@ -1,0 +1,37 @@
+.home-app{
+  width:min(100%,430px);
+  padding:max(16px,env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom));
+}
+.home-topbar{height:58px}
+.home-brand strong{font-size:21px;letter-spacing:.2px}
+.home-brand span{margin-top:4px;font-size:11px;letter-spacing:1.4px;color:#8C98A4}
+.task-card{
+  margin-top:18px;
+  min-height:0;
+  padding:18px;
+  border-radius:16px;
+  background:#18212B;
+  border-color:#2A3540;
+  box-shadow:none;
+}
+.task-title{font-size:17px}
+.task-name{gap:9px}
+.status-dot{width:22px;height:22px;min-width:22px;background:#26313C}
+.task-route{font-size:13px;color:#B8C2CC}
+.task-main{margin-top:12px;grid-template-columns:1fr auto;align-items:center}
+.task-info{display:flex;flex-wrap:wrap;gap:4px 12px;color:#B8C2CC;font-size:15px;line-height:22px}
+.task-info strong{font-size:15px}
+.task-info .today-date{width:100%;font-size:13px;color:#7F8A95;line-height:20px}
+.delivery-man{width:88px;height:66px;opacity:.66}
+.function-list{margin-top:12px;gap:8px}
+.function-btn{height:54px;min-height:54px;border-radius:12px;background:#18212B;border-color:#2A3540}
+.function-icon{margin-right:11px}
+.upload-sheet{background:#18212B;border-color:#2A3540;border-radius:18px}
+.source-option{height:68px;min-height:68px;background:#11171D;border-color:#2A3540}
+.upload-cancel-btn{background:#11171D;border-color:#2A3540}
+.home-status{font-size:12px;line-height:20px;margin-top:8px}
+@media(max-width:380px){
+ .home-app{padding-left:12px;padding-right:12px}
+ .task-card{margin-top:15px;padding:16px}
+ .function-btn{height:52px;min-height:52px}
+}

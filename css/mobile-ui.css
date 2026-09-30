@@ -1,0 +1,66 @@
+/* 智配One · Mobile Web UI 2.0 foundation
+   Loaded after app.css on pages that opt in.
+   Goals: compact Android-style hierarchy, touch-safe controls, safe-area handling,
+   consistent dialogs/forms/status states, responsive narrow screens. */
+:root{
+  --zp-bg:#05070A;
+  --zp-surface:#18212B;
+  --zp-surface-2:#11171D;
+  --zp-surface-3:#202B36;
+  --zp-line:#2A3540;
+  --zp-text:#FFFFFF;
+  --zp-muted:#B8C2CC;
+  --zp-soft:#7F8A95;
+  --zp-danger:#FFB4AB;
+  --zp-radius:14px;
+}
+html{background:var(--zp-bg);-webkit-text-size-adjust:100%}
+body{background:var(--zp-bg);color:var(--zp-text);overscroll-behavior-y:none}
+button,a,input,select,textarea{font:inherit}
+button,a{touch-action:manipulation}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+  outline:2px solid #8793A0;outline-offset:2px;
+}
+.shell{
+  width:min(calc(100% - 24px),560px);
+  padding:max(10px,env(safe-area-inset-top)) 0 calc(28px + env(safe-area-inset-bottom));
+}
+.topbar{
+  min-height:52px;
+  padding:0 2px 10px;
+}
+.topbar strong{font-size:19px;letter-spacing:.1px}
+.topbar a,.topbar .text-button{min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+.card{
+  background:var(--zp-surface);
+  border:1px solid var(--zp-line);
+  border-radius:var(--zp-radius);
+  padding:16px;
+  margin-bottom:10px;
+}
+.card h2{font-size:16px;line-height:22px}
+.primary-btn,.secondary-btn,.grid a{
+  min-height:48px;
+  border-radius:11px;
+}
+input,select,textarea{
+  border-color:#35414D!important;
+  background:var(--zp-surface-2)!important;
+  color:var(--zp-text)!important;
+}
+input,select{min-height:48px}
+select{padding-inline:12px}
+label{display:block;color:var(--zp-muted);font-size:13px;line-height:20px}
+label+label{margin-top:13px}
+.message{font-size:13px}
+.message.error{color:var(--zp-danger)}
+.empty{padding:28px 12px;text-align:center;color:var(--zp-soft)}
+[disabled]{cursor:default!important}
+button:disabled,select:disabled,input:disabled{opacity:.45}
+@media(max-width:380px){
+  .shell{width:min(calc(100% - 20px),560px)}
+  .card{padding:15px}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;transition-duration:0.01ms!important;animation-duration:0.01ms!important}
+}

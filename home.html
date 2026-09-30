@@ -7,20 +7,21 @@
 <title>智配One</title>
 <link rel="stylesheet" href="/css/app.css">
 <link rel="stylesheet" href="/css/home.css">
+<link rel="stylesheet" href="/css/home-v2.css">
 </head>
 <body>
 <main class="home-app">
   <header class="home-topbar">
     <div class="home-brand">
       <strong>智配One</strong>
-      <span>Zhipei One</span>
+      <span>智能配送·一路领先</span>
     </div>
     <div class="menu-wrap">
       <button id="menuButton" class="home-menu-button" type="button" aria-label="打开菜单" aria-expanded="false">☰</button>
       <div id="menuPanel" class="home-menu-panel" hidden>
         <div class="home-menu-current" id="menuRoute">当前配送线路</div>
         <a href="/pages/route_apply.html">线路变更</a>
-        <a href="/pages/data.html">数据中心</a>
+        <a href="/pages/data.html">线路数据</a>
         <a href="/pages/account.html">账号设置</a>
         <button id="logout" type="button">退出登录</button>
       </div>
@@ -30,16 +31,16 @@
   <section class="task-card" aria-labelledby="todayTitle">
     <div class="task-title">
       <div class="task-name">
-        <span id="todayTitle">今日任务</span>
+        <span id="todayTitle">今日配送</span>
         <span class="status-dot" id="statusDot" aria-label="今日运单笔数">0</span>
       </div>
       <div class="task-route" id="todayRoute">加载中…</div>
     </div>
-
     <div class="task-main">
       <div class="task-info">
-        <div>门店汇总：<strong id="todayCount">无数据</strong></div>
-        <div>重量汇总：<strong id="todayWeight">无数据</strong></div>
+        <div id="todayDate" class="today-date">今日</div>
+        <div><strong id="todayCount">—</strong></div>
+        <div><strong id="todayWeight">—</strong></div>
       </div>
       <div class="delivery-man" aria-hidden="true">
         <img src="/assets/delivery-route.png" alt="">
@@ -50,43 +51,28 @@
 
   <nav class="function-list" aria-label="主要功能">
     <button class="function-btn" id="uploadAction" type="button">
-      <span class="function-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg>
-      </span>
+      <span class="function-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg></span>
       <span>上传运单</span>
     </button>
     <a class="function-btn" href="/pages/today.html">
-      <span class="function-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path d="M12 21s7-6.1 7-11.1A7 7 0 0 0 5 9.9C5 14.9 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.3"/><path d="M4 18.5h3M17 18.5h3"/></svg>
-      </span>
-      <span>当日线路</span>
+      <span class="function-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s7-6.1 7-11.1A7 7 0 0 0 5 9.9C5 14.9 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.3"/><path d="M4 18.5h3M17 18.5h3"/></svg></span>
+      <span>今日运单</span>
     </a>
     <a class="function-btn" href="/pages/history.html">
-      <span class="function-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3.5 5v4h4"/><path d="M12 7.5v5l3.2 1.9"/></svg>
-      </span>
+      <span class="function-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3.5 5v4h4"/><path d="M12 7.5v5l3.2 1.9"/></svg></span>
       <span>历史查询</span>
     </a>
   </nav>
 
   <div id="uploadArea" class="upload-overlay" hidden aria-hidden="true">
-    <div class="upload-sheet">
+    <div class="upload-sheet" role="dialog" aria-modal="true" aria-labelledby="uploadTitle">
       <div class="sheet-handle" aria-hidden="true"></div>
       <div class="upload-source-menu active" id="uploadSourceMenu">
-        <div class="source-menu-title">上传运单</div>
+        <div class="source-menu-title" id="uploadTitle">上传运单</div>
         <div class="source-menu-options">
-          <button class="source-option" data-source="camera" type="button">
-            <span class="source-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h4l1.5-2h5L16 7h4v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span>
-            <strong>拍摄</strong>
-          </button>
-          <button class="source-option" data-source="photo" type="button">
-            <span class="source-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="9" r="1.5"/><path d="m4 17 5-5 3.5 3.5 2.5-2.5 5 5"/></svg></span>
-            <strong>相册</strong>
-          </button>
-          <button class="source-option" data-source="document" type="button">
-            <span class="source-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 6h7l2 2h9v10H3z"/></svg></span>
-            <strong>文件</strong>
-          </button>
+          <button class="source-option" data-source="camera" type="button"><span class="source-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h4l1.5-2h5L16 7h4v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span><strong>拍摄</strong></button>
+          <button class="source-option" data-source="photo" type="button"><span class="source-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="9" r="1.5"/><path d="m4 17 5-5 3.5 3.5 2.5-2.5 5 5"/></svg></span><strong>相册</strong></button>
+          <button class="source-option" data-source="document" type="button"><span class="source-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 6h7l2 2h9v10H3z"/></svg></span><strong>文件</strong></button>
         </div>
         <button id="sourceCancel" class="upload-cancel-btn" type="button">取消</button>
       </div>
@@ -100,5 +86,9 @@
   <button id="process" type="button" hidden>开始处理</button>
 </main>
 <script src="/js/home.js"></script>
+<script>
+(()=>{const d=document.getElementById("todayDate");if(d){const f=new Intl.DateTimeFormat("zh-CN",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit",weekday:"short"});d.textContent=f.format(new Date()).replaceAll("/","-")}})();
+document.getElementById("logout")?.addEventListener("click",async()=>{try{await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"})}finally{location.replace("/")}})
+</script>
 </body>
 </html>
