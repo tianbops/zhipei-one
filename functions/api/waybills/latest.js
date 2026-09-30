@@ -15,7 +15,7 @@ async function writeIfNewer(env,key,waybill){
  return command(env,["EVAL",script,"1","zp:"+key,JSON.stringify(waybill)]);
 }
 
-async function scanCurrentDay(env,routeId){
+async function scanCurrentDay(env,routeId,confirmedOnly){
  let cursor="0",found=null;
  do{
   const r=await command(env,["SCAN",cursor,"MATCH","zp:waybill:*","COUNT","100"]);
@@ -49,11 +49,12 @@ export async function onRequestGet({request,env}){
    const rawRepair=await get(env,"waybill:"+repairIdClean);
    let w=null;
    try{w=typeof rawRepair==="string"?JSON.parse(rawRepair):rawRepair}catch{}
-   if(!validWaybill(w)||w.routeId!==routeId||(confirmedOnly&&!effectiveWaybill(w))){
+   if(!validWaybill(w)||w.routeId!==routeId){
     await command(env,["HSET","zp:"+repairInvalidKey,repairIdClean,JSON.stringify({status:"INVALID",waybillId:repairIdClean,routeId,reason:rawRepair?"INVALID_WAYBILL":"WAYBILL_MISSING",markedAt:new Date().toISOString()})]).catch(()=>{});
     await command(env,["SREM","zp:"+repairKey,repairIdClean]).catch(()=>{});
     continue;
    }
+   if(confirmedOnly&&!effectiveWaybill(w))continue;
    if(w.historyStatus==="SUPERSEDED"||confirmedOnly&&!effectiveWaybill(w)){
     await command(env,["SREM","zp:"+repairKey,repairIdClean]).catch(()=>{});
     continue;
@@ -81,7 +82,7 @@ export async function onRequestGet({request,env}){
   }catch{}
  }
  if(todayWaybill)return json({success:true,waybill:todayWaybill});
- const found=await scanCurrentDay(env,routeId);
+ const found=await scanCurrentDay(env,routeId,confirmedOnly);
  if(found){
   try{
    await writeIfNewer(env,"route:"+routeId+":orders:today",found);
