@@ -6,6 +6,7 @@ import {canUseRoute} from "../_permissions.js";
 const clean=v=>String(v??"").trim();
 const todayCN=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 const validWaybill=x=>!!x&&x.schemaVersion==="2"&&typeof x.id==="string"&&typeof x.routeId==="string"&&Array.isArray(x.stores)&&!!x.summary;
+const activeWaybill=x=>validWaybill(x)&&x.historyStatus!=="SUPERSEDED;
 const isPrimaryWaybillKey=key=>/^zp:waybill:[^:]+$/.test(String(key));
 
 async function writeIfNewer(env,key,waybill){
@@ -23,7 +24,7 @@ async function scanCurrentDay(env,routeId){
    const v=await get(env,String(key).replace(/^zp:/,""));
    try{
     const w=typeof v==="string"?JSON.parse(v):v;
-    if(validWaybill(w)&&w.routeId===routeId&&w.date===todayCN()&&(!found||String(w.createdAt||"")>String(found.createdAt||"")))found=w;
+    if(activeWaybill(w)&&w.routeId===routeId&&w.date===todayCN()&&(!found||String(w.createdAt||"")>String(found.createdAt||"")))found=w;
    }catch{}
   }
  }while(cursor!=="0");
@@ -52,6 +53,10 @@ export async function onRequestGet({request,env}){
     await command(env,["SREM","zp:"+repairKey,repairIdClean]).catch(()=>{});
     continue;
    }
+   if(w.historyStatus==="SUPERSEDED"){
+    await command(env,["SREM","zp:"+repairKey,repairIdClean]).catch(()=>{});
+    continue;
+   }
    try{
     await writeIfNewer(env,"route:"+routeId+":orders:latest",w);
     if(w.date===todayCN())await writeIfNewer(env,"route:"+routeId+":orders:today",w);
@@ -61,12 +66,12 @@ export async function onRequestGet({request,env}){
  }
  const todayRaw=await get(env,"route:"+routeId+":orders:today");
  let todayWaybill=null;
- if(todayRaw){try{const x=typeof todayRaw==="string"?JSON.parse(todayRaw):todayRaw;if(validWaybill(x)&&x.routeId===routeId&&x.date===todayCN())todayWaybill=x}catch{}}
+ if(todayRaw){try{const x=typeof todayRaw==="string"?JSON.parse(todayRaw):todayRaw;if(activeWaybill(x)&&x.routeId===routeId&&x.date===todayCN())todayWaybill=x}catch{}}
  const raw=await get(env,"route:"+routeId+":orders:latest");
  if(raw){
   try{
    const latestWaybill=typeof raw==="string"?JSON.parse(raw):raw;
-   if(validWaybill(latestWaybill)&&latestWaybill.routeId===routeId&&latestWaybill.date===todayCN()){
+   if(activeWaybill(latestWaybill)&&latestWaybill.routeId===routeId&&latestWaybill.date===todayCN()){
     if(!todayWaybill||String(latestWaybill.createdAt||"")>String(todayWaybill.createdAt||"")){
      try{await writeIfNewer(env,"route:"+routeId+":orders:today",latestWaybill);return json({success:true,waybill:latestWaybill})}
      catch{return json({success:true,waybill:latestWaybill,indexSync:"DEFERRED"})}
