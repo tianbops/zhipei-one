@@ -23,8 +23,15 @@ function extract(rawText){
   const full=lines.join(" ");
   const dm=full.match(/(20\d{2}[-/.年]\d{1,2}[-/.月]\d{1,2}日?)/);
   if(dm){const p=dm[1].replace(/[年月/.]/g,"-").replace(/日$/,"").split("-").map(x=>x.padStart(2,"0"));if(p.length===3)date=p.join("-")}
-  const vm=full.match(/(?:车牌|车辆|车号)\s*[:：]?\s*([\u4e00-\u9fa5A-Z]{1,3}[A-Z0-9]{5,8})/i);
-  if(vm)vehicle=vm[1];
+  // OCR 常会把车牌省份简称、字母和数字之间拆成空格，因此车辆提取不能要求字符连续。
+  // 先按车辆字段提取，再对整段文本做通用车牌兜底；只做格式兼容，不做具体车辆硬编码。
+  const vehiclePattern=/(?:车牌号?|车牌|车辆|车号)\s*[:：]?\s*([\u4e00-\u9fa5])\s*([A-Z])\s*([A-Z0-9]{5,8})/i;
+  let vm=full.match(vehiclePattern);
+  if(!vm)vm=full.match(/(^|[^\u4e00-\u9fa5A-Z0-9])([\u4e00-\u9fa5])\s*([A-Z])\s*([A-Z0-9]{5,8})(?=$|[^A-Z0-9])/i);
+  if(vm){
+    const groups=vm.length===4?vm.slice(2):vm.slice(1);
+    vehicle=(groups[0]+groups[1]+groups[2]).toUpperCase();
+  }
   const wm=full.match(/(?:总重量|重量)\s*[:：]?\s*([\d.]+)\s*(?:吨|t|T)?/);
   if(wm)totalWeight=number(wm[1]);
 
