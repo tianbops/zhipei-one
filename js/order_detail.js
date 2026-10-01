@@ -116,7 +116,10 @@ function openConfirm(){
  };
 }
 
-$('backBtn').onclick=()=>{setMenu(false);location.replace('/home.html')};
+const backToHome=()=>{setMenu(false);location.replace('/home.html')};
+history.pushState({zhipeiOneOrderDetail:true},'',location.href);
+window.addEventListener('popstate',()=>backToHome());
+$('backBtn').onclick=backToHome;
 $('menuBtn').onclick=e=>{e.stopPropagation();setMenu(!menuOpen)};
 $('editRouteBtn').onclick=()=>location.href='/pages/data.html';
 $('shareBtn').onclick=async()=>{
