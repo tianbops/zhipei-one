@@ -48,19 +48,41 @@ async function scanConfirmedWaybill(env,routeId,date){
 }
 
 
-async function readHistoryEntry(env,key){
- // SCAN returns physical zp:* keys; get() adds zp: itself, so strip the prefix first.
- const raw=await get(env,String(key).replace(/^zp:/,""));
- if(!raw)return null;
+async function readHistoryEntries(env,key){
+ const physical=String(key).startsWith("zp:")?String(key):"zp:"+String(key);
+ let members=[];
  try{
-  const value=typeof raw==="string"?JSON.parse(raw):raw;
-  if(value&&typeof value==="object"&&value.id)return historyReadable(value)?value:null;
-  const id=clean(raw);
-  return id?await readWaybill(env,id):null;
- }catch{
-  const id=clean(raw);
-  return id?await readWaybill(env,id):null;
+  const type=await command(env,["TYPE",physical]);
+  if(String(type)==="set")members=await command(env,["SMEMBERS",physical])||[];
+  else{
+   const raw=await get(env,physical.replace(/^zp:/,""));
+   if(raw){
+    try{
+     const value=typeof raw==="string"?JSON.parse(raw):raw;
+     if(value&&typeof value==="object"&&value.id)members=[value];
+     else if(typeof value==="string"&&value)members=[value];
+    }catch{members=[String(raw)];}
+   }
+  }
+ }catch{return []}
+ const out=[];
+ for(const member of members){
+  if(member&&typeof member==="object"&&member.id){if(historyReadable(member))out.push(member);continue}
+  const id=clean(member);
+  if(!id)continue;
+  const w=await readWaybill(env,id);
+  if(w)out.push(w);
  }
+ const seen=new Set();
+ return out.filter(w=>{if(seen.has(w.id))return false;seen.add(w.id);return true}).sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
+}
+async function readHistoryEntry(env,key){
+ const entries=await readHistoryEntries(env,key);
+ return entries.length?entries[entries.length-1]:null;
+}
+async function addHistoryId(env,routeId,date,id){
+ if(!routeId||!date||!id)return;
+ await command(env,["SADD",historyKey(routeId,date),id]);
 }
 
 async function readHistoryIds(env,routeId){
@@ -121,56 +143,49 @@ export async function onRequestGet({request,env}){
   const range=historyRange(todayCN());
   if(!inRange(date,range))return json({success:false,code:"DATE_OUT_OF_RANGE",error:"日期不在历史查询范围内"},400);
   const historyIndexKey=historyKey(routeId,date);
-  const indexed=await readHistoryEntry(env,historyIndexKey);
-  if(!indexed){
-   const recovered=await scanConfirmedWaybill(env,routeId,date);
-   if(!recovered)return json({success:true,routeId,date,waybill:null});
-   try{await command(env,["SET",historyIndexKey,recovered.id]);}catch{}
-   return json({success:true,routeId,date,waybill:await withRouteData(recovered),indexSync:"REPAIRED"});
+  let waybills=await readHistoryEntries(env,historyIndexKey);
+  if(!waybills.length){
+   let cursor="0";
+   do{
+    const scan=await command(env,["SCAN",cursor,"MATCH","zp:waybill:*","COUNT","100"]);
+    cursor=String(scan?.[0]??"0");
+    for(const key of (scan?.[1]||[])){
+     if(!/^zp:waybill:[^:]+$/.test(String(key)))continue;
+     const raw=await get(env,String(key).replace(/^zp:/,""));
+     try{
+      const w=typeof raw==="string"?JSON.parse(raw):raw;
+      if(historyReadable(w)&&w.routeId===routeId&&w.date===date)waybills.push(w);
+     }catch{}
+    }
+   }while(cursor!=="0");
+   const unique=[...new Map(waybills.map(w=>[w.id,w])).values()];
+   waybills=unique.sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
+   if(waybills.length){for(const w of waybills)await addHistoryId(env,routeId,date,w.id).catch(()=>{});}
   }
-  const waybill=indexed;
-  if(!waybill||waybill.routeId!==routeId||waybill.date!==date){
-   await command(env,["DEL",historyKey(routeId,date)]).catch(()=>{});
-   return json({success:true,routeId,date,waybill:null,indexSync:"INVALID_REMOVED"});
-  }
-  return json({success:true,routeId,date,waybill:await withRouteData(waybill)});
+  waybills=waybills.filter(w=>w.routeId===routeId&&w.date===date);
+  const enriched=[];for(const w of waybills)enriched.push(await withRouteData(w));
+  return json({
+   success:true,routeId,date,
+   waybills:enriched,
+   count:enriched.length,
+   waybill:enriched[enriched.length-1]||null
+  });
  }
-
  const today=todayCN();
  const {start,end}=historyRange(today);
  const entries=await readHistoryIds(env,routeId);
- const dates=[];
- const indexedDates=new Set();
+ const byDate=new Map();
  for(const entry of entries){
   if(entry.date<start||entry.date>end)continue;
-  const waybill=await readHistoryEntry(env,entry.key);
-  if(!waybill)continue;
-  if(!waybill||waybill.routeId!==routeId||waybill.date!==entry.date){
-   await command(env,["DEL",entry.key]).catch(()=>{});
-   continue;
+  const waybills=await readHistoryEntries(env,entry.key);
+  for(const waybill of waybills){
+   if(waybill.routeId!==routeId||waybill.date!==entry.date)continue;
+   const list=byDate.get(entry.date)||[];
+   if(!list.some(x=>x.id===waybill.id))list.push(waybill);
+   byDate.set(entry.date,list);
   }
-  indexedDates.add(entry.date);
-  dates.push({
-   date:entry.date,
-   waybillId:waybill.id,
-   storeCount:Number(waybill.summary?.total)||waybill.stores.length,
-   totalWeight:Number(waybill.totalWeight)||0
-  });
  }
- // 历史索引缺失时，先从“今日/最新”主索引恢复，再扫描主运单记录。
- // 这样即使规划保存时 history:{date} 索引同步暂时失败，只要今日运单已经可读，历史查询也能立即恢复。
- const primaryKeys=["route:"+routeId+":orders:today","route:"+routeId+":orders:latest"];
- for(const primaryKey of primaryKeys){
-  try{
-   const raw=await get(env,primaryKey);
-   const w=typeof raw==="string"?JSON.parse(raw):raw;
-   if(!historyReadable(w)||w.routeId!==routeId||w.date<start||w.date>end||indexedDates.has(w.date))continue;
-   indexedDates.add(w.date);
-   dates.push({date:w.date,waybillId:w.id,storeCount:Number(w.summary?.total)||w.stores.length,totalWeight:Number(w.totalWeight)||0});
-   await command(env,["SET",historyKey(routeId,w.date),w.id]).catch(()=>{});
-  }catch{}
- }
- // 再扫描主运单记录，恢复其它缺失的历史索引。
+ // 索引缺失时扫描主运单记录，恢复该日期的全部历史成员。
  let cursor="0";
  do{
   const scan=await command(env,["SCAN",cursor,"MATCH","zp:waybill:*","COUNT","100"]);
@@ -180,21 +195,27 @@ export async function onRequestGet({request,env}){
    const raw=await get(env,String(key).replace(/^zp:/,""));
    try{
     const w=typeof raw==="string"?JSON.parse(raw):raw;
-    if(!historyReadable(w)||w.routeId!==routeId||w.date<start||w.date>end||indexedDates.has(w.date))continue;
-    indexedDates.add(w.date);
-    dates.push({date:w.date,waybillId:w.id,storeCount:Number(w.summary?.total)||w.stores.length,totalWeight:Number(w.totalWeight)||0});
-    await command(env,["SET",historyKey(routeId,w.date),w.id]).catch(()=>{});
+    if(!historyReadable(w)||w.routeId!==routeId||w.date<start||w.date>end)continue;
+    const list=byDate.get(w.date)||[];
+    if(!list.some(x=>x.id===w.id))list.push(w);
+    byDate.set(w.date,list);
    }catch{}
   }
  }while(cursor!=="0");
+ const dates=[];
+ for(const [date,list] of byDate){
+  list.sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
+  for(const w of list)await addHistoryId(env,routeId,date,w.id).catch(()=>{});
+  const storeCount=list.reduce((sum,w)=>sum+(Number(w.summary?.total)||w.stores.length),0);
+  const totalWeight=list.reduce((sum,w)=>sum+(Number(w.totalWeight)||0),0);
+  dates.push({date,count:list.length,waybillId:list[list.length-1]?.id||null,storeCount,totalWeight});
+ }
  dates.sort((a,b)=>b.date.localeCompare(a.date));
  const monthMap=new Map();
  for(const item of dates){
   const month=item.date.slice(0,7);
-  const current=monthMap.get(month)||{month,days:0,totalStores:0,totalWeight:0};
-  current.days++;
-  current.totalStores+=item.storeCount;
-  current.totalWeight+=item.totalWeight;
+  const current=monthMap.get(month)||{month,days:0,waybills:0,totalStores:0,totalWeight:0};
+  current.days++;current.waybills+=item.count;current.totalStores+=item.storeCount;current.totalWeight+=item.totalWeight;
   monthMap.set(month,current);
  }
  return json({
