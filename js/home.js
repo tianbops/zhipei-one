@@ -103,7 +103,7 @@ async function processSelectedFile(file){
     let r;
     try{
       r=await fetch("/api/waybills/process?stream=1",{method:"POST",body:fd,credentials:"same-origin",signal:controller.signal});
-      if(!r.ok)throw Error("运单处理服务暂时不可用，请重试");
+      if(!r.ok){\n        const httpError=new Error("运单处理服务暂时不可用，请重试");\n        httpError.code="PROCESS_HTTP_"+r.status;\n        throw httpError;\n      }
       const reader=r.body?.getReader();
       if(!reader)throw Error("当前浏览器不支持实时处理进度");
       const decoder=new TextDecoder();
@@ -130,11 +130,11 @@ async function processSelectedFile(file){
       renderProcessingProgress(100);
       location.replace("/pages/order_detail.html?id="+encodeURIComponent(result.waybill.id)+"&source=process");
     }catch(e){
-      if(e?.name==="AbortError")throw Error("运单处理超时，请检查OCR服务后重试");
+      if(e?.name==="AbortError")throw Object.assign(new Error("运单处理超时，请检查OCR服务后重试"),{code:"PROCESS_CLIENT_TIMEOUT"});
       throw e;
     }
   }catch(e){
-    showProcessingError(e.message||"处理失败，请重试");
+    showProcessingError((e?.code?"错误代码："+e.code+"\n":"")+(e?.message||"处理失败，请重试"));
     status.textContent="";
     status.className="home-status";
   }finally{
