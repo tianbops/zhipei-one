@@ -15,7 +15,8 @@ const addMonths=(date,months)=>{
  return x.toISOString().slice(0,10);
 };
 const startOfYear=date=>date.slice(0,4)+"-01-01";
-const historyRange=today=>({start:startOfYear(today),end:addMonths(today,1)});
+const historyRange=today=>({start:startOfYear(today),end:addMonths(today,0)===today?addDays(today,1):addDays(today,1)});
+const addDays=(date,days)=>{const [y,m,d]=date.split("-").map(Number);const x=new Date(Date.UTC(y,m-1,d));x.setUTCDate(x.getUTCDate()+days);return x.toISOString().slice(0,10)};
 const inRange=(date,range)=>date>=range.start&&date<=range.end;
 const monthInRange=(month,range)=>month>=range.start.slice(0,7)&&month<=range.end.slice(0,7);
 const validWaybill=x=>!!x&&x.schemaVersion==="2"&&typeof x.id==="string"&&typeof x.routeId==="string"&&Array.isArray(x.stores)&&!!x.summary&&x.stage==="CONFIRMED"&&x.historyStatus!=="SUPERSEDED";
