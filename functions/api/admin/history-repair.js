@@ -25,7 +25,7 @@ async function repair(env,routeId,start,end){
  const waybills=await readWaybills(env,ids);
  const commands=[];
  for(const w of waybills){
-  if(w.routeId!==routeId||!/^\\d{4}-\\d{2}-\\d{2}$/.test(String(w.date)))continue;
+  if(w.routeId!==routeId||!/^\d{4}-\d{2}-\d{2}$/.test(String(w.date)))continue;
   if(String(w.date)<start||String(w.date)>end)continue;
   commands.push(["SADD","zp:route:"+routeId+":history:"+w.date,w.id]);
  }
@@ -42,7 +42,7 @@ export async function onRequestPost({request,env}){
   const start=clean(input.start)||"2026-01-01";
   const end=clean(input.end)||"2026-12-31";
   if(!routeId)return json({success:false,code:"ROUTE_REQUIRED",error:"缺少线路"},400);
-  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(start)||!/^\\d{4}-\\d{2}-\\d{2}$/.test(end)||start>end)return json({success:false,code:"INVALID_RANGE",error:"日期范围无效"},400);
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(start)||!/^\d{4}-\d{2}-\d{2}$/.test(end)||start>end)return json({success:false,code:"INVALID_RANGE",error:"日期范围无效"},400);
   const result=await repair(env,routeId,start,end);
   return json({success:true,routeId,range:{start,end},...result});
  }catch(e){
