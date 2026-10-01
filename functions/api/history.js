@@ -120,7 +120,7 @@ async function addHistoryId(env,routeId,date,id){
 }
 
 async function repairLegacyHistoryIndex(env,routeId,start,end){
- const script='local cursor="0"; local out={}; repeat local scan=redis.call("SCAN",cursor,"MATCH","zp:waybill:*","COUNT","500"); cursor=tostring(scan[1] or "0"); for _,key in ipairs(scan[2] or {}) do local raw=redis.call("GET",key); if raw then local ok,w=pcall(cjson.decode,raw); if ok and type(w)=="table" and type(w.id)=="string" and type(w.routeId)=="string" and type(w.date)=="string" and w.routeId==ARGV[1] and w.date>=ARGV[2] and w.date<=ARGV[3] and (w.stage=="PLANNED" or w.stage=="CONFIRMED") and w.historyStatus~="SUPERSEDED" then table.insert(out,w.id) end end end end until cursor=="0"; return out';
+ const script='local cursor="0"; local out={}; repeat local scan=redis.call("SCAN",cursor,"MATCH","zp:waybill:*","COUNT","500"); cursor=tostring(scan[1] or "0"); for _,key in ipairs(scan[2] or {}) do local raw=redis.call("GET",key); if raw then local ok,w=pcall(cjson.decode,raw); if ok and type(w)=="table" and type(w.id)=="string" and type(w.routeId)=="string" and type(w.date)=="string" and w.routeId==ARGV[1] and w.date>=ARGV[2] and w.date<=ARGV[3] and (w.stage=="PLANNED" or w.stage=="CONFIRMED") and w.historyStatus~="SUPERSEDED" then table.insert(out,w.id) end end end until cursor=="0"; return out';
  const idsRaw=await command(env,["EVAL",script,"0",routeId,start,end]);
  const ids=[...new Set((Array.isArray(idsRaw)?idsRaw:[]).map(clean).filter(Boolean))];
  if(!ids.length)return [];
