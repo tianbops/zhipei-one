@@ -280,3 +280,17 @@
 .processing-retry-btn{display:block;width:100%;height:48px;min-height:48px;margin-top:20px;border:1px solid #2A3540;border-radius:12px;background:#26313C;color:#F2F5F7;font-size:15px;font-weight:650}
 .processing-retry-btn:active{background:#35414D;transform:scale(.985)}
 @media(max-width:380px){.upload-sheet{width:min(90vw,340px);padding:20px 17px 18px}.processing-error-title{font-size:18px}.processing-error-message{font-size:13px}}
+
+
+/* Android 触控反馈：不显示浏览器默认方形焦点边框 */
+.function-btn,.source-option,.upload-cancel-btn,.processing-retry-btn,.home-menu-button{
+  -webkit-tap-highlight-color:transparent;
+}
+.function-btn:focus,.source-option:focus,.upload-cancel-btn:focus,.processing-retry-btn:focus,.home-menu-button:focus{
+  outline:none;
+  box-shadow:none;
+}
+.function-btn:focus-visible,.source-option:focus-visible,.upload-cancel-btn:focus-visible,.processing-retry-btn:focus-visible,.home-menu-button:focus-visible{
+  outline:2px solid rgba(255,255,255,.24);
+  outline-offset:2px;
+}
