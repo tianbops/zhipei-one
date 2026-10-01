@@ -163,7 +163,13 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
     const existing=await get(env,"waybill:"+String(saveResult));
     if(existing){
       const existingOrder=typeof existing==="string"?JSON.parse(existing):existing;
-      return json({success:true,waybill:existingOrder,idempotent:true,indexSync:"EXISTING"});
+      let repaired="OK";
+      try{
+        await writeIfNewer(env,"route:"+routeId+":orders:latest",existingOrder);
+        if(existingOrder.date===todayCN())await writeIfNewer(env,"route:"+routeId+":orders:today",existingOrder);
+        if(/^\d{4}-\d{2}-\d{2}$/.test(clean(existingOrder.date)))await command(env,["SADD","zp:route:"+routeId+":history:"+clean(existingOrder.date),existingOrder.id]);
+      }catch{repaired="DEFERRED"}
+      return json({success:true,waybill:existingOrder,idempotent:true,indexSync:repaired});
     }
     return json({success:false,code:"WAYBILL_FINGERPRINT_CONFLICT",error:"相同业务运单正在保存，请稍后重试"},409);
   }
