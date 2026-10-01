@@ -114,3 +114,13 @@
  .data-tools-card{padding:14px 16px}
  .data-float-scroll{right:24px}
 }
+
+.data-swipe-actions{position:absolute;right:0;top:50%;display:flex;gap:6px;align-items:center;opacity:0;visibility:hidden;transform:translate(12px,-50%);transition:opacity .16s ease,transform .16s ease,visibility .16s ease}
+.data-store-row.data-swipe-open .data-store-main{padding-right:116px}
+.data-store-row.data-swipe-open .data-swipe-actions{opacity:1;visibility:visible;transform:translate(0,-50%)}
+.data-swipe-actions button{min-width:48px;height:34px;padding:0 9px;border:1px solid #35404C;border-radius:9px;background:#11171D;color:#E8EDF2;font-size:12px}
+.data-swipe-actions .data-swipe-delete{color:#D4B6B6}
+@media(min-width:600px){
+ .data-swipe-actions{right:0}
+ .data-store-row.data-swipe-open .data-store-main{padding-right:124px}
+}
