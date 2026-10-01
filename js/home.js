@@ -4,7 +4,7 @@ menuButton?.addEventListener("click",e=>{e.stopPropagation();const open=menuPane
 document.addEventListener("click",e=>{if(menuPanel&&!menuPanel.hidden&&!menuPanel.contains(e.target)&&e.target!==menuButton){menuPanel.hidden=true;menuButton.setAttribute("aria-expanded","false")}});
 
 const overlay=$("uploadArea"),cancel=$("sourceCancel");
-const todayCount=$("todayCount"),todayWeight=$("todayWeight"),dot=$("statusDot");
+const todayCount=$("todayCount"),todayWeight=$("todayWeight"),todayRoute=$("todayRoute"),menuRouteValue=$("currentRouteMenuValue"),dot=$("statusDot");
 let dispatchRouteId="";
 const setEmptyToday=()=>{todayCount.textContent="暂无运单";todayWeight.textContent="";if(dot){dot.textContent="0";dot.hidden=true}};
 const setHasToday=()=>{if(dot)dot.hidden=false};
@@ -133,8 +133,6 @@ async function processSelectedFile(file){
     }
   }catch(e){
     showProcessingError(e?.code||"PROCESS_FAILED");
-    status.textContent="";
-    status.className="home-status";
   }finally{
     clearTimeout(timer);
     document.querySelectorAll(".source-option").forEach(b=>b.disabled=false);
@@ -154,8 +152,9 @@ async function loadHome(){
     if(!routesRes.ok||!routes.success)throw Error(routes.error||"线路读取失败");
     if(!dispatchRes.ok||!dispatch.success)throw Error(dispatch.error||"当前配送线路读取失败");
     dispatchRouteId=dispatch.dispatchRoute?.id||"";
-    todayRoute.textContent=dispatch.dispatchRoute?.name||"请选择配送线路";
-    if(!dispatchRouteId)routeMessage.textContent="请先选择今天实际使用的线路。";
+    const routeName=dispatch.dispatchRoute?.type==="temporary"?"临时":(dispatch.dispatchRoute?.name||"未选择");
+    if(todayRoute)todayRoute.textContent=routeName;
+    if(menuRouteValue)menuRouteValue.textContent=routeName;
     const wRes=await fetch("/api/waybills/latest?confirmed=1",{credentials:"same-origin",cache:"no-store"});
     const wd=await wRes.json().catch(()=>({}));
     const w=wRes.ok&&wd.success?wd.waybill:null;
