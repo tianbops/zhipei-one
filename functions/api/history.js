@@ -76,6 +76,7 @@ async function readHistoryIds(env,routeId){
 }
 
 export async function onRequestGet({request,env}){
+ try{
  const user=await currentUser(request,env);
  if(!user)return json({success:false,error:"未登录"},401);
  if(user.role==="admin"||!canUseRoute(user))return json({success:false,error:"无权查看配送业务"},403);
@@ -183,7 +184,7 @@ export async function onRequestGet({request,env}){
    }catch{}
   }
  }while(cursor!=="0");
- dates.sort((a,b)=>b.date.localeCompare(a.date));
+ }\n dates.sort((a,b)=>b.date.localeCompare(a.date));
  const monthMap=new Map();
  for(const item of dates){
   const month=item.date.slice(0,7);
@@ -200,6 +201,9 @@ export async function onRequestGet({request,env}){
   months:[...monthMap.values()],
   history:dates
  });
+}
+
+ }catch(e){return json({success:false,code:"HISTORY_READ_FAILED",error:"历史记录读取失败",detail:String(e?.message||e).slice(0,180)},500)}
 }
 
 export async function onRequestDelete({request,env}){
