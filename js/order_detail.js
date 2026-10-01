@@ -37,7 +37,6 @@ function render(){
    const nameHtmlWithNote=nav?'<a class="order-store-name nav" href="'+attr(nav)+'" target="_self">'+name+noteHtml+status+'</a>':'<div class="order-store-name">'+name+noteHtml+status+'</div>';
    return '<div class="order-store-item"><span class="order-store-index">'+String(i+1).padStart(2,'0')+'</span><div class="order-store-main">'+nameHtmlWithNote+'</div></div>';
  }).join(''):'<div class="order-empty">当日暂无配送数据</div>';
- if(params.get('diagnostic')==='1'){$('diagnostics').hidden=false;$('diagnostics').textContent=JSON.stringify(order.diagnostics||{},null,2)}
  const old=$('confirmPendingBtn');if(old)old.remove();
  if(pending.length){const b=document.createElement('button');b.id='confirmPendingBtn';b.type='button';b.className='order-pending-fab';b.textContent='确认'+pending.length+'家待定门店';b.onclick=openConfirm;document.body.appendChild(b)}
 }
