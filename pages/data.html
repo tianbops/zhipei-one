@@ -18,7 +18,7 @@
   <input id="restoreFile" type="file" accept=".json,.txt,.csv,application/json,text/plain,text/csv" hidden>
 </div>
 </section>
-<section class="page2-card data-list-card"><div class="data-list-head"><span class="data-list-title">门店资料</span><span id="storeCount" class="data-list-count">—</span></div><div id="stores" class="data-store-list">加载中…</div></section>
+<div id="dataFeedback" class="data-feedback" hidden></div><section class="page2-card data-list-card"><div class="data-list-head"><span class="data-list-title">门店资料</span><span id="storeCount" class="data-list-count">—</span></div><div id="stores" class="data-store-list">加载中…</div></section>
 <div id="editBox" class="data-import data-editor" style="display:none"><div class="data-import-panel data-editor-panel"><div class="data-import-head"><h3 id="editTitle">编辑门店</h3><button id="editClose" class="data-import-close" type="button" aria-label="关闭">×</button></div><label class="data-field"><span>排列序号</span><input id="editOrder" class="data-input" type="number" min="1" step="1" inputmode="numeric" placeholder="例如 1"><small id="editOrderHint" class="data-field-hint"></small></label><label class="data-field"><span>门店名称</span><input id="editName" class="data-input" type="text" maxlength="120"></label><label class="data-field"><span>导航地址</span><input id="editNavigation" class="data-input" type="url" placeholder="https://..."></label><label class="data-field"><span>备注</span><textarea id="editNote" class="data-textarea data-note" placeholder="可选"></textarea></label><div id="editError" class="data-help data-preview"></div><div class="data-import-actions"><button id="editCancel" type="button">取消</button><button id="editSave" type="button">保存</button></div></div></div>
 <div id="confirmBox" class="data-import data-confirm" style="display:none"><div class="data-confirm-panel"><div class="data-confirm-icon">!</div><h3 id="confirmTitle">确认操作</h3><p id="confirmMessage"></p><div class="data-import-actions"><button id="confirmCancel" type="button">取消</button><button id="confirmOk" type="button">确定</button></div></div></div>
 <div id="replaceBox" class="data-import" style="display:none"><div class="data-import-panel">
@@ -36,7 +36,7 @@
 <div id="appendBox" class="data-import" style="display:none"><div class="data-import-panel">
 <div class="data-import-head"><h3>单独追加</h3><button id="appendClose" class="data-import-close" type="button" aria-label="关闭">×</button></div>
 <p class="data-help">新增一家门店到当前资料的末尾。追加内容先保存在页面，确认无误后再提交更新。</p>
-<label class="data-field"><span>门店名称</span><input id="appendName" class="data-input" type="text" maxlength="120"></label>
+<label class="data-field"><span>排列序号</span><input id="appendOrder" class="data-input" type="number" min="1" step="1" inputmode="numeric" placeholder="例如 1"><small id="appendOrderHint" class="data-field-hint"></small></label><label class="data-field"><span>门店名称</span><input id="appendName" class="data-input" type="text" maxlength="120"></label>
 <label class="data-field"><span>导航地址</span><input id="appendNavigation" class="data-input" type="url" placeholder="https://..."></label>
 <label class="data-field"><span>备注</span><textarea id="appendNote" class="data-textarea data-note" placeholder="可选"></textarea></label>
 <div id="appendError" class="data-help data-preview"></div>
@@ -84,7 +84,7 @@ function parseImport(text){
 }
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
 function navUrl(v){const u=String(v||"").trim();return /^https?:\/\//i.test(u)?u:""}
-function render(){
+function showDataFeedback(type,message){const el=$("dataFeedback");if(!el)return;el.className="data-feedback "+type;el.textContent=message;el.hidden=false;clearTimeout(showDataFeedback.timer);showDataFeedback.timer=setTimeout(()=>{el.hidden=true},2600)}\nfunction render(){
  const box=$("stores");$("storeCount").textContent=stores.length+"家";
  if(!stores.length){box.innerHTML='<div class="data-empty">暂无门店资料</div>';return}
  const ordered=stores.map((s,index)=>({s,index})).sort((a,b)=>(a.s.routeOrder||0)-(b.s.routeOrder||0));
@@ -155,7 +155,7 @@ $("editSave").onclick=()=>{
 };
 function closeAllPanels(){["replaceBox","appendBox","restoreBox","replaceConfirmBox"].forEach(id=>$(id).style.display="none")}
 function openReplace(){$("replaceText").value="";$("replaceFile").value="";$("replacePreview").textContent="";$("replaceBox").style.display="flex"}
-function openAppend(){$("appendName").value="";$("appendNavigation").value="";$("appendNote").value="";$("appendError").textContent="";$("appendBox").style.display="flex";setTimeout(()=>$("appendName").focus(),0)}
+function openAppend(){$("appendOrder").value=stores.length+1;$("appendOrderHint").textContent="默认追加到第 "+(stores.length+1)+" 位";$("appendName").value="";$("appendNavigation").value="";$("appendNote").value="";$("appendError").textContent="";$("appendBox").style.display="flex";setTimeout(()=>$("appendOrder").focus(),0)}
 function showRestore(){ $("restorePreview").textContent="等待选择数据文件"; $("restoreBox").style.display="flex" }
 function prepareReplace(){
  const p=parseImport($("replaceText").value);
