@@ -51,20 +51,24 @@ async function scanConfirmedWaybill(env,routeId,date){
 async function readHistoryEntries(env,key){
  const physical=String(key).startsWith("zp:")?String(key):"zp:"+String(key);
  let members=[];
+ // 新索引使用 Redis Set。优先直接读取 Set，避免 TYPE 在不同 Redis REST 实现上的差异。
  try{
-  const type=await command(env,["TYPE",physical]);
-  if(String(type)==="set")members=await command(env,["SMEMBERS",physical])||[];
-  else{
+  const setMembers=await command(env,["SMEMBERS",physical]);
+  if(Array.isArray(setMembers)){members=setMembers;}
+ }catch{
+  // 兼容旧版单值历史索引：字符串 JSON / 运单 ID / 对象。
+  try{
    const raw=await get(env,physical.replace(/^zp:/,""));
    if(raw){
     try{
      const value=typeof raw==="string"?JSON.parse(raw):raw;
-     if(value&&typeof value==="object"&&value.id)members=[value];
+     if(Array.isArray(value))members=value;
+     else if(value&&typeof value==="object"&&value.id)members=[value];
      else if(typeof value==="string"&&value)members=[value];
     }catch{members=[String(raw)];}
    }
-  }
- }catch{return []}
+  }catch{}
+ }
  const out=[];
  for(const member of members){
   if(member&&typeof member==="object"&&member.id){if(historyReadable(member))out.push(member);continue}
@@ -225,7 +229,9 @@ export async function onRequestGet({request,env}){
   months:[...monthMap.values()],
   history:dates
  });
-}catch(e){return json({success:false,code:"HISTORY_READ_FAILED",error:"历史记录读取失败",detail:String(e?.message||e).slice(0,180)},500)
+}catch(e){
+ const detail=String(e?.message||e||"UNKNOWN_ERROR").slice(0,180);
+ return json({success:false,code:"HISTORY_READ_FAILED",error:"历史记录读取失败",detail},500)
 }
 }
 
