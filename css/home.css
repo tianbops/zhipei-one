@@ -35,7 +35,7 @@
 .function-btn:active{background:#202A34;transform:scale(.985)}
 .function-icon{width:24px;height:24px;flex:0 0 24px;margin-right:12px;display:flex;align-items:center;justify-content:center;color:#D5DCE2}
 .function-icon svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.function-btn::after{content:"›";position:absolute;right:16px;top:50%;transform:translateY(-50%);color:#75818D;font:22px/1 Arial,sans-serif}
+.function-btn::after{display:none}
 .function-btn:active::after{color:#0B1015}
 
 .upload-overlay{position:fixed;inset:0;z-index:999;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.68)}
