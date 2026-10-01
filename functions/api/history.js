@@ -17,6 +17,7 @@ const addMonths=(date,months)=>{
 const startOfYear=date=>date.slice(0,4)+"-01-01";
 const endOfNextMonth=date=>{const [y,m]=date.split("-").map(Number);return new Date(Date.UTC(y,m+1,0)).toISOString().slice(0,10)};
 const historyRange=today=>({start:startOfYear(today),end:endOfNextMonth(today)});
+const validDate=date=>/^\d{4}-\d{2}-\d{2}$/.test(date)&&!Number.isNaN(Date.parse(date));
 const inRange=(date,range)=>date>=range.start&&date<=range.end;
 const monthInRange=(month,range)=>month>=range.start.slice(0,7)&&month<=range.end.slice(0,7);
 const validWaybill=x=>!!x&&x.schemaVersion==="2"&&typeof x.id==="string"&&typeof x.routeId==="string"&&Array.isArray(x.stores)&&!!x.summary&&x.stage==="CONFIRMED"&&x.historyStatus!=="SUPERSEDED";
@@ -201,9 +202,7 @@ export async function onRequestGet({request,env}){
   months:[...monthMap.values()],
   history:dates
  });
-}
-
- }catch(e){return json({success:false,code:"HISTORY_READ_FAILED",error:"历史记录读取失败",detail:String(e?.message||e).slice(0,180)},500)}
+}catch(e){return json({success:false,code:"HISTORY_READ_FAILED",error:"历史记录读取失败",detail:String(e?.message||e).slice(0,180)},500)}
 }
 
 export async function onRequestDelete({request,env}){
