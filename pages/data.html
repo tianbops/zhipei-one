@@ -2,8 +2,9 @@
 <html lang="zh-CN">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>智配One · 数据资料</title><link rel="stylesheet" href="/css/app.css"><link rel="stylesheet" href="/css/mobile-ui.css"><link rel="stylesheet" href="/css/business-pages.css"><link rel="stylesheet" href="/css/data.css"></head>
 <body><main class="page2 data-page">
-<header class="page2-head"><a class="page2-back" href="/home.html">返回</a><h1>数据资料</h1><span></span></header>
-<section class="page2-card data-route-card"><div class="data-route-kicker">当前调度线路</div><div class="data-route-title"><h2 id="title">加载中…</h2><span class="data-route-badge">线路资料</span></div><p id="hint" class="data-route-hint">正在读取线路资料</p><div id="summary" class="data-summary"><strong>—</strong><span>正在读取</span></div></section>
+<header class="page2-head data-page-head"><a class="data-page-back" href="/home.html" aria-label="返回">‹</a><h1>数据资料</h1><button id="pageMenuBtn" class="data-page-menu-btn" type="button" aria-label="打开菜单">☰</button></header>
+<section class="page2-card data-route-card"><div class="data-route-kicker">当前调度线路</div><div class="data-route-title"><h2 id="title">加载中…</h2></div><div id="summary" class="data-summary"><strong>—</strong></div><p id="hint" class="data-route-hint">正在读取线路资料</p></section>
+<div id="pageMenu" class="data-page-menu" hidden><button id="dataShareBtn" type="button">分享</button><button id="dataLogoutBtn" type="button">退出</button></div>
 <section class="card data-tools-card" id="tools" style="display:none">
 <div class="data-maintenance">
   <div class="data-maintenance-group">
@@ -193,13 +194,35 @@ $("restoreFile").onchange=async e=>{
  finally{e.target.value=""}
 };
 $("saveStoresTop").onclick=async()=>submitStores();
+async function shareSavedBase(){
+ try{
+  const d=await api("/api/base?routeId="+encodeURIComponent(routeId));
+  const saved=Array.isArray(d.base?.stores)?d.base.stores:[];
+  const routeName=d.route?.name||$("title").textContent||"当前线路";
+  const lines=["智配One · "+routeName,"已保存线路资料 · "+saved.length+"家",""];
+  saved.slice().sort((a,b)=>(a.routeOrder||0)-(b.routeOrder||0)).forEach((s,i)=>{
+   const name=s.name||s.originalName||"未命名门店";
+   lines.push(String(i+1).padStart(2,"0")+"  "+name);
+   if(s.navigation)lines.push("导航："+s.navigation);
+   if(s.note)lines.push("备注："+s.note);
+  });
+  const text=lines.join("\\n");
+  if(navigator.share){await navigator.share({title:routeName+" · 线路资料",text})}
+  else if(navigator.clipboard){await navigator.clipboard.writeText(text);alert("已复制已保存的线路资料")}
+  else{alert("当前设备不支持分享")}
+ }catch(e){if(e?.name!=="AbortError")alert("分享失败："+(e?.message||"请求失败"))}
+}
+$("pageMenuBtn").onclick=()=>{$("pageMenu").hidden=!$("pageMenu").hidden};
+document.addEventListener("click",e=>{if(!e.target.closest(".data-page-menu,.data-page-menu-btn"))$("pageMenu").hidden=true});
+$("dataShareBtn").onclick=async()=>{ $("pageMenu").hidden=true; if(routeId)await shareSavedBase() };
+$("dataLogoutBtn").onclick=async()=>{ $("pageMenu").hidden=true; if(!confirm("确定退出登录吗？"))return; try{await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"})}finally{location.replace("/")} };
 async function submitStores(){
  if(saving)return;saving=true;$("saveStoresTop").disabled=true;
  try{
   stores.forEach((s,i)=>s.routeOrder=i+1);
   const d=await api("/api/base",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({routeId,expectedVersion:baseVersion,stores})});
   stores=Array.isArray(d.base?.stores)?d.base.stores:stores;baseVersion=Number(d.base?.version)||baseVersion;hiddenIndexes.clear();render();
-  $("summary").innerHTML="<strong>"+stores.length+"</strong><span>家门店 · 已提交</span>"
+  $("summary").innerHTML="<strong>"+stores.length+"家</strong>"
  }catch(e){if(e.code==="BASE_VERSION_CONFLICT")await load();$("summary").textContent=err(e)}
  finally{saving=false;$("saveStoresTop").disabled=false}
 }
@@ -257,7 +280,7 @@ async function load(){
  try{
   const d=await api("/api/dispatch");routeId=d.dispatchRoute?.id||"";
   if(!routeId){$("hint").textContent="请先在首页选择调度线路";$("stores").textContent="暂无可查看的数据资料";return}
-  if(routeId==="__temporary__"){$("title").textContent="临时线路 · 数据资料";$("hint").textContent="临时线路不建立正式数据资料";$("summary").innerHTML="<strong>临时</strong><span>线路</span>";$("stores").textContent="临时线路使用全局学习识别门店，规划按运单原始顺序排列。";return}
+  if(routeId==="__temporary__"){$("title").textContent="临时线路 · 数据资料";$("hint").textContent="临时线路不建立正式数据资料";$("summary").innerHTML="<strong>临时线路</strong>";$("stores").textContent="临时线路使用全局学习识别门店，规划按运单原始顺序排列。";return}
   const x=await api("/api/base?routeId="+encodeURIComponent(routeId));
   canMaintain=!!x.canMaintain;
   $("tools").style.display=canMaintain?"block":"none";
