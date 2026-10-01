@@ -74,3 +74,14 @@
 .data-store-menu button:active{background:#26313C}
 .data-store-menu .data-danger{color:#D4B6B6}
 @media(min-width:600px){.data-store-menu{min-width:136px}}
+
+.data-route-kicker{margin-bottom:4px;color:#687584;font-size:11px;line-height:17px;letter-spacing:.02em}
+.data-route-title h2{min-width:0}
+.data-route-badge{background:#11171D}
+.data-tools-card{margin-top:0}
+.data-maintain{display:block}
+.data-maintain-info{margin-bottom:10px;color:#687584;font-size:11px;line-height:17px}
+.data-maintain-actions{display:grid;grid-template-columns:1fr 1.25fr;gap:10px}
+.data-maintain-actions button{width:100%;margin:0}
+.data-maintain .data-save{box-shadow:none}
+@media(min-width:600px){.data-route-card{padding:18px}.data-maintain-actions{max-width:520px}}
