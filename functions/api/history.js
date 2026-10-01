@@ -184,7 +184,6 @@ export async function onRequestGet({request,env}){
    }catch{}
   }
  }while(cursor!=="0");
- }
  dates.sort((a,b)=>b.date.localeCompare(a.date));
  const monthMap=new Map();
  for(const item of dates){
