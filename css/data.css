@@ -88,3 +88,4 @@
 
 .data-field:first-of-type{margin-top:10px}
 .data-input[type=number]{font-variant-numeric:tabular-nums}
+.data-field-hint{display:block;margin-top:5px;color:#687584;font-size:11px;line-height:17px}.data-field-hint.invalid{color:#B8A0A0}
