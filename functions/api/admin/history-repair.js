@@ -18,10 +18,36 @@ async function readWaybills(env,ids){
  return out;
 }
 
+async function scanWaybillIds(env,routeId,start,end){
+ let cursor="0";
+ const ids=[];
+ do{
+  const result=await command(env,["SCAN",cursor,"MATCH","zp:waybill:*","COUNT","500"]);
+  if(!Array.isArray(result)||result.length<2)throw new Error("REDIS_SCAN_INVALID");
+  cursor=String(result[0]??"0");
+  const keys=Array.isArray(result[1])?result[1]:[];
+  const candidates=keys.map(k=>String(k)).filter(k=>k.startsWith("zp:waybill:"));
+  if(candidates.length){
+   const values=await pipeline(env,candidates.map(key=>["GET",key]));
+   for(let i=0;i<values.length;i++){
+    const value=values[i];
+    if(!value)continue;
+    try{
+     const w=typeof value==="string"?JSON.parse(value):value;
+     if(w&&typeof w==="object"&&typeof w.id==="string"&&typeof w.routeId==="string"&&typeof w.date==="string"&&
+        w.routeId===routeId&&/^\d{4}-\d{2}-\d{2}$/.test(w.date)&&w.date>=start&&w.date<=end&&
+        (w.stage==="PLANNED"||w.stage==="CONFIRMED")&&w.historyStatus!=="SUPERSEDED"){
+      ids.push(w.id);
+     }
+    }catch{}
+   }
+  }
+ }while(cursor!=="0");
+ return [...new Set(ids)];
+}
+
 async function repair(env,routeId,start,end){
- const script='local cursor="0"; local out={}; repeat local scan=redis.call("SCAN",cursor,"MATCH","zp:waybill:*","COUNT","500"); cursor=tostring(scan[1] or "0"); for _,key in ipairs(scan[2] or {}) do local raw=redis.call("GET",key); if raw then local ok,w=pcall(cjson.decode,raw); if ok and type(w)=="table" and type(w.id)=="string" and type(w.routeId)=="string" and type(w.date)=="string" and w.routeId==ARGV[1] and w.date>=ARGV[2] and w.date<=ARGV[3] and (w.stage=="PLANNED" or w.stage=="CONFIRMED") and w.historyStatus~="SUPERSEDED" then table.insert(out,w.id) end end end end until cursor=="0"; return out';
- const raw=await command(env,["EVAL",script,"0",routeId,start,end]);
- const ids=[...new Set((Array.isArray(raw)?raw:[]).map(clean).filter(Boolean))];
+ const ids=await scanWaybillIds(env,routeId,start,end);
  const waybills=await readWaybills(env,ids);
  const commands=[];
  for(const w of waybills){
