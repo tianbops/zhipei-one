@@ -18,8 +18,7 @@
     <div class="menu-wrap">
       <button id="menuButton" class="home-menu-button" type="button" aria-label="打开菜单" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
       <div id="menuPanel" class="home-menu-panel" hidden>
-        <div class="home-menu-current" id="menuRoute">当前配送线路</div>
-        <a href="/pages/route_apply.html"><span class="menu-item-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z"/><path d="M8 10h8M8 14h5"/></svg></span><span>线路变更</span></a>
+                <a href="/pages/route_apply.html"><span class="menu-item-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z"/><path d="M8 10h8M8 14h5"/></svg></span><span>线路变更</span></a>
         <a href="/pages/data.html"><span class="menu-item-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg></span><span>数据中心</span></a>
         <a href="/pages/account.html"><span class="menu-item-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M5 20c.8-3.2 3.1-5 7-5s6.2 1.8 7 5"/></svg></span><span>账号设置</span></a>
         <div class="menu-divider" aria-hidden="true"></div>
@@ -32,18 +31,16 @@
     <div class="task-title">
       <div class="task-name">
         <span id="todayTitle">今日配送</span>
-        <span class="status-dot" id="statusDot" aria-label="今日运单笔数">0</span>
+        <span class="status-dot" id="statusDot" aria-label="今日运单笔数" hidden>0</span>
       </div>
       <div id="todayDate" class="today-date task-date">今日</div>
     </div>
-    <div class="task-route" id="todayRoute">加载中…</div>
     <div class="task-main">
       <div class="task-info">
-        <div class="today-summary"><strong id="todayCount">—</strong><span id="todayWeight">—</span></div>
+        <div class="today-summary"><strong id="todayCount">加载中…</strong><span id="todayWeight"></span></div>
       </div>
       <div class="delivery-man" aria-hidden="true"><img src="/assets/delivery-route.png" alt=""></div>
     </div>
-    <p id="todayStatus" class="today-status" aria-live="polite"></p>
   </section>
 
   <nav class="function-list" aria-label="主要功能">
@@ -73,7 +70,11 @@
         </div>
         <button id="sourceCancel" class="upload-cancel-btn" type="button">取消</button>
       </div>
-      <div class="upload-processing-error" id="uploadProcessingError" hidden aria-live="assertive">        <div class="processing-error-title">处理失败</div>        <div class="processing-error-message" id="processingErrorMessage">PROCESS_STREAM_INTERRUPTED</div>        <button id="processingRetry" class="processing-retry-btn" type="button">请重试</button>      </div>      <div class="upload-processing" id="uploadProcessing" hidden aria-live="polite">
+      <div class="upload-processing-error" id="uploadProcessingError" hidden aria-live="assertive">
+        <div class="processing-error-title">处理失败</div>
+        <div class="processing-error-message" id="processingErrorMessage">PROCESS_STREAM_INTERRUPTED</div>
+        <button id="processingRetry" class="processing-retry-btn" type="button">请重试</button>
+      </div>      <div class="upload-processing" id="uploadProcessing" hidden aria-live="polite">
         <div class="processing-title">客官不要急，正在努力中… <span id="processingPercent">0%</span></div>
         <div class="processing-progress" role="progressbar" aria-label="运单处理进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
           <span class="processing-progress-line"><i id="processingProgressDot"></i></span>
@@ -81,12 +82,9 @@
       </div>
     </div>
   </div>
-  <p id="status" class="home-status" aria-live="polite"></p>
-  <input id="waybill" type="file" accept="image/*,.pdf" hidden>
   <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden>
   <input id="photoInput" type="file" accept="image/*" hidden>
   <input id="documentInput" type="file" accept="image/*,.pdf" hidden>
-  <button id="process" type="button" hidden>开始处理</button>
 </main>
 <script src="/js/home.js"></script>
 <script>
