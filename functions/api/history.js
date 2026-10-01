@@ -246,7 +246,7 @@ export async function onRequestGet({request,env}){
   const repairCommands=[];
   for(const w of legacy){if(/^\\d{4}-\\d{2}-\\d{2}$/.test(String(w.date)))repairCommands.push(["SADD",historyKey(routeId,w.date),w.id]);}
   for(let i=0;i<repairCommands.length;i+=100)await pipeline(env,repairCommands.slice(i,i+100));
-  await command(env,["SET","zp:"+repairMarker,"1"]);
+  await set(env,repairMarker,"1");
  }
  const dates=[];
  for(const [date,list] of byDate){
