@@ -21,6 +21,8 @@ function renderProcessingProgress(value){
 }
 function resetProcessingUI(){
   if(!processingPanel||!sourceMenu)return;
+  if(overlay)overlay.classList.remove("processing-error-state");
+  if(processingError)processingError.hidden=true;
   sourceMenu.hidden=false;processingPanel.hidden=true;
   renderProcessingProgress(0);
 }
@@ -33,6 +35,8 @@ function showProcessingError(message){
 }
 function showProcessingUI(){
   if(!processingPanel||!sourceMenu)return;
+  if(overlay)overlay.classList.remove("processing-error-state");
+  if(processingError)processingError.hidden=true;
   sourceMenu.hidden=true;processingPanel.hidden=false;
   renderProcessingProgress(0);
 }
@@ -130,9 +134,9 @@ async function processSelectedFile(file){
       throw e;
     }
   }catch(e){
-    if(overlay){overlay.hidden=true;overlay.setAttribute("aria-hidden","true");document.body.classList.remove("sheet-open");resetProcessingUI()}
-    status.textContent=e.message||"处理失败";
-    status.className="home-status error";
+    showProcessingError(e.message||"处理失败，请重试");
+    status.textContent="";
+    status.className="home-status";
   }finally{
     clearTimeout(timer);
     document.querySelectorAll(".source-option").forEach(b=>b.disabled=false);
