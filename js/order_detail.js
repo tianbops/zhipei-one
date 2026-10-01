@@ -41,9 +41,17 @@ function render(){
 function setMenu(open){menuOpen=open;$('menuPanel').hidden=!open;$('menuBtn').setAttribute('aria-expanded',String(open))}
 async function load(){
  const url=id?'/api/waybills/latest?id='+encodeURIComponent(id):'/api/waybills/latest';
- const r=await fetch(url,{credentials:'same-origin',cache:'no-store'}), d=await r.json().catch(()=>({}));
- if(!r.ok||!d.success||!d.waybill)throw Error(d.error||'暂无当日运单');
- order=d.waybill;render();
+ const controller=new AbortController();
+ const timer=setTimeout(()=>controller.abort(),12000);
+ try{
+  const r=await fetch(url,{credentials:'same-origin',cache:'no-store',signal:controller.signal});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok||!d.success||!d.waybill)throw Error(d.error||'暂无当日运单');
+  order=d.waybill;render();
+ }catch(e){
+  if(e?.name==='AbortError')throw Error('运单读取超时，请重试');
+  throw e;
+ }finally{clearTimeout(timer)}
 }
 
 function openConfirm(){
