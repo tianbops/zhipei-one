@@ -9,7 +9,7 @@ let dispatchRouteId="";
 const setEmptyToday=()=>{todayCount.textContent="暂无运单";todayWeight.textContent="";if(dot)dot.textContent="0";todayRoute.textContent="";todayRoute.hidden=true;document.querySelector(".task-card")?.classList.add("no-waybill")};
 const setHasToday=()=>{todayRoute.hidden=false;document.querySelector(".task-card")?.classList.remove("no-waybill")};
 
-const processingPanel=$("uploadProcessing"),sourceMenu=$("uploadSourceMenu"),processingPercent=$("processingPercent"),processingProgress=$("processingProgressDot");
+const processingPanel=$("uploadProcessing"),processingError=$("uploadProcessingError"),processingErrorMessage=$("processingErrorMessage"),processingRetry=$("processingRetry"),sourceMenu=$("uploadSourceMenu"),processingPercent=$("processingPercent"),processingProgress=$("processingProgressDot");
 let processingProgressValue=0;
 function renderProcessingProgress(value){
   processingProgressValue=Math.max(0,Math.min(100,Math.round(Number(value)||0)));
@@ -41,7 +41,7 @@ function setPipelineStage(index,text){
   renderProcessingProgress(checkpoints[Math.max(0,Math.min(5,index))]);
 }
 $("uploadAction")?.addEventListener("click",openUpload);
-cancel?.addEventListener("click",closeUpload);
+cancel?.addEventListener("click",closeUpload);\nprocessingRetry?.addEventListener("click",()=>{if(processingFile)return;closeUpload();});
 overlay?.addEventListener("click",e=>{if(e.target===overlay)closeUpload()});
 
 async function ensureDispatchRoute(){
