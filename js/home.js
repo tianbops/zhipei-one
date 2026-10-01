@@ -71,10 +71,8 @@ async function ensureDispatchRoute(){
 }
 
 function chooseFile(source){
-  // 保持文件选择器调用在用户点击手势内，避免 Android 浏览器因异步等待而拦截相册/相机。
   const input=source==="camera"?$("cameraInput"):source==="photo"?$("photoInput"):$("documentInput");
   if(!input)return;
-  // 允许连续选择同一张运单时也能再次触发 change。
   input.value="";
   input.click();
 }
@@ -103,9 +101,13 @@ async function processSelectedFile(file){
     let r;
     try{
       r=await fetch("/api/waybills/process?stream=1",{method:"POST",body:fd,credentials:"same-origin",signal:controller.signal});
-      if(!r.ok){\n        const httpError=new Error("运单处理服务暂时不可用，请重试");\n        httpError.code="PROCESS_HTTP_"+r.status;\n        throw httpError;\n      }
+      if(!r.ok){
+        const httpError=new Error("运单处理服务暂时不可用，请重试");
+        httpError.code="PROCESS_HTTP_"+r.status;
+        throw httpError;
+      }
       const reader=r.body?.getReader();
-      if(!reader)throw Error("当前浏览器不支持实时处理进度");
+      if(!reader)throw Object.assign(new Error("当前浏览器不支持实时处理进度"),{code:"PROCESS_STREAM_UNSUPPORTED"});
       const decoder=new TextDecoder();
       let buffer="",result=null;
       while(true){
@@ -116,7 +118,8 @@ async function processSelectedFile(file){
         buffer=lines.pop()||"";
         for(const line of lines){
           if(!line.trim())continue;
-          let event;try{event=JSON.parse(line)}catch{continue}
+          let event;
+          try{event=JSON.parse(line)}catch{continue}
           if(event.type==="progress")renderProcessingProgress(event.progress);
           else if(event.type==="result")result=event;
         }
@@ -125,8 +128,11 @@ async function processSelectedFile(file){
       if(buffer.trim()){
         try{const event=JSON.parse(buffer);if(event.type==="result")result=event}catch{}
       }
-      if(!result)throw Error("处理连接中断，请重试");
-      if(!result?.success)throw Error(result?.message||result?.error||"处理失败");
+      if(!result)throw Object.assign(new Error("处理连接中断，请重试"),{code:"PROCESS_STREAM_INTERRUPTED"});
+      if(!result.success){
+        const code=result.code||result.errorCode||"PROCESS_FAILED";
+        throw Object.assign(new Error(result.message||result.error||"处理失败"),{code});
+      }
       renderProcessingProgress(100);
       location.replace("/pages/order_detail.html?id="+encodeURIComponent(result.waybill.id)+"&source=process");
     }catch(e){
