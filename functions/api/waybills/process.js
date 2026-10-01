@@ -16,6 +16,7 @@ async function writeIfNewer(env,key,waybill){
   return command(env,["EVAL",script,"1","zp:"+key,JSON.stringify(waybill)]);
 }
 
+const waybillIndexKey=(routeId,date)=>"zp:route:"+routeId+":waybills:"+date;
 async function base(env,id){const raw=await get(env,"route:"+id+":base");if(!raw)throw Object.assign(new Error("线路数据资料尚未建立"),{code:"BASE_NOT_FOUND"});let x;try{x=typeof raw==="string"?JSON.parse(raw):raw}catch{throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"})}if(!x||!Array.isArray(x.stores))throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"});return x.stores}
 
 function extract(rawText){
@@ -157,33 +158,20 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
   emit(94,"正在保存运单");
   order.businessFingerprint=await businessFingerprint(order);
   const fingerprintKey="zp:waybill:fingerprint:"+order.businessFingerprint;
-  const saveScript='local existing=redis.call("GET",KEYS[1]); if existing and existing~=ARGV[1] then local raw=redis.call("GET","zp:waybill:"..existing); if raw then return existing else redis.call("DEL",KEYS[1]) end end; redis.call("SET",KEYS[1],ARGV[1]); redis.call("SET",KEYS[2],ARGV[2]); return ARGV[1]';
-  const saveResult=await command(env,["EVAL",saveScript,"2",fingerprintKey,"zp:waybill:"+order.id,order.id,JSON.stringify(order)]);
+  const indexKey=waybillIndexKey(routeId,clean(order.date));
+  const saveScript='local existing=redis.call("GET",KEYS[1]); if existing and existing~=ARGV[1] then local raw=redis.call("GET","zp:waybill:"..existing); if raw then redis.call("SADD",KEYS[3],existing); return existing else redis.call("DEL",KEYS[1]) end end; redis.call("SET",KEYS[1],ARGV[1]); redis.call("SET",KEYS[2],ARGV[2]); redis.call("SADD",KEYS[3],ARGV[1]); return ARGV[1]';
+  const saveResult=await command(env,["EVAL",saveScript,"3",fingerprintKey,"zp:waybill:"+order.id,indexKey,order.id,JSON.stringify(order)]);
   if(String(saveResult)!==order.id){
     const existing=await get(env,"waybill:"+String(saveResult));
     if(existing){
       const existingOrder=typeof existing==="string"?JSON.parse(existing):existing;
-      let repaired="OK";
-      try{
-        await writeIfNewer(env,"route:"+routeId+":orders:latest",existingOrder);
-        if(existingOrder.date===todayCN())await writeIfNewer(env,"route:"+routeId+":orders:today",existingOrder);
-        if(/^\d{4}-\d{2}-\d{2}$/.test(clean(existingOrder.date)))await command(env,["SADD","zp:route:"+routeId+":history:"+clean(existingOrder.date),existingOrder.id]);
-      }catch{repaired="DEFERRED"}
-      return json({success:true,waybill:existingOrder,idempotent:true,indexSync:repaired});
+      await command(env,["SADD",waybillIndexKey(routeId,clean(existingOrder.date)),existingOrder.id]);
+      return json({success:true,waybill:existingOrder,idempotent:true,indexSync:"OK"});
     }
     return json({success:false,code:"WAYBILL_FINGERPRINT_CONFLICT",error:"相同业务运单正在保存，请稍后重试"},409);
   }
-  let indexSync="OK";
-  try{
-    await writeIfNewer(env,"route:"+routeId+":orders:latest",order);
-    if(order.date===todayCN())await writeIfNewer(env,"route:"+routeId+":orders:today",order);
-    if(/^\d{4}-\d{2}-\d{2}$/.test(clean(order.date)))await command(env,["SADD","zp:route:"+routeId+":history:"+clean(order.date),order.id]);
-  }catch{
-    indexSync="DEFERRED";
-    try{await command(env,["SADD","zp:route:"+routeId+":orders:index-repair",order.id])}catch{}
-  }
   emit(100,"处理完成");
-  return json({success:true,waybill:order,pipeline:order.pipeline,summary:order.summary,indexSync});
+  return json({success:true,waybill:order,pipeline:order.pipeline,summary:order.summary,indexSync:"OK"});
 }
 
 export async function onRequestPost({request,env}){
