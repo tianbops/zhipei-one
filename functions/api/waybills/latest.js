@@ -38,10 +38,21 @@ export async function onRequestGet({request,env}){
  if(user.role==="admin"||!canUseRoute(user))return json({success:false,error:"无权查看配送业务"},403);
  const url=new URL(request.url),id=clean(url.searchParams.get("id")),confirmedOnly=url.searchParams.get("confirmed")==="1",routeId=clean(user.dispatchRouteId||user.boundRouteId);if(!routeId)return json({success:true,waybill:null});
  const route=await getRoute(env,routeId);const routeName=clean(route?.name)||"临时";
- const withRouteName=w=>w?(w.routeName=clean(w.routeName)||routeName,w):w;
+ async function withRouteData(w){
+  if(!w)return w;
+  w.routeName=clean(w.routeName)||routeName;
+  if(!Array.isArray(w.stores)||!w.stores.length)return w;
+  try{
+   const rawBase=await get(env,"route:"+routeId+":base");
+   const parsed=typeof rawBase==="string"?JSON.parse(rawBase):rawBase;
+   const byId=new Map((Array.isArray(parsed?.stores)?parsed.stores:[]).map(s=>[clean(s?.storeId),s]));
+   w.stores=w.stores.map(s=>{const baseStore=byId.get(clean(s?.storeId));return baseStore&&clean(baseStore.navigation)&&!clean(s?.navigation)?{...s,navigation:clean(baseStore.navigation)}:s});
+  }catch{}
+  return w;
+ }
  if(id){
   const raw=await get(env,"waybill:"+id);if(!raw)return json({success:true,waybill:null});
-  try{const waybill=typeof raw==="string"?JSON.parse(raw):raw;if((confirmedOnly?!effectiveWaybill(waybill):!activeWaybill(waybill))||waybill.routeId!==routeId)return json({success:true,waybill:null});return json({success:true,waybill:withRouteName(waybill)})}catch{return json({success:false,code:"WAYBILL_DATA_INVALID",error:"运单数据异常"},500)}
+  try{const waybill=typeof raw==="string"?JSON.parse(raw):raw;if((confirmedOnly?!effectiveWaybill(waybill):!activeWaybill(waybill))||waybill.routeId!==routeId)return json({success:true,waybill:null});return json({success:true,waybill:await withRouteData(waybill)})}catch{return json({success:false,code:"WAYBILL_DATA_INVALID",error:"运单数据异常"},500)}
  }
  const repairKey="route:"+routeId+":orders:index-repair";
  const repairInvalidKey=repairKey+":invalid";
@@ -78,19 +89,19 @@ export async function onRequestGet({request,env}){
    const latestWaybill=typeof raw==="string"?JSON.parse(raw):raw;
    if((confirmedOnly?effectiveWaybill(latestWaybill):activeWaybill(latestWaybill))&&latestWaybill.routeId===routeId&&latestWaybill.date===todayCN()){
     if(!todayWaybill||String(latestWaybill.createdAt||"")>String(todayWaybill.createdAt||"")){
-     try{await writeIfNewer(env,"route:"+routeId+":orders:today",latestWaybill);return json({success:true,waybill:withRouteName(latestWaybill)})}
+     try{await writeIfNewer(env,"route:"+routeId+":orders:today",latestWaybill);return json({success:true,waybill:await withRouteData(latestWaybill)})}
      catch{return json({success:true,waybill:latestWaybill,indexSync:"DEFERRED"})}
     }
    }
   }catch{}
  }
- if(todayWaybill)return json({success:true,waybill:withRouteName(todayWaybill)});
+ if(todayWaybill)return json({success:true,waybill:await withRouteData(todayWaybill)});
  const found=await scanCurrentDay(env,routeId,confirmedOnly);
  if(found){
   try{
    await writeIfNewer(env,"route:"+routeId+":orders:today",found);
    await writeIfNewer(env,"route:"+routeId+":orders:latest",found);
-   return json({success:true,waybill:withRouteName(found),indexSync:"REPAIRED"});
+   return json({success:true,waybill:await withRouteData(found),indexSync:"REPAIRED"});
   }catch{return json({success:true,waybill:found,indexSync:"DEFERRED"})}
  }
  return json({success:true,waybill:null});
