@@ -46,7 +46,7 @@ export async function onRequestGet({request,env}){
    const rawBase=await get(env,"route:"+routeId+":base");
    const parsed=typeof rawBase==="string"?JSON.parse(rawBase):rawBase;
    const byId=new Map((Array.isArray(parsed?.stores)?parsed.stores:[]).map(s=>[clean(s?.storeId),s]));
-   w.stores=w.stores.map(s=>{const baseStore=byId.get(clean(s?.storeId));return baseStore&&clean(baseStore.navigation)&&!clean(s?.navigation)?{...s,navigation:clean(baseStore.navigation)}:s});
+   w.stores=w.stores.map(s=>{const baseStore=byId.get(clean(s?.storeId));if(!baseStore)return s;const navigation=clean(baseStore.navigation)||clean(s?.navigation);const note=clean(baseStore.note||baseStore.remark)||clean(s?.note||s?.remark);return navigation||note?{...s,...(navigation?{navigation}:{}),...(note?{note}: {})}:s});
   }catch{}
   return w;
  }
