@@ -214,12 +214,12 @@ function bindTouch(){
   const row=e.target.closest(".data-store-row"),t=row?row._touch:null;if(!row||!t)return;
   const dx=e.touches[0].clientX-t.x,dy=e.touches[0].clientY-t.y;
   if(Math.abs(dx)>12||Math.abs(dy)>12){clearTimeout(row._timer);if(!t.long)return}
-  if(t.long){e.preventDefault();const target=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY)?.closest(".data-store-row");if(target&&target!==row){const a=Number(row.dataset.index),b=Number(target.dataset.index);if(Number.isInteger(a)&&Number.isInteger(b)&&a!==b){const [item]=stores.splice(a,1);stores.splice(b,0,item);stores.forEach((s,i)=>s.routeOrder=i+1);hiddenIndexes.clear();render()}}}
+  if(t.long){e.preventDefault();row.classList.add("data-drag-active")}
  },{passive:false});
  list.addEventListener("touchend",e=>{
   const row=e.target.closest(".data-store-row"),t=row?row._touch:null;if(!row||!t)return;clearTimeout(row._timer);
   const dx=e.changedTouches[0].clientX-t.x,dy=e.changedTouches[0].clientY-t.y;row.classList.remove("data-drag-active");row._touch=null;
-  if(t.long)return;
+  if(t.long){const target=document.elementFromPoint(e.changedTouches[0].clientX,e.changedTouches[0].clientY)?.closest(".data-store-row");row.classList.remove("data-drag-active");if(target&&target!==row){applyOrder(Number(row.dataset.index),Number(target.dataset.index))}return;}
   if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)){const index=Number(row.dataset.index);if(dx<0){document.querySelectorAll(".data-store-row.data-swipe-open").forEach(x=>x.classList.remove("data-swipe-open"));row.classList.add("data-swipe-open")}else{hiddenIndexes.add(index);render()}return}
  },{passive:true});
  list.addEventListener("dragstart",e=>{const row=e.target.closest(".data-store-row");if(!row||!canMaintain)return;dragIndex=Number(row.dataset.index);row.classList.add("data-drag-active")});
