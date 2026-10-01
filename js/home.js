@@ -4,10 +4,10 @@ menuButton?.addEventListener("click",e=>{e.stopPropagation();const open=menuPane
 document.addEventListener("click",e=>{if(menuPanel&&!menuPanel.hidden&&!menuPanel.contains(e.target)&&e.target!==menuButton){menuPanel.hidden=true;menuButton.setAttribute("aria-expanded","false")}});
 
 const overlay=$("uploadArea"),cancel=$("sourceCancel");
-const todayCount=$("todayCount"),todayWeight=$("todayWeight"),todayRoute=$("todayRoute"),menuRouteValue=$("currentRouteMenuValue"),dot=$("statusDot");
+const todayCount=$("todayCount"),todayWeight=$("todayWeight"),menuRouteValue=$("currentRouteMenuValue"),dot=$("statusDot");
 let dispatchRouteId="";
-const setEmptyToday=()=>{todayCount.textContent="暂无运单";todayWeight.textContent="";if(dot){dot.textContent="0";dot.hidden=true}};
-const setHasToday=()=>{if(dot)dot.hidden=false};
+const setEmptyToday=()=>{todayCount.textContent="暂无运单";todayWeight.textContent=""};
+const setRouteBadge=(route)=>{if(!dot)return;const type=route?.type||"";const name=String(route?.name||"").trim();const badge=type==="temporary"||/临时/.test(name)?"临":(name.replace(/\s+/g,"").replace(/路$/,"" )||"—");dot.textContent=badge;dot.hidden=false};
 
 const processingPanel=$("uploadProcessing"),processingError=$("uploadProcessingError"),processingErrorMessage=$("processingErrorMessage"),processingRetry=$("processingRetry"),sourceMenu=$("uploadSourceMenu"),processingPercent=$("processingPercent"),processingProgress=$("processingProgressDot");
 let processingProgressValue=0;
@@ -152,18 +152,17 @@ async function loadHome(){
     if(!routesRes.ok||!routes.success)throw Error(routes.error||"线路读取失败");
     if(!dispatchRes.ok||!dispatch.success)throw Error(dispatch.error||"当前配送线路读取失败");
     dispatchRouteId=dispatch.dispatchRoute?.id||"";
-    const routeName=dispatch.dispatchRoute?.type==="temporary"?"临时":(dispatch.dispatchRoute?.name||"未选择");
-    if(todayRoute)todayRoute.textContent=routeName;
+    const route=dispatch.dispatchRoute||null;
+    const routeName=route?.type==="temporary"?"临时":(route?.name||"未选择");
+    setRouteBadge(route);
     if(menuRouteValue)menuRouteValue.textContent=routeName;
     const wRes=await fetch("/api/waybills/latest?confirmed=1",{credentials:"same-origin",cache:"no-store"});
     const wd=await wRes.json().catch(()=>({}));
     const w=wRes.ok&&wd.success?wd.waybill:null;
     if(w&&w.routeId===dispatchRouteId){
-      setHasToday();
       const total=Number(w.summary?.total)||Number(w.stores?.length)||0;
       todayCount.textContent=total+"家";
       todayWeight.textContent=(Math.round((Number(w.totalWeight)||0)*100)/100).toFixed(2)+"t";
-      if(dot)dot.textContent="1";
     }else{
       setEmptyToday();
     }
