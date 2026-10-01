@@ -97,5 +97,17 @@ $('closeConfirm').onclick=()=>$('confirmDialog').hidden=true;
 $('cancelConfirm').onclick=()=>$('confirmDialog').hidden=true;
 $('confirmDialog').addEventListener('click',e=>{if(e.target===$('confirmDialog'))$('confirmDialog').hidden=true});
 document.addEventListener('click',e=>{if(menuOpen&&!$('menuPanel').contains(e.target)&&e.target!==$('menuBtn'))setMenu(false)});
-(async()=>{try{await load()}catch(e){$('orderDate').textContent='运单读取失败';$('routeName').textContent=e.message||'暂无当日运单';$('routeList').innerHTML='<div class="order-empty">'+esc(e.message||'暂无当日运单')+'</div>}})();
+(async()=>{
+  try{
+    await load();
+  }catch(e){
+    $('orderDate').textContent='运单读取失败';
+    $('storeCount').textContent='0';
+    $('totalWeight').textContent='0.00';
+    $('metrics').innerHTML='';
+    $('routeName').textContent=e.message||'暂无当日运单';
+    $('vehicle').textContent='';
+    $('routeList').innerHTML='<div class="order-empty">'+esc(e.message||'暂无当日运单')+'</div>';
+  }
+})();
 })();
