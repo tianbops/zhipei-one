@@ -24,7 +24,7 @@ function resetProcessingUI(){
   sourceMenu.hidden=false;processingPanel.hidden=true;
   renderProcessingProgress(0);
 }
-function showProcessingUI(){
+function showProcessingError(message){\n  if(processingPanel)processingPanel.hidden=true;\n  if(sourceMenu)sourceMenu.hidden=true;\n  if(overlay)overlay.classList.add("processing-error-state");\n  if(processingErrorMessage)processingErrorMessage.textContent=message||"处理失败，请重试";\n  if(processingError)processingError.hidden=false;\n}\nfunction showProcessingUI(){
   if(!processingPanel||!sourceMenu)return;
   sourceMenu.hidden=true;processingPanel.hidden=false;
   renderProcessingProgress(0);
