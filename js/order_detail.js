@@ -33,7 +33,9 @@ function render(){
    const status=x.pending?'<span class="order-store-status pending">待确认</span>':(x.matchMethod==='confirmed-new'||x.isNew?'<span class="order-store-status">新增</span>':'');
    const nameHtml=nav?'<a class="order-store-name nav" href="'+attr(nav)+'" target="_self">'+name+status+'</a>':'<div class="order-store-name">'+name+status+'</div>';
    const note=x.pending&&Array.isArray(x.candidates)&&x.candidates[0]?.name?'建议匹配：'+x.candidates[0].name:(x.note||x.remark||'');
-   return '<div class="order-store-item"><span class="order-store-index">'+String(i+1).padStart(2,'0')+'</span><div class="order-store-main">'+nameHtml+(note?'<div class="order-store-note">'+esc(note)+'</div>':'')+'</div></div>';
+   const noteHtml=note?'<span class="order-store-note-inline">（'+esc(note)+'）</span>':'';
+   const nameHtmlWithNote=nav?'<a class="order-store-name nav" href="'+attr(nav)+'" target="_self">'+name+noteHtml+status+'</a>':'<div class="order-store-name">'+name+noteHtml+status+'</div>';
+   return '<div class="order-store-item"><span class="order-store-index">'+String(i+1).padStart(2,'0')+'</span><div class="order-store-main">'+nameHtmlWithNote+'</div></div>';
  }).join(''):'<div class="order-empty">当日暂无配送数据</div>';
  if(params.get('diagnostic')==='1'){$('diagnostics').hidden=false;$('diagnostics').textContent=JSON.stringify(order.diagnostics||{},null,2)}
  const old=$('confirmPendingBtn');if(old)old.remove();
