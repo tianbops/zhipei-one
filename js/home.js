@@ -11,13 +11,58 @@ const setRouteBadge=(route)=>{if(!dot)return;const type=route?.type||"";const na
 
 const processingPanel=$("uploadProcessing"),processingError=$("uploadProcessingError"),processingErrorMessage=$("processingErrorMessage"),processingRetry=$("processingRetry"),sourceMenu=$("uploadSourceMenu"),processingPercent=$("processingPercent"),processingProgress=$("processingProgressDot");
 let processingProgressValue=0;
-function renderProcessingProgress(value){
-  processingProgressValue=Math.max(0,Math.min(100,Math.round(Number(value)||0)));
-  if(processingPercent)processingPercent.textContent=processingProgressValue+"%";
+let processingProgressTarget=0;
+let processingProgressFrame=0;
+let processingProgressStart=0;
+let processingProgressFrom=0;
+let processingProgressDuration=0;
+
+function paintProcessingProgress(value){
+  processingProgressValue=Math.max(0,Math.min(100,value));
+  const displayValue=Math.round(processingProgressValue);
+  if(processingPercent)processingPercent.textContent=displayValue+"%";
   const line=processingProgress?.closest(".processing-progress-line");
   if(line)line.style.setProperty("--progress",processingProgressValue+"%");
   const bar=processingProgress?.closest(".processing-progress");
-  if(bar)bar.setAttribute("aria-valuenow",String(processingProgressValue));
+  if(bar)bar.setAttribute("aria-valuenow",String(displayValue));
+}
+
+function animateProcessingProgress(now){
+  const elapsed=now-processingProgressStart;
+  const ratio=processingProgressDuration>0?Math.min(1,elapsed/processingProgressDuration):1;
+  // ease-out：前段变化更明显，后段自然收住；目标值始终来自后端真实进度事件。
+  const eased=1-Math.pow(1-ratio,3);
+  paintProcessingProgress(processingProgressFrom+(processingProgressTarget-processingProgressFrom)*eased);
+  if(ratio<1){
+    processingProgressFrame=requestAnimationFrame(animateProcessingProgress);
+  }else{
+    processingProgressFrame=0;
+    paintProcessingProgress(processingProgressTarget);
+  }
+}
+
+function renderProcessingProgress(value){
+  const next=Math.max(0,Math.min(100,Number(value)||0));
+  // 后端进度只允许向前推进，避免网络事件乱序造成百分比倒退。
+  if(next<processingProgressTarget)return;
+  if(processingProgressFrame)cancelAnimationFrame(processingProgressFrame);
+  processingProgressTarget=next;
+  processingProgressFrom=processingProgressValue;
+  processingProgressStart=performance.now();
+  const delta=Math.max(0,next-processingProgressFrom);
+  // 按实际进度跨度决定过渡时间：小步快、大步平滑，不人为持续增长。
+  processingProgressDuration=Math.max(180,Math.min(1800,delta*55));
+  processingProgressFrame=requestAnimationFrame(animateProcessingProgress);
+}
+
+function resetProcessingProgress(){
+  if(processingProgressFrame)cancelAnimationFrame(processingProgressFrame);
+  processingProgressFrame=0;
+  processingProgressTarget=0;
+  processingProgressFrom=0;
+  processingProgressStart=0;
+  processingProgressDuration=0;
+  paintProcessingProgress(0);
 }
 function resetProcessingUI(){
   if(!processingPanel||!sourceMenu)return;
