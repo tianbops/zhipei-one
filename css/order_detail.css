@@ -17,7 +17,8 @@
 .order-summary-main{display:flex;align-items:baseline;justify-content:center;gap:3px;margin-top:5px;font-size:24px;line-height:30px;font-weight:700;letter-spacing:.1px}
 .order-summary-main span:nth-child(2),.order-summary-main span:nth-child(5){font-size:14px;color:#B8C2CC;font-weight:500}
 .order-summary-main b{font-size:17px;color:#7F8A95;font-weight:500;margin:0 2px}
-.order-metrics{min-height:20px;margin-top:8px;display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap;color:#B8C2CC;font-size:12px;line-height:18px}
+.order-metrics{margin-top:8px;display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap;color:#B8C2CC;font-size:12px;line-height:18px}
+.order-metrics:empty{display:none}
 .order-metrics span{white-space:nowrap}
 .order-route-card{min-height:0;flex:1 1 auto;display:flex;flex-direction:column;padding:13px 12px 0;overflow:hidden}
 .order-route-head{display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:5px;flex:0 0 auto;padding:0 2px 9px}
@@ -30,7 +31,8 @@
 .order-store-item{display:grid;grid-template-columns:34px minmax(0,1fr);gap:6px;padding:10px 3px;border-bottom:1px solid rgba(255,255,255,.055);min-height:56px}
 .order-store-item:last-child{border-bottom:0}.order-store-index{color:#7F8A95;font-size:12px;line-height:22px;font-weight:600}
 .order-store-main{min-width:0}.order-store-name{font-size:15px;line-height:22px;color:#fff;font-weight:600;word-break:break-all}
-.order-store-name.nav{cursor:pointer;text-decoration:none!important;-webkit-text-decoration:none!important;color:#fff!important}.order-store-name.nav:visited{color:#fff!important;text-decoration:none!important}.order-store-name.nav:active{opacity:.65}
+.order-store-name.nav{display:inline;color:#fff!important;text-decoration:none!important;-webkit-text-decoration:none!important;cursor:pointer}
+.order-store-name.nav:visited{color:#fff!important;text-decoration:none!important}.order-store-name.nav:active{opacity:.65}
 .order-store-note{margin-top:3px;color:#9AA6B2;font-size:11px;line-height:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .order-store-status{display:inline-flex;margin-left:6px;padding:1px 5px;border-radius:5px;background:#2A3540;color:#B8C2CC;font-size:10px;line-height:16px;vertical-align:2px;font-weight:600}
 .order-store-status.pending{background:rgba(255,176,32,.12);color:#FFB020}
