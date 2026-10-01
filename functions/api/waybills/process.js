@@ -159,7 +159,7 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
   try{
     await writeIfNewer(env,"route:"+routeId+":orders:latest",order);
     if(order.date===todayCN())await writeIfNewer(env,"route:"+routeId+":orders:today",order);
-    if(order.stage==="CONFIRMED"&&/^\\d{4}-\\d{2}-\\d{2}$/.test(clean(order.date)))await writeIfNewer(env,"route:"+routeId+":history:"+clean(order.date),order);
+    if(order.stage==="CONFIRMED"&&/^\d{4}-\d{2}-\d{2}$/.test(clean(order.date)))await writeIfNewer(env,"route:"+routeId+":history:"+clean(order.date),order);
   }catch{
     indexSync="DEFERRED";
     try{await command(env,["SADD","zp:route:"+routeId+":orders:index-repair",order.id])}catch{}
