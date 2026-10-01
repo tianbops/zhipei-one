@@ -152,7 +152,20 @@ export async function onRequestGet({request,env}){
    totalWeight:Number(waybill.totalWeight)||0
   });
  }
- // 历史索引缺失时，从主运单记录恢复日期索引，避免“首页有数据、历史查询为空”。
+ // 历史索引缺失时，先从“今日/最新”主索引恢复，再扫描主运单记录。
+ // 这样即使规划保存时 history:{date} 索引同步暂时失败，只要今日运单已经可读，历史查询也能立即恢复。
+ const primaryKeys=["route:"+routeId+":orders:today","route:"+routeId+":orders:latest"];
+ for(const primaryKey of primaryKeys){
+  try{
+   const raw=await get(env,primaryKey);
+   const w=typeof raw==="string"?JSON.parse(raw):raw;
+   if(!validWaybill(w)||w.routeId!==routeId||w.date<start||w.date>end||indexedDates.has(w.date))continue;
+   indexedDates.add(w.date);
+   dates.push({date:w.date,waybillId:w.id,storeCount:Number(w.summary?.total)||w.stores.length,totalWeight:Number(w.totalWeight)||0});
+   await command(env,["SET",historyKey(routeId,w.date),w.id]).catch(()=>{});
+  }catch{}
+ }
+ // 再扫描主运单记录，恢复其它缺失的历史索引。
  let cursor="0";
  do{
   const scan=await command(env,["SCAN",cursor,"MATCH","zp:waybill:*","COUNT","100"]);
