@@ -85,3 +85,6 @@
 .data-maintain-actions button{width:100%;margin:0}
 .data-maintain .data-save{box-shadow:none}
 @media(min-width:600px){.data-route-card{padding:18px}.data-maintain-actions{max-width:520px}}
+
+.data-field:first-of-type{margin-top:10px}
+.data-input[type=number]{font-variant-numeric:tabular-nums}
