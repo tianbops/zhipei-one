@@ -44,6 +44,21 @@ async function scanConfirmedWaybill(env,routeId,date){
  return found;
 }
 
+
+async function readHistoryEntry(env,key){
+ const raw=await get(env,key);
+ if(!raw)return null;
+ try{
+  const value=typeof raw==="string"?JSON.parse(raw):raw;
+  if(value&&typeof value==="object"&&value.id)return validWaybill(value)?value:null;
+  const id=clean(raw);
+  return id?await readWaybill(env,id):null;
+ }catch{
+  const id=clean(raw);
+  return id?await readWaybill(env,id):null;
+ }
+}
+
 async function readHistoryIds(env,routeId){
  const ids=[];
  let cursor="0";
@@ -87,14 +102,14 @@ export async function onRequestGet({request,env}){
   const range=historyRange(todayCN());
   if(!inRange(date,range))return json({success:false,code:"DATE_OUT_OF_RANGE",error:"日期不在历史查询范围内"},400);
   const historyIndexKey=historyKey(routeId,date);
-  const id=await get(env,historyIndexKey);
-  if(!id){
+  const indexed=await readHistoryEntry(env,historyIndexKey);
+  if(!indexed){
    const recovered=await scanConfirmedWaybill(env,routeId,date);
    if(!recovered)return json({success:true,routeId,date,waybill:null});
    try{await command(env,["SET",historyIndexKey,recovered.id]);}catch{}
    return json({success:true,routeId,date,waybill:await withRouteData(recovered),indexSync:"REPAIRED"});
   }
-  const waybill=await readWaybill(env,clean(id));
+  const waybill=indexed;
   if(!waybill||waybill.routeId!==routeId||waybill.date!==date){
    await command(env,["DEL",historyKey(routeId,date)]).catch(()=>{});
    return json({success:true,routeId,date,waybill:null,indexSync:"INVALID_REMOVED"});
@@ -109,9 +124,8 @@ export async function onRequestGet({request,env}){
  const indexedDates=new Set();
  for(const entry of entries){
   if(entry.date<start||entry.date>end)continue;
-  const id=await get(env,entry.key);
-  if(!id)continue;
-  const waybill=await readWaybill(env,clean(id));
+  const waybill=await readHistoryEntry(env,entry.key);
+  if(!waybill)continue;
   if(!waybill||waybill.routeId!==routeId||waybill.date!==entry.date){
    await command(env,["DEL",entry.key]).catch(()=>{});
    continue;
@@ -212,11 +226,10 @@ export async function onRequestDelete({request,env}){
  const range=historyRange(todayCN());
  if(!inRange(date,range))return json({success:false,code:"DATE_OUT_OF_RANGE",error:"日期不在历史查询范围内"},400);
  const key=historyKey(routeId,date);
- const waybillId=clean(await get(env,key));
+ const order=await readHistoryEntry(env,key);
+ const waybillId=clean(order?.id);
  if(!waybillId)return json({success:true,deleted:false});
- const raw=await get(env,"waybill:"+waybillId);
- let order=null;try{order=typeof raw==="string"?JSON.parse(raw):raw}catch{}
- if(!order||order.routeId!==routeId||order.date!==date||order.stage!=="CONFIRMED"){
+ if(order.routeId!==routeId||order.date!==date||order.stage!=="CONFIRMED"){
   await command(env,["DEL",key]);
   return json({success:true,deleted:false,indexSync:"INVALID_REMOVED"});
  }
