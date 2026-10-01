@@ -20,9 +20,11 @@
 .order-metrics{min-height:20px;margin-top:8px;display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap;color:#B8C2CC;font-size:12px;line-height:18px}
 .order-metrics span{white-space:nowrap}
 .order-route-card{min-height:0;flex:1 1 auto;display:flex;flex-direction:column;padding:13px 12px 0;overflow:hidden}
-.order-route-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:0 0 auto;padding:0 2px 9px}
-.order-route-label{font-size:12px;color:#7F8A95;line-height:18px}.order-route-name{font-size:16px;font-weight:700;line-height:22px;color:#fff}
-.order-vehicle{font-size:12px;color:#B8C2CC;white-space:nowrap}
+.order-route-head{display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:5px;flex:0 0 auto;padding:0 2px 9px}
+.order-meta-row{display:grid;grid-template-columns:38px minmax(0,1fr);align-items:center;min-height:21px;column-gap:8px}
+.order-meta-label{font-size:12px;line-height:20px;color:#7F8A95;font-weight:500}
+.order-route-name{font-size:15px;font-weight:650;line-height:20px;color:#fff}
+.order-vehicle{font-size:15px;line-height:20px;color:#fff;font-weight:650;white-space:nowrap}
 .order-store-list{min-height:0;flex:1 1 auto;overflow-y:auto;padding:0 2px 18px;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
 .order-store-list::-webkit-scrollbar{width:4px}.order-store-list::-webkit-scrollbar-thumb{background:#3A4654;border-radius:8px}.order-store-list::-webkit-scrollbar-track{background:transparent}
 .order-store-item{display:grid;grid-template-columns:34px minmax(0,1fr);gap:6px;padding:10px 3px;border-bottom:1px solid rgba(255,255,255,.055);min-height:56px}
