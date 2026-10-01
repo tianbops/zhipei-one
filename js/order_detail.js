@@ -4,7 +4,7 @@ const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const attr=v=>esc(v).replace(/'/g,'&#39;');
 const navOf=x=>String(x?.navigation||x?.nav||'').trim();
-const params=new URLSearchParams(location.search), id=params.get('id')||'';
+const params=new URLSearchParams(location.search), id=params.get('id')||'', source=params.get('source')||'', targetDate=params.get('date')||'';
 let order=null,menuOpen=false;
 
 function safeUrl(v){try{const raw=String(v??'').trim();if(!raw)return'';const u=new URL(raw,location.origin);return /^(https?:)$/.test(u.protocol)?u.href:''}catch{return''}}
@@ -15,6 +15,7 @@ function render(){
  if(!order)return;
  const s=order.summary||{}, stores=Array.isArray(order.stores)?order.stores:[], pending=stores.filter(x=>x?.pending);
  $('orderDate').textContent=order.date||'日期待确认';
+ $('pageTitle')?.replaceChildren(document.createTextNode(source==='today'?'今日运单':'运单详情'));
  $('storeCount').textContent=Number(s.total)||stores.length||0;
  $('totalWeight').textContent=fmtWeight(order.totalWeight);
  $('routeName').textContent=order.routeName||'—';
@@ -41,7 +42,11 @@ function render(){
 
 function setMenu(open){menuOpen=open;$('menuPanel').hidden=!open;$('menuBtn').setAttribute('aria-expanded',String(open))}
 async function load(){
- const url=id?'/api/waybills/latest?id='+encodeURIComponent(id):'/api/waybills/latest';
+ const url=id
+  ?'/api/waybills/latest?id='+encodeURIComponent(id)
+  :(source==='today'&&targetDate
+    ?'/api/history?date='+encodeURIComponent(targetDate)
+    :(source==='today'?'/api/waybills/latest?confirmed=1':'/api/waybills/latest'));
  const controller=new AbortController();
  const timer=setTimeout(()=>controller.abort(),12000);
  try{
