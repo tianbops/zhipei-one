@@ -68,7 +68,18 @@ export async function onRequestGet({request,env}){
  const date=clean(url.searchParams.get("date"));
  if(!routeId)return json({success:true,routeId:null,months:[],history:[]});
  const route=await getRoute(env,routeId);const routeName=clean(route?.name)||"临时";
- const withRouteName=w=>w?(w.routeName=clean(w.routeName)||routeName,w):w;
+ async function withRouteData(w){
+  if(!w)return w;
+  w.routeName=clean(w.routeName)||routeName;
+  if(!Array.isArray(w.stores)||!w.stores.length)return w;
+  try{
+   const rawBase=await get(env,"route:"+routeId+":base");
+   const parsed=typeof rawBase==="string"?JSON.parse(rawBase):rawBase;
+   const byId=new Map((Array.isArray(parsed?.stores)?parsed.stores:[]).map(s=>[clean(s?.storeId),s]));
+   w.stores=w.stores.map(s=>{const baseStore=byId.get(clean(s?.storeId));return baseStore&&clean(baseStore.navigation)&&!clean(s?.navigation)?{...s,navigation:clean(baseStore.navigation)}:s});
+  }catch{}
+  return w;
+ }
  if(routeId!==(clean(user.dispatchRouteId)||clean(user.boundRouteId)))return json({success:false,error:"无权查看该线路历史"},403);
 
  if(date){
@@ -81,14 +92,14 @@ export async function onRequestGet({request,env}){
    const recovered=await scanConfirmedWaybill(env,routeId,date);
    if(!recovered)return json({success:true,routeId,date,waybill:null});
    try{await command(env,["SET",historyIndexKey,recovered.id]);}catch{}
-   return json({success:true,routeId,date,waybill:withRouteName(recovered),indexSync:"REPAIRED"});
+   return json({success:true,routeId,date,waybill:await withRouteData(recovered),indexSync:"REPAIRED"});
   }
   const waybill=await readWaybill(env,clean(id));
   if(!waybill||waybill.routeId!==routeId||waybill.date!==date){
    await command(env,["DEL",historyKey(routeId,date)]).catch(()=>{});
    return json({success:true,routeId,date,waybill:null,indexSync:"INVALID_REMOVED"});
   }
-  return json({success:true,routeId,date,waybill:withRouteName(waybill)});
+  return json({success:true,routeId,date,waybill:await withRouteData(waybill)});
  }
 
  const today=todayCN();
