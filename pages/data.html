@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>智配One · 数据中心</title><link rel="stylesheet" href="/css/app.css"><link rel="stylesheet" href="/css/mobile-ui.css"><link rel="stylesheet" href="/css/business-pages.css"><link rel="stylesheet" href="/css/data.css"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>智配One · 数据资料</title><link rel="stylesheet" href="/css/app.css"><link rel="stylesheet" href="/css/mobile-ui.css"><link rel="stylesheet" href="/css/business-pages.css"><link rel="stylesheet" href="/css/data.css"></head>
 <body><main class="page2 data-page">
-<header class="page2-head"><a class="page2-back" href="/home.html">返回</a><h1>数据中心</h1><span></span></header>
+<header class="page2-head"><a class="page2-back" href="/home.html">返回</a><h1>数据资料</h1><span></span></header>
 <section class="page2-card data-route-card"><div class="data-route-kicker">当前调度线路</div><div class="data-route-title"><h2 id="title">加载中…</h2><span class="data-route-badge">线路资料</span></div><p id="hint" class="data-route-hint">正在读取线路资料</p><div id="summary" class="data-summary"><strong>—</strong><span>正在读取</span></div></section>
 <section class="card data-tools-card" id="tools" style="display:none">
 <div class="data-maintenance">
@@ -17,7 +17,7 @@
   <input id="restoreFile" type="file" accept=".json,.txt,.csv,application/json,text/plain,text/csv" hidden>
 </div>
 </section>
-<section class="page2-card data-list-card"><div class="data-list-head"><span class="data-list-title">门店资料</span><span id="storeCount" class="data-list-count">—</span></div><div id="stores" class="data-store-list">加载中…</div><div id="maintainTools" class="data-maintain" style="display:none"><div class="data-maintain-info"><span>修改仅在提交更新后生效</span></div></div></section>
+<section class="page2-card data-list-card"><div class="data-list-head"><span class="data-list-title">门店资料</span><span id="storeCount" class="data-list-count">—</span></div><div id="stores" class="data-store-list">加载中…</div></section>
 <div id="editBox" class="data-import data-editor" style="display:none"><div class="data-import-panel data-editor-panel"><div class="data-import-head"><h3 id="editTitle">编辑门店</h3><button id="editClose" class="data-import-close" type="button" aria-label="关闭">×</button></div><label class="data-field"><span>排列序号</span><input id="editOrder" class="data-input" type="number" min="1" step="1" inputmode="numeric" placeholder="例如 1"><small id="editOrderHint" class="data-field-hint"></small></label><label class="data-field"><span>门店名称</span><input id="editName" class="data-input" type="text" maxlength="120"></label><label class="data-field"><span>导航地址</span><input id="editNavigation" class="data-input" type="url" placeholder="https://..."></label><label class="data-field"><span>备注</span><textarea id="editNote" class="data-textarea data-note" placeholder="可选"></textarea></label><div id="editError" class="data-help data-preview"></div><div class="data-import-actions"><button id="editCancel" type="button">取消</button><button id="editSave" type="button">保存</button></div></div></div>
 <div id="confirmBox" class="data-import data-confirm" style="display:none"><div class="data-confirm-panel"><div class="data-confirm-icon">!</div><h3 id="confirmTitle">确认操作</h3><p id="confirmMessage"></p><div class="data-import-actions"><button id="confirmCancel" type="button">取消</button><button id="confirmOk" type="button">确定</button></div></div></div>
 <div id="replaceBox" class="data-import" style="display:none"><div class="data-import-panel">
@@ -261,7 +261,6 @@ async function load(){
   const x=await api("/api/base?routeId="+encodeURIComponent(routeId));
   canMaintain=!!x.canMaintain;
   $("tools").style.display=canMaintain?"block":"none";
-  $("maintainTools").style.display=canMaintain?"block":"none";
   stores=Array.isArray(x.base?.stores)?x.base.stores:[];baseVersion=Number(x.base?.version)||1;
   $("title").textContent=x.route?.name||"当前线路";
   $("hint").textContent=canMaintain?"你目前拥有该线路维护权限":"你目前仅拥有该线路使用权限";
