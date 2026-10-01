@@ -1,9 +1,9 @@
 import {json,body} from "../_json.js";
 import {currentUser} from "../_auth.js";
-import {get,set,command} from "../_redis.js";
+import {get,command} from "../_redis.js";
 import {hash} from "../login.js";
 
-function admin(u){return u&&(u.role==="system_admin"||(u.role==="system_admin"||(u.role==="system_admin"||u.role==="admin")))}
+function admin(u){return u&&(u.role==="system_admin"||u.role==="admin")}
 function validUsername(v){return /^[A-Za-z0-9_]{3,32}$/.test(v)}
 
 export async function onRequestPost({request,env}){
@@ -45,37 +45,26 @@ export async function onRequestPost({request,env}){
     if(!password)return json({success:false,error:"请输入管理员密码"},400);
     if(actor.passwordHash!==await hash(password))return json({success:false,error:"管理员密码错误"},403);
 
-    const keep=new Set([
-      "zp:user:"+String(actor.id),
-      "zp:user:index:"+String(actor.username||"").toLowerCase(),
-      "zp:users:index"
-    ]);
-    const authorization=(request.headers.get("authorization")||"").replace(/^Bearer\s+/i,"").trim();
-    const cookie=request.headers.get("cookie")||"";
-    const m=cookie.match(/(?:^|;\s*)zp_session=([^;]+)/);
-    const sessionToken=authorization|| (m?decodeURIComponent(m[1]):"");
-    if(sessionToken)keep.add("zp:session:"+sessionToken);
-
-    let cursor="0";
+    // 只清理旧运单/历史运行数据，保留管理员、普通用户、线路、线路基准和系统配置。
+    const oldPatterns=[
+      "zp:waybill:*",
+      "zp:route:*:waybills:*",
+      "zp:route:*:orders:today",
+      "zp:route:*:orders:latest",
+      "zp:route:*:orders:index-repair*",
+      "zp:route:*:history:*",
+      "zp:history:*"
+    ];
     let deleted=0;
-    do{
-      const scan=await command(env,["SCAN",cursor,"MATCH","zp:*","COUNT","200"]);
-      cursor=String(scan?.[0]??"0");
-      const keys=Array.isArray(scan?.[1])?scan[1]:[];
-      const remove=keys.filter(k=>{
-        if(keep.has(k))return false;
-        if(k.startsWith("zp:system:"))return false;
-        if(k.startsWith("zp:config:"))return false;
-        if(k.startsWith("zp:settings:"))return false;
-        return true;
-      });
-      if(remove.length){
-        await command(env,["DEL",...remove]);
-        deleted+=remove.length;
-      }
-    }while(cursor!=="0");
-
-    await set(env,"users:index",[actor.id]);
+    for(const pattern of oldPatterns){
+      let cursor="0";
+      do{
+        const scan=await command(env,["SCAN",cursor,"MATCH",pattern,"COUNT","200"]);
+        cursor=String(scan?.[0]??"0");
+        const keys=Array.isArray(scan?.[1])?scan[1].map(String).filter(Boolean):[];
+        if(keys.length){await command(env,["DEL",...keys]);deleted+=keys.length;}
+      }while(cursor!=="0");
+    }
     return json({success:true,deleted});
   }
 
