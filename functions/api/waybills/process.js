@@ -130,11 +130,11 @@ function dedupe(items){
 }
 function plan(items,useRouteOrder=true){const list=useRouteOrder?[...items].sort((a,b)=>(number(a.routeOrder)??100000)-(number(b.routeOrder)??100000)||formatCompareKey(a.name).localeCompare(formatCompareKey(b.name),"zh-CN")):[...items];return list.map((s,i)=>({...s,routeOrder:i+1}))}
 
-async function runProcess({request,env,emit=()=>{}}){
+async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:providedUser=null}){
   emit(3,"运单已接收");
-  const user=await currentUser(request,env);if(!user){emit(4,"身份验证失败");return json({success:false,error:"未登录"},401)};if(user.role==="admin"||!canUseRoute(user)){emit(4,"无权处理运单");return json({success:false,error:"无权处理运单"},403)};
+  const user=providedUser||await currentUser(request,env);if(!user){emit(4,"身份验证失败");return json({success:false,error:"未登录"},401)};if(user.role==="admin"||!canUseRoute(user)){emit(4,"无权处理运单");return json({success:false,error:"无权处理运单"},403)};
   emit(5,"正在读取运单");
-  let form;try{form=await request.formData()}catch{emit(5,"运单提交格式错误");return json({success:false,error:"运单提交格式错误"},400)}
+  let form=providedForm;try{if(!form)form=await request.formData()}catch{emit(5,"运单提交格式错误");return json({success:false,code:"WAYBILL_FORM_INVALID",error:"运单提交格式错误"},400)}
   const requestedRouteId=clean(form.get("routeId"));const routeId=clean(user.dispatchRouteId||user.boundRouteId);if(!routeId){emit(0,"等待配送线路");return json({success:false,error:"请先选择调度线路"},400);}if(requestedRouteId&&requestedRouteId!==routeId){emit(0,"线路校验失败");return json({success:false,code:"DISPATCH_ROUTE_MISMATCH",error:"提交线路与当前调度线路不一致，请刷新后重试"},403);}
   if(routeId!==TEMP_DISPATCH_ID){emit(6,"正在校验配送线路");const route=await getRoute(env,routeId);if(!route||route.status!=="active"){emit(6,"当前配送线路不可用");return json({success:false,code:"DISPATCH_ROUTE_INACTIVE",error:"当前调度线路不存在或已停用，请重新选择线路"},409)}}
   const rawText=clean(form.get("rawText")),file=form.get("file");if(!rawText&&!(file instanceof File)){emit(6,"未找到运单");return json({success:false,error:"请选择运单"},400)};emit(6,"已读取运单");
