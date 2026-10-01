@@ -208,8 +208,10 @@ export async function onRequestGet({request,env}){
    byDate.set(entry.date,list);
   }
  }
- // 索引缺失时扫描主运单记录，恢复该日期的全部历史成员。
- let cursor="0";
+ // 仅当历史索引完全不存在时才扫描主运单记录。
+ // 正常历史查询不再遍历整个 waybill:*，避免 Cloudflare Worker 子请求超限。
+ if(!entries.length){
+  let cursor="0";
  do{
   const scan=await command(env,["SCAN",cursor,"MATCH","zp:waybill:*","COUNT","100"]);
   cursor=String(scan?.[0]??"0");
@@ -224,7 +226,8 @@ export async function onRequestGet({request,env}){
     byDate.set(w.date,list);
    }catch{}
   }
- }while(cursor!=="0");
+  }while(cursor!=="0");
+ }
  const dates=[];
  for(const [date,list] of byDate){
   list.sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
