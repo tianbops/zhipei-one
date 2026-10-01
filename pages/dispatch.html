@@ -17,7 +17,7 @@
 .dispatch-section-title{margin:0 0 9px 3px;color:#7F8A95;font-size:13px;font-weight:600}
 .dispatch-list{display:flex;flex-direction:column;gap:9px}
 .dispatch-option{width:100%;min-height:58px;padding:12px 15px;border:1px solid #2A3540;border-radius:14px;background:#18212B;color:#fff;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:16px;font-weight:600}
-.dispatch-option small{color:#7F8A95;font-size:12px;font-weight:500}
+.dispatch-option small{color:#7F8A95;font-size:12px;font-weight:500;white-space:nowrap}.dispatch-route-meta{margin-left:auto;display:flex;align-items:center;gap:8px;white-space:nowrap}.dispatch-route-meta small{color:#7F8A95;font-size:12px;font-weight:500}
 .dispatch-option.selected{border-color:#B8C2CC;background:#202A34}
 .dispatch-option:active{transform:scale(.985);background:#26313C}
 .dispatch-empty,.dispatch-message{padding:16px;color:#B8C2CC;text-align:center;font-size:14px}
@@ -54,7 +54,7 @@ async function load(){
   const current=dispatch.dispatchRoute?.id||"";
   mark(current);
   const list=(routes.routes||[]).filter(r=>r.status==="active");
-  $("routeList").innerHTML=list.length?list.map(r=>'<button class="dispatch-option" type="button" data-route-id="'+String(r.id).replaceAll('"',"&quot;")+'"><span>'+String(r.name||r.id).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")+'</span></button>').join(""):'<div class="dispatch-empty">暂无已有线路</div>';
+  $("routeList").innerHTML=list.length?list.map(r=>'<button class="dispatch-option" type="button" data-route-id="'+String(r.id).replaceAll('"',"&quot;")+'"><span>'+String(r.name||r.id).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")+'</span><span class="dispatch-route-meta"><small>已匹配·'+(Number(r.storeCount)||0)+'家门店</small></span></button>').join(""):'<div class="dispatch-empty">暂无已有线路</div>';
   document.querySelectorAll("#routeList .dispatch-option").forEach(b=>{b.classList.toggle("selected",b.dataset.routeId===current);b.addEventListener("click",()=>selectRoute(b.dataset.routeId,b))});
  }catch(e){$("routeList").innerHTML='<div class="dispatch-message">线路读取失败，请重试</div>'}
 }
