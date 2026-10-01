@@ -264,7 +264,7 @@ async function load(){
   stores=Array.isArray(x.base?.stores)?x.base.stores:[];baseVersion=Number(x.base?.version)||1;
   $("title").textContent=x.route?.name||"当前线路";
   $("hint").textContent=canMaintain?"你目前拥有该线路维护权限":"你目前仅拥有该线路使用权限";
-  $("summary").innerHTML="<strong>"+stores.length+"</strong><span>家门店</span>"+(x.base?.version?'<span class="data-summary-dot"></span><span>版本 '+x.base.version+"</span>":"");
+  $("summary").innerHTML="<strong>"+stores.length+"</strong><span>家门店</span>";
   render();setupScrollButtons()
  }catch(e){$("hint").textContent=err(e);$("stores").textContent="数据资料加载失败"}
 }
