@@ -9,7 +9,6 @@ const todayCN=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year
 const validWaybill=x=>!!x&&x.schemaVersion==="2"&&typeof x.id==="string"&&typeof x.routeId==="string"&&Array.isArray(x.stores)&&!!x.summary;
 const activeWaybill=x=>validWaybill(x)&&x.historyStatus!=="SUPERSEDED";
 const effectiveWaybill=x=>activeWaybill(x)&&x.stage==="CONFIRMED";
-const isPrimaryWaybillKey=key=>/^zp:waybill:[^:]+$/.test(String(key));
 const waybillIndexKey=(routeId,date)=>"zp:route:"+routeId+":waybills:"+date;
 
 
