@@ -92,6 +92,7 @@ export async function onRequestGet({request,env}){
  const {start,end}=historyRange(today);
  const entries=await readHistoryIds(env,routeId);
  const dates=[];
+ const indexedDates=new Set();
  for(const entry of entries){
   if(entry.date<start||entry.date>end)continue;
   const id=await get(env,entry.key);
@@ -101,6 +102,7 @@ export async function onRequestGet({request,env}){
    await command(env,["DEL",entry.key]).catch(()=>{});
    continue;
   }
+  indexedDates.add(entry.date);
   dates.push({
    date:entry.date,
    waybillId:waybill.id,
@@ -108,6 +110,23 @@ export async function onRequestGet({request,env}){
    totalWeight:Number(waybill.totalWeight)||0
   });
  }
+ // 历史索引缺失时，从主运单记录恢复日期索引，避免“首页有数据、历史查询为空”。
+ let cursor="0";
+ do{
+  const scan=await command(env,["SCAN",cursor,"MATCH","zp:waybill:*","COUNT","100"]);
+  cursor=String(scan?.[0]??"0");
+  for(const key of (scan?.[1]||[])){
+   if(!/^zp:waybill:[^:]+$/.test(String(key)))continue;
+   const raw=await get(env,String(key).replace(/^zp:/,""));
+   try{
+    const w=typeof raw==="string"?JSON.parse(raw):raw;
+    if(!validWaybill(w)||w.routeId!==routeId||w.date<start||w.date>end||indexedDates.has(w.date))continue;
+    indexedDates.add(w.date);
+    dates.push({date:w.date,waybillId:w.id,storeCount:Number(w.summary?.total)||w.stores.length,totalWeight:Number(w.totalWeight)||0});
+    await command(env,["SET",historyKey(routeId,w.date),w.id]).catch(()=>{});
+   }catch{}
+  }
+ }while(cursor!=="0");
  dates.sort((a,b)=>b.date.localeCompare(a.date));
  const monthMap=new Map();
  for(const item of dates){
