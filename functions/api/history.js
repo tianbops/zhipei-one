@@ -119,6 +119,14 @@ async function addHistoryId(env,routeId,date,id){
  await command(env,["SADD",historyKey(routeId,date),id]);
 }
 
+async function repairLegacyHistoryIndex(env,routeId,start,end){
+ const script='local cursor="0"; local out={}; repeat local scan=redis.call("SCAN",cursor,"MATCH","zp:waybill:*","COUNT","500"); cursor=tostring(scan[1] or "0"); for _,key in ipairs(scan[2] or {}) do local raw=redis.call("GET",key); if raw then local ok,w=pcall(cjson.decode,raw); if ok and type(w)=="table" and type(w.id)=="string" and type(w.routeId)=="string" and type(w.date)=="string" and w.routeId==ARGV[1] and w.date>=ARGV[2] and w.date<=ARGV[3] and (w.stage=="PLANNED" or w.stage=="CONFIRMED") and w.historyStatus~="SUPERSEDED" then table.insert(out,raw) end end end end until cursor=="0"; return out';
+ const raw=await command(env,["EVAL",script,"0",routeId,start,end]);
+ const out=[];
+ for(const item of Array.isArray(raw)?raw:[]){try{const w=typeof item==="string"?JSON.parse(item):item;if(historyReadable(w))out.push(w)}catch{}}
+ return out;
+}
+
 async function readHistoryIds(env,routeId){
  const ids=[];
  let cursor="0";
@@ -224,25 +232,23 @@ export async function onRequestGet({request,env}){
    byDate.set(entry.date,list);
   }
  }
- // 仅当历史索引完全不存在时才扫描主运单记录。
- // 正常历史查询不再遍历整个 waybill:*，避免 Cloudflare Worker 子请求超限。
- if(!entries.length){
-  let cursor="0";
- do{
-  const scan=await command(env,["SCAN",cursor,"MATCH","zp:waybill:*","COUNT","100"]);
-  cursor=String(scan?.[0]??"0");
-  for(const key of (scan?.[1]||[])){
-   if(!/^zp:waybill:[^:]+$/.test(String(key)))continue;
-   const raw=await get(env,String(key).replace(/^zp:/,""));
-   try{
-    const w=typeof raw==="string"?JSON.parse(raw):raw;
-    if(!historyReadable(w)||w.routeId!==routeId||w.date<start||w.date>end)continue;
+ // 兼容历史索引建立前已经存在的旧运单：只做一次按线路/日期范围的恢复扫描。
+ // 恢复结果写回日期索引，后续正常历史查询不再扫描整个 waybill:*。
+ const repairMarker="route:"+routeId+":history:index-repaired-v1";
+ const repaired=await get(env,repairMarker).catch(()=>null);
+ if(!repaired){
+  try{
+   const legacy=await repairLegacyHistoryIndex(env,routeId,start,end);
+   for(const w of legacy){
     const list=byDate.get(w.date)||[];
     if(!list.some(x=>x.id===w.id))list.push(w);
     byDate.set(w.date,list);
-   }catch{}
-  }
-  }while(cursor!=="0");
+   }
+   const repairCommands=[];
+   for(const w of legacy){if(/^\\d{4}-\\d{2}-\\d{2}$/.test(String(w.date)))repairCommands.push(["SADD",historyKey(routeId,w.date),w.id]);}
+   repairCommands.push(["SET", "zp:"+repairMarker, "1"]);
+   if(repairCommands.length>1)await pipeline(env,repairCommands);
+  }catch{}
  }
  const dates=[];
  for(const [date,list] of byDate){
