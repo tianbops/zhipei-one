@@ -6,45 +6,54 @@
 <title>今日运单 · 智配One</title>
 <link rel="stylesheet" href="/css/app.css">
 <link rel="stylesheet" href="/css/mobile-ui.css">
-<link rel="stylesheet" href="/css/business-pages.css">
+<link rel="stylesheet" href="/css/order_detail.css">
 </head>
 <body>
-<main class="page2">
-  <header class="page2-head"><a class="page2-back" href="/home.html">返回</a><h1>今日运单</h1><span></span></header>
-  <section class="page2-card">
-    <div id="routeMeta" class="route-meta">正在读取线路…</div>
-    <div id="routeSummary" class="route-summary"></div>
-    <h2 class="route-section-title">配送顺序</h2>
-    <div id="routeStores" class="store-list"></div>
+<main class="order-shell">
+  <header class="order-topbar">
+    <button id="backBtn" class="order-icon-btn" type="button" aria-label="返回">‹</button>
+    <div class="order-title" id="pageTitle">今日运单</div>
+    <button id="menuBtn" class="order-icon-btn" type="button" aria-label="打开运单菜单" aria-expanded="false">⋮</button>
+    <div id="menuPanel" class="order-menu" hidden>
+      <div id="menuRoute" class="order-menu-route">当前线路</div>
+      <button id="editRouteBtn" type="button">数据中心</button>
+      <button id="shareBtn" type="button">分享</button>
+      <button id="logoutBtn" class="logout" type="button">退出登录</button>
+    </div>
+  </header>
+
+  <section class="order-summary-card">
+    <div id="orderDate" class="order-date">正在读取运单…</div>
+    <div class="order-summary-main">
+      <span id="storeCount">0</span><span>家</span><b>·</b><span id="totalWeight">0.00</span><span>t</span>
+    </div>
+    <div id="metrics" class="order-metrics"></div>
+  </section>
+
+  <section class="order-route-card">
+    <div class="order-route-head">
+      <div>
+        <div class="order-meta-row"><span class="order-meta-label">线路</span><span id="routeName" class="order-route-name">—</span></div>
+        <div class="order-meta-row"><span class="order-meta-label">车辆</span><span id="vehicle" class="order-vehicle">—</span></div>
+      </div>
+    </div>
+    <div id="routeList" class="order-store-list"></div>
   </section>
 </main>
-<script>
-(async()=>{
- const meta=document.getElementById("routeMeta"),summary=document.getElementById("routeSummary"),stores=document.getElementById("routeStores");
- const esc=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
- const attr=v=>esc(v).replace(/'/g,"&#39;");
- const nav=v=>{try{const u=new URL(String(v??"").trim(),location.origin);return /^(https?:)$/.test(u.protocol)?u.href:""}catch{return""}};
- try{
-  const today=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
-  const p=new URLSearchParams(location.search),targetDate=p.get("date")||today;
-  const [r,dRoutes]=await Promise.all([
-   fetch(targetDate===today?"/api/waybills/latest?confirmed=1":"/api/history?date="+encodeURIComponent(targetDate),{credentials:"same-origin",cache:"no-store"}),
-   fetch("/api/routes",{credentials:"same-origin",cache:"no-store"})
-  ]);
-  const d=await r.json().catch(()=>({})),routeData=await dRoutes.json().catch(()=>null);
-  if(!r.ok||!d.success||!d.waybill||d.waybill.stage!=="CONFIRMED"){meta.textContent=targetDate===today?"今日暂无已确认运单":"该日期暂无运单";summary.textContent="";stores.innerHTML="";return}
-  const w=d.waybill,s=w.summary||{},items=Array.isArray(w.stores)?w.stores:[];
-  const route=(Array.isArray(routeData?.routes)?routeData.routes:[]).find(x=>x.id===w.routeId);
-  meta.innerHTML="<strong>"+esc(route?.name||w.routeName||w.routeId||"当前线路")+"</strong><span>"+esc(targetDate)+"</span>";
-  const metrics=[(Number(s.total)||items.length)+"家",(Math.round((Number(w.totalWeight)||0)*100)/100).toFixed(2)+"t"];
-  summary.innerHTML="<div>"+metrics.join(" · ")+"</div>"+(w.vehicle?'<div class="route-vehicle">车辆：'+esc(w.vehicle)+"</div>":"");
-  stores.innerHTML=items.length?items.map((x,i)=>{
-   const name=esc(x.name||x.rawName||"未识别门店"),u=nav(x.navigation),label=String(i+1).padStart(2,"0")+"  "+name;
-   const body=u?'<a class="store-nav" href="'+attr(u)+'" target="_blank" rel="noopener">'+label+"</a>":label;
-   return '<div class="store-row">'+(x.pending?'<span class="pending-store"><span class="pending-icon"></span>':"<span>")+body+"</span>"+(x.pending?'<small>待确认</small>':"<span></span>")+"</div>";
-  }).join(""):'<div class="empty">暂无配送门店</div>';
- }catch(e){meta.textContent="今日运单读取失败";summary.textContent="";stores.innerHTML='<div class="empty">'+esc(e.message||"请稍后重试")+"</div>"}
-})();
-</script>
+
+<div id="confirmDialog" class="order-dialog" hidden>
+  <div class="order-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="order-dialog-head">
+      <strong id="confirmTitle">确认待定门店</strong>
+      <button id="closeConfirm" class="order-icon-btn" type="button" aria-label="关闭">×</button>
+    </div>
+    <div id="pendingList" class="pending-list"></div>
+    <div class="order-dialog-actions">
+      <button id="cancelConfirm" class="secondary-btn" type="button">取消</button>
+      <button id="submitConfirm" class="primary-btn confirm-submit" type="button" disabled>请完成全部选择</button>
+    </div>
+  </div>
+</div>
+<script src="/js/order_detail.js"></script>
 </body>
 </html>
