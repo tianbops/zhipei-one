@@ -26,6 +26,23 @@ async function readWaybill(env,id){
  try{const x=typeof raw==="string"?JSON.parse(raw):raw;return validWaybill(x)?x:null}catch{return null}
 }
 
+async function scanConfirmedWaybill(env,routeId,date){
+ let cursor="0",found=null;
+ do{
+  const r=await command(env,["SCAN",cursor,"MATCH","zp:waybill:*","COUNT","100"]);
+  cursor=String(r?.[0]??"0");
+  for(const key of (r?.[1]||[])){
+   if(!/^zp:waybill:[^:]+$/.test(String(key)))continue;
+   const raw=await get(env,String(key).replace(/^zp:/,""));
+   try{
+    const x=typeof raw==="string"?JSON.parse(raw):raw;
+    if(validWaybill(x)&&x.routeId===routeId&&x.date===date&&(!found||String(x.createdAt||"")>String(found.createdAt||"")))found=x;
+   }catch{}
+  }
+ }while(cursor!=="0");
+ return found;
+}
+
 async function readHistoryIds(env,routeId){
  const ids=[];
  let cursor="0";
@@ -55,8 +72,14 @@ export async function onRequestGet({request,env}){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return json({success:false,code:"DATE_INVALID",error:"日期格式错误"},400);
   const range=historyRange(todayCN());
   if(!inRange(date,range))return json({success:false,code:"DATE_OUT_OF_RANGE",error:"日期不在历史查询范围内"},400);
-  const id=await get(env,historyKey(routeId,date));
-  if(!id)return json({success:true,routeId,date,waybill:null});
+  const historyIndexKey=historyKey(routeId,date);
+  const id=await get(env,historyIndexKey);
+  if(!id){
+   const recovered=await scanConfirmedWaybill(env,routeId,date);
+   if(!recovered)return json({success:true,routeId,date,waybill:null});
+   try{await command(env,["SET",historyIndexKey,recovered.id]);}catch{}
+   return json({success:true,routeId,date,waybill:recovered,indexSync:"REPAIRED"});
+  }
   const waybill=await readWaybill(env,clean(id));
   if(!waybill||waybill.routeId!==routeId||waybill.date!==date){
    await command(env,["DEL",historyKey(routeId,date)]).catch(()=>{});
