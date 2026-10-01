@@ -116,7 +116,7 @@ function openConfirm(){
  };
 }
 
-$('backBtn').onclick=()=>{setMenu(false);if(history.length>1)history.back();else location.replace('/home.html')};
+$('backBtn').onclick=()=>{setMenu(false);location.replace('/home.html')};
 $('menuBtn').onclick=e=>{e.stopPropagation();setMenu(!menuOpen)};
 $('editRouteBtn').onclick=()=>location.href='/pages/data.html';
 $('shareBtn').onclick=async()=>{
