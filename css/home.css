@@ -21,7 +21,7 @@
 .task-title{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:21px;line-height:28px;font-weight:700}
 .task-name{display:flex;align-items:center;gap:9px;min-width:0;white-space:nowrap}
 .task-date{margin:0;text-align:right;white-space:nowrap;color:#7F8A95;font-size:15px;line-height:23px;font-weight:500}
-.status-dot{width:23px;height:23px;min-width:23px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:#5B7188;color:#fff;border:1px solid rgba(255,255,255,.14);font:650 11px/23px Arial,"Microsoft YaHei",sans-serif}
+.status-dot{width:30px;height:30px;min-width:30px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:#5B7188;color:#fff;border:1px solid rgba(255,255,255,.14);font:650 12px/30px Arial,"Microsoft YaHei",sans-serif}
 .status-dot[hidden]{display:none}
 .task-main{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:10px;margin-top:15px}
 .task-info{min-width:0;color:#9AA6B2;font-size:15px;line-height:27px}
@@ -84,6 +84,5 @@
 }
 
 /* 当前线路显示 */
-.today-route{display:block;margin-top:4px;color:#B8C2CC;font-size:15px;line-height:22px;font-weight:600}
 .home-menu-panel a#currentRouteMenu{justify-content:flex-start}
 .home-menu-panel .menu-route-value{margin-left:auto;max-width:92px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#B8C2CC;font-size:13px;font-weight:600}
