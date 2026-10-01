@@ -5,7 +5,7 @@ const esc=v=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const attr=v=>esc(v).replace(/'/g,'&#39;');
 const navOf=x=>String(x?.navigation||x?.nav||'').trim();
 const params=new URLSearchParams(location.search), id=params.get('id')||'', source=params.get('source')||'', targetDate=params.get('date')||'';
-let order=null,menuOpen=false;
+let order=null,menuOpen=false,historyChoices=null;
 
 function safeUrl(v){try{const raw=String(v??'').trim();if(!raw)return'';const u=new URL(raw,location.origin);return /^(https?:)$/.test(u.protocol)?u.href:''}catch{return''}}
 function vehicleText(v){const s=String(v??'').replace(/undefined/gi,'').replace(/\s+/g,'').trim();return s?('车辆 '+s):''}
@@ -13,6 +13,25 @@ function fmtWeight(v){const n=Number(v);return Number.isFinite(n)?(Math.round(n*
 
 function render(){
  if(!order)return;
+ if(Array.isArray(historyChoices)&&historyChoices.length>1){
+  $('orderDate').textContent=targetDate||'历史运单';
+  $('storeCount').textContent=historyChoices.length;
+  $('totalWeight').textContent=fmtWeight(historyChoices.reduce((n,x)=>n+(Number(x.totalWeight)||0),0));
+  $('routeName').textContent=order.routeName||'—';
+  $('menuRoute').textContent=order.routeName||'当前线路';
+  $('vehicle').textContent='请选择要查看的运单';
+  $('metrics').innerHTML='<span>同日'+historyChoices.length+'张运单</span>';
+  $('routeList').innerHTML=historyChoices.map((x,i)=>{
+    const s=x.summary||{},stage=x.stage==='CONFIRMED'?'已确认':'待确认';
+    return '<button type="button" class="order-history-choice" data-history-index="'+i+'"><strong>运单 '+String(i+1).padStart(2,'0')+'</strong><span>'+esc(x.vehicle||'车辆待确认')+'</span><span>'+Number(s.total||x.stores?.length||0)+'家 · '+fmtWeight(x.totalWeight)+'t · '+stage+'</span></button>';
+  }).join('');
+  $('routeList').querySelectorAll('.order-history-choice').forEach(b=>b.onclick=()=>{
+    const x=historyChoices[Number(b.dataset.historyIndex)];
+    historyChoices=null;order=x;render();
+  });
+  const old=$('confirmPendingBtn');if(old)old.remove();
+  return;
+ }
  const s=order.summary||{}, stores=Array.isArray(order.stores)?order.stores:[], pending=stores.filter(x=>x?.pending);
  $('orderDate').textContent=order.date||'日期待确认';
  $('pageTitle')?.replaceChildren(document.createTextNode('运单详情'));
@@ -53,8 +72,14 @@ async function load(){
  try{
   const r=await fetch(url,{credentials:'same-origin',cache:'no-store',signal:controller.signal});
   const d=await r.json().catch(()=>({}));
-  if(!r.ok||!d.success||!d.waybill)throw Error(d.error||'暂无当日运单');
-  order=d.waybill;render();
+  if(!r.ok||!d.success||(!d.waybill&&!Array.isArray(d.waybills)))throw Error(d.error||'暂无当日运单');
+  if(source==='today'&&targetDate&&Array.isArray(d.waybills)&&d.waybills.length){
+    historyChoices=d.waybills;
+    order=d.waybills[0];
+  }else{
+    historyChoices=null;order=d.waybill;
+  }
+  render();
  }catch(e){
   if(e?.name==='AbortError')throw Error('运单读取超时，请重试');
   throw e;
