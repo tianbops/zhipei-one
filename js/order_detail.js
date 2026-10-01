@@ -15,7 +15,7 @@ function render(){
  if(!order)return;
  const s=order.summary||{}, stores=Array.isArray(order.stores)?order.stores:[], pending=stores.filter(x=>x?.pending);
  $('orderDate').textContent=order.date||'日期待确认';
- $('pageTitle')?.replaceChildren(document.createTextNode(source==='today'?'今日运单':'运单详情'));
+ $('pageTitle')?.replaceChildren(document.createTextNode('运单详情'));
  $('storeCount').textContent=Number(s.total)||stores.length||0;
  $('totalWeight').textContent=fmtWeight(order.totalWeight);
  $('routeName').textContent=order.routeName||'—';
