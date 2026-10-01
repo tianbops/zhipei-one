@@ -29,6 +29,22 @@ async function readWaybill(env,id){
  if(!raw)return null;
  try{const x=typeof raw==="string"?JSON.parse(raw):raw;return historyReadable(x)?x:null}catch{return null}
 }
+async function readWaybills(env,ids){
+ const cleanIds=[...new Set((ids||[]).map(clean).filter(Boolean))];
+ if(!cleanIds.length)return [];
+ try{
+  const rawList=await command(env,["MGET",...cleanIds.map(id=>"zp:waybill:"+id)]);
+  const list=Array.isArray(rawList)?rawList:[];
+  return list.map((raw,i)=>{
+   if(!raw)return null;
+   try{const x=typeof raw==="string"?JSON.parse(raw):raw;return historyReadable(x)?x:null}catch{return null}
+  }).filter(Boolean);
+ }catch{
+  const out=[];
+  for(const id of cleanIds){const w=await readWaybill(env,id);if(w)out.push(w)}
+  return out;
+ }
+}
 
 async function scanConfirmedWaybill(env,routeId,date){
  let cursor="0",found=null;
@@ -70,13 +86,12 @@ async function readHistoryEntries(env,key){
   }catch{}
  }
  const out=[];
+ const ids=[];
  for(const member of members){
   if(member&&typeof member==="object"&&member.id){if(historyReadable(member))out.push(member);continue}
-  const id=clean(member);
-  if(!id)continue;
-  const w=await readWaybill(env,id);
-  if(w)out.push(w);
+  const id=clean(member);if(id)ids.push(id);
  }
+ out.push(...await readWaybills(env,ids));
  const seen=new Set();
  return out.filter(w=>{if(seen.has(w.id))return false;seen.add(w.id);return true}).sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
 }
@@ -114,14 +129,18 @@ export async function onRequestGet({request,env}){
  const date=clean(url.searchParams.get("date"));
  if(!routeId)return json({success:true,routeId:null,months:[],history:[]});
  const route=await getRoute(env,routeId);const routeName=clean(route?.name)||"临时";
+ let baseStoresCache=null;
  async function withRouteData(w){
   if(!w)return w;
   w.routeName=clean(w.routeName)||routeName;
   if(!Array.isArray(w.stores)||!w.stores.length)return w;
   try{
-   const rawBase=await get(env,"route:"+routeId+":base");
-   const parsed=typeof rawBase==="string"?JSON.parse(rawBase):rawBase;
-   const baseStores=Array.isArray(parsed?.stores)?parsed.stores:[];
+   if(baseStoresCache===null){
+    const rawBase=await get(env,"route:"+routeId+":base");
+    const parsed=typeof rawBase==="string"?JSON.parse(rawBase):rawBase;
+    baseStoresCache=Array.isArray(parsed?.stores)?parsed.stores:[];
+   }
+   const baseStores=baseStoresCache;
    const byId=new Map(baseStores.map(s=>[clean(s?.storeId),s]).filter(x=>x[0]));
    const baseKey=v=>clean(v).normalize("NFKC").replace(/\s+/g,"").replace(/[，。；;：:、（）()【】\[\]{}<>《》“”"'‘’]/g,"").toLowerCase();
    const byName=new Map();
