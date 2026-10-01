@@ -7,7 +7,8 @@ const navOf=x=>String(x?.navigation||x?.nav||'').trim();
 const params=new URLSearchParams(location.search), id=params.get('id')||'';
 let order=null,menuOpen=false;
 
-function safeUrl(v){try{const u=new URL(String(v||''),location.origin);return /^(https?:)$/.test(u.protocol)?u.href:''}catch{return''}}
+function safeUrl(v){try{const raw=String(v??'').trim();if(!raw)return'';const u=new URL(raw,location.origin);return /^(https?:)$/.test(u.protocol)?u.href:''}catch{return''}}
+function vehicleText(v){const s=String(v??'').replace(/undefined/gi,'').replace(/\s+/g,'').trim();return s?('车辆 '+s):''}
 function fmtWeight(v){const n=Number(v);return Number.isFinite(n)?(Math.round(n*100)/100).toFixed(2):'0.00'}
 
 function render(){
@@ -16,9 +17,9 @@ function render(){
  $('orderDate').textContent=order.date||'日期待确认';
  $('storeCount').textContent=Number(s.total)||stores.length||0;
  $('totalWeight').textContent=fmtWeight(order.totalWeight);
- $('routeName').textContent=order.routeName||order.routeId||'当前线路';
- $('menuRoute').textContent=order.routeName||order.routeId||'当前线路';
- $('vehicle').textContent=order.vehicle?('车辆 '+order.vehicle):'';
+ $('routeName').textContent=order.routeName||'当前线路';
+ $('menuRoute').textContent=order.routeName||'当前线路';
+ $('vehicle').textContent=vehicleText(order.vehicle);
  const metrics=[];
  if(Number(s.original)&&Number(s.original)!==Number(s.total))metrics.push('原始'+s.original+'家');
  if(Number(s.correction)>0)metrics.push('更正'+s.correction+'家');
@@ -29,7 +30,7 @@ function render(){
  $('routeList').innerHTML=stores.length?stores.map((x,i)=>{
    const name=esc(x.name||x.rawName||'未识别门店'), nav=safeUrl(navOf(x));
    const status=x.pending?'<span class="order-store-status pending">待确认</span>':(x.matchMethod==='confirmed-new'||x.isNew?'<span class="order-store-status">新增</span>':'');
-   const nameHtml=nav?'<a class="order-store-name nav" href="'+attr(nav)+'" target="_blank" rel="noopener">'+name+status+'</a>':'<div class="order-store-name">'+name+status+'</div>';
+   const nameHtml=nav?'<a class="order-store-name nav" href="'+attr(nav)+'" target="_self">'+name+status+'</a>':'<div class="order-store-name">'+name+status+'</div>';
    const note=x.pending&&Array.isArray(x.candidates)&&x.candidates[0]?.name?'建议匹配：'+x.candidates[0].name:(x.note||x.remark||'');
    return '<div class="order-store-item"><span class="order-store-index">'+String(i+1).padStart(2,'0')+'</span><div class="order-store-main">'+nameHtml+(note?'<div class="order-store-note">'+esc(note)+'</div>':'')+'</div></div>';
  }).join(''):'<div class="order-empty">当日暂无配送数据</div>';
@@ -89,7 +90,7 @@ $('menuBtn').onclick=e=>{e.stopPropagation();setMenu(!menuOpen)};
 $('editRouteBtn').onclick=()=>location.href='/pages/data.html';
 $('shareBtn').onclick=async()=>{
  setMenu(false);if(!order)return;
- const s=order.summary||{},text='智配One\n'+(order.date||'')+'\n'+(order.routeName||order.routeId||'当前线路')+'\n'+(s.total||order.stores?.length||0)+'家 · '+fmtWeight(order.totalWeight)+'t';
+ const s=order.summary||{},text='智配One\n'+(order.date||'')+'\n'+(order.routeName||'当前线路')+'\n'+(s.total||order.stores?.length||0)+'家 · '+fmtWeight(order.totalWeight)+'t';
  try{if(navigator.share)await navigator.share({title:'当日运单',text});else{await navigator.clipboard?.writeText(text);alert('已复制运单摘要')}}catch{}
 };
 $('logoutBtn').onclick=async()=>{setMenu(false);if(!confirm('确定退出登录吗？'))return;try{await fetch('/api/logout',{method:'POST',credentials:'same-origin',cache:'no-store'})}finally{location.replace('/')}};
