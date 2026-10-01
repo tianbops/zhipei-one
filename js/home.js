@@ -68,14 +68,6 @@ async function ensureDispatchRoute(){
 
 function chooseFile(source){
   // 保持文件选择器调用在用户点击手势内，避免 Android 浏览器因异步等待而拦截相册/相机。
-  if(!dispatchRouteId){
-    status.textContent="正在读取当前配送线路…";
-    status.className="home-status";
-    ensureDispatchRoute().then(ready=>{
-      if(!ready){status.textContent="请先选择今天实际使用的配送线路";status.className="home-status error";}
-    });
-    return;
-  }
   const input=source==="camera"?$("cameraInput"):source==="photo"?$("photoInput"):$("documentInput");
   if(!input)return;
   // 允许连续选择同一张运单时也能再次触发 change。
