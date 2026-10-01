@@ -54,7 +54,7 @@ async function readHistoryEntry(env,key){
  if(!raw)return null;
  try{
   const value=typeof raw==="string"?JSON.parse(raw):raw;
-  if(value&&typeof value==="object"&&value.id)return validWaybill(value)?value:null;
+  if(value&&typeof value==="object"&&value.id)return historyReadable(value)?value:null;
   const id=clean(raw);
   return id?await readWaybill(env,id):null;
  }catch{
@@ -180,7 +180,7 @@ export async function onRequestGet({request,env}){
    const raw=await get(env,String(key).replace(/^zp:/,""));
    try{
     const w=typeof raw==="string"?JSON.parse(raw):raw;
-    if(!validWaybill(w)||w.routeId!==routeId||w.date<start||w.date>end||indexedDates.has(w.date))continue;
+    if(!historyReadable(w)||w.routeId!==routeId||w.date<start||w.date>end||indexedDates.has(w.date))continue;
     indexedDates.add(w.date);
     dates.push({date:w.date,waybillId:w.id,storeCount:Number(w.summary?.total)||w.stores.length,totalWeight:Number(w.totalWeight)||0});
     await command(env,["SET",historyKey(routeId,w.date),w.id]).catch(()=>{});
