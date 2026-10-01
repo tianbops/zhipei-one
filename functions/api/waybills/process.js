@@ -194,7 +194,7 @@ export async function onRequestPost({request,env}){
       if(heartbeat)clearInterval(heartbeat);
       if(!closed){closed=true;try{controller.close()}catch{}}
     }).catch(error=>{
-      push(JSON.stringify({type:"result",success:false,error:error?.message||"处理失败"})+"\n");
+      push(JSON.stringify({type:"result",success:false,code:error?.code||"PROCESS_FAILED",message:error?.message||"处理失败",error:error?.message||"处理失败"})+"\n");
       if(heartbeat)clearInterval(heartbeat);
       if(!closed){closed=true;try{controller.close()}catch{}}
     });
