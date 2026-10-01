@@ -195,11 +195,9 @@ export async function onRequestDelete({request,env}){
    const entries=await readHistoryIds(env,routeId);
    for(const entry of entries){
     if(!entry.date.startsWith(month))continue;
-    const key=entry.key,waybillId=clean(await get(env,key));
-    if(!waybillId){await command(env,["DEL",key]).catch(()=>{});continue}
-    const raw=await get(env,"waybill:"+waybillId);let order=null;
-    try{order=typeof raw==="string"?JSON.parse(raw):raw}catch{}
-    if(!order||order.routeId!==routeId||order.date!==entry.date||order.stage!=="CONFIRMED"){await command(env,["DEL",key]).catch(()=>{});continue}
+    const key=entry.key,order=await readHistoryEntry(env,key),waybillId=clean(order?.id);
+    if(!order||!waybillId){await command(env,["DEL",key]).catch(()=>{});continue}
+    if(order.routeId!==routeId||order.date!==entry.date||order.stage!=="CONFIRMED"){await command(env,["DEL",key]).catch(()=>{});continue}
     const lockKey="zp:route:"+routeId+":history-delete-lock:"+entry.date,token=crypto.randomUUID();
     if(await command(env,["SET",lockKey,token,"NX","EX","60"])!=="OK")continue;
     try{
