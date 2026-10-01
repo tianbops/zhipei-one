@@ -30,7 +30,7 @@ async function load(){
    r=await fetch("/api/history",{credentials:"same-origin",cache:"no-store"});
    text=await r.text();try{d=JSON.parse(text)}catch{d=null}
   }
-  if(!r.ok||!d?.success)throw new Error(d?.error||"历史记录读取失败");
+  if(!r.ok||!d?.success){const code=String(d?.code||("HTTP_"+r.status));const detail=String(d?.detail||"").trim();throw new Error(code+(detail?"："+detail:"："+(d?.error||"历史记录读取失败")))}
   model={history:Array.isArray(d.history)?d.history:[],range:d.range||null};
   render();
  }catch(e){
