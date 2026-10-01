@@ -203,7 +203,6 @@ export async function onRequestGet({request,env}){
   history:dates
  });
 }catch(e){return json({success:false,code:"HISTORY_READ_FAILED",error:"历史记录读取失败",detail:String(e?.message||e).slice(0,180)},500)}
-}
 
 export async function onRequestDelete({request,env}){
  const user=await currentUser(request,env);
