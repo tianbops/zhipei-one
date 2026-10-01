@@ -24,7 +24,14 @@ function resetProcessingUI(){
   sourceMenu.hidden=false;processingPanel.hidden=true;
   renderProcessingProgress(0);
 }
-function showProcessingError(message){\n  if(processingPanel)processingPanel.hidden=true;\n  if(sourceMenu)sourceMenu.hidden=true;\n  if(overlay)overlay.classList.add("processing-error-state");\n  if(processingErrorMessage)processingErrorMessage.textContent=message||"处理失败，请重试";\n  if(processingError)processingError.hidden=false;\n}\nfunction showProcessingUI(){
+function showProcessingError(message){
+  if(processingPanel)processingPanel.hidden=true;
+  if(sourceMenu)sourceMenu.hidden=true;
+  if(overlay)overlay.classList.add("processing-error-state");
+  if(processingErrorMessage)processingErrorMessage.textContent=message||"处理失败，请重试";
+  if(processingError)processingError.hidden=false;
+}
+function showProcessingUI(){
   if(!processingPanel||!sourceMenu)return;
   sourceMenu.hidden=true;processingPanel.hidden=false;
   renderProcessingProgress(0);
@@ -41,7 +48,8 @@ function setPipelineStage(index,text){
   renderProcessingProgress(checkpoints[Math.max(0,Math.min(5,index))]);
 }
 $("uploadAction")?.addEventListener("click",openUpload);
-cancel?.addEventListener("click",closeUpload);\nprocessingRetry?.addEventListener("click",()=>{if(processingFile)return;closeUpload();});
+cancel?.addEventListener("click",closeUpload);
+processingRetry?.addEventListener("click",()=>{if(processingFile)return;closeUpload();});
 overlay?.addEventListener("click",e=>{if(e.target===overlay)closeUpload()});
 
 async function ensureDispatchRoute(){
@@ -108,7 +116,8 @@ async function processSelectedFile(file){
         const chunk=await reader.read();
         if(chunk.done)break;
         buffer+=decoder.decode(chunk.value,{stream:true});
-        const lines=buffer.split("\n");
+        const lines=buffer.split("
+");
         buffer=lines.pop()||"";
         for(const line of lines){
           if(!line.trim())continue;
