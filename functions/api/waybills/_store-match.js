@@ -157,6 +157,7 @@ export function matchStores(items,baseStores){
       matchStatus:"matched",
       matchMethod:method,
       navigation:clean(target.navigation||item.navigation),
+      note:clean(target.note||target.remark||item.note||item.remark),
       correction:!isFormatOnlyDifference(rawName,target),
       pending:false,
       candidates:[]
