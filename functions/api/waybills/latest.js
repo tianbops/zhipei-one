@@ -13,11 +13,6 @@ const isPrimaryWaybillKey=key=>/^zp:waybill:[^:]+$/.test(String(key));
 const waybillIndexKey=(routeId,date)=>"zp:route:"+routeId+":waybills:"+date;
 
 
-async function writeIfNewer(env,key,waybill){
- const script=`local incoming=cjson.decode(ARGV[1]); local raw=redis.call("GET",KEYS[1]); if raw then local ok,current=pcall(cjson.decode,raw); if ok and type(current)=="table" and current.routeId==incoming.routeId and current.createdAt and incoming.createdAt and tostring(current.createdAt)>=tostring(incoming.createdAt) then return 0 end end; redis.call("SET",KEYS[1],ARGV[1]); return 1`;
- return command(env,["EVAL",script,"1","zp:"+key,JSON.stringify(waybill)]);
-}
-
 export async function onRequestGet({request,env}){
  const user=await currentUser(request,env);if(!user)return json({success:false,error:"未登录"},401);
  if(user.role==="admin"||!canUseRoute(user))return json({success:false,error:"无权查看配送业务"},403);
