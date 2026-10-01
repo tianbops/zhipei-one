@@ -120,11 +120,11 @@ async function addHistoryId(env,routeId,date,id){
 }
 
 async function repairLegacyHistoryIndex(env,routeId,start,end){
- const script='local cursor="0"; local out={}; repeat local scan=redis.call("SCAN",cursor,"MATCH","zp:waybill:*","COUNT","500"); cursor=tostring(scan[1] or "0"); for _,key in ipairs(scan[2] or {}) do local raw=redis.call("GET",key); if raw then local ok,w=pcall(cjson.decode,raw); if ok and type(w)=="table" and type(w.id)=="string" and type(w.routeId)=="string" and type(w.date)=="string" and w.routeId==ARGV[1] and w.date>=ARGV[2] and w.date<=ARGV[3] and (w.stage=="PLANNED" or w.stage=="CONFIRMED") and w.historyStatus~="SUPERSEDED" then table.insert(out,raw) end end end end until cursor=="0"; return out';
- const raw=await command(env,["EVAL",script,"0",routeId,start,end]);
- const out=[];
- for(const item of Array.isArray(raw)?raw:[]){try{const w=typeof item==="string"?JSON.parse(item):item;if(historyReadable(w))out.push(w)}catch{}}
- return out;
+ const script='local cursor="0"; local out={}; repeat local scan=redis.call("SCAN",cursor,"MATCH","zp:waybill:*","COUNT","500"); cursor=tostring(scan[1] or "0"); for _,key in ipairs(scan[2] or {}) do local raw=redis.call("GET",key); if raw then local ok,w=pcall(cjson.decode,raw); if ok and type(w)=="table" and type(w.id)=="string" and type(w.routeId)=="string" and type(w.date)=="string" and w.routeId==ARGV[1] and w.date>=ARGV[2] and w.date<=ARGV[3] and (w.stage=="PLANNED" or w.stage=="CONFIRMED") and w.historyStatus~="SUPERSEDED" then table.insert(out,w.id) end end end end until cursor=="0"; return out';
+ const idsRaw=await command(env,["EVAL",script,"0",routeId,start,end]);
+ const ids=[...new Set((Array.isArray(idsRaw)?idsRaw:[]).map(clean).filter(Boolean))];
+ if(!ids.length)return [];
+ return readWaybills(env,ids);
 }
 
 async function readHistoryIds(env,routeId){
@@ -234,21 +234,19 @@ export async function onRequestGet({request,env}){
  }
  // 兼容历史索引建立前已经存在的旧运单：只做一次按线路/日期范围的恢复扫描。
  // 恢复结果写回日期索引，后续正常历史查询不再扫描整个 waybill:*。
- const repairMarker="route:"+routeId+":history:index-repaired-v1";
+ const repairMarker="route:"+routeId+":history:index-repaired-v2";
  const repaired=await get(env,repairMarker).catch(()=>null);
  if(!repaired){
-  try{
-   const legacy=await repairLegacyHistoryIndex(env,routeId,start,end);
-   for(const w of legacy){
-    const list=byDate.get(w.date)||[];
-    if(!list.some(x=>x.id===w.id))list.push(w);
-    byDate.set(w.date,list);
-   }
-   const repairCommands=[];
-   for(const w of legacy){if(/^\\d{4}-\\d{2}-\\d{2}$/.test(String(w.date)))repairCommands.push(["SADD",historyKey(routeId,w.date),w.id]);}
-   repairCommands.push(["SET", "zp:"+repairMarker, "1"]);
-   if(repairCommands.length>1)await pipeline(env,repairCommands);
-  }catch{}
+  const legacy=await repairLegacyHistoryIndex(env,routeId,start,end);
+  for(const w of legacy){
+   const list=byDate.get(w.date)||[];
+   if(!list.some(x=>x.id===w.id))list.push(w);
+   byDate.set(w.date,list);
+  }
+  const repairCommands=[];
+  for(const w of legacy){if(/^\\d{4}-\\d{2}-\\d{2}$/.test(String(w.date)))repairCommands.push(["SADD",historyKey(routeId,w.date),w.id]);}
+  for(let i=0;i<repairCommands.length;i+=100)await pipeline(env,repairCommands.slice(i,i+100));
+  await command(env,["SET","zp:"+repairMarker,"1"]);
  }
  const dates=[];
  for(const [date,list] of byDate){
