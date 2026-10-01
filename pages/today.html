@@ -28,11 +28,11 @@
   const today=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
   const p=new URLSearchParams(location.search),targetDate=p.get("date")||today;
   const [r,dRoutes]=await Promise.all([
-   fetch("/api/history?date="+encodeURIComponent(targetDate),{credentials:"same-origin",cache:"no-store"}),
+   fetch(targetDate===today?"/api/waybills/latest?confirmed=1":"/api/history?date="+encodeURIComponent(targetDate),{credentials:"same-origin",cache:"no-store"}),
    fetch("/api/routes",{credentials:"same-origin",cache:"no-store"})
   ]);
   const d=await r.json().catch(()=>({})),routeData=await dRoutes.json().catch(()=>null);
-  if(!r.ok||!d.success||!d.waybill){meta.textContent=targetDate===today?"今日暂无已确认运单":"该日期暂无运单";summary.textContent="";stores.innerHTML="";return}
+  if(!r.ok||!d.success||!d.waybill||d.waybill.stage!=="CONFIRMED"){meta.textContent=targetDate===today?"今日暂无已确认运单":"该日期暂无运单";summary.textContent="";stores.innerHTML="";return}
   const w=d.waybill,s=w.summary||{},items=Array.isArray(w.stores)?w.stores:[];
   const route=(Array.isArray(routeData?.routes)?routeData.routes:[]).find(x=>x.id===w.routeId);
   meta.innerHTML="<strong>"+esc(route?.name||w.routeName||w.routeId||"当前线路")+"</strong><span>"+esc(targetDate)+"</span>";
