@@ -62,3 +62,15 @@
 .data-confirm-panel p{margin:8px 0 0;text-align:center;color:#9AA5B0;font-size:13px;line-height:20px;word-break:break-word}
 .data-confirm-panel .data-import-actions{margin-top:18px}
 .data-confirm-panel #confirmOk{background:#26313C}
+
+.data-store-name-line{display:flex;align-items:flex-start;gap:8px;min-width:0}
+.data-store-name-line .data-store-name{flex:1;min-width:0}
+.data-store-actions{position:relative;display:flex;flex:none;margin:0}
+.data-store-more{width:34px;height:32px;padding:0;border:1px solid #35404C;border-radius:9px;background:#11171D;color:#B8C2CC;font-size:16px;letter-spacing:2px;line-height:1}
+.data-store-more:active{background:#26313C;color:#fff}
+.data-store-menu{position:absolute;right:0;top:38px;z-index:20;display:none;min-width:124px;padding:5px;background:#10161D;border:1px solid #35404C;border-radius:11px;box-shadow:0 12px 28px rgba(0,0,0,.42)}
+.data-store-menu.open{display:grid}
+.data-store-menu button{min-height:36px;padding:0 11px;border:0;border-radius:7px;background:transparent;color:#E8EDF2;text-align:left;font-size:13px}
+.data-store-menu button:active{background:#26313C}
+.data-store-menu .data-danger{color:#D4B6B6}
+@media(min-width:600px){.data-store-menu{min-width:136px}}
