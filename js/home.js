@@ -3,11 +3,11 @@ const menuButton=$("menuButton"),menuPanel=$("menuPanel");
 menuButton?.addEventListener("click",e=>{e.stopPropagation();const open=menuPanel.hidden;menuPanel.hidden=!open;menuButton.setAttribute("aria-expanded",String(open))});
 document.addEventListener("click",e=>{if(menuPanel&&!menuPanel.hidden&&!menuPanel.contains(e.target)&&e.target!==menuButton){menuPanel.hidden=true;menuButton.setAttribute("aria-expanded","false")}});
 
-const status=$("status"),overlay=$("uploadArea"),cancel=$("sourceCancel");
-const routeMessage=$("todayStatus"),todayRoute=$("todayRoute"),todayCount=$("todayCount"),todayWeight=$("todayWeight"),dot=$("statusDot");
+const overlay=$("uploadArea"),cancel=$("sourceCancel");
+const todayCount=$("todayCount"),todayWeight=$("todayWeight"),dot=$("statusDot");
 let dispatchRouteId="";
-const setEmptyToday=()=>{todayCount.textContent="暂无运单";todayWeight.textContent="";if(dot)dot.textContent="0";todayRoute.textContent="";todayRoute.hidden=true;document.querySelector(".task-card")?.classList.add("no-waybill")};
-const setHasToday=()=>{todayRoute.hidden=false;document.querySelector(".task-card")?.classList.remove("no-waybill")};
+const setEmptyToday=()=>{todayCount.textContent="暂无运单";todayWeight.textContent="";if(dot){dot.textContent="0";dot.hidden=true}};
+const setHasToday=()=>{if(dot)dot.hidden=false};
 
 const processingPanel=$("uploadProcessing"),processingError=$("uploadProcessingError"),processingErrorMessage=$("processingErrorMessage"),processingRetry=$("processingRetry"),sourceMenu=$("uploadSourceMenu"),processingPercent=$("processingPercent"),processingProgress=$("processingProgressDot");
 let processingProgressValue=0;
@@ -47,10 +47,6 @@ function closeUpload(){
 function openUpload(){
   if(overlay){resetProcessingUI();overlay.hidden=false;overlay.setAttribute("aria-hidden","false");document.body.classList.add("sheet-open")}
 }
-function setPipelineStage(index,text){
-  const checkpoints=[8,28,48,68,88,100];
-  renderProcessingProgress(checkpoints[Math.max(0,Math.min(5,index))]);
-}
 $("uploadAction")?.addEventListener("click",openUpload);
 cancel?.addEventListener("click",closeUpload);
 processingRetry?.addEventListener("click",()=>{if(processingFile)return;closeUpload();});
@@ -63,7 +59,6 @@ async function ensureDispatchRoute(){
     const d=await r.json().catch(()=>({}));
     if(r.ok&&d.success&&d.dispatchRoute?.id){
       dispatchRouteId=d.dispatchRoute.id;
-      if(todayRoute)todayRoute.textContent=d.dispatchRoute.name||"当前配送线路";
       return true;
     }
   }catch{}
@@ -79,8 +74,6 @@ function chooseFile(source){
 document.querySelectorAll(".source-option").forEach(btn=>btn.addEventListener("click",()=>chooseFile(btn.dataset.source)));
 
 let processingFile=false;
-let processingStage="";
-function setProcessingStage(text){processingStage=text;status.textContent=text;status.className="home-status processing";}
 async function processSelectedFile(file){
   if(!file||processingFile)return;
   processingFile=true;
@@ -88,8 +81,7 @@ async function processSelectedFile(file){
   const timer=setTimeout(()=>controller.abort(),60000);
   try{
     if(!(await ensureDispatchRoute())){
-      status.textContent="请先选择今天实际使用的配送线路";
-      status.className="home-status error";
+      showProcessingError("DISPATCH_ROUTE_MISSING");
       return;
     }
     showProcessingUI();
@@ -177,7 +169,6 @@ async function loadHome(){
       setEmptyToday();
     }
   }catch(e){
-    todayRoute.textContent="";todayRoute.hidden=true;
     setEmptyToday();
   }
 }
