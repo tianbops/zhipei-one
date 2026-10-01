@@ -15,8 +15,8 @@ const addMonths=(date,months)=>{
  return x.toISOString().slice(0,10);
 };
 const startOfYear=date=>date.slice(0,4)+"-01-01";
-const historyRange=today=>({start:startOfYear(today),end:addDays(today,1)});
-const addDays=(date,days)=>{const [y,m,d]=date.split("-").map(Number);const x=new Date(Date.UTC(y,m-1,d));x.setUTCDate(x.getUTCDate()+days);return x.toISOString().slice(0,10)};
+const endOfNextMonth=date=>{const [y,m]=date.split("-").map(Number);return new Date(Date.UTC(y,m+1,0)).toISOString().slice(0,10)};
+const historyRange=today=>({start:startOfYear(today),end:endOfNextMonth(today)});
 const inRange=(date,range)=>date>=range.start&&date<=range.end;
 const monthInRange=(month,range)=>month>=range.start.slice(0,7)&&month<=range.end.slice(0,7);
 const validWaybill=x=>!!x&&x.schemaVersion==="2"&&typeof x.id==="string"&&typeof x.routeId==="string"&&Array.isArray(x.stores)&&!!x.summary&&x.stage==="CONFIRMED"&&x.historyStatus!=="SUPERSEDED";
@@ -114,7 +114,7 @@ export async function onRequestGet({request,env}){
  if(routeId!==(clean(user.dispatchRouteId)||clean(user.boundRouteId)))return json({success:false,error:"无权查看该线路历史"},403);
 
  if(date){
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return json({success:false,code:"DATE_INVALID",error:"日期格式错误"},400);
+  if(!validDate(date))return json({success:false,code:"DATE_INVALID",error:"日期无效"},400);
   const range=historyRange(todayCN());
   if(!inRange(date,range))return json({success:false,code:"DATE_OUT_OF_RANGE",error:"日期不在历史查询范围内"},400);
   const historyIndexKey=historyKey(routeId,date);
