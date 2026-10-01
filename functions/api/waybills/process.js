@@ -7,7 +7,7 @@ import {TEMP_DISPATCH_ID} from "../dispatch.js";
 import {getRoute} from "../_route.js";
 import {recognizeImage} from "./ocr.js";
 import {findGlobalMatches} from "../_global-learning.js";
-import {clean,formatCompareKey,matchStores,businessStoreCode} from "./_store-match.js";
+import {clean,formatCompareKey,matchStores} from "./_store-match.js";
 
 const waybillIndexKey=(routeId,date)=>"zp:route:"+routeId+":waybills:"+date;
 async function base(env,id){const raw=await get(env,"route:"+id+":base");if(!raw)throw Object.assign(new Error("线路数据资料尚未建立"),{code:"BASE_NOT_FOUND"});let x;try{x=typeof raw==="string"?JSON.parse(raw):raw}catch{throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"})}if(!x||!Array.isArray(x.stores))throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"});return x.stores}
