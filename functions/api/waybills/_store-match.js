@@ -156,6 +156,7 @@ export function matchStores(items,baseStores){
       routeOrder:Number(target.routeOrder)||index+1,
       matchStatus:"matched",
       matchMethod:method,
+      navigation:clean(target.navigation||item.navigation),
       correction:!isFormatOnlyDifference(rawName,target),
       pending:false,
       candidates:[]
