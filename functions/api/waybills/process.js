@@ -173,7 +173,7 @@ export async function onRequestPost({request,env}){
       try{controller.enqueue(encoder.encode(value));return true}catch{closed=true;return false}
     };
     const emit=(progress,message)=>push(JSON.stringify({type:"progress",progress,message})+"\n");
-    heartbeat=setInterval(()=>push(JSON.stringify({type:"heartbeat",ts:Date.now()})NaN),1000);
+    heartbeat=setInterval(()=>push(JSON.stringify({type:"heartbeat",ts:Date.now()})+"\n"),1000);
     runProcess({request,env,emit,form,user}).then(async response=>{
       let payload={};try{payload=await response.clone().json()}catch(error){payload={success:false,error:"处理结果读取失败"}}
       push(JSON.stringify({type:"result",...payload})+"\n");
