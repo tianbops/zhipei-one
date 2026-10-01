@@ -163,16 +163,28 @@ export async function onRequestPost({request,env}){
   const user=await currentUser(request,env);if(!user)return json({success:false,error:"未登录"},401);
   if(new URL(request.url).searchParams.get("stream")!=="1")return runProcess({request,env});
   const encoder=new TextEncoder();
+  let closed=false;
+  let heartbeat=null;
   const streamBody=new ReadableStream({start(controller){
-    const emit=(progress,message)=>controller.enqueue(encoder.encode(JSON.stringify({type:"progress",progress,message})+"\\n"));
+    const push=value=>{
+      if(closed)return false;
+      try{controller.enqueue(encoder.encode(value));return true}catch{closed=true;return false}
+    };
+    const emit=(progress,message)=>push(JSON.stringify({type:"progress",progress,message})+"\\n");
+    heartbeat=setInterval(()=>push(JSON.stringify({type:"heartbeat",ts:Date.now()})+"\\n"),1000);
     runProcess({request,env,emit}).then(async response=>{
-      let payload={};try{payload=await response.clone().json()}catch{}
-      controller.enqueue(encoder.encode(JSON.stringify({type:"result",...payload})+"\\n"));
-      controller.close();
+      let payload={};try{payload=await response.clone().json()}catch(error){payload={success:false,error:"处理结果读取失败"}}
+      push(JSON.stringify({type:"result",...payload})+"\\n");
+      if(heartbeat)clearInterval(heartbeat);
+      if(!closed){closed=true;try{controller.close()}catch{}}
     }).catch(error=>{
-      controller.enqueue(encoder.encode(JSON.stringify({type:"result",success:false,error:error?.message||"处理失败"})+"\\n"));
-      controller.close();
+      push(JSON.stringify({type:"result",success:false,error:error?.message||"处理失败"})+"\\n");
+      if(heartbeat)clearInterval(heartbeat);
+      if(!closed){closed=true;try{controller.close()}catch{}}
     });
+  },cancel(){
+    closed=true;
+    if(heartbeat)clearInterval(heartbeat);
   }});
-  return new Response(streamBody,{status:200,headers:{"Content-Type":"application/x-ndjson; charset=utf-8","Cache-Control":"no-store","X-Accel-Buffering":"no"}});
+  return new Response(streamBody,{status:200,headers:{"Content-Type":"application/x-ndjson; charset=utf-8","Cache-Control":"no-store, no-transform","X-Accel-Buffering":"no","X-Content-Type-Options":"nosniff"}});
 }
