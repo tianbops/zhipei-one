@@ -4,55 +4,256 @@
 <body><main class="page2 data-page">
 <header class="page2-head"><a class="page2-back" href="/home.html">返回</a><h1>数据中心</h1><span></span></header>
 <section class="page2-card data-route-card"><div class="data-route-kicker">当前调度线路</div><div class="data-route-title"><h2 id="title">加载中…</h2><span class="data-route-badge">线路资料</span></div><p id="hint" class="data-route-hint">正在读取线路资料</p><div id="summary" class="data-summary"><strong>—</strong><span>正在读取</span></div></section>
-<section class="card data-tools-card" id="tools" style="display:none"><div class="data-toolbar"><div><div class="data-toolbar-title">批量维护</div><div class="data-toolbar-sub">导入资料会整体替换当前线路门店</div></div><button id="importBtn" class="secondary-btn" type="button">导入资料</button></div></section>
-<section class="page2-card data-list-card"><div class="data-list-head"><span class="data-list-title">门店资料</span><span id="storeCount" class="data-list-count">—</span></div><div id="stores" class="data-store-list">加载中…</div><div id="maintainTools" class="data-maintain" style="display:none"><div class="data-maintain-info"><span>修改仅在保存后生效</span></div><div class="data-maintain-actions"><button id="addStore" class="secondary-btn" type="button">新增门店</button><button id="saveStores" class="primary-btn data-save" type="button">保存修改</button></div></div></section>
+<section class="card data-tools-card" id="tools" style="display:none">
+<div class="data-maintenance">
+  <div class="data-maintenance-group">
+    <button id="replaceBtn" class="data-action-btn" type="button">批量替换</button>
+    <button id="appendBtn" class="data-action-btn" type="button">单独追加</button>
+  </div>
+  <div class="data-maintenance-group">
+    <button id="restoreBtn" class="data-action-btn" type="button">恢复数据</button>
+    <button id="saveStoresTop" class="data-action-btn data-action-primary" type="button">提交更新</button>
+  </div>
+  <input id="restoreFile" type="file" accept=".json,.txt,.csv,application/json,text/plain,text/csv" hidden>
+</div>
+</section>
+<section class="page2-card data-list-card"><div class="data-list-head"><span class="data-list-title">门店资料</span><span id="storeCount" class="data-list-count">—</span></div><div id="stores" class="data-store-list">加载中…</div><div id="maintainTools" class="data-maintain" style="display:none"><div class="data-maintain-info"><span>修改仅在提交更新后生效</span></div></div></section>
 <div id="editBox" class="data-import data-editor" style="display:none"><div class="data-import-panel data-editor-panel"><div class="data-import-head"><h3 id="editTitle">编辑门店</h3><button id="editClose" class="data-import-close" type="button" aria-label="关闭">×</button></div><label class="data-field"><span>排列序号</span><input id="editOrder" class="data-input" type="number" min="1" step="1" inputmode="numeric" placeholder="例如 1"><small id="editOrderHint" class="data-field-hint"></small></label><label class="data-field"><span>门店名称</span><input id="editName" class="data-input" type="text" maxlength="120"></label><label class="data-field"><span>导航地址</span><input id="editNavigation" class="data-input" type="url" placeholder="https://..."></label><label class="data-field"><span>备注</span><textarea id="editNote" class="data-textarea data-note" placeholder="可选"></textarea></label><div id="editError" class="data-help data-preview"></div><div class="data-import-actions"><button id="editCancel" type="button">取消</button><button id="editSave" type="button">保存</button></div></div></div>
 <div id="confirmBox" class="data-import data-confirm" style="display:none"><div class="data-confirm-panel"><div class="data-confirm-icon">!</div><h3 id="confirmTitle">确认操作</h3><p id="confirmMessage"></p><div class="data-import-actions"><button id="confirmCancel" type="button">取消</button><button id="confirmOk" type="button">确定</button></div></div></div>
-<div id="importBox" class="data-import" style="display:none"><div class="data-import-panel"><div class="data-import-head"><h3>导入数据资料</h3><button id="importClose" class="data-import-close" type="button" aria-label="关闭">×</button></div><p class="data-help">每行一家门店。支持编号、导航和备注；保存后按当前顺序生成门店编号。</p><input id="importFile" class="data-file" type="file" accept=".txt,.csv,.json,text/plain,text/csv,application/json"><textarea id="importText" class="data-textarea" placeholder="01、江北胡汪洋经销商
+<div id="replaceBox" class="data-import" style="display:none"><div class="data-import-panel">
+<div class="data-import-head"><h3>批量替换</h3><button id="replaceClose" class="data-import-close" type="button" aria-label="关闭">×</button></div>
+<p class="data-help">用新的完整门店资料替换当前线路显示的资料。确认提交前，不会修改服务器中的正式数据。</p>
+<input id="replaceFile" class="data-file" type="file" accept=".txt,.csv,.json,application/json,text/plain,text/csv">
+<textarea id="replaceText" class="data-textarea" placeholder="01、江北胡汪洋经销商
 导航：https://...
 备注：由经销商代送
 
-02、渝北中景隆贸易有限公司"></textarea><div id="importPreview" class="data-help data-preview"></div><div class="data-import-actions"><button id="importCancel" type="button">取消</button><button id="importSave" type="button">保存导入</button></div></div></div>
+02、渝北中景隆贸易有限公司"></textarea>
+<div id="replacePreview" class="data-help data-preview"></div>
+<div class="data-import-actions"><button id="replaceCancel" type="button">取消</button><button id="replaceApply" type="button">预览替换</button></div>
+</div></div>
+<div id="appendBox" class="data-import" style="display:none"><div class="data-import-panel">
+<div class="data-import-head"><h3>单独追加</h3><button id="appendClose" class="data-import-close" type="button" aria-label="关闭">×</button></div>
+<p class="data-help">新增一家门店到当前资料的末尾。追加内容先保存在页面，确认无误后再提交更新。</p>
+<label class="data-field"><span>门店名称</span><input id="appendName" class="data-input" type="text" maxlength="120"></label>
+<label class="data-field"><span>导航地址</span><input id="appendNavigation" class="data-input" type="url" placeholder="https://..."></label>
+<label class="data-field"><span>备注</span><textarea id="appendNote" class="data-textarea data-note" placeholder="可选"></textarea></label>
+<div id="appendError" class="data-help data-preview"></div>
+<div class="data-import-actions"><button id="appendCancel" type="button">取消</button><button id="appendApply" type="button">追加</button></div>
+</div></div>
+<div id="restoreBox" class="data-import" style="display:none"><div class="data-import-panel">
+<div class="data-import-head"><h3>恢复数据</h3><button id="restoreClose" class="data-import-close" type="button" aria-label="关闭">×</button></div>
+<p class="data-help">选择之前保存的线路资料文件。恢复只替换当前页面显示的暂存数据，检查无误后再点击“提交更新”。</p>
+<div id="restorePreview" class="data-help data-preview">等待选择数据文件</div>
+<div class="data-import-actions"><button id="restoreCancel" type="button">取消</button><button id="restoreChoose" type="button">选择文件</button></div>
+</div></div>
+<div id="replaceConfirmBox" class="data-import data-confirm" style="display:none"><div class="data-confirm-panel">
+<div class="data-confirm-icon">!</div><h3>确认批量替换</h3><p id="replaceConfirmMessage"></p>
+<div class="data-import-actions"><button id="replaceConfirmCancel" type="button">取消</button><button id="replaceConfirmOk" type="button">确认替换</button></div>
+</div></div>
 </main>
 <script>
 const $=id=>document.getElementById(id);
 async function api(u,o={}){const r=await fetch(u,{credentials:"same-origin",...o});const d=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(d.error||d.message||"请求失败");e.code=d.code||"HTTP_"+r.status;e.detail=d.detail||"";throw e}return d}
 function err(e){return(e.code?"["+e.code+"] ":"")+e.message+(e.detail?" · "+e.detail:"")}
-let routeId="",canMaintain=false,stores=[],importing=false,baseVersion=1,saving=false,editingIndex=-1,confirming=false;
+let routeId="",canMaintain=false,stores=[],baseVersion=1,saving=false,editingIndex=-1,confirming=false,dragIndex=-1,hiddenIndexes=new Set();
+
 function cleanName(v){return String(v||"").trim().replace(/^[、.．)）\\-\s]+|[、.．\\-\s]+$/g,"").trim()}
-function parseImport(text){const raw=String(text||"").trim();if(raw.startsWith("[")||raw.startsWith("{")){try{const j=JSON.parse(raw),a=Array.isArray(j)?j:(Array.isArray(j.stores)?j.stores:[]);if(a.length)return a.map((x,i)=>({storeId:String(x.storeId||"").trim(),originalName:String(x.originalName||x.name||x.displayName||"").trim(),name:String(x.name||x.displayName||x.originalName||"").trim(),aliases:Array.isArray(x.aliases)?x.aliases:[],navigation:x.navigation||"",routeOrder:i+1,note:String(x.note||"").trim()})).filter(x=>x.name)}catch{}}const lines=String(text||"").replace(/\r/g,"").split("\n").map(x=>x.trim()).filter(Boolean),out=[];let cur=null;const push=()=>{if(cur?.name){cur.name=cleanName(cur.name);if(cur.name)out.push(cur)}cur=null};for(let line of lines){const nav=line.match(/(?:导航\s*[:：]?\s*)?(https?:\/\/[^\s）)]+)/i);if(nav){if(!cur){const before=line.slice(0,nav.index).trim();if(before)cur={name:before,nav:"",note:""}}if(cur)cur.nav=nav[1].trim();line=(line.slice(0,nav.index)+line.slice(nav.index+nav[0].length)).trim();if(!line)continue}if(/^备注\s*[:：]/i.test(line)){if(cur)cur.note=line.replace(/^备注\s*[:：]\s*/i,"").trim();continue}const m=line.match(/^\d+\s*[、.．)）-]?\s*(.+)$/);if(m){push();cur={name:m[1].trim(),nav:"",note:""};continue}if(!cur)cur={name:line,nav:"",note:""};else cur.name+=" "+line}push();const seen=new Set();return out.filter(x=>{const k=x.name.replace(/[\s　]+/g,"").toLowerCase();if(!k||seen.has(k))return false;seen.add(k);return true}).map((x,i)=>({storeId:"",originalName:x.name,name:x.name,aliases:[],navigation:/^https?:\/\//i.test(x.nav)?x.nav:"",routeOrder:i+1,note:x.note||""}))}
+function parseImport(text){
+ const raw=String(text||"").trim();
+ if(raw.startsWith("[")||raw.startsWith("{")){
+  try{
+   const j=JSON.parse(raw),a=Array.isArray(j)?j:(Array.isArray(j.stores)?j.stores:(Array.isArray(j.data)?j.data:[]));
+   if(a.length)return a.map((x,i)=>({storeId:String(x.storeId||"").trim(),originalName:String(x.originalName||x.name||x.displayName||"").trim(),name:String(x.name||x.displayName||x.originalName||"").trim(),aliases:Array.isArray(x.aliases)?x.aliases:[],businessStoreCode:String(x.businessStoreCode||"").trim(),navigation:String(x.navigation||"").trim(),routeOrder:Number(x.routeOrder)||i+1,note:String(x.note||"").trim()})).filter(x=>x.name);
+  }catch{}
+ }
+ const lines=String(text||"").replace(/\r/g,"").split("\n").map(x=>x.trim()).filter(Boolean),out=[];let cur=null;
+ const push=()=>{if(cur?.name){cur.name=cleanName(cur.name);if(cur.name)out.push(cur)}cur=null};
+ for(let line of lines){
+  const nav=line.match(/(?:导航\s*[:：]?\s*)?(https?:\/\/[^\s）)]+)/i);
+  if(nav){if(!cur){const before=line.slice(0,nav.index).trim();if(before)cur={name:before,nav:"",note:""}}if(cur)cur.nav=nav[1].trim();line=(line.slice(0,nav.index)+line.slice(nav.index+nav[0].length)).trim();if(!line)continue}
+  if(/^备注\s*[:：]/i.test(line)){if(cur)cur.note=line.replace(/^备注\s*[:：]\s*/i,"").trim();continue}
+  const m=line.match(/^\d+\s*[、.．)）-]?\s*(.+)$/);
+  if(m){push();cur={name:m[1].trim(),nav:"",note:""};continue}
+  if(!cur)cur={name:line,nav:"",note:""};else cur.name+=" "+line
+ }
+ push();
+ const seen=new Set();
+ return out.filter(x=>{const k=x.name.replace(/[\s　]+/g,"").toLowerCase();if(!k||seen.has(k))return false;seen.add(k);return true}).map((x,i)=>({storeId:"",originalName:x.name,name:x.name,aliases:[],businessStoreCode:"",navigation:/^https?:\/\//i.test(x.nav)?x.nav:"",routeOrder:i+1,note:x.note||""}))
+}
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
-function render(){const box=$("stores");$("storeCount").textContent=stores.length+"家";if(!stores.length){box.innerHTML='<div class="data-empty">暂无门店资料</div>';return}const ordered=stores.map((s,index)=>({s,index})).sort((a,b)=>(a.s.routeOrder||0)-(b.s.routeOrder||0));box.innerHTML=ordered.map((entry,i)=>{const s=entry.s,index=entry.index;const meta=(s.aliases?.length?"<span><b class=\"data-store-meta-label\">别名</b>"+esc(s.aliases.join("、"))+"</span>":"")+(s.navigation?"<span><b class=\"data-store-meta-label\">导航</b>"+esc(s.navigation)+"</span>":"")+(s.note?"<span><b class=\"data-store-meta-label\">备注</b>"+esc(s.note)+"</span>":"");const actions=canMaintain?"<div class=\"data-store-actions\"><button type=\"button\" class=\"data-store-more\" data-menu=\""+index+"\">•••</button><div class=\"data-store-menu\" data-menu-panel=\""+index+"\"><button type=\"button\" data-edit=\""+index+"\">编辑资料</button><button type=\"button\" data-up=\""+index+"\">上移</button><button type=\"button\" data-down=\""+index+"\">下移</button><button type=\"button\" class=\"data-danger\" data-del=\""+index+"\">删除</button></div></div>":"";return "<div class=\"data-store-row\"><span class=\"data-store-index\">"+String(i+1).padStart(2,"0")+"</span><div class=\"data-store-main\"><div class=\"data-store-name-line\"><strong class=\"data-store-name\">"+esc(s.name||s.originalName||"未命名门店")+"</strong>"+actions+"</div>"+(meta?"<div class=\"data-store-meta\">"+meta+"</div>":"")+"</div></div>"}).join("")}
-function updatePreview(){const p=parseImport($("importText").value);$("importPreview").textContent=p.length?"已识别 "+p.length+" 家门店，保存后将整体替换当前数据资料。":"尚未识别到有效门店"}
-$("importBtn").onclick=()=>{if(!canMaintain)return;$("importText").value="";$("importFile").value="";$("importPreview").textContent="";$("importBox").style.display="block"};
-$("importCancel").onclick=()=>{$("importBox").style.display="none"};
-$("importClose").onclick=()=>{$("importBox").style.display="none"};
-$("importText").oninput=updatePreview;
-$("importFile").onchange=async e=>{const file=e.target.files?.[0];if(!file)return;try{$("importText").value=await file.text();updatePreview()}catch{$("importPreview").textContent="文件读取失败"}};
-$("importSave").onclick=async()=>{if(importing)return;const parsed=parseImport($("importText").value);if(!parsed.length){$("importPreview").textContent="没有可导入的门店";return}if(!await askConfirm("替换门店资料","导入内容将整体替换当前线路门店资料，是否继续？"))return;importing=true;$("importSave").disabled=true;try{const existing=new Map(stores.map(s=>[(s.name||s.originalName||"").replace(/[\\s　]+/g,"").toLowerCase(),s]));const merged=parsed.map((s,i)=>{const old=existing.get((s.name||"").replace(/[\\s　]+/g,"").toLowerCase());return {...s,storeId:old?.storeId||s.storeId||"" ,aliases:old?.aliases?.length?s.aliases.length?s.aliases:old.aliases:s.aliases,navigation:s.navigation||old?.navigation||"",note:s.note||old?.note||"",routeOrder:i+1}});const d=await api("/api/base",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({routeId,expectedVersion:baseVersion,stores:merged})});stores=Array.isArray(d.base?.stores)?d.base.stores:parsed;await load();$("importBox").style.display="none";$("summary").innerHTML="<strong>"+stores.length+"</strong><span>家门店 · 已更新</span>"}catch(e){$("importPreview").textContent=err(e)}finally{importing=false;$("importSave").disabled=false}};
-function openEditor(index=-1){editingIndex=index;const s=index>=0?stores[index]:{name:"",originalName:"",navigation:"",note:""};$("editTitle").textContent=index>=0?"编辑门店":"新增门店";$("editOrder").value=index>=0?(s.routeOrder||index+1):stores.length+1;
-  updateOrderHint();
-  $("editName").value=s.name||s.originalName||"";$("editNavigation").value=s.navigation||"";$("editNote").value=s.note||"";$("editError").textContent="";$("editBox").style.display="flex";setTimeout(()=>$("editName").focus(),0)}
-function updateOrderHint(){const max=stores.length+(editingIndex<0?1:0),value=Number($("editOrder").value),hint=$("editOrderHint");if(!Number.isInteger(value)||value<1||value>max){hint.textContent="请输入 1～"+max+" 的序号";hint.className="data-field-hint invalid";return}hint.textContent=editingIndex<0?"将插入第 "+value+" 位":"保存后将调整到第 "+value+" 位";hint.className="data-field-hint"}
+function navUrl(v){const u=String(v||"").trim();return /^https?:\/\//i.test(u)?u:""}
+function render(){
+ const box=$("stores");$("storeCount").textContent=stores.length+"家";
+ if(!stores.length){box.innerHTML='<div class="data-empty">暂无门店资料</div>';return}
+ const ordered=stores.map((s,index)=>({s,index})).sort((a,b)=>(a.s.routeOrder||0)-(b.s.routeOrder||0));
+ box.innerHTML=ordered.map((entry,i)=>{
+  const s=entry.s,index=entry.index,hidden=hiddenIndexes.has(index);
+  const name=esc(s.name||s.originalName||"未命名门店");
+  const meta=[];
+  if(s.aliases?.length)meta.push('<span><b class="data-store-meta-label">别名</b>'+esc(s.aliases.join("、"))+'</span>');
+  if(s.note)meta.push('<span><b class="data-store-meta-label">备注</b>'+esc(s.note)+'</span>');
+  const nav=navUrl(s.navigation);
+  const rowClass=hidden?"data-store-row data-store-hidden":"data-store-row";
+  return '<article class="'+rowClass+'" data-index="'+index+'" draggable="'+(canMaintain?"true":"false")+'">'+
+   '<span class="data-store-index">'+String(i+1).padStart(2,"0")+'</span>'+
+   '<div class="data-store-main">'+
+   '<div class="data-store-name-line">'+
+   (nav?'<a class="data-store-name data-store-nav" href="'+esc(nav)+'" target="_blank" rel="noopener noreferrer">'+name+'</a>':'<strong class="data-store-name">'+name+'</strong>')+
+   (canMaintain?'<span class="data-store-swipe-hint" aria-hidden="true">滑动操作</span>':"")+
+   '</div>'+
+   (meta.length?'<div class="data-store-meta">'+meta.join("")+'</div>':"")+
+   '</div></article>'
+ }).join("");
+}
+function openEditor(index=-1){
+ editingIndex=index;
+ const s=index>=0?stores[index]:{name:"",originalName:"",navigation:"",note:""};
+ $("editTitle").textContent=index>=0?"编辑门店":"新增门店";
+ $("editOrder").value=index>=0?(s.routeOrder||index+1):stores.length+1;
+ updateOrderHint();
+ $("editName").value=s.name||s.originalName||"";
+ $("editNavigation").value=s.navigation||"";
+ $("editNote").value=s.note||"";
+ $("editError").textContent="";
+ $("editBox").style.display="flex";
+ setTimeout(()=>$("editName").focus(),0)
+}
+function updateOrderHint(){
+ const max=stores.length+(editingIndex<0?1:0),value=Number($("editOrder").value),hint=$("editOrderHint");
+ if(!Number.isInteger(value)||value<1||value>max){hint.textContent="请输入 1～"+max+" 的序号";hint.className="data-field-hint invalid";return}
+ hint.textContent=editingIndex<0?"将插入第 "+value+" 位":"保存后将调整到第 "+value+" 位";hint.className="data-field-hint"
+}
 function closeEditor(){$("editBox").style.display="none";editingIndex=-1}
-function askConfirm(title,message){return new Promise(resolve=>{if(confirming){resolve(false);return}confirming=true;$("confirmTitle").textContent=title;$("confirmMessage").textContent=message;$("confirmBox").style.display="flex";const finish=value=>{confirming=false;$("confirmBox").style.display="none";resolve(value)};$("confirmCancel").onclick=()=>finish(false);$("confirmOk").onclick=()=>finish(true)})}
+function askConfirm(title,message){
+ return new Promise(resolve=>{
+  if(confirming){resolve(false);return}
+  confirming=true;$("confirmTitle").textContent=title;$("confirmMessage").textContent=message;$("confirmBox").style.display="flex";
+  const finish=value=>{confirming=false;$("confirmBox").style.display="none";resolve(value)};
+  $("confirmCancel").onclick=()=>finish(false);$("confirmOk").onclick=()=>finish(true)
+ })
+}
+function applyOrder(index,target){
+ const to=Math.max(1,Math.min(Number(target)||1,stores.length))-1;
+ if(index<0||index>=stores.length||index===to)return;
+ const [item]=stores.splice(index,1);stores.splice(to,0,item);stores.forEach((s,i)=>s.routeOrder=i+1);hiddenIndexes.clear();render()
+}
 $("editOrder").oninput=updateOrderHint;
 $("editClose").onclick=closeEditor;$("editCancel").onclick=closeEditor;
-$("editSave").onclick=()=>{const name=$("editName").value.trim();if(!name){$("editError").textContent="请输入门店名称";$("editName").focus();return}const item=editingIndex>=0?stores[editingIndex]:{storeId:"",originalName:"",aliases:[],routeOrder:stores.length+1};item.name=name;if(!item.originalName)item.originalName=name;item.navigation=$("editNavigation").value.trim();item.note=$("editNote").value.trim();if(editingIndex<0)stores.push(item);stores.forEach((s,i)=>s.routeOrder=i+1);closeEditor();render()};
-$("addStore").onclick=()=>openEditor(-1);
-document.addEventListener("click",e=>{if(!e.target.closest(".data-store-more")&&!e.target.closest(".data-store-menu"))document.querySelectorAll(".data-store-menu.open").forEach(x=>x.classList.remove("open"));const b=e.target.closest("#stores button");if(!b)return;if(b.dataset.menu!==undefined){const panel=document.querySelector('[data-menu-panel="'+b.dataset.menu+'"]');document.querySelectorAll(".data-store-menu.open").forEach(x=>{if(x!==panel)x.classList.remove("open")});panel?.classList.toggle("open");return}const i=Number(b.dataset.edit??b.dataset.del??b.dataset.up??b.dataset.down);if(!Number.isInteger(i)||i<0||i>=stores.length)return;if(b.dataset.edit!==undefined){document.querySelectorAll(".data-store-menu.open").forEach(x=>x.classList.remove("open"));openEditor(i);return}else if(b.dataset.del!==undefined){document.querySelectorAll(".data-store-menu.open").forEach(x=>x.classList.remove("open"));askConfirm("删除门店","确定删除“"+(stores[i].name||stores[i].originalName||"该门店")+"”吗？").then(ok=>{if(!ok)return;stores.splice(i,1);stores.forEach((s,n)=>s.routeOrder=n+1);render()})}else if(b.dataset.up!==undefined&&i>0){[stores[i-1],stores[i]]=[stores[i],stores[i-1]];stores.forEach((s,n)=>s.routeOrder=n+1);render()}else if(b.dataset.down!==undefined&&i<stores.length-1){[stores[i],stores[i+1]]=[stores[i+1],stores[i]];stores.forEach((s,n)=>s.routeOrder=n+1);render()}});
-$("saveStores").onclick=async()=>{if(saving)return;saving=true;$("saveStores").disabled=true;try{const d=await api("/api/base",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({routeId,expectedVersion:baseVersion,stores})});stores=d.base?.stores||stores;baseVersion=Number(d.base?.version)||baseVersion;render();$("summary").innerHTML="<strong>"+stores.length+"</strong><span>家门店 · 已保存</span>"}catch(e){if(e.code==="BASE_VERSION_CONFLICT")await load();$("summary").textContent=err(e)}finally{saving=false;$("saveStores").disabled=false}};
+$("editSave").onclick=()=>{
+ const name=$("editName").value.trim(),order=Number($("editOrder").value);
+ if(!name){$("editError").textContent="请输入门店名称";$("editName").focus();return}
+ const max=stores.length+(editingIndex<0?1:0);
+ if(!Number.isInteger(order)||order<1||order>max){$("editError").textContent="排列序号无效";return}
+ let item=editingIndex>=0?stores[editingIndex]:{storeId:"",originalName:"",aliases:[],businessStoreCode:"",routeOrder:stores.length+1};
+ item.name=name;if(!item.originalName)item.originalName=name;item.navigation=$("editNavigation").value.trim();item.note=$("editNote").value.trim();
+ if(editingIndex<0){stores.push(item);editingIndex=stores.length-1}
+ const from=editingIndex;applyOrder(from,order);closeEditor();render()
+};
+function closeAllPanels(){["replaceBox","appendBox","restoreBox","replaceConfirmBox"].forEach(id=>$(id).style.display="none")}
+function openReplace(){$("replaceText").value="";$("replaceFile").value="";$("replacePreview").textContent="";$("replaceBox").style.display="flex"}
+function openAppend(){$("appendName").value="";$("appendNavigation").value="";$("appendNote").value="";$("appendError").textContent="";$("appendBox").style.display="flex";setTimeout(()=>$("appendName").focus(),0)}
+function showRestore(){ $("restorePreview").textContent="等待选择数据文件"; $("restoreBox").style.display="flex" }
+function prepareReplace(){
+ const p=parseImport($("replaceText").value);
+ $("replacePreview").textContent=p.length?"已识别 "+p.length+" 家门店，将替换当前 "+stores.length+" 家资料。":"尚未识别到有效门店";
+ return p
+}
+$("replaceBtn").onclick=()=>canMaintain&&openReplace();
+$("replaceClose").onclick=$("replaceCancel").onclick=()=>closeAllPanels();
+$("replaceText").oninput=prepareReplace;
+$("replaceFile").onchange=async e=>{const file=e.target.files?.[0];if(!file)return;try{$("replaceText").value=await file.text();prepareReplace()}catch{$("replacePreview").textContent="文件读取失败"}};
+$("replaceApply").onclick=async()=>{
+ const p=prepareReplace();if(!p.length)return;
+ $("replaceConfirmMessage").textContent="当前资料 "+stores.length+" 家，新资料 "+p.length+" 家。确认后将替换当前页面显示的暂存资料；服务器正式资料仍需点击“提交更新”才会改变。";
+ $("replaceBox").style.display="none";$("replaceConfirmBox").style.display="flex";
+ $("replaceConfirmOk").onclick=()=>{stores=p.map((s,i)=>({...s,routeOrder:i+1}));hiddenIndexes.clear();$("replaceConfirmBox").style.display="none";render()};
+ $("replaceConfirmCancel").onclick=()=>{$("replaceConfirmBox").style.display="none";$("replaceBox").style.display="flex"}
+};
+$("appendBtn").onclick=()=>canMaintain&&openAppend();
+$("appendClose").onclick=$("appendCancel").onclick=()=>$("appendBox").style.display="none";
+$("appendApply").onclick=()=>{
+ const name=$("appendName").value.trim();if(!name){$("appendError").textContent="请输入门店名称";return}
+ stores.push({storeId:"",originalName:name,name,aliases:[],businessStoreCode:"",navigation:$("appendNavigation").value.trim(),routeOrder:stores.length+1,note:$("appendNote").value.trim()});
+ render();$("appendBox").style.display="none"
+};
+$("restoreBtn").onclick=()=>{if(canMaintain){showRestore();$("restoreFile").click()}};
+$("restoreChoose").onclick=()=>$("restoreFile").click();
+$("restoreClose").onclick=$("restoreCancel").onclick=()=>$("restoreBox").style.display="none";
+$("restoreFile").onchange=async e=>{
+ const file=e.target.files?.[0];if(!file)return;
+ try{
+  const raw=await file.text(),parsed=parseImport(raw);
+  if(!parsed.length){$("restorePreview").textContent="未识别到有效门店资料，请选择之前导出的数据文件。";return}
+  $("restorePreview").textContent="已读取 "+parsed.length+" 家门店。恢复后将替换当前页面显示的暂存资料。";
+  if(await askConfirm("恢复数据","确认用这份 "+parsed.length+" 家门店资料替换当前页面显示的数据吗？")){stores=parsed.map((s,i)=>({...s,routeOrder:i+1}));hiddenIndexes.clear();render();$("restoreBox").style.display="none"}
+ }catch(e){$("restorePreview").textContent="恢复失败："+err(e)}
+ finally{e.target.value=""}
+};
+$("saveStoresTop").onclick=async()=>submitStores();
+async function submitStores(){
+ if(saving)return;saving=true;$("saveStoresTop").disabled=true;
+ try{
+  stores.forEach((s,i)=>s.routeOrder=i+1);
+  const d=await api("/api/base",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({routeId,expectedVersion:baseVersion,stores})});
+  stores=Array.isArray(d.base?.stores)?d.base.stores:stores;baseVersion=Number(d.base?.version)||baseVersion;hiddenIndexes.clear();render();
+  $("summary").innerHTML="<strong>"+stores.length+"</strong><span>家门店 · 已提交</span>"
+ }catch(e){if(e.code==="BASE_VERSION_CONFLICT")await load();$("summary").textContent=err(e)}
+ finally{saving=false;$("saveStoresTop").disabled=false}
+}
+function bindTouch(){
+ const list=$("stores");
+ list.addEventListener("touchstart",e=>{
+  const row=e.target.closest(".data-store-row");if(!row||!canMaintain)return;
+  row._touch={x:e.touches[0].clientX,y:e.touches[0].clientY,t:Date.now(),long:false};
+  row._timer=setTimeout(()=>{if(row._touch){row._touch.long=true;row.classList.add("data-drag-active")}},550)
+ },{passive:true});
+ list.addEventListener("touchmove",e=>{
+  const row=e.target.closest(".data-store-row"),t=row?row._touch:null;if(!row||!t)return;
+  const dx=e.touches[0].clientX-t.x,dy=e.touches[0].clientY-t.y;
+  if(Math.abs(dx)>12||Math.abs(dy)>12){clearTimeout(row._timer);if(!t.long)return}
+  if(t.long){e.preventDefault();const target=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY)?.closest(".data-store-row");if(target&&target!==row){const a=Number(row.dataset.index),b=Number(target.dataset.index);if(Number.isInteger(a)&&Number.isInteger(b)&&a!==b){const [item]=stores.splice(a,1);stores.splice(b,0,item);stores.forEach((s,i)=>s.routeOrder=i+1);hiddenIndexes.clear();render()}}}
+ },{passive:false});
+ list.addEventListener("touchend",e=>{
+  const row=e.target.closest(".data-store-row"),t=row?row._touch:null;if(!row||!t)return;clearTimeout(row._timer);
+  const dx=e.changedTouches[0].clientX-t.x,dy=e.changedTouches[0].clientY-t.y;row.classList.remove("data-drag-active");row._touch=null;
+  if(t.long)return;
+  if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)){const index=Number(row.dataset.index);if(dx<0){openEditor(index)}else{hiddenIndexes.add(index);render()}return}
+ },{passive:true});
+ list.addEventListener("dragstart",e=>{const row=e.target.closest(".data-store-row");if(!row||!canMaintain)return;dragIndex=Number(row.dataset.index);row.classList.add("data-drag-active")});
+ list.addEventListener("dragover",e=>{if(dragIndex>=0)e.preventDefault()});
+ list.addEventListener("drop",e=>{const row=e.target.closest(".data-store-row");if(!row||dragIndex<0)return;e.preventDefault();applyOrder(dragIndex,Number(row.dataset.index));dragIndex=-1});
+ list.addEventListener("dragend",()=>{dragIndex=-1;document.querySelectorAll(".data-drag-active").forEach(x=>x.classList.remove("data-drag-active"))});
+}
+$("stores").addEventListener("click",e=>{
+ const nav=e.target.closest(".data-store-nav");if(nav)return;
+ const row=e.target.closest(".data-store-row");if(!row)return;
+ if(canMaintain&&e.detail===1){const now=Date.now();if(row._lastTap&&now-row._lastTap<350)return;row._lastTap=now;openEditor(Number(row.dataset.index))}
+});
+bindTouch();
+function setupScrollButtons(){
+ const up=document.createElement("button"),down=document.createElement("button");
+ up.className="data-float-scroll data-float-up";up.type="button";up.setAttribute("aria-label","快速回到顶部");up.textContent="↑";
+ down.className="data-float-scroll data-float-down";down.type="button";down.setAttribute("aria-label","快速向下");down.textContent="↓";
+ document.body.append(up,down);
+ const update=()=>{const y=window.scrollY,max=Math.max(0,document.documentElement.scrollHeight-window.innerHeight);up.classList.toggle("show",y>180);down.classList.toggle("show",y<max-180)};
+ up.onclick=()=>window.scrollTo({top:0,behavior:"smooth"});down.onclick=()=>window.scrollTo({top:document.documentElement.scrollHeight,behavior:"smooth"});
+ window.addEventListener("scroll",update,{passive:true});window.addEventListener("resize",update);update()
+}
 async function load(){
  try{
-  const d=await api("/api/dispatch"); routeId=d.dispatchRoute?.id||"";
+  const d=await api("/api/dispatch");routeId=d.dispatchRoute?.id||"";
   if(!routeId){$("hint").textContent="请先在首页选择调度线路";$("stores").textContent="暂无可查看的数据资料";return}
   if(routeId==="__temporary__"){$("title").textContent="临时线路 · 数据资料";$("hint").textContent="临时线路不建立正式数据资料";$("summary").innerHTML="<strong>临时</strong><span>线路</span>";$("stores").textContent="临时线路使用全局学习识别门店，规划按运单原始顺序排列。";return}
   const x=await api("/api/base?routeId="+encodeURIComponent(routeId));
-  canMaintain=!!x.canMaintain; $("tools").style.display=canMaintain?"block":"none"; $("maintainTools").style.display=canMaintain?"grid":"none"; stores=Array.isArray(x.base?.stores)?x.base.stores:[];baseVersion=Number(x.base?.version)||1;
-  $("title").textContent=(x.route?.name||"当前线路")+" · 数据中心";
-  $("hint").textContent=canMaintain?"你正在维护该线路的数据资料":"当前为查看模式，你不是该线路维护人员，不能修改数据资料";
-  $("summary").innerHTML="<strong>"+stores.length+"</strong><span>家门店</span>"+(x.base?.version?"<span class=\"data-summary-dot\"></span><span>版本 "+x.base.version+"</span>":"");
-  render();
+  canMaintain=!!x.canMaintain;
+  $("tools").style.display=canMaintain?"block":"none";
+  $("maintainTools").style.display=canMaintain?"block":"none";
+  stores=Array.isArray(x.base?.stores)?x.base.stores:[];baseVersion=Number(x.base?.version)||1;
+  $("title").textContent=x.route?.name||"当前线路";
+  $("hint").textContent=canMaintain?"你目前拥有该线路维护权限":"你目前仅拥有该线路使用权限";
+  $("summary").innerHTML="<strong>"+stores.length+"</strong><span>家门店</span>"+(x.base?.version?'<span class="data-summary-dot"></span><span>版本 '+x.base.version+"</span>":"");
+  render();setupScrollButtons()
  }catch(e){$("hint").textContent=err(e);$("stores").textContent="数据资料加载失败"}
 }
 load();
