@@ -84,7 +84,8 @@ function parseImport(text){
 }
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
 function navUrl(v){const u=String(v||"").trim();return /^https?:\/\//i.test(u)?u:""}
-function showDataFeedback(type,message){const el=$("dataFeedback");if(!el)return;el.className="data-feedback "+type;el.textContent=message;el.hidden=false;clearTimeout(showDataFeedback.timer);showDataFeedback.timer=setTimeout(()=>{el.hidden=true},2600)}\nfunction render(){
+function showDataFeedback(type,message){const el=$("dataFeedback");if(!el)return;el.className="data-feedback "+type;el.textContent=message;el.hidden=false;clearTimeout(showDataFeedback.timer);showDataFeedback.timer=setTimeout(()=>{el.hidden=true},2600)}
+function render(){
  const box=$("stores");$("storeCount").textContent=stores.length+"家";
  if(!stores.length){box.innerHTML='<div class="data-empty">暂无门店资料</div>';return}
  const ordered=stores.map((s,index)=>({s,index})).sort((a,b)=>(a.s.routeOrder||0)-(b.s.routeOrder||0));
@@ -176,9 +177,12 @@ $("replaceApply").onclick=async()=>{
 $("appendBtn").onclick=()=>canMaintain&&openAppend();
 $("appendClose").onclick=$("appendCancel").onclick=()=>$("appendBox").style.display="none";
 $("appendApply").onclick=()=>{
- const name=$("appendName").value.trim();if(!name){$("appendError").textContent="请输入门店名称";return}
- stores.push({storeId:"",originalName:name,name,aliases:[],businessStoreCode:"",navigation:$("appendNavigation").value.trim(),routeOrder:stores.length+1,note:$("appendNote").value.trim()});
- render();$("appendBox").style.display="none"
+ const name=$("appendName").value.trim(),order=Number($("appendOrder").value);
+ if(!Number.isInteger(order)||order<1||order>stores.length+1){$("appendError").textContent="排列序号无效，请输入 1～"+(stores.length+1);return}
+ if(!name){$("appendError").textContent="请输入门店名称";return}
+ stores.splice(order-1,0,{storeId:"",originalName:name,name,aliases:[],businessStoreCode:"",navigation:$("appendNavigation").value.trim(),routeOrder:order,note:$("appendNote").value.trim()});
+ stores.forEach((s,i)=>s.routeOrder=i+1);
+ hiddenIndexes.clear();render();$("appendBox").style.display="none"
 };
 $("restoreBtn").onclick=()=>{if(canMaintain){showRestore();$("restoreFile").click()}};
 $("restoreChoose").onclick=()=>$("restoreFile").click();
@@ -222,8 +226,8 @@ async function submitStores(){
   stores.forEach((s,i)=>s.routeOrder=i+1);
   const d=await api("/api/base",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({routeId,expectedVersion:baseVersion,stores})});
   stores=Array.isArray(d.base?.stores)?d.base.stores:stores;baseVersion=Number(d.base?.version)||baseVersion;hiddenIndexes.clear();render();
-  $("summary").innerHTML="<strong>"+stores.length+"家</strong>"
- }catch(e){if(e.code==="BASE_VERSION_CONFLICT")await load();$("summary").textContent=err(e)}
+  $("summary").innerHTML="<strong>"+stores.length+"家</strong>";showDataFeedback("success","数据更新成功")
+ }catch(e){if(e.code==="BASE_VERSION_CONFLICT")await load();showDataFeedback("error","数据更新失败："+(e.message||"请稍后重试"))}
  finally{saving=false;$("saveStoresTop").disabled=false}
 }
 function bindTouch(){
