@@ -134,12 +134,12 @@ function plan(items,useRouteOrder=true){const list=useRouteOrder?[...items].sort
 
 async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:providedUser=null}){
   emit(3,"运单已接收");
-  const user=providedUser||await currentUser(request,env);if(!user){emit(4,"身份验证失败");return json({success:false,error:"未登录"},401)};if(user.role==="admin"||!canUseRoute(user)){emit(4,"无权处理运单");return json({success:false,error:"无权处理运单"},403)};
+  const user=providedUser||await currentUser(request,env);if(!user){emit(4,"身份验证失败");return json({success:false,code:"AUTH_REQUIRED",error:"未登录"},401)};if(user.role==="admin"||!canUseRoute(user)){emit(4,"无权处理运单");return json({success:false,code:"WAYBILL_PROCESS_FORBIDDEN",error:"无权处理运单"},403)};
   emit(5,"正在读取运单");
   let form=providedForm;try{if(!form)form=await request.formData()}catch{emit(5,"运单提交格式错误");return json({success:false,code:"WAYBILL_FORM_INVALID",error:"运单提交格式错误"},400)}
-  const requestedRouteId=clean(form.get("routeId"));const routeId=clean(user.dispatchRouteId||user.boundRouteId);if(!routeId){emit(0,"等待配送线路");return json({success:false,error:"请先选择调度线路"},400);}if(requestedRouteId&&requestedRouteId!==routeId){emit(0,"线路校验失败");return json({success:false,code:"DISPATCH_ROUTE_MISMATCH",error:"提交线路与当前调度线路不一致，请刷新后重试"},403);}
+  const requestedRouteId=clean(form.get("routeId"));const routeId=clean(user.dispatchRouteId||user.boundRouteId);if(!routeId){emit(0,"等待配送线路");return json({success:false,code:"DISPATCH_ROUTE_MISSING",error:"请先选择调度线路"},400);}if(requestedRouteId&&requestedRouteId!==routeId){emit(0,"线路校验失败");return json({success:false,code:"DISPATCH_ROUTE_MISMATCH",error:"提交线路与当前调度线路不一致，请刷新后重试"},403);}
   let route=null;if(routeId!==TEMP_DISPATCH_ID){emit(6,"正在校验配送线路");route=await getRoute(env,routeId);if(!route||route.status!=="active"){emit(6,"当前配送线路不可用");return json({success:false,code:"DISPATCH_ROUTE_INACTIVE",error:"当前调度线路不存在或已停用，请重新选择线路"},409)}}
-  const rawText=clean(form.get("rawText")),file=form.get("file");if(!rawText&&!(file instanceof File)){emit(6,"未找到运单");return json({success:false,error:"请选择运单"},400)};emit(6,"已读取运单");
+  const rawText=clean(form.get("rawText")),file=form.get("file");if(!rawText&&!(file instanceof File)){emit(6,"未找到运单");return json({success:false,code:"WAYBILL_FILE_MISSING",error:"请选择运单"},400)};emit(6,"已读取运单");
   const started=Date.now();let ocr=null,recognizedText=rawText,ocrMs=0;
   if(!recognizedText){const ocrStarted=Date.now();emit(8,"正在识别运单…");try{ocr=await recognizeImage(env,file,p=>emit(8+Math.round(Number(p||0)*0.18),"正在识别运单…"));recognizedText=ocr.rawText;ocrMs=Date.now()-ocrStarted}catch(e){return json({success:false,code:e.code||"OCR_FAILED",message:e.message||"OCR识别失败",jobId:e.jobId||null},e.code==="OCR_NOT_CONFIGURED"?503:422)}}
   const recognizedMs=Date.now()-started;const baseStarted=Date.now();let baseStores=[];let baseAvailable=false;if(routeId!==TEMP_DISPATCH_ID){try{baseStores=await base(env,routeId);baseAvailable=Array.isArray(baseStores)&&baseStores.length>0}catch(e){if(e?.code!=="BASE_NOT_FOUND")return json({success:false,code:e.code||"BASE_DATA_INVALID",message:e.message||"线路数据资料读取失败"},409)}}const baseMs=Date.now()-baseStarted;emit(28,baseAvailable?"已读取线路基准":"未建立线路基准，转入全局学习");
@@ -194,7 +194,7 @@ export async function onRequestPost({request,env}){
       if(heartbeat)clearInterval(heartbeat);
       if(!closed){closed=true;try{controller.close()}catch{}}
     }).catch(error=>{
-      push(JSON.stringify({type:"result",success:false,code:error?.code||"PROCESS_FAILED",message:error?.message||"处理失败",error:error?.message||"处理失败"})+"\n");
+      push(JSON.stringify({type:"result",success:false,code:error?.code||"PROCESS_UNHANDLED_ERROR",message:error?.message||"处理流程发生未捕获异常",error:error?.message||"处理流程发生未捕获异常",detail:error?.stack||String(error||"")})+"\n");
       if(heartbeat)clearInterval(heartbeat);
       if(!closed){closed=true;try{controller.close()}catch{}}
     });
