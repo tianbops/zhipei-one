@@ -228,9 +228,18 @@ function bindTouch(){
  list.addEventListener("dragend",()=>{dragIndex=-1;document.querySelectorAll(".data-drag-active").forEach(x=>x.classList.remove("data-drag-active"))});
 }
 $("stores").addEventListener("click",e=>{
+ const edit=e.target.closest("[data-swipe-edit]"),del=e.target.closest("[data-swipe-delete]");
+ if(edit){openEditor(Number(edit.dataset.swipeEdit));return}
+ if(del){
+  const i=Number(del.dataset.swipeDelete);
+  if(Number.isInteger(i)&&i>=0&&i<stores.length){
+   askConfirm("删除门店","确定删除“"+(stores[i].name||stores[i].originalName||"该门店")+"”吗？").then(ok=>{if(!ok)return;stores.splice(i,1);stores.forEach((s,n)=>s.routeOrder=n+1);hiddenIndexes.clear();render()})
+  }
+  return
+ }
  const nav=e.target.closest(".data-store-nav");if(nav)return;
  const row=e.target.closest(".data-store-row");if(!row)return;
- if(canMaintain&&e.detail===1){const now=Date.now();if(row._lastTap&&now-row._lastTap<350)return;row._lastTap=now;openEditor(Number(row.dataset.index))}
+ if(row.classList.contains("data-swipe-open"))row.classList.remove("data-swipe-open");
 });
 bindTouch();
 function setupScrollButtons(){
