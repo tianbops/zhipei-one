@@ -153,7 +153,12 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
   const fingerprintKey="zp:waybill:fingerprint:"+order.businessFingerprint;
   const indexKey=waybillIndexKey(routeId,clean(order.date));
   const saveScript='local existing=redis.call("GET",KEYS[1]); if existing and existing~=ARGV[1] then local raw=redis.call("GET","zp:waybill:"..existing); if raw then redis.call("SADD",KEYS[3],existing); return existing else redis.call("DEL",KEYS[1]) end end; redis.call("SET",KEYS[1],ARGV[1]); redis.call("SET",KEYS[2],ARGV[2]); redis.call("SADD",KEYS[3],ARGV[1]); return ARGV[1]';
-  const saveResult=await command(env,["EVAL",saveScript,"3",fingerprintKey,"zp:waybill:"+order.id,indexKey,order.id,JSON.stringify(order)]);
+  let saveResult;
+  try{
+    saveResult=await command(env,["EVAL",saveScript,"3",fingerprintKey,"zp:waybill:"+order.id,indexKey,order.id,JSON.stringify(order)]);
+  }catch(e){
+    return json({success:false,code:"WAYBILL_SAVE_FAILED",error:"运单保存失败",detail:e?.message||String(e)},500);
+  }
   if(String(saveResult)!==order.id){
     const existing=await get(env,"waybill:"+String(saveResult));
     if(existing){
