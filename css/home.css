@@ -82,3 +82,8 @@
  .processing-title{font-size:17px}.processing-progress{margin-top:20px}
  .processing-error-title{font-size:18px}.processing-error-message{font-size:13px}
 }
+
+/* 当前线路显示 */
+.today-route{display:block;margin-top:4px;color:#B8C2CC;font-size:15px;line-height:22px;font-weight:600}
+.home-menu-panel a#currentRouteMenu{justify-content:flex-start}
+.home-menu-panel .menu-route-value{margin-left:auto;max-width:92px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#B8C2CC;font-size:13px;font-weight:600}
