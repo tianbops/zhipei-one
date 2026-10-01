@@ -93,7 +93,19 @@ function splitByRouteBase(items,baseStores){
     }
     const unique=new Map();
     for(const hit of hits){const id=clean(hit.store?.storeId)||hit.key;const old=unique.get(id);if(!old||hit.key.length>old.key.length)unique.set(id,hit);}
-    const selected=[...unique.values()].sort((a,b)=>a.pos-b.pos||b.key.length-a.key.length);
+    const candidates=[...unique.values()].sort((a,b)=>b.key.length-a.key.length||a.pos-b.pos);
+    const selected=[];
+    for(const candidate of candidates){
+      const start=candidate.pos;
+      const end=start+candidate.key.length;
+      const overlaps=selected.some(hit=>{
+        const hitStart=hit.pos;
+        const hitEnd=hitStart+hit.key.length;
+        return start< hitEnd && hitStart<end;
+      });
+      if(!overlaps)selected.push(candidate);
+    }
+    selected.sort((a,b)=>a.pos-b.pos||b.key.length-a.key.length);
     if(selected.length<2)return [item];
     return selected.map((hit,index)=>({...item,rawName:hit.name,name:hit.name,storeId:clean(hit.store?.storeId)||null,extractionMethod:'route-base-segment',extractionSegment:index+1,extractionSegments:selected.length}));
   });
