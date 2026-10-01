@@ -2,6 +2,7 @@ import {json} from "./_json.js";
 import {currentUser} from "./_auth.js";
 import {get,command} from "./_redis.js";
 import {canUseRoute} from "./_permissions.js";
+import {getRoute} from "./_route.js";
 
 const clean=v=>String(v??"").trim();
 const todayCN=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
@@ -66,6 +67,8 @@ export async function onRequestGet({request,env}){
  const routeId=clean(url.searchParams.get("routeId")||user.dispatchRouteId||user.boundRouteId);
  const date=clean(url.searchParams.get("date"));
  if(!routeId)return json({success:true,routeId:null,months:[],history:[]});
+ const route=await getRoute(env,routeId);const routeName=clean(route?.name)||"临时";
+ const withRouteName=w=>w?(w.routeName=clean(w.routeName)||routeName,w):w;
  if(routeId!==(clean(user.dispatchRouteId)||clean(user.boundRouteId)))return json({success:false,error:"无权查看该线路历史"},403);
 
  if(date){
@@ -78,14 +81,14 @@ export async function onRequestGet({request,env}){
    const recovered=await scanConfirmedWaybill(env,routeId,date);
    if(!recovered)return json({success:true,routeId,date,waybill:null});
    try{await command(env,["SET",historyIndexKey,recovered.id]);}catch{}
-   return json({success:true,routeId,date,waybill:recovered,indexSync:"REPAIRED"});
+   return json({success:true,routeId,date,waybill:withRouteName(recovered),indexSync:"REPAIRED"});
   }
   const waybill=await readWaybill(env,clean(id));
   if(!waybill||waybill.routeId!==routeId||waybill.date!==date){
    await command(env,["DEL",historyKey(routeId,date)]).catch(()=>{});
    return json({success:true,routeId,date,waybill:null,indexSync:"INVALID_REMOVED"});
   }
-  return json({success:true,routeId,date,waybill});
+  return json({success:true,routeId,date,waybill:withRouteName(waybill)});
  }
 
  const today=todayCN();
