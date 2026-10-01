@@ -90,8 +90,22 @@ export async function onRequestGet({request,env}){
   try{
    const rawBase=await get(env,"route:"+routeId+":base");
    const parsed=typeof rawBase==="string"?JSON.parse(rawBase):rawBase;
-   const byId=new Map((Array.isArray(parsed?.stores)?parsed.stores:[]).map(s=>[clean(s?.storeId),s]));
-   w.stores=w.stores.map(s=>{const baseStore=byId.get(clean(s?.storeId));if(!baseStore)return s;const navigation=clean(baseStore.navigation)||clean(s?.navigation);const note=clean(baseStore.note||baseStore.remark)||clean(s?.note||s?.remark);return navigation||note?{...s,...(navigation?{navigation}:{}),...(note?{note}: {})}:s});
+   const baseStores=Array.isArray(parsed?.stores)?parsed.stores:[];
+   const byId=new Map(baseStores.map(s=>[clean(s?.storeId),s]).filter(x=>x[0]));
+   const baseKey=v=>clean(v).normalize("NFKC").replace(/\s+/g,"").replace(/[，。；;：:、（）()【】\[\]{}<>《》“”"'‘’]/g,"").toLowerCase();
+   const byName=new Map();
+   for(const bs of baseStores){
+    for(const field of [bs?.name,bs?.originalName,...(Array.isArray(bs?.aliases)?bs.aliases:[])]){
+     const key=baseKey(field); if(key&&!byName.has(key))byName.set(key,bs);
+    }
+   }
+   w.stores=w.stores.map(s=>{
+    const baseStore=byId.get(clean(s?.storeId))||byName.get(baseKey(s?.name||s?.rawName))||null;
+    if(!baseStore)return s;
+    const navigation=clean(baseStore.navigation)||clean(s?.navigation);
+    const note=clean(baseStore.note||baseStore.remark)||clean(s?.note||s?.remark);
+    return navigation||note?{...s,...(navigation?{navigation}:{}),...(note?{note}: {})}:s;
+   });
   }catch{}
   return w;
  }
