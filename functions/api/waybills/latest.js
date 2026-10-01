@@ -1,6 +1,6 @@
 import {json} from "../_json.js";
 import {currentUser} from "../_auth.js";
-import {get,set,command} from "../_redis.js";
+import {get,command} from "../_redis.js";
 import {canUseRoute} from "../_permissions.js";
 import {getRoute} from "../_route.js";
 
