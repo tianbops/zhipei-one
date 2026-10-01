@@ -1,6 +1,6 @@
 import {json} from "./_json.js";
 import {currentUser} from "./_auth.js";
-import {get,command} from "./_redis.js";
+import {get,command,pipeline} from "./_redis.js";
 import {canUseRoute} from "./_permissions.js";
 import {getRoute} from "./_route.js";
 
@@ -67,12 +67,10 @@ async function scanConfirmedWaybill(env,routeId,date){
 async function readHistoryEntries(env,key){
  const physical=String(key).startsWith("zp:")?String(key):"zp:"+String(key);
  let members=[];
- // 新索引使用 Redis Set。优先直接读取 Set，避免 TYPE 在不同 Redis REST 实现上的差异。
  try{
   const setMembers=await command(env,["SMEMBERS",physical]);
-  if(Array.isArray(setMembers)){members=setMembers;}
+  if(Array.isArray(setMembers))members=setMembers;
  }catch{
-  // 兼容旧版单值历史索引：字符串 JSON / 运单 ID / 对象。
   try{
    const raw=await get(env,physical.replace(/^zp:/,""));
    if(raw){
@@ -85,15 +83,32 @@ async function readHistoryEntries(env,key){
    }
   }catch{}
  }
- const out=[];
- const ids=[];
- for(const member of members){
+ return readHistoryMembers(env,members);
+}
+async function readHistoryMembers(env,members){
+ const out=[],ids=[];
+ for(const member of members||[]){
   if(member&&typeof member==="object"&&member.id){if(historyReadable(member))out.push(member);continue}
   const id=clean(member);if(id)ids.push(id);
  }
  out.push(...await readWaybills(env,ids));
  const seen=new Set();
  return out.filter(w=>{if(seen.has(w.id))return false;seen.add(w.id);return true}).sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
+}
+async function readHistoryEntriesBatch(env,entries){
+ const out=new Map();
+ const valid=entries.filter(Boolean);
+ if(!valid.length)return out;
+ try{
+  for(let i=0;i<valid.length;i+=50){
+   const chunk=valid.slice(i,i+50);
+   const results=await pipeline(env,chunk.map(x=>["SMEMBERS",x.key]));
+   for(let j=0;j<chunk.length;j++)out.set(chunk[j].date,await readHistoryMembers(env,results[j]||[]));
+  }
+ }catch{
+  for(const entry of valid)out.set(entry.date,await readHistoryEntries(env,entry.key));
+ }
+ return out;
 }
 async function readHistoryEntry(env,key){
  const entries=await readHistoryEntries(env,key);
@@ -198,9 +213,10 @@ export async function onRequestGet({request,env}){
  const {start,end}=historyRange(today);
  const entries=await readHistoryIds(env,routeId);
  const byDate=new Map();
- for(const entry of entries){
-  if(entry.date<start||entry.date>end)continue;
-  const waybills=await readHistoryEntries(env,entry.key);
+ const validEntries=entries.filter(entry=>entry.date>=start&&entry.date<=end);
+ const historyBatch=await readHistoryEntriesBatch(env,validEntries);
+ for(const entry of validEntries){
+  const waybills=historyBatch.get(entry.date)||[];
   for(const waybill of waybills){
    if(waybill.routeId!==routeId||waybill.date!==entry.date)continue;
    const list=byDate.get(entry.date)||[];
@@ -231,7 +247,7 @@ export async function onRequestGet({request,env}){
  const dates=[];
  for(const [date,list] of byDate){
   list.sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
-  for(const w of list)await addHistoryId(env,routeId,date,w.id).catch(()=>{});
+  // 历史索引已经存在时无需重复 SADD，避免每个日期产生额外 Redis 请求。
   const storeCount=list.reduce((sum,w)=>sum+(Number(w.summary?.total)||w.stores.length),0);
   const totalWeight=list.reduce((sum,w)=>sum+(Number(w.totalWeight)||0),0);
   dates.push({date,count:list.length,waybillId:list[list.length-1]?.id||null,storeCount,totalWeight});
