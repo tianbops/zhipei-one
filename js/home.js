@@ -108,8 +108,7 @@ async function processSelectedFile(file){
         const chunk=await reader.read();
         if(chunk.done)break;
         buffer+=decoder.decode(chunk.value,{stream:true});
-        const lines=buffer.split("
-");
+        const lines=buffer.split("\n");
         buffer=lines.pop()||"";
         for(const line of lines){
           if(!line.trim())continue;
