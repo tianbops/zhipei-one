@@ -2,6 +2,7 @@ import {json} from "../_json.js";
 import {currentUser} from "../_auth.js";
 import {get,set,command,newId} from "../_redis.js";
 import {canUseRoute} from "../_permissions.js";
+import {businessFingerprint} from "../_waybill-identity.js";
 import {TEMP_DISPATCH_ID} from "../dispatch.js";
 import {getRoute} from "../_route.js";
 import {recognizeImage} from "./ocr.js";
@@ -154,12 +155,23 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
   if(!pending.length){order.confirmedAt=order.createdAt;order.confirmedBy=user.id;}
   const validation=validateResult(order);order.validation=validation;if(!validation.valid){const first=validation.errors?.[0]||"校验失败";const codeMap={"缺少运单日期":"WAYBILL_VALIDATION_DATE_MISSING","缺少车辆信息":"WAYBILL_VALIDATION_VEHICLE_MISSING","没有规划门店":"WAYBILL_VALIDATION_STORES_EMPTY","规划结果存在重复门店":"WAYBILL_VALIDATION_DUPLICATE_STORE","规划结果存在无效线路顺序":"WAYBILL_VALIDATION_ROUTE_ORDER_INVALID","规划结果存在重复线路顺序":"WAYBILL_VALIDATION_ROUTE_ORDER_DUPLICATE","线路顺序不连续":"WAYBILL_VALIDATION_ROUTE_ORDER_GAP"};return json({success:false,code:codeMap[first]||"WAYBILL_VALIDATION_FAILED",error:"运单规划结果校验失败："+first,validation},422)}order.diagnostics={matchMode:hasRouteBase?"ROUTE_BASE":"GLOBAL_LEARNING",baseStoreCount:baseStores.length,rawExtractCount,extractCount:extracted.stores.length,splitExtractCount,rawExtractItems,extractItems:extracted.stores.map((s,i)=>({index:i+1,rawName:s.rawName,name:s.name,storeId:s.storeId||null})),localMatchedCount:locallyMatched.filter(x=>!x.pending).length,localPendingCount:locallyMatched.filter(x=>x.pending).length,localPendingItems:locallyMatched.filter(x=>x.pending).map(x=>({rawName:x.rawName,candidates:x.candidates||[]})),globalMatchedCount:matched.filter(x=>!x.pending&&(x.matchMethod==="global-alias"||x.matchMethod==="global-identity")).length,globalPendingCount:hasRouteBase?0:matched.filter(x=>x.pending).length,finalPendingCount:pending.length,dedupeBefore:matched.length,dedupeAfter:d.items.length,merged:d.merged,dedupeConflicts:d.conflicts,dedupeRemoved:d.removed,correctionItems:planned.filter(x=>x.correction).map((s,i)=>({rawName:s.rawName,name:s.name,storeId:s.storeId||null,matchMethod:s.matchMethod||null})),plannedCount:planned.length,finalCount:order.stores.length,finalItems:planned.map((s,i)=>({index:i+1,rawName:s.rawName,name:s.name,storeId:s.storeId||null,pending:!!s.pending,matchMethod:s.matchMethod||null,routeOrder:s.routeOrder}))};
   emit(94,"正在保存运单");
-  await set(env,"waybill:"+order.id,order);
+  order.businessFingerprint=await businessFingerprint(order);
+  const fingerprintKey="zp:waybill:fingerprint:"+order.businessFingerprint;
+  const saveScript='local existing=redis.call("GET",KEYS[1]); if existing and existing~=ARGV[1] then local raw=redis.call("GET","zp:waybill:"..existing); if raw then return existing else redis.call("DEL",KEYS[1]) end end; redis.call("SET",KEYS[1],ARGV[1]); redis.call("SET",KEYS[2],ARGV[2]); return ARGV[1]';
+  const saveResult=await command(env,["EVAL",saveScript,"2",fingerprintKey,"zp:waybill:"+order.id,order.id,JSON.stringify(order)]);
+  if(String(saveResult)!==order.id){
+    const existing=await get(env,"waybill:"+String(saveResult));
+    if(existing){
+      const existingOrder=typeof existing==="string"?JSON.parse(existing):existing;
+      return json({success:true,waybill:existingOrder,idempotent:true,indexSync:"EXISTING"});
+    }
+    return json({success:false,code:"WAYBILL_FINGERPRINT_CONFLICT",error:"相同业务运单正在保存，请稍后重试"},409);
+  }
   let indexSync="OK";
   try{
     await writeIfNewer(env,"route:"+routeId+":orders:latest",order);
     if(order.date===todayCN())await writeIfNewer(env,"route:"+routeId+":orders:today",order);
-    if(order.stage==="CONFIRMED"&&/^\d{4}-\d{2}-\d{2}$/.test(clean(order.date)))await writeIfNewer(env,"route:"+routeId+":history:"+clean(order.date),order);
+    if(/^\d{4}-\d{2}-\d{2}$/.test(clean(order.date)))await command(env,["SADD","zp:route:"+routeId+":history:"+clean(order.date),order.id]);
   }catch{
     indexSync="DEFERRED";
     try{await command(env,["SADD","zp:route:"+routeId+":orders:index-repair",order.id])}catch{}
