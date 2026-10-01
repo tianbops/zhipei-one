@@ -16,20 +16,9 @@ main.onclick=()=>{if(h.row.classList.contains("swiped")){closeOpen();return}sect
 items.forEach(item=>{const r=shell("date",item.date),dm=document.createElement("button");dm.type="button";dm.className="history-date-main";dm.innerHTML="<span>"+esc(dateLabel(item.date))+"</span><small>"+Number(item.storeCount||0)+"家 · "+fmtWeight(item.totalWeight)+"</small>";r.surface.appendChild(dm);dm.onclick=()=>{if(r.row.classList.contains("swiped")){closeOpen();return}location.href="/pages/order_detail.html?source=today&date="+encodeURIComponent(item.date)};r.action.onclick=()=>askDelete("date",item.date,"确定删除"+dateLabel(item.date)+"历史记录吗？删除后不可恢复。");body.appendChild(r.row)});section.append(h.row,body);listEl.appendChild(section)})}
 async function load(){
  try{
-  let routeId="";
-  try{
-   const dr=await fetch("/api/dispatch",{credentials:"same-origin",cache:"no-store"});
-   const dd=await dr.json().catch(()=>({}));
-   if(dr.ok&&dd?.success&&dd.dispatchRoute?.id)routeId=String(dd.dispatchRoute.id).trim();
-  }catch{}
-  const query=routeId?"?routeId="+encodeURIComponent(routeId):"";
-  let r=await fetch("/api/history"+query,{credentials:"same-origin",cache:"no-store"});
+  const r=await fetch("/api/history",{credentials:"same-origin",cache:"no-store"});
   let text=await r.text(),d=null;
   try{d=JSON.parse(text)}catch{throw new Error(r.ok?"历史接口返回数据格式错误":"历史接口异常（HTTP "+r.status+"）")}
-  if((!r.ok||!d?.success)&&routeId){
-   r=await fetch("/api/history",{credentials:"same-origin",cache:"no-store"});
-   text=await r.text();try{d=JSON.parse(text)}catch{d=null}
-  }
   if(!r.ok||!d?.success){const code=String(d?.code||("HTTP_"+r.status));const detail=String(d?.detail||"").trim();throw new Error(code+(detail?"："+detail:"："+(d?.error||"历史记录读取失败")))}
   model={history:Array.isArray(d.history)?d.history:[],range:d.range||null};
   render();
