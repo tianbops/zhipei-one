@@ -33,6 +33,7 @@
 .order-store-main{min-width:0}.order-store-name{font-size:15px;line-height:22px;color:#fff;font-weight:600;word-break:break-all}
 .order-store-name.nav{display:inline;color:#fff!important;text-decoration:none!important;-webkit-text-decoration:none!important;cursor:pointer}
 .order-store-name.nav:visited{color:#fff!important;text-decoration:none!important}.order-store-name.nav:active{opacity:.65}
+.order-store-note-inline{margin-left:5px;color:#7F8A95;font-size:11px;line-height:20px;font-weight:500;white-space:normal}
 .order-store-note{margin-top:3px;color:#9AA6B2;font-size:11px;line-height:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .order-store-status{display:inline-flex;margin-left:6px;padding:1px 5px;border-radius:5px;background:#2A3540;color:#B8C2CC;font-size:10px;line-height:16px;vertical-align:2px;font-weight:600}
 .order-store-status.pending{background:rgba(255,176,32,.12);color:#FFB020}
