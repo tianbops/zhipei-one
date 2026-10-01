@@ -134,7 +134,7 @@ async function processSelectedFile(file){
       throw e;
     }
   }catch(e){
-    showProcessingError((e?.code?"错误代码："+e.code+"\n":"")+(e?.message||"处理失败，请重试"));
+    showProcessingError(e?.code||"PROCESS_FAILED");
     status.textContent="";
     status.className="home-status";
   }finally{
