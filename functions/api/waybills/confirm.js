@@ -7,16 +7,8 @@ import {findGlobalMatches,learnGlobal} from "../_global-learning.js";
 import {businessFingerprint} from "../_waybill-identity.js";
 
 const clean=v=>String(v??"").trim();
+const normalized=v=>clean(v).replace(/[\u3000\s]+/g,"").replace(/[（）()【】\[\]{}<>《》“”"'‘’]/g,"").replace(/[·•、,，。；;:：!！?？\-_—]/g,"").replace(/Ⅱl|Il|II|ⅱ/gi,"II").toLowerCase();
 async function loadBase(env,id){const raw=await get(env,"route:"+id+":base");if(!raw)throw Object.assign(new Error("线路数据资料尚未建立"),{code:"BASE_NOT_FOUND"});let x;try{x=typeof raw==="string"?JSON.parse(raw):raw}catch{throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"})}if(!x||!Array.isArray(x.stores))throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"});return {...x,routeId:id}}
-async function queueLearningRepairs(env,waybillId,items){
- if(!waybillId||!items.length)return;
- const key="zp:waybill:"+waybillId+":learning-repair";
- for(const item of items){
-  const field=[clean(item.storeId),normalized(item.rawName||item.name)].join("|");
-  if(!field)continue;
-  await command(env,["HSET",key,field,JSON.stringify(item)]);
- }
-}
 async function retryLearningRepairs(env,waybillId,userId){
  const key="waybill:"+waybillId+":learning-repair";
  const lock={key:key+":lock",token:newId()};
