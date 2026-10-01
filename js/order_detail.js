@@ -17,9 +17,9 @@ function render(){
  $('orderDate').textContent=order.date||'日期待确认';
  $('storeCount').textContent=Number(s.total)||stores.length||0;
  $('totalWeight').textContent=fmtWeight(order.totalWeight);
- $('routeName').textContent=order.routeName||'当前线路';
+ $('routeName').textContent=order.routeName||'—';
  $('menuRoute').textContent=order.routeName||'当前线路';
- $('vehicle').textContent=vehicleText(order.vehicle);
+ $('vehicle').textContent=vehicleText(order.vehicle).replace(/^车辆\s*/,'')||'—';
  const metrics=[];
  if(Number(s.original)&&Number(s.original)!==Number(s.total))metrics.push('原始'+s.original+'家');
  if(Number(s.correction)>0)metrics.push('更正'+s.correction+'家');
