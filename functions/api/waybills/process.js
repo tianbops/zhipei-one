@@ -162,6 +162,8 @@ async function runProcess({request,env,emit=()=>{}}){
 export async function onRequestPost({request,env}){
   const user=await currentUser(request,env);if(!user)return json({success:false,error:"未登录"},401);
   if(new URL(request.url).searchParams.get("stream")!=="1")return runProcess({request,env});
+  let form;
+  try{form=await request.formData()}catch{return json({success:false,code:"WAYBILL_FORM_INVALID",error:"运单提交格式错误"},400)}
   const encoder=new TextEncoder();
   let closed=false;
   let heartbeat=null;
@@ -172,7 +174,7 @@ export async function onRequestPost({request,env}){
     };
     const emit=(progress,message)=>push(JSON.stringify({type:"progress",progress,message})+"\\n");
     heartbeat=setInterval(()=>push(JSON.stringify({type:"heartbeat",ts:Date.now()})+"\\n"),1000);
-    runProcess({request,env,emit}).then(async response=>{
+    runProcess({request,env,emit,form,user}).then(async response=>{
       let payload={};try{payload=await response.clone().json()}catch(error){payload={success:false,error:"处理结果读取失败"}}
       push(JSON.stringify({type:"result",...payload})+"\\n");
       if(heartbeat)clearInterval(heartbeat);
