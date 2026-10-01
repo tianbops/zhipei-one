@@ -20,13 +20,14 @@ const historyRange=today=>({start:startOfYear(today),end:endOfNextMonth(today)})
 const validDate=date=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return false;const [y,m,d]=date.split("-").map(Number);const parsed=new Date(Date.UTC(y,m-1,d));return parsed.getUTCFullYear()===y&&parsed.getUTCMonth()===m-1&&parsed.getUTCDate()===d;};
 const inRange=(date,range)=>date>=range.start&&date<=range.end;
 const monthInRange=(month,range)=>month>=range.start.slice(0,7)&&month<=range.end.slice(0,7);
-const validWaybill=x=>!!x&&x.schemaVersion==="2"&&typeof x.id==="string"&&typeof x.routeId==="string"&&Array.isArray(x.stores)&&!!x.summary&&x.stage==="CONFIRMED"&&x.historyStatus!=="SUPERSEDED";
+const validWaybill=x=>!!x&&x.schemaVersion==="2"&&typeof x.id==="string"&&typeof x.routeId==="string"&&Array.isArray(x.stores)&&!!x.summary&&x.historyStatus!=="SUPERSEDED";
+const historyReadable=x=>validWaybill(x)&&["PLANNED","CONFIRMED"].includes(x.stage);
 const historyKey=(routeId,date)=>"zp:route:"+routeId+":history:"+date;
 
 async function readWaybill(env,id){
  const raw=await get(env,"waybill:"+id);
  if(!raw)return null;
- try{const x=typeof raw==="string"?JSON.parse(raw):raw;return validWaybill(x)?x:null}catch{return null}
+ try{const x=typeof raw==="string"?JSON.parse(raw):raw;return historyReadable(x)?x:null}catch{return null}
 }
 
 async function scanConfirmedWaybill(env,routeId,date){
@@ -39,7 +40,7 @@ async function scanConfirmedWaybill(env,routeId,date){
    const raw=await get(env,String(key).replace(/^zp:/,""));
    try{
     const x=typeof raw==="string"?JSON.parse(raw):raw;
-    if(validWaybill(x)&&x.routeId===routeId&&x.date===date&&(!found||String(x.createdAt||"")>String(found.createdAt||"")))found=x;
+    if(historyReadable(x)&&x.routeId===routeId&&x.date===date&&(!found||String(x.createdAt||"")>String(found.createdAt||"")))found=x;
    }catch{}
   }
  }while(cursor!=="0");
@@ -163,7 +164,7 @@ export async function onRequestGet({request,env}){
   try{
    const raw=await get(env,primaryKey);
    const w=typeof raw==="string"?JSON.parse(raw):raw;
-   if(!validWaybill(w)||w.routeId!==routeId||w.date<start||w.date>end||indexedDates.has(w.date))continue;
+   if(!historyReadable(w)||w.routeId!==routeId||w.date<start||w.date>end||indexedDates.has(w.date))continue;
    indexedDates.add(w.date);
    dates.push({date:w.date,waybillId:w.id,storeCount:Number(w.summary?.total)||w.stores.length,totalWeight:Number(w.totalWeight)||0});
    await command(env,["SET",historyKey(routeId,w.date),w.id]).catch(()=>{});
