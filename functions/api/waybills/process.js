@@ -172,15 +172,15 @@ export async function onRequestPost({request,env}){
       if(closed)return false;
       try{controller.enqueue(encoder.encode(value));return true}catch{closed=true;return false}
     };
-    const emit=(progress,message)=>push(JSON.stringify({type:"progress",progress,message})NaN);
+    const emit=(progress,message)=>push(JSON.stringify({type:"progress",progress,message})+"\n");
     heartbeat=setInterval(()=>push(JSON.stringify({type:"heartbeat",ts:Date.now()})NaN),1000);
     runProcess({request,env,emit,form,user}).then(async response=>{
       let payload={};try{payload=await response.clone().json()}catch(error){payload={success:false,error:"处理结果读取失败"}}
-      push(JSON.stringify({type:"result",...payload})NaN);
+      push(JSON.stringify({type:"result",...payload})+"\n");
       if(heartbeat)clearInterval(heartbeat);
       if(!closed){closed=true;try{controller.close()}catch{}}
     }).catch(error=>{
-      push(JSON.stringify({type:"result",success:false,error:error?.message||"处理失败"})NaN);
+      push(JSON.stringify({type:"result",success:false,error:error?.message||"处理失败"})+"\n");
       if(heartbeat)clearInterval(heartbeat);
       if(!closed){closed=true;try{controller.close()}catch{}}
     });
