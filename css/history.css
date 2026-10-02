@@ -305,3 +305,45 @@
 
 /* 同日多次派送：仅高亮次数数字 */
 .history-count-highlight{color:#fff;font-size:13px;font-weight:750;letter-spacing:.1px}
+
+
+/* UI 2.2：历史查询视觉减层
+   日期工具栏保留，主体列表去掉外层厚卡片感，让月份/日期成为主要层级。 */
+.history-card{
+  background:transparent;
+  border:0;
+  border-radius:0;
+  overflow:visible;
+}
+.history-toolbar{
+  margin-bottom:10px;
+  padding:0 2px;
+  border-bottom:0;
+  min-height:48px;
+}
+.history-list{
+  border:1px solid rgba(255,255,255,.075);
+  border-radius:16px;
+  overflow:hidden;
+}
+.history-month{
+  background:#151D26;
+}
+.history-month-main{
+  min-height:54px;
+}
+.history-month-body{
+  background:#11171D;
+}
+.history-swipe-row{
+  background:#11171D;
+}
+.history-row-surface{
+  background:#151D26;
+}
+.history-month-body .history-row-surface{
+  background:#11171D;
+}
+.history-state{
+  padding:18px 8px;
+}
