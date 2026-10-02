@@ -108,6 +108,64 @@ select option{background:#11171D;color:#fff}
 #routes .route.open .route-content{transform:translateX(-74px)!important}
 #routes .route.open .route-delete{right:0!important;pointer-events:auto!important}
 #routes .route .person .small-action{z-index:3}
+
+/* 管理员系统菜单 3.3：沿用首页三横菜单的右上锚定浮层，不再使用居中模态弹窗。 */
+.menu-bg{
+  position:fixed!important;inset:0!important;z-index:320!important;
+  display:block!important;padding:0!important;
+  background:transparent!important;backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  pointer-events:none
+}
+.menu-bg[hidden]{display:none!important}
+.menu-bg>.dialog{
+  position:fixed;top:calc(env(safe-area-inset-top) + 62px);
+  right:max(12px,calc((100vw - 680px)/2 + 14px));
+  width:220px!important;max-height:min(72dvh,560px);
+  overflow:auto;padding:6px!important;
+  border:1px solid #2A3540!important;border-radius:16px!important;
+  background:#18212B!important;
+  box-shadow:0 14px 34px rgba(0,0,0,.46)!important;
+  animation:admin-menu-in .16s ease-out;
+  pointer-events:auto
+}
+.menu-bg>.dialog h2{
+  margin:2px 5px 5px!important;padding:7px 7px 9px;
+  border-bottom:1px solid rgba(255,255,255,.07);
+  font-size:15px!important;line-height:20px!important;font-weight:650;
+  color:#F2F5F7
+}
+.menu-bg>.dialog>.card{
+  margin:0!important;padding:2px 0!important;
+  border:0!important;border-radius:0!important;background:transparent!important
+}
+.menu-bg .setting{
+  position:relative;min-height:48px;padding:0 10px 0 42px!important;
+  border:0!important;border-radius:11px;
+  color:#D5DCE2;font-size:14px;line-height:20px;font-weight:600;
+  background:transparent;gap:10px
+}
+.menu-bg .setting:active{background:#26313C}
+.menu-bg .setting>div:first-child{min-width:0;flex:1}
+.menu-bg .setting .meta{margin-top:1px;font-size:12px;line-height:16px;color:#7F8A95}
+.menu-bg .setting .chev{font-size:21px;line-height:1;color:#7F8A95}
+.menu-bg .setting::before{
+  position:absolute;left:12px;top:50%;transform:translateY(-50%);
+  width:20px;height:20px;display:flex;align-items:center;justify-content:center;
+  color:#B8C2CC;font-size:17px;line-height:20px;font-weight:500
+}
+.menu-bg #editUser::before{content:"♙"}
+.menu-bg #editPass::before{content:"⌑"}
+.menu-bg #reset::before{content:"↻"}
+.menu-bg #logout{color:#FF8278}
+.menu-bg #logout::before{content:"⇥";color:#FF8278}
+@keyframes admin-menu-in{
+  from{opacity:0;transform:translateY(-5px) scale(.985)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+@media(max-width:380px){
+  .menu-bg>.dialog{right:12px;width:min(220px,calc(100vw - 24px))!important}
+}
 </style></head><body><main class="shell"><div class="panel"><header class="head"><img src="/assets/logo.png" alt="智配One"><div class="head-info"><h1>管理员</h1><div id="who" class="who">正在验证身份…</div></div><button id="menuBtn" class="menu-btn" aria-label="打开系统设置">☰</button></header><nav class="tabs"><button class="tab active" data-i="0">用户管理</button><button class="tab" data-i="1">线路管理</button><button class="tab" data-i="2">线路审核</button><button class="tab" data-i="3">邀请码</button></nav><div id="viewport" class="viewport"><div id="pages" class="pages"><section class="page"><div class="title">用户管理</div><div class="search"><span>⌕</span><input id="search" placeholder="搜索用户名"></div><div id="users" class="list"></div></section><section class="page"><div class="title"><span>线路管理</span><button id="addRoute" class="add">＋</button></div><div id="routes" class="list"></div></section><section class="page"><div class="title">线路审核</div><div id="requests" class="list"></div></section><section class="page"><div class="title"><span>邀请码</span><button id="addInvite" class="add">＋</button></div><div id="invites" class="list"></div></section></div></div></div></main><div id="dlg" class="dialog-bg" hidden><div class="dialog"><h2 id="dt"></h2><p id="dp"></p><div id="db"></div><div class="dialog-actions"><button id="dc" class="cancel">取消</button><button id="do" class="ok">确定</button></div></div></div><div id="menuBg" class="dialog-bg menu-bg" hidden><div class="dialog"><h2>系统设置</h2><div class="card" style="margin-top:10px"><div id="editUser" class="setting"><div>用户名<div id="userMeta" class="meta"></div></div><span class="chev">›</span></div><div id="editPass" class="setting">修改密码<span class="chev">›</span></div><div id="reset" class="setting">重置数据<span class="chev">›</span></div><div id="logout" class="setting">退出登录</div></div></div></div><div id="toast" class="toast"></div><script>
 window.__adminBootStarted=Date.now();
 const $=id=>document.getElementById(id),S={page:0,users:[],routes:[],requests:[],invites:[],me:null},esc=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));async function api(u,o={}){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);try{const r=await fetch(u,{credentials:"same-origin",cache:"no-store",...o,signal:controller.signal}),d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||("请求失败（"+r.status+"）"));return d}catch(e){if(e?.name==="AbortError")throw Error("服务器响应超时");throw e}finally{clearTimeout(timer)}}let tm;function toast(t){$("toast").textContent=t;$("toast").classList.add("show");clearTimeout(tm);tm=setTimeout(()=>$("toast").classList.remove("show"),1500)}function close(){dlg.hidden=true;db.innerHTML="";const mb=$("menuBg");if(mb)mb.hidden=true}function open(t,p,b="",ok="确定",danger=false,fn){dt.textContent=t;dp.textContent=p;db.innerHTML=b;do_.textContent=ok;do_.classList.toggle("danger",danger);dlg.hidden=false;dc.onclick=close;do_.onclick=async()=>{if(!fn)return close();do_.disabled=true;try{await fn()}catch(e){toast(e.message)}finally{do_.disabled=false}}}const dlg=$("dlg"),dt=$("dt"),dp=$("dp"),db=$("db"),dc=$("dc"),do_=$("do");function page(i){S.page=Math.max(0,Math.min(3,i));closeSwipes();$("pages").style.transform="translateX(-"+S.page*25+"%)";document.querySelectorAll(".tab").forEach((b,n)=>b.classList.toggle("active",n===S.page))}function closeSwipes(){document.querySelectorAll(".row.open,.route.open").forEach(x=>x.classList.remove("open"))}function sw(el){let x=0,y=0;el.addEventListener("touchstart",e=>{if(!dlg.hidden)return;x=e.touches[0].clientX;y=e.touches[0].clientY},{passive:true});el.addEventListener("touchend",e=>{if(!dlg.hidden)return;const dx=e.changedTouches[0].clientX-x,dy=e.changedTouches[0].clientY-y;if(Math.abs(dx)>48&&Math.abs(dx)>Math.abs(dy)*1.25){e.stopPropagation();closeSwipes();if(dx<0)el.classList.add("open")}},{passive:true})}
