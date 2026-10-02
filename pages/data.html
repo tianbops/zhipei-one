@@ -20,7 +20,6 @@
 </section>
 <div id="dataFeedback" class="data-feedback" hidden></div><section class="page2-card data-list-card"><div class="data-list-head"><span class="data-list-title">门店资料</span><span id="storeCount" class="data-list-count">—</span></div><div id="stores" class="data-store-list">加载中…</div></section>
 <div id="editBox" class="data-import data-editor" style="display:none"><div class="data-import-panel data-editor-panel"><div class="data-import-head"><h3 id="editTitle">编辑门店</h3><button id="editClose" class="data-import-close" type="button" aria-label="关闭">×</button></div><label class="data-field"><span>排列序号</span><input id="editOrder" class="data-input" type="number" min="1" step="1" inputmode="numeric" placeholder="例如 1"><small id="editOrderHint" class="data-field-hint"></small></label><label class="data-field"><span>门店名称</span><input id="editName" class="data-input" type="text" maxlength="120"></label><label class="data-field"><span>导航地址</span><input id="editNavigation" class="data-input" type="url" placeholder="https://..."></label><label class="data-field"><span>备注</span><textarea id="editNote" class="data-textarea data-note" placeholder="可选"></textarea></label><div id="editError" class="data-help data-preview"></div><div class="data-import-actions"><button id="editCancel" type="button">取消</button><button id="editSave" type="button">保存</button></div></div></div>
-<div id="confirmBox" class="data-import data-confirm" style="display:none"><div class="data-confirm-panel"><div class="data-confirm-icon">!</div><h3 id="confirmTitle">确认操作</h3><p id="confirmMessage"></p><div class="data-import-actions"><button id="confirmCancel" type="button">取消</button><button id="confirmOk" type="button">确定</button></div></div></div>
 <div id="replaceBox" class="data-import" style="display:none"><div class="data-import-panel">
 <div class="data-import-head"><h3>批量替换</h3><button id="replaceClose" class="data-import-close" type="button" aria-label="关闭">×</button></div>
 <p class="data-help">用新的完整门店资料替换当前线路显示的资料。确认提交前，不会修改服务器中的正式数据。</p>
@@ -47,10 +46,6 @@
 <p class="data-help">选择之前保存的线路资料文件。恢复只替换当前页面显示的暂存数据，检查无误后再点击“提交更新”。</p>
 <div id="restorePreview" class="data-help data-preview">等待选择数据文件</div>
 <div class="data-import-actions"><button id="restoreCancel" type="button">取消</button><button id="restoreChoose" type="button">选择文件</button></div>
-</div></div>
-<div id="replaceConfirmBox" class="data-import data-confirm" style="display:none"><div class="data-confirm-panel">
-<div class="data-confirm-icon">!</div><h3>确认批量替换</h3><p id="replaceConfirmMessage"></p>
-<div class="data-import-actions"><button id="replaceConfirmCancel" type="button">取消</button><button id="replaceConfirmOk" type="button">确认替换</button></div>
 </div></div>
 </main>
 <script>
@@ -129,13 +124,11 @@ function updateOrderHint(){
  hint.textContent=editingIndex<0?"将插入第 "+value+" 位":"保存后将调整到第 "+value+" 位";hint.className="data-field-hint"
 }
 function closeEditor(){$("editBox").style.display="none";editingIndex=-1}
-function askConfirm(title,message){
- return new Promise(resolve=>{
-  if(confirming){resolve(false);return}
-  confirming=true;$("confirmTitle").textContent=title;$("confirmMessage").textContent=message;$("confirmBox").style.display="flex";
-  const finish=value=>{confirming=false;$("confirmBox").style.display="none";resolve(value)};
-  $("confirmCancel").onclick=()=>finish(false);$("confirmOk").onclick=()=>finish(true)
- })
+async function askConfirm(title,message,okText="确定"){
+ if(confirming)return false;
+ confirming=true;
+ try{return await zpConfirm(title,message,okText)}
+ finally{confirming=false}
 }
 function applyOrder(index,target){
  const to=Math.max(1,Math.min(Number(target)||1,stores.length))-1;
@@ -169,10 +162,9 @@ $("replaceText").oninput=prepareReplace;
 $("replaceFile").onchange=async e=>{const file=e.target.files?.[0];if(!file)return;try{$("replaceText").value=await file.text();prepareReplace()}catch{$("replacePreview").textContent="文件读取失败"}};
 $("replaceApply").onclick=async()=>{
  const p=prepareReplace();if(!p.length)return;
- $("replaceConfirmMessage").textContent="当前资料 "+stores.length+" 家，新资料 "+p.length+" 家。确认后将替换当前页面显示的暂存资料；服务器正式资料仍需点击“提交更新”才会改变。";
- $("replaceBox").style.display="none";$("replaceConfirmBox").style.display="flex";
- $("replaceConfirmOk").onclick=()=>{stores=p.map((s,i)=>({...s,routeOrder:i+1}));hiddenIndexes.clear();$("replaceConfirmBox").style.display="none";render()};
- $("replaceConfirmCancel").onclick=()=>{$("replaceConfirmBox").style.display="none";$("replaceBox").style.display="flex"}
+ const ok=await zpConfirm("确认批量替换","当前资料 "+stores.length+" 家，新资料 "+p.length+" 家。确认后只替换当前页面的暂存资料；服务器正式资料仍需点击“提交更新”才会改变。","确认替换");
+ if(!ok)return;
+ stores=p.map((s,i)=>({...s,routeOrder:i+1}));hiddenIndexes.clear();$("replaceBox").style.display="none";render();
 };
 $("appendBtn").onclick=()=>canMaintain&&openAppend();
 $("appendClose").onclick=$("appendCancel").onclick=()=>$("appendBox").style.display="none";
