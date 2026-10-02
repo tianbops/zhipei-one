@@ -86,7 +86,24 @@ select option{background:#11171D;color:#fff}
 #users .row .main strong{flex:1;min-width:0}
 #users .row .main .meta{flex:0 0 auto;white-space:nowrap;text-align:right}
 #users .row .arrow{display:none!important}#users .row .content{padding-right:13px}\n/* 左滑操作：删除动作始终位于内容层后方，仅在左滑露出。 */\n#routes .route{overflow:hidden}\n#routes .route-delete{right:-74px;top:0;height:100%;min-height:54px;margin:0;padding:0;width:74px;border:0;border-radius:0;background:#4A2528;color:#FFD5D1;z-index:1;pointer-events:none}\n#routes .route-content{position:relative;z-index:2;background:var(--card);transform:translateX(0)}\n#routes .route.open .route-content{transform:translateX(-74px)}\n#routes .route.open .route-delete{pointer-events:auto}
-</style>/* 管理员用户/线路左滑 3.2：移除无意义箭头；线路删除按钮仅在左滑后露出。 */
+/* 管理员用户/线路左滑 3.2：移除无意义箭头；线路删除按钮仅在左滑后露出。 */
+#users .row .arrow{display:none!important}
+#routes .route{position:relative;overflow:hidden}
+#routes .route-delete{
+  right:-74px!important;top:0!important;bottom:0!important;
+  width:74px!important;height:100%!important;min-height:54px!important;
+  margin:0!important;padding:0!important;border:0!important;border-radius:0!important;
+  background:#4A2528!important;color:#FFD5D1!important;z-index:1!important;
+  pointer-events:none!important;transition:none!important
+}
+#routes .route-content{
+  position:relative;z-index:2;background:var(--card);
+  transform:translateX(0)!important;transition:transform .18s ease
+}
+#routes .route.open .route-content{transform:translateX(-74px)!important}
+#routes .route.open .route-delete{right:0!important;pointer-events:auto!important}
+#routes .route .person .small-action{z-index:3}
+</style>
 #users .row .arrow{display:none!important}
 #routes .route{overflow:hidden}
 #routes .route-delete{
