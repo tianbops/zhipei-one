@@ -54,7 +54,7 @@ async function load(){
  }catch(e){$("route").innerHTML='<option value="">线路加载失败</option>';$("requests").textContent="线路加载失败："+msg(e);$("message").textContent=msg(e)}
 }
 $("unbind").onclick=async()=>{
- if(!window.confirm("确定解除当前线路绑定吗？解除后需要重新申请并经管理员审核。"))return;
+ if(!(await zpConfirm("解除线路绑定","确定解除当前线路绑定吗？解除后需要重新申请并经管理员审核。","解除")))return;
  $("unbind").disabled=true;
  try{await api("/api/route-binding",{method:"POST"});$("message").textContent="线路绑定已解除";await load()}
  catch(e){$("message").textContent=msg(e)}finally{$("unbind").disabled=false}
