@@ -93,29 +93,42 @@ function render(){
 function setMenu(open){menuOpen=open;$('menuPanel').hidden=!open;$('menuBtn').setAttribute('aria-expanded',String(open))}
 function routeText(v){const s=String(v??'').trim();if(!s)return'—';return /号线$/.test(s)?s:(/^\d+$/.test(s)?s+'号线':s)}
 function bindHistoryGestures(){
- const list=$('routeList');let row=null;
- list.addEventListener('touchstart',e=>{
+ const list=$('routeList');if(!list||list._historyGestureBound)return;
+ list._historyGestureBound=true;
+ let state=null;
+ const closeOthers=row=>list.querySelectorAll('.order-history-swipe-row.open').forEach(x=>{if(x!==row)x.classList.remove('open')});
+ list.addEventListener('pointerdown',e=>{
    const r=e.target.closest('.order-history-swipe-row');if(!r)return;
-   row=r;r._touch={x:e.touches[0].clientX,y:e.touches[0].clientY,t:Date.now()};
+   state={row:r,id:e.pointerId,x:e.clientX,y:e.clientY,swiping:false,moved:false};
+   try{r.setPointerCapture?.(e.pointerId)}catch{}
  },{passive:true});
- list.addEventListener('touchmove',e=>{
-   if(!row)return;
-   const t=row._touch;if(!t)return;
-   const dx=e.touches[0].clientX-t.x,dy=e.touches[0].clientY-t.y;
-   if(Math.abs(dx)>12&&Math.abs(dx)>Math.abs(dy))e.preventDefault();
+ list.addEventListener('pointermove',e=>{
+   if(!state||e.pointerId!==state.id)return;
+   const dx=e.clientX-state.x,dy=e.clientY-state.y;
+   if(Math.abs(dx)<6&&Math.abs(dy)<6)return;
+   state.moved=true;
+   if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>10){
+     state.swiping=true;
+     e.preventDefault();
+   }
  },{passive:false});
- list.addEventListener('touchend',e=>{
-   if(!row)return;
-   const r=row,t=r._touch;r=null;row=null;if(!t)return;
-   const dx=e.changedTouches[0].clientX-t.x,dy=e.changedTouches[0].clientY-t.y;
-   if(Math.abs(dx)<55||Math.abs(dx)<=Math.abs(dy))return;
+ list.addEventListener('pointerup',e=>{
+   if(!state||e.pointerId!==state.id)return;
+   const s=state;state=null;
+   const dx=e.clientX-s.x,dy=e.clientY-s.y;
+   if(Math.abs(dx)<45||Math.abs(dx)<=Math.abs(dy))return;
    if(dx<0){
-     list.querySelectorAll('.order-history-swipe-row.open').forEach(x=>x.classList.remove('open'));
-     r.classList.add('open');
+     closeOthers(s.row);
+     s.row.classList.add('open');
    }else{
-     r.classList.remove('open');
+     s.row.classList.remove('open');
    }
  },{passive:true});
+ list.addEventListener('pointercancel',()=>{state=null},{passive:true});
+ list.addEventListener('click',e=>{
+   const row=e.target.closest('.order-history-swipe-row');if(!row)return;
+   if(row.classList.contains('open'))return;
+ });
 }
 async function load(){
  const url=id
