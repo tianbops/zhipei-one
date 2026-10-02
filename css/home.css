@@ -88,16 +88,16 @@
 .home-menu-panel .menu-route-value{margin-left:auto;max-width:82px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#B8C2CC;font-size:13px;font-weight:600}
 
 /* Final Android typography normalization: size/line-height only */
-.home-brand strong{font-size:18px;line-height:24px;letter-spacing:.5px}
-.home-brand span{font-size:11px;line-height:16px}
-.task-title{font-size:16px;line-height:22px}
-.task-date{font-size:13px;line-height:20px}
-.task-info{font-size:14px;line-height:21px}
-.today-summary strong{font-size:18px;line-height:25px}
-.today-summary span{font-size:14px;line-height:21px}
-.function-btn{font-size:14px;line-height:20px}
-.source-menu-title{font-size:16px;line-height:22px}
-.processing-title{font-size:16px;line-height:24px}
-.processing-error-title{font-size:16px;line-height:22px}
-.processing-error-message{font-size:13px;line-height:20px}
-.processing-retry-btn{font-size:14px;line-height:20px}
+.home-brand strong{font-size:19px;line-height:25px;letter-spacing:.5px}
+.home-brand span{font-size:12px;line-height:18px}
+.task-title{font-size:17px;line-height:23px}
+.task-date{font-size:14px;line-height:21px}
+.task-info{font-size:15px;line-height:22px}
+.today-summary strong{font-size:20px;line-height:27px}
+.today-summary span{font-size:15px;line-height:22px}
+.function-btn{font-size:15px;line-height:21px}
+.source-menu-title{font-size:17px;line-height:23px}
+.processing-title{font-size:17px;line-height:25px}
+.processing-error-title{font-size:17px;line-height:23px}
+.processing-error-message{font-size:14px;line-height:21px}
+.processing-retry-btn{font-size:15px;line-height:21px}
