@@ -39,7 +39,7 @@ function render(){
       e.stopPropagation();
       const index=Number(row.dataset.historyIndex),x=historyChoices[index];
       if(!x?.id)return;
-      if(!confirm('确定删除这张运单吗？删除后无法恢复。'))return;
+      if(!(await zpConfirm('删除运单','确定删除这张运单吗？删除后无法恢复。','删除')))return;
       const btn=e.currentTarget;btn.disabled=true;btn.textContent='删除中…';
       try{
         const date=x.date||targetDate||'';
@@ -201,7 +201,7 @@ $('shareBtn').onclick=async()=>{
  const s=order.summary||{},text='智配One\n'+(order.date||'')+'\n'+(order.routeName||'当前线路')+'\n'+(s.total||order.stores?.length||0)+'家 · '+fmtWeight(order.totalWeight)+'t';
  try{if(navigator.share)await navigator.share({title:'当日运单',text});else{await navigator.clipboard?.writeText(text);alert('已复制运单摘要')}}catch{}
 };
-$('logoutBtn').onclick=async()=>{setMenu(false);if(!confirm('确定退出登录吗？'))return;try{await fetch('/api/logout',{method:'POST',credentials:'same-origin',cache:'no-store'})}finally{location.replace('/')}};
+$('logoutBtn').onclick=async()=>{setMenu(false);if(!(await zpConfirm('退出登录','确定退出当前账号吗？')))return;try{await fetch('/api/logout',{method:'POST',credentials:'same-origin',cache:'no-store'})}finally{location.replace('/')}};
 $('closeConfirm').onclick=()=>$('confirmDialog').hidden=true;
 $('cancelConfirm').onclick=()=>$('confirmDialog').hidden=true;
 $('confirmDialog').addEventListener('click',e=>{if(e.target===$('confirmDialog'))$('confirmDialog').hidden=true});
