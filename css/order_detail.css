@@ -99,3 +99,48 @@
   font-weight:500
 }
 .order-shell.history-multi .order-route-card{border-color:#2A3540}
+
+
+/* 同日多次派送：压缩为单行信息卡 */
+.order-shell.history-multi .order-history-swipe-row .order-history-choice{
+  display:grid;
+  grid-template-columns:24px minmax(0,1fr) auto;
+  grid-template-areas:"index vehicle main";
+  align-items:center;
+  gap:8px;
+  min-height:50px;
+  padding:8px 10px;
+  margin:0;
+}
+.history-choice-index{
+  grid-area:index;
+  color:#7F8A95;
+  font-size:13px;
+  line-height:20px;
+  font-weight:700;
+  text-align:center;
+}
+.history-choice-vehicle{
+  grid-area:vehicle;
+  color:#fff;
+  font-size:14px;
+  line-height:20px;
+  font-weight:650;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.order-shell.history-multi .history-choice-main{
+  grid-area:main;
+  color:#fff;
+  font-size:13px;
+  line-height:20px;
+  font-weight:600;
+  white-space:nowrap;
+}
+.order-shell.history-multi .order-history-swipe-row{
+  margin-bottom:7px;
+}
+.order-shell.history-multi .history-choice-delete{
+  width:76px;
+}
