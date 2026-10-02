@@ -35,3 +35,21 @@
  .task-card{margin-top:15px;padding:16px}
  .function-btn{height:52px;min-height:52px}
 }
+
+/* Android typography normalization: size/line-height only */
+.home-brand strong{font-size:18px;line-height:24px}
+.home-brand span{font-size:11px;line-height:16px}
+.task-title{font-size:16px;line-height:22px}
+.task-date{font-size:13px;line-height:20px}
+.task-route{font-size:13px;line-height:20px}
+.task-info{font-size:14px;line-height:21px}
+.today-summary strong{font-size:18px;line-height:25px}
+.today-summary span{font-size:14px;line-height:21px}
+.function-btn{font-size:15px;line-height:20px}
+.source-menu-title{font-size:17px;line-height:24px}
+.source-option strong{font-size:13px;line-height:18px}
+.upload-cancel-btn{font-size:14px;line-height:20px}
+.processing-title{font-size:16px;line-height:24px}
+.processing-error-title{font-size:17px;line-height:24px}
+.processing-error-message{font-size:13px;line-height:20px}
+.processing-retry-btn{font-size:14px;line-height:20px}
