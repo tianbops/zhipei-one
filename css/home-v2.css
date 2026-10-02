@@ -3,7 +3,7 @@
   padding:max(16px,env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom));
 }
 .home-topbar{height:58px}
-.home-brand strong{font-size:21px;letter-spacing:.2px}
+.home-brand strong{font-size:18px;letter-spacing:.2px}
 .home-brand span{margin-top:4px;font-size:11px;letter-spacing:1.4px;color:#8C98A4}
 .task-card{
   margin-top:18px;
