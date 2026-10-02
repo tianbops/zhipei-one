@@ -18,8 +18,9 @@ function render(){
   $('orderDate').textContent=targetDate||'历史运单';
   document.querySelector('.order-shell')?.classList.add('history-multi');
   $('storeCount').textContent=historyChoices.length;
-  $('summaryUnit').textContent='张';
+  $('summaryUnit').textContent='次派送';
   $('totalWeight').textContent=fmtWeight(historyChoices.reduce((n,x)=>n+(Number(x.totalWeight)||0),0));
+  $('metrics').innerHTML='<span class="history-multi-hint">↓ 查看当日 '+historyChoices.length+' 次派送</span>';
   $('routeName').textContent=routeText(order.routeName);
   $('menuRoute').textContent=routeText(order.routeName);
   $('vehicle').textContent='请选择要查看的运单';
