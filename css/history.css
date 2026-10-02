@@ -302,3 +302,6 @@
   .history-swipe-row.swiped .history-row-surface{transform:translate3d(-72px,0,0)}
   .history-calendar-grid{min-height:232px}
 }
+
+/* 同日多次派送：仅高亮次数数字 */
+.history-count-highlight{color:#fff;font-size:13px;font-weight:750;letter-spacing:.1px}
