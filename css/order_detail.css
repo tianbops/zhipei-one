@@ -178,3 +178,30 @@
   padding-left:0;
   padding-right:0;
 }
+
+/* Android typography normalization: size/line-height only */
+.order-title{font-size:18px;line-height:24px}
+.order-menu button,.order-menu-route{font-size:14px;line-height:20px}
+.order-date{font-size:14px;line-height:21px}
+.order-summary-main{font-size:22px;line-height:28px}
+.order-summary-main span:nth-child(2),.order-summary-main span:nth-child(5){font-size:13px;line-height:18px}
+.order-summary-main b{font-size:16px;line-height:20px}
+.order-metrics{font-size:12px;line-height:18px}
+.order-meta-label{font-size:12px;line-height:18px}
+.order-route-name,.order-vehicle{font-size:14px;line-height:20px}
+.order-store-index{font-size:12px;line-height:20px}
+.order-store-name{font-size:14px;line-height:21px}
+.order-store-note-inline{font-size:11px;line-height:18px}
+.order-store-note{font-size:11px;line-height:17px}
+.order-store-status{font-size:10px;line-height:16px}
+.order-empty{font-size:13px;line-height:20px}
+.order-dialog-head strong{font-size:16px;line-height:22px}
+.pending-title{font-size:14px;line-height:20px}
+.pending-hint{font-size:11px;line-height:17px}
+.choice-btn{font-size:13px;line-height:18px}
+.order-dialog-actions button{font-size:14px;line-height:20px}
+.history-choice-head strong,.history-choice-head em{font-size:13px;line-height:19px}
+.history-choice-main{font-size:13px;line-height:19px}
+.history-choice-status{font-size:10px;line-height:16px}
+.history-choice-index{font-size:13px;line-height:20px}
+.history-choice-vehicle{font-size:14px;line-height:20px}
