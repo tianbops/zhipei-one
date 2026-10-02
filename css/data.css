@@ -130,3 +130,8 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-page-menu button{font-size:14px;line-height:20px}
 .data-feedback{font-size:13px;line-height:18px}
 .data-feedback-action{font-size:12px;line-height:18px}
+
+/* Final Android typography normalization: size/line-height only */
+.data-route-title h2{font-size:16px;line-height:22px}
+.data-import-head h3{font-size:16px;line-height:22px}
+.data-import-actions button{font-size:14px;line-height:20px}
