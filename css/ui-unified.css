@@ -221,3 +221,47 @@ input,select,textarea{
   .upload-sheet{border-radius:16px!important}
 }
 
+
+/* 全局快速滚动 2.6：沿用数据中心 ↑/↓ 交互，仅在页面存在明显纵向滚动时显示。 */
+.zp-float-scroll-wrap{
+  position:fixed;
+  right:16px;
+  top:50%;
+  z-index:90;
+  width:40px;
+  height:88px;
+  transform:translateY(-50%);
+  pointer-events:none;
+}
+.zp-float-scroll{
+  position:absolute;
+  right:0;
+  width:40px;
+  height:40px;
+  padding:0;
+  border:1px solid #35404C;
+  border-radius:50%;
+  background:#18212B;
+  color:#E8EDF2;
+  box-shadow:0 8px 24px rgba(0,0,0,.35);
+  font-size:19px;
+  line-height:38px;
+  text-align:center;
+  opacity:0;
+  visibility:hidden;
+  transform:translateY(8px);
+  transition:opacity .18s ease,transform .18s ease,visibility .18s ease;
+  pointer-events:auto;
+  -webkit-tap-highlight-color:transparent;
+}
+.zp-float-up{top:0}
+.zp-float-down{top:48px}
+.zp-float-scroll.show{
+  opacity:1;
+  visibility:visible;
+  transform:translateY(0);
+}
+.zp-float-scroll:active{background:#26313C}
+@media(max-width:380px){
+  .zp-float-scroll-wrap{right:12px}
+}
