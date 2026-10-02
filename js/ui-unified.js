@@ -50,6 +50,40 @@
   window.addEventListener("pageshow",bindPageBack);
   bindPageBack();
 
+  function setupGlobalScrollButtons(){
+    if(document.querySelector(".data-float-scroll,.zp-float-scroll"))return;
+    const candidates=[document.scrollingElement,...document.querySelectorAll("main,.page2,.history-shell,.order-store-list,.dispatch-list,.data-store-list")].filter(Boolean);
+    const target=candidates.reduce((best,el)=>{
+      const can=el===document.scrollingElement ? el.scrollHeight-el.clientHeight>240 :
+        getComputedStyle(el).overflowY!=="visible" && el.scrollHeight-el.clientHeight>240;
+      if(!can)return best;
+      const score=el.scrollHeight-el.clientHeight;
+      return !best||score>best.score?{el,score}:best;
+    },null);
+    if(!target)return;
+    const el=target.el,root=document.createElement("div");
+    root.className="zp-float-scroll-wrap";
+    root.innerHTML='<button class="zp-float-scroll zp-float-up" type="button" aria-label="快速回到顶部">↑</button><button class="zp-float-scroll zp-float-down" type="button" aria-label="快速到底部">↓</button>';
+    document.body.appendChild(root);
+    const up=root.querySelector(".zp-float-up"),down=root.querySelector(".zp-float-down");
+    const getY=()=>el===document.scrollingElement?window.scrollY:el.scrollTop;
+    const getMax=()=>Math.max(0,(el===document.scrollingElement?document.documentElement.scrollHeight:el.scrollHeight)-(el===document.scrollingElement?window.innerHeight:el.clientHeight));
+    const update=()=>{
+      const y=getY(),max=getMax();
+      up.classList.toggle("show",y>180);
+      down.classList.toggle("show",y<max-180);
+    };
+    const move=(top)=>el===document.scrollingElement?window.scrollTo({top,behavior:"smooth"}):el.scrollTo({top,behavior:"smooth"});
+    up.onclick=()=>move(0);
+    down.onclick=()=>move(getMax());
+    const eventTarget=el===document.scrollingElement?window:el;
+    eventTarget.addEventListener("scroll",update,{passive:true});
+    window.addEventListener("resize",update);
+    setTimeout(update,80);
+  }
+  window.addEventListener("load",setupGlobalScrollButtons,{once:true});
+  setTimeout(setupGlobalScrollButtons,120);
+
   window.zpToast=function(message,type="success"){
     const root=ensure(),toast=root.querySelector("#zpToast");
     toast.textContent=message||"";
