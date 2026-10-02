@@ -157,3 +157,14 @@ input,select,textarea{
 @media(prefers-reduced-motion:reduce){
   .ui-toast{transition:none}
 }
+
+/* 全局二次确认弹窗 */
+.zp-confirm{position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.70);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.zp-confirm[hidden]{display:none}
+.zp-confirm-panel{width:min(100%,360px);padding:20px 18px 16px;border:1px solid var(--ui-line);border-radius:18px;background:var(--ui-surface);box-shadow:0 18px 50px rgba(0,0,0,.45)}
+.zp-confirm-panel h3{margin:0;color:#fff;font-size:17px;line-height:24px;font-weight:650}
+.zp-confirm-panel p{margin:8px 0 0;color:var(--ui-muted);font-size:13px;line-height:20px;word-break:break-word}
+.zp-confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+.zp-confirm-actions button{min-height:46px;border-radius:11px;font-size:14px;font-weight:550}
+.zp-confirm-actions button:first-child{border:1px solid #35404C;background:#11171D;color:#E8EDF2}
+.zp-confirm-actions button:last-child{border:1px solid #3A4652;background:#202B36;color:#fff}
