@@ -19,10 +19,14 @@
       root.querySelector("#zpConfirmText").textContent=text||"确定继续吗？";
       ok.textContent=okText||"确定";
       box.hidden=false;
+      const previousOverflow=document.body.style.overflow;
+      document.body.style.overflow="hidden";
       let done=false;
-      const finish=v=>{if(done)return;done=true;box.hidden=true;ok.onclick=null;cancel.onclick=null;resolve(v)};
+      const onKey=e=>{if(e.key==="Escape"){e.preventDefault();finish(false)}};
+      const finish=v=>{if(done)return;done=true;box.hidden=true;ok.onclick=null;cancel.onclick=null;box.onclick=null;document.removeEventListener("keydown",onKey);document.body.style.overflow=previousOverflow;resolve(v)};
       ok.onclick=()=>finish(true);cancel.onclick=()=>finish(false);
       box.onclick=e=>{if(e.target===box)finish(false)};
+      document.addEventListener("keydown",onKey);
       setTimeout(()=>cancel.focus(),0);
     });
   };
