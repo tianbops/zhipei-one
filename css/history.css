@@ -537,3 +537,6 @@
 .history-menu{
   display:none;
 }
+
+/* Android 返回层 2.5：历史查询返回按钮沿用运单详情纯箭头。 */
+.history-back{touch-action:manipulation}
