@@ -84,3 +84,18 @@
 .order-shell.history-multi .order-route-card{margin-top:10px}
 .order-shell.history-multi .order-route-head{display:none}
 .order-shell.history-multi .order-store-list{padding-top:0}
+
+
+/* 历史详情：明确提示当天存在多次派送 */
+.order-shell.history-multi .order-summary-main{font-size:22px}
+.order-shell.history-multi .order-summary-main span:nth-child(2){font-size:14px;color:#B8C2CC;font-weight:600}
+.history-multi-hint{
+  display:block;
+  margin-top:5px;
+  text-align:center;
+  color:#7F8A95;
+  font-size:11px;
+  line-height:17px;
+  font-weight:500
+}
+.order-shell.history-multi .order-route-card{border-color:#2A3540}
