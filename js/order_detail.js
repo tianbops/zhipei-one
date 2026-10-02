@@ -22,10 +22,10 @@ function render(){
   $('routeName').textContent=routeText(order.routeName);
   $('menuRoute').textContent=routeText(order.routeName);
   $('vehicle').textContent='请选择要查看的运单';
-  $('metrics').innerHTML='<span>同日'+historyChoices.length+'张运单</span>';
+  $('metrics').innerHTML='';
   $('routeList').innerHTML=historyChoices.map((x,i)=>{
-    const s=x.summary||{},stage=x.stage==='CONFIRMED'?'已确认':'待确认';
-    return '<div class="order-history-swipe-row" data-history-index="'+i+'"><button type="button" class="order-history-choice"><span class="history-choice-head"><strong>运单 '+String(i+1).padStart(2,'0')+'</strong><em>'+esc(cleanVehicle(x.vehicle))+'</em></span><span class="history-choice-main">'+Number(s.total||x.stores?.length||0)+'家 · '+fmtWeight(x.totalWeight)+'t</span><span class="history-choice-status">'+stage+'</span></button><button type="button" class="history-choice-delete" aria-label="删除运单">删除</button></div>';
+    const s=x.summary||{},stage=x.stage==='CONFIRMED'?'已确认':'待确认',routeLabel=routeText(x.routeName||order.routeName);
+    return '<div class="order-history-swipe-row" data-history-index="'+i+'"><button type="button" class="order-history-choice"><span class="history-choice-head"><strong>运单 '+String(i+1).padStart(2,'0')+'</strong><em>'+esc(cleanVehicle(x.vehicle))+'</em></span><span class="history-choice-main">'+Number(s.total||x.stores?.length||0)+'家 · '+fmtWeight(x.totalWeight)+'t</span><span class="history-choice-route">'+esc(routeLabel)+'</span><span class="history-choice-status">'+stage+'</span></button><button type="button" class="history-choice-delete" aria-label="删除运单">删除</button></div>';
   }).join('');
   $('routeList').querySelectorAll('.order-history-swipe-row').forEach(row=>{
     const b=row.querySelector('.order-history-choice');
@@ -96,7 +96,7 @@ function bindHistoryGestures(){
    row=r;r._touch={x:e.touches[0].clientX,y:e.touches[0].clientY,t:Date.now()};
  },{passive:true});
  list.addEventListener('touchmove',e=>{
-   if(!row?true:false)return;
+   if(!row)return;
    const t=row._touch;if(!t)return;
    const dx=e.touches[0].clientX-t.x,dy=e.touches[0].clientY-t.y;
    if(Math.abs(dx)>12&&Math.abs(dx)>Math.abs(dy))e.preventDefault();
