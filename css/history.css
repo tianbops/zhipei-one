@@ -349,23 +349,23 @@
 }
 
 /* Android typography normalization: size/line-height only */
-.history-shell .topbar strong{font-size:18px;line-height:24px}
-.history-shell .topbar .text-button{font-size:15px;line-height:21px}
-.history-toolbar strong{font-size:15px;line-height:21px}
+.history-shell .topbar strong{font-size:19px;line-height:25px}
+.history-shell .topbar .text-button{font-size:16px;line-height:22px}
+.history-toolbar strong{font-size:16px;line-height:22px}
 .history-toolbar button{font-size:13px;line-height:18px}
-.history-month-main span{font-size:15px;line-height:21px}
-.history-month-main small,.history-date-main small{font-size:13px;line-height:19px}
-.history-date-main span{font-size:15px;line-height:21px}
+.history-month-main span{font-size:16px;line-height:22px}
+.history-month-main small,.history-date-main small{font-size:14px;line-height:20px}
+.history-date-main span{font-size:16px;line-height:22px}
 .history-picker-head strong{font-size:16px;line-height:22px}
 .history-calendar-week{font-size:11px;line-height:18px}
 .history-calendar-day{font-size:13px;line-height:18px}
 .history-picker-panel p{font-size:11px;line-height:17px}
-.history-picker-close{font-size:15px;line-height:21px}
+.history-picker-close{font-size:16px;line-height:22px}
 .history-dialog-panel>strong{font-size:16px;line-height:22px}
-.history-dialog-panel>p{font-size:14px;line-height:21px}
-.history-dialog-actions button{font-size:15px;line-height:21px}
+.history-dialog-panel>p{font-size:15px;line-height:22px}
+.history-dialog-actions button{font-size:16px;line-height:22px}
 .history-count-highlight{font-size:13px;line-height:18px}
 
 /* Android typography readability adjustment: size/line-height only */
-.history-toolbar button{font-size:15px;line-height:21px}
-.history-picker-panel p{font-size:13px;line-height:19px}
+.history-toolbar button{font-size:16px;line-height:22px}
+.history-picker-panel p{font-size:14px;line-height:20px}
