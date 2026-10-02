@@ -1,0 +1,159 @@
+/* 智配One · 全局 UI 统一层 2.1
+   只负责视觉、层级、触控与反馈，不承载任何业务规则。 */
+:root{
+  --ui-bg:#05070A;
+  --ui-surface:#18212B;
+  --ui-surface-2:#11171D;
+  --ui-surface-3:#202B36;
+  --ui-line:#2A3540;
+  --ui-text:#FFFFFF;
+  --ui-muted:#B8C2CC;
+  --ui-soft:#7F8A95;
+  --ui-danger:#FF8278;
+  --ui-danger-soft:rgba(255,130,120,.08);
+  --ui-radius:14px;
+  --ui-dialog-radius:18px;
+  --ui-control-radius:11px;
+}
+html,body{background:var(--ui-bg);color:var(--ui-text)}
+button,a,input,select,textarea{font-family:inherit}
+button,a{-webkit-tap-highlight-color:transparent}
+button:active{transform:translateY(0)}
+[hidden]{display:none!important}
+
+/* 页面层级：页面 > 卡片 > 次级区域，避免无意义的多层嵌套视觉 */
+.card,.page2-card,.data-route-card,.data-list-card,.task-card{
+  border-color:rgba(255,255,255,.075);
+  box-shadow:none;
+}
+.card,.page2-card{border-radius:var(--ui-radius)}
+.route-summary,.confirm-panel,.pending-box{background:var(--ui-surface-2);border-color:rgba(255,255,255,.07)}
+
+/* 顶部栏统一：标题居中/左右操作，减少重复标题层 */
+.topbar,.page2-head,.dispatch-head,.order-topbar{position:relative}
+.topbar strong,.page2-head h1,.dispatch-head h1,.order-title{font-weight:650}
+.text-button,.page2-back,.dispatch-back{color:var(--ui-muted)}
+.text-button:active,.page2-back:active,.dispatch-back:active{color:#fff}
+
+/* 菜单统一为单层浮层 */
+.menu-panel,.home-menu-panel,.data-page-menu,.order-menu{
+  border:1px solid var(--ui-line);
+  border-radius:12px;
+  background:var(--ui-surface);
+  box-shadow:0 14px 34px rgba(0,0,0,.34);
+  overflow:hidden;
+}
+.menu-panel a,.menu-panel button,.home-menu-panel a,.home-menu-panel button,.data-page-menu button,.order-menu button{
+  min-height:44px;
+}
+.menu-divider{background:rgba(255,255,255,.07)}
+
+/* 统一按钮语义：主操作右侧、取消/次要操作左侧 */
+.ui-actions,.data-import-actions,.history-dialog-actions,.order-dialog-actions,.account-dialog-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.ui-actions button,.data-import-actions button,.history-dialog-actions button,.order-dialog-actions button,.account-dialog-actions button{
+  min-height:46px;
+  border-radius:var(--ui-control-radius);
+  font-size:14px;
+  font-weight:550;
+}
+.ui-actions button:first-child,.data-import-actions button:first-child,.history-dialog-actions button:first-child,.order-dialog-actions button:first-child,.account-dialog-actions button:first-child{
+  background:var(--ui-surface-2);
+  border:1px solid #35404C;
+  color:#E8EDF2;
+}
+.ui-actions button:last-child,.data-import-actions button:last-child,.history-dialog-actions button:last-child,.order-dialog-actions button:last-child,.account-dialog-actions button:last-child{
+  background:var(--ui-surface-3);
+  border:1px solid #3A4652;
+  color:#fff;
+}
+
+/* 统一模态层：只保留一层遮罩 + 一个内容面板 */
+.order-dialog,.history-dialog,.data-import,.account-dialog-bg,.upload-overlay{
+  background:rgba(0,0,0,.70)!important;
+  backdrop-filter:blur(3px);
+  -webkit-backdrop-filter:blur(3px);
+}
+.order-dialog-panel,.history-dialog-panel,.data-import-panel,.data-confirm-panel,.account-dialog,.upload-sheet{
+  background:var(--ui-surface);
+  border:1px solid var(--ui-line);
+  border-radius:var(--ui-dialog-radius);
+  box-shadow:0 18px 50px rgba(0,0,0,.42);
+}
+.order-dialog-panel,.history-dialog-panel,.data-import-panel,.account-dialog{
+  max-width:398px;
+}
+.order-dialog-head,.data-import-head{
+  min-height:40px;
+}
+.order-dialog-head strong,.data-import-head h3,.history-dialog-panel>strong,.account-dialog h2{
+  font-size:17px;
+  line-height:24px;
+  font-weight:650;
+}
+.order-dialog-panel>p,.history-dialog-panel>p,.account-dialog>p{
+  color:var(--ui-muted);
+}
+
+/* 二次确认：不再使用大图标/装饰层，突出标题、风险说明、操作 */
+.data-confirm-icon{width:30px;height:30px;margin:0 auto 9px;font-size:14px}
+.data-confirm-panel p{margin-top:8px}
+.data-confirm-panel .data-import-actions{margin-top:18px}
+.page2-danger-btn,.data-swipe-delete{color:var(--ui-danger)!important}
+
+/* 上传/处理：同一面板内切换内容，不叠加第二个面板 */
+.upload-sheet{overflow:hidden}
+.upload-source-menu,.upload-processing{background:transparent}
+.sheet-handle{opacity:.8}
+
+/* 表单统一：标签、输入、错误信息节奏一致 */
+input,select,textarea{
+  border-radius:var(--ui-control-radius)!important;
+}
+.message,.login-message{line-height:20px}
+.message.error,.login-message[role=alert]{color:#FFB4AB}
+
+/* Toast/轻反馈：用于成功、复制、保存等非破坏性反馈 */
+.ui-toast{
+  position:fixed;
+  left:50%;
+  bottom:calc(24px + env(safe-area-inset-bottom));
+  z-index:400;
+  max-width:calc(100vw - 32px);
+  padding:10px 14px;
+  border:1px solid var(--ui-line);
+  border-radius:10px;
+  background:var(--ui-surface);
+  color:#fff;
+  font-size:13px;
+  line-height:18px;
+  text-align:center;
+  box-shadow:0 10px 28px rgba(0,0,0,.36);
+  transform:translate(-50%,10px);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .18s ease,transform .18s ease;
+}
+.ui-toast.show{opacity:1;transform:translate(-50%,0)}
+.ui-toast.success{background:#1D2A24}
+.ui-toast.error{background:#302326;border-color:#594048}
+
+/* 状态文字与列表节奏统一 */
+.empty,.page2-state,.dispatch-empty,.dispatch-message,.history-state{
+  color:var(--ui-soft);
+}
+.store-row,.account-row,.request-row{
+  border-bottom-color:rgba(255,255,255,.065);
+}
+
+/* 小屏：进一步减少外层留白，不缩小触控目标 */
+@media(max-width:380px){
+  .order-dialog,.history-dialog,.data-import,.account-dialog-bg,.upload-overlay{padding:14px}
+  .order-dialog-panel,.history-dialog-panel,.data-import-panel,.account-dialog{border-radius:16px}
+}
+@media(prefers-reduced-motion:reduce){
+  .ui-toast{transition:none}
+}
