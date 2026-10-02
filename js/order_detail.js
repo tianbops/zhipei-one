@@ -27,7 +27,7 @@ function render(){
   $('metrics').innerHTML='';
   $('routeList').innerHTML=historyChoices.map((x,i)=>{
     const s=x.summary||{},stage=x.stage==='CONFIRMED'?'已确认':'待确认',routeLabel=routeText(x.routeName||order.routeName);
-    return '<div class="order-history-swipe-row" data-history-index="'+i+'"><button type="button" class="order-history-choice"><span class="history-choice-head"><strong>第'+(i+1)+'次派送+'</strong><em>'+esc(cleanVehicle(x.vehicle))+'</em></span><span class="history-choice-main">'+Number(s.total||x.stores?.length||0)+'家 · '+fmtWeight(x.totalWeight)+'t</span><span class="history-choice-route">'+esc(routeLabel)+'</span><span class="history-choice-status">'+stage+'</span></button><button type="button" class="history-choice-delete" aria-label="删除运单">删除</button></div>';
+    return '<div class="order-history-swipe-row" data-history-index="'+i+'"><button type="button" class="order-history-choice"><span class="history-choice-index">'+(i+1)+'</span><span class="history-choice-vehicle">'+esc(cleanVehicle(x.vehicle))+'</span><span class="history-choice-main">'+Number(s.total||x.stores?.length||0)+'家 · '+fmtWeight(x.totalWeight)+'t</span></button><button type="button" class="history-choice-delete" aria-label="删除运单">删除</button></div>';
   }).join('');
   $('routeList').querySelectorAll('.order-history-swipe-row').forEach(row=>{
     const b=row.querySelector('.order-history-choice');
