@@ -5,8 +5,8 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-route-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .data-route-title h2{margin:0;font-size:17px;line-height:24px;font-weight:700}
 .data-route-badge{flex:none;padding:4px 8px;border:1px solid #34414D;border-radius:999px;color:#B8C2CC;font-size:11px;line-height:16px}
-.data-route-hint{margin:6px 0 0;color:#8F9AA5;font-size:13px;line-height:20px}
-.data-summary{display:flex;align-items:center;gap:8px;margin-top:13px;padding-top:13px;border-top:1px solid rgba(255,255,255,.07);color:#B8C2CC;font-size:13px;line-height:20px}
+.data-route-hint{margin:6px 0 0;color:#8F9AA5;font-size:14px;line-height:21px}
+.data-summary{display:flex;align-items:center;gap:8px;margin-top:13px;padding-top:13px;border-top:1px solid rgba(255,255,255,.07);color:#B8C2CC;font-size:14px;line-height:21px}
 .data-summary strong{color:#fff;font-size:16px;font-weight:600}
 .data-summary-dot{width:3px;height:3px;border-radius:50%;background:#687584}
 .data-tools-card{padding:14px 16px}
@@ -21,7 +21,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-store-index{display:flex;align-items:flex-start;justify-content:center;padding-top:1px;color:#7F8A95;font-size:12px;font-variant-numeric:tabular-nums}
 .data-store-main{min-width:0}
 .data-store-name{display:block;color:#fff;font-size:14px;line-height:21px;font-weight:500;word-break:break-word}
-.data-store-meta{display:grid;gap:3px;margin-top:5px;color:#8F9AA5;font-size:12px;line-height:18px;word-break:break-all}
+.data-store-meta{display:grid;gap:3px;margin-top:5px;color:#8F9AA5;font-size:13px;line-height:19px;word-break:break-all}
 .data-store-meta span{display:block}
 .data-store-meta-label{color:#687584;margin-right:4px}
 .data-empty{padding:28px 8px;text-align:center;color:#7F8A95;font-size:13px}
@@ -41,7 +41,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 
 .data-editor-panel{padding-top:16px}
 .data-field{display:block;margin-top:14px}
-.data-field>span{display:block;margin-bottom:6px;color:#B8C2CC;font-size:12px;line-height:18px}
+.data-field>span{display:block;margin-bottom:6px;color:#B8C2CC;font-size:13px;line-height:19px}
 .data-input{display:block;width:100%;height:46px;box-sizing:border-box;border:1px solid #35404C;border-radius:10px;background:#10161D;color:#E8EDF2;padding:0 12px;font:inherit;font-size:14px;outline:none}
 .data-input:focus,.data-note:focus{border-color:#687584}
 .data-note{min-height:100px;margin-top:0}
@@ -121,17 +121,17 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 
 /* Android typography normalization: size/line-height only */
 .data-route-badge{font-size:11px;line-height:16px}
-.data-route-hint{font-size:13px;line-height:20px}
-.data-summary{font-size:13px;line-height:20px}
-.data-summary strong{font-size:16px;line-height:22px}
-.data-import-actions button{font-size:14px;line-height:20px}
+.data-route-hint{font-size:14px;line-height:21px}
+.data-summary{font-size:14px;line-height:21px}
+.data-summary strong{font-size:17px;line-height:23px}
+.data-import-actions button{font-size:15px;line-height:21px}
 .data-page-head h1{font-size:18px;line-height:24px}
 .data-route-title h2{font-size:17px;line-height:23px}
-.data-page-menu button{font-size:14px;line-height:20px}
+.data-page-menu button{font-size:15px;line-height:21px}
 .data-feedback{font-size:13px;line-height:18px}
-.data-feedback-action{font-size:12px;line-height:18px}
+.data-feedback-action{font-size:13px;line-height:19px}
 
-/* Final Android typography normalization: size/line-height only */
-.data-route-title h2{font-size:16px;line-height:22px}
-.data-import-head h3{font-size:16px;line-height:22px}
-.data-import-actions button{font-size:14px;line-height:20px}
+/* Android typography readability adjustment: size/line-height only */
+.data-route-title h2{font-size:17px;line-height:23px}
+.data-import-head h3{font-size:17px;line-height:23px}
+.data-import-actions button{font-size:15px;line-height:21px}
