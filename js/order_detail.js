@@ -16,6 +16,7 @@ function render(){
  if(!order)return;
  if(Array.isArray(historyChoices)&&historyChoices.length>1){
   $('orderDate').textContent=targetDate||'历史运单';
+  document.querySelector('.order-shell')?.classList.add('history-multi');
   $('storeCount').textContent=historyChoices.length;
   $('summaryUnit').textContent='张';
   $('totalWeight').textContent=fmtWeight(historyChoices.reduce((n,x)=>n+(Number(x.totalWeight)||0),0));
@@ -59,6 +60,7 @@ function render(){
   const old=$('confirmPendingBtn');if(old)old.remove();
   return;
  }
+ document.querySelector('.order-shell')?.classList.remove('history-multi');
  const s=order.summary||{}, stores=Array.isArray(order.stores)?order.stores:[], pending=stores.filter(x=>x?.pending);
  $('orderDate').textContent=order.date||'日期待确认';
  $('pageTitle')?.replaceChildren(document.createTextNode('运单详情'));
