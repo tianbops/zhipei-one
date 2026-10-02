@@ -17,7 +17,7 @@ function render(){
  if(Array.isArray(historyChoices)&&historyChoices.length>1){
   $('orderDate').textContent=targetDate||'历史运单';
   document.querySelector('.order-shell')?.classList.add('history-multi');
-  const totalStores=historyChoices.reduce((n,x)=>n+(Number(x.summary?.total)||Array.isArray(x.stores)?x.stores.length:0),0);
+  const totalStores=historyChoices.reduce((n,x)=>n+(Number(x.summary?.total)|| (Array.isArray(x.stores)?x.stores.length:0)),0);
   $('storeCount').textContent=totalStores;
   $('summaryUnit').textContent='家';
   $('totalWeight').textContent=fmtWeight(historyChoices.reduce((n,x)=>n+(Number(x.totalWeight)||0),0));
