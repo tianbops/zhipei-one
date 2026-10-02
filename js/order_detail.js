@@ -44,7 +44,7 @@ function render(){
       try{
         const date=x.date||targetDate||'';
         const batch=x.orderBatchId||'';
-        const q='/api/history?date='+encodeURIComponent(date)+(batch?'&orderBatchId='+encodeURIComponent(batch):'');
+        const q='/api/history?date='+encodeURIComponent(date)+'&waybillId='+encodeURIComponent(x.id);
         const r=await fetch(q,{method:'DELETE',credentials:'same-origin',cache:'no-store'});
         const d=await r.json().catch(()=>({}));
         if(!r.ok||!d.success)throw Error(d.error||'删除失败');
