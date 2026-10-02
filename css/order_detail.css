@@ -13,7 +13,7 @@
 .order-menu button:active{background:#26313C}.order-menu .logout{color:#FF8278;border-bottom:0}
 .order-summary-card,.order-route-card{background:#18212B;border:1px solid #2A3540;border-radius:16px;box-shadow:none}
 .order-summary-card{padding:14px 15px 13px;flex:0 0 auto;margin-bottom:10px}
-.order-date{text-align:center;font-size:15px;line-height:22px;color:#fff;font-weight:650}
+.order-date{text-align:center;font-size:14px;line-height:22px;color:#fff;font-weight:650}
 .order-summary-main{display:flex;align-items:baseline;justify-content:center;gap:3px;margin-top:5px;font-size:24px;line-height:30px;font-weight:700;letter-spacing:.1px}
 .order-summary-main span:nth-child(2),.order-summary-main span:nth-child(5){font-size:14px;color:#B8C2CC;font-weight:500}
 .order-summary-main b{font-size:17px;color:#7F8A95;font-weight:500;margin:0 2px}
