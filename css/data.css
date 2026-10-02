@@ -44,13 +44,6 @@
 .data-input{display:block;width:100%;height:46px;box-sizing:border-box;border:1px solid #35404C;border-radius:10px;background:#10161D;color:#E8EDF2;padding:0 12px;font:inherit;font-size:14px;outline:none}
 .data-input:focus,.data-note:focus{border-color:#687584}
 .data-note{min-height:100px;margin-top:0}
-.data-confirm{align-items:center}
-.data-confirm-panel{width:min(100%,360px);box-sizing:border-box;background:#18212B;border:1px solid #2A3540;border-radius:18px;padding:22px 18px 18px;box-shadow:0 18px 50px rgba(0,0,0,.42)}
-.data-confirm-icon{width:34px;height:34px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;border:1px solid #596674;border-radius:50%;color:#fff;font-size:16px}
-.data-confirm-panel h3{margin:0;text-align:center;color:#fff;font-size:17px;line-height:24px}
-.data-confirm-panel p{margin:8px 0 0;text-align:center;color:#9AA5B0;font-size:13px;line-height:20px;word-break:break-word}
-.data-confirm-panel .data-import-actions{margin-top:18px}
-.data-confirm-panel #confirmOk{background:#26313C}
 
 .data-store-name-line{display:flex;align-items:flex-start;gap:8px;min-width:0}
 .data-store-name-line .data-store-name{flex:1;min-width:0}
@@ -123,4 +116,4 @@
 .data-route-title .data-summary{flex:none;margin:0;padding:0;border:0}
 .data-route-title .data-summary strong{font-size:17px;white-space:nowrap}
 
-.data-feedback{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:160;max-width:calc(100vw - 32px);padding:10px 14px;border:1px solid #35404C;border-radius:10px;background:#18212B;color:#fff;font-size:13px;line-height:18px;box-shadow:0 10px 28px rgba(0,0,0,.4);text-align:center}.data-feedback.success{background:#1D2A24}.data-feedback.error{background:#302326;border-color:#594048}
+.data-feedback{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:160;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;max-width:calc(100vw - 32px);padding:10px 14px;border:1px solid #35404C;border-radius:10px;background:#18212B;color:#fff;font-size:13px;line-height:18px;box-shadow:0 10px 28px rgba(0,0,0,.4);text-align:center}.data-feedback.success{background:#1D2A24}.data-feedback.error{background:#302326;border-color:#594048}.data-feedback-action{flex:none;min-height:32px;padding:0 10px;border:1px solid #596674;border-radius:8px;background:#18212B;color:#fff;font-size:12px;font-weight:600}
