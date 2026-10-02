@@ -147,7 +147,7 @@ $("editSave").onclick=()=>{
  if(editingIndex<0){stores.push(item);editingIndex=stores.length-1}
  const from=editingIndex;applyOrder(from,order);closeEditor();render()
 };
-function closeAllPanels(){["replaceBox","appendBox","restoreBox","replaceConfirmBox"].forEach(id=>$(id).style.display="none")}
+function closeAllPanels(){["replaceBox","appendBox","restoreBox"].forEach(id=>$(id).style.display="none")}
 function openReplace(){$("replaceText").value="";$("replaceFile").value="";$("replacePreview").textContent="";$("replaceBox").style.display="flex"}
 function openAppend(){$("appendOrder").value=stores.length+1;$("appendOrderHint").textContent="默认追加到第 "+(stores.length+1)+" 位";$("appendName").value="";$("appendNavigation").value="";$("appendNote").value="";$("appendError").textContent="";$("appendBox").style.display="flex";setTimeout(()=>$("appendOrder").focus(),0)}
 function showRestore(){ $("restorePreview").textContent="等待选择数据文件"; $("restoreBox").style.display="flex" }
