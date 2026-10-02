@@ -61,7 +61,7 @@
 .processing-progress-line:before{content:"";position:absolute;left:0;top:0;width:var(--progress,0%);height:2px;border-radius:2px;background:#B8C2CC}
 .processing-progress-line i{position:absolute;left:var(--progress,0%);top:50%;width:10px;height:10px;margin:-4px 0 0 -5px;border-radius:50%;background:#F2F5F7;box-shadow:0 0 0 2px rgba(255,255,255,.08)}
 .processing-error-title{color:#F2F5F7;text-align:center;font-size:19px;font-weight:700;line-height:28px}
-.processing-error-message{margin-top:10px;color:#B8C2CC;text-align:center;font-size:14px;line-height:22px;word-break:break-word}
+.processing-error-message{margin-top:10px;color:#B8C2CC;text-align:center;font-size:15px;line-height:23px;word-break:break-word}
 .processing-retry-btn{display:block;width:100%;height:48px;min-height:48px;margin-top:20px;border:1px solid #2A3540;border-radius:12px;background:#26313C;color:#F2F5F7;font-size:15px;font-weight:650;-webkit-tap-highlight-color:transparent}
 .processing-retry-btn:active{background:#35414D;transform:scale(.985)}
 .home-menu-button:focus,.function-btn:focus,.source-option:focus,.upload-cancel-btn:focus,.processing-retry-btn:focus{outline:none;box-shadow:none}
@@ -70,7 +70,7 @@
  .home-app{padding-left:12px;padding-right:12px}
  .task-card{margin-top:18px;padding:17px 16px 16px;border-radius:17px}
  .task-title{font-size:20px;line-height:26px}
- .task-date{font-size:14px;line-height:21px}
+ .task-date{font-size:16px;line-height:23px}
  .today-summary strong{font-size:19px}.today-summary span{font-size:15px}
  .delivery-man{width:105px;height:78px;transform:translateY(12px)}
  .function-list{margin-top:12px;gap:8px}
@@ -88,16 +88,16 @@
 .home-menu-panel .menu-route-value{margin-left:auto;max-width:82px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#B8C2CC;font-size:13px;font-weight:600}
 
 /* Final Android typography normalization: size/line-height only */
-.home-brand strong{font-size:19px;line-height:25px;letter-spacing:.5px}
+.home-brand strong{font-size:20px;line-height:26px;letter-spacing:.5px}
 .home-brand span{font-size:12px;line-height:18px}
-.task-title{font-size:17px;line-height:23px}
-.task-date{font-size:14px;line-height:21px}
-.task-info{font-size:15px;line-height:22px}
+.task-title{font-size:18px;line-height:24px}
+.task-date{font-size:16px;line-height:23px}
+.task-info{font-size:16px;line-height:23px}
 .today-summary strong{font-size:20px;line-height:27px}
-.today-summary span{font-size:15px;line-height:22px}
-.function-btn{font-size:15px;line-height:21px}
-.source-menu-title{font-size:17px;line-height:23px}
-.processing-title{font-size:17px;line-height:25px}
-.processing-error-title{font-size:17px;line-height:23px}
-.processing-error-message{font-size:14px;line-height:21px}
-.processing-retry-btn{font-size:15px;line-height:21px}
+.today-summary span{font-size:16px;line-height:23px}
+.function-btn{font-size:16px;line-height:22px}
+.source-menu-title{font-size:18px;line-height:24px}
+.processing-title{font-size:18px;line-height:26px}
+.processing-error-title{font-size:18px;line-height:24px}
+.processing-error-message{font-size:16px;line-height:23px}
+.processing-retry-btn{font-size:16px;line-height:22px}
