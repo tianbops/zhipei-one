@@ -38,7 +38,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   padding:16px;
   margin-bottom:10px;
 }
-.card h2{font-size:17px;line-height:23px}
+.card h2{font-size:18px;line-height:24px}
 .primary-btn,.secondary-btn,.grid a{
   min-height:48px;
   border-radius:11px;
@@ -65,6 +65,6 @@ button:disabled,select:disabled,input:disabled{opacity:.45}
   *,*::before,*::after{scroll-behavior:auto!important;transition-duration:0.01ms!important;animation-duration:0.01ms!important}
 }
 /* Android typography normalization: size/line-height only */
-.topbar strong{font-size:19px;line-height:25px}
-.card h2{font-size:17px;line-height:23px}
-.primary-btn,.secondary-btn,.grid a{font-size:15px;line-height:21px}
+.topbar strong{font-size:20px;line-height:26px}
+.card h2{font-size:18px;line-height:24px}
+.primary-btn,.secondary-btn,.grid a{font-size:16px;line-height:22px}
