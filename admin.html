@@ -249,3 +249,31 @@ async function load(){
   }
 }$("search").oninput=renderUsers;document.addEventListener("click",e=>{if(!e.target.closest(".row,.route,.dialog"))closeSwipes()});document.querySelectorAll(".page").forEach(p=>p.addEventListener("scroll",closeSwipes,{passive:true}));$("addRoute").onclick=addRoute;$("menuBtn").onclick=()=>{$("menuBg").hidden=false};$("menuBg").addEventListener("click",e=>{if(e.target===$("menuBg"))$("menuBg").hidden=true});$("addInvite").onclick=addInvite;$("editUser").onclick=editUser;$("editPass").onclick=editPass;$("reset").onclick=resetData;$("logout").onclick=async()=>{$("menuBg").hidden=true;if(!(await zpConfirm("退出登录","确定要退出当前管理员账号吗？","退出")))return;await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"});location.replace("/")};document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>page(Number(b.dataset.i)));let sx,sy;$("viewport").addEventListener("touchstart",e=>{if(!dlg.hidden)return;sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});$("viewport").addEventListener("touchend",e=>{if(!dlg.hidden)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.35){if(dx<0&&S.page<3)page(S.page+1);if(dx>0&&S.page>0)page(S.page-1)}} ,{passive:true});load();
 </script><script id="ui-unified-admin" src="/js/ui-unified.js"></script></body></html>
+
+/* 管理员用户管理 3.3：移除用户行末尾的无效箭头，用户名保持原有左侧起始位置。 */
+#users .row .arrow,
+#users .row .content::after,
+#users .row .main::after{
+  display:none!important;
+  content:none!important;
+}
+#users .row .content{
+  padding-left:13px!important;
+  padding-right:13px!important;
+}
+#users .row .main{
+  width:100%;
+  margin:0;
+  justify-content:space-between;
+}
+#users .row .main strong{
+  flex:1 1 auto;
+  min-width:0;
+  text-align:left;
+}
+#users .row .main .meta{
+  flex:0 0 auto;
+  margin-left:12px;
+  text-align:right;
+}
+
