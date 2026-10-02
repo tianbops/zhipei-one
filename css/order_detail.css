@@ -65,3 +65,12 @@
 .history-choice-status{grid-area:status;align-self:center;justify-self:end;padding:4px 7px;border-radius:7px;background:#26313C;color:#B8C2CC;font-size:10px;line-height:16px;font-weight:650;white-space:nowrap}
 .order-pending-fab{height:46px;padding:0 20px;border-radius:13px;background:#18212B;color:#fff;border:1px solid #53606D;box-shadow:0 10px 30px rgba(0,0,0,.42);font-size:14px}
 .order-pending-fab:active{background:#26313C}
+
+/* 统一手势：左滑删除、右滑返回 */
+.order-history-swipe-row{position:relative;display:flex;overflow:hidden;border-radius:13px;margin:0 0 8px}
+.order-history-swipe-row:last-child{margin-bottom:0}
+.order-history-swipe-row .order-history-choice{flex:1;min-width:100%;margin:0;border-radius:13px;position:relative;z-index:2;transition:transform .18s ease}
+.order-history-swipe-row.open .order-history-choice{transform:translateX(-76px)}
+.history-choice-delete{position:absolute;right:0;top:0;width:76px;height:100%;border:0;border-radius:0 13px 13px 0;background:#3A2024;color:#FFB4B0;font-size:13px;font-weight:700}
+.history-choice-delete:active{background:#51282E}
+.order-history-swipe-row .order-history-choice{touch-action:pan-y}
