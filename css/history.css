@@ -501,3 +501,39 @@
     transform:translate3d(-72px,0,0);
   }
 }
+
+/* UI 2.4：顶部返回键与运单详情统一
+   历史查询不显示右侧三横，仅保留与运单详情一致的返回箭头。 */
+.history-topbar{
+  grid-template-columns:44px 1fr 44px;
+}
+.history-back{
+  width:44px;
+  height:44px;
+  border:0;
+  border-radius:12px;
+  background:transparent;
+  color:#fff;
+  padding:0;
+}
+.history-back svg{
+  width:21px;
+  height:21px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.9;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.history-back:active{
+  background:#18212B;
+  transform:none;
+}
+.history-topbar-placeholder{
+  width:44px;
+  height:44px;
+  display:block;
+}
+.history-menu{
+  display:none;
+}
