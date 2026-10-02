@@ -205,3 +205,103 @@
 .history-choice-status{font-size:11px;line-height:17px}
 .history-choice-index{font-size:13px;line-height:20px}
 .history-choice-vehicle{font-size:14px;line-height:20px}
+
+/* UI 2.3：运单详情顶部统一为成熟 Android 信息层级
+   修正窄屏下“13 / 家 / · / 0.66 / t”被拆开的显示问题。
+   仅调整顶部视觉与排版，不改变业务数据。 */
+.order-shell{
+  padding-top:8px;
+}
+.order-topbar{
+  height:52px;
+  flex-basis:52px;
+  margin-bottom:12px;
+}
+.order-title{
+  font-size:20px;
+  line-height:26px;
+  font-weight:700;
+}
+.order-icon-btn{
+  width:44px;
+  height:44px;
+  border-radius:12px;
+  border:0;
+  background:transparent;
+}
+.order-icon-btn:active{
+  background:#18212B;
+  transform:none;
+}
+.order-summary-card{
+  padding:15px 16px 14px;
+  margin-bottom:12px;
+  border-radius:16px;
+  background:#18212B;
+  border:1px solid rgba(255,255,255,.075);
+}
+.order-date{
+  font-size:16px;
+  line-height:23px;
+  font-weight:650;
+}
+.order-summary-main{
+  width:100%;
+  display:flex;
+  flex-wrap:nowrap;
+  align-items:baseline;
+  justify-content:center;
+  gap:0;
+  margin-top:5px;
+  white-space:nowrap;
+  font-size:22px;
+  line-height:30px;
+  font-weight:700;
+}
+.order-summary-main span{
+  display:inline-block;
+  flex:0 0 auto;
+  white-space:nowrap;
+}
+.order-summary-main span:nth-child(2),
+.order-summary-main span:nth-child(5){
+  margin-left:3px;
+  font-size:15px;
+  line-height:20px;
+  color:#B8C2CC;
+  font-weight:500;
+}
+.order-summary-main b{
+  flex:0 0 auto;
+  margin:0 7px;
+  font-size:17px;
+  line-height:22px;
+  color:#7F8A95;
+  font-weight:500;
+}
+.order-metrics{
+  margin-top:7px;
+  gap:12px;
+  font-size:14px;
+  line-height:20px;
+}
+.order-route-card{
+  border-radius:15px;
+}
+@media(max-width:360px){
+  .order-summary-card{
+    padding-left:12px;
+    padding-right:12px;
+  }
+  .order-summary-main{
+    font-size:21px;
+  }
+  .order-summary-main span:nth-child(2),
+  .order-summary-main span:nth-child(5){
+    font-size:14px;
+  }
+  .order-summary-main b{
+    margin-left:5px;
+    margin-right:5px;
+  }
+}
