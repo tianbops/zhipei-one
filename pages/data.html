@@ -212,14 +212,14 @@ async function shareSavedBase(){
   });
   const text=lines.join("\\n");
   if(navigator.share){await navigator.share({title:routeName+" · 线路资料",text})}
-  else if(navigator.clipboard){await navigator.clipboard.writeText(text);alert("已复制已保存的线路资料")}
-  else{alert("当前设备不支持分享")}
- }catch(e){if(e?.name!=="AbortError")alert("分享失败："+(e?.message||"请求失败"))}
+  else if(navigator.clipboard){await navigator.clipboard.writeText(text);zpToast("已复制已保存的线路资料","success")}
+  else{zpToast("当前设备不支持分享","error")}
+ }catch(e){if(e?.name!=="AbortError")zpToast("分享失败："+(e?.message||"请求失败"),"error")}
 }
 $("pageMenuBtn").onclick=()=>{$("pageMenu").hidden=!$("pageMenu").hidden};
 document.addEventListener("click",e=>{if(!e.target.closest(".data-page-menu,.data-page-menu-btn"))$("pageMenu").hidden=true});
 $("dataShareBtn").onclick=async()=>{ $("pageMenu").hidden=true; if(routeId)await shareSavedBase() };
-$("dataLogoutBtn").onclick=async()=>{ $("pageMenu").hidden=true; if(!confirm("确定退出登录吗？"))return; try{await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"})}finally{location.replace("/")} };
+$("dataLogoutBtn").onclick=async()=>{ $("pageMenu").hidden=true; if(!(await zpConfirm("退出登录","确定退出当前账号吗？")))return; try{await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"})}finally{location.replace("/")} };
 async function submitStores(){
  if(saving)return;saving=true;$("saveStoresTop").disabled=true;
  try{
