@@ -309,66 +309,195 @@
 /* 同日多次派送：仅高亮次数数字 */
 .history-count-highlight{color:#fff;font-size:13px;font-weight:750;letter-spacing:.1px}
 
-
-/* UI 2.2：历史查询视觉减层
-   日期工具栏保留，主体列表去掉外层厚卡片感，让月份/日期成为主要层级。 */
+/* UI 2.3：历史查询成熟 Android 列表布局
+   目标：减少“卡片套卡片”，强化月份层级，日期使用轻量列表行。
+   仅调整视觉与触控区域，不改变历史查询业务逻辑。 */
+.history-shell{
+  padding-top:8px;
+  padding-bottom:0;
+}
+.history-topbar{
+  height:52px;
+  margin-bottom:14px;
+}
+.history-topbar>strong{
+  font-size:20px;
+  line-height:26px;
+  font-weight:700;
+}
+.history-back,.history-menu{
+  width:44px;
+  height:44px;
+  border-radius:12px;
+  font-size:16px;
+  line-height:22px;
+}
 .history-card{
+  padding:0;
   background:transparent;
   border:0;
   border-radius:0;
   overflow:visible;
 }
 .history-toolbar{
-  margin-bottom:10px;
-  padding:0 2px;
-  border-bottom:0;
-  min-height:48px;
+  min-height:46px;
+  margin:0 2px 12px;
+  padding:0;
+  border:0;
+}
+.history-toolbar strong{
+  font-size:17px;
+  line-height:24px;
+  font-weight:650;
+}
+.history-toolbar button{
+  height:38px;
+  padding:0 14px;
+  border:1px solid #35404C;
+  border-radius:11px;
+  background:#18212B;
+  color:#F4F6F8;
+  font-size:16px;
+  line-height:22px;
+  font-weight:550;
+}
+.history-toolbar button:active{
+  background:#26313C;
+}
+.history-state{
+  min-height:20px;
+  padding:18px 8px;
+  color:#7F8A95;
+  font-size:14px;
+  line-height:20px;
 }
 .history-list{
+  width:100%;
   border:1px solid rgba(255,255,255,.075);
-  border-radius:16px;
+  border-radius:17px;
   overflow:hidden;
+  background:#151D26;
 }
 .history-month{
   background:#151D26;
+  border-bottom:1px solid rgba(255,255,255,.075);
+}
+.history-month:last-child{
+  border-bottom:0;
 }
 .history-month-main{
-  min-height:54px;
+  min-height:58px;
+  padding:0 16px;
+  background:#18212B;
+}
+.history-month-main span{
+  font-size:17px;
+  line-height:24px;
+  font-weight:650;
+  letter-spacing:.1px;
+}
+.history-month-main small{
+  margin-left:auto;
+  padding-right:4px;
+  color:#9AA5AF;
+  font-size:14px;
+  line-height:20px;
+  font-weight:450;
+}
+.history-month-main::after{
+  width:7px;
+  height:7px;
+  margin-left:12px;
+}
+.history-month.expanded .history-month-main{
+  border-bottom:1px solid rgba(255,255,255,.065);
 }
 .history-month-body{
+  display:none;
   background:#11171D;
+}
+.history-month.expanded .history-month-body{
+  display:block;
 }
 .history-swipe-row{
   background:#11171D;
+  border-bottom:1px solid rgba(255,255,255,.055);
+}
+.history-month-body .history-swipe-row:last-child{
+  border-bottom:0;
 }
 .history-row-surface{
-  background:#151D26;
+  min-height:54px;
+  background:#11171D;
 }
 .history-month-body .history-row-surface{
   background:#11171D;
 }
-.history-state{
-  padding:18px 8px;
+.history-date-main{
+  min-height:54px;
+  padding:0 16px 0 32px;
+  background:transparent;
+}
+.history-date-main span{
+  color:#E8EDF2;
+  font-size:16px;
+  line-height:22px;
+  font-weight:500;
+}
+.history-date-main small{
+  margin-left:auto;
+  color:#9AA5AF;
+  font-size:14px;
+  line-height:20px;
+  font-weight:450;
+}
+.history-date-main:active,
+.history-month-main:active{
+  background:#202B36;
+}
+.history-count-highlight{
+  color:#fff;
+  font-size:14px;
+  line-height:20px;
+  font-weight:750;
+}
+.history-delete{
+  width:76px;
+  background:#343A41;
+  color:#F4F6F8;
+  font-size:15px;
+  line-height:20px;
+  font-weight:550;
+}
+.history-swipe-row.swiped .history-row-surface{
+  transform:translate3d(-76px,0,0);
 }
 
-/* Android typography normalization: size/line-height only */
-.history-shell .topbar strong{font-size:19px;line-height:25px}
-.history-shell .topbar .text-button{font-size:16px;line-height:22px}
-.history-toolbar strong{font-size:16px;line-height:22px}
-.history-toolbar button{font-size:13px;line-height:18px}
-.history-month-main span{font-size:16px;line-height:22px}
-.history-month-main small,.history-date-main small{font-size:14px;line-height:20px}
-.history-date-main span{font-size:16px;line-height:22px}
-.history-picker-head strong{font-size:16px;line-height:22px}
-.history-calendar-week{font-size:11px;line-height:18px}
-.history-calendar-day{font-size:13px;line-height:18px}
-.history-picker-panel p{font-size:11px;line-height:17px}
-.history-picker-close{font-size:16px;line-height:22px}
-.history-dialog-panel>strong{font-size:16px;line-height:22px}
-.history-dialog-panel>p{font-size:15px;line-height:22px}
-.history-dialog-actions button{font-size:16px;line-height:22px}
-.history-count-highlight{font-size:13px;line-height:18px}
+/* 月份之间增加清晰但克制的呼吸感 */
+.history-month + .history-month{
+  border-top:6px solid #05070A;
+}
 
-/* Android typography readability adjustment: size/line-height only */
-.history-toolbar button{font-size:16px;line-height:22px}
-.history-picker-panel p{font-size:14px;line-height:20px}
+/* 日历/确认弹窗保持与全局 Android 2.0 视觉一致 */
+.history-picker-panel,
+.history-dialog-panel{
+  border-radius:18px;
+}
+.history-picker-close,
+.history-dialog-actions button{
+  font-size:16px;
+  line-height:22px;
+}
+
+@media(max-width:380px){
+  .history-toolbar{margin-left:0;margin-right:0}
+  .history-month-main{padding-left:14px;padding-right:14px}
+  .history-date-main{padding-left:28px;padding-right:14px}
+  .history-month-main span{font-size:16px}
+  .history-month-main small,
+  .history-date-main small{font-size:13px}
+  .history-delete{width:72px}
+  .history-swipe-row.swiped .history-row-surface{
+    transform:translate3d(-72px,0,0);
+  }
+}
