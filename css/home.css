@@ -86,3 +86,18 @@
 /* 当前线路显示 */
 .home-menu-panel a#currentRouteMenu{justify-content:flex-start}
 .home-menu-panel .menu-route-value{margin-left:auto;max-width:82px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#B8C2CC;font-size:13px;font-weight:600}
+
+/* Final Android typography normalization: size/line-height only */
+.home-brand strong{font-size:18px;line-height:24px}
+.home-brand span{font-size:11px;line-height:16px}
+.task-title{font-size:16px;line-height:22px}
+.task-date{font-size:13px;line-height:20px}
+.task-info{font-size:14px;line-height:21px}
+.today-summary strong{font-size:18px;line-height:25px}
+.today-summary span{font-size:14px;line-height:21px}
+.function-btn{font-size:14px;line-height:20px}
+.source-menu-title{font-size:16px;line-height:22px}
+.processing-title{font-size:16px;line-height:24px}
+.processing-error-title{font-size:16px;line-height:22px}
+.processing-error-message{font-size:13px;line-height:20px}
+.processing-retry-btn{font-size:14px;line-height:20px}
