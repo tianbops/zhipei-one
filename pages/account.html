@@ -112,7 +112,7 @@ $("passwordBtn").onclick=async()=>{
  }catch(e){show("passwordMessage",e);$("passwordBtn").disabled=false}
 };
 
-$("logout").onclick=async()=>{try{await fetch("/api/logout",{method:"POST",credentials:"same-origin"})}finally{location.replace("/")}};
+$("logout").onclick=async()=>{if(!(await zpConfirm("退出登录","确定要退出当前账号吗？","退出")))return;try{await fetch("/api/logout",{method:"POST",credentials:"same-origin"})}finally{location.replace("/")}};
 
 const deletePrompt=$("deletePrompt"),deleteConfirmPanel=$("deleteConfirmPanel");
 function closeDelete(){deleteConfirmPanel.hidden=true;deletePrompt.hidden=false;$("deletePassword").value="";$("deleteMessage").textContent="";$("deleteConfirm").disabled=false}
