@@ -191,9 +191,21 @@ function openConfirm(){
 }
 
 const backToHome=()=>{setMenu(false);location.replace('/home.html')};
-history.pushState({zhipeiOneOrderDetail:true},'',location.href);
-window.addEventListener('popstate',()=>backToHome());
-$('backBtn').onclick=backToHome;
+const backToPrevious=()=>{
+  setMenu(false);
+  const ref=document.referrer||"";
+  let sameOrigin=false;
+  try{sameOrigin=!!ref&&new URL(ref,location.href).origin===location.origin}catch{}
+  if(sameOrigin&&history.length>1){history.back();return}
+  location.replace('/home.html');
+};
+if(document.body.dataset.backHome==="true"){
+  history.pushState({zhipeiOneOrderDetail:true},'',location.href);
+  window.addEventListener('popstate',()=>backToHome());
+  $('backBtn').onclick=backToHome;
+}else{
+  $('backBtn').onclick=backToPrevious;
+}
 $('menuBtn').onclick=e=>{e.stopPropagation();setMenu(!menuOpen)};
 $('editRouteBtn').onclick=()=>location.href='/pages/data.html';
 $('shareBtn').onclick=async()=>{
