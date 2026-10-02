@@ -12,6 +12,66 @@
     document.body.appendChild(el);
     return el;
   }
+  const eyeOpen='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.2 12s3.2-5 9.8-5 9.8 5 9.8 5-3.2 5-9.8 5-9.8-5-9.8-5Z"/><circle cx="12" cy="12" r="2.5"/></svg>';
+  const eyeClosed='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.6 6.2A10.9 10.9 0 0 1 12 6c6.6 0 9.8 6 9.8 6a16.5 16.5 0 0 1-3 3.5M6.2 6.3C3.5 8 2.2 12 2.2 12s3.2 6 9.8 6c1 0 1.9-.2 2.7-.5"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+  function setupPasswordToggles(root=document){
+    const inputs=[];
+    if(root.matches?.('input[type="password"]'))inputs.push(root);
+    root.querySelectorAll?.('input[type="password"]').forEach(input=>inputs.push(input));
+    inputs.forEach(input=>{
+      if(input.dataset.zpPasswordEyeBound==="1")return;
+      let control=input.parentElement;
+      if(!control?.classList.contains("zp-password-control")&&!control?.classList.contains("reset-password-control")){
+        control=document.createElement("div");
+        control.className="zp-password-control";
+        input.parentNode.insertBefore(control,input);
+        control.appendChild(input);
+      }else control.classList.add("zp-password-control");
+      let button=control.querySelector(":scope > .zp-password-eye");
+      if(!button){
+        button=document.createElement("button");
+        button.type="button";
+        button.className="zp-password-eye";
+        button.setAttribute("aria-label","显示密码");
+        button.setAttribute("aria-pressed","false");
+        control.appendChild(button);
+      }
+      input.dataset.zpPasswordEyeBound="1";
+      const sync=()=>{
+        const hasValue=input.value.length>0;
+        button.hidden=!hasValue;
+        if(!hasValue&&input.type!=="password")input.type="password";
+        const visible=input.type==="text";
+        button.innerHTML=visible?eyeClosed:eyeOpen;
+        button.setAttribute("aria-pressed",String(visible));
+        button.setAttribute("aria-label",visible?"隐藏密码":"显示密码");
+      };
+      input.addEventListener("input",sync);
+      input.addEventListener("change",sync);
+      button.addEventListener("click",()=>{
+        if(!input.value.length)return;
+        input.type=input.type==="password"?"text":"password";
+        sync();
+        input.focus();
+      });
+      sync();
+    });
+  }
+  window.zpSetupPasswordToggles=setupPasswordToggles;
+  function initPasswordToggles(){
+    setupPasswordToggles(document);
+    if(document.body&&window.MutationObserver){
+      const observer=new MutationObserver(records=>{
+        records.forEach(record=>record.addedNodes.forEach(node=>{
+          if(node.nodeType===1)setupPasswordToggles(node);
+        }));
+      });
+      observer.observe(document.body,{childList:true,subtree:true});
+    }
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",initPasswordToggles,{once:true});
+  else initPasswordToggles();
+
   window.zpConfirm=function(title,text,okText){
     return new Promise(resolve=>{
       const root=ensure(),box=root.querySelector(".zp-confirm"),ok=root.querySelector("[data-zp-ok]"),cancel=root.querySelector("[data-zp-cancel]");
