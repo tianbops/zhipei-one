@@ -132,6 +132,15 @@ export async function onRequestDelete({request,env}){
  }
  if(!validDate(date))return json({success:false,code:"DATE_INVALID",error:"日期格式错误"},400);
  if(!inRange(date,range))return json({success:false,code:"DATE_OUT_OF_RANGE",error:"日期不在历史查询范围内"},400);
+ const waybillId=clean(url.searchParams.get("waybillId")||url.searchParams.get("id"));
+ if(waybillId){
+  const orders=await readDateWaybills(env,routeId,date);
+  const target=orders.find(order=>order.id===waybillId);
+  if(!target)return json({success:false,code:"WAYBILL_NOT_FOUND",error:"运单不存在或已删除"},404);
+  if(target.stage!=="CONFIRMED")return json({success:false,code:"WAYBILL_NOT_CONFIRMED",error:"仅可删除已确认运单"},409);
+  await deleteWaybill(env,routeId,date,target.id);
+  return json({success:true,deleted:1,deletedWaybills:1,waybillId});
+ }
  let deleted=0;for(const order of await readDateWaybills(env,routeId,date)){if(order.stage!=="CONFIRMED")continue;await deleteWaybill(env,routeId,date,order.id);deleted++}
  return json({success:true,deleted,deletedWaybills:deleted});
 }
