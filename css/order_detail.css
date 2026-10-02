@@ -74,3 +74,8 @@
 .history-choice-delete{position:absolute;right:0;top:0;width:76px;height:100%;border:0;border-radius:0 13px 13px 0;background:#3A2024;color:#FFB4B0;font-size:13px;font-weight:700}
 .history-choice-delete:active{background:#51282E}
 .order-history-swipe-row .order-history-choice{touch-action:pan-y}
+
+/* 同日多运单：日期下直接进入运单卡片 */
+.order-history-swipe-row .order-history-choice{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"head status" "main status" "route status";gap:2px 10px;padding:11px 10px 10px;min-height:82px}
+.history-choice-route{grid-area:route;color:#7F8A95;font-size:11px;line-height:17px;font-weight:500}
+.order-history-swipe-row .history-choice-status{align-self:center}
