@@ -144,3 +144,37 @@
 .order-shell.history-multi .history-choice-delete{
   width:76px;
 }
+
+
+/* UI 2.2：详情页视觉减层
+   保留摘要卡作为唯一核心信息卡，配送列表改为轻容器，减少“卡中卡”。 */
+.order-route-card{
+  background:transparent;
+  border-color:rgba(255,255,255,.055);
+  border-radius:14px;
+  padding-left:4px;
+  padding-right:4px;
+}
+.order-route-head{
+  padding-left:8px;
+  padding-right:8px;
+  padding-bottom:8px;
+}
+.order-store-list{
+  padding-left:8px;
+  padding-right:8px;
+}
+.order-store-item{
+  padding-left:0;
+  padding-right:0;
+}
+.order-shell.history-multi .order-route-card{
+  background:transparent;
+  border-color:rgba(255,255,255,.055);
+  padding-left:0;
+  padding-right:0;
+}
+.order-shell.history-multi .order-store-list{
+  padding-left:0;
+  padding-right:0;
+}
