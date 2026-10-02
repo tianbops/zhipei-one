@@ -180,26 +180,26 @@
 }
 
 /* Android typography readability adjustment: size/line-height only */
-.order-title{font-size:19px;line-height:25px}
-.order-menu button,.order-menu-route{font-size:15px;line-height:21px}
-.order-date{font-size:15px;line-height:22px}
+.order-title{font-size:20px;line-height:26px}
+.order-menu button,.order-menu-route{font-size:16px;line-height:22px}
+.order-date{font-size:16px;line-height:23px}
 .order-summary-main{font-size:22px;line-height:28px}
-.order-summary-main span:nth-child(2),.order-summary-main span:nth-child(5){font-size:14px;line-height:19px}
-.order-summary-main b{font-size:17px;line-height:21px}
-.order-metrics{font-size:13px;line-height:19px}
-.order-meta-label{font-size:13px;line-height:19px}
-.order-route-name,.order-vehicle{font-size:15px;line-height:21px}
-.order-store-index{font-size:13px;line-height:21px}
-.order-store-name{font-size:15px;line-height:22px}
-.order-store-note-inline{font-size:12px;line-height:19px}
-.order-store-note{font-size:12px;line-height:18px}
+.order-summary-main span:nth-child(2),.order-summary-main span:nth-child(5){font-size:15px;line-height:20px}
+.order-summary-main b{font-size:18px;line-height:22px}
+.order-metrics{font-size:14px;line-height:20px}
+.order-meta-label{font-size:14px;line-height:20px}
+.order-route-name,.order-vehicle{font-size:16px;line-height:22px}
+.order-store-index{font-size:14px;line-height:22px}
+.order-store-name{font-size:16px;line-height:23px}
+.order-store-note-inline{font-size:13px;line-height:20px}
+.order-store-note{font-size:13px;line-height:19px}
 .order-store-status{font-size:10px;line-height:16px}
-.order-empty{font-size:14px;line-height:21px}
-.order-dialog-head strong{font-size:17px;line-height:23px}
-.pending-title{font-size:15px;line-height:21px}
-.pending-hint{font-size:12px;line-height:18px}
-.choice-btn{font-size:14px;line-height:19px}
-.order-dialog-actions button{font-size:15px;line-height:21px}
+.order-empty{font-size:15px;line-height:22px}
+.order-dialog-head strong{font-size:18px;line-height:24px}
+.pending-title{font-size:16px;line-height:22px}
+.pending-hint{font-size:13px;line-height:19px}
+.choice-btn{font-size:15px;line-height:20px}
+.order-dialog-actions button{font-size:16px;line-height:22px}
 .history-choice-head strong,.history-choice-head em{font-size:14px;line-height:20px}
 .history-choice-main{font-size:14px;line-height:20px}
 .history-choice-status{font-size:11px;line-height:17px}
