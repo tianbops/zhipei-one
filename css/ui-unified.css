@@ -265,3 +265,33 @@ input,select,textarea{
 @media(max-width:380px){
   .zp-float-scroll-wrap{right:12px}
 }
+
+
+/* 全局密码显隐 2.7：所有密码输入统一使用小眼睛，空值时隐藏，输入后即时出现。 */
+.zp-password-control{
+  position:relative;display:flex;align-items:center;width:100%;min-height:48px;
+  border:1px solid #35414D;border-radius:11px;background:#11171D;
+  transition:border-color .16s ease,box-shadow .16s ease;
+}
+.zp-password-control:focus-within{border-color:#687584;box-shadow:0 0 0 3px rgba(184,194,204,.08)}
+.zp-password-control input[type="password"],
+.zp-password-control input[type="text"]{
+  display:block;flex:1;min-width:0;width:100%;height:48px!important;min-height:48px!important;
+  margin:0!important;padding:0 48px 0 12px!important;border:0!important;border-radius:10px!important;
+  outline:none!important;box-shadow:none!important;background:transparent!important;color:#F5F7F9;
+  font-size:16px;line-height:22px;letter-spacing:.01em;
+}
+.zp-password-control input::placeholder{color:#75818C}
+.zp-password-eye{
+  position:absolute;right:4px;top:50%;transform:translateY(-50%);
+  display:flex;align-items:center;justify-content:center;width:38px;height:38px;
+  padding:0;border:0;border-radius:9px;background:transparent;color:#8F9BA7;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+.zp-password-eye svg{display:block;width:19px;height:19px;pointer-events:none}
+.zp-password-eye:active{background:#26313C;color:#E8EDF2}
+.zp-password-eye[hidden]{display:none!important}
+.field .zp-password-control{margin-top:0}
+.reset-password-field>label{display:block;margin:0 0 8px;color:#DCE3E9;font-size:14px;line-height:20px;font-weight:600}
+.reset-password-field{margin-top:16px}
+@media(max-width:380px){.zp-password-eye{right:3px;width:36px;height:36px}}
