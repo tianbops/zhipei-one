@@ -10,12 +10,70 @@ const setEmptyToday=()=>{todayCount.textContent="暂无运单";todayWeight.textC
 const setRouteBadge=(route)=>{if(!dot)return;const type=route?.type||"";const name=String(route?.name||"").trim();const badge=type==="temporary"||/临时/.test(name)?"临":(name.replace(/\s+/g,"").replace(/路$/,"" )||"—");dot.textContent=badge;dot.hidden=false};
 
 const processingPanel=$("uploadProcessing"),processingError=$("uploadProcessingError"),processingErrorMessage=$("processingErrorMessage"),processingRetry=$("processingRetry"),sourceMenu=$("uploadSourceMenu"),processingPercent=$("processingPercent"),processingProgress=$("processingProgressDot");
+const processingStageEl=$("processingStage"),processingElapsedEl=$("processingElapsed"),processingCancelBtn=$("processingCancel");
 let processingProgressValue=0;
 let processingProgressTarget=0;
 let processingProgressFrame=0;
 let processingProgressStart=0;
 let processingProgressFrom=0;
 let processingProgressDuration=0;
+
+/* ===== 等待期体验：让"19 秒干等"变成"看得见的等待" =====
+   后端已通过 SSE 推送 progress（含阶段文案 message）与 heartbeat（每秒存活心跳），
+   此前前端只取 progress 数字、丢弃 message，且两次 progress 间隔可达 5 秒，
+   于是进度条长时间静止、文案始终一句，用户无法判断是"在跑"还是"卡死"。
+   这里补三件事，均不伪造进度：
+     1) 展示后端真实阶段文案 + 已用时；
+     2) 久无新进度但心跳仍到 → 进度条叠加流动微光（存活指示，不改数字）；
+     3) 处理超过 8 秒才给出"取消处理"出口（此前处理中无任何退出方式）。 */
+const STAGE_DEFAULT="正在准备…";
+const STALL_THRESHOLD=1200;   // 超过此毫秒没有新进度即视为停滞
+const ALIVE_THRESHOLD=3000;   // 心跳超过此毫秒未到即认为连接已断
+const CANCEL_REVEAL_MS=8000;  // 处理多久后才显示取消按钮
+let processingController=null;
+let processingStartedAt=0;
+let processingLastProgressAt=0;
+let processingLastSignalAt=0;
+let processingCancelled=false;
+let processingClockTimer=0;
+
+function setProcessingStage(text){
+  if(processingStageEl&&text)processingStageEl.textContent=String(text);
+}
+function refreshProcessingClock(){
+  if(!processingStartedAt)return;
+  const elapsed=Date.now()-processingStartedAt;
+  if(processingElapsedEl){
+    // 超过 15 秒属于 OCR 排队偏慢，给出"稍候"提示，避免用户以为卡死
+    processingElapsedEl.textContent="已用时 "+Math.max(0,Math.round(elapsed/1000))+"s"+(elapsed>=15000?" · 稍候":"");
+  }
+}
+function refreshStalledState(){
+  const bar=processingProgress?.closest(".processing-progress");
+  if(!bar)return;
+  const now=performance.now();
+  const alive=(now-processingLastSignalAt)<ALIVE_THRESHOLD;
+  const stalled=alive&&(now-processingLastProgressAt)>STALL_THRESHOLD;
+  bar.classList.toggle("is-stalled",stalled);
+}
+function startProcessingClock(){
+  processingStartedAt=Date.now();
+  processingLastProgressAt=performance.now();
+  processingLastSignalAt=processingLastProgressAt;
+  if(processingClockTimer)clearInterval(processingClockTimer);
+  processingClockTimer=setInterval(()=>{
+    refreshProcessingClock();
+    refreshStalledState();
+    if(processingCancelBtn&&!processingCancelled&&(Date.now()-processingStartedAt)>=CANCEL_REVEAL_MS){
+      processingCancelBtn.hidden=false;
+    }
+  },500);
+}
+function stopProcessingClock(){
+  if(processingClockTimer)clearInterval(processingClockTimer);
+  processingClockTimer=0;
+  processingProgress?.closest(".processing-progress")?.classList.remove("is-stalled");
+}
 
 function paintProcessingProgress(value){
   processingProgressValue=Math.max(0,Math.min(100,value));
@@ -43,6 +101,8 @@ function animateProcessingProgress(now){
 
 function renderProcessingProgress(value){
   const next=Math.max(0,Math.min(100,Number(value)||0));
+  processingLastProgressAt=performance.now();
+  processingLastSignalAt=processingLastProgressAt;
   // 后端进度只允许向前推进，避免网络事件乱序造成百分比倒退。
   if(next<processingProgressTarget)return;
   if(processingProgressFrame)cancelAnimationFrame(processingProgressFrame);
@@ -65,6 +125,12 @@ function resetProcessingProgress(){
   paintProcessingProgress(0);
 }
 function resetProcessingUI(){
+  stopProcessingClock();
+  processingStartedAt=0;
+  processingCancelled=false;
+  if(processingCancelBtn)processingCancelBtn.hidden=true;
+  setProcessingStage(STAGE_DEFAULT);
+  if(processingElapsedEl)processingElapsedEl.textContent="已用时 0s";
   if(!processingPanel||!sourceMenu)return;
   if(overlay)overlay.classList.remove("processing-error-state");
   if(processingError)processingError.hidden=true;
@@ -72,6 +138,8 @@ function resetProcessingUI(){
   renderProcessingProgress(0);
 }
 function showProcessingError(message){
+  stopProcessingClock();
+  if(processingCancelBtn)processingCancelBtn.hidden=true;
   if(processingPanel)processingPanel.hidden=true;
   if(sourceMenu)sourceMenu.hidden=true;
   if(overlay)overlay.classList.add("processing-error-state");
@@ -83,7 +151,13 @@ function showProcessingUI(){
   if(overlay)overlay.classList.remove("processing-error-state");
   if(processingError)processingError.hidden=true;
   sourceMenu.hidden=true;processingPanel.hidden=false;
+  processingCancelled=false;
+  if(processingCancelBtn)processingCancelBtn.hidden=true;
+  setProcessingStage(STAGE_DEFAULT);
+  if(processingElapsedEl)processingElapsedEl.textContent="已用时 0s";
   renderProcessingProgress(0);
+  startProcessingClock();
+  refreshProcessingClock();
 }
 function closeUpload(){
   if(processingFile)return;
@@ -94,6 +168,14 @@ function openUpload(){
 }
 $("uploadAction")?.addEventListener("click",openUpload);
 cancel?.addEventListener("click",closeUpload);
+// 处理中的唯一退出方式：处理期间取消按钮被隐藏，等待超过 8 秒后才给出出口，
+// 既保留处理锁（防重复提交、防误触关闭），又不把用户永久锁在弹窗里。
+processingCancelBtn?.addEventListener("click",()=>{
+  if(!processingFile||!processingController)return;
+  processingCancelled=true;
+  processingCancelBtn.disabled=true;
+  try{processingController.abort()}catch{}
+});
 processingRetry?.addEventListener("click",()=>{if(processingFile)return;closeUpload();});
 overlay?.addEventListener("click",e=>{if(e.target===overlay)closeUpload()});
 
@@ -123,6 +205,8 @@ async function processSelectedFile(file){
   if(!file||processingFile)return;
   processingFile=true;
   const controller=new AbortController();
+  processingController=controller;
+  if(processingCancelBtn){processingCancelBtn.hidden=true;processingCancelBtn.disabled=false}
   const timer=setTimeout(()=>controller.abort(),60000);
   try{
     if(!(await ensureDispatchRoute())){
@@ -157,7 +241,15 @@ async function processSelectedFile(file){
           if(!line.trim())continue;
           let event;
           try{event=JSON.parse(line)}catch{continue}
-          if(event.type==="progress")renderProcessingProgress(event.progress);
+          if(event.type==="progress"){
+            renderProcessingProgress(event.progress);
+            // 后端每个阶段都带了中文说明，此前被前端丢弃，导致全程只有一句固定文案
+            if(event.message)setProcessingStage(event.message);
+          }
+          else if(event.type==="heartbeat"){
+            // 心跳只证明"还活着"，不推进进度；停滞微光靠它判断连接是否正常
+            processingLastSignalAt=performance.now();
+          }
           else if(event.type==="result")result=event;
         }
       }
@@ -173,15 +265,26 @@ async function processSelectedFile(file){
       renderProcessingProgress(100);
       location.replace("/pages/order_detail.html?id="+encodeURIComponent(result.waybill.id)+"&source=process");
     }catch(e){
-      if(e?.name==="AbortError")throw Object.assign(new Error("运单处理超时，请检查OCR服务后重试"),{code:"PROCESS_CLIENT_TIMEOUT"});
+      if(e?.name==="AbortError"){
+        // 用户主动取消不算错误：静默收尾，由 finally 关闭面板并提示
+        if(processingCancelled)return;
+        throw Object.assign(new Error("运单处理超时，请检查OCR服务后重试"),{code:"PROCESS_CLIENT_TIMEOUT"});
+      }
       throw e;
     }
   }catch(e){
     showProcessingError(e?.code||"PROCESS_FAILED");
   }finally{
     clearTimeout(timer);
+    stopProcessingClock();
     document.querySelectorAll(".source-option").forEach(b=>b.disabled=false);
     processingFile=false;
+    const wasCancelled=processingCancelled;
+    processingController=null;
+    if(wasCancelled){
+      closeUpload();
+      try{window.zpToast?.("已取消处理","success")}catch{}
+    }
   }
 }
 ["cameraInput","photoInput","documentInput"].forEach(id=>$(id)?.addEventListener("change",e=>processSelectedFile(e.target.files?.[0])));

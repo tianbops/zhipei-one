@@ -1,0 +1,11 @@
+# Cloudflare Pages 缓存头
+# Service Worker 绝不能被 CDN 缓存：否则新版本 SW 无法下发，客户端会一直用旧缓存。
+/sw.js
+  Cache-Control: no-store, no-cache, must-revalidate
+
+# HTML 保持回源校验，保证 SW 更新后页面引用到最新脚本
+/*.html
+  Cache-Control: no-cache
+
+/manifest.json
+  Cache-Control: public, max-age=3600

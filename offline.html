@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>离线 · 智配One</title>
+<meta name="theme-color" content="#05070A">
+<link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/ui-unified.css">
+<style>
+.zp-offline{min-width:100%;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;background:#05070A;box-sizing:border-box}
+.zp-offline-card{width:min(100%,360px);padding:28px 22px;border:1px solid #2A3540;border-radius:18px;background:#18212B;text-align:center}
+.zp-offline-card img{width:64px;height:64px;margin-bottom:14px}
+.zp-offline-card h1{margin:0;color:#fff;font-size:18px;line-height:24px;font-weight:700}
+.zp-offline-card p{margin:10px 0 0;color:#B8C2CC;font-size:14px;line-height:22px}
+.zp-offline-card .zp-offline-hint{margin-top:6px;color:#7F8A95;font-size:12px;line-height:19px}
+.zp-offline-btn{width:100%;min-height:46px;margin-top:20px;border:0;border-radius:11px;background:#26313C;color:#fff;font-size:15px;font-weight:650}
+.zp-offline-btn:active{background:#2E3A46}
+</style>
+</head>
+<body>
+<main class="zp-offline">
+  <section class="zp-offline-card">
+    <img src="/assets/icons/icon-192.png" alt="智配One">
+    <h1>当前无网络连接</h1>
+    <p>运单识别与线路匹配需要联网才能进行。</p>
+    <p class="zp-offline-hint">已缓存的页面仍可打开；恢复网络后点击重试。</p>
+    <button id="retry" class="zp-offline-btn" type="button">重试</button>
+  </section>
+</main>
+<script>
+document.getElementById("retry").onclick=function(){location.reload()};
+</script>
+</body>
+</html>

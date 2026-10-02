@@ -1,5 +1,5 @@
 /* 智配One · 首页移动端 UI */
-.home-app{width:min(100%,430px);min-height:100dvh;margin:0 auto;padding:16px 16px calc(28px + env(safe-area-inset-bottom));background:#05070A}
+.home-app{width:min(100%,430px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:16px 16px calc(28px + env(safe-area-inset-bottom));background:#05070A}
 .home-topbar{height:56px;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:10}
 .home-brand{display:flex;flex-direction:column;line-height:1.2}
 .home-brand strong{font-size:22px;font-weight:700;letter-spacing:1px;color:#fff}
@@ -7,7 +7,7 @@
 .home-menu-button{width:42px;height:42px;border:1px solid rgba(255,255,255,.025);border-radius:50%;background:#18212B;color:#fff;padding:0;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
 .home-menu-button svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round}
 .home-menu-button:active{background:#B8C1C8;color:#0B1015;transform:scale(.95)}
-.home-menu-panel{position:absolute;right:0;top:50px;width:172px;overflow:hidden;padding:6px;border:1px solid #2A3540;border-radius:16px;background:#18212B;box-shadow:0 14px 34px rgba(0,0,0,.46);z-index:999}
+.home-menu-panel{position:absolute;right:0;top:50px;width:172px;overflow:hidden;padding:6px;border:1px solid #2A3540;border-radius:16px;background:#18212B;box-shadow:0 14px 34px rgba(0,0,0,.46)}
 .home-menu-panel[hidden]{display:none}
 .home-menu-panel a,.home-menu-panel button{width:100%;height:48px;min-height:48px;padding:0 12px;gap:11px;border:0;border-radius:11px;background:transparent;color:#D5DCE2;text-align:left;text-decoration:none;font-size:14px;font-weight:600;display:flex;align-items:center;-webkit-tap-highlight-color:transparent}
 .home-menu-panel a:active,.home-menu-panel button:active{background:#26313C;transform:scale(.985)}
@@ -38,7 +38,7 @@
 .function-btn::after{display:none}
 .function-btn:active::after{color:#0B1015}
 
-.upload-overlay{position:fixed;inset:0;z-index:999;display:none;align-items:flex-end;justify-content:center;padding:16px;background:rgba(0,0,0,.68)}
+
 .upload-overlay:not([hidden]){display:flex}
 .upload-sheet{width:min(100%,390px);max-width:390px;margin:0 auto;padding:20px 18px calc(18px + env(safe-area-inset-bottom));border-radius:20px 20px 16px 16px;background:#151D26;border:1px solid #2A3540;box-shadow:0 18px 46px rgba(0,0,0,.5)}
 .sheet-handle{width:34px;height:4px;margin:0 auto 16px;border-radius:4px;background:rgba(255,255,255,.15)}
@@ -64,8 +64,26 @@
 .processing-error-message{margin-top:10px;color:#B8C2CC;text-align:center;font-size:15px;line-height:23px;word-break:break-word}
 .processing-retry-btn{display:block;width:100%;height:48px;min-height:48px;margin-top:20px;border:1px solid #2A3540;border-radius:12px;background:#26313C;color:#F2F5F7;font-size:15px;font-weight:650;-webkit-tap-highlight-color:transparent}
 .processing-retry-btn:active{background:#35414D;transform:scale(.985)}
-.home-menu-button:focus,.function-btn:focus,.source-option:focus,.upload-cancel-btn:focus,.processing-retry-btn:focus{outline:none;box-shadow:none}
-.home-menu-button:focus-visible,.function-btn:focus-visible,.source-option:focus-visible,.upload-cancel-btn:focus-visible,.processing-retry-btn:focus-visible{outline:2px solid rgba(255,255,255,.24);outline-offset:2px}
+/* 等待期信息层：阶段文案 + 已用时，让"干等"变成"有进度可看" */
+.processing-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px}
+.processing-stage{min-width:0;overflow:hidden;color:#B8C2CC;text-align:left;font-size:14px;line-height:20px;text-overflow:ellipsis;white-space:nowrap}
+.processing-elapsed{flex:none;color:#7F8A95;font-size:13px;line-height:20px;font-variant-numeric:tabular-nums}
+.processing-cancel-btn{display:block;width:100%;min-height:44px;margin-top:16px;border:1px solid #2A3540;border-radius:12px;background:#11171D;color:#B8C2CC;font-size:15px;font-weight:650;-webkit-tap-highlight-color:transparent}
+.processing-cancel-btn[hidden]{display:none}
+.processing-cancel-btn:active{background:#18212B;color:#F2F5F7}
+/* 停滞但存活：进度条叠加流动微光，表示"服务端仍在运行"而非卡死。
+   仅在收到心跳（证明连接存活）且久无新进度时启用，不伪造百分比。 */
+.processing-progress.is-stalled .processing-progress-line:before{
+  background:linear-gradient(90deg,#8F9BA7 0%,#F2F5F7 50%,#8F9BA7 100%);
+  background-size:200% 100%;
+  animation:zp-progress-flow 1.5s linear infinite;
+}
+@keyframes zp-progress-flow{from{background-position:200% 0}to{background-position:0 0}}
+@media(prefers-reduced-motion:reduce){
+  .processing-progress.is-stalled .processing-progress-line:before{animation:none}
+}
+.home-menu-button:focus,.function-btn:focus,.source-option:focus,.upload-cancel-btn:focus,.processing-retry-btn:focus,.processing-cancel-btn:focus{outline:none;box-shadow:none}
+.home-menu-button:focus-visible,.function-btn:focus-visible,.source-option:focus-visible,.upload-cancel-btn:focus-visible,.processing-retry-btn:focus-visible,.processing-cancel-btn:focus-visible{outline:2px solid rgba(255,255,255,.24);outline-offset:2px}
 @media(max-width:380px){
  .home-app{padding-left:12px;padding-right:12px}
  .task-card{margin-top:18px;padding:17px 16px 16px;border-radius:17px}

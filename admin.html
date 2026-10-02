@@ -1,4 +1,11 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>智配One · 管理员</title><style>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="stylesheet" href="/css/ui-unified.css"><title>智配One · 管理员</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#05070A">
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="智配One"><style>
 :root{--bg:#05070A;--card:#1C2530;--panel:#11171D;--line:#2A3540;--muted:#B8C2CC;--soft:#7F8A95}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#fff;font:16px/22px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.shell{min-height:100dvh;padding:max(12px,env(safe-area-inset-top)) 14px calc(28px + env(safe-area-inset-bottom))}.panel{width:min(100%,680px);margin:auto}.head{min-height:58px;padding:0 2px 10px}.head img{width:32px;height:32px}.head h1{font-size:20px;line-height:26px}.menu-btn{width:42px;height:42px;border:1px solid var(--line);border-radius:11px;background:var(--panel)}.tabs{border-bottom:1px solid var(--line)}.tab{height:46px;font-size:16px;line-height:22px}.viewport{margin-top:12px}.title{font-size:18px;line-height:24px;margin-bottom:10px}.search input,.field input,.field select{height:48px;background:var(--panel);border-color:#34414d;border-radius:11px}.row,.route,.card,.invite{background:var(--panel);border-color:var(--line);border-radius:14px}.row .content{background:var(--panel);min-height:58px}.route-content{background:var(--card)}.dialog-bg{background:rgba(0,0,0,.72)}.dialog{background:var(--card);border-color:var(--line);border-radius:17px}.dialog-actions button{height:48px}.cancel{order:0}.ok{order:1}.toast{background:#26313C}
 .head{display:flex;align-items:center;gap:11px;padding:8px 2px 12px}
 .head .head-info{min-width:0;flex:1}.head h1{margin:0;line-height:22px;font-weight:700}
@@ -56,15 +63,15 @@ body{touch-action:pan-y}
 .search input::placeholder{color:#68737E}
 input,select{color:#fff;outline:none}
 select option{background:#11171D;color:#fff}
-.dialog-bg{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.72);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.dialog-bg{position:fixed;inset:0;z-index:var(--ui-z-modal,1000);display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.72);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
 .dialog-bg[hidden]{display:none!important}
 .dialog{width:min(100%,380px);max-height:88dvh;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:17px;padding:18px;box-shadow:0 18px 50px rgba(0,0,0,.45)}
 .dialog-actions button{color:#fff;border:1px solid #35404C;background:#11171D}
 .dialog-actions .ok{background:#202B36;border-color:#3A4652}
 .dialog-actions .ok.danger{background:#4A2528;border-color:#6A3940;color:#FFD5D1}
-.menu-bg{z-index:320}
+.menu-bg{z-index:var(--ui-z-modal-stack,1100)}
 .menu-bg .dialog{width:min(100%,360px)}
-.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));z-index:450;display:block;min-height:42px;max-width:calc(100vw - 32px);padding:10px 14px;border:1px solid var(--line);border-radius:11px;background:#26313C;color:#fff;font-size:14px;line-height:20px;text-align:center;box-shadow:0 10px 28px rgba(0,0,0,.36);transform:translate(-50%,10px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .18s ease,transform .18s ease,visibility .18s ease}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));z-index:var(--ui-z-toast,2000);display:block;min-height:42px;max-width:calc(100vw - 32px);padding:10px 14px;border:1px solid var(--line);border-radius:11px;background:#26313C;color:#fff;font-size:14px;line-height:20px;text-align:center;box-shadow:0 10px 28px rgba(0,0,0,.36);transform:translate(-50%,10px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .18s ease,transform .18s ease,visibility .18s ease}
 .toast.show{opacity:1;visibility:visible;transform:translate(-50%,0)}
 .menu-btn{cursor:pointer}
 .tab,.add,.small-action,.route-delete,.copy,.dialog button,.setting{cursor:pointer}
@@ -142,7 +149,7 @@ select option{background:#11171D;color:#fff}
 
 /* 管理员系统菜单 3.3：沿用首页三横菜单的右上锚定浮层，不再使用居中模态弹窗。 */
 .menu-bg{
-  position:fixed!important;inset:0!important;z-index:320!important;
+  position:fixed!important;inset:0!important;z-index:var(--ui-z-modal-stack,1100)!important;
   display:block!important;padding:0!important;
   background:transparent!important;backdrop-filter:none!important;
   -webkit-backdrop-filter:none!important;
@@ -293,9 +300,9 @@ select option{background:#11171D;color:#fff}
 }
 
 /* 管理员退出确认：补齐全局 zpConfirm 在独立 admin 页面所需的居中模态样式。 */
-#zpUiLayer{position:relative;z-index:500}
+#zpUiLayer{position:relative;z-index:var(--ui-z-modal-top,1200)}
 #zpUiLayer .zp-confirm{
-  position:fixed;inset:0;z-index:500;
+  position:fixed;inset:0;z-index:var(--ui-z-modal-top,1200);
   display:flex;align-items:center;justify-content:center;
   padding:18px;
   background:rgba(0,0,0,.70);
@@ -382,4 +389,5 @@ async function load(){
     renderUsers();renderRoutes();renderRequests();renderInvites();
   }
 }$("search").oninput=renderUsers;document.addEventListener("click",e=>{if(!e.target.closest(".row,.route,.dialog"))closeSwipes()});document.querySelectorAll(".page").forEach(p=>p.addEventListener("scroll",closeSwipes,{passive:true}));$("addRoute").onclick=addRoute;$("menuBtn").onclick=()=>{$("menuBg").hidden=false};$("menuBg").addEventListener("click",e=>{if(e.target===$("menuBg"))$("menuBg").hidden=true});$("addInvite").onclick=addInvite;$("editUser").onclick=editUser;$("editPass").onclick=editPass;$("reset").onclick=resetData;$("logout").onclick=async()=>{$("menuBg").hidden=true;if(!(await zpConfirm("退出登录","确定要退出当前管理员账号吗？","退出")))return;await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"});location.replace("/")};document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>page(Number(b.dataset.i)));let sx,sy;$("viewport").addEventListener("touchstart",e=>{if(!dlg.hidden)return;sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});$("viewport").addEventListener("touchend",e=>{if(!dlg.hidden)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.35){if(dx<0&&S.page<3)page(S.page+1);if(dx>0&&S.page>0)page(S.page-1)}} ,{passive:true});load();
-</script><script id="ui-unified-admin" src="/js/ui-unified.js"></script></body></html>
+</script><script id="ui-unified-admin" src="/js/ui-unified.js"></script><script src="/js/pwa.js"></script>
+</body></html>

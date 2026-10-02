@@ -1,12 +1,25 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>账号设置 · 智配One</title><link rel="stylesheet" href="/css/app.css"><link rel="stylesheet" href="/css/ui-unified.css"><link rel="stylesheet" href="/css/mobile-ui.css"><link rel="stylesheet" href="/css/business-pages.css"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>账号设置 · 智配One</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#05070A">
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="智配One"><link rel="stylesheet" href="/css/app.css"><link rel="stylesheet" href="/css/ui-unified.css"><link rel="stylesheet" href="/css/mobile-ui.css"><link rel="stylesheet" href="/css/business-pages.css"></head>
 <body><main class="page2 account-page">
 <header class="page2-head"><a class="page2-back" href="/home.html" aria-label="返回"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><h1>账号设置</h1><span></span></header>
 
 <section class="page2-card account-info-card">
   <h2>账号信息</h2>
   <div class="account-row"><span>用户名</span><strong id="username">读取中…</strong></div>
+</section>
+
+<section id="installCard" class="page2-card" hidden>
+  <h2>添加到手机桌面</h2>
+  <p id="installHint" class="page2-soft">添加后可像 App 一样从桌面直接打开，无需每次输入网址。</p>
+  <button id="installBtn" class="page2-primary" type="button" hidden>添加到桌面</button>
 </section>
 
 <section class="page2-card account-edit-card">
@@ -128,5 +141,35 @@ $("deleteConfirm").onclick=async()=>{
   setTimeout(()=>location.replace("/"),700);
  }catch(e){show("deleteMessage",e);$("deleteConfirm").disabled=false}
 };
+
+/* 添加到手机桌面：已安装时整块隐藏，未安装时按平台给出对应引导。
+   iOS Safari 不支持 beforeinstallprompt，只能给手动步骤。 */
+(function(){
+ const card=$("installCard"),btn=$("installBtn"),hint=$("installHint");
+ if(!card)return;
+ const installed=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+ if(installed)return;
+ const ua=navigator.userAgent||"";
+ const isIOS=/iPad|iPhone|iPod/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+ card.hidden=false;
+ if(isIOS){hint.textContent="在 Safari 中点击底部「分享」→「添加到主屏幕」，即可像 App 一样从桌面打开。";return}
+ let deferred=null;
+ window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferred=e;btn.hidden=false});
+ setTimeout(()=>{if(!deferred&&btn.hidden)hint.textContent="请在浏览器菜单中选择「添加到主屏幕」或「安装应用」。"},2000);
+ btn.onclick=async()=>{
+  if(!deferred)return;
+  btn.disabled=true;
+  const ev=deferred;deferred=null;
+  try{ev.prompt();const r=await ev.userChoice;
+   hint.textContent=r&&r.outcome==="accepted"?"已添加到桌面，可从桌面图标直接打开。":"已取消，稍后可在浏览器菜单中再次添加。";
+   btn.hidden=true;
+   try{if(window.zpToast)window.zpToast(r&&r.outcome==="accepted"?"已添加到桌面":"已取消","success")}catch{}
+  }finally{btn.disabled=false}
+ };
+ window.addEventListener("appinstalled",()=>{card.hidden=true;btn.hidden=true});
+})();
+
 load();
-</script><script src="/js/ui-unified.js"></script>\n</body></html>
+</script><script src="/js/ui-unified.js"></script>
+<script src="/js/pwa.js"></script>
+</body></html>

@@ -70,7 +70,7 @@
 .history-delete{
   position:absolute;
   z-index:1;
-  inset:0 0 0 auto;
+  top:0;right:0;bottom:0;left:auto;inset:0 0 0 auto;
   width:76px;
   margin:0;
   padding:0;
@@ -156,14 +156,14 @@
 
 .history-picker{
   position:fixed;
-  inset:0;
+  top:0;right:0;bottom:0;left:0;inset:0;
   z-index:130;
   display:flex;
   align-items:center;
   justify-content:center;
   padding:18px;
   background:rgba(0,0,0,.68);
-  backdrop-filter:blur(4px);
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
 }
 .history-picker[hidden]{display:none}
 .history-picker-panel{
@@ -244,14 +244,14 @@
 
 .history-dialog{
   position:fixed;
-  inset:0;
+  top:0;right:0;bottom:0;left:0;inset:0;
   z-index:120;
   display:flex;
   align-items:center;
   justify-content:center;
   padding:20px;
   background:rgba(0,0,0,.68);
-  backdrop-filter:blur(4px);
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
 }
 .history-dialog[hidden]{display:none}
 .history-dialog-panel{

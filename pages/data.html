@@ -1,6 +1,13 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>智配One · 数据资料</title><link rel="stylesheet" href="/css/app.css"><link rel="stylesheet" href="/css/ui-unified.css"><link rel="stylesheet" href="/css/mobile-ui.css"><link rel="stylesheet" href="/css/business-pages.css"><link rel="stylesheet" href="/css/data.css"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>智配One · 数据资料</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#05070A">
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="智配One"><link rel="stylesheet" href="/css/app.css"><link rel="stylesheet" href="/css/ui-unified.css"><link rel="stylesheet" href="/css/mobile-ui.css"><link rel="stylesheet" href="/css/business-pages.css"><link rel="stylesheet" href="/css/data.css"></head>
 <body><main class="page2 data-page">
 <header class="page2-head data-page-head"><a class="data-page-back" href="/home.html" aria-label="返回"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><h1>数据资料</h1><button id="pageMenuBtn" class="data-page-menu-btn" type="button" aria-label="打开菜单">☰</button></header>
 <section class="page2-card data-route-card"><div class="data-route-kicker">当前调度线路</div><div class="data-route-title"><h2 id="title">加载中…</h2><div id="summary" class="data-summary"><strong>—</strong></div></div><p id="hint" class="data-route-hint">正在读取线路资料</p></section>
@@ -242,7 +249,7 @@ async function shareSavedBase(){
    if(s.navigation)lines.push("导航："+s.navigation);
    if(s.note)lines.push("备注："+s.note);
   });
-  const text=lines.join("\\n");
+  const text=lines.join("\n");
   if(navigator.share){await navigator.share({title:routeName+" · 线路资料",text})}
   else if(navigator.clipboard){await navigator.clipboard.writeText(text);zpToast("已复制已保存的线路资料","success")}
   else{zpToast("当前设备不支持分享","error")}
@@ -333,4 +340,6 @@ async function load(){
  }catch(e){$("hint").textContent=err(e);$("stores").textContent="数据资料加载失败"}
 }
 load();
-</script><script src="/js/ui-unified.js"></script>\n</body></html>
+</script><script src="/js/ui-unified.js"></script>
+<script src="/js/pwa.js"></script>
+</body></html>

@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>线路申请 · 智配One</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#05070A">
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="智配One">
 <link rel="stylesheet" href="/css/app.css"><link rel="stylesheet" href="/css/ui-unified.css">
 <link rel="stylesheet" href="/css/mobile-ui.css">
 <link rel="stylesheet" href="/css/business-pages.css">
@@ -27,6 +34,10 @@
   <button id="submit" class="primary-btn" type="button">提交申请</button>
   <p id="message" class="message" aria-live="polite"></p>
   </div>
+</section>
+<section class="page2-card">
+  <h2>我的申请记录</h2>
+  <div id="requests"><div class="empty">读取中…</div></div>
 </section>
 </main>
 <script>
@@ -67,5 +78,7 @@ $("submit").onclick=async()=>{
 };
 load();
 </script>
-<script src="/js/ui-unified.js"></script>\n</body>
+<script src="/js/ui-unified.js"></script>
+<script src="/js/pwa.js"></script>
+</body>
 </html>

@@ -14,12 +14,30 @@
   --ui-radius:14px;
   --ui-dialog-radius:18px;
   --ui-control-radius:11px;
+
+  /* ===== 全局层级体系 3.0 =====
+     目的：任何"后打开的弹窗都在上层"，Toast 永远可见，确认框永远盖不住。
+     约定：同一层级内的元素不得互相覆盖；跨层级严格递进。
+     规则：页面内所有 position:fixed / absolute + z-index 一律引用下列变量，禁止硬编码。 */
+  --ui-z-content:1;        /* 内容层：普通卡片内的绝对定位元素 */
+  --ui-z-topbar:10;        /* 顶栏：页面顶部固定栏 */
+  --ui-z-float:90;         /* 悬浮操作：快速滚动、悬浮按钮（不遮挡弹窗） */
+  --ui-z-menu:200;         /* 菜单浮层：下拉菜单、页面菜单、选择器（非模态） */
+  --ui-z-modal:1000;       /* 模态第 1 层：业务弹窗（导入/订单/历史/账号/上传） */
+  --ui-z-modal-stack:1100; /* 模态第 2 层：模态之上再弹（历史选择器等） */
+  --ui-z-modal-top:1200;   /* 模态第 3 层：最终确认（删除等破坏性操作） */
+  --ui-z-toast:2000;       /* 全局提示：Toast / 气泡反馈（永远最上） */
 }
 html,body{background:var(--ui-bg);color:var(--ui-text)}
 button,a,input,select,textarea{font-family:inherit}
 button,a{-webkit-tap-highlight-color:transparent}
 button:active{transform:translateY(0)}
-[hidden]{display:none!important}
+/* hidden 属性必须始终生效，且优先级高于所有遮罩层 display 规则。
+   用 !important + 属性选择器双写，确保任何后出现的 !important 规则都无法覆盖它。
+   背景：弹窗遮罩统一使用 display:flex!important 后，与 [hidden] 权重相同，
+   若顺序靠后会导致 hidden 失效、弹窗无法关闭。此处以 [hidden][hidden] 提升权重。 */
+[hidden],
+[hidden][hidden]{display:none!important}
 
 /* 页面层级：页面 > 卡片 > 次级区域，避免无意义的多层嵌套视觉 */
 .card,.page2-card,.data-route-card,.data-list-card,.task-card{
@@ -159,7 +177,7 @@ input,select,textarea{
 }
 
 /* 全局二次确认弹窗 */
-.zp-confirm{position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.70);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.zp-confirm{position:fixed;top:0;right:0;bottom:0;left:0;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.70);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
 .zp-confirm[hidden]{display:none}
 .zp-confirm-panel{width:min(100%,360px);padding:20px 18px 16px;border:1px solid var(--ui-line);border-radius:18px;background:var(--ui-surface);box-shadow:0 18px 50px rgba(0,0,0,.45)}
 .zp-confirm-panel h3{margin:0;color:#fff;font-size:17px;line-height:24px;font-weight:650}
@@ -200,7 +218,7 @@ input,select,textarea{
 .upload-sheet{
   margin:0 auto!important;
   border-radius:18px!important;
-  max-height:min(88dvh,760px);
+  max-height:min(88vh,760px);max-height:min(88dvh,760px);
 }
 .upload-sheet{
   width:min(100%,390px)!important;
@@ -296,3 +314,255 @@ input,select,textarea{
 .reset-password-field>label{display:block;margin:0 0 8px;color:#DCE3E9;font-size:14px;line-height:20px;font-weight:600}
 .reset-password-field{margin-top:16px}
 @media(max-width:380px){.zp-password-eye{right:3px;width:36px;height:36px}}
+
+
+/* ================================================================
+ * 全局层级体系 3.0 · 落地规则
+ * ----------------------------------------------------------------
+ * 上面的变量只是"声明"，这里是"执行"：把所有既有的层级硬编码
+ * 统一收口到变量上，使多层弹窗拥有确定且可预测的叠放秩序。
+ *
+ * 解决的问题：
+ *   1) 原首页上传层 z-index:999 高于 Toast(400) 与确认框(500)，
+ *      导致上传过程中弹出的确认框被遮挡、用户看不到按钮；
+ *   2) 业务弹窗原分散在 100/120 两个值上，5 个弹窗抢同一层，
+ *      叠放顺序取决于 CSS 加载顺序，不可控。
+ *
+ * 层级顺序（由低到高）：
+ *   内容 1 → 顶栏 10 → 悬浮 90 → 菜单 200
+ *   → 模态一层 1000 → 模态二层 1100 → 模态三层 1200 → 提示 2000
+ * ================================================================ */
+
+/* --- 模态第 1 层：所有业务弹窗归于同一层 --- */
+.order-dialog,
+.history-dialog,
+.data-import,
+.account-dialog-bg,
+.upload-overlay{
+  z-index:var(--ui-z-modal)!important;
+}
+
+/* --- 模态第 2 层：在弹窗之上再开的浮层 --- */
+.history-picker{
+  z-index:var(--ui-z-modal-stack)!important;
+}
+
+/* --- 模态第 3 层：最终确认（破坏性操作） --- */
+.zp-confirm{
+  z-index:var(--ui-z-modal-top)!important;
+}
+
+/* --- 全局提示：永远在最上层，不被任何弹窗遮挡 --- */
+.ui-toast,
+.data-feedback{
+  z-index:var(--ui-z-toast)!important;
+}
+
+/* --- 菜单浮层：非模态，低于一切弹窗 --- */
+.menu-panel,
+.home-menu-panel,
+.data-page-menu,
+.order-menu{
+  z-index:var(--ui-z-menu)!important;
+}
+
+/* --- 悬浮操作：位于内容之上、弹窗之下 --- */
+.zp-float-scroll-wrap,
+.data-float-scroll,
+.order-pending-fab{
+  z-index:var(--ui-z-float)!important;
+}
+
+/* --- 顶栏 --- */
+.home-topbar,
+.order-topbar{
+  z-index:var(--ui-z-topbar)!important;
+}
+
+
+/* ================================================================
+ * 弹窗样式收敛 4.0 · 单一来源
+ * ----------------------------------------------------------------
+ * 背景：同一弹窗曾散落在 2~4 个文件重复定义，且样式互相矛盾
+ *       （例：.data-import 在 app.css 居中、在 data.css 底部弹出），
+ *       最终靠"后面再补一条覆盖"打补丁，改一处不起作用。
+ * 处理：以下弹窗的"遮罩层 + 面板"统一由本处定义，各页面 CSS
+ *       不再重复定义这些属性，只保留页面特有的内部布局。
+ *
+ * 统一后所有业务弹窗行为一致：
+ *   遮罩 rgba(0,0,0,.72) + 3px 模糊 · 居中显示 · 面板 18px 圆角
+ * ================================================================ */
+
+/* --- 统一遮罩层 --- */
+.order-dialog,
+.history-dialog,
+.history-picker,
+.data-import,
+.account-dialog-bg,
+.upload-overlay{
+  position:fixed!important;
+  top:0!important;right:0!important;bottom:0!important;left:0!important;inset:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:16px!important;
+  background:rgba(0,0,0,.72)!important;
+  backdrop-filter:blur(3px)!important;
+  -webkit-backdrop-filter:blur(3px)!important;
+}
+
+/* --- 统一面板 ---
+   所有业务弹窗面板统一为 398px 宽（与上方 2.1 节 max-width 一致）。
+   滚动策略保持各页原有行为：面板整体滚动（overflow:auto），
+   订单确认弹窗的"头部固定+内容区滚动"由 order_detail.css 页面级定义。 */
+.order-dialog-panel,
+.history-dialog-panel,
+.history-picker-panel,
+.data-import-panel,
+.account-dialog,
+.upload-sheet{
+  width:min(100%,398px);
+  max-height:min(88vh,760px);max-height:min(88dvh,760px);
+  overflow:auto;
+  margin:0 auto;
+  padding:18px;
+  border:1px solid var(--ui-line);
+  border-radius:var(--ui-dialog-radius);
+  background:var(--ui-surface);
+  box-shadow:0 18px 50px rgba(0,0,0,.42);
+}
+
+/* --- 统一次级按钮（取消类）--- */
+.data-import-actions,
+.order-dialog-actions,
+.history-dialog-actions,
+.account-dialog-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:14px;
+}
+.data-import-actions button,
+.order-dialog-actions button,
+.history-dialog-actions button,
+.account-dialog-actions button{
+  min-height:46px;
+  border:1px solid #35404C;
+  border-radius:var(--ui-control-radius);
+  background:var(--ui-surface-2);
+  color:#E8EDF2;
+  font-size:16px;
+  font-weight:550;
+}
+.data-import-actions button:last-child,
+.order-dialog-actions button:last-child,
+.history-dialog-actions button:last-child,
+.account-dialog-actions button:last-child{
+  border-color:#3A4652;
+  background:var(--ui-surface-3);
+  color:#fff;
+}
+
+
+/* ================================================================
+ * 视觉细节收敛 5.0 · 同类同形
+ * ----------------------------------------------------------------
+ * 巡检发现的问题（均为"同类元素在不同页面长得不一样"）：
+ *   1) 主按钮三处三种底色：#26313C(app) / #26313C(同) / #2E3B47(business)；
+ *   2) 主按钮三处三种圆角：11px(app) / 11px(同) / 12px(部分页面)；
+ *   3) 空状态三套内边距：28px 12px / 28px 10px / 30px 10px / 22px 16px；
+ *   4) 焦点可见环只有部分页面有（业务页有，登录页无）；
+ *   5) 状态类 .dispatch-* 在 ui-unified 中声明但页面用局部 <style> 重复实现。
+ *
+ * 角色色约定（核对此前渲染结果后确认保持不变）：
+ *   错误文字 = #FFB4AB（浅红，正文可读优先）；危险操作 = #FF8278（深红，警示优先）。
+ *
+ * 处理原则：只统一"同类元素的形状与色值"，不改任何布局尺寸与业务逻辑。
+ * 所有规则置于文件末尾，保证覆盖此前同名声明；不增加 !important，
+ * 以便页面级"确有需要"的差异化仍可通过更高优先级表达。
+ * ================================================================ */
+
+/* --- 5.1 主按钮：同色、同圆角、同字重 --- */
+.primary-btn,
+.login-submit,
+.page2-primary,
+.confirm-submit,
+.data-save{
+  background:#26313C;
+  border-radius:var(--ui-control-radius);
+  color:#fff;
+}
+
+/* --- 5.2 次按钮：同边框色、同圆角 --- */
+.secondary-btn,
+.page2-secondary{
+  border-radius:var(--ui-control-radius);
+}
+
+/* --- 5.3 危险按钮：统一危险色（浅红/深红角色区分见区块头注释） --- */
+.page2-danger-btn,
+.page2-danger{
+  color:var(--ui-danger);
+}
+.page2-danger-btn{
+  border-color:rgba(255,130,120,.5);
+  background:var(--ui-danger-soft);
+}
+
+/* --- 5.4 错误文案：统一为可读性更好的浅红 --- */
+.message.error,
+.login-message,
+.login-message[role=alert],
+.processing-error-message{
+  color:#FFB4AB;
+}
+
+/* --- 5.5 空状态 / 状态文字：统一内边距与居中节奏 ---
+   注意：history-state 在 history.css 里被定义了两次（22px 16px 与 18px 8px），
+   此处收口为同一个值，消除"改一处不生效"。 */
+.empty,
+.page2-state,
+.data-empty,
+.history-state,
+.dispatch-empty,
+.dispatch-message{
+  padding:28px 12px;
+  text-align:center;
+  color:var(--ui-soft);
+}
+
+/* --- 5.6 焦点可见环：全站统一（键盘/外接设备可访问性） --- */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible{
+  outline:2px solid #8793A0;
+  outline-offset:2px;
+}
+
+/* --- 5.7 禁用态：统一透明度与光标 --- */
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled,
+[disabled]{
+  cursor:default;
+}
+.primary-btn:disabled,
+.login-submit:disabled,
+.page2-primary:disabled,
+.page2-secondary:disabled,
+.secondary-btn:disabled,
+.confirm-submit:disabled{
+  opacity:.45;
+}
+
+/* --- 5.8 小标签 / 状态胶囊：同圆角、同行高 --- */
+.page2-status,
+.data-route-badge,
+.history-month-count{
+  border-radius:7px;
+  line-height:20px;
+}

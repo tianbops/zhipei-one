@@ -1,0 +1,36 @@
+{
+  "name": "智配One",
+  "short_name": "智配One",
+  "description": "物流运单智能识别与配送线路匹配",
+  "lang": "zh-CN",
+  "dir": "ltr",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "orientation": "portrait",
+  "background_color": "#05070A",
+  "theme_color": "#05070A",
+  "categories": ["productivity", "business"],
+  "icons": [
+    { "src": "/assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "上传运单",
+      "short_name": "上传运单",
+      "description": "拍照上传运单并开始识别",
+      "url": "/home.html",
+      "icons": [{ "src": "/assets/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "今日路线",
+      "short_name": "今日路线",
+      "description": "查看今日配送线路与门店",
+      "url": "/pages/today.html",
+      "icons": [{ "src": "/assets/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

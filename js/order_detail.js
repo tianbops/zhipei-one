@@ -81,7 +81,21 @@ function render(){
    const name=esc(x.name||x.rawName||'未识别门店'), nav=safeUrl(navOf(x));
    const status=x.pending?'<span class="order-store-status pending">待确认</span>':(x.matchMethod==='confirmed-new'||x.isNew?'<span class="order-store-status">新增</span>':'');
    const nameHtml=nav?'<a class="order-store-name nav" href="'+attr(nav)+'" target="_self">'+name+status+'</a>':'<div class="order-store-name">'+name+status+'</div>';
-   const note=x.pending&&Array.isArray(x.candidates)&&x.candidates[0]?.name?'建议匹配：'+x.candidates[0].name:(x.note||x.remark||'');
+   // 待定门店：优先展示候选建议及置信度，并说明未自动匹配的原因，便于用户快速判断。
+   const REASON_TEXT={no_candidate:'基准库中无相近门店',below_threshold:'相似度不足，请确认',ambiguous:'存在多个相近门店，请选择'};
+   let note='';
+   if(x.pending){
+     const c0=Array.isArray(x.candidates)?x.candidates[0]:null;
+     const reason=x.matchDiagnostics?.reason;
+     const reasonText=reason?REASON_TEXT[reason]||'': '';
+     if(c0&&c0.name){
+       note='建议匹配：'+c0.name+(c0.score!=null?'（'+(Math.round(c0.score*100))+'%）':'')+(reasonText?'，'+reasonText:'');
+     }else{
+       note=reasonText||'无相近门店，请选择合并或新增';
+     }
+   }else{
+     note=x.note||x.remark||'';
+   }
    const noteHtml=note?'<span class="order-store-note-inline">（'+esc(note)+'）</span>':'';
    const nameHtmlWithNote=nav?'<a class="order-store-name nav" href="'+attr(nav)+'" target="_self">'+name+noteHtml+status+'</a>':'<div class="order-store-name">'+name+noteHtml+status+'</div>';
    return '<div class="order-store-item"><span class="order-store-index">'+String(i+1).padStart(2,'0')+'</span><div class="order-store-main">'+nameHtmlWithNote+'</div></div>';
@@ -164,18 +178,41 @@ function openConfirm(){
  const pending=order?.stores?.map((x,i)=>({x,i})).filter(v=>v.x?.pending)||[];
  const list=$('pendingList'), selected=new Map();list.innerHTML='';
  const updateSubmit=()=>{$('submitConfirm').disabled=selected.size!==pending.length;$('submitConfirm').textContent=selected.size===pending.length?'确认':'请完成全部选择'};
+ // 待定原因文案：让用户明白系统为何没有自动匹配，而不是面对无解释的"待确认"
+ const REASON_TEXT={no_candidate:'基准库中没有相近门店，请选择新增或指定已有门店',below_threshold:'相似度不足，请确认是否为同一门店',ambiguous:'存在多个相近门店，请人工选择'};
  pending.forEach(({x,i})=>{
    const box=document.createElement('div');box.className='pending-box';
    const title=document.createElement('div');title.className='pending-title';title.textContent='待确认：'+(x.rawName||x.name||'未识别门店');box.appendChild(title);
-   const hint=document.createElement('div');hint.className='pending-hint';hint.textContent='请选择合并到已有门店，或作为新增门店。';box.appendChild(hint);
+   const candidates=Array.isArray(x.candidates)?x.candidates:[];
+   const reason=x.matchDiagnostics?.reason;
+   const hint=document.createElement('div');hint.className='pending-hint';
+   if(reason==='no_candidate'){
+     hint.textContent='基准库中没有相近门店，请选择新增，或从已有门店中指定。';
+   }else if(candidates.length){
+     const top=candidates[0];
+     const pct=top.score!=null?Math.round(top.score*100)+'%':'';
+     hint.textContent='建议合并到「'+(top.name||'')+'」'+(pct?'（相似度 '+pct+'）':'')+'。'+(reason==='ambiguous'?'存在多个相近门店，请仔细选择。':'如确为同一门店请选择合并。');
+   }else{
+     hint.textContent=REASON_TEXT[reason]||'请选择合并到已有门店，或作为新增门店。';
+   }
+   box.appendChild(hint);
    const choices=document.createElement('div');choices.className='candidate-list';
-   (Array.isArray(x.candidates)?x.candidates:[]).forEach(c=>{
-     const b=document.createElement('button');b.type='button';b.className='choice-btn';b.textContent='合并：'+(c.name||c.storeId||'未命名门店')+(c.score!=null?' · 相似度 '+c.score:'');
-     b.onclick=()=>{selected.set(i,{action:'merge',storeId:c.storeId,standardName:c.name});[...choices.children].forEach(e=>e.classList.remove('selected'));b.classList.add('selected');updateSubmit()};choices.appendChild(b);
+   const autoSelectTop=()=>{if(candidates[0]&&!selected.has(i)){selected.set(i,{action:'merge',storeId:candidates[0].storeId,standardName:candidates[0].name});return true}return false};
+   candidates.forEach((c,ci)=>{
+     const b=document.createElement('button');b.type='button';b.className='choice-btn';
+     const pct=c.score!=null?Math.round(c.score*100)+'%':'';
+     b.textContent='合并：'+(c.name||c.storeId||'未命名门店')+(pct?' · 相似度 '+pct:'');
+     if(ci===0)b.classList.add('recommended');
+     b.onclick=()=>{selected.set(i,{action:'merge',storeId:c.storeId,standardName:c.name});[...choices.children].forEach(e=>e.classList.remove('selected'));b.classList.add('selected');updateSubmit()};
+     choices.appendChild(b);
    });
    const add=document.createElement('button');add.type='button';add.className='choice-btn';add.textContent='新增：'+(x.rawName||x.name||'该门店');
    add.onclick=()=>{selected.set(i,{action:'new',standardName:x.rawName||x.name});[...choices.children].forEach(e=>e.classList.remove('selected'));add.classList.add('selected');updateSubmit()};
    choices.appendChild(add);box.appendChild(choices);list.appendChild(box);
+   // 有唯一且高分建议时预选，用户只需确认；多个候选时不预选，强制人工判断
+   if(candidates.length===1&&candidates[0].score!=null&&candidates[0].score>=0.80){
+     if(autoSelectTop()){const first=choices.querySelector('.choice-btn');if(first&&!first.classList.contains('selected'))first.classList.add('selected')}
+   }
  });
  updateSubmit();$('confirmDialog').hidden=false;
  $('submitConfirm').onclick=async()=>{
