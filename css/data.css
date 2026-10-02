@@ -118,3 +118,15 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-route-title .data-summary strong{font-size:17px;white-space:nowrap}
 
 .data-feedback{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:160;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;max-width:calc(100vw - 32px);padding:10px 14px;border:1px solid #35404C;border-radius:10px;background:#18212B;color:#fff;font-size:13px;line-height:18px;box-shadow:0 10px 28px rgba(0,0,0,.4);text-align:center}.data-feedback.success{background:#1D2A24}.data-feedback.error{background:#302326;border-color:#594048}.data-feedback-action{flex:none;min-height:32px;padding:0 10px;border:1px solid #596674;border-radius:8px;background:#18212B;color:#fff;font-size:12px;font-weight:600}
+
+/* Android typography normalization: size/line-height only */
+.data-route-badge{font-size:11px;line-height:16px}
+.data-route-hint{font-size:13px;line-height:20px}
+.data-summary{font-size:13px;line-height:20px}
+.data-summary strong{font-size:16px;line-height:22px}
+.data-import-actions button{font-size:14px;line-height:20px}
+.data-page-head h1{font-size:18px;line-height:24px}
+.data-route-title h2{font-size:17px;line-height:23px}
+.data-page-menu button{font-size:14px;line-height:20px}
+.data-feedback{font-size:13px;line-height:18px}
+.data-feedback-action{font-size:12px;line-height:18px}
