@@ -29,7 +29,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   min-height:52px;
   padding:0 2px 10px;
 }
-.topbar strong{font-size:19px;letter-spacing:.1px}
+.topbar strong{font-size:18px;letter-spacing:.1px}
 .topbar a,.topbar .text-button{min-height:44px;display:inline-flex;align-items:center;justify-content:center}
 .card{
   background:var(--zp-surface);
