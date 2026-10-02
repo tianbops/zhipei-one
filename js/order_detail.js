@@ -5,7 +5,7 @@ const esc=v=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const attr=v=>esc(v).replace(/'/g,'&#39;');
 const navOf=x=>String(x?.navigation||x?.nav||'').trim();
 const params=new URLSearchParams(location.search), id=params.get('id')||'', source=params.get('source')||'', targetDate=params.get('date')||'';
-let order=null,menuOpen=false,historyChoices=null;
+let order=null,menuOpen=false,historyChoices=null;let baseStoreCache=null,baseStoreRoute=null;
 
 function safeUrl(v){try{const raw=String(v??'').trim();if(!raw)return'';const u=new URL(raw,location.origin);return /^(https?:)$/.test(u.protocol)?u.href:''}catch{return''}}
 function vehicleText(v){const s=String(v??'').replace(/undefined/gi,'').replace(/\s+/g,'').trim();return s?('车辆 '+s):''}
@@ -174,6 +174,17 @@ async function load(){
  }finally{clearTimeout(timer)}
 }
 
+// 待定门店的"指定已有门店"入口需要线路基准库；按线路缓存，同一张运单多次打开只读一次
+async function loadBaseStores(routeId){
+ if(baseStoreCache&&baseStoreRoute===routeId)return baseStoreCache;
+ const r=await fetch('/api/base?routeId='+encodeURIComponent(routeId),{credentials:'same-origin',cache:'no-store'});
+ const d=await r.json().catch(()=>({}));
+ if(!r.ok||!d.success)throw Error(d.error||'线路数据资料读取失败');
+ const stores=Array.isArray(d.base?.stores)?d.base.stores:[];
+ baseStoreRoute=routeId;baseStoreCache=stores;
+ return stores;
+}
+
 function openConfirm(){
  const pending=order?.stores?.map((x,i)=>({x,i})).filter(v=>v.x?.pending)||[];
  const list=$('pendingList'), selected=new Map();list.innerHTML='';
@@ -198,17 +209,53 @@ function openConfirm(){
    box.appendChild(hint);
    const choices=document.createElement('div');choices.className='candidate-list';
    const autoSelectTop=()=>{if(candidates[0]&&!selected.has(i)){selected.set(i,{action:'merge',storeId:candidates[0].storeId,standardName:candidates[0].name});return true}return false};
+   const normStore=v=>String(v||'').replace(/[\u3000\s]+/g,'').replace(/[（）()【】\[\]{}<>《》“”"'‘’]/g,'').replace(/[·•、,，。；;:：!！?？\-_—]/g,'').toLowerCase();
+   const PICK_LABEL='从已有门店中指定…';
+   // 所有选项共用一个"清空选中"逻辑，保证候选 / 新增 / 指定三种入口互斥
+   let pickBtn=null;
+   const clearChoice=()=>{[...choices.children].forEach(e=>e.classList.remove('selected'));if(pickBtn)pickBtn.textContent=PICK_LABEL};
    candidates.forEach((c,ci)=>{
      const b=document.createElement('button');b.type='button';b.className='choice-btn';
      const pct=c.score!=null?Math.round(c.score*100)+'%':'';
      b.textContent='合并：'+(c.name||c.storeId||'未命名门店')+(pct?' · 相似度 '+pct:'');
      if(ci===0)b.classList.add('recommended');
-     b.onclick=()=>{selected.set(i,{action:'merge',storeId:c.storeId,standardName:c.name});[...choices.children].forEach(e=>e.classList.remove('selected'));b.classList.add('selected');updateSubmit()};
+     b.onclick=()=>{selected.set(i,{action:'merge',storeId:c.storeId,standardName:c.name});clearChoice();b.classList.add('selected');updateSubmit()};
      choices.appendChild(b);
    });
+   const pickWrap=document.createElement('div');pickWrap.className='pending-picker';pickWrap.hidden=true;
+   const pickSearch=document.createElement('input');pickSearch.type='search';pickSearch.className='pending-search';pickSearch.autocomplete='off';pickSearch.placeholder='输入门店名称关键词，从本线路门店中指定…';
+   const pickOpts=document.createElement('div');pickOpts.className='pending-options';
+   const renderPickOpts=()=>{
+     const q=normStore(pickSearch.value);
+     const hits=(baseStoreCache||[]).filter(s=>!q||normStore(s.name).includes(q)||normStore(s.originalName).includes(q)||(Array.isArray(s.aliases)&&s.aliases.some(a=>normStore(a).includes(q))));
+     pickOpts.innerHTML='';
+     if(!hits.length){const em=document.createElement('div');em.className='pending-empty';em.textContent=q?'没有匹配的门店，可改用「新增」':'暂无门店数据';pickOpts.appendChild(em);return}
+     hits.slice(0,40).forEach(s=>{
+       const nm=s.name||s.originalName||'未命名门店';
+       const ob=document.createElement('button');ob.type='button';ob.className='choice-btn';
+       ob.textContent='指定：'+nm+(s.routeOrder?' · 第'+s.routeOrder+'站':'');
+       ob.onclick=()=>{clearChoice();pickBtn.classList.add('selected');pickBtn.textContent='指定：'+nm;selected.set(i,{action:'merge',storeId:s.storeId,standardName:nm});pickWrap.hidden=true;updateSubmit()};
+       pickOpts.appendChild(ob);
+     });
+     if(hits.length>40){const more=document.createElement('div');more.className='pending-empty';more.textContent='仅显示前 40 个，请继续输入关键词缩小范围';pickOpts.appendChild(more)}
+   };
+   pickWrap.appendChild(pickSearch);pickWrap.appendChild(pickOpts);
+   pickBtn=document.createElement('button');pickBtn.type='button';pickBtn.className='choice-btn';pickBtn.textContent=PICK_LABEL;
+   pickBtn.onclick=async()=>{
+     if(!pickWrap.hidden){pickWrap.hidden=true;return}
+     pickWrap.hidden=false;pickBtn.textContent=PICK_LABEL;
+     if(baseStoreRoute!==order.routeId||!baseStoreCache){
+       pickOpts.innerHTML='';const ld=document.createElement('div');ld.className='pending-empty';ld.textContent='正在读取本线路门店…';pickOpts.appendChild(ld);
+       try{await loadBaseStores(order.routeId);renderPickOpts();pickSearch.focus()}
+       catch(err){pickOpts.innerHTML='';const er=document.createElement('div');er.className='pending-empty';er.textContent=(err.message||'读取失败')+'，可改用「新增」';pickOpts.appendChild(er)}
+       return;
+     }
+     renderPickOpts();pickSearch.focus();
+   };
+   pickSearch.oninput=renderPickOpts;
    const add=document.createElement('button');add.type='button';add.className='choice-btn';add.textContent='新增：'+(x.rawName||x.name||'该门店');
-   add.onclick=()=>{selected.set(i,{action:'new',standardName:x.rawName||x.name});[...choices.children].forEach(e=>e.classList.remove('selected'));add.classList.add('selected');updateSubmit()};
-   choices.appendChild(add);box.appendChild(choices);list.appendChild(box);
+   add.onclick=()=>{selected.set(i,{action:'new',standardName:x.rawName||x.name});clearChoice();add.classList.add('selected');updateSubmit()};
+   choices.appendChild(add);choices.appendChild(pickBtn);box.appendChild(choices);box.appendChild(pickWrap);list.appendChild(box);
    // 有唯一且高分建议时预选，用户只需确认；多个候选时不预选，强制人工判断
    if(candidates.length===1&&candidates[0].score!=null&&candidates[0].score>=0.80){
      if(autoSelectTop()){const first=choices.querySelector('.choice-btn');if(first&&!first.classList.contains('selected'))first.classList.add('selected')}

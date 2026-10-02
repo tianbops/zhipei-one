@@ -50,6 +50,12 @@
 /* 首位候选为系统推荐项，用左侧标记区分，避免用户面对同级选项时无从判断 */
 .choice-btn.recommended{border-left:3px solid #6E7B88}
 .choice-btn.recommended.selected{border-left-color:#D6DEE6}
+/* 指定已有门店：折叠式搜索选择器，默认收起，只占一个按钮高度 */
+.pending-picker{display:grid;gap:7px;margin-top:8px}
+.pending-search{min-height:42px;width:100%;padding:8px 10px;border:1px solid #2A3540;border-radius:10px;background:#0C1116;color:#fff;font-size:13px;line-height:18px}
+.pending-search::placeholder{color:#6E7B88}
+.pending-options{display:grid;gap:7px;max-height:210px;overflow:auto}
+.pending-empty{padding:10px 2px;color:#7F8A95;font-size:11px;line-height:17px;text-align:center}
 .order-dialog-actions{display:flex;gap:8px;padding:12px 14px;border-top:1px solid rgba(255,255,255,.06)}
 .order-dialog-actions button{flex:1;height:44px;border-radius:11px;border:0;font-size:14px;font-weight:650}
 .order-dialog-actions .secondary-btn{background:#11171D;color:#E3E8ED;border:1px solid #35404C}.order-dialog-actions .primary-btn{background:#26313C;color:#fff;border:0}.order-dialog-actions .primary-btn:disabled{opacity:.45}
@@ -202,6 +208,8 @@
 .pending-title{font-size:16px;line-height:22px}
 .pending-hint{font-size:13px;line-height:19px}
 .choice-btn{font-size:15px;line-height:20px}
+.pending-search{font-size:15px;line-height:20px}
+.pending-empty{font-size:13px;line-height:19px}
 .order-dialog-actions button{font-size:16px;line-height:22px}
 .history-choice-head strong,.history-choice-head em{font-size:14px;line-height:20px}
 .history-choice-main{font-size:14px;line-height:20px}
