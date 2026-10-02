@@ -45,7 +45,7 @@ function mark(id){document.querySelectorAll(".dispatch-option").forEach(b=>b.cla
 async function selectRoute(id,button){
   document.querySelectorAll(".dispatch-option").forEach(b=>b.disabled=true);
   try{await api("/api/dispatch",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({routeId:id})});location.replace("/home.html")}
-  catch(e){document.querySelectorAll(".dispatch-option").forEach(b=>b.disabled=false);alert(e.message||"线路切换失败")}
+  catch(e){document.querySelectorAll(".dispatch-option").forEach(b=>b.disabled=false);zpToast(e.message||"线路切换失败","error")}
 }
 document.querySelectorAll(".dispatch-option").forEach(b=>b.addEventListener("click",()=>selectRoute(b.dataset.routeId,b)));
 async function load(){
