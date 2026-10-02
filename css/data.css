@@ -135,3 +135,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-route-title h2{font-size:18px;line-height:24px}
 .data-import-head h3{font-size:18px;line-height:24px}
 .data-import-actions button{font-size:16px;line-height:22px}
+
+/* Android 返回层 2.5：数据资料与业务页统一返回箭头。 */
+.data-page-back{font-size:0!important;padding:0!important}
+.data-page-back svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
