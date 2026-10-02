@@ -120,15 +120,19 @@ function bindHistoryGestures(){
    if(dx<0){
      closeOthers(s.row);
      s.row.classList.add('open');
+     s.row._suppressClick=true;
+     setTimeout(()=>{s.row._suppressClick=false},350);
    }else{
      s.row.classList.remove('open');
+     s.row._suppressClick=true;
+     setTimeout(()=>{s.row._suppressClick=false},350);
    }
  },{passive:true});
  list.addEventListener('pointercancel',()=>{state=null},{passive:true});
  list.addEventListener('click',e=>{
    const row=e.target.closest('.order-history-swipe-row');if(!row)return;
-   if(row.classList.contains('open'))return;
- });
+   if(row._suppressClick){e.preventDefault();e.stopImmediatePropagation();}
+ },true);
 }
 async function load(){
  const url=id
