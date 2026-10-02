@@ -55,7 +55,7 @@ function render(){
         $('orderDate').textContent=targetDate||'历史运单';
         $('storeCount').textContent='0';$('summaryUnit').textContent='张';$('totalWeight').textContent='0.00';$('metrics').innerHTML='';
         $('routeName').textContent='—';$('vehicle').textContent='—';$('routeList').innerHTML='<div class="order-empty">暂无配送数据</div>';
-      }catch(err){btn.disabled=false;btn.textContent='删除';alert(err.message||'删除失败')}
+      }catch(err){btn.disabled=false;btn.textContent='删除';zpToast(err.message||'删除失败','error')}
     };
   });
   const old=$('confirmPendingBtn');if(old)old.remove();
@@ -186,7 +186,7 @@ function openConfirm(){
      const r=await fetch('/api/waybills/confirm',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({waybillId:order.id,confirmations,confirmRequestId:crypto.randomUUID()})});
      const d=await r.json().catch(()=>({}));if(!r.ok||!d.success)throw Error(d.error||'确认失败');
      order=d.waybill;$('confirmDialog').hidden=true;render();
-   }catch(e){btn.disabled=false;btn.textContent='确认';alert(e.message||'确认失败')}
+   }catch(e){btn.disabled=false;btn.textContent='确认';zpToast(e.message||'确认失败','error')}
  };
 }
 
@@ -199,7 +199,7 @@ $('editRouteBtn').onclick=()=>location.href='/pages/data.html';
 $('shareBtn').onclick=async()=>{
  setMenu(false);if(!order)return;
  const s=order.summary||{},text='智配One\n'+(order.date||'')+'\n'+(order.routeName||'当前线路')+'\n'+(s.total||order.stores?.length||0)+'家 · '+fmtWeight(order.totalWeight)+'t';
- try{if(navigator.share)await navigator.share({title:'当日运单',text});else{await navigator.clipboard?.writeText(text);alert('已复制运单摘要')}}catch{}
+ try{if(navigator.share)await navigator.share({title:'当日运单',text});else{await navigator.clipboard?.writeText(text);zpToast('已复制运单摘要','success')}}catch{}
 };
 $('logoutBtn').onclick=async()=>{setMenu(false);if(!(await zpConfirm('退出登录','确定退出当前账号吗？')))return;try{await fetch('/api/logout',{method:'POST',credentials:'same-origin',cache:'no-store'})}finally{location.replace('/')}};
 $('closeConfirm').onclick=()=>$('confirmDialog').hidden=true;
