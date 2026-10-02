@@ -180,3 +180,44 @@ input,select,textarea{
 .order-dialog-panel>p,.history-dialog-panel>p,.account-dialog>p,.zp-confirm-panel p{font-size:15px!important;line-height:22px!important}
 .ui-toast{font-size:15px!important;line-height:21px!important}
 .empty,.page2-state,.dispatch-empty,.dispatch-message,.history-state{font-size:15px!important;line-height:22px!important}
+
+/* Modal positioning 2.5
+   所有业务弹窗统一居中显示；菜单、Toast、悬浮操作不属于模态弹窗，不参与居中规则。 */
+.order-dialog,
+.history-dialog,
+.history-picker,
+.data-import,
+.account-dialog-bg,
+.upload-overlay{
+  align-items:center!important;
+  justify-content:center!important;
+}
+.order-dialog-panel,
+.history-dialog-panel,
+.history-picker-panel,
+.data-import-panel,
+.account-dialog,
+.upload-sheet{
+  margin:0 auto!important;
+  border-radius:18px!important;
+  max-height:min(88dvh,760px);
+}
+.upload-sheet{
+  width:min(100%,390px)!important;
+  padding:20px 18px calc(18px + env(safe-area-inset-bottom))!important;
+}
+@media(max-width:380px){
+  .order-dialog,
+  .history-dialog,
+  .history-picker,
+  .data-import,
+  .account-dialog-bg,
+  .upload-overlay{padding:14px!important}
+  .order-dialog-panel,
+  .history-dialog-panel,
+  .history-picker-panel,
+  .data-import-panel,
+  .account-dialog,
+  .upload-sheet{border-radius:16px!important}
+}
+
