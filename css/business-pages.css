@@ -83,3 +83,18 @@
 .route-section-title{font-size:15px!important;line-height:20px}
 .account-row{font-size:15px;line-height:22px}
 .empty{font-size:15px;line-height:22px}
+
+/* Android 返回层 2.5：所有业务页统一为运单详情同款纯箭头；点击走浏览器历史栈。 */
+.page2-back{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:#fff;
+  text-decoration:none;
+  box-sizing:border-box;
+}
+.page2-back svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.page2-back:active{background:#18212B;color:#fff}
