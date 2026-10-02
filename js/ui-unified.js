@@ -30,6 +30,26 @@
       setTimeout(()=>cancel.focus(),0);
     });
   };
+  window.zpGoBack=function(fallback="/home.html"){
+    const ref=document.referrer||"";
+    let sameOrigin=false;
+    try{sameOrigin=!!ref&&new URL(ref,location.href).origin===location.origin}catch{}
+    if(sameOrigin&&history.length>1){history.back();return}
+    location.replace(fallback);
+  };
+  function bindPageBack(){
+    document.querySelectorAll(".page2-back,.dispatch-back,.history-back,.data-page-back").forEach(el=>{
+      if(el.dataset.zpBackBound==="1")return;
+      el.dataset.zpBackBound="1";
+      el.addEventListener("click",e=>{
+        e.preventDefault();
+        window.zpGoBack("/home.html");
+      });
+    });
+  }
+  window.addEventListener("pageshow",bindPageBack);
+  bindPageBack();
+
   window.zpToast=function(message,type="success"){
     const root=ensure(),toast=root.querySelector("#zpToast");
     toast.textContent=message||"";
