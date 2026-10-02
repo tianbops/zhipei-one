@@ -52,7 +52,7 @@
 const $=id=>document.getElementById(id);
 async function api(u,o={}){const r=await fetch(u,{credentials:"same-origin",...o});const d=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(d.error||d.message||"请求失败");e.code=d.code||"HTTP_"+r.status;e.detail=d.detail||"";throw e}return d}
 function err(e){return(e.code?"["+e.code+"] ":"")+e.message+(e.detail?" · "+e.detail:"")}
-let routeId="",canMaintain=false,stores=[],baseVersion=1,saving=false,editingIndex=-1,confirming=false,dragIndex=-1,hiddenIndexes=new Set();
+let routeId="",canMaintain=false,stores=[],baseVersion=1,saving=false,baseVersionConflict=false,editingIndex=-1,confirming=false,dragIndex=-1,hiddenIndexes=new Set();
 
 function cleanName(v){return String(v||"").trim().replace(/^[、.．)）\\-\s]+|[、.．\\-\s]+$/g,"").trim()}
 function parseImport(text){
@@ -79,7 +79,23 @@ function parseImport(text){
 }
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
 function navUrl(v){const u=String(v||"").trim();return /^https?:\/\//i.test(u)?u:""}
-function showDataFeedback(type,message){const el=$("dataFeedback");if(!el)return;el.className="data-feedback "+type;el.textContent=message;el.hidden=false;clearTimeout(showDataFeedback.timer);showDataFeedback.timer=setTimeout(()=>{el.hidden=true},2600)}
+function showDataFeedback(type,message,actionLabel="",action=null){
+ const el=$("dataFeedback");if(!el)return;
+ el.className="data-feedback "+type;el.replaceChildren();
+ const text=document.createElement("span");text.textContent=message;el.appendChild(text);
+ if(actionLabel&&typeof action==="function"){
+  const btn=document.createElement("button");btn.type="button";btn.className="data-feedback-action";btn.textContent=actionLabel;btn.onclick=action;el.appendChild(btn)
+ }
+ el.hidden=false;clearTimeout(showDataFeedback.timer);
+ showDataFeedback.timer=setTimeout(()=>{el.hidden=true},actionLabel?15000:2600)
+}
+function downloadDraft(){
+ const payload={routeId,baseVersion,exportedAt:new Date().toISOString(),stores:stores.map((s,i)=>({...s,routeOrder:i+1}))};
+ const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json;charset=utf-8"});
+ const url=URL.createObjectURL(blob),a=document.createElement("a");
+ a.href=url;a.download="zhipei-one-data-draft-"+(routeId||"route")+"-"+new Date().toISOString().slice(0,10)+".json";
+ document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)
+}
 function render(){
  const box=$("stores");$("storeCount").textContent=stores.length+"家";
  if(!stores.length){box.innerHTML='<div class="data-empty">暂无门店资料</div>';return}
@@ -219,7 +235,12 @@ async function submitStores(){
   const d=await api("/api/base",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({routeId,expectedVersion:baseVersion,stores})});
   stores=Array.isArray(d.base?.stores)?d.base.stores:stores;baseVersion=Number(d.base?.version)||baseVersion;hiddenIndexes.clear();render();
   $("summary").innerHTML="<strong>"+stores.length+"家</strong>";showDataFeedback("success","数据更新成功")
- }catch(e){if(e.code==="BASE_VERSION_CONFLICT")await load();showDataFeedback("error","数据更新失败："+(e.message||"请稍后重试"))}
+ }catch(e){
+   if(e.code==="BASE_VERSION_CONFLICT"){
+    baseVersionConflict=true;
+    showDataFeedback("error","服务器资料已被其他操作更新。当前暂存修改已保留但不能直接提交，请下载副本后刷新并合并。","下载暂存副本",downloadDraft)
+   }else showDataFeedback("error","数据更新失败："+(e.message||"请稍后重试"))
+  }
  finally{saving=false;$("saveStoresTop").disabled=false}
 }
 function bindTouch(){
