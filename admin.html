@@ -23,7 +23,60 @@
 .setting{min-height:48px;padding:0 2px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.06);font-size:14px}
 .setting:last-child{border-bottom:0}.setting .chev{color:var(--soft);font-size:21px}
 .toast{min-height:42px;border:1px solid var(--line);border-radius:11px;padding:0 14px}
-</style></head><body><main class="shell"><div class="panel"><header class="head"><img src="/assets/logo.png" alt="智配One"><div class="head-info"><h1>管理员</h1><div id="who" class="who">正在验证身份…</div></div><button id="menuBtn" class="menu-btn" aria-label="打开系统设置">☰</button></header><nav class="tabs"><button class="tab active" data-i="0">用户管理</button><button class="tab" data-i="1">线路管理</button><button class="tab" data-i="2">线路审核</button><button class="tab" data-i="3">邀请码</button></nav><div id="viewport" class="viewport"><div id="pages" class="pages"><section class="page"><div class="title">用户管理</div><div class="search"><span>⌕</span><input id="search" placeholder="搜索用户名"></div><div id="users" class="list"></div></section><section class="page"><div class="title"><span>线路管理</span><button id="addRoute" class="add">＋</button></div><div id="routes" class="list"></div></section><section class="page"><div class="title">线路审核</div><div id="requests" class="list"></div></section><section class="page"><div class="title"><span>邀请码</span><button id="addInvite" class="add">＋</button></div><div id="invites" class="list"></div></section></div></div></div></main><div id="dlg" class="dialog-bg" hidden><div class="dialog"><h2 id="dt"></h2><p id="dp"></p><div id="db"></div><div class="dialog-actions"><button id="dc" class="cancel">取消</button><button id="do" class="ok">确定</button></div></div></div><div id="menuBg" class="dialog-bg menu-bg" hidden><div class="dialog"><h2>系统设置</h2><div class="card" style="margin-top:10px"><div id="editUser" class="setting"><div>用户名<div id="userMeta" class="meta"></div></div><span class="chev">›</span></div><div id="editPass" class="setting">修改密码<span class="chev">›</span></div><div id="reset" class="setting">重置数据<span class="chev">›</span></div><div id="logout" class="setting">退出登录</div></div></div></div><div id="toast" class="toast"></div><script>
+<style>
+/* 管理员页面结构修复 3.0：恢复分页、滑动操作、模态层和系统菜单的完整布局。 */
+html,body{width:100%;min-height:100%;overflow-x:hidden}
+body{touch-action:pan-y}
+.shell{width:100%}
+.panel{overflow:hidden}
+.viewport{width:100%;overflow:hidden}
+.pages{display:flex;width:400%;transform:translateX(0);transition:transform .22s ease;will-change:transform}
+.page{width:25%;min-width:25%;flex:0 0 25%;padding-bottom:24px;min-height:200px}
+.list{width:100%}
+.row{position:relative;min-height:56px}
+.row .content{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 13px;min-height:56px}
+.row .main{min-width:0;flex:1}
+.row .main strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .arrow{color:var(--soft);font-size:22px;line-height:1}
+.row .actions{position:absolute;inset:0 0 0 auto;width:148px;display:flex;align-items:stretch;z-index:1}
+.row .actions .act{width:74px;border:0;color:#fff;font-size:13px}
+.row .actions .normal{background:#26313C}
+.row .actions .danger{background:#4A2528}
+.row.open .content{transform:translateX(-148px)}
+.row .content{transition:transform .18s ease}
+.route{position:relative}
+.route-delete{position:absolute;right:12px;top:10px;z-index:3;border:1px solid #594048;border-radius:8px;background:#302326;color:#FFB4AB;min-height:32px;padding:0 10px}
+.route.open .route-content{transform:translateX(-74px)}
+.route-content{position:relative;transition:transform .18s ease}
+.route-content .person .small-action{position:relative;z-index:4}
+.route-line{height:1px;background:rgba(255,255,255,.055);margin:9px 0 0}
+.empty{padding:28px 12px;text-align:center;color:var(--soft)}
+.search{display:flex;align-items:center;gap:8px}
+.search>span{color:var(--soft);font-size:20px;line-height:1}
+.search input{flex:1;min-width:0;border:1px solid #34414d;color:#fff;outline:none}
+.search input::placeholder{color:#68737E}
+input,select{color:#fff;outline:none}
+select option{background:#11171D;color:#fff}
+.dialog-bg{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.72);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.dialog-bg[hidden]{display:none!important}
+.dialog{width:min(100%,380px);max-height:88dvh;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:17px;padding:18px;box-shadow:0 18px 50px rgba(0,0,0,.45)}
+.dialog-actions button{color:#fff;border:1px solid #35404C;background:#11171D}
+.dialog-actions .ok{background:#202B36;border-color:#3A4652}
+.dialog-actions .ok.danger{background:#4A2528;border-color:#6A3940;color:#FFD5D1}
+.menu-bg{z-index:320}
+.menu-bg .dialog{width:min(100%,360px)}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));z-index:450;display:block;min-height:42px;max-width:calc(100vw - 32px);padding:10px 14px;border:1px solid var(--line);border-radius:11px;background:#26313C;color:#fff;font-size:14px;line-height:20px;text-align:center;box-shadow:0 10px 28px rgba(0,0,0,.36);transform:translate(-50%,10px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .18s ease,transform .18s ease,visibility .18s ease}
+.toast.show{opacity:1;visibility:visible;transform:translate(-50%,0)}
+.menu-btn{cursor:pointer}
+.tab,.add,.small-action,.route-delete,.copy,.dialog button,.setting{cursor:pointer}
+.setting:active,.tab:active,.add:active,.small-action:active,.route-delete:active,.menu-btn:active{background:#26313C}
+@media(max-width:560px){
+  .shell{padding-left:12px;padding-right:12px}
+  .tabs{gap:2px;padding:3px}
+  .tab{font-size:14px;padding:0 2px}
+  .title{font-size:17px}
+}
+</style></style></head><body><main class="shell"><div class="panel"><header class="head"><img src="/assets/logo.png" alt="智配One"><div class="head-info"><h1>管理员</h1><div id="who" class="who">正在验证身份…</div></div><button id="menuBtn" class="menu-btn" aria-label="打开系统设置">☰</button></header><nav class="tabs"><button class="tab active" data-i="0">用户管理</button><button class="tab" data-i="1">线路管理</button><button class="tab" data-i="2">线路审核</button><button class="tab" data-i="3">邀请码</button></nav><div id="viewport" class="viewport"><div id="pages" class="pages"><section class="page"><div class="title">用户管理</div><div class="search"><span>⌕</span><input id="search" placeholder="搜索用户名"></div><div id="users" class="list"></div></section><section class="page"><div class="title"><span>线路管理</span><button id="addRoute" class="add">＋</button></div><div id="routes" class="list"></div></section><section class="page"><div class="title">线路审核</div><div id="requests" class="list"></div></section><section class="page"><div class="title"><span>邀请码</span><button id="addInvite" class="add">＋</button></div><div id="invites" class="list"></div></section></div></div></div></main><div id="dlg" class="dialog-bg" hidden><div class="dialog"><h2 id="dt"></h2><p id="dp"></p><div id="db"></div><div class="dialog-actions"><button id="dc" class="cancel">取消</button><button id="do" class="ok">确定</button></div></div></div><div id="menuBg" class="dialog-bg menu-bg" hidden><div class="dialog"><h2>系统设置</h2><div class="card" style="margin-top:10px"><div id="editUser" class="setting"><div>用户名<div id="userMeta" class="meta"></div></div><span class="chev">›</span></div><div id="editPass" class="setting">修改密码<span class="chev">›</span></div><div id="reset" class="setting">重置数据<span class="chev">›</span></div><div id="logout" class="setting">退出登录</div></div></div></div><div id="toast" class="toast"></div><script>
 window.__adminBootStarted=Date.now();
 const $=id=>document.getElementById(id),S={page:0,users:[],routes:[],requests:[],invites:[],me:null},esc=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));async function api(u,o={}){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);try{const r=await fetch(u,{credentials:"same-origin",cache:"no-store",...o,signal:controller.signal}),d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||("请求失败（"+r.status+"）"));return d}catch(e){if(e?.name==="AbortError")throw Error("服务器响应超时");throw e}finally{clearTimeout(timer)}}let tm;function toast(t){$("toast").textContent=t;$("toast").classList.add("show");clearTimeout(tm);tm=setTimeout(()=>$("toast").classList.remove("show"),1500)}function close(){dlg.hidden=true;db.innerHTML="";const mb=$("menuBg");if(mb)mb.hidden=true}function open(t,p,b="",ok="确定",danger=false,fn){dt.textContent=t;dp.textContent=p;db.innerHTML=b;do_.textContent=ok;do_.classList.toggle("danger",danger);dlg.hidden=false;dc.onclick=close;do_.onclick=async()=>{if(!fn)return close();do_.disabled=true;try{await fn()}catch(e){toast(e.message)}finally{do_.disabled=false}}}const dlg=$("dlg"),dt=$("dt"),dp=$("dp"),db=$("db"),dc=$("dc"),do_=$("do");function page(i){S.page=Math.max(0,Math.min(3,i));closeSwipes();$("pages").style.transform="translateX(-"+S.page*25+"%)";document.querySelectorAll(".tab").forEach((b,n)=>b.classList.toggle("active",n===S.page))}function closeSwipes(){document.querySelectorAll(".row.open,.route.open").forEach(x=>x.classList.remove("open"))}function sw(el){let x=0,y=0;el.addEventListener("touchstart",e=>{if(!dlg.hidden)return;x=e.touches[0].clientX;y=e.touches[0].clientY},{passive:true});el.addEventListener("touchend",e=>{if(!dlg.hidden)return;const dx=e.changedTouches[0].clientX-x,dy=e.changedTouches[0].clientY-y;if(Math.abs(dx)>48&&Math.abs(dx)>Math.abs(dy)*1.25){e.stopPropagation();closeSwipes();if(dx<0)el.classList.add("open")}},{passive:true})}
 function renderUsers(){const q=$("search").value.trim().toLowerCase(),a=S.users.filter(u=>(u.username||"").toLowerCase().includes(q));$("users").innerHTML=a.length?a.map((u,i)=>'<div class="row"><div class="actions">'+(u.boundRouteId?'<button class="act normal" data-u="unbind">解绑</button>':'<button class="act normal" data-u="bind">绑定</button>')+'<button class="act danger" data-u="delete">删除</button></div><div class="content"><div class="main"><strong>'+esc(u.username)+'</strong><div class="meta">'+esc(u.boundRouteId?(u.routeName||"线路未知")+" · "+(u.routeDuty==="driver"?"司机":"配送"):"暂无绑定线路")+'</div></div><span class="arrow">›</span></div></div>').join(""):'<div class="empty">暂无用户</div>';document.querySelectorAll("#users .row").forEach((e,i)=>{sw(e);e.querySelectorAll("[data-u]").forEach(b=>b.onclick=()=>userAct(a[i],b.dataset.u))})}
