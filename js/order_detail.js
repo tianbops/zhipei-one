@@ -17,14 +17,14 @@ function render(){
  if(Array.isArray(historyChoices)&&historyChoices.length>1){
   $('orderDate').textContent=targetDate||'历史运单';
   document.querySelector('.order-shell')?.classList.add('history-multi');
-  $('storeCount').textContent=historyChoices.length;
-  $('summaryUnit').textContent='次派送';
+  const totalStores=historyChoices.reduce((n,x)=>n+(Number(x.summary?.total)||Array.isArray(x.stores)?x.stores.length:0),0);
+  $('storeCount').textContent=totalStores;
+  $('summaryUnit').textContent='家';
   $('totalWeight').textContent=fmtWeight(historyChoices.reduce((n,x)=>n+(Number(x.totalWeight)||0),0));
-  $('metrics').innerHTML='<span class="history-multi-hint">↓ 查看当日 '+historyChoices.length+' 次派送</span>';
+  $('metrics').innerHTML='';
   $('routeName').textContent=routeText(order.routeName);
   $('menuRoute').textContent=routeText(order.routeName);
-  $('vehicle').textContent='请选择要查看的运单';
-  $('metrics').innerHTML='';
+  $('vehicle').textContent='';
   $('routeList').innerHTML=historyChoices.map((x,i)=>{
     const s=x.summary||{},stage=x.stage==='CONFIRMED'?'已确认':'待确认',routeLabel=routeText(x.routeName||order.routeName);
     return '<div class="order-history-swipe-row" data-history-index="'+i+'"><button type="button" class="order-history-choice"><span class="history-choice-index">'+(i+1)+'</span><span class="history-choice-vehicle">'+esc(cleanVehicle(x.vehicle))+'</span><span class="history-choice-main">'+Number(s.total||x.stores?.length||0)+'家 · '+fmtWeight(x.totalWeight)+'t</span></button><button type="button" class="history-choice-delete" aria-label="删除运单">删除</button></div>';
@@ -114,7 +114,6 @@ function bindHistoryGestures(){
      r.classList.add('open');
    }else{
      r.classList.remove('open');
-     backToHome();
    }
  },{passive:true});
 }
