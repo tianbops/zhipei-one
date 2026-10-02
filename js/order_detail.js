@@ -19,17 +19,42 @@ function render(){
   $('storeCount').textContent=historyChoices.length;
   $('summaryUnit').textContent='张';
   $('totalWeight').textContent=fmtWeight(historyChoices.reduce((n,x)=>n+(Number(x.totalWeight)||0),0));
-  $('routeName').textContent=order.routeName||'—';
-  $('menuRoute').textContent=order.routeName||'当前线路';
+  $('routeName').textContent=routeText(order.routeName);
+  $('menuRoute').textContent=routeText(order.routeName);
   $('vehicle').textContent='请选择要查看的运单';
   $('metrics').innerHTML='<span>同日'+historyChoices.length+'张运单</span>';
   $('routeList').innerHTML=historyChoices.map((x,i)=>{
     const s=x.summary||{},stage=x.stage==='CONFIRMED'?'已确认':'待确认';
-    return '<button type="button" class="order-history-choice" data-history-index="'+i+'"><span class="history-choice-head"><strong>运单 '+String(i+1).padStart(2,'0')+'</strong><em>'+esc(cleanVehicle(x.vehicle))+'</em></span><span class="history-choice-main">'+Number(s.total||x.stores?.length||0)+'家 · '+fmtWeight(x.totalWeight)+'t</span><span class="history-choice-status">'+stage+'</span></button>';
+    return '<div class="order-history-swipe-row" data-history-index="'+i+'"><button type="button" class="order-history-choice"><span class="history-choice-head"><strong>运单 '+String(i+1).padStart(2,'0')+'</strong><em>'+esc(cleanVehicle(x.vehicle))+'</em></span><span class="history-choice-main">'+Number(s.total||x.stores?.length||0)+'家 · '+fmtWeight(x.totalWeight)+'t</span><span class="history-choice-status">'+stage+'</span></button><button type="button" class="history-choice-delete" aria-label="删除运单">删除</button></div>';
   }).join('');
-  $('routeList').querySelectorAll('.order-history-choice').forEach(b=>b.onclick=()=>{
-    const x=historyChoices[Number(b.dataset.historyIndex)];
-    historyChoices=null;order=x;render();
+  $('routeList').querySelectorAll('.order-history-swipe-row').forEach(row=>{
+    const b=row.querySelector('.order-history-choice');
+    b.onclick=()=>{
+      const x=historyChoices[Number(row.dataset.historyIndex)];
+      historyChoices=null;order=x;render();
+    };
+    row.querySelector('.history-choice-delete').onclick=async e=>{
+      e.stopPropagation();
+      const index=Number(row.dataset.historyIndex),x=historyChoices[index];
+      if(!x?.id)return;
+      if(!confirm('确定删除这张运单吗？删除后无法恢复。'))return;
+      const btn=e.currentTarget;btn.disabled=true;btn.textContent='删除中…';
+      try{
+        const date=x.date||targetDate||'';
+        const batch=x.orderBatchId||'';
+        const q='/api/history?date='+encodeURIComponent(date)+(batch?'&orderBatchId='+encodeURIComponent(batch):'');
+        const r=await fetch(q,{method:'DELETE',credentials:'same-origin',cache:'no-store'});
+        const d=await r.json().catch(()=>({}));
+        if(!r.ok||!d.success)throw Error(d.error||'删除失败');
+        historyChoices=historyChoices.filter((_,n)=>n!==index);
+        if(historyChoices.length>1){render();return}
+        if(historyChoices.length===1){order=historyChoices[0];historyChoices=null;render();return}
+        historyChoices=null;order=null;
+        $('orderDate').textContent=targetDate||'历史运单';
+        $('storeCount').textContent='0';$('summaryUnit').textContent='张';$('totalWeight').textContent='0.00';$('metrics').innerHTML='';
+        $('routeName').textContent='—';$('vehicle').textContent='—';$('routeList').innerHTML='<div class="order-empty">暂无配送数据</div>';
+      }catch(err){btn.disabled=false;btn.textContent='删除';alert(err.message||'删除失败')}
+    };
   });
   const old=$('confirmPendingBtn');if(old)old.remove();
   return;
@@ -63,6 +88,33 @@ function render(){
 }
 
 function setMenu(open){menuOpen=open;$('menuPanel').hidden=!open;$('menuBtn').setAttribute('aria-expanded',String(open))}
+function routeText(v){const s=String(v??'').trim();if(!s)return'—';return /号线$/.test(s)?s:(/^\d+$/.test(s)?s+'号线':s)}
+function bindHistoryGestures(){
+ const list=$('routeList');let row=null;
+ list.addEventListener('touchstart',e=>{
+   const r=e.target.closest('.order-history-swipe-row');if(!r)return;
+   row=r;r._touch={x:e.touches[0].clientX,y:e.touches[0].clientY,t:Date.now()};
+ },{passive:true});
+ list.addEventListener('touchmove',e=>{
+   if(!row?true:false)return;
+   const t=row._touch;if(!t)return;
+   const dx=e.touches[0].clientX-t.x,dy=e.touches[0].clientY-t.y;
+   if(Math.abs(dx)>12&&Math.abs(dx)>Math.abs(dy))e.preventDefault();
+ },{passive:false});
+ list.addEventListener('touchend',e=>{
+   if(!row)return;
+   const r=row,t=r._touch;r=null;row=null;if(!t)return;
+   const dx=e.changedTouches[0].clientX-t.x,dy=e.changedTouches[0].clientY-t.y;
+   if(Math.abs(dx)<55||Math.abs(dx)<=Math.abs(dy))return;
+   if(dx<0){
+     list.querySelectorAll('.order-history-swipe-row.open').forEach(x=>x.classList.remove('open'));
+     r.classList.add('open');
+   }else{
+     r.classList.remove('open');
+     backToHome();
+   }
+ },{passive:true});
+}
 async function load(){
  const url=id
   ?'/api/waybills/latest?id='+encodeURIComponent(id)
@@ -82,6 +134,7 @@ async function load(){
     historyChoices=null;order=d.waybill;
   }
   render();
+  bindHistoryGestures();
  }catch(e){
   if(e?.name==='AbortError')throw Error('运单读取超时，请重试');
   throw e;
