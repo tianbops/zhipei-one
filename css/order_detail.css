@@ -79,3 +79,8 @@
 .order-history-swipe-row .order-history-choice{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"head status" "main status" "route status";gap:2px 10px;padding:11px 10px 10px;min-height:82px}
 .history-choice-route{grid-area:route;color:#7F8A95;font-size:11px;line-height:17px;font-weight:500}
 .order-history-swipe-row .history-choice-status{align-self:center}
+
+/* 历史详情：同日多运单直接位于日期汇总之后 */
+.order-shell.history-multi .order-route-card{margin-top:10px}
+.order-shell.history-multi .order-route-head{display:none}
+.order-shell.history-multi .order-store-list{padding-top:0}
