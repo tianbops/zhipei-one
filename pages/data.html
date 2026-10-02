@@ -214,7 +214,7 @@ $("appendApply").onclick=()=>{
  if(!name){$("appendError").textContent="请输入门店名称";return}
  stores.splice(order-1,0,{storeId:"",originalName:name,name,aliases:[],businessStoreCode:"",navigation:$("appendNavigation").value.trim(),routeOrder:order,note:$("appendNote").value.trim()});
  stores.forEach((s,i)=>s.routeOrder=i+1);
- hiddenIndexes.clear();render();$("appendBox").style.display="none"
+ hiddenIndexes.clear();render();hidePanel("appendBox")
 };
 $("restoreBtn").onclick=()=>{if(canMaintain){showRestore();$("restoreFile").click()}};
 $("restoreChoose").onclick=()=>$("restoreFile").click();
@@ -225,7 +225,7 @@ $("restoreFile").onchange=async e=>{
   const raw=await file.text(),parsed=parseImport(raw);
   if(!parsed.length){$("restorePreview").textContent="未识别到有效门店资料，请选择之前导出的数据文件。";return}
   $("restorePreview").textContent="已读取 "+parsed.length+" 家门店。恢复后将替换当前页面显示的暂存资料。";
-  if(await askConfirm("恢复数据","确认用这份 "+parsed.length+" 家门店资料替换当前页面显示的数据吗？")){stores=parsed.map((s,i)=>({...s,routeOrder:i+1}));hiddenIndexes.clear();render();$("restoreBox").style.display="none"}
+  if(await askConfirm("恢复数据","确认用这份 "+parsed.length+" 家门店资料替换当前页面显示的数据吗？")){stores=parsed.map((s,i)=>({...s,routeOrder:i+1}));hiddenIndexes.clear();render();hidePanel("restoreBox")}
  }catch(e){$("restorePreview").textContent="恢复失败："+err(e)}
  finally{e.target.value=""}
 };
