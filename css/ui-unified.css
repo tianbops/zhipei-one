@@ -169,14 +169,14 @@ input,select,textarea{
 .zp-confirm-actions button:first-child{border:1px solid #35404C;background:#11171D;color:#E8EDF2}
 .zp-confirm-actions button:last-child{border:1px solid #3A4652;background:#202B36;color:#fff}
 
-/* Android 移动端文字规范 2.3
+/* Android 移动端文字规范 2.4
    仅调整文字尺寸与行高，不改变业务规则、数据结构、交互逻辑或页面布局。
-   目标层级：页面标题 19px / 区块标题 17px / 正文 15px / 辅助 14px / 元信息 13px。 */
-.topbar strong,.page2-head h1,.dispatch-head h1,.order-title{font-size:19px!important;line-height:25px!important}
-.card h2,.page2-card h2,.section-title,.page2-title,.data-route-title h2,.history-toolbar strong{font-size:17px!important;line-height:23px!important}
-.text-button,.page2-back,.dispatch-back,.history-toolbar button{font-size:15px!important;line-height:21px!important}
-.ui-actions button,.data-import-actions button,.history-dialog-actions button,.order-dialog-actions button,.account-dialog-actions button,.zp-confirm-actions button{font-size:15px!important;line-height:21px!important}
-.order-dialog-head strong,.data-import-head h3,.history-dialog-panel>strong,.account-dialog h2,.zp-confirm-panel h3{font-size:17px!important;line-height:23px!important}
-.order-dialog-panel>p,.history-dialog-panel>p,.account-dialog>p,.zp-confirm-panel p{font-size:14px!important;line-height:21px!important}
-.ui-toast{font-size:14px!important;line-height:20px!important}
-.empty,.page2-state,.dispatch-empty,.dispatch-message,.history-state{font-size:14px!important;line-height:21px!important}
+   目标层级：页面标题 20px / 区块标题 18px / 正文 16px / 辅助 15px / 元信息 14px。 */
+.topbar strong,.page2-head h1,.dispatch-head h1,.order-title{font-size:20px!important;line-height:26px!important}
+.card h2,.page2-card h2,.section-title,.page2-title,.data-route-title h2,.history-toolbar strong{font-size:18px!important;line-height:24px!important}
+.text-button,.page2-back,.dispatch-back,.history-toolbar button{font-size:16px!important;line-height:22px!important}
+.ui-actions button,.data-import-actions button,.history-dialog-actions button,.order-dialog-actions button,.account-dialog-actions button,.zp-confirm-actions button{font-size:16px!important;line-height:22px!important}
+.order-dialog-head strong,.data-import-head h3,.history-dialog-panel>strong,.account-dialog h2,.zp-confirm-panel h3{font-size:18px!important;line-height:24px!important}
+.order-dialog-panel>p,.history-dialog-panel>p,.account-dialog>p,.zp-confirm-panel p{font-size:15px!important;line-height:22px!important}
+.ui-toast{font-size:15px!important;line-height:21px!important}
+.empty,.page2-state,.dispatch-empty,.dispatch-message,.history-state{font-size:15px!important;line-height:22px!important}
