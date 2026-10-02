@@ -74,12 +74,12 @@
  .account-page .account-danger-box{padding:0 15px 15px}
  .account-page .account-dialog{padding:16px}
 }
-/* Android typography normalization: size/line-height only */
-.page2-card h2{font-size:16px;line-height:22px}
-.page2-label,.route-meta,.request-row{font-size:13px;line-height:20px}
-.route-meta strong{font-size:16px;line-height:22px}
-.route-summary{font-size:16px;line-height:22px}
-.route-summary .route-vehicle,.data-help{font-size:12px;line-height:18px}
-.route-section-title{font-size:13px!important;line-height:18px}
-.account-row{font-size:13px;line-height:20px}
-.empty{font-size:13px;line-height:20px}
+/* Android typography readability adjustment: size/line-height only */
+.page2-card h2{font-size:17px;line-height:23px}
+.page2-label,.route-meta,.request-row{font-size:14px;line-height:21px}
+.route-meta strong{font-size:17px;line-height:23px}
+.route-summary{font-size:17px;line-height:23px}
+.route-summary .route-vehicle,.data-help{font-size:13px;line-height:19px}
+.route-section-title{font-size:14px!important;line-height:19px}
+.account-row{font-size:14px;line-height:21px}
+.empty{font-size:14px;line-height:21px}
