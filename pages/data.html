@@ -131,7 +131,7 @@ function openEditor(index=-1){
  $("editNavigation").value=s.navigation||"";
  $("editNote").value=s.note||"";
  $("editError").textContent="";
- $("editBox").style.display="flex";
+ showPanel("editBox");
  setTimeout(()=>$("editName").focus(),0)
 }
 function updateOrderHint(){
@@ -139,7 +139,16 @@ function updateOrderHint(){
  if(!Number.isInteger(value)||value<1||value>max){hint.textContent="请输入 1～"+max+" 的序号";hint.className="data-field-hint invalid";return}
  hint.textContent=editingIndex<0?"将插入第 "+value+" 位":"保存后将调整到第 "+value+" 位";hint.className="data-field-hint"
 }
-function closeEditor(){$("editBox").style.display="none";editingIndex=-1}
+function syncPanelScrollLock(){
+ const open=["editBox","replaceBox","appendBox","restoreBox"].some(id=>$(id).style.display==="flex");
+ document.body.classList.toggle("data-panel-open",open)
+}
+function showPanel(id){
+ ["editBox","replaceBox","appendBox","restoreBox"].forEach(key=>{if(key!==id)$(key).style.display="none"});
+ $(id).style.display="flex";syncPanelScrollLock()
+}
+function hidePanel(id){$(id).style.display="none";syncPanelScrollLock()}
+function closeEditor(){hidePanel("editBox");editingIndex=-1}
 async function askConfirm(title,message,okText="确定"){
  if(confirming)return false;
  confirming=true;
@@ -163,10 +172,25 @@ $("editSave").onclick=()=>{
  if(editingIndex<0){stores.push(item);editingIndex=stores.length-1}
  const from=editingIndex;applyOrder(from,order);closeEditor();render()
 };
-function closeAllPanels(){["replaceBox","appendBox","restoreBox"].forEach(id=>$(id).style.display="none")}
-function openReplace(){$("replaceText").value="";$("replaceFile").value="";$("replacePreview").textContent="";$("replaceBox").style.display="flex"}
-function openAppend(){$("appendOrder").value=stores.length+1;$("appendOrderHint").textContent="默认追加到第 "+(stores.length+1)+" 位";$("appendName").value="";$("appendNavigation").value="";$("appendNote").value="";$("appendError").textContent="";$("appendBox").style.display="flex";setTimeout(()=>$("appendOrder").focus(),0)}
-function showRestore(){ $("restorePreview").textContent="等待选择数据文件"; $("restoreBox").style.display="flex" }
+function closeAllPanels(){["replaceBox","appendBox","restoreBox"].forEach(hidePanel)}
+
+// 数据资料编辑/导入面板：点击遮罩或按 Esc 关闭，不影响全局确认弹窗。
+["editBox","replaceBox","appendBox","restoreBox"].forEach(id=>{
+ $(id).addEventListener("click",e=>{if(e.target!==$(id))return;
+  if(id==="editBox")closeEditor();else if(id==="replaceBox")closeAllPanels();else hidePanel(id)
+ })
+});
+document.addEventListener("keydown",e=>{
+ if(e.key!=="Escape")return;
+ const active=["editBox","replaceBox","appendBox","restoreBox"].find(id=>$(id).style.display==="flex");
+ if(!active)return;
+ e.preventDefault();
+ if(active==="editBox")closeEditor();else if(active==="replaceBox")closeAllPanels();else hidePanel(active)
+});
+
+function openReplace(){$("replaceText").value="";$("replaceFile").value="";$("replacePreview").textContent="";showPanel("replaceBox")}
+function openAppend(){$("appendOrder").value=stores.length+1;$("appendOrderHint").textContent="默认追加到第 "+(stores.length+1)+" 位";$("appendName").value="";$("appendNavigation").value="";$("appendNote").value="";$("appendError").textContent="";showPanel("appendBox");setTimeout(()=>$("appendOrder").focus(),0)}
+function showRestore(){ $("restorePreview").textContent="等待选择数据文件"; showPanel("restoreBox") }
 function prepareReplace(){
  const p=parseImport($("replaceText").value);
  $("replacePreview").textContent=p.length?"已识别 "+p.length+" 家门店，将替换当前 "+stores.length+" 家资料。":"尚未识别到有效门店";
@@ -180,10 +204,10 @@ $("replaceApply").onclick=async()=>{
  const p=prepareReplace();if(!p.length)return;
  const ok=await zpConfirm("确认批量替换","当前资料 "+stores.length+" 家，新资料 "+p.length+" 家。确认后只替换当前页面的暂存资料；服务器正式资料仍需点击“提交更新”才会改变。","确认替换");
  if(!ok)return;
- stores=p.map((s,i)=>({...s,routeOrder:i+1}));hiddenIndexes.clear();$("replaceBox").style.display="none";render();
+ stores=p.map((s,i)=>({...s,routeOrder:i+1}));hiddenIndexes.clear();hidePanel("replaceBox");render();
 };
 $("appendBtn").onclick=()=>canMaintain&&openAppend();
-$("appendClose").onclick=$("appendCancel").onclick=()=>$("appendBox").style.display="none";
+$("appendClose").onclick=$("appendCancel").onclick=()=>hidePanel("appendBox");
 $("appendApply").onclick=()=>{
  const name=$("appendName").value.trim(),order=Number($("appendOrder").value);
  if(!Number.isInteger(order)||order<1||order>stores.length+1){$("appendError").textContent="排列序号无效，请输入 1～"+(stores.length+1);return}
@@ -194,7 +218,7 @@ $("appendApply").onclick=()=>{
 };
 $("restoreBtn").onclick=()=>{if(canMaintain){showRestore();$("restoreFile").click()}};
 $("restoreChoose").onclick=()=>$("restoreFile").click();
-$("restoreClose").onclick=$("restoreCancel").onclick=()=>$("restoreBox").style.display="none";
+$("restoreClose").onclick=$("restoreCancel").onclick=()=>hidePanel("restoreBox");
 $("restoreFile").onchange=async e=>{
  const file=e.target.files?.[0];if(!file)return;
  try{
