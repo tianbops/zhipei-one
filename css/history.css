@@ -365,3 +365,7 @@
 .history-dialog-panel>p{font-size:13px;line-height:20px}
 .history-dialog-actions button{font-size:14px;line-height:20px}
 .history-count-highlight{font-size:13px;line-height:18px}
+
+/* Final Android typography normalization: size/line-height only */
+.history-toolbar button{font-size:14px;line-height:20px}
+.history-picker-panel p{font-size:12px;line-height:18px}
