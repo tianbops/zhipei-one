@@ -292,6 +292,7 @@ input,select,textarea{
 .zp-password-eye:active{background:#26313C;color:#E8EDF2}
 .zp-password-eye[hidden]{display:none!important}
 .field .zp-password-control{margin-top:0}
+.page2-label>.zp-password-control{margin-top:6px}
 .reset-password-field>label{display:block;margin:0 0 8px;color:#DCE3E9;font-size:14px;line-height:20px;font-weight:600}
 .reset-password-field{margin-top:16px}
 @media(max-width:380px){.zp-password-eye{right:3px;width:36px;height:36px}}
