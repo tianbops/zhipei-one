@@ -9,6 +9,7 @@ let order=null,menuOpen=false,historyChoices=null;
 
 function safeUrl(v){try{const raw=String(v??'').trim();if(!raw)return'';const u=new URL(raw,location.origin);return /^(https?:)$/.test(u.protocol)?u.href:''}catch{return''}}
 function vehicleText(v){const s=String(v??'').replace(/undefined/gi,'').replace(/\s+/g,'').trim();return s?('车辆 '+s):''}
+function cleanVehicle(v){return vehicleText(v).replace(/^车辆\s*/,'')||'车辆待确认'}
 function fmtWeight(v){const n=Number(v);return Number.isFinite(n)?(Math.round(n*100)/100).toFixed(2):'0.00'}
 
 function render(){
@@ -16,6 +17,7 @@ function render(){
  if(Array.isArray(historyChoices)&&historyChoices.length>1){
   $('orderDate').textContent=targetDate||'历史运单';
   $('storeCount').textContent=historyChoices.length;
+  $('summaryUnit').textContent='张';
   $('totalWeight').textContent=fmtWeight(historyChoices.reduce((n,x)=>n+(Number(x.totalWeight)||0),0));
   $('routeName').textContent=order.routeName||'—';
   $('menuRoute').textContent=order.routeName||'当前线路';
@@ -23,7 +25,7 @@ function render(){
   $('metrics').innerHTML='<span>同日'+historyChoices.length+'张运单</span>';
   $('routeList').innerHTML=historyChoices.map((x,i)=>{
     const s=x.summary||{},stage=x.stage==='CONFIRMED'?'已确认':'待确认';
-    return '<button type="button" class="order-history-choice" data-history-index="'+i+'"><strong>运单 '+String(i+1).padStart(2,'0')+'</strong><span>'+esc(x.vehicle||'车辆待确认')+'</span><span>'+Number(s.total||x.stores?.length||0)+'家 · '+fmtWeight(x.totalWeight)+'t · '+stage+'</span></button>';
+    return '<button type="button" class="order-history-choice" data-history-index="'+i+'"><span class="history-choice-head"><strong>运单 '+String(i+1).padStart(2,'0')+'</strong><em>'+esc(cleanVehicle(x.vehicle))+'</em></span><span class="history-choice-main">'+Number(s.total||x.stores?.length||0)+'家 · '+fmtWeight(x.totalWeight)+'t</span><span class="history-choice-status">'+stage+'</span></button>';
   }).join('');
   $('routeList').querySelectorAll('.order-history-choice').forEach(b=>b.onclick=()=>{
     const x=historyChoices[Number(b.dataset.historyIndex)];
@@ -138,6 +140,7 @@ document.addEventListener('click',e=>{if(menuOpen&&!$('menuPanel').contains(e.ta
   }catch(e){
     $('orderDate').textContent='运单读取失败';
     $('storeCount').textContent='0';
+    $('summaryUnit').textContent='家';
     $('totalWeight').textContent='0.00';
     $('metrics').innerHTML='';
     $('routeName').textContent=e.message||'暂无当日运单';
