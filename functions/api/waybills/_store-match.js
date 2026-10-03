@@ -28,7 +28,7 @@ export const formatCompareKey = v => {
   let s = clean(v);
   try { s = s.normalize("NFKC"); } catch {}
   return s
-    .replace(/[\p{Z}\p{Cf}\p{P}\p{S}]+/gu, "")
+    .replace(/[\s\p{Z}\p{Cf}\p{P}\p{S}]+/gu, "")
     .replace(/Ⅱl|Il|II|ⅱ/gi, "II")
     .toLowerCase();
 };
@@ -42,12 +42,12 @@ export const businessStoreCode = v => {
  * 第 1 层：匹配专用归一（仅用于评分，不影响对外契约）
  * ================================================================ */
 
-/** 基础归一：全角半角、空白、括号、标点、罗马数字 */
+/** 基础归一：全角半角、空白（含 OCR 断行 \n、制表符）、括号、标点、罗马数字 */
 export const normalizeForMatch = v => {
   let s = clean(v);
   try { s = s.normalize("NFKC"); } catch {}
   return s
-    .replace(/[\p{Z}\p{Cf}]+/gu, "")
+    .replace(/[\s\p{Z}\p{Cf}]+/gu, "")
     .replace(/[（）()【】\[\]{}<>《》「」『』""''‘’]/g, "")
     .replace(/[·•、,，。；;:：!！?？\-_—~～|/\\]/g, "")
     .replace(/Ⅱ|ⅱ/gi, "II")
@@ -166,6 +166,14 @@ export function scoreNames(raw, target) {
   // 主体长度需 >= 3，避免 "A店" vs "B店" 退化情形
   if (aBody && bBody && aBody === bBody && aBody.length >= 3) {
     return { score: 0.97, signals: { bodyExact: 1 } };
+  }
+
+  // 互相包含（OCR 漏字 / 带路线段前缀，如
+  //   "渝北JM03050谊品生鲜温馨家园南门店" ⊃ "谊品生鲜温馨家园南门店"）
+  // 短串 >= 4 字时视为同一门店的强信号，直接给到自动匹配档；
+  // 空格 / 断行已在归一层剥离，不参与差异。
+  if (Math.min(A.length, B.length) >= 4 && (A.includes(B) || B.includes(A))) {
+    return { score: 0.92, signals: { containment: 1 } };
   }
 
   const sEdit   = editSim(A, B);

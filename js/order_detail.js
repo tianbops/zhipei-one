@@ -227,7 +227,6 @@ function openConfirm(){
      choices.appendChild(b);
    });
    const pickWrap=document.createElement('div');pickWrap.className='pending-picker';pickWrap.hidden=true;
-   const pickSearch=document.createElement('input');pickSearch.type='search';pickSearch.className='pending-search';pickSearch.autocomplete='off';pickSearch.placeholder='输入门店名称关键词，从本线路门店中指定…';
    const pickOpts=document.createElement('div');pickOpts.className='pending-options';
    // 轻量相似度：完全相等 > 互相包含（子串≥4字，覆盖 OCR 漏字/多前缀）> 双字组重合（Dice）
    const simScore=(a,b)=>{
@@ -238,7 +237,7 @@ function openConfirm(){
      const A=bg(a),B=bg(b);let n=0;A.forEach(g=>{if(B.has(g))n++});
      return A.size&&B.size?2*n/(A.size+B.size):0;
    };
-   // 与待确认门店名的匹配度：标准名 / 原始名 / 别名取最高分
+   // 与待确认门店名的匹配度：标准名 / 原始名 / 别名取最高分（归一已忽略空格与断行）
    const pendingName=normStore(x.rawName||x.name||'');
    const storeScore=s=>{
      let best=simScore(pendingName,normStore(s.name));
@@ -247,15 +246,14 @@ function openConfirm(){
      return best;
    };
    const SIM_HOT=.5;// 达到该值的门店标"推荐/最佳匹配"，未达到时保持线路原顺序，避免误导
+   // 展开即显示按匹配度排序的门店列表（无搜索框），点一下完成选择
    const renderPickOpts=()=>{
-     const q=normStore(pickSearch.value);
      const scored=(baseStoreCache||[]).map((s,si)=>({s,si,sc:storeScore(s)}));
-     const hits=scored.filter(v=>!q||normStore(v.s.name).includes(q)||normStore(v.s.originalName).includes(q)||(Array.isArray(v.s.aliases)&&v.s.aliases.some(a=>normStore(a).includes(q))));
-     // 匹配度最高的排最前，点一下即可选中；同分保持线路原有顺序
-     hits.sort((a,b)=>b.sc-a.sc||a.si-b.si);
+     // 匹配度最高的排最前；同分保持线路原有顺序
+     scored.sort((a,b)=>b.sc-a.sc||a.si-b.si);
      pickOpts.innerHTML='';
-     if(!hits.length){const em=document.createElement('div');em.className='pending-empty';em.textContent=q?'没有匹配的门店，可改用「新增」':'暂无门店数据';pickOpts.appendChild(em);return}
-     hits.slice(0,40).forEach((v,hi)=>{
+     if(!scored.length){const em=document.createElement('div');em.className='pending-empty';em.textContent='本线路暂无门店数据，可改用「新增」';pickOpts.appendChild(em);return}
+     scored.slice(0,40).forEach((v,hi)=>{
        const s=v.s,sc=v.sc;
        const nm=s.name||s.originalName||'未命名门店';
        const ob=document.createElement('button');ob.type='button';ob.className='choice-btn';
@@ -264,27 +262,25 @@ function openConfirm(){
        const parts=['指定：'+nm];
        if(sc>=SIM_HOT)parts.push('相似度 '+Math.round(sc*100)+'%');
        if(s.routeOrder)parts.push('第'+s.routeOrder+'站');
-       const tx=document.createElement('span');tx.textContent=parts.join(' · ');
-       ob.appendChild(tx);
+       ob.appendChild(document.createTextNode(parts.join(' · ')));
        ob.onclick=()=>{clearChoice();pickBtn.classList.add('selected');pickBtn.textContent='指定：'+nm;selected.set(i,{action:'merge',storeId:s.storeId,standardName:nm});pickWrap.hidden=true;updateSubmit()};
        pickOpts.appendChild(ob);
      });
-     if(hits.length>40){const more=document.createElement('div');more.className='pending-empty';more.textContent='仅显示前 40 个，请继续输入关键词缩小范围';pickOpts.appendChild(more)}
+     if(scored.length>40){const more=document.createElement('div');more.className='pending-empty';more.textContent='门店较多，仅显示前 40 家（已按相似度排序）';pickOpts.appendChild(more)}
    };
-   pickWrap.appendChild(pickSearch);pickWrap.appendChild(pickOpts);
+   pickWrap.appendChild(pickOpts);
    pickBtn=document.createElement('button');pickBtn.type='button';pickBtn.className='choice-btn';pickBtn.textContent=PICK_LABEL;
    pickBtn.onclick=async()=>{
      if(!pickWrap.hidden){pickWrap.hidden=true;return}
      pickWrap.hidden=false;pickBtn.textContent=PICK_LABEL;
      if(baseStoreRoute!==order.routeId||!baseStoreCache){
        pickOpts.innerHTML='';const ld=document.createElement('div');ld.className='pending-empty';ld.textContent='正在读取本线路门店…';pickOpts.appendChild(ld);
-       try{await loadBaseStores(order.routeId);renderPickOpts();pickSearch.focus()}
+       try{await loadBaseStores(order.routeId);renderPickOpts()}
        catch(err){pickOpts.innerHTML='';const er=document.createElement('div');er.className='pending-empty';er.textContent=(err.message||'读取失败')+'，可改用「新增」';pickOpts.appendChild(er)}
        return;
      }
-     renderPickOpts();pickSearch.focus();
+     renderPickOpts();
    };
-   pickSearch.oninput=renderPickOpts;
    const add=document.createElement('button');add.type='button';add.className='choice-btn';add.textContent='新增：'+(x.rawName||x.name||'该门店');
    add.onclick=()=>{selected.set(i,{action:'new',standardName:x.rawName||x.name});clearChoice();add.classList.add('selected');updateSubmit()};
    choices.appendChild(add);

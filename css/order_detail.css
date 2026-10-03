@@ -43,23 +43,25 @@
 .order-dialog-panel{width:min(100%,420px);max-height:88vh;display:flex;flex-direction:column;background:#18212B;border:1px solid #2A3540;border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.5);overflow:hidden}
 .order-dialog-head{height:54px;flex:0 0 54px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid rgba(255,255,255,.06)}
 .order-dialog-head strong{font-size:16px}.order-dialog-head button{width:34px;height:34px;border:0;background:transparent;color:#B8C2CC;font-size:26px}
-.pending-list{padding:12px 14px;overflow:auto}.pending-box{padding:12px 0;border-bottom:1px solid rgba(255,255,255,.055)}.pending-box:last-child{border-bottom:0}
+/* pending-list 占据标题与按钮之间的剩余空间并内部滚动：
+   缺少 flex:1+min-height:0 时内容会把面板撑高，被 overflow:hidden 硬裁，
+   表现为"文字超出显示框"（2026-10-03 修复） */
+.pending-list{flex:1 1 auto;min-height:0;padding:12px 14px;overflow:auto}.pending-box{padding:14px 0;border-bottom:1px solid rgba(255,255,255,.055)}.pending-box:last-child{border-bottom:0}
 .pending-title{font-size:14px;font-weight:650;line-height:20px}.pending-hint{margin-top:4px;color:#7F8A95;font-size:11px;line-height:17px}
 .candidate-list{display:grid;gap:7px;margin-top:9px}.choice-btn{min-height:42px;padding:8px 10px;border:1px solid #2A3540;border-radius:10px;background:#11171D;color:#fff;text-align:left;font-size:13px;line-height:18px}
 .choice-btn.selected{border-color:#B8C1C8;background:#26313C}.choice-btn:active{background:#26313C}
 /* 首位候选为系统推荐项，用左侧标记区分，避免用户面对同级选项时无从判断 */
 .choice-btn.recommended{border-left:3px solid #6E7B88}
 .choice-btn.recommended.selected{border-left-color:#D6DEE6}
-/* 指定已有门店：折叠式搜索选择器，默认收起，只占一个按钮高度 */
+/* 指定已有门店：折叠选择器，默认收起，只占一个按钮高度；展开即显示按相似度排序的门店 */
 .pending-picker{display:grid;gap:7px;margin-top:8px}
-.pending-search{min-height:42px;width:100%;padding:8px 10px;border:1px solid #2A3540;border-radius:10px;background:#0C1116;color:#fff;font-size:13px;line-height:18px}
-.pending-search::placeholder{color:#6E7B88}
-.pending-options{display:grid;gap:7px;max-height:210px;overflow:auto}
-.pick-badge{flex:none;margin-right:6px;padding:1px 6px;border:1px solid #3A4652;border-radius:6px;background:#26313C;color:#C7D2DB;font-size:10px;line-height:16px;white-space:nowrap}
-.pending-options .choice-btn{display:flex;align-items:center}
-.pending-options .choice-btn span:last-child{min-width:0}
+.pending-options{display:grid;gap:7px;max-height:236px;overflow:auto}
+/* 徽标走普通文档流（inline-block），长店名换行时不会溢出按钮边框 */
+.pick-badge{display:inline-block;margin-right:6px;padding:1px 6px;border:1px solid #3A4652;border-radius:6px;background:#26313C;color:#C7D2DB;font-size:10px;line-height:16px;white-space:nowrap;vertical-align:2px}
+.pending-picker{margin:9px 0 2px}
+.pending-options .choice-btn{word-break:break-word}
 .pending-empty{padding:10px 2px;color:#7F8A95;font-size:11px;line-height:17px;text-align:center}
-.order-dialog-actions{display:flex;gap:8px;padding:12px 14px;border-top:1px solid rgba(255,255,255,.06)}
+.order-dialog-actions{display:flex;flex:0 0 auto;gap:8px;padding:12px 14px;border-top:1px solid rgba(255,255,255,.06)}
 .order-dialog-actions button{flex:1;height:44px;border-radius:11px;border:0;font-size:14px;font-weight:650}
 .order-dialog-actions .secondary-btn{background:#11171D;color:#E3E8ED;border:1px solid #35404C}.order-dialog-actions .primary-btn{background:#26313C;color:#fff;border:0}.order-dialog-actions .primary-btn:disabled{opacity:.45}
 @media(max-width:430px){.order-shell{padding-left:10px;padding-right:10px}.order-summary-main{font-size:22px}.order-route-card{padding-left:10px;padding-right:10px}}
@@ -211,7 +213,6 @@
 .pending-title{font-size:16px;line-height:22px}
 .pending-hint{font-size:13px;line-height:19px}
 .choice-btn{font-size:15px;line-height:20px}
-.pending-search{font-size:15px;line-height:20px}
 .pending-empty{font-size:13px;line-height:19px}
 .order-dialog-actions button{font-size:16px;line-height:22px}
 .history-choice-head strong,.history-choice-head em{font-size:14px;line-height:20px}
