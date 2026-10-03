@@ -1,4 +1,4 @@
-/* 智配One · 数据资料 UI 统一样式 */
+/* 适配One · 数据资料 UI 统一样式 */
 .data-page{padding-bottom:calc(32px + env(safe-area-inset-bottom))}
 body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-route-card{padding:17px 16px}

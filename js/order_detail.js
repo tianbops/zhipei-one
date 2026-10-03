@@ -346,7 +346,7 @@ $('menuBtn').onclick=e=>{e.stopPropagation();setMenu(!menuOpen)};
 $('editRouteBtn').onclick=()=>location.href='/pages/data.html';
 $('shareBtn').onclick=async()=>{
  setMenu(false);if(!order)return;
- const s=order.summary||{},text='智配One\n'+(order.date||'')+'\n'+(order.routeName||'当前线路')+'\n'+(s.total||order.stores?.length||0)+'家 · '+fmtWeight(order.totalWeight)+'t';
+ const s=order.summary||{},text='适配One\n'+(order.date||'')+'\n'+(order.routeName||'当前线路')+'\n'+(s.total||order.stores?.length||0)+'家 · '+fmtWeight(order.totalWeight)+'t';
  try{if(navigator.share)await navigator.share({title:'当日运单',text});else{await navigator.clipboard?.writeText(text);zpToast('已复制运单摘要','success')}}catch{}
 };
 $('logoutBtn').onclick=async()=>{setMenu(false);if(!(await zpConfirm('退出登录','确定退出当前账号吗？')))return;try{await fetch('/api/logout',{method:'POST',credentials:'same-origin',cache:'no-store'})}finally{location.replace('/')}};

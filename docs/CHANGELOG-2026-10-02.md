@@ -1,7 +1,7 @@
-# 智配One 优化版变更说明
+# 适配One 优化版变更说明
 
 版本：2026-10-02
-基线：tianyou-zhipei-main（原架构基线）
+基线：zhipei-one-main（原架构基线）
 范围：**门店匹配引擎重构 + OCR 适配层加固**
 
 ---
@@ -521,7 +521,7 @@ polyfill；手工构造的 Response 不响应 abort 信号 → 补中止联动�
 
 ### 15.1 线路申请页"我的申请记录"容器补齐（14.3 遗留项落地）
 
-与**原始上传包**（`1790935611308844576-tianyou-zhipei-main.zip`）比对确认：
+与**原始上传包**（`1790935611308844576-zhipei-one-main.zip`）比对确认：
 `pages/route_apply.html` 的 JS 引用 `$("requests")` 属于**原始代码就存在的缺陷**，
 不是本轮优化引入或误删——作者写了完整的渲染逻辑与 `.request-row` 样式
 （business-pages.css / ui-unified.css 中均预留），却从未在 HTML 里放置容器。
@@ -728,5 +728,5 @@ Cookie；`process.js` 收 `multipart/form-data`，`wx.uploadFile` 可直接对�
 | 将来做小程序 | 与 PWA 不冲突，后端改造量仍只有 `login.js` 补 token 一处 |
 
 > 建议：微信内引导司机使用**微信浮窗**（打开网页后右上角「…」→ 浮窗），
-> 可把智配One 常驻在微信界面上随时点开，比在聊天记录里翻链接体验好得多，
+> 可把适配One 常驻在微信界面上随时点开，比在聊天记录里翻链接体验好得多，
 > 且零成本、零改造。

@@ -1,4 +1,4 @@
-/* 智配One · 全局 UI 反馈 2.1
+/* 适配One · 全局 UI 反馈 2.1
    只处理弹窗/Toast，不包含业务逻辑。 */
 (function(){
   if(window.zpConfirm)return;
