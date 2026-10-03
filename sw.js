@@ -4,11 +4,13 @@
  *   - /api/*         ：直接透传，绝不入缓存（登录态、运单、线路必须实时）
  *   - 非 GET 请求     ：不拦截（登录提交、运单上传）
  *   - 页面导航        ：network-first，离线回退缓存，最后回退 offline.html
- *   - CSS/JS/图片     ：stale-while-revalidate（先秒开，后台静默更新）
+ *   - CSS/JS         ：network-first（2.5s 超时回退缓存）——保证发布后
+ *                      下一次刷新必见新版；有网时永不拿旧脚本
+ *   - 图片/字体       ：stale-while-revalidate（内容基本不变，秒开优先）
  * 缓存 key 一律用 pathname 规整化：页面 URL 常带 ?v=时间戳（防缓存），
  * 若按完整 URL 存，每次跳转都会产生一份新副本。
  */
-const VERSION = "zp-pwa-1";
+const VERSION = "zp-pwa-2";
 const STATIC_CACHE = VERSION + "-static";
 const PAGES_CACHE = VERSION + "-pages";
 const OFFLINE_URL = "/offline.html";
@@ -72,7 +74,8 @@ self.addEventListener("fetch", event => {
     (req.headers.get("accept") || "").indexOf("text/html") > -1;
 
   if (isDocument) { event.respondWith(navigateStrategy(req)); return; }
-  if (["style", "script", "image", "font"].includes(req.destination)) { event.respondWith(swrStrategy(req)); return; }
+  if (req.destination === "style" || req.destination === "script") { event.respondWith(freshStrategy(req)); return; }
+  if (["image", "font"].includes(req.destination)) { event.respondWith(swrStrategy(req)); return; }
 });
 
 /* 页面：网络优先，离线回退缓存，再回退离线页 */
@@ -92,7 +95,7 @@ async function navigateStrategy(req) {
   }
 }
 
-/* 静态资源：先给缓存，后台更新 */
+/* 静态资源（图片/字体）：先给缓存，后台更新 */
 async function swrStrategy(req) {
   const key = cacheKeyOf(req.url);
   const cache = await caches.open(STATIC_CACHE);
@@ -101,4 +104,26 @@ async function swrStrategy(req) {
     .then(res => { if (res && res.ok) cache.put(key, res.clone()); return res; })
     .catch(() => hit || Response.error());
   return hit || network;
+}
+
+/* 脚本/样式：网络优先，发布后下一次刷新即见新版。
+ * - 无缓存时：安心等网络（失败才报错，不做超时——弱网下宁可慢也不能白屏）
+ * - 有缓存时：网络 2.5s 未回就先给缓存秒开，后台继续更新供下次使用
+ * - cache:'no-cache'：绕过 HTTP 层的 14400s 强缓存，强制回源校验 ETag
+ */
+async function freshStrategy(req) {
+  const key = cacheKeyOf(req.url);
+  const cache = await caches.open(STATIC_CACHE);
+  const hit = await cache.match(key);
+  const network = fetch(req, { cache: "no-cache" })
+    .then(res => { if (res && res.ok) cache.put(key, res.clone()); return res; });
+  if (!hit) {
+    try { return await network; } catch { return Response.error(); }
+  }
+  try {
+    return await Promise.race([
+      network,
+      new Promise((_, rej) => setTimeout(() => rej(new Error("slow-network")), 2500))
+    ]);
+  } catch { return hit; }
 }

@@ -7,5 +7,12 @@
 /*.html
   Cache-Control: no-cache
 
+# JS/CSS 每次回源校验（带 ETag，未变更时只回 304，几乎零开销）。
+# 此前 CF Pages 默认 max-age=14400：发布后用户浏览器最长 4 小时看不到新版本。
+/js/*
+  Cache-Control: no-cache
+/css/*
+  Cache-Control: no-cache
+
 /manifest.json
   Cache-Control: public, max-age=3600
