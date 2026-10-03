@@ -1,4 +1,4 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="stylesheet" href="/css/ui-unified.css"><title>智配One · 管理员</title>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="stylesheet" href="/css/ui-unified.css?v=a2d67c7d"><title>智配One · 管理员</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#05070A">
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
@@ -389,5 +389,5 @@ async function load(){
     renderUsers();renderRoutes();renderRequests();renderInvites();
   }
 }$("search").oninput=renderUsers;document.addEventListener("click",e=>{if(!e.target.closest(".row,.route,.dialog"))closeSwipes()});document.querySelectorAll(".page").forEach(p=>p.addEventListener("scroll",closeSwipes,{passive:true}));$("addRoute").onclick=addRoute;$("menuBtn").onclick=()=>{$("menuBg").hidden=false};$("menuBg").addEventListener("click",e=>{if(e.target===$("menuBg"))$("menuBg").hidden=true});$("addInvite").onclick=addInvite;$("editUser").onclick=editUser;$("editPass").onclick=editPass;$("reset").onclick=resetData;$("logout").onclick=async()=>{$("menuBg").hidden=true;if(!(await zpConfirm("退出登录","确定要退出当前管理员账号吗？","退出")))return;await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"});location.replace("/")};document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>page(Number(b.dataset.i)));let sx,sy;$("viewport").addEventListener("touchstart",e=>{if(!dlg.hidden)return;sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});$("viewport").addEventListener("touchend",e=>{if(!dlg.hidden)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.35){if(dx<0&&S.page<3)page(S.page+1);if(dx>0&&S.page>0)page(S.page-1)}} ,{passive:true});load();
-</script><script id="ui-unified-admin" src="/js/ui-unified.js"></script><script src="/js/pwa.js"></script>
+</script><script id="ui-unified-admin" src="/js/ui-unified.js?v=6c8f6c24"></script><script src="/js/pwa.js?v=864ce384"></script>
 </body></html>

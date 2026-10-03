@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# 智配One · 部署辅助脚本
+# 用法（在项目根目录执行）：
+#   bash deploy.sh            # 只部署
+#   bash deploy.sh secrets    # 只导入密钥（读 secrets.json）
+#   bash deploy.sh all        # 导入密钥 + 部署
+#   bash deploy.sh check      # 部署后检查 /api/health
+#
+# Windows 用户在 Git Bash 里执行同样命令
+
+set -euo pipefail
+
+PROJECT="${ZP_PROJECT:-tianyou-zhipei}"
+MODE="${1:-deploy}"
+WRANGLER="npx wrangler@latest"
+
+# 发布前必须执行：给静态资源引用打上 ?v=<内容哈希>，
+# 否则浏览器 HTTP 缓存 / Service Worker 会继续提供旧版 JS/CSS，
+# 用户看不到本次修改。见 tools/stamp_assets.py
+stamp() {
+  echo "==> 给静态资源引用打版本号"
+  python3 tools/stamp_assets.py || { echo "✗ 打版本号失败"; exit 1; }
+}
+
+case "$MODE" in
+
+  secrets)
+    echo "==> 导入密钥（读取 secrets.json）"
+    if [ ! -f secrets.json ]; then
+      echo "✗ 找不到 secrets.json，请先创建它（见部署指南第 7 步）"
+      exit 1
+    fi
+    $WRANGLER pages secret bulk secrets.json --project-name="$PROJECT"
+    echo "✓ 密钥导入完成"
+    echo "⚠ 记得删除 secrets.json：$ rm -f secrets.json"
+    ;;
+
+  deploy)
+    echo "==> 部署到 Cloudflare Pages（项目：$PROJECT）"
+    stamp
+    $WRANGLER pages deploy . --project-name="$PROJECT"
+    echo "✓ 部署完成"
+    echo "⚠ 如果你刚改过环境变量，密钥会在本次部署中生效"
+    ;;
+
+  all)
+    echo "==> 导入密钥"
+    [ -f secrets.json ] || { echo "✗ 找不到 secrets.json"; exit 1; }
+    $WRANGLER pages secret bulk secrets.json --project-name="$PROJECT"
+    echo "==> 部署"
+    stamp
+    $WRANGLER pages deploy . --project-name="$PROJECT"
+    echo "✓ 全部完成"
+    echo "⚠ 记得删除 secrets.json"
+    ;;
+
+  check)
+    echo "==> 检查后端健康状态"
+    URL="https://${PROJECT}.pages.dev/api/health"
+    echo "GET $URL"
+    BODY="$(curl -sS --max-time 20 "$URL" || echo '请求失败')"
+    echo "$BODY"
+    if echo "$BODY" | grep -q '"status":"ok"'; then
+      echo "✓ Functions 已正常运行"
+    else
+      echo "✗ 后端没起来 —— 多半是 functions/ 没部署上，或环境变量没配"
+      echo "  排查：部署指南第 13 节故障排查表"
+    fi
+    ;;
+
+  *)
+    echo "用法：bash deploy.sh [deploy|secrets|all|check]"
+    exit 1
+    ;;
+esac
