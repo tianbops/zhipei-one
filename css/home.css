@@ -1,4 +1,4 @@
-/* 适配One · 首页移动端 UI */
+/* 智配One · 首页移动端 UI */
 .home-app{width:min(100%,430px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:16px 16px calc(28px + env(safe-area-inset-bottom));background:#05070A}
 .home-topbar{height:56px;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:10}
 .home-brand{display:flex;flex-direction:column;line-height:1.2}

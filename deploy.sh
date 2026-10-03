@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 适配One · 部署辅助脚本
+# 智配One · 部署辅助脚本
 # 用法（在项目根目录执行）：
 #   bash deploy.sh            # 只部署
 #   bash deploy.sh secrets    # 只导入密钥（读 secrets.json）
