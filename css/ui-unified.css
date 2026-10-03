@@ -411,7 +411,7 @@ input,select,textarea{
   display:flex!important;
   align-items:center!important;
   justify-content:center!important;
-  padding:16px!important;
+  padding:12px!important;
   background:rgba(0,0,0,.72)!important;
   backdrop-filter:blur(3px)!important;
   -webkit-backdrop-filter:blur(3px)!important;

@@ -188,7 +188,7 @@ async function loadBaseStores(routeId){
 function openConfirm(){
  const pending=order?.stores?.map((x,i)=>({x,i})).filter(v=>v.x?.pending)||[];
  const list=$('pendingList'), selected=new Map();list.innerHTML='';
- const updateSubmit=()=>{$('submitConfirm').disabled=selected.size!==pending.length;$('submitConfirm').textContent=selected.size===pending.length?'确认':'请完成全部选择'};
+ const updateSubmit=()=>{$('submitConfirm').disabled=selected.size!==pending.length;$('submitConfirm').textContent=selected.size===pending.length?'确认':'确认（'+selected.size+'/'+pending.length+'）'};
  // 临时线路不建立线路数据资料，没有"已有门店"可指定，此时只保留「新增」
  const isTempRoute=order?.routeId==='__temporary__';
  // 待定原因文案：让用户明白系统为何没有自动匹配，而不是面对无解释的"待确认"

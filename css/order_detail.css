@@ -40,7 +40,8 @@
 .order-empty{text-align:center;color:#7F8A95;font-size:14px;padding:48px 18px}
 .order-diagnostics{margin-top:8px;max-height:180px;overflow:auto;white-space:pre-wrap;background:#11171D;border:1px solid #2A3540;border-radius:10px;padding:10px;font:11px/1.5 monospace;color:#B8C2CC}
 
-.order-dialog-panel{width:min(100%,420px);max-height:88vh;display:flex;flex-direction:column;background:#18212B;border:1px solid #2A3540;border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.5);overflow:hidden}
+/* 弹窗：放宽尺寸上限（用户反馈"显示框调大一点"），高度用 dvh 并带 vh 兜底 */
+.order-dialog-panel{width:min(100%,460px);max-height:min(90vh,800px);max-height:min(90dvh,800px);display:flex;flex-direction:column;background:#18212B;border:1px solid #2A3540;border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.5);overflow:hidden}
 .order-dialog-head{height:54px;flex:0 0 54px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid rgba(255,255,255,.06)}
 .order-dialog-head strong{font-size:16px}.order-dialog-head button{width:34px;height:34px;border:0;background:transparent;color:#B8C2CC;font-size:26px}
 /* pending-list 占据标题与按钮之间的剩余空间并内部滚动：
@@ -48,19 +49,26 @@
    表现为"文字超出显示框"（2026-10-03 修复） */
 .pending-list{flex:1 1 auto;min-height:0;padding:12px 14px;overflow:auto}.pending-box{padding:14px 0;border-bottom:1px solid rgba(255,255,255,.055)}.pending-box:last-child{border-bottom:0}
 .pending-title{font-size:14px;font-weight:650;line-height:20px}.pending-hint{margin-top:4px;color:#7F8A95;font-size:11px;line-height:17px}
-.candidate-list{display:grid;gap:7px;margin-top:9px}.choice-btn{min-height:42px;padding:8px 10px;border:1px solid #2A3540;border-radius:10px;background:#11171D;color:#fff;text-align:left;font-size:13px;line-height:18px}
-.choice-btn.selected{border-color:#B8C1C8;background:#26313C}.choice-btn:active{background:#26313C}
+.candidate-list{display:grid;gap:7px;margin-top:9px}
+/* 选项按钮：轻底色 + 细边框 + 大圆角，柔化"深色方块"感（全局统一）；
+   padding 9px 12px + word-break，长店名换行绝不贴边/出框 */
+.choice-btn{min-height:42px;padding:9px 12px;border:1px solid rgba(255,255,255,.10);border-radius:12px;background:rgba(255,255,255,.035);color:#fff;text-align:left;font-size:13px;line-height:19px;word-break:break-word}
+.choice-btn.selected{border-color:#93A3B1;background:#202B36}.choice-btn:active{background:#1A232E}
 /* 首位候选为系统推荐项，用左侧标记区分，避免用户面对同级选项时无从判断 */
-.choice-btn.recommended{border-left:3px solid #6E7B88}
+.choice-btn.recommended{border-left:3px solid #5F6E7C}
 .choice-btn.recommended.selected{border-left-color:#D6DEE6}
-/* 指定已有门店：折叠选择器，默认收起，只占一个按钮高度；展开即显示按相似度排序的门店 */
-.pending-picker{display:grid;gap:7px;margin-top:8px}
-.pending-options{display:grid;gap:7px;max-height:236px;overflow:auto}
-/* 徽标走普通文档流（inline-block），长店名换行时不会溢出按钮边框 */
-.pick-badge{display:inline-block;margin-right:6px;padding:1px 6px;border:1px solid #3A4652;border-radius:6px;background:#26313C;color:#C7D2DB;font-size:10px;line-height:16px;white-space:nowrap;vertical-align:2px}
-.pending-picker{margin:9px 0 2px}
-.pending-options .choice-btn{word-break:break-word}
+/* 指定已有门店：折叠选择器，默认收起，只占一个按钮高度；
+   展开即显示按相似度排序的门店。列表不再自带滚动，
+   统一交给 .pending-list 滚动，避免嵌套滚动条。 */
+.pending-picker{display:grid;gap:7px;margin:9px 0 2px}
+.pending-options{display:grid;gap:7px}
+/* 徽标：胶囊形、轻底色，融入按钮文字流，长店名换行不会溢出 */
+.pick-badge{display:inline-block;margin-right:7px;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.09);color:#C7D2DB;font-size:10px;line-height:15px;white-space:nowrap;vertical-align:2px}
 .pending-empty{padding:10px 2px;color:#7F8A95;font-size:11px;line-height:17px;text-align:center}
+/* 深色 UI 细滚动条：去掉扎眼的白色粗条 */
+.pending-list::-webkit-scrollbar,.pending-options::-webkit-scrollbar{width:3px}
+.pending-list::-webkit-scrollbar-thumb,.pending-options::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:999px}
+.pending-list{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.14) transparent}
 .order-dialog-actions{display:flex;flex:0 0 auto;gap:8px;padding:12px 14px;border-top:1px solid rgba(255,255,255,.06)}
 .order-dialog-actions button{flex:1;height:44px;border-radius:11px;border:0;font-size:14px;font-weight:650}
 .order-dialog-actions .secondary-btn{background:#11171D;color:#E3E8ED;border:1px solid #35404C}.order-dialog-actions .primary-btn{background:#26313C;color:#fff;border:0}.order-dialog-actions .primary-btn:disabled{opacity:.45}
