@@ -26,25 +26,36 @@ function render(){
   $('menuRoute').textContent=routeText(order.routeName);
   $('vehicle').textContent='';
   $('routeList').innerHTML=historyChoices.map((x,i)=>{
-    const s=x.summary||{},stage=x.stage==='CONFIRMED'?'已确认':'待确认',routeLabel=routeText(x.routeName||order.routeName);
-    return '<div class="order-history-swipe-row" data-history-index="'+i+'"><button type="button" class="order-history-choice"><span class="history-choice-index">'+(i+1)+'</span><span class="history-choice-vehicle">'+esc(cleanVehicle(x.vehicle))+'</span><span class="history-choice-main">'+Number(s.total||x.stores?.length||0)+'家 · '+fmtWeight(x.totalWeight)+'t</span></button><button type="button" class="history-choice-delete" aria-label="删除运单">删除</button></div>';
+    const s=x.summary||{},confirmed=x.stage==='CONFIRMED';
+    // 状态角标可见：此前 stage 只算不用，用户看不出哪张是「待确认」，删除失败时无从判断
+    const status='<span class="history-choice-status '+(confirmed?'ok':'wait')+'">'+(confirmed?'已确认':'待确认')+'</span>';
+    return '<div class="order-history-swipe-row" data-history-index="'+i+'"><button type="button" class="order-history-choice"><span class="history-choice-index">'+(i+1)+'</span><span class="history-choice-vehicle">'+esc(cleanVehicle(x.vehicle))+'</span><span class="history-choice-main">'+Number(s.total||x.stores?.length||0)+'家 · '+fmtWeight(x.totalWeight)+'t</span>'+status+'</button><button type="button" class="history-choice-delete" aria-label="删除运单">删除</button></div>';
   }).join('');
   $('routeList').querySelectorAll('.order-history-swipe-row').forEach(row=>{
     const b=row.querySelector('.order-history-choice');
     b.onclick=()=>{
+      // 行处于展开（露出删除）状态时，点击卡片只收起，避免误进入详情
+      if(row.classList.contains('open')){row.classList.remove('open');return}
       const x=historyChoices[Number(row.dataset.historyIndex)];
       historyChoices=null;order=x;render();
     };
     row.querySelector('.history-choice-delete').onclick=async e=>{
       e.stopPropagation();
       const index=Number(row.dataset.historyIndex),x=historyChoices[index];
-      if(!x?.id)return;
+      // ⚠ 按钮引用必须在 await 之前取：事件派发结束后 e.currentTarget 会被置空，
+      // await 之后再读就是 null，btn.disabled=true 直接抛 TypeError，
+      // 请求还没发出就整个崩掉（删除"点了没反应"的第二个根因）。
+      const btn=e.currentTarget;
+      // 缺少运单标识时明确提示，避免"点了没反应"
+      if(!x?.id){zpToast('该运单缺少标识，无法删除','error');return}
       if(!(await zpConfirm('删除运单','确定删除这张运单吗？删除后无法恢复。','删除')))return;
-      const btn=e.currentTarget;btn.disabled=true;btn.textContent='删除中…';
+      if(!btn)return;
+      btn.disabled=true;btn.textContent='删除中…';
       try{
         const date=x.date||targetDate||'';
-        const batch=x.orderBatchId||'';
-        const q='/api/history?date='+encodeURIComponent(date)+'&waybillId='+encodeURIComponent(x.id);
+        // 显式带上 routeId：后端虽能用当前线路兜底，显式传可避免跨线路误判
+        const routeId=x.routeId||order?.routeId||'';
+        const q='/api/history?date='+encodeURIComponent(date)+'&waybillId='+encodeURIComponent(x.id)+(routeId?'&routeId='+encodeURIComponent(routeId):'');
         const r=await fetch(q,{method:'DELETE',credentials:'same-origin',cache:'no-store'});
         const d=await r.json().catch(()=>({}));
         if(!r.ok||!d.success)throw Error(d.error||'删除失败');
@@ -109,12 +120,19 @@ function routeText(v){const s=String(v??'').trim();if(!s)return'—';return /号
 function bindHistoryGestures(){
  const list=$('routeList');if(!list||list._historyGestureBound)return;
  list._historyGestureBound=true;
- let state=null;
- const closeOthers=row=>list.querySelectorAll('.order-history-swipe-row.open').forEach(x=>{if(x!==row)x.classList.remove('open')});
+  let state=null;
+  const closeRows=row=>list.querySelectorAll('.order-history-swipe-row.open').forEach(x=>{if(x!==row)x.classList.remove('open')});
+  // 与历史列表页（js/history.js）保持一致：点击空白处收起已展开的行
+  document.addEventListener('click',e=>{if(!e.target.closest('.order-history-swipe-row'))closeRows(null)});
  list.addEventListener('pointerdown',e=>{
    const r=e.target.closest('.order-history-swipe-row');if(!r)return;
+   // 落点在行内按钮（删除）上时完全不介入：既不做手势判定，也绝不捕获指针
+   if(e.target.closest('.history-choice-delete')){state=null;return}
    state={row:r,id:e.pointerId,x:e.clientX,y:e.clientY,swiping:false,moved:false};
-   try{r.setPointerCapture?.(e.pointerId)}catch{}
+   // ⚠ 这里不能调 setPointerCapture。一旦在 pointerdown 阶段捕获指针，
+   // 浏览器会把后续的 mousedown / mouseup / click 一并重定向到捕获元素（整行），
+   // 行内按钮的 onclick 永远收不到 click —— 这正是「删除按钮失效」的根因。
+   // 捕获推迟到确认是横向滑动之后再做（见下方 pointermove）。
  },{passive:true});
  list.addEventListener('pointermove',e=>{
    if(!state||e.pointerId!==state.id)return;
@@ -122,7 +140,11 @@ function bindHistoryGestures(){
    if(Math.abs(dx)<6&&Math.abs(dy)<6)return;
    state.moved=true;
    if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>10){
-     state.swiping=true;
+     if(!state.swiping){
+       state.swiping=true;
+       // 仅在判定为横向滑动后才捕获，保证手指滑出行外仍能收到 pointerup
+       try{state.row.setPointerCapture?.(e.pointerId)}catch{}
+     }
      e.preventDefault();
    }
  },{passive:false});
@@ -132,7 +154,7 @@ function bindHistoryGestures(){
    const dx=e.clientX-s.x,dy=e.clientY-s.y;
    if(Math.abs(dx)<45||Math.abs(dx)<=Math.abs(dy))return;
    if(dx<0){
-     closeOthers(s.row);
+     closeRows(s.row);
      s.row.classList.add('open');
      s.row._suppressClick=true;
      setTimeout(()=>{s.row._suppressClick=false},350);

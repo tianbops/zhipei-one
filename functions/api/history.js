@@ -127,7 +127,11 @@ export async function onRequestDelete({request,env}){
   if(!/^\d{4}-\d{2}$/.test(month))return json({success:false,code:"MONTH_INVALID",error:"月份格式错误"},400);
   if(!monthInRange(month,range))return json({success:false,code:"MONTH_OUT_OF_RANGE",error:"月份不在历史查询范围内"},400);
   const entries=await readDates(env,routeId,range);let deleted=0;
-  for(const entry of entries){if(!entry.date.startsWith(month))continue;for(const order of await readDateWaybills(env,routeId,entry.date)){if(order.stage!=="CONFIRMED")continue;await deleteWaybill(env,routeId,entry.date,order.id);deleted++}}
+  // readDateWaybills 已按 historyReadable 过滤（PLANNED / CONFIRMED），
+  // 这里不再按 stage 二次拦截：用户看到的历史运单都应该删得掉。
+  // 旧逻辑只删 CONFIRMED，导致「待确认」运单点了删除却报「仅可删除已确认运单」，
+  // 或整日删除后记录仍在 —— 与实际预期不符。
+  for(const entry of entries){if(!entry.date.startsWith(month))continue;for(const order of await readDateWaybills(env,routeId,entry.date)){await deleteWaybill(env,routeId,entry.date,order.id);deleted++}}
   return json({success:true,deleted,deletedWaybills:deleted,month});
  }
  if(!validDate(date))return json({success:false,code:"DATE_INVALID",error:"日期格式错误"},400);
@@ -137,10 +141,9 @@ export async function onRequestDelete({request,env}){
   const orders=await readDateWaybills(env,routeId,date);
   const target=orders.find(order=>order.id===waybillId);
   if(!target)return json({success:false,code:"WAYBILL_NOT_FOUND",error:"运单不存在或已删除"},404);
-  if(target.stage!=="CONFIRMED")return json({success:false,code:"WAYBILL_NOT_CONFIRMED",error:"仅可删除已确认运单"},409);
   await deleteWaybill(env,routeId,date,target.id);
   return json({success:true,deleted:1,deletedWaybills:1,waybillId});
  }
- let deleted=0;for(const order of await readDateWaybills(env,routeId,date)){if(order.stage!=="CONFIRMED")continue;await deleteWaybill(env,routeId,date,order.id);deleted++}
+ let deleted=0;for(const order of await readDateWaybills(env,routeId,date)){await deleteWaybill(env,routeId,date,order.id);deleted++}
  return json({success:true,deleted,deletedWaybills:deleted});
 }
