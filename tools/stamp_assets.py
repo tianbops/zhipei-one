@@ -20,9 +20,10 @@ import sys
 ROOT = sys.argv[1] if len(sys.argv) > 1 else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HTML_DIRS = [ROOT] + [os.path.join(ROOT, d) for d in ("pages", "admin")]
 
-# 匹配 href="/xxx.css" 或 src="/xxx.js"，忽略已带其它 query 的（极少）
-REF = re.compile(r'(href=")(/[A-Za-z0-9_./-]+\.css)(")')
-SRC = re.compile(r'(src=")(/[A-Za-z0-9_./-]+\.js)(")')
+# 匹配 href="/xxx.css" 或 src="/xxx.js"（允许已带 ?v= 旧版本号，会原位替换；
+# 跳过 sw.js：注册 URL 必须固定）
+REF = re.compile(r'(href=")(/[A-Za-z0-9_./-]+\.css)(?:\?v=[0-9a-f]*)?(")')
+SRC = re.compile(r'(src=")(/[A-Za-z0-9_./-]+\.js)(?:\?v=[0-9a-f]*)?(")')
 
 
 def stamp_of(path):

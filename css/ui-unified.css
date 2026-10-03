@@ -391,13 +391,19 @@ input,select,textarea{
  *
  * 统一后所有业务弹窗行为一致：
  *   遮罩 rgba(0,0,0,.72) + 3px 模糊 · 居中显示 · 面板 18px 圆角
+ *
+ * ⚠ 数据中心（data.html）：弹窗外观与本文件 2.1/2.5 节的统一规则保持
+ *   原版完全一致（原版即由本文件接管遮罩与面板：居中模态、398px 上限、
+ *   18px 圆角）。css/data.css 只保留内部布局 + dvh 兜底 + 入场动效。
+ *   本节（4.0）不得对 .data-import 追加 display 等强覆盖规则 ——
+ *   data.html 用内联 style="display:none" 控制开关，任何 display!important
+ *   都会让弹窗常驻展开、挡住整个页面（2026-10-03 已修复的缺陷）。
  * ================================================================ */
 
 /* --- 统一遮罩层 --- */
 .order-dialog,
 .history-dialog,
 .history-picker,
-.data-import,
 .account-dialog-bg,
 .upload-overlay{
   position:fixed!important;
@@ -418,7 +424,6 @@ input,select,textarea{
 .order-dialog-panel,
 .history-dialog-panel,
 .history-picker-panel,
-.data-import-panel,
 .account-dialog,
 .upload-sheet{
   width:min(100%,398px);
@@ -433,7 +438,6 @@ input,select,textarea{
 }
 
 /* --- 统一次级按钮（取消类）--- */
-.data-import-actions,
 .order-dialog-actions,
 .history-dialog-actions,
 .account-dialog-actions{
@@ -442,7 +446,6 @@ input,select,textarea{
   gap:10px;
   margin-top:14px;
 }
-.data-import-actions button,
 .order-dialog-actions button,
 .history-dialog-actions button,
 .account-dialog-actions button{
@@ -454,7 +457,6 @@ input,select,textarea{
   font-size:16px;
   font-weight:550;
 }
-.data-import-actions button:last-child,
 .order-dialog-actions button:last-child,
 .history-dialog-actions button:last-child,
 .account-dialog-actions button:last-child{

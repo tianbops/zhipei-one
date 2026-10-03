@@ -25,7 +25,10 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-store-meta span{display:block}
 .data-store-meta-label{color:#687584;margin-right:4px}
 .data-empty{padding:28px 8px;text-align:center;color:#7F8A95;font-size:13px}
-
+/* 数据中心弹窗：内部布局沿用原始定义。
+   遮罩与面板的定位/外观由 ui-unified.css 统一规则接管（与原版渲染一致）；
+   此处仅补充 dvh 兜底（旧内核不支持 dvh 时退回 88vh，避免面板失去高度上限）。 */
+.data-import{position:fixed;inset:0;z-index:120;background:rgba(0,0,0,.72);padding:16px;display:flex;align-items:flex-end;justify-content:center}
 .data-import-panel{width:min(100%,620px);max-height:min(88vh,760px);max-height:min(88dvh,760px);overflow:auto;background:#18212B;border:1px solid #2A3540;border-radius:18px 18px 12px 12px;padding:18px 16px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -10px 40px rgba(0,0,0,.35)}
 .data-import-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
 .data-import-head h3{margin:0;font-size:17px;line-height:24px}
@@ -37,7 +40,11 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-import-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
 .data-import-actions button{height:46px;border:1px solid #35404C;border-radius:10px;background:#11171D;color:#fff;font-size:15px}
 .data-import-actions #importSave{background:#26313C}
-@media(min-width:600px){}
+@media(min-width:600px){.data-import{align-items:center}.data-import-panel{border-radius:18px}}
+/* 轻量入场动效：只做透明度+上滑，不改布局与结构；系统开启"减弱动态效果"时自动关闭 */
+@keyframes dataSheetIn{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+.data-import-panel{animation:dataSheetIn .18s ease-out}
+@media(prefers-reduced-motion:reduce){.data-import-panel{animation:none}}
 
 .data-editor-panel{padding-top:16px}
 .data-field{display:block;margin-top:14px}
