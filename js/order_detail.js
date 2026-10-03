@@ -189,6 +189,8 @@ function openConfirm(){
  const pending=order?.stores?.map((x,i)=>({x,i})).filter(v=>v.x?.pending)||[];
  const list=$('pendingList'), selected=new Map();list.innerHTML='';
  const updateSubmit=()=>{$('submitConfirm').disabled=selected.size!==pending.length;$('submitConfirm').textContent=selected.size===pending.length?'确认':'请完成全部选择'};
+ // 临时线路不建立线路数据资料，没有"已有门店"可指定，此时只保留「新增」
+ const isTempRoute=order?.routeId==='__temporary__';
  // 待定原因文案：让用户明白系统为何没有自动匹配，而不是面对无解释的"待确认"
  const REASON_TEXT={no_candidate:'基准库中没有相近门店，请选择新增或指定已有门店',below_threshold:'相似度不足，请确认是否为同一门店',ambiguous:'存在多个相近门店，请人工选择'};
  pending.forEach(({x,i})=>{
@@ -197,7 +199,9 @@ function openConfirm(){
    const candidates=Array.isArray(x.candidates)?x.candidates:[];
    const reason=x.matchDiagnostics?.reason;
    const hint=document.createElement('div');hint.className='pending-hint';
-   if(reason==='no_candidate'){
+   if(isTempRoute&&reason==='no_candidate'){
+     hint.textContent='临时线路没有线路数据资料，请直接新增该门店。';
+   }else if(reason==='no_candidate'){
      hint.textContent='基准库中没有相近门店，请选择新增，或从已有门店中指定。';
    }else if(candidates.length){
      const top=candidates[0];
@@ -255,7 +259,9 @@ function openConfirm(){
    pickSearch.oninput=renderPickOpts;
    const add=document.createElement('button');add.type='button';add.className='choice-btn';add.textContent='新增：'+(x.rawName||x.name||'该门店');
    add.onclick=()=>{selected.set(i,{action:'new',standardName:x.rawName||x.name});clearChoice();add.classList.add('selected');updateSubmit()};
-   choices.appendChild(add);choices.appendChild(pickBtn);box.appendChild(choices);box.appendChild(pickWrap);list.appendChild(box);
+   choices.appendChild(add);
+   if(!isTempRoute){choices.appendChild(pickBtn);box.appendChild(pickWrap)}
+   box.appendChild(choices);list.appendChild(box);
    // 有唯一且高分建议时预选，用户只需确认；多个候选时不预选，强制人工判断
    if(candidates.length===1&&candidates[0].score!=null&&candidates[0].score>=0.80){
      if(autoSelectTop()){const first=choices.querySelector('.choice-btn');if(first&&!first.classList.contains('selected'))first.classList.add('selected')}
