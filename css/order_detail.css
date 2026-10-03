@@ -55,6 +55,9 @@
 .pending-search{min-height:42px;width:100%;padding:8px 10px;border:1px solid #2A3540;border-radius:10px;background:#0C1116;color:#fff;font-size:13px;line-height:18px}
 .pending-search::placeholder{color:#6E7B88}
 .pending-options{display:grid;gap:7px;max-height:210px;overflow:auto}
+.pick-badge{flex:none;margin-right:6px;padding:1px 6px;border:1px solid #3A4652;border-radius:6px;background:#26313C;color:#C7D2DB;font-size:10px;line-height:16px;white-space:nowrap}
+.pending-options .choice-btn{display:flex;align-items:center}
+.pending-options .choice-btn span:last-child{min-width:0}
 .pending-empty{padding:10px 2px;color:#7F8A95;font-size:11px;line-height:17px;text-align:center}
 .order-dialog-actions{display:flex;gap:8px;padding:12px 14px;border-top:1px solid rgba(255,255,255,.06)}
 .order-dialog-actions button{flex:1;height:44px;border-radius:11px;border:0;font-size:14px;font-weight:650}
