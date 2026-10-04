@@ -549,9 +549,9 @@
   to{opacity:1;transform:none}
 }
 .history-picker-head strong.cal-anim-left,
-.history-calendar-grid.cal-anim-left{animation:historyCalInLeft .22s ease-out}
+.history-calendar-grid.cal-anim-left{animation:historyCalInLeft .17s ease-out}
 .history-picker-head strong.cal-anim-right,
-.history-calendar-grid.cal-anim-right{animation:historyCalInRight .22s ease-out}
+.history-calendar-grid.cal-anim-right{animation:historyCalInRight .17s ease-out}
 @media(prefers-reduced-motion:reduce){
   .history-picker-head strong.cal-anim-left,
   .history-calendar-grid.cal-anim-left,

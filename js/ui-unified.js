@@ -90,12 +90,21 @@
       setTimeout(()=>cancel.focus(),0);
     });
   };
+  // 来源驱动返回：URL 带 from= 时按固定映射回到对应板块首页，不再用
+  // document.referrer / history.length 猜测（避免不同入口返回行为不一致）。
+  // 无 from= 时回落到调用方给定的 fallback（与各页返回按钮的 href 一致）。
   window.zpGoBack=function(fallback="/home.html"){
-    const ref=document.referrer||"";
-    let sameOrigin=false;
-    try{sameOrigin=!!ref&&new URL(ref,location.href).origin===location.origin}catch{}
-    if(sameOrigin&&history.length>1){history.back();return}
-    location.replace(fallback);
+    const from=new URLSearchParams(location.search).get("from");
+    const map={
+      history:"/pages/history.html",
+      today:"/pages/today.html",
+      process:"/home.html",
+      data:"/pages/data.html",
+      account:"/pages/account.html",
+      route:"/pages/route_apply.html",
+      home:"/home.html"
+    };
+    location.replace((from&&map[from])?map[from]:fallback);
   };
   function bindPageBack(){
     document.querySelectorAll(".page2-back,.dispatch-back,.history-back,.data-page-back").forEach(el=>{
