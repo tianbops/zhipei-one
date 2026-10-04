@@ -117,31 +117,62 @@ export async function recognizeImage(env, file, onProgress = () => {}) {
     }
 
     if (state === "done" || state === "completed" || data.resultUrl?.jsonUrl) {
-      const url = clean(data.resultUrl?.jsonUrl);
-      if (!url) throw fail("OCR_RESULT_MISSING", "OCR结果地址缺失", { jobId });
+      const STATUS_PATH = base + JOB_PATH + "/" + encodeURIComponent(jobId);
+      const url0 = clean(data.resultUrl?.jsonUrl);
+      if (!url0) throw fail("OCR_RESULT_MISSING", "OCR结果地址缺失", { jobId });
 
-      let rr;
-      try {
-        rr = await fetch(url, { signal: AbortSignal.timeout(8000) });
-      } catch (e) {
-        if (e?.name === "TimeoutError" || e?.name === "AbortError") throw fail("OCR_RESULT_TIMEOUT", "OCR结果读取超时", { jobId });
-        throw fail("OCR_RESULT_FETCH", "OCR结果读取失败", { jobId, detail: e?.message || "" });
-      }
-      if (!rr.ok) {
-        const detail = await rr.text().catch(() => "");
-        throw fail("OCR_RESULT_FETCH", `OCR结果读取失败（HTTP ${rr.status}）`, { jobId, status: rr.status, detail: detail.slice(0, 300) });
-      }
+      // 结果 JSON 偶发读取抖动（AI Studio 慢/结果地址未同步）会让整单处理前功尽弃：
+      // 最多尝试 3 次（每次 8s 超时，退避 0.8s/1.6s）。
+      // HTTP 5xx/429/403/404 视为可重试，且下次尝试前重查任务状态刷新结果地址；网络超时保留原地址重试。
+      const readResult = async (u) => {
+        let rr;
+        try {
+          rr = await fetch(u, { signal: AbortSignal.timeout(8000) });
+        } catch (e) {
+          if (e?.name === "TimeoutError" || e?.name === "AbortError") {
+            const err = fail("OCR_RESULT_TIMEOUT", "OCR结果读取超时", { jobId });
+            err.retryable = true;
+            throw err;
+          }
+          throw fail("OCR_RESULT_FETCH", "OCR结果读取失败", { jobId, detail: e?.message || "" });
+        }
+        if (!rr.ok) {
+          const detail = await rr.text().catch(() => "");
+          const err = fail("OCR_RESULT_FETCH", `OCR结果读取失败（HTTP ${rr.status}）`, { jobId, status: rr.status, detail: detail.slice(0, 300) });
+          err.retryable = rr.status >= 500 || rr.status === 429 || rr.status === 403 || rr.status === 404;
+          err.refreshUrl = err.retryable;
+          throw err;
+        }
+        return rr;
+      };
+      const parseResult = async (rr) => {
+        const raw = await rr.text();
+        const texts = [];
+        for (const line of raw.split(/\r?\n/)) {
+          if (!line.trim()) continue;
+          try { collectText(JSON.parse(line), texts); } catch {}
+        }
+        const unique = [...new Set(texts)].filter(Boolean);
+        if (!unique.length) throw fail("OCR_EMPTY", "OCR未识别到文字", { jobId });
+        onProgress(100);
+        return { jobId, provider: "aistudio", model: MODEL, rawText: unique.join("\n"), lineCount: unique.length };
+      };
 
-      const raw = await rr.text();
-      const texts = [];
-      for (const line of raw.split(/\r?\n/)) {
-        if (!line.trim()) continue;
-        try { collectText(JSON.parse(line), texts); } catch {}
+      let url = url0, lastError = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (attempt) await new Promise(r => setTimeout(r, 800 * attempt));
+        try {
+          if (attempt > 0 && lastError?.refreshUrl) {
+            const again = await requestJson(STATUS_PATH, { headers: { Authorization: "Bearer " + token, Accept: "application/json" } }, 6000);
+            url = clean(again?.data?.resultUrl?.jsonUrl) || url;
+          }
+          return await parseResult(await readResult(url));
+        } catch (e) {
+          lastError = e;
+          if (!e?.retryable) throw e;
+        }
       }
-      const unique = [...new Set(texts)].filter(Boolean);
-      if (!unique.length) throw fail("OCR_EMPTY", "OCR未识别到文字", { jobId });
-      onProgress(100);
-      return { jobId, provider: "aistudio", model: MODEL, rawText: unique.join("\n"), lineCount: unique.length };
+      throw lastError || fail("OCR_RESULT_FETCH", "OCR结果读取失败", { jobId });
     }
     delay = Math.min(5000, Math.round(delay * 1.35));
   }

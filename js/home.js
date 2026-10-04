@@ -137,13 +137,34 @@ function resetProcessingUI(){
   sourceMenu.hidden=false;processingPanel.hidden=true;
   renderProcessingProgress(0);
 }
+const PROCESS_ERROR_TEXT={
+  OCR_RESULT_TIMEOUT:"OCR结果读取超时（已自动重试仍失败），请重新上传重试",
+  OCR_TIMEOUT:"OCR识别超时，请稍后重试",
+  OCR_NETWORK_TIMEOUT:"OCR服务响应超时，请稍后重试",
+  OCR_JOB_FAILED:"OCR识别失败，请上传更清晰的运单照片",
+  OCR_EMPTY:"OCR未识别到文字，请上传更清晰的运单照片",
+  OCR_NOT_CONFIGURED:"OCR服务尚未配置，请联系管理员",
+  OCR_AUTH:"OCR服务鉴权失败，请联系管理员",
+  OCR_ENDPOINT:"OCR服务地址异常，请联系管理员",
+  OCR_API:"OCR服务暂时不可用，请稍后重试",
+  OCR_BAD_RESPONSE:"OCR服务返回异常，请稍后重试",
+  OCR_SUBMIT_FAILED:"OCR任务提交失败，请稍后重试",
+  OCR_RESULT_MISSING:"OCR结果地址缺失，请重试",
+  OCR_RESULT_FETCH:"OCR结果读取失败，请重试",
+  PROCESS_CLIENT_TIMEOUT:"处理超时（60秒），请稍后重试或换更清晰的运单图片",
+  PROCESS_STREAM_INTERRUPTED:"处理连接中断，请重试",
+  EXTRACT_EMPTY:"未从运单中提取到门店，请检查运单内容",
+  DISPATCH_ROUTE_MISSING:"请先在首页选择调度线路",
+  WAYBILL_FILE_MISSING:"请选择运单文件"
+};
 function showProcessingError(message){
   stopProcessingClock();
   if(processingCancelBtn)processingCancelBtn.hidden=true;
   if(processingPanel)processingPanel.hidden=true;
   if(sourceMenu)sourceMenu.hidden=true;
   if(overlay)overlay.classList.add("processing-error-state");
-  if(processingErrorMessage)processingErrorMessage.textContent=message||"处理失败，请重试";
+  const text=PROCESS_ERROR_TEXT[message]||message||"处理失败，请重试";
+  if(processingErrorMessage)processingErrorMessage.textContent=text;
   if(processingError)processingError.hidden=false;
 }
 function showProcessingUI(){
@@ -273,7 +294,8 @@ async function processSelectedFile(file){
       throw e;
     }
   }catch(e){
-    showProcessingError(e?.code||"PROCESS_FAILED");
+    // 优先展示服务端友好 message（与 code 不同时）；纯 code 场景走映射表
+    showProcessingError(e?.message&&e.message!==e.code?e.message:(e?.code||"PROCESS_FAILED"));
   }finally{
     clearTimeout(timer);
     stopProcessingClock();
