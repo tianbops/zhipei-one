@@ -120,7 +120,13 @@
       const score=el.scrollHeight-el.clientHeight;
       return !best||score>best.score?{el,score}:best;
     },null);
-    if(!target)return;
+    if(!target){
+      // 运单详情/今日运单/历史等页面的列表由 API 异步渲染，首次判定时还是空的。
+      // 轮询等待内容出现（最多 ~16s），避免箭头永不出现。
+      if((setupGlobalScrollButtons._tries=(setupGlobalScrollButtons._tries||0)+1)<=40)
+        setTimeout(setupGlobalScrollButtons,400);
+      return;
+    }
     const el=target.el,root=document.createElement("div");
     root.className="zp-float-scroll-wrap";
     root.innerHTML='<button class="zp-float-scroll zp-float-up" type="button" aria-label="快速回到顶部">↑</button><button class="zp-float-scroll zp-float-down" type="button" aria-label="快速到底部">↓</button>';
@@ -139,6 +145,8 @@
     const eventTarget=el===document.scrollingElement?window:el;
     eventTarget.addEventListener("scroll",update,{passive:true});
     window.addEventListener("resize",update);
+    // 列表内容后续重渲染/增减时重测是否继续显示箭头（内容长高不改变盒子尺寸，须监听子节点变化）
+    if(window.MutationObserver)new MutationObserver(update).observe(el===document.scrollingElement?document.body:el,{childList:true,subtree:true});
     setTimeout(update,80);
   }
   window.addEventListener("load",setupGlobalScrollButtons,{once:true});
