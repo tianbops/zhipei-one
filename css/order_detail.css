@@ -350,3 +350,47 @@
     margin-right:5px;
   }
 }
+
+/* UI 2.4：待确认入口从底部悬浮改为内联——
+   放在线路/车辆信息行右侧，两行垂直居中、靠右对齐。
+   仅调整位置与文案承载，确认弹窗逻辑不变。 */
+.order-route-head{
+  flex-direction:row;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.order-meta-main{
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  min-width:0;
+  flex:1 1 auto;
+}
+.order-pending-slot{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+}
+.order-pending-fab{
+  position:static;
+  transform:none;
+  z-index:auto;
+  height:38px;
+  padding:0 14px;
+  border-radius:11px;
+  font-size:13px;
+  box-shadow:none;
+  white-space:nowrap;
+}
+.order-pending-fab:active{
+  transform:scale(.97);
+  background:#26313C;
+}
+@media(max-width:360px){
+  .order-pending-fab{
+    height:34px;
+    padding:0 10px;
+    font-size:12px;
+  }
+}
