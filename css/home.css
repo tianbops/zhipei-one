@@ -45,7 +45,7 @@
 .upload-source-menu{margin:0;padding:0;background:transparent}
 .source-menu-title{height:28px;line-height:28px;margin:0 0 20px;color:#F2F5F7;text-align:center;font-size:20px;font-weight:700}
 .source-menu-options{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.source-option{height:72px;min-height:72px;border:1px solid rgba(255,255,255,.075);border-radius:12px;background:#1B2530;color:#D5DCE2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.source-option{height:auto;min-height:72px;padding:9px 0;border:1px solid rgba(255,255,255,.075);border-radius:12px;background:#1B2530;color:#D5DCE2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .source-option:active{background:#26313C;transform:scale(.985)}
 .source-icon{width:24px;height:24px;display:flex;align-items:center;justify-content:center}
 .source-icon svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -96,7 +96,7 @@
  .upload-sheet{width:min(90vw,340px);padding:20px 17px 18px}
  .source-menu-title{font-size:19px;margin-bottom:18px}
  .source-menu-options{gap:7px}
- .source-option{height:62px;min-height:62px}
+ .source-option{height:auto;min-height:62px}
  .processing-title{font-size:17px}.processing-progress{margin-top:20px}
  .processing-error-title{font-size:18px}.processing-error-message{font-size:13px}
 }
@@ -139,3 +139,7 @@
 @media(prefers-reduced-motion:reduce){
   .menu-route-value:empty::before{animation:none}
 }
+
+/* 上传入口「文件」按钮副标题：明确此入口用于 PDF 运单，
+   避免与「拍摄/相册」的图片入口混淆 */
+.source-option small{font-size:10px;line-height:14px;color:#7F8A95;font-weight:500}

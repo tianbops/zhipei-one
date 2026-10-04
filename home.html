@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="智配One">
 <link rel="stylesheet" href="/css/app.css?v=e634d2ad"><link rel="stylesheet" href="/css/ui-unified.css?v=f8987a92">
-<link rel="stylesheet" href="/css/home.css?v=014786f8">
+<link rel="stylesheet" href="/css/home.css?v=2a77f724">
 </head>
 <body>
 <main class="home-app">
@@ -71,9 +71,9 @@
       <div class="upload-source-menu active" id="uploadSourceMenu">
         <div class="source-menu-title" id="uploadTitle">上传运单</div>
         <div class="source-menu-options">
-          <button class="source-option" data-source="camera" type="button"><span class="source-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h4l1.5-2h5L16 7h4v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span><strong>拍摄</strong></button>
-          <button class="source-option" data-source="photo" type="button"><span class="source-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="9" r="1.5"/><path d="m4 17 5-5 3.5 3.5 2.5-2.5 5 5"/></svg></span><strong>相册</strong></button>
-          <button class="source-option" data-source="document" type="button"><span class="source-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 6h7l2 2h9v10H3z"/></svg></span><strong>文件</strong></button>
+          <button class="source-option" data-source="camera" type="button"><span class="source-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h4l1.5-2h5L16 7h4v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span><strong>拍摄</strong><small>拍照识别</small></button>
+          <button class="source-option" data-source="photo" type="button"><span class="source-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="9" r="1.5"/><path d="m4 17 5-5 3.5 3.5 2.5-2.5 5 5"/></svg></span><strong>相册</strong><small>图片识别</small></button>
+          <button class="source-option" data-source="document" type="button"><span class="source-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 6h7l2 2h9v10H3z"/></svg></span><strong>文件</strong><small>PDF 运单</small></button>
         </div>
         <button id="sourceCancel" class="upload-cancel-btn" type="button">取消</button>
       </div>
@@ -96,7 +96,7 @@
   </div>
   <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden>
   <input id="photoInput" type="file" accept="image/*" hidden>
-  <input id="documentInput" type="file" accept="image/*,.pdf" hidden>
+  <input id="documentInput" type="file" accept="application/pdf,.pdf" hidden>
 </main>
 <script src="/js/home.js?v=0f6a1fca"></script>
 <script>
