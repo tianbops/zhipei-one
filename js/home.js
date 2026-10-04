@@ -341,3 +341,25 @@ async function loadHome(){
   }
 }
 loadHome();
+
+/* ===== 首页系统返回：两次返回才退出（防止误滑直接关闭 PWA） =====
+   手机在 PWA 独立模式下，原生滑动返回 = WebView 返回 = history.back。
+   当首页是 App 入口(root)时，一次滑动会直接关闭应用；这里做成
+   「再按一次返回退出」：首次滑动被吸收并提示，2 秒内再次滑动才退出。
+   仅当首页没有「同源站内上一页」时拦截——从其它页返回首页时系统返回
+   应走正常历史(回到刚才那页)，不弹误导性提示。 */
+(function(){
+  const ref=document.referrer||"";
+  let inAppPrev=false;
+  try{inAppPrev=!!ref&&new URL(ref,location.href).origin===location.origin&&/\/(home\.html|pages\/)/.test(ref)}catch{}
+  if(inAppPrev)return; // 从站内页进入首页：系统返回走正常历史，不拦截
+  let armed=false,timer=0;
+  try{history.pushState({zpHomeGuard:true},"")}catch{} // 加一项 guard，使首次系统返回被吸收而非直接退出
+  window.addEventListener("popstate",function(){
+    if(armed)return; // 第二次返回：不拦截，交给系统退出（已到 history 顶）
+    armed=true;
+    try{window.zpToast?window.zpToast("再按一次返回退出应用","info"):0}catch{}
+    clearTimeout(timer);
+    timer=setTimeout(function(){armed=false},2000);
+  });
+})();
