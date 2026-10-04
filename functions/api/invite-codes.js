@@ -1,20 +1,19 @@
 import {json,body} from "./_json.js";
 import {currentUser} from "./_auth.js";
 import {command,get,set,newId} from "./_redis.js";
-
-function admin(u){return u&&(u.role==="system_admin"||u.role==="admin")}
+import {isSystemAdmin} from "./_permissions.js";
 function normalize(v){return String(v||"").trim().toUpperCase()}
 function safe(c){return {id:c.id,code:c.code,enabled:c.enabled!==false,maxUses:c.maxUses,usedCount:c.usedCount||0,expiresAt:c.expiresAt||null,createdAt:c.createdAt||null}}
 
 export async function onRequestGet({request,env}){
- const actor=await currentUser(request,env);if(!admin(actor))return json({success:false,error:"无权限"},403);
+ const actor=await currentUser(request,env);if(!isSystemAdmin(actor))return json({success:false,error:"无权限"},403);
  const raw=await get(env,"invite-codes:index");let ids=[];try{ids=raw?(typeof raw==="string"?JSON.parse(raw):raw):[]}catch{return json({success:false,code:"INVITE_INDEX_INVALID",error:"邀请码索引数据异常，请联系管理员处理"},409)}if(!Array.isArray(ids))return json({success:false,code:"INVITE_INDEX_INVALID",error:"邀请码索引数据异常，请联系管理员处理"},409)
  const codes=[];for(const id of Array.isArray(ids)?ids:[]){if(typeof id!=="string"||!id)return json({success:false,code:"INVITE_INDEX_INVALID",error:"邀请码索引数据异常，请联系管理员处理"},409);const base=await get(env,"invite-code:"+id);if(!base)return json({success:false,code:"INVITE_DATA_INVALID",error:"邀请码索引包含缺失的邀请码数据，请联系管理员处理"},409);try{const b=typeof base==="string"?JSON.parse(base):base;if(!b||b.id!==id||typeof b.code!=="string"||!b.code)return json({success:false,code:"INVITE_DATA_INVALID",error:"邀请码数据异常，请联系管理员处理"},409);const r=await get(env,"invite-code:code:"+b.code);if(!r)return json({success:false,code:"INVITE_DATA_INCONSISTENT",error:"邀请码主记录与编码索引不一致，请联系管理员处理"},409);const d=typeof r==="string"?JSON.parse(r):r;if(!d||d.id!==id||d.code!==b.code)return json({success:false,code:"INVITE_DATA_INCONSISTENT",error:"邀请码主记录与编码索引不一致，请联系管理员处理"},409);const expired=d.expiresAt&&Date.parse(d.expiresAt)<=Date.now();const complete=Number(d.maxUses||0)>0&&Number(d.usedCount||0)>=Number(d.maxUses||0);if(d.enabled!==false&&!expired&&!complete)codes.push(safe(d))}catch{return json({success:false,code:"INVITE_DATA_INVALID",error:"邀请码数据异常，请联系管理员处理"},409)}}
  return json({success:true,codes});
 }
 
 export async function onRequestPost({request,env}){
- const actor=await currentUser(request,env);if(!admin(actor))return json({success:false,error:"无权限"},403);
+ const actor=await currentUser(request,env);if(!isSystemAdmin(actor))return json({success:false,error:"无权限"},403);
  const input=await body(request);const action=String(input.action||"");
  if(action==="create"){
   const requestedUses=Number(input.maxUses); const maxUses=Number.isFinite(requestedUses)?Math.max(0,Math.min(9999,Math.floor(requestedUses))):1;

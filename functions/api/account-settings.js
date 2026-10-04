@@ -2,6 +2,7 @@ import {json,body} from "./_json.js";
 import {currentUser} from "./_auth.js";
 import {get,command,sessionCookie} from "./_redis.js";
 import {hash} from "./login.js";
+import {isSystemAdmin} from "./_permissions.js";
 
 function validUsername(v){return /^[A-Za-z0-9_\-.]{3,32}$/.test(v)}
 
@@ -43,7 +44,7 @@ export async function onRequestPost({request,env}){
   }
 
   if(action==="delete"){
-   if(actor.role==="admin"||actor.role==="system_admin")return json({success:false,error:"系统管理员账号不能自行注销，请联系管理员处理",code:"ADMIN_ACCOUNT_DELETE_BLOCKED"},403);
+   if(isSystemAdmin(actor))return json({success:false,error:"系统管理员账号不能自行注销，请联系管理员处理",code:"ADMIN_ACCOUNT_DELETE_BLOCKED"},403);
    const password=String(input.password||"");
    if(!password)return json({success:false,error:"请输入当前密码确认注销"},400);
    if(actor.passwordHash!==await hash(password))return json({success:false,error:"当前密码错误",code:"CURRENT_PASSWORD_INVALID"},403);

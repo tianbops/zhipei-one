@@ -111,10 +111,13 @@ export async function onRequestGet({request,env}){
 }
 
 async function deleteWaybill(env,routeId,date,waybillId){
- await command(env,["SREM",waybillIndexKey(routeId,date),waybillId]).catch(()=>{});
- await command(env,["DEL","zp:waybill:"+waybillId]).catch(()=>{});
+ const errors=[];let mainOk=false,indexOk=false,childrenOk=true;
+ try{await command(env,["SREM",waybillIndexKey(routeId,date),waybillId]);indexOk=true}catch(e){errors.push(e)}
+ try{await command(env,["DEL","zp:waybill:"+waybillId]);mainOk=true}catch(e){errors.push(e)}
  let cursor="0";const prefix="zp:waybill:"+waybillId+":";
- do{const r=await command(env,["SCAN",cursor,"MATCH",prefix+"*","COUNT","100"]);cursor=String(r?.[0]??"0");const keys=Array.isArray(r?.[1])?r[1]:[];if(keys.length)await command(env,["DEL",...keys]).catch(()=>{})}while(cursor!=="0");
+ do{let keys=[];try{const r=await command(env,["SCAN",cursor,"MATCH",prefix+"*","COUNT","100"]);cursor=String(r?.[0]??"0");keys=Array.isArray(r?.[1])?r[1]:[]}catch(e){errors.push(e);childrenOk=false;break}
+    if(keys.length){try{await command(env,["DEL",...keys])}catch(e){errors.push(e);childrenOk=false}}}while(cursor!=="0");
+ return {mainOk,indexOk,childrenOk,errors};
 }
 
 export async function onRequestDelete({request,env}){
@@ -123,16 +126,15 @@ export async function onRequestDelete({request,env}){
  const url=new URL(request.url),routeId=clean(url.searchParams.get("routeId")||user.dispatchRouteId||user.boundRouteId),date=clean(url.searchParams.get("date")),month=clean(url.searchParams.get("month")),currentRoute=clean(user.dispatchRouteId)||clean(user.boundRouteId);
  if(!routeId||routeId!==currentRoute)return json({success:false,error:"无权操作该线路历史"},403);
  const range=historyRange(todayCN());
+ const summarize=results=>{let deleted=0,mainFailed=false,partial=false;for(const r of results){if(r.mainOk)deleted++;else mainFailed=true;if(!r.indexOk||!r.childrenOk)partial=true}return {deleted,mainFailed,partial}};
  if(month){
   if(!/^\d{4}-\d{2}$/.test(month))return json({success:false,code:"MONTH_INVALID",error:"月份格式错误"},400);
   if(!monthInRange(month,range))return json({success:false,code:"MONTH_OUT_OF_RANGE",error:"月份不在历史查询范围内"},400);
-  const entries=await readDates(env,routeId,range);let deleted=0;
-  // readDateWaybills 已按 historyReadable 过滤（PLANNED / CONFIRMED），
-  // 这里不再按 stage 二次拦截：用户看到的历史运单都应该删得掉。
-  // 旧逻辑只删 CONFIRMED，导致「待确认」运单点了删除却报「仅可删除已确认运单」，
-  // 或整日删除后记录仍在 —— 与实际预期不符。
-  for(const entry of entries){if(!entry.date.startsWith(month))continue;for(const order of await readDateWaybills(env,routeId,entry.date)){await deleteWaybill(env,routeId,entry.date,order.id);deleted++}}
-  return json({success:true,deleted,deletedWaybills:deleted,month});
+  const entries=await readDates(env,routeId,range);const results=[];
+  for(const entry of entries){if(!entry.date.startsWith(month))continue;for(const order of await readDateWaybills(env,routeId,entry.date)){results.push(await deleteWaybill(env,routeId,entry.date,order.id))}}
+  const s=summarize(results);
+  if(s.mainFailed)return json({success:false,code:"WAYBILL_DELETE_FAILED",error:"部分运单主记录删除失败,请重试",deleted:s.deleted,month});
+  return json({success:true,code:s.partial?"PARTIAL_FAILURE":undefined,message:s.partial?"部分索引或子键清理未完成,建议稍后执行修复":undefined,deleted:s.deleted,deletedWaybills:s.deleted,month});
  }
  if(!validDate(date))return json({success:false,code:"DATE_INVALID",error:"日期格式错误"},400);
  if(!inRange(date,range))return json({success:false,code:"DATE_OUT_OF_RANGE",error:"日期不在历史查询范围内"},400);
@@ -141,9 +143,12 @@ export async function onRequestDelete({request,env}){
   const orders=await readDateWaybills(env,routeId,date);
   const target=orders.find(order=>order.id===waybillId);
   if(!target)return json({success:false,code:"WAYBILL_NOT_FOUND",error:"运单不存在或已删除"},404);
-  await deleteWaybill(env,routeId,date,target.id);
-  return json({success:true,deleted:1,deletedWaybills:1,waybillId});
+  const r=await deleteWaybill(env,routeId,date,target.id);
+  if(!r.mainOk)return json({success:false,code:"WAYBILL_DELETE_FAILED",error:"运单主记录删除失败,请重试",deleted:0,waybillId});
+  return json({success:true,code:r.indexOk&&r.childrenOk?undefined:"PARTIAL_FAILURE",message:r.indexOk&&r.childrenOk?undefined:"部分索引或子键清理未完成,建议稍后执行修复",deleted:1,deletedWaybills:1,waybillId});
  }
- let deleted=0;for(const order of await readDateWaybills(env,routeId,date)){await deleteWaybill(env,routeId,date,order.id);deleted++}
- return json({success:true,deleted,deletedWaybills:deleted});
+ const results=[];for(const order of await readDateWaybills(env,routeId,date)){results.push(await deleteWaybill(env,routeId,date,order.id))}
+ const s=summarize(results);
+ if(s.mainFailed)return json({success:false,code:"WAYBILL_DELETE_FAILED",error:"部分运单主记录删除失败,请重试",deleted:s.deleted});
+ return json({success:true,code:s.partial?"PARTIAL_FAILURE":undefined,message:s.partial?"部分索引或子键清理未完成,建议稍后执行修复":undefined,deleted:s.deleted,deletedWaybills:s.deleted});
 }

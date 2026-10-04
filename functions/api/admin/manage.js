@@ -2,13 +2,12 @@ import {json,body} from "../_json.js";
 import {currentUser} from "../_auth.js";
 import {get,command} from "../_redis.js";
 import {hash} from "../login.js";
-
-function admin(u){return u&&(u.role==="system_admin"||u.role==="admin")}
+import {isSystemAdmin} from "../_permissions.js";
 function validUsername(v){return /^[A-Za-z0-9_]{3,32}$/.test(v)}
 
 export async function onRequestPost({request,env}){
   const actor=await currentUser(request,env);
-  if(!admin(actor))return json({success:false,error:"无权限"},403);
+  if(!isSystemAdmin(actor))return json({success:false,error:"无权限"},403);
   const input=await body(request);
   const action=String(input.action||"");
 
