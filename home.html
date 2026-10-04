@@ -24,10 +24,10 @@
     <div class="menu-wrap">
       <button id="menuButton" class="home-menu-button" type="button" aria-label="打开菜单" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
       <div id="menuPanel" class="home-menu-panel" hidden>
-                <a href="/pages/dispatch.html" id="currentRouteMenu"><span class="menu-item-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z"/><path d="M8 10h8M8 14h5"/></svg></span><span>当前线路</span><strong id="currentRouteMenuValue" class="menu-route-value"></strong></a>
-        <a href="/pages/route_apply.html" id="bindingRouteMenu"><span class="menu-item-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z"/><path d="M8 10h8M8 14h5"/></svg></span><span>绑定线路</span></a>
-        <a href="/pages/data.html"><span class="menu-item-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg></span><span>数据中心</span></a>
-        <a href="/pages/account.html"><span class="menu-item-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M5 20c.8-3.2 3.1-5 7-5s6.2 1.8 7 5"/></svg></span><span>账号设置</span></a>
+                <a href="/pages/dispatch.html?from=home" id="currentRouteMenu"><span class="menu-item-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z"/><path d="M8 10h8M8 14h5"/></svg></span><span>当前线路</span><strong id="currentRouteMenuValue" class="menu-route-value"></strong></a>
+        <a href="/pages/route_apply.html?from=home" id="bindingRouteMenu"><span class="menu-item-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z"/><path d="M8 10h8M8 14h5"/></svg></span><span>绑定线路</span></a>
+        <a href="/pages/data.html?from=home"><span class="menu-item-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg></span><span>数据中心</span></a>
+        <a href="/pages/account.html?from=home"><span class="menu-item-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M5 20c.8-3.2 3.1-5 7-5s6.2 1.8 7 5"/></svg></span><span>账号设置</span></a>
         <div class="menu-divider" aria-hidden="true"></div>
         <button id="logout" type="button"><span class="menu-item-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10 5H5v14h5M13 8l4 4-4 4M8 12h9"/></svg></span><span>退出登录</span></button>
       </div>
@@ -55,11 +55,11 @@
       <span class="function-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg></span>
       <span>上传运单</span>
     </button>
-    <a class="function-btn" href="/pages/today.html">
+    <a class="function-btn" href="/pages/today.html?from=home">
       <span class="function-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s7-6.1 7-11.1A7 7 0 0 0 5 9.9C5 14.9 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.3"/><path d="M4 18.5h3M17 18.5h3"/></svg></span>
       <span>今日运单</span>
     </a>
-    <a class="function-btn" href="/pages/history.html">
+    <a class="function-btn" href="/pages/history.html?from=home">
       <span class="function-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3.5 5v4h4"/><path d="M12 7.5v5l3.2 1.9"/></svg></span>
       <span>历史查询</span>
     </a>
@@ -98,12 +98,12 @@
   <input id="photoInput" type="file" accept="image/*" hidden>
   <input id="documentInput" type="file" accept="application/pdf,.pdf" hidden>
 </main>
-<script src="/js/home.js?v=0286a43a"></script>
+<script src="/js/home.js?v=157e2259"></script>
 <script>
 (()=>{const d=document.getElementById("todayDate");if(d){const f=new Intl.DateTimeFormat("zh-CN",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit",weekday:"short"});d.textContent=f.format(new Date()).replaceAll("/","-")}})();
 document.getElementById("logout")?.addEventListener("click",async()=>{const ok=window.zpConfirm?await window.zpConfirm("退出登录","确定要退出当前账号吗？","退出"):true;if(!ok)return;try{await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"})}finally{location.replace("/")}})
 </script>
-<script src="/js/ui-unified.js?v=dca0b062"></script>
+<script src="/js/ui-unified.js?v=772d8613"></script>
 <script src="/js/pwa.js?v=864ce384"></script>
 </body>
 </html>

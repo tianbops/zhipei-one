@@ -57,6 +57,7 @@
 </main>
 <script>
 const $=id=>document.getElementById(id);
+var dataBaseline="";// 门店资料基线：用于判断是否存在「暂存但未提交」的修改
 // 来源驱动返回：从运单详情内进入数据资料时，返回箭头应回到原运单而非首页
 (function(){
   const p=new URLSearchParams(location.search);
@@ -272,7 +273,7 @@ async function submitStores(){
  try{
   stores.forEach((s,i)=>s.routeOrder=i+1);
   const d=await api("/api/base",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({routeId,expectedVersion:baseVersion,stores})});
-  stores=Array.isArray(d.base?.stores)?d.base.stores:stores;baseVersion=Number(d.base?.version)||baseVersion;hiddenIndexes.clear();render();
+  stores=Array.isArray(d.base?.stores)?d.base.stores:stores;baseVersion=Number(d.base?.version)||baseVersion;hiddenIndexes.clear();dataBaseline=JSON.stringify(stores);render();
   $("summary").innerHTML="<strong>"+stores.length+"家</strong>";showDataFeedback("success","数据更新成功")
  }catch(e){
    if(e.code==="BASE_VERSION_CONFLICT"){
@@ -340,7 +341,7 @@ async function load(){
   const x=await api("/api/base?routeId="+encodeURIComponent(routeId));
   canMaintain=!!x.canMaintain;
   $("tools").style.display=canMaintain?"block":"none";
-  stores=Array.isArray(x.base?.stores)?x.base.stores:[];baseVersion=Number(x.base?.version)||1;
+  stores=Array.isArray(x.base?.stores)?x.base.stores:[];baseVersion=Number(x.base?.version)||1;dataBaseline=JSON.stringify(stores);
   $("title").textContent=(x.route?.name?((/号线$/.test(x.route.name)?x.route.name:x.route.name+"号线")):"当前线路");
   $("hint").textContent=canMaintain?"你目前拥有该线路维护权限":"你目前仅拥有该线路使用权限";
   $("summary").innerHTML="<strong>"+stores.length+"家</strong>";
@@ -348,6 +349,20 @@ async function load(){
  }catch(e){$("hint").textContent=err(e);$("stores").textContent="数据资料加载失败";$("summary").innerHTML="<strong>—</strong>";$("storeCount").textContent="—"}
 }
 load();
-</script><script src="/js/ui-unified.js?v=dca0b062"></script>
+/* 返回层级：四个导入面板（用内联 style.display，非 hidden）→ 下拉菜单 → 页面导航。
+   另加页面级未保存拦截，保护「暂存但尚未提交」的门店修改。 */
+(function(){
+  const PANELS=["editBox","replaceBox","appendBox","restoreBox"];
+  const openPanel=()=>{for(const id of PANELS){const el=$(id);if(el&&el.style.display==="flex")return el}return null};
+  const filled=el=>!!el&&[...el.querySelectorAll("input,textarea,select")].some(x=>String(x.value||"").trim()!=="");
+  (window.zpBackHooks=window.zpBackHooks||[]).push(
+    {rank:10,probe:openPanel,dirty:()=>filled(openPanel()),
+     close:()=>{const el=openPanel();if(!el)return false;hidePanel(el.id);if(el.id==="editBox")editingIndex=-1;return true}},
+    {rank:20,probe:()=>$("pageMenu"),close:()=>{$("pageMenu").hidden=true;return true}}
+  );
+  (window.zpDirtyProbes=window.zpDirtyProbes||[]).push(()=>
+    filled(openPanel())||!!(dataBaseline&&dataBaseline!==JSON.stringify(stores)));
+})();
+</script><script src="/js/ui-unified.js?v=772d8613"></script>
 <script src="/js/pwa.js?v=864ce384"></script>
 </body></html>

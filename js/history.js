@@ -36,4 +36,11 @@ pickerPrev.onclick=()=>shiftMonth(-1);pickerNext.onclick=()=>shiftMonth(1);
 async function deleteDate(date){const r=await fetch("/api/history?date="+encodeURIComponent(date),{method:"DELETE",credentials:"same-origin"}),d=await r.json().catch(()=>null);if(!r.ok||!d?.success)throw new Error(d?.error||"删除失败")}
 async function deleteMonth(month){const r=await fetch("/api/history?month="+encodeURIComponent(month),{method:"DELETE",credentials:"same-origin"}),d=await r.json().catch(()=>null);if(!r.ok||!d?.success)throw new Error(d?.error||"删除失败")}
 confirmBtn.onclick=async()=>{if(!pendingDelete)return;const job=pendingDelete;confirmBtn.disabled=true;confirmBtn.textContent="删除中…";try{if(job.type==="date")await deleteDate(job.key);else await deleteMonth(job.key);closeDialog();await load()}catch(e){confirmBtn.disabled=false;confirmBtn.textContent="确定";dialogText.textContent=e.message||"删除失败，请稍后重试"}};
-document.addEventListener("click",e=>{if(!e.target.closest(".history-swipe-row"))closeOpen()});document.addEventListener("scroll",closeOpen,{passive:true});load()})();
+document.addEventListener("click",e=>{if(!e.target.closest(".history-swipe-row"))closeOpen()});document.addEventListener("scroll",closeOpen,{passive:true});load();
+/* 返回层级：删除确认弹窗 / 日历选择器 → 左滑展开行 → 页面导航 */
+(window.zpBackHooks=window.zpBackHooks||[]).push(
+  {rank:10,probe:()=>picker,close:()=>{picker.hidden=true;return true}},
+  {rank:10,probe:()=>dialog,close:()=>{closeDialog();return true}},
+  {rank:40,probe:()=>document.querySelector(".history-swipe-row.swiped"),close:()=>{closeOpen();return true}}
+);
+})();

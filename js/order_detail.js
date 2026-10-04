@@ -326,11 +326,14 @@ function openConfirm(){
  };
 }
 
-// 来源驱动返回：不再依赖 document.referrer / history.length 猜测，由 URL 的 from= 决定目标
-const backToFrom=()=>{setMenu(false);const map={history:'/pages/history.html',today:'/pages/today.html',process:'/home.html'};location.replace(map[from]||'/home.html')};
-history.pushState({zhipeiOneOrderDetail:true},'',location.href);
-window.addEventListener('popstate',backToFrom);
-$('backBtn').onclick=backToFrom;
+// 顶部返回 与 Android 系统返回统一由 ui-unified.js 的 zpHandleBack() 处理，
+// 这里只注册本页的返回层级：待确认子选择器 → 确认弹窗 → 下拉菜单，由页面自身逻辑关闭。
+(window.zpBackHooks=window.zpBackHooks||[]).push(
+  {rank:10,probe:()=>document.querySelector('.pending-picker'),close:()=>{const p=document.querySelector('.pending-picker');if(p)p.hidden=true;return true}},
+  // 待确认弹窗本身就是编辑态：有已选项未提交时，返回需先确认放弃
+  {rank:10,probe:()=>$('confirmDialog'),dirty:()=>!!document.querySelector('#confirmDialog .choice-btn.selected'),close:()=>{$('confirmDialog').hidden=true;return true}},
+  {rank:20,probe:()=>$('menuPanel'),close:()=>{setMenu(false);return true}}
+);
 $('menuBtn').onclick=e=>{e.stopPropagation();setMenu(!menuOpen)};
 $('editRouteBtn').onclick=()=>location.href='/pages/data.html?from=order&id='+encodeURIComponent(order.id)+'&source=process';
 $('shareBtn').onclick=async()=>{
