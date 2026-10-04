@@ -346,6 +346,19 @@ select option{background:#11171D;color:#fff}
   #zpUiLayer .zp-confirm-panel{padding:20px 16px 16px;border-radius:16px}
   #zpUiLayer .zp-confirm-actions{gap:8px;margin-top:18px}
 }
+
+/* ===== 面板横滑 4.0 =====
+   旧问题：内容不足时 #viewport 高度只有列表那么高，屏幕下半部的触摸 target 是
+   .panel/.shell，事件不会冒泡到挂在 #viewport 的监听器 → 底部完全滑不动。
+   修复：整条链路改成「视口高度 + 面板内滚动」，让每一页都铺满可滑动热区。 */
+html,body{height:100%}
+body{overflow-y:hidden}
+.shell{height:100dvh;display:flex;flex-direction:column}
+.panel{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+.viewport{flex:1 1 auto;min-height:0;overflow:hidden;touch-action:pan-y}
+.pages{height:100%}
+.page{height:100%;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.tabs{touch-action:pan-y}
 </style>
 </head><body><main class="shell"><div class="panel"><header class="head"><img src="/assets/logo.png" alt="智配One"><div class="head-info"><div id="who" class="who">正在验证身份…</div></div><button id="menuBtn" class="menu-btn" aria-label="打开系统设置">☰</button></header><nav class="tabs"><button class="tab active" data-i="0">用户管理</button><button class="tab" data-i="1">线路管理</button><button class="tab" data-i="2">线路审核</button><button class="tab" data-i="3">邀请码</button></nav><div id="viewport" class="viewport"><div id="pages" class="pages"><section class="page"><div class="title">用户管理</div><div class="search"><span>⌕</span><input id="search" placeholder="搜索用户名"></div><div id="users" class="list"></div></section><section class="page"><div class="title"><span>线路管理</span><button id="addRoute" class="add">＋</button></div><div id="routes" class="list"></div></section><section class="page"><div class="title">线路审核</div><div id="requests" class="list"></div></section><section class="page"><div class="title"><span>邀请码</span><button id="addInvite" class="add">＋</button></div><div id="invites" class="list"></div></section></div></div></div></main><div id="dlg" class="dialog-bg" hidden><div class="dialog"><h2 id="dt"></h2><p id="dp"></p><div id="db"></div><div class="dialog-actions"><button id="dc" class="cancel">取消</button><button id="do" class="ok">确定</button></div></div></div><div id="menuBg" class="dialog-bg menu-bg" hidden><div class="dialog"><h2>系统设置</h2><div class="card" style="margin-top:10px"><div id="editUser" class="setting"><div>用户名<div id="userMeta" class="meta"></div></div><span class="chev">›</span></div><div id="editPass" class="setting">修改密码<span class="chev">›</span></div><div id="reset" class="setting">重置数据<span class="chev">›</span></div><div id="logout" class="setting">退出登录</div></div></div></div><div id="toast" class="toast"></div><script>
 window.__adminBootStarted=Date.now();
@@ -398,7 +411,62 @@ async function load(){
     toast("管理员身份已验证，但部分数据读取失败："+(e.message||"请稍后重试"));
     renderUsers();renderRoutes();renderRequests();renderInvites();
   }
-}$("search").oninput=renderUsers;document.addEventListener("click",e=>{if(!e.target.closest(".row,.route,.dialog"))closeSwipes()});document.querySelectorAll(".page").forEach(p=>p.addEventListener("scroll",closeSwipes,{passive:true}));$("addRoute").onclick=addRoute;$("menuBtn").onclick=()=>{const mb=$("menuBg");mb.hidden?openMenu():hideMenu()};$("menuBg").addEventListener("click",e=>{if(e.target===$("menuBg"))hideMenu()});document.addEventListener("keydown",e=>{if(e.key==="Escape")hideMenu()});/* popstate 已移交 ui-unified.js 中央控制器 zpHandleBack() */$("addInvite").onclick=addInvite;$("editUser").onclick=editUser;$("editPass").onclick=editPass;$("reset").onclick=resetData;$("logout").onclick=async()=>{hideMenu();if(!(await zpConfirm("退出登录","确定要退出当前管理员账号吗？","退出")))return;await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"});location.replace("/")};document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>page(Number(b.dataset.i)));let sx,sy;$("viewport").addEventListener("touchstart",e=>{if(!dlg.hidden)return;sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});$("viewport").addEventListener("touchend",e=>{if(!dlg.hidden)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.35){if(dx<0&&S.page<3)page(S.page+1);if(dx>0&&S.page>0)page(S.page-1)}} ,{passive:true});load();
+}$("search").oninput=renderUsers;document.addEventListener("click",e=>{if(!e.target.closest(".row,.route,.dialog"))closeSwipes()});document.querySelectorAll(".page").forEach(p=>p.addEventListener("scroll",closeSwipes,{passive:true}));$("addRoute").onclick=addRoute;$("menuBtn").onclick=()=>{const mb=$("menuBg");mb.hidden?openMenu():hideMenu()};$("menuBg").addEventListener("click",e=>{if(e.target===$("menuBg"))hideMenu()});document.addEventListener("keydown",e=>{if(e.key==="Escape")hideMenu()});/* popstate 已移交 ui-unified.js 中央控制器 zpHandleBack() */$("addInvite").onclick=addInvite;$("editUser").onclick=editUser;$("editPass").onclick=editPass;$("reset").onclick=resetData;$("logout").onclick=async()=>{hideMenu();if(!(await zpConfirm("退出登录","确定要退出当前管理员账号吗？","退出")))return;await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"});location.replace("/")};document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>page(Number(b.dataset.i)));load();
+/* 面板横滑 4.0：实时跟手 + 8px 方向锁定 + 距离/速度双判定 + 首尾阻尼。
+   旧实现三处失效：①阈值 55px 太高 ②要求 |dx|>|dy|*1.35，拇指自然弧度必带
+   竖向分量 → 被误判为滚动 ③热区原只挂在 #viewport，屏幕边缘与底部留白收不到
+   事件（已改为整块 .shell 可滑 + 面板铺满可用高度，详见上方样式注释）。 */
+(function(){
+  const vp=$("viewport"),pg=$("pages");
+  const W=()=>vp.clientWidth||document.documentElement.clientWidth||360;
+  const busy=()=>!$("dlg").hidden||!$("menuBg").hidden;
+  let sx=0,sy=0,axis="",live=false,from=0,t0=0,onRow=false;
+  function down(e){
+    if(busy()||e.touches.length>1){axis="skip";return}
+    if(document.querySelector(".row.open,.route.open")){closeSwipes();axis="skip";return}
+    const t=e.touches[0];
+    sx=t.clientX;sy=t.clientY;axis="";live=false;from=S.page;t0=e.timeStamp||Date.now();
+    onRow=!!(e.target&&e.target.closest&&e.target.closest(".row,.route"));
+  }
+  function move(e){
+    if(axis==="skip"||busy())return;
+    const t=e.touches[0],mx=t.clientX-sx,ay=Math.abs(t.clientY-sy);
+    if(!axis){
+      if(Math.abs(mx)<8&&ay<8)return;                 // 死区：不动就什么都不判定
+      if(onRow&&mx<0){axis="skip";return}             // 列表行向左 = 行内操作菜单，让位给 sw()
+      axis=Math.abs(mx)>ay?"x":"y";                   // 一次锁定，全程不再摇摆
+      if(axis!=="x")return;                           // 竖向 → 交还列表原生滚动
+      live=true;
+    }
+    if(axis!=="x")return;
+    let off=mx;
+    if((from===0&&off>0)||(from===3&&off<0))off*=0.3; // 首尾面板阻尼，滑到底有回弹感
+    pg.style.transition="none";
+    pg.style.transform="translateX("+(-from*W()+off)+"px)";
+    if(e.cancelable)e.preventDefault();
+  }
+  function end(e,commit){
+    if(axis==="skip"||axis!=="x"||!live){axis="";live=false;return}
+    const t=e.changedTouches&&e.changedTouches[0];
+    const last=t?t.clientX-sx:0;
+    const dt=Math.max(1,(e.timeStamp||Date.now())-t0),vel=Math.abs(last)/dt,w=W();
+    let to=from;
+    // 距离够远 或 甩得够快（快滑哪怕只有 18px 也翻页），两者满足其一即可
+    if(commit&&(Math.abs(last)>Math.min(36,w*0.10)||(vel>0.28&&Math.abs(last)>14)))
+      to=last<0?from+1:from-1;
+    to=Math.max(0,Math.min(3,to));
+    pg.style.transition="";live=false;axis="";
+    page(to);                                          // 统一收尾：百分比重排 + Tab 高亮 + 收起左滑行
+  }
+  const host=document.querySelector(".shell")||vp;   // 热区提升到整块面板：含 tabs 与四周留白
+  [host].forEach(el=>{if(!el)return;
+    el.addEventListener("touchstart",down,{passive:true});
+    el.addEventListener("touchmove",move,{passive:false});
+    el.addEventListener("touchend",e=>end(e,true),{passive:true});
+    el.addEventListener("touchcancel",e=>end(e,false),{passive:true});
+  });
+})();
+
 /* 管理员端返回层级：表单弹窗 → 系统设置抽屉 → 左滑展开行 → 到顶「两次返回退出」。
    管理员是独立工作区，中央控制器的跨区防火墙已禁止其回落到业务首页/业务页。 */
 (window.zpBackHooks=window.zpBackHooks||[]).push(
