@@ -540,3 +540,23 @@
 
 /* Android 返回层 2.5：历史查询返回按钮沿用运单详情纯箭头。 */
 .history-back{touch-action:manipulation}
+
+/* 日历月份滑动切换：左滑下月（内容自右滑入）、右滑上月（内容自左滑入） */
+@keyframes historyCalInLeft{
+  from{opacity:0;transform:translate3d(-18px,0,0)}
+  to{opacity:1;transform:none}
+}
+@keyframes historyCalInRight{
+  from{opacity:0;transform:translate3d(18px,0,0)}
+  to{opacity:1;transform:none}
+}
+.history-picker-head strong.cal-anim-left,
+.history-calendar-grid.cal-anim-left{animation:historyCalInLeft .22s ease-out}
+.history-picker-head strong.cal-anim-right,
+.history-calendar-grid.cal-anim-right{animation:historyCalInRight .22s ease-out}
+@media(prefers-reduced-motion:reduce){
+  .history-picker-head strong.cal-anim-left,
+  .history-calendar-grid.cal-anim-left,
+  .history-picker-head strong.cal-anim-right,
+  .history-calendar-grid.cal-anim-right{animation:none}
+}
