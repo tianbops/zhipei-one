@@ -301,7 +301,7 @@ async function loadHome(){
     if(!dispatchRes.ok||!dispatch.success)throw Error(dispatch.error||"当前配送线路读取失败");
     dispatchRouteId=dispatch.dispatchRoute?.id||"";
     const route=dispatch.dispatchRoute||null;
-    const routeName=route?.type==="temporary"?"临时":(route?.name||"未选择");
+    const routeName=route?.type==="temporary"?"临时用户":(route?.name||"未选择");
     setRouteBadge(route);
     if(menuRouteValue)menuRouteValue.textContent=routeName;
     const wRes=await fetch("/api/waybills/latest?confirmed=1",{credentials:"same-origin",cache:"no-store"});

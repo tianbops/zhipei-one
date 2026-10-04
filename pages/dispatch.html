@@ -19,18 +19,11 @@
 <main class="dispatch-page">
 <header class="dispatch-head"><a class="dispatch-back" href="/home.html" aria-label="返回"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><h1>当前线路</h1><span></span></header>
 <section class="dispatch-section">
-  <h2 class="dispatch-section-title">临时线路</h2>
-  <div class="dispatch-list">
-    <button class="dispatch-option" type="button" data-route-id="__temporary__"><span>临时</span><small>无数据 · 全局学习</small></button>
-  </div>
-</section>
-<section class="dispatch-section">
   <h2 class="dispatch-section-title">已有线路</h2>
   <div id="routeList" class="dispatch-list"><div class="dispatch-message">读取中…</div></div>
 </section>
 </main>
 <script>
-const TEMP="__temporary__";
 const $=id=>document.getElementById(id);
 async function api(url,opt={}){const r=await fetch(url,{credentials:"same-origin",cache:"no-store",...opt});const d=await r.json().catch(()=>({}));if(!r.ok||!d.success)throw new Error(d.error||"请求失败");return d}
 function mark(id){document.querySelectorAll(".dispatch-option").forEach(b=>b.classList.toggle("selected",b.dataset.routeId===id))}

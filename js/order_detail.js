@@ -211,8 +211,8 @@ function openConfirm(){
  const pending=order?.stores?.map((x,i)=>({x,i})).filter(v=>v.x?.pending)||[];
  const list=$('pendingList'), selected=new Map();list.innerHTML='';
  const updateSubmit=()=>{$('submitConfirm').disabled=selected.size!==pending.length;$('submitConfirm').textContent=selected.size===pending.length?'确认':'确认（'+selected.size+'/'+pending.length+'）'};
- // 临时线路不建立线路数据资料，没有"已有门店"可指定，此时只保留「新增」
- const isTempRoute=order?.routeId==='__temporary__';
+ // 临时线路（routeId=__temp__:<userId>）不建立线路数据资料，没有"已有门店"可指定，此时只保留「新增」
+ const isTempRoute=String(order?.routeId||"").startsWith("__temp__:");
  // 待定原因文案：让用户明白系统为何没有自动匹配，而不是面对无解释的"待确认"
  const REASON_TEXT={no_candidate:'基准库中没有相近门店，请选择新增或指定已有门店',below_threshold:'相似度不足，请确认是否为同一门店',ambiguous:'存在多个相近门店，请人工选择'};
  pending.forEach(({x,i})=>{

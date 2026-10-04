@@ -1,6 +1,7 @@
 import {json,body} from "./_json.js";
 import {get,command,newId} from "./_redis.js";
 import {hash} from "./login.js";
+import {TEMP_ROUTE_PREFIX} from "./dispatch.js";
 
 function normalize(v){return String(v??"").trim()}
 
@@ -9,9 +10,9 @@ async function registerAtomically(env,{id,username,name,passwordHash,inviteCode}
  const userIndexKey="zp:user:index:"+username.toLowerCase();
  const userKey="zp:user:"+id;
  const usersIndexKey="zp:users:index";
- // 新注册用户默认进入临时线路（dispatchRouteId=__temporary__，见 dispatch.js TEMP_DISPATCH_ID），
- // 避免未选择调度线路时空跑“请先选择调度线路”而无法上传运单。
- const user={id,username,name,role:"user",disabled:false,boundRouteId:null,routeDuty:null,dispatchRouteId:"__temporary__",sessionVersion:1,passwordHash,createdAt:new Date().toISOString()};
+ // 新注册用户默认进入“临时用户”状态：分配每人独立的临时线路（dispatchRouteId=__temp__:<id>，见 dispatch.js TEMP_ROUTE_PREFIX），
+ // 避免未选择调度线路时空跑“请先选择调度线路”；各临时用户数据天然隔离，并共享全局学习库。
+ const user={id,username,name,role:"user",disabled:false,boundRouteId:null,routeDuty:null,dispatchRouteId:TEMP_ROUTE_PREFIX+id,sessionVersion:1,passwordHash,createdAt:new Date().toISOString()};
  const script="local raw=redis.call('GET',KEYS[1]); if not raw then return -1 end; local ok,c=pcall(cjson.decode,raw); if not ok or type(c)~='table' or type(c.id)~='string' or type(c.code)~='string' then return -6 end; if string.upper(c.code)~=ARGV[5] then return -6 end; local main=redis.call('GET','zp:invite-code:'..c.id); if not main then return -6 end; local okm,m=pcall(cjson.decode,main); if not okm or type(m)~='table' or m.id~=c.id or m.code~=c.code then return -6 end; if c.enabled==false or m.enabled==false then return -2 end; if c.expiresAt and c.expiresAt~='' and ARGV[4] >= string.sub(c.expiresAt,1,19) then return -3 end; local used=tonumber(c.usedCount or 0) or 0; local max=tonumber(c.maxUses or 0) or 0; if max>0 and used>=max then return -4 end; if redis.call('GET',KEYS[2]) then return -5 end; local rawIds=redis.call('GET',KEYS[4]); local arr={}; if rawIds then local okIds,v=pcall(cjson.decode,rawIds); if not okIds or type(v)~='table' then return -7 end; arr=v; for _,uid in ipairs(arr) do if type(uid)~='string' or uid=='' then return -7 end end end; local next=used+1; c.usedCount=next; m.usedCount=next; redis.call('SET',KEYS[1],cjson.encode(c)); redis.call('SET','zp:invite-code:'..c.id,cjson.encode(m)); redis.call('SET',KEYS[3],ARGV[1]); redis.call('SET',KEYS[2],ARGV[3]); table.insert(arr,ARGV[3]); redis.call('SET',KEYS[4],cjson.encode(arr)); return 1";
  const now=new Date().toISOString().slice(0,19);
  return command(env,["EVAL",script,"4",codeKey,userIndexKey,userKey,usersIndexKey,JSON.stringify(user),username,id,now,inviteCode]);

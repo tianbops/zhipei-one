@@ -2,13 +2,22 @@ import {json,body} from "../_json.js";
 import {currentUser} from "../_auth.js";
 import {get,newId,command} from "../_redis.js";
 import {canMaintainRoute,requireBusinessUser} from "../_permissions.js";
-import {TEMP_DISPATCH_ID} from "../dispatch.js";
+import {isTempRoute,TEMP_ROUTE_PREFIX} from "../dispatch.js";
 import {findGlobalMatches,learnGlobal} from "../_global-learning.js";
 import {businessFingerprint} from "../_waybill-identity.js";
 
 const clean=v=>String(v??"").trim();
 const normalized=v=>clean(v).replace(/[\u3000\s]+/g,"").replace(/[（）()【】\[\]{}<>《》“”"'‘’]/g,"").replace(/[·•、,，。；;:：!！?？\-_—]/g,"").replace(/Ⅱl|Il|II|ⅱ/gi,"II").toLowerCase();
+// 运单确认权限：正式线路要求维护权限；临时线路要求“必须是本人独立的临时空间”，
+// 杜绝跨临时用户确认（每个临时用户 routeId=__temp__:<userId>，互不相同）。
+function canConfirmWaybill(user,order){
+ if(isTempRoute(order.routeId))return order.routeId===TEMP_ROUTE_PREFIX+user.id;
+ return canMaintainRoute(user,order.routeId);
+}
 async function loadBase(env,id){const raw=await get(env,"route:"+id+":base");if(!raw)throw Object.assign(new Error("线路数据资料尚未建立"),{code:"BASE_NOT_FOUND"});let x;try{x=typeof raw==="string"?JSON.parse(raw):raw}catch{throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"})}if(!x||!Array.isArray(x.stores))throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"});return {...x,routeId:id}}
+// 读取运单主记录（zp:waybill:<id>）。此前 confirm.js 引用了未定义的 load，导致确认链路运行时报错，
+// 此处补全与 base.js/learning.js 同构的本地实现。
+async function load(env,waybillId){const raw=await get(env,"waybill:"+waybillId);if(!raw)return null;try{return typeof raw==="string"?JSON.parse(raw):raw}catch{return null}}
 async function retryLearningRepairs(env,waybillId,userId){
  const key="waybill:"+waybillId+":learning-repair";
  const lock={key:key+":lock",token:newId()};
@@ -26,6 +35,12 @@ async function retryLearningRepairs(env,waybillId,userId){
   return remaining?"DEFERRED":"RECORDED";
  }finally{await releaseLock(env,lock)}
 }
+// 释放分布式锁：仅在当前令牌与持锁令牌一致时删除，避免误删他人锁。
+// 此前 confirm.js 多处调用 releaseLock 却未定义，导致每次成功确认在收尾阶段抛 ReferenceError 返回 500。
+async function releaseLock(env,lock){
+  if(!lock)return;
+  try{const cur=await get(env,lock.key);if(cur===lock.token)await command(env,["DEL",lock.key])}catch{}
+}
 
 export async function onRequestPost({request,env}){
  let requestLock=null,waybillLock=null,routeBaseLock=null,order=null;
@@ -33,7 +48,7 @@ export async function onRequestPost({request,env}){
   const gate=await requireBusinessUser(request,env);if(gate.response)return gate.response;
   const user=gate.user;const input=await body(request);const waybillId=clean(input.waybillId);if(!waybillId)return json({success:false,code:"WAYBILL_ID_REQUIRED",error:"缺少运单ID"},400);
   order=await load(env,waybillId);if(!order)return json({success:false,code:"WAYBILL_NOT_FOUND",error:"运单不存在"},404);
-  if(order.routeId!==TEMP_DISPATCH_ID&&!canMaintainRoute(user,order.routeId))return json({success:false,code:"BASE_MAINTENANCE_FORBIDDEN",error:"无权确认并维护该线路数据资料"},403);
+  if(!canConfirmWaybill(user,order))return json({success:false,code:"BASE_MAINTENANCE_FORBIDDEN",error:"无权确认并维护该线路数据资料"},403);
   if(order.stage==="CONFIRMED"){const indexKey=/^\d{4}-\d{2}-\d{2}$/.test(clean(order.date))?waybillIndexKey(order.routeId,clean(order.date)):"";if(indexKey)await command(env,["SADD",indexKey,waybillId]);const learning=await retryLearningRepairs(env,waybillId,user.id);return json({success:true,waybill:order,learning:learning==="RECORDED"?"ALREADY_CONFIRMED":"DEFERRED"});}
   if(!Array.isArray(input.confirmations))return json({success:false,code:"CONFIRMATIONS_REQUIRED",error:"确认项目必须是数组"},400);
 
@@ -51,9 +66,9 @@ export async function onRequestPost({request,env}){
   const doneKey="waybill:"+waybillId+":confirm:"+confirmRequestId;const existing=await get(env,doneKey);if(existing){const committed=await load(env,waybillId);if(!committed)return json({success:false,code:"WAYBILL_NOT_FOUND",error:"运单不存在"},404);return json({success:true,waybill:committed,learning:"DUPLICATE_REQUEST"});}requestLock={key:doneKey+":lock",token:newId()};const locked=await command(env,["SET","zp:"+requestLock.key,requestLock.token,"NX","EX","60"]);if(locked!=="OK"){requestLock=null;return json({success:false,code:"CONFIRM_REQUEST_BUSY",error:"确认请求正在处理中，请稍后再试"},409)}
   waybillLock={key:"waybill:"+waybillId+":confirm-lock",token:newId()};const waybillLocked=await command(env,["SET","zp:"+waybillLock.key,waybillLock.token,"NX","EX","60"]);if(waybillLocked!=="OK"){await releaseLock(env,requestLock);requestLock=null;waybillLock=null;return json({success:false,code:"CONFIRM_REQUEST_BUSY",error:"该运单正在确认处理中，请稍后再试"},409)}
   const freshOrder=await load(env,waybillId);if(!freshOrder)throw Object.assign(new Error("运单不存在"),{code:"WAYBILL_NOT_FOUND"});if(freshOrder.routeId!==order.routeId)throw Object.assign(new Error("运单线路发生变化"),{code:"WAYBILL_ROUTE_CHANGED"});order=freshOrder;if(order.stage==="CONFIRMED"){const learning=await retryLearningRepairs(env,waybillId,user.id);await releaseLock(env,waybillLock);waybillLock=null;await releaseLock(env,requestLock);requestLock=null;return json({success:true,waybill:order,learning:learning==="RECORDED"?"ALREADY_CONFIRMED":"DEFERRED"});}
-  if(order.routeId!==TEMP_DISPATCH_ID){routeBaseLock={key:"route:"+order.routeId+":base-confirm-lock",token:newId()};const baseLocked=await command(env,["SET","zp:"+routeBaseLock.key,routeBaseLock.token,"NX","EX","120"]);if(baseLocked!=="OK"){await releaseLock(env,waybillLock);waybillLock=null;await releaseLock(env,requestLock);requestLock=null;routeBaseLock=null;return json({success:false,code:"BASE_UPDATE_BUSY",error:"该线路数据资料正在被其他确认操作更新，请稍后重试"},409)}}
+  if(!isTempRoute(order.routeId)){routeBaseLock={key:"route:"+order.routeId+":base-confirm-lock",token:newId()};const baseLocked=await command(env,["SET","zp:"+routeBaseLock.key,routeBaseLock.token,"NX","EX","120"]);if(baseLocked!=="OK"){await releaseLock(env,waybillLock);waybillLock=null;await releaseLock(env,requestLock);requestLock=null;routeBaseLock=null;return json({success:false,code:"BASE_UPDATE_BUSY",error:"该线路数据资料正在被其他确认操作更新，请稍后重试"},409)}}
   const stores=[...(order.stores||[])];
-  const base=order.routeId===TEMP_DISPATCH_ID?{routeId:order.routeId,version:1,stores:[]}:await loadBase(env,order.routeId);
+  const base=isTempRoute(order.routeId)?{routeId:order.routeId,version:1,stores:[]}:await loadBase(env,order.routeId);
   const learned=[];
   for(const c of confirmations){
     const index=Number(c.index);if(!Number.isInteger(index)||index<0||index>=stores.length)continue;
@@ -70,7 +85,7 @@ export async function onRequestPost({request,env}){
       return json({success:false,code:"MERGE_TARGET_NOT_FOUND",error:"指定的已有门店不存在于当前线路资料，请重新选择“合并”或“新增”"},409);
     }
     const standardName=action==="merge"?clean(target?.name)||rawName:(clean(c.standardName)||rawName);
-    if(action==="new"&&order.routeId!==TEMP_DISPATCH_ID){
+    if(action==="new"&&!isTempRoute(order.routeId)){
       const duplicate=base.stores.find(s=>normalized(s.name)===normalized(rawName)||normalized(s.originalName)===normalized(rawName)||(Array.isArray(s.aliases)&&s.aliases.some(a=>normalized(a)===normalized(rawName))));
       if(duplicate){
         await releaseLock(env,waybillLock);waybillLock=null;
@@ -80,7 +95,7 @@ export async function onRequestPost({request,env}){
       target={storeId:newId(),originalName:rawName,name:rawName,aliases:[],navigation:null,routeOrder:base.stores.length+1,note:""};
       base.stores.push(target);
     }
-    if(!target&&order.routeId!==TEMP_DISPATCH_ID){
+    if(!target&&!isTempRoute(order.routeId)){
       const globals=await findGlobalMatches(env,[{rawName:standardName}]);
       const globalTarget=globals[0]?.globalMatchStatus==="matched"?globals[0]:null;
       if(globalTarget){
@@ -109,7 +124,7 @@ export async function onRequestPost({request,env}){
   const seen=new Set();const deduped=[];let merged=0;
   for(const item of stores){const key=item.storeId?"id:"+item.storeId:"pending:"+normalized(item.rawName);if(seen.has(key)){merged++;continue}seen.add(key);deduped.push(item)}
   let ordered=deduped;
-  if(order.routeId!==TEMP_DISPATCH_ID&&base.stores.length){
+  if(!isTempRoute(order.routeId)&&base.stores.length){
     const routeOrderById=new Map(base.stores.filter(s=>s&&s.storeId).map(s=>[clean(s.storeId),Number(s.routeOrder)]));
     const known=deduped.filter(s=>s.storeId&&Number.isFinite(routeOrderById.get(clean(s.storeId))));
     const unknown=deduped.filter(s=>!known.includes(s));
@@ -120,10 +135,10 @@ export async function onRequestPost({request,env}){
   const pending=finalStores.filter(s=>s.pending).length;
   order.stores=finalStores;order.stage=pending?"PLANNED":"CONFIRMED";order.summary={...(order.summary||{}),total:finalStores.length,matched:finalStores.length-pending,pending,correction:finalStores.filter(s=>s.correction).length,merged:(order.summary?.merged||0)+merged,newStores:finalStores.filter(s=>s.matchMethod==="confirmed-new").length};
   const confirmedNow=new Date().toISOString();if(pending===0){order.confirmedAt=confirmedNow;order.confirmedBy=user.id;}else{order.lastConfirmedAt=confirmedNow;order.lastConfirmedBy=user.id;}order.confirmRequestId=confirmRequestId||null;
-  if(learned.length&&order.routeId!==TEMP_DISPATCH_ID){base.version=(Number(base.version)||1)+1;base.updatedAt=new Date().toISOString();base.updatedBy=user.id}
+  if(learned.length&&!isTempRoute(order.routeId)){base.version=(Number(base.version)||1)+1;base.updatedAt=new Date().toISOString();base.updatedBy=user.id}
   order.businessFingerprint=await businessFingerprint(order);
   const learningEntries=learned.map(item=>({field:[clean(item.storeId),normalized(item.rawName||item.name)].join("|"),value:JSON.stringify(item)})).filter(x=>x.field);
-  const basePayload=(learned.length&&order.routeId!==TEMP_DISPATCH_ID)?JSON.stringify(base):"";
+  const basePayload=(learned.length&&!isTempRoute(order.routeId))?JSON.stringify(base):"";
   const waybillIndexKey=(routeId,date)=>"zp:route:"+routeId+":waybills:"+date;
   const indexKey=/^\d{4}-\d{2}-\d{2}$/.test(clean(order.date))?waybillIndexKey(order.routeId,clean(order.date)):"";
   const commitScript='local okOrder,order=pcall(cjson.decode,ARGV[1]); if not okOrder or type(order)~="table" then return 2 end; local rawDone=redis.call("GET",KEYS[2]); if rawDone then return 3 end; local existingFingerprint=redis.call("GET",KEYS[6]); if existingFingerprint and existingFingerprint~=order.id then return 7 end; local okItems,items=pcall(cjson.decode,ARGV[2]); if not okItems or type(items)~="table" then return 4 end; for _,item in ipairs(items) do if type(item)~="table" or type(item.field)~="string" or item.field=="" or type(item.value)~="string" or item.value=="" then return 6 end end; if ARGV[3]~="" then local okBase,base=pcall(cjson.decode,ARGV[3]); if not okBase or type(base)~="table" then return 5 end end; if ARGV[3]~="" then redis.call("SET",KEYS[4],ARGV[3]) end; redis.call("SET",KEYS[1],ARGV[1]); redis.call("SET",KEYS[2],"1"); redis.call("SET",KEYS[6],order.id); for _,item in ipairs(items) do redis.call("HSET",KEYS[3],item.field,item.value) end; if ARGV[4]~="" then redis.call("SADD",KEYS[5],order.id) end; return 1';
