@@ -263,7 +263,7 @@ async function processSelectedFile(file){
         throw Object.assign(new Error(result.message||result.error||"处理失败"),{code});
       }
       renderProcessingProgress(100);
-      location.replace("/pages/order_detail.html?id="+encodeURIComponent(result.waybill.id)+"&source=process");
+      location.replace("/pages/order_detail.html?id="+encodeURIComponent(result.waybill.id)+"&source=process&from=process");
     }catch(e){
       if(e?.name==="AbortError"){
         // 用户主动取消不算错误：静默收尾，由 finally 关闭面板并提示

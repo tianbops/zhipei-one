@@ -4,7 +4,7 @@ const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const attr=v=>esc(v).replace(/'/g,'&#39;');
 const navOf=x=>String(x?.navigation||x?.nav||'').trim();
-const params=new URLSearchParams(location.search), id=params.get('id')||'', source=params.get('source')||'', targetDate=params.get('date')||'';
+const params=new URLSearchParams(location.search), id=params.get('id')||'', source=params.get('source')||'', targetDate=params.get('date')||'', from=params.get('from')||'';
 let order=null,menuOpen=false,historyChoices=null;let baseStoreCache=null,baseStoreRoute=null;
 
 function safeUrl(v){try{const raw=String(v??'').trim();if(!raw)return'';const u=new URL(raw,location.origin);return /^(https?:)$/.test(u.protocol)?u.href:''}catch{return''}}
@@ -326,22 +326,11 @@ function openConfirm(){
  };
 }
 
-const backToHome=()=>{setMenu(false);location.replace('/home.html')};
-const backToPrevious=()=>{
-  setMenu(false);
-  const ref=document.referrer||"";
-  let sameOrigin=false;
-  try{sameOrigin=!!ref&&new URL(ref,location.href).origin===location.origin}catch{}
-  if(sameOrigin&&history.length>1){history.back();return}
-  location.replace('/home.html');
-};
-if(document.body.dataset.backHome==="true"){
-  history.pushState({zhipeiOneOrderDetail:true},'',location.href);
-  window.addEventListener('popstate',()=>backToHome());
-  $('backBtn').onclick=backToHome;
-}else{
-  $('backBtn').onclick=backToPrevious;
-}
+// 来源驱动返回：不再依赖 document.referrer / history.length 猜测，由 URL 的 from= 决定目标
+const backToFrom=()=>{setMenu(false);const map={history:'/pages/history.html',today:'/pages/today.html',process:'/home.html'};location.replace(map[from]||'/home.html')};
+history.pushState({zhipeiOneOrderDetail:true},'',location.href);
+window.addEventListener('popstate',backToFrom);
+$('backBtn').onclick=backToFrom;
 $('menuBtn').onclick=e=>{e.stopPropagation();setMenu(!menuOpen)};
 $('editRouteBtn').onclick=()=>location.href='/pages/data.html';
 $('shareBtn').onclick=async()=>{

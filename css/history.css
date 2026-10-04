@@ -75,13 +75,13 @@
   margin:0;
   padding:0;
   border:0;
-  background:#343A41;
-  color:#F4F6F8;
+  background:var(--ui-danger-soft);
+  color:var(--ui-danger);
   font-size:14px;
   font-weight:550;
   letter-spacing:.2px;
 }
-.history-delete:active{background:#4A5159}
+.history-delete:active{background:rgba(255,130,120,.18)}
 
 .history-month-main,
 .history-date-main{
@@ -163,7 +163,6 @@
   justify-content:center;
   padding:18px;
   background:rgba(0,0,0,.68);
-  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
 }
 .history-picker[hidden]{display:none}
 .history-picker-panel{
@@ -251,7 +250,6 @@
   justify-content:center;
   padding:20px;
   background:rgba(0,0,0,.68);
-  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
 }
 .history-dialog[hidden]{display:none}
 .history-dialog-panel{
@@ -463,8 +461,8 @@
 }
 .history-delete{
   width:76px;
-  background:#343A41;
-  color:#F4F6F8;
+  background:var(--ui-danger-soft);
+  color:var(--ui-danger);
   font-size:15px;
   line-height:20px;
   font-weight:550;
@@ -543,11 +541,11 @@
 
 /* 日历月份滑动切换：左滑下月（内容自右滑入）、右滑上月（内容自左滑入） */
 @keyframes historyCalInLeft{
-  from{opacity:0;transform:translate3d(-18px,0,0)}
+  from{opacity:0;transform:translate3d(-10px,0,0)}
   to{opacity:1;transform:none}
 }
 @keyframes historyCalInRight{
-  from{opacity:0;transform:translate3d(18px,0,0)}
+  from{opacity:0;transform:translate3d(10px,0,0)}
   to{opacity:1;transform:none}
 }
 .history-picker-head strong.cal-anim-left,

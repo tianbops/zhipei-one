@@ -42,7 +42,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-import-actions #importSave{background:#26313C}
 @media(min-width:600px){.data-import{align-items:center}.data-import-panel{border-radius:18px}}
 /* 轻量入场动效：只做透明度+上滑，不改布局与结构；系统开启"减弱动态效果"时自动关闭 */
-@keyframes dataSheetIn{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+@keyframes dataSheetIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 .data-import-panel{animation:dataSheetIn .18s ease-out}
 @media(prefers-reduced-motion:reduce){.data-import-panel{animation:none}}
 
@@ -73,7 +73,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-maintenance-group{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .data-action-btn{width:100%;min-height:44px;margin:0;padding:0 10px;border:1px solid #35404C;border-radius:10px;background:#11171D;color:#E8EDF2;font-size:14px;font-weight:500}
 .data-action-btn:active{background:#26313C}
-.data-action-primary{background:#26313C;border-color:#3A4652}
+.data-action-primary{background:#2E3B47;border-color:#4A5A68;color:#fff;font-weight:700}
 .data-store-row{touch-action:pan-y;user-select:none;transition:opacity .18s ease,transform .18s ease}
 .data-store-row.data-drag-active{opacity:.72;transform:scale(.99);background:rgba(255,255,255,.025)}
 .data-store-nav{color:#fff;text-decoration:none;cursor:pointer}
@@ -159,9 +159,9 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
   height:16px;
   border-radius:8px;
   vertical-align:middle;
-  background:linear-gradient(90deg,#1A222C 25%,#242F3B 50%,#1A222C 75%);
+  background:linear-gradient(90deg,#1A222C 25%,#202A31 50%,#1A222C 75%);
   background-size:200% 100%;
-  animation:zpSkeleton 1.1s ease-in-out infinite;
+  animation:zpSkeleton 1.4s ease-in-out infinite;
 }
 .data-list-count:empty::before{
   content:"";
@@ -170,9 +170,9 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
   height:12px;
   border-radius:6px;
   vertical-align:middle;
-  background:linear-gradient(90deg,#1A222C 25%,#242F3B 50%,#1A222C 75%);
+  background:linear-gradient(90deg,#1A222C 25%,#202A31 50%,#1A222C 75%);
   background-size:200% 100%;
-  animation:zpSkeleton 1.1s ease-in-out infinite;
+  animation:zpSkeleton 1.4s ease-in-out infinite;
 }
 @media(prefers-reduced-motion:reduce){
   .data-summary strong:empty::before,

@@ -6,8 +6,8 @@
 .home-brand span{margin-top:2px;font-size:12px;color:#7F8B98;letter-spacing:2px}
 .home-menu-button{width:42px;height:42px;border:1px solid rgba(255,255,255,.025);border-radius:50%;background:#18212B;color:#fff;padding:0;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
 .home-menu-button svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round}
-.home-menu-button:active{background:#B8C1C8;color:#0B1015;transform:scale(.95)}
-.home-menu-panel{position:absolute;right:0;top:50px;width:172px;overflow:hidden;padding:6px;border:1px solid #2A3540;border-radius:16px;background:#18212B;box-shadow:0 14px 34px rgba(0,0,0,.46)}
+.home-menu-button:active{background:#B8C1C8;color:#0B1015;transform:scale(.97)}
+.home-menu-panel{position:absolute;right:0;top:50px;width:172px;overflow:hidden;padding:6px;border:1px solid #2A3540;border-radius:12px;background:#18212B;box-shadow:0 10px 24px rgba(0,0,0,.3);animation:zpMenuIn .14s ease-out}
 .home-menu-panel[hidden]{display:none}
 .home-menu-panel a,.home-menu-panel button{width:100%;height:48px;min-height:48px;padding:0 12px;gap:11px;border:0;border-radius:11px;background:transparent;color:#D5DCE2;text-align:left;text-decoration:none;font-size:14px;font-weight:600;display:flex;align-items:center;-webkit-tap-highlight-color:transparent}
 .home-menu-panel a:active,.home-menu-panel button:active{background:#26313C;transform:scale(.985)}
@@ -28,7 +28,7 @@
 .today-summary{display:flex;align-items:baseline;gap:9px;white-space:nowrap;line-height:29px}
 .today-summary strong{color:#F2F5F7;font-size:20px;line-height:29px;font-weight:600}
 .today-summary span{font-size:16px;line-height:29px;color:#B8C2CC}
-.delivery-man{width:190px;height:140px;display:flex;align-items:flex-end;justify-content:flex-end;opacity:.9;transform:translateY(13px)}
+.delivery-man{width:120px;height:88px;display:flex;align-items:flex-end;justify-content:flex-end;opacity:.5;transform:translateY(10px)}
 .delivery-man img{width:100%;height:100%;object-fit:contain}
 .function-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
 .function-btn{position:relative;width:100%;height:58px;min-height:58px;padding:0 48px;border:1px solid rgba(255,255,255,.075);border-radius:14px;background:#151D26;color:#F2F5F7;text-decoration:none;font-size:16px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:0;box-shadow:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
@@ -39,8 +39,8 @@
 .function-btn:active::after{color:#0B1015}
 
 
-.upload-overlay:not([hidden]){display:flex}
-.upload-sheet{width:min(100%,390px);max-width:390px;margin:0 auto;padding:20px 18px calc(18px + env(safe-area-inset-bottom));border-radius:20px 20px 16px 16px;background:#151D26;border:1px solid #2A3540;box-shadow:0 18px 46px rgba(0,0,0,.5)}
+.upload-overlay:not([hidden]){display:flex;animation:zpModalFade .16s ease-out}
+.upload-sheet{width:min(100%,390px);max-width:390px;margin:0 auto;padding:20px 18px calc(18px + env(safe-area-inset-bottom));border-radius:20px 20px 16px 16px;background:#151D26;border:1px solid #2A3540;box-shadow:0 18px 46px rgba(0,0,0,.5);animation:zpModalIn .16s ease-out}
 .sheet-handle{width:34px;height:4px;margin:0 auto 16px;border-radius:4px;background:rgba(255,255,255,.15)}
 .upload-source-menu{margin:0;padding:0;background:transparent}
 .source-menu-title{height:28px;line-height:28px;margin:0 0 20px;color:#F2F5F7;text-align:center;font-size:20px;font-weight:700}
@@ -76,7 +76,7 @@
 .processing-progress.is-stalled .processing-progress-line:before{
   background:linear-gradient(90deg,#8F9BA7 0%,#F2F5F7 50%,#8F9BA7 100%);
   background-size:200% 100%;
-  animation:zp-progress-flow 1.5s linear infinite;
+  animation:zp-progress-flow 2.2s linear infinite;
 }
 @keyframes zp-progress-flow{from{background-position:200% 0}to{background-position:0 0}}
 @media(prefers-reduced-motion:reduce){
@@ -90,7 +90,7 @@
  .task-title{font-size:20px;line-height:26px}
  .task-date{font-size:16px;line-height:23px}
  .today-summary strong{font-size:19px}.today-summary span{font-size:15px}
- .delivery-man{width:105px;height:78px;transform:translateY(12px)}
+ .delivery-man{width:80px;height:60px;opacity:.5;transform:translateY(10px)}
  .function-list{margin-top:12px;gap:8px}
  .function-btn{height:52px;min-height:52px;font-size:15px}
  .upload-sheet{width:min(90vw,340px);padding:20px 17px 18px}
@@ -132,9 +132,9 @@
   height:12px;
   border-radius:6px;
   vertical-align:middle;
-  background:linear-gradient(90deg,#1A222C 25%,#242F3B 50%,#1A222C 75%);
+  background:linear-gradient(90deg,#1A222C 25%,#202A31 50%,#1A222C 75%);
   background-size:200% 100%;
-  animation:zpSkeleton 1.1s ease-in-out infinite;
+  animation:zpSkeleton 1.4s ease-in-out infinite;
 }
 @media(prefers-reduced-motion:reduce){
   .menu-route-value:empty::before{animation:none}
@@ -143,3 +143,6 @@
 /* 上传入口「文件」按钮副标题：明确此入口用于 PDF 运单，
    避免与「拍摄/相册」的图片入口混淆 */
 .source-option small{font-size:10px;line-height:14px;color:#7F8A95;font-weight:500}
+
+/* 首页菜单轻入场：opacity + 轻微上移，弱化「Web Dropdown」观感 */
+@keyframes zpMenuIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}

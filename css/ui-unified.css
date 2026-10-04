@@ -91,9 +91,7 @@ button:active{transform:translateY(0)}
 
 /* 统一模态层：只保留一层遮罩 + 一个内容面板 */
 .order-dialog,.history-dialog,.data-import,.account-dialog-bg,.upload-overlay{
-  background:rgba(0,0,0,.70)!important;
-  backdrop-filter:blur(3px);
-  -webkit-backdrop-filter:blur(3px);
+  background:rgba(0,0,0,.58)!important;
 }
 .order-dialog-panel,.history-dialog-panel,.data-import-panel,.data-confirm-panel,.account-dialog,.upload-sheet{
   background:var(--ui-surface);
@@ -177,7 +175,7 @@ input,select,textarea{
 }
 
 /* 全局二次确认弹窗 */
-.zp-confirm{position:fixed;top:0;right:0;bottom:0;left:0;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.70);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.zp-confirm{position:fixed;top:0;right:0;bottom:0;left:0;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.58)}
 .zp-confirm[hidden]{display:none}
 .zp-confirm-panel{width:min(100%,360px);padding:20px 18px 16px;border:1px solid var(--ui-line);border-radius:18px;background:var(--ui-surface);box-shadow:0 18px 50px rgba(0,0,0,.45)}
 .zp-confirm-panel h3{margin:0;color:#fff;font-size:17px;line-height:24px;font-weight:650}
@@ -412,9 +410,7 @@ input,select,textarea{
   align-items:center!important;
   justify-content:center!important;
   padding:12px!important;
-  background:rgba(0,0,0,.72)!important;
-  backdrop-filter:blur(3px)!important;
-  -webkit-backdrop-filter:blur(3px)!important;
+  background:rgba(0,0,0,.58)!important;
 }
 
 /* --- 统一面板 ---
@@ -568,3 +564,21 @@ textarea:disabled,
   border-radius:7px;
   line-height:20px;
 }
+
+/* UI 2.6：页面进入动效统一——
+   所有业务页加载时统一 fade + 6px 上移（120ms），消除「页面突然换掉」的生硬感。
+   仅作用于各页 <main> 主壳；dialog/picker/sheet 是 <main> 的兄弟节点，不受影响。
+   尊重系统的「减少动态效果」偏好（mobile-ui.css 的 reduce-motion 媒体查询会将其压到 ~0ms）。 */
+@keyframes zpPageEnter{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.home-app,.shell,.login-shell,.auth-shell,.page2,.order-shell,.history-shell,.dispatch-page,.route-apply-page,.zp-offline{animation:zpPageEnter .12s ease-out both}
+
+/* UI 2.6：弹窗/选择框统一进入动效——
+   遮罩淡现 + 面板轻微上移（16px / 160ms），替代「啪地出现」。
+   普通业务弹窗不再使用 backdrop blur（稳、硬朗）。 */
+@keyframes zpModalIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes zpModalFade{from{opacity:0}to{opacity:1}}
+.order-dialog:not([hidden]),.history-dialog:not([hidden]),.history-picker:not([hidden]),.zp-confirm:not([hidden]){animation:zpModalFade .16s ease-out}
+.order-dialog-panel,.history-dialog-panel,.history-picker-panel,.zp-confirm-panel{animation:zpModalIn .16s ease-out}
+
+/* 菜单轻入场：opacity + 轻微上移，弱化 Web Dropdown 观感（全站通用） */
+@keyframes zpMenuIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}

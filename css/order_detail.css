@@ -5,7 +5,7 @@
 .order-icon-btn{width:42px;height:42px;border:1px solid #2A3540;border-radius:13px;background:#18212B;color:#fff;display:flex;align-items:center;justify-content:center}
 .order-icon-btn svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .order-icon-btn:active{background:#26313C;transform:scale(.97)}
-.order-menu{position:absolute;right:0;top:48px;width:190px;background:#18212B;border:1px solid #2A3540;border-radius:16px;box-shadow:0 18px 44px rgba(0,0,0,.48);overflow:hidden}
+.order-menu{position:absolute;right:0;top:48px;width:190px;background:#18212B;border:1px solid #2A3540;border-radius:12px;box-shadow:0 10px 24px rgba(0,0,0,.3);overflow:hidden;animation:zpMenuIn .14s ease-out}
 .order-menu[hidden],.order-dialog[hidden]{display:none}
 .order-menu button,.order-menu-route{width:100%;min-height:46px;border:0;border-bottom:1px solid rgba(255,255,255,.045);background:transparent;color:#fff;text-align:left;padding:0 16px;font-size:14px}
 .order-menu-route{display:flex;align-items:center;background:#1C2530;font-weight:650}
@@ -409,9 +409,9 @@
   height:15px;
   border-radius:8px;
   vertical-align:middle;
-  background:linear-gradient(90deg,#1A222C 25%,#242F3B 50%,#1A222C 75%);
+  background:linear-gradient(90deg,#1A222C 25%,#202A31 50%,#1A222C 75%);
   background-size:200% 100%;
-  animation:zpSkeleton 1.1s ease-in-out infinite;
+  animation:zpSkeleton 1.4s ease-in-out infinite;
 }
 @media(prefers-reduced-motion:reduce){
   .order-route-name:empty::before,
@@ -427,9 +427,9 @@
   height:20px;
   border-radius:7px;
   vertical-align:middle;
-  background:linear-gradient(90deg,#1A222C 25%,#242F3B 50%,#1A222C 75%);
+  background:linear-gradient(90deg,#1A222C 25%,#202A31 50%,#1A222C 75%);
   background-size:200% 100%;
-  animation:zpSkeleton 1.1s ease-in-out infinite;
+  animation:zpSkeleton 1.4s ease-in-out infinite;
 }
 #totalWeight:empty::before{width:46px}
 @media(prefers-reduced-motion:reduce){
