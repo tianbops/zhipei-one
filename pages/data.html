@@ -57,6 +57,14 @@
 </main>
 <script>
 const $=id=>document.getElementById(id);
+// 来源驱动返回：从运单详情内进入数据资料时，返回箭头应回到原运单而非首页
+(function(){
+  const p=new URLSearchParams(location.search);
+  if(p.get("from")==="order"){
+    const oid=p.get("id");
+    if(oid){const a=document.querySelector(".data-page-back");if(a)a.href="/pages/order_detail.html?id="+encodeURIComponent(oid)+"&source=process&from=process"}
+  }
+})();
 async function api(u,o={}){const r=await fetch(u,{credentials:"same-origin",...o});const d=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(d.error||d.message||"请求失败");e.code=d.code||"HTTP_"+r.status;e.detail=d.detail||"";throw e}return d}
 function err(e){return(e.code?"["+e.code+"] ":"")+e.message+(e.detail?" · "+e.detail:"")}
 let routeId="",canMaintain=false,stores=[],baseVersion=1,saving=false,baseVersionConflict=false,editingIndex=-1,confirming=false,dragIndex=-1,hiddenIndexes=new Set();

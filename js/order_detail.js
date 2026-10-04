@@ -332,7 +332,7 @@ history.pushState({zhipeiOneOrderDetail:true},'',location.href);
 window.addEventListener('popstate',backToFrom);
 $('backBtn').onclick=backToFrom;
 $('menuBtn').onclick=e=>{e.stopPropagation();setMenu(!menuOpen)};
-$('editRouteBtn').onclick=()=>location.href='/pages/data.html';
+$('editRouteBtn').onclick=()=>location.href='/pages/data.html?from=order&id='+encodeURIComponent(order.id)+'&source=process';
 $('shareBtn').onclick=async()=>{
  setMenu(false);if(!order)return;
  const s=order.summary||{},text='智配One\n'+(order.date||'')+'\n'+(order.routeName||'当前线路')+'\n'+(s.total||order.stores?.length||0)+'家 · '+fmtWeight(order.totalWeight)+'t';
