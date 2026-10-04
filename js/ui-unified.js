@@ -188,11 +188,11 @@
       return true;
     }});
 
-  let zpExitArmed=false,zpExitTimer=0,zpGuardDepth=0,zpLeaving=false;
-  // 压一条「占位历史」，使下一次系统返回先落到本页而不是直接滑出去。
-  // zpGuardDepth 用于离开时一次性跨过它们，避免慢按多次后退也退不出去。
+  let zpExitArmed=false,zpExitTimer=0,zpLeaving=false;
+  // 压一条「占位历史」，使第一次系统返回先触发 popstate（被本控制器接管），
+  // 而不是直接越过首条记录由系统关掉 PWA（那样就没有「再按一次」提示了）。
   function zpPushGuard(){
-    try{history.pushState({zpGuard:((history.state&&history.state.zpGuard)|0)+1},"");zpGuardDepth++}catch{}
+    try{history.pushState({zpGuard:((history.state&&history.state.zpGuard)|0)+1},"")}catch{}
   }
 
   async function zpConfirmDiscard(){
@@ -223,9 +223,12 @@
       zpExitArmed=true;
       try{window.zpToast?window.zpToast("再按一次返回退出应用","info"):0}catch{}
       clearTimeout(zpExitTimer);
-      // 窗口过期后必须把 guard 补回来，否则下一次返回会直接滑出本页
-      // （真人操作常有停顿，很容易踩到这条缝隙）
-      zpExitTimer=setTimeout(()=>{zpExitArmed=false;zpPushGuard()},2000);
+      // 窗口过期：仅复位武装标记，不再补占位。
+      // 安卓独立 PWA 下 window.close() 对「主页启动的顶层上下文」是空操作，
+      // 真正退出只能靠「越过首条记录让系统关掉 PWA」。武装期间刻意不补占位，
+      // 第二次返回才能退到首条记录之前、由系统退回桌面；补占位反而会让第二次
+      // 返回卡在管理端、要多按几次才滑出去（旧版就表现为「穿越到业务首页」）。
+      zpExitTimer=setTimeout(()=>{zpExitArmed=false},2000);
       return "exit-armed";
     }
     // 离开页面前：页面级未保存拦截
@@ -246,6 +249,18 @@
   }
 
   (function zpInstallBack(){
+    // 跨区退出：管理员端「再按一次退出」后，若系统返回退到了业务端首页
+    // （多因 PWA 标签历史被恢复，背后残留着司机首页），继续后退直到真正退出 PWA，
+    // 绝不停在司机首页。机制：管理员端离开时置一次性标记，业务端页（全新加载或
+    // bfcache 恢复都会触发）消费标记并再退一步；登录/管理端页则清掉残留避免重开误退。
+    var _f=null;try{_f=sessionStorage.getItem("zpExitAdmin")}catch{}
+    if(zpZone!=="business"){
+      if(_f){try{sessionStorage.removeItem("zpExitAdmin")}catch{}} // 非业务页：清残留，防误触
+    }else if(_f){
+      try{sessionStorage.removeItem("zpExitAdmin")}catch{}
+      try{history.back()}catch{}
+      return;
+    }
     zpBindPageBack();
     window.addEventListener("pageshow",zpBindPageBack);
     if(!zpZone)return; // 登录/引导页只统一按钮行为，不安装系统返回守卫
@@ -254,26 +269,29 @@
     if(!(history.state&&history.state.zpGuard))zpPushGuard();
     window.addEventListener("popstate",async()=>{
       if(window.zpSuppressPop){window.zpSuppressPop=false;return} // 自己触发的 back，吃掉
+      // 业务端页上（含 bfcache 恢复）：消费跨区退出标记，继续后退直到真正退出
+      if(zpZone==="business"){
+        var _f2=null;try{_f2=sessionStorage.getItem("zpExitAdmin")}catch{}
+        if(_f2){try{sessionStorage.removeItem("zpExitAdmin")}catch{};try{history.back()}catch{};return}
+      }
       const r=await zpHandleBack();
       if(zpLeaving)return;
       if(r==="handled"){zpPushGuard();return}   // 关掉了一层 UI：补回占位，别让下一次返回滑出本页
       if(r==="exit-armed")return;               // 处于「再按一次退出」窗口：窗口内再按即离开
       // leave：用户确认离开（首页/管理端根 × 窗口内第二次返回）。
-      // 目标是把 App 真正收起来，而不是「滑到历史里的上一个文档」——后者在管理员端
-      // 表现为按返回却被甩到业务首页，正是本次要修的漏洞。
+      // 关键：安卓独立 PWA 下 window.close() 对「主页启动的顶层上下文」是空操作，
+      // 唯一可靠的退出方式是让浏览器越过「首条历史记录」去关掉 PWA。
+      // 武装态期间我们不再补占位，所以此刻当前页就停在首条记录上——
+      // 再 history.back() 一步即越过去，由系统退回手机桌面（浏览器里退回上一站）。
+      // 即便历史里残留着业务端首页，这一步会一并越过，不会"卡在/穿越到"司机首页。
       zpLeaving=true;
-      // ① PWA 独立模式先尝试直接关闭。close() 对非脚本打开的窗口会静默失败，
-      //    所以下面无论如何都留了一条回退路径。
-      let triedClose=false;
+      // 置位一次性退出标记：若历史里残留业务端首页，下一页加载时会继续后退直到真正退出
+      try{sessionStorage.setItem("zpExitAdmin","1")}catch{}
+      try{history.back()}catch{}
       try{
         const standalone=(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||window.navigator.standalone===true;
-        if(standalone){triedClose=true;window.close()}
+        if(standalone)window.close(); // 部分环境可真正收起；失败则上面的 back 已越界退出
       }catch{}
-      // ② 回退：一次性跨过本页积累的所有占位项，落到历史里的上一页（通常是
-      //    登录页 / index.html）；那里已被 index.html 的 back_forward 守护拦住，
-      //    不会再按角色把管理员送到司机首页。
-      const leave=()=>{try{history.go(-Math.max(1,zpGuardDepth))}catch{try{history.back()}catch{}}};
-      if(triedClose)setTimeout(leave,300);else leave();
     });
   })();
 
