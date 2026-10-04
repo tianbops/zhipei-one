@@ -188,7 +188,12 @@
       return true;
     }});
 
-  let zpExitArmed=false,zpExitTimer=0;
+  let zpExitArmed=false,zpExitTimer=0,zpGuardDepth=0,zpLeaving=false;
+  // 压一条「占位历史」，使下一次系统返回先落到本页而不是直接滑出去。
+  // zpGuardDepth 用于离开时一次性跨过它们，避免慢按多次后退也退不出去。
+  function zpPushGuard(){
+    try{history.pushState({zpGuard:((history.state&&history.state.zpGuard)|0)+1},"");zpGuardDepth++}catch{}
+  }
 
   async function zpConfirmDiscard(){
     const ok=await window.zpConfirm("放弃修改？","当前修改尚未提交，返回后将丢失。","放弃");
@@ -218,7 +223,9 @@
       zpExitArmed=true;
       try{window.zpToast?window.zpToast("再按一次返回退出应用","info"):0}catch{}
       clearTimeout(zpExitTimer);
-      zpExitTimer=setTimeout(()=>{zpExitArmed=false},2000);
+      // 窗口过期后必须把 guard 补回来，否则下一次返回会直接滑出本页
+      // （真人操作常有停顿，很容易踩到这条缝隙）
+      zpExitTimer=setTimeout(()=>{zpExitArmed=false;zpPushGuard()},2000);
       return "exit-armed";
     }
     // 离开页面前：页面级未保存拦截
@@ -242,15 +249,31 @@
     zpBindPageBack();
     window.addEventListener("pageshow",zpBindPageBack);
     if(!zpZone)return; // 登录/引导页只统一按钮行为，不安装系统返回守卫
-    // 压一条 guard 历史项，保证「系统返回」一定触发 popstate 而不是直接退出
-    try{if(!(history.state&&history.state.zpGuard))history.pushState({zpGuard:1},"")}catch{}
+    // 每次进入都要有 guard：没有它，「系统返回」会直接滑出本站（落在历史里
+    // 的上一页，管理员端就会被甩到业务首页），而不是先交给下面这段处理。
+    if(!(history.state&&history.state.zpGuard))zpPushGuard();
     window.addEventListener("popstate",async()=>{
       if(window.zpSuppressPop){window.zpSuppressPop=false;return} // 自己触发的 back，吃掉
       const r=await zpHandleBack();
-      if(r==="handled"){
-        try{history.pushState({zpGuard:((history.state&&history.state.zpGuard)|0)+1},"")}catch{}
-      }
-      // exit-armed / leave 均不补压：下一次返回交给系统退出或已发生导航
+      if(zpLeaving)return;
+      if(r==="handled"){zpPushGuard();return}   // 关掉了一层 UI：补回占位，别让下一次返回滑出本页
+      if(r==="exit-armed")return;               // 处于「再按一次退出」窗口：窗口内再按即离开
+      // leave：用户确认离开（首页/管理端根 × 窗口内第二次返回）。
+      // 目标是把 App 真正收起来，而不是「滑到历史里的上一个文档」——后者在管理员端
+      // 表现为按返回却被甩到业务首页，正是本次要修的漏洞。
+      zpLeaving=true;
+      // ① PWA 独立模式先尝试直接关闭。close() 对非脚本打开的窗口会静默失败，
+      //    所以下面无论如何都留了一条回退路径。
+      let triedClose=false;
+      try{
+        const standalone=(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||window.navigator.standalone===true;
+        if(standalone){triedClose=true;window.close()}
+      }catch{}
+      // ② 回退：一次性跨过本页积累的所有占位项，落到历史里的上一页（通常是
+      //    登录页 / index.html）；那里已被 index.html 的 back_forward 守护拦住，
+      //    不会再按角色把管理员送到司机首页。
+      const leave=()=>{try{history.go(-Math.max(1,zpGuardDepth))}catch{try{history.back()}catch{}}};
+      if(triedClose)setTimeout(leave,300);else leave();
     });
   })();
 
