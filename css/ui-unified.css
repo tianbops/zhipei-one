@@ -568,9 +568,14 @@ textarea:disabled,
 /* UI 2.6：页面进入动效统一——
    所有业务页加载时统一 fade + 6px 上移（120ms），消除「页面突然换掉」的生硬感。
    仅作用于各页 <main> 主壳；dialog/picker/sheet 是 <main> 的兄弟节点，不受影响。
-   尊重系统的「减少动态效果」偏好（mobile-ui.css 的 reduce-motion 媒体查询会将其压到 ~0ms）。 */
+   尊重系统的「减少动态效果」偏好（mobile-ui.css 的 reduce-motion 媒体查询会将其压到 ~0ms）。
+   ⚠ 禁止加 animation-fill-mode:both/forwards：动画结束后残留的恒等 transform
+   会让 <main> 常驻成为 position:fixed 后代的包含块 + stacking context，
+   把 main 内部的弹窗/反馈条（如 data 页的 .data-import、#dataFeedback）钉进
+   main 的层级与文档坐标——表现为弹窗跑到文档中部、遮罩不满屏、
+   body 级悬浮元素（z 90）反而盖住 z 1000 的弹窗。 */
 @keyframes zpPageEnter{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.home-app,.shell,.login-shell,.auth-shell,.page2,.order-shell,.history-shell,.dispatch-page,.route-apply-page,.zp-offline{animation:zpPageEnter .12s ease-out both}
+.home-app,.shell,.login-shell,.auth-shell,.page2,.order-shell,.history-shell,.dispatch-page,.route-apply-page,.zp-offline{animation:zpPageEnter .12s ease-out}
 
 /* UI 2.6：弹窗/选择框统一进入动效——
    遮罩淡现 + 面板轻微上移（16px / 160ms），替代「啪地出现」。
