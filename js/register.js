@@ -36,16 +36,23 @@ form?.addEventListener("submit",async e=>{
   button.disabled=true;
   button.textContent="注册中…";
   try{
-    const r=await fetch("/api/register",{
-      method:"POST",
-      credentials:"same-origin",
-      headers:{"content-type":"application/json"},
-      body:JSON.stringify({
-        username:document.getElementById("username").value.trim(),
-        password,
-        inviteCode:document.getElementById("inviteCode").value.trim()
-      })
-    });
+    // 15 秒超时：网络黑洞时给出明确提示，而不是永远卡在「注册中…」
+    const ctrl=new AbortController();const timer=setTimeout(()=>ctrl.abort(),15000);
+    let r;
+    try{
+      r=await fetch("/api/register",{
+        method:"POST",
+        credentials:"same-origin",
+        signal:ctrl.signal,
+        headers:{"content-type":"application/json"},
+        body:JSON.stringify({
+          username:document.getElementById("username").value.trim(),
+          password,
+          inviteCode:document.getElementById("inviteCode").value.trim()
+        })
+      });
+    }catch(netErr){throw new Error("网络连接失败或超时，请检查网络后重试（若开了 VPN，请尝试切换网络/关闭 VPN）")}
+    finally{clearTimeout(timer)}
     const d=await r.json().catch(()=>({}));
     if(!r.ok){const code=d.code||("HTTP_"+r.status);const detail=d.detail?(" · "+d.detail):"";throw new Error("["+code+"] "+(d.error||"注册失败")+detail)}
     message.textContent=d.message||"注册成功，请返回登录";
