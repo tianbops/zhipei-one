@@ -146,3 +146,35 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 /* Android 返回层 2.5：数据资料与业务页统一返回箭头。 */
 .data-page-back{font-size:0!important;padding:0!important}
 .data-page-back svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+
+/* 加载占位优化：摘要/数量空值期间显示骨架微光条，替代「—」横线闪现 */
+@keyframes zpSkeleton{
+  from{background-position:200% 0}
+  to{background-position:-200% 0}
+}
+.data-summary strong:empty::before{
+  content:"";
+  display:inline-block;
+  width:64px;
+  height:16px;
+  border-radius:8px;
+  vertical-align:middle;
+  background:linear-gradient(90deg,#1A222C 25%,#242F3B 50%,#1A222C 75%);
+  background-size:200% 100%;
+  animation:zpSkeleton 1.1s ease-in-out infinite;
+}
+.data-list-count:empty::before{
+  content:"";
+  display:inline-block;
+  width:34px;
+  height:12px;
+  border-radius:6px;
+  vertical-align:middle;
+  background:linear-gradient(90deg,#1A222C 25%,#242F3B 50%,#1A222C 75%);
+  background-size:200% 100%;
+  animation:zpSkeleton 1.1s ease-in-out infinite;
+}
+@media(prefers-reduced-motion:reduce){
+  .data-summary strong:empty::before,
+  .data-list-count:empty::before{animation:none}
+}

@@ -119,3 +119,23 @@
 .processing-error-title{font-size:18px;line-height:24px}
 .processing-error-message{font-size:16px;line-height:23px}
 .processing-retry-btn{font-size:16px;line-height:22px}
+
+/* 加载占位优化：菜单「当前线路」空值期间显示骨架微光条，替代「—」横线闪现 */
+@keyframes zpSkeleton{
+  from{background-position:200% 0}
+  to{background-position:-200% 0}
+}
+.menu-route-value:empty::before{
+  content:"";
+  display:inline-block;
+  width:52px;
+  height:12px;
+  border-radius:6px;
+  vertical-align:middle;
+  background:linear-gradient(90deg,#1A222C 25%,#242F3B 50%,#1A222C 75%);
+  background-size:200% 100%;
+  animation:zpSkeleton 1.1s ease-in-out infinite;
+}
+@media(prefers-reduced-motion:reduce){
+  .menu-route-value:empty::before{animation:none}
+}
