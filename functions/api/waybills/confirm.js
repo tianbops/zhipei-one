@@ -39,11 +39,12 @@ async function retryLearningRepairs(env,waybillId,userId){
 // 此前 confirm.js 多处调用 releaseLock 却未定义，导致每次成功确认在收尾阶段抛 ReferenceError 返回 500。
 async function releaseLock(env,lock){
   if(!lock)return;
-  try{const cur=await get(env,lock.key);if(cur===lock.token)await command(env,["DEL",lock.key])}catch{}
+  try{const cur=await get(env,lock.key);if(cur===lock.token)await command(env,["DEL","zp:"+lock.key])}catch{}
 }
 
 export async function onRequestPost({request,env}){
  let requestLock=null,waybillLock=null,routeBaseLock=null,order=null;
+ const waybillIndexKey=(routeId,date)=>"zp:route:"+routeId+":waybills:"+date;
  try{
   const gate=await requireBusinessUser(request,env);if(gate.response)return gate.response;
   const user=gate.user;const input=await body(request);const waybillId=clean(input.waybillId);if(!waybillId)return json({success:false,code:"WAYBILL_ID_REQUIRED",error:"缺少运单ID"},400);
@@ -139,7 +140,6 @@ export async function onRequestPost({request,env}){
   order.businessFingerprint=await businessFingerprint(order);
   const learningEntries=learned.map(item=>({field:[clean(item.storeId),normalized(item.rawName||item.name)].join("|"),value:JSON.stringify(item)})).filter(x=>x.field);
   const basePayload=(learned.length&&!isTempRoute(order.routeId))?JSON.stringify(base):"";
-  const waybillIndexKey=(routeId,date)=>"zp:route:"+routeId+":waybills:"+date;
   const indexKey=/^\d{4}-\d{2}-\d{2}$/.test(clean(order.date))?waybillIndexKey(order.routeId,clean(order.date)):"";
   const commitScript='local okOrder,order=pcall(cjson.decode,ARGV[1]); if not okOrder or type(order)~="table" then return 2 end; local rawDone=redis.call("GET",KEYS[2]); if rawDone then return 3 end; local existingFingerprint=redis.call("GET",KEYS[6]); if existingFingerprint and existingFingerprint~=order.id then return 7 end; local okItems,items=pcall(cjson.decode,ARGV[2]); if not okItems or type(items)~="table" then return 4 end; for _,item in ipairs(items) do if type(item)~="table" or type(item.field)~="string" or item.field=="" or type(item.value)~="string" or item.value=="" then return 6 end end; if ARGV[3]~="" then local okBase,base=pcall(cjson.decode,ARGV[3]); if not okBase or type(base)~="table" then return 5 end end; if ARGV[3]~="" then redis.call("SET",KEYS[4],ARGV[3]) end; redis.call("SET",KEYS[1],ARGV[1]); redis.call("SET",KEYS[2],"1"); redis.call("SET",KEYS[6],order.id); for _,item in ipairs(items) do redis.call("HSET",KEYS[3],item.field,item.value) end; if ARGV[4]~="" then redis.call("SADD",KEYS[5],order.id) end; return 1';
   const commitResult=await command(env,["EVAL",commitScript,"6","zp:waybill:"+order.id,"zp:"+doneKey,"zp:waybill:"+order.id+":learning-repair","zp:route:"+order.routeId+":base",indexKey||"zp:waybills:noop","zp:waybill:fingerprint:"+order.businessFingerprint,JSON.stringify(order),JSON.stringify(learningEntries),basePayload,indexKey?"1":"",confirmedNow,order.businessFingerprint]);

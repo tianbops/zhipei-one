@@ -1,0 +1,206 @@
+// 内存版 Redis + fengari Lua 执行引擎，用于在 Node 中真实运行智配One 的
+// Cloudflare Pages Functions（process/confirm/latest/history 等），
+// 通过拦截 global.fetch 的 Upstash REST 协议接管 _redis.js。
+// 仅用于本地全链路回归，不接触任何线上资源。
+const path = require("path");
+const fengari = require("fengari");
+const { lua, lauxlib, lualib, to_luastring, to_jsstring } = fengari;
+
+// ---------- Lua <-> JS 值转换 ----------
+function pushLuaValue(L, val) {
+  if (val === null || val === undefined) { lua.lua_pushnil(L); return; }
+  if (typeof val === "string") { lua.lua_pushstring(L, to_luastring(val)); return; }
+  if (typeof val === "number") { lua.lua_pushnumber(L, val); return; }
+  if (typeof val === "boolean") { lua.lua_pushboolean(L, val ? 1 : 0); return; }
+  if (Array.isArray(val)) {
+    lua.lua_createtable(L, val.length, 0);
+    for (let i = 0; i < val.length; i++) { pushLuaValue(L, val[i]); lua.lua_rawseti(L, -2, i + 1); }
+    return;
+  }
+  if (typeof val === "object") {
+    const keys = Object.keys(val);
+    lua.lua_createtable(L, 0, keys.length);
+    for (const k of keys) { pushLuaValue(L, val[k]); lua.lua_setfield(L, -2, to_luastring(String(k))); }
+    return;
+  }
+  lua.lua_pushnil(L);
+}
+
+function toJsValue(L, idx, seen) {
+  const t = lua.lua_type(L, idx);
+  if (t === lua.LUA_TNIL) return null;
+  if (t === lua.LUA_TBOOLEAN) return !!lua.lua_toboolean(L, idx);
+  if (t === lua.LUA_TSTRING) return to_jsstring(lua.lua_tostring(L, idx));
+  if (t === lua.LUA_TNUMBER) return lua.lua_tonumber(L, idx);
+  if (t === lua.LUA_TTABLE) {
+    seen = seen || new Set();
+    if (seen.has(idx)) return null;
+    seen.add(idx);
+    // 先探测是否为连续数组（1..n）
+    const arr = [];
+    let i = 1;
+    while (true) {
+      lua.lua_rawgeti(L, idx, i);
+      const tt = lua.lua_type(L, -1);
+      if (tt === lua.LUA_TNIL) { lua.lua_pop(L, 1); break; }
+      arr.push(toJsValue(L, -1, seen));
+      lua.lua_pop(L, 1);
+      i++;
+    }
+    if (arr.length > 0) return arr;
+    // 否则作为对象（字符串键）
+    const obj = {};
+    lua.lua_pushnil(L);
+    while (lua.lua_next(L, idx)) {
+      const k = to_jsstring(lua.lua_tostring(L, -2));
+      obj[k] = toJsValue(L, -1, seen);
+      lua.lua_pop(L, 1);
+    }
+    return obj;
+  }
+  return null;
+}
+
+// ---------- 内存 Redis ----------
+class MiniRedis {
+  constructor() {
+    this.strings = new Map(); // key -> string
+    this.sets = new Map();    // key -> Set<string>
+    this.hashes = new Map();  // key -> Map<string,string>
+    this.lists = new Map();   // key -> string[]
+  }
+  _get(k) { return this.strings.has(k) ? this.strings.get(k) : null; }
+  _set(k, v) { this.strings.set(k, String(v)); return "OK"; }
+  _scanKeys(pattern) {
+    const out = [];
+    const p = pattern.replace(/[-/\\^$+?.()|{}]/g, "\\$&").replace(/\*/g, ".*");
+    const re = new RegExp("^" + p + "$");
+    for (const k of [...this.strings.keys(), ...this.sets.keys(), ...this.hashes.keys(), ...this.lists.keys()]) {
+      if (re.test(k)) out.push(k);
+    }
+    out.sort();
+    return out;
+  }
+  _scan(pattern) {
+    // 返回 Redis 原生形状 [cursor, [keys]]（history.js 读 r[0]/r[1]）
+    const keys = this._scanKeys(pattern);
+    return ["0", keys];
+  }
+  command(parts) {
+    const cmd = String(parts[0]).toUpperCase();
+    const a = parts.slice(1);
+    switch (cmd) {
+      case "GET": return this._get(a[0]);
+      case "SET": {
+        const hasNX = a.includes("NX");
+        if (hasNX && this.strings.has(a[0])) return null;
+        return this._set(a[0], a[1]);
+      }
+      case "DEL": { let n = 0; for (const k of a) { if (this.strings.delete(k)) n++; if (this.sets.delete(k)) n++; if (this.hashes.delete(k)) n++; if (this.lists.delete(k)) n++; } return n; }
+      case "SADD": {
+        const key = a[0]; let s = this.sets.get(key); if (!s) { s = new Set(); this.sets.set(key, s); }
+        let n = 0; for (let i = 1; i < a.length; i++) { if (!s.has(a[i])) { s.add(a[i]); n++; } } return n;
+      }
+      case "SREM": { const s = this.sets.get(a[0]); if (!s) return 0; let n = 0; for (let i = 1; i < a.length; i++) if (s.delete(a[i])) n++; return n; }
+      case "SMEMBERS": return this.sets.has(a[0]) ? [...this.sets.get(a[0])] : [];
+      case "MGET": return a.map(k => this._get(k));
+      case "SCAN": {
+        const [cursor, items] = this._scan(a[2] || "*");
+        return [cursor, items];
+      }
+      case "HSET": {
+        const key = a[0]; let h = this.hashes.get(key); if (!h) { h = new Map(); this.hashes.set(key, h); }
+        let n = 0; for (let i = 1; i + 1 < a.length; i += 2) { const f = a[i], v = a[i + 1]; if (!h.has(f)) n++; h.set(f, v); } return n;
+      }
+      case "HGET": { const h = this.hashes.get(a[0]); return h && h.has(a[1]) ? h.get(a[1]) : null; }
+      case "HGETALL": { const h = this.hashes.get(a[0]); if (!h) return []; const out = []; for (const [f, v] of h) { out.push(f, v); } return out; }
+      case "HMGET": { const h = this.hashes.get(a[0]); return a.slice(1).map(f => (h && h.has(f)) ? h.get(f) : null); }
+      case "HDEL": { const h = this.hashes.get(a[0]); if (!h) return 0; let n = 0; for (let i = 1; i < a.length; i++) if (h.delete(a[i])) n++; return n; }
+      case "HLEN": { const h = this.hashes.get(a[0]); return h ? h.size : 0; }
+      case "HSCAN": {
+        const [cursor] = this._scan(a[2] || "*");
+        const flat = []; for (const k of this._scanKeys(a[2] || "*")) { const h = this.hashes.get(k); if (h) for (const [f, v] of h) flat.push(f, v); }
+        return [cursor, flat];
+      }
+      case "RPUSH": { const key = a[0]; let l = this.lists.get(key); if (!l) { l = []; this.lists.set(key, l); } for (let i = 1; i < a.length; i++) l.push(a[i]); return l.length; }
+      case "LTRIM": { const l = this.lists.get(a[0]); if (!l) return "OK"; const start = Number(a[1]), stop = Number(a[2]); if (stop < 0) stop = l.length + stop; const nw = l.slice(start, stop + 1); this.lists.set(a[0], nw); return "OK"; }
+      case "LLEN": { const l = this.lists.get(a[0]); return l ? l.length : 0; }
+      case "INCR": { const cur = Number(this._get(a[0]) || "0"); const nv = cur + 1; this._set(a[0], nv); return nv; }
+      case "EVAL": {
+        const numkeys = Number(a[1]);
+        const keys = a.slice(2, 2 + numkeys);
+        const argv = a.slice(2 + numkeys);
+        return this.evalLua(a[0], keys, argv);
+      }
+      default: throw new Error("MINIREDIS_UNSUPPORTED:" + cmd);
+    }
+  }
+  pipeline(commands) { return commands.map(c => this.command(c)); }
+
+  evalLua(script, keys, argv) {
+    const L = lauxlib.luaL_newstate();
+    lualib.luaL_openlibs(L);
+    const luaArr = (arr) => "{" + (arr || []).map(v => `"${String(v).replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`).join(",") + "}";
+    // redis.call
+    const self = this;
+    lua.lua_pushjsfunction(L, function (L2) {
+      const n = lua.lua_gettop(L2);
+      const args = [];
+      for (let i = 1; i <= n; i++) {
+        const t = lua.lua_type(L2, i);
+        if (t === lua.LUA_TSTRING) args.push(to_jsstring(lua.lua_tostring(L2, i)));
+        else if (t === lua.LUA_TNUMBER) args.push(String(lua.lua_tonumber(L2, i)));
+        else if (t === lua.LUA_TBOOLEAN) args.push(lua.lua_toboolean(L2, i) ? "1" : "0");
+        else if (t === lua.LUA_TNIL) args.push(null);
+        else args.push(to_jsstring(lua.lua_tostring(L2, i)));
+      }
+      const res = self.command(args);
+      pushLuaValue(L2, res);
+      return 1;
+    });
+    lua.lua_setglobal(L, to_luastring("redis_call"));
+    // cjson
+    lua.lua_pushjsfunction(L, function (L2) {
+      const s = to_jsstring(lua.lua_tostring(L2, 1));
+      let v; try { v = JSON.parse(s); } catch (e) { lauxlib.luaL_error(L2, "cjson.decode error"); return 0; }
+      pushLuaValue(L2, v);
+      return 1;
+    });
+    lua.lua_setglobal(L, to_luastring("cjson_decode"));
+    lua.lua_pushjsfunction(L, function (L2) {
+      const v = toJsValue(L2, 1);
+      lua.lua_pushstring(L2, to_luastring(JSON.stringify(v)));
+      return 1;
+    });
+    lua.lua_setglobal(L, to_luastring("cjson_encode"));
+
+    const chunk =
+      `local KEYS=${luaArr(keys)};local ARGV=${luaArr(argv)};` +
+      `redis={call=redis_call};cjson={decode=cjson_decode,encode=cjson_encode};\n` +
+      script;
+    const ok = lauxlib.luaL_dostring(L, to_luastring(chunk));
+    if (ok !== lua.LUA_OK) {
+      const msg = to_jsstring(lua.lua_tostring(L, -1));
+      throw new Error("LUA_ERROR: " + msg);
+    }
+    const result = toJsValue(L, -1);
+    return result;
+  }
+}
+
+// ---------- Upstash REST 协议桥接 ----------
+function makeUpstash(red) {
+  global.fetch = async function (url, init) {
+    const body = init && init.body ? JSON.parse(init.body) : null;
+    const u = String(url);
+    if (u.endsWith("/pipeline")) {
+      const results = red.pipeline(body).map(r => ({ result: r }));
+      return new Response(JSON.stringify(results), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    const result = red.command(body);
+    return new Response(JSON.stringify({ result }), { status: 200, headers: { "content-type": "application/json" } });
+  };
+  return red;
+}
+
+module.exports = { MiniRedis, makeUpstash };
