@@ -44,6 +44,7 @@ async function toJson(resp) { return await resp.json(); }
   const historyMod = await import(baseDir + "history.js");
   const diagMod = await import(baseDir + "waybills/diagnostic.js");
   const confirmMod = await import(baseDir + "waybills/confirm.js");
+  const migMod = await import(baseDir + "_migrations.js");
 
   const env = { UPSTASH_REDIS_REST_URL: "https://upstash.local", UPSTASH_REDIS_REST_TOKEN: "x", PADDLEOCR_ACCESS_TOKEN: "x" };
 
@@ -107,7 +108,8 @@ async function toJson(resp) { return await resp.json(); }
   // 按日删除（不带 waybillId）：只应删掉带班自己创建的
   const idD2 = (await upload(tokD, ROUTE, "粤B44444")).waybill?.id;
   let Del4 = await toJson(await historyMod.onRequestDelete({ request: getReq("https://app.local/api/waybills/history?date=" + TODAY, tokD), env }));
-  check("带班按日删除只删自己的(deleted=1)", Del4.success === true && Del4.deleted === 1, "deleted=" + Del4.deleted);
+  check("带班按日删除只删自己的(deleted=1, skipped=1, total=2)", Del4.success === true && Del4.deleted === 1 && Del4.skipped === 1 && Del4.total === 2, "deleted=" + Del4.deleted + " skipped=" + Del4.skipped + " total=" + Del4.total);
+  check("按日删除明确返回 PARTIAL_DELETE（提示他人单未删）", Del4.code === "PARTIAL_DELETE", "code=" + Del4.code);
   check("按日删除未误删绑定者运单", !!red._get("zp:waybill:" + idB));
 
   // ===================================================================
@@ -165,6 +167,21 @@ async function toJson(resp) { return await resp.json(); }
   check("严格模式下本人仍可读", R5.success && R5.waybill?.id === idB2);
   let R6 = await toJson(await readById(tokA, idB2));
   check("关闭开关后 uA 又能读到（默认共享）", R6.success && R6.waybill?.id === idB2);
+
+  // ===================================================================
+  console.log("\n【7】遗留角色归一化（P2-1）：system_admin → admin");
+  seed("users:index", ["uLegacy1", "uLegacy2", "uOk"]);
+  seed("user:uLegacy1", { id: "uLegacy1", role: "system_admin", name: "老管理员1" });
+  seed("user:uLegacy2", { id: "uLegacy2", role: "system_admin", name: "老管理员2" });
+  seed("user:uOk", { id: "uOk", role: "admin", name: "正常管理员" });
+  const mr = await migMod.normalizeLegacyRoles(env);
+  check("归一化扫描到 3 个账户", mr.scanned === 3, "scanned=" + mr.scanned);
+  check("2 个 system_admin 被归一化为 admin", mr.normalized === 2, "normalized=" + mr.normalized);
+  check("uLegacy1 role 已变为 admin", read("user:uLegacy1").role === "admin");
+  check("uLegacy2 role 已变为 admin", read("user:uLegacy2").role === "admin");
+  check("uOk（admin）保持不变", read("user:uOk").role === "admin");
+  const mr2 = await migMod.normalizeLegacyRoles(env);
+  check("重复执行幂等（不再归一化）", mr2.normalized === 0, "normalized=" + mr2.normalized);
 
   console.log(`\n==== 隔离回归：通过 ${pass} / 失败 ${fail} ====`);
   process.exit(fail === 0 ? 0 : 1);

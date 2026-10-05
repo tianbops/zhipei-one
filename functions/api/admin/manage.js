@@ -3,6 +3,7 @@ import {currentUser} from "../_auth.js";
 import {get,command} from "../_redis.js";
 import {hash} from "../login.js";
 import {isSystemAdmin} from "../_permissions.js";
+import {normalizeLegacyRoles} from "../_migrations.js";
 function validUsername(v){return /^[A-Za-z0-9_]{3,32}$/.test(v)}
 
 export async function onRequestPost({request,env}){
@@ -65,6 +66,11 @@ export async function onRequestPost({request,env}){
       }while(cursor!=="0");
     }
     return json({success:true,deleted});
+  }
+
+  if(action==="normalize-roles"){
+    const r=await normalizeLegacyRoles(env);
+    return json({success:true,scanned:r.scanned,normalized:r.normalized,errors:r.errors});
   }
 
   return json({success:false,error:"不支持的操作"},400);
