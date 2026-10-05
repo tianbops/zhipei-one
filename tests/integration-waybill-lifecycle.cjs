@@ -38,6 +38,12 @@ async function toJson(resp) {
 (async () => {
   // ---- 加载真实业务模块 ----
   const TODAY = todayCN();
+  // 「次日」按运行时动态计算，禁止硬编码日期（否则跨天后该日期落到当天，会与当日去重语义冲突）
+  const TOMORROW = (() => {
+    const d = new Date(TODAY + "T12:00:00+08:00");
+    d.setUTCDate(d.getUTCDate() + 1);
+    return d.toISOString().slice(0, 10);
+  })();
   const TOKEN = "tok-test";
   const UID = "u-1";
   const ROUTE = "route-1001";
@@ -65,7 +71,7 @@ async function toJson(resp) {
   const indexKey = (date) => "zp:route:" + ROUTE + ":waybills:" + date;
   const rawTextA = `运输日期 ${TODAY}\n车牌号 粤B12345\n总重量 1.5吨\n谊品生鲜温馨家园南门店 -> 华润万家梅林店 -> 沃尔玛深南店`;
   const rawTextB = `运输日期 ${TODAY}\n车牌号 粤B12345\n总重量 1.5吨\n谊品生鲜温馨家园南门店 -> 华润万家梅林店 -> 沃尔玛深南店 -> 天虹商场龙华店`;
-  const rawTextC = `运输日期 2026-10-06\n车牌号 粤B12345\n总重量 1.5吨\n谊品生鲜温馨家园南门店 -> 华润万家梅林店 -> 沃尔玛深南店 -> 天虹商场龙华店`;
+  const rawTextC = `运输日期 ${TOMORROW}\n车牌号 粤B12345\n总重量 1.5吨\n谊品生鲜温馨家园南门店 -> 华润万家梅林店 -> 沃尔玛深南店 -> 天虹商场龙华店`;
 
   // ===================================================================
   console.log("\n【阶段1】上传→识别(OCR文本直供)→提取→匹配→去重→规划→保存（全匹配）");
@@ -187,8 +193,8 @@ async function toJson(resp) {
   check("C stage=CONFIRMED", C.waybill?.stage === "CONFIRMED", C.waybill?.stage);
   check("C 天虹门店已自动匹配(非pending)", C.waybill?.stores.find(s => s.rawName === "天虹商场龙华店")?.matchStatus === "matched");
   check("C 是独立新单（非去重复用 B）", idC && idC !== idB, "idC=" + idC);
-  check("C 进入次日日期索引", red.sets.get(indexKey("2026-10-06"))?.has(idC) === true);
-  resp = await historyMod.onRequestGet({request: getReq("https://app.local/api/waybills/history?date=2026-10-06", TOKEN), env});
+  check("C 进入次日日期索引", red.sets.get(indexKey(TOMORROW))?.has(idC) === true);
+  resp = await historyMod.onRequestGet({request: getReq("https://app.local/api/waybills/history?date=" + TOMORROW, TOKEN), env});
   let HC = await toJson(resp);
   check("历史(次日)读取命中 C", HC.success && HC.waybill?.id === idC);
 
@@ -215,7 +221,7 @@ async function toJson(resp) {
   }
   // 索引成员都能解析为主记录
   let allConsistent = true;
-  for (const date of [TODAY, "2026-10-06"]) {
+  for (const date of [TODAY, TOMORROW]) {
     const members = red.sets.get(indexKey(date)) || new Set();
     for (const m of members) if (!read("waybill:" + m)) allConsistent = false;
   }
