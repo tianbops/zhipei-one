@@ -92,6 +92,56 @@ async function toJson(resp) { return await resp.json(); }
   let ownDel = await toJson(await historyMod.onRequestDelete({ request: getReq("https://app.local/api/waybills/history?date=" + TODAY + "&waybillId=" + idB, tokB), env }));
   check("uB 删除自己运单成功", ownDel.success === true, "code=" + ownDel.code);
 
+  // ===================================================================
+  // 第二部分：共享模式 SHARE_FORMAL_ROUTE_WAYBILLS="1"
+  // 语义：正式线路「线路授权成员互见」；必须同时守住——
+  //   ① 非本线路成员仍不可见（开关不是全局放开）
+  //   ② 临时线路仍严格按 owner 私有（开关只作用于正式线路）
+  // ===================================================================
+  console.log("\n【共享模式】SHARE_FORMAL_ROUTE_WAYBILLS=1 — 线路成员互见， outsiders/临时线路仍拒绝");
+  const envShare = { ...env, SHARE_FORMAL_ROUTE_WAYBILLS: "1" };
+  const UC = "uC", tokC = "tok-C", ROUTE_OTHER = "route-9002";
+  seed("session:" + tokC, { userId: UC, sessionVersion: 1 });
+  seed("user:" + UC, { id: UC, role: "user", boundRouteId: ROUTE_OTHER, dispatchRouteId: ROUTE_OTHER, routeDuty: "driver", sessionVersion: 1 });
+  seed("route:" + ROUTE_OTHER, { id: ROUTE_OTHER, name: "线路9002", status: "active" });
+
+  const rawA2 = `运输日期 ${TODAY}\n车牌号 粤B33333\n总重量 1.0吨\n门店A -> 门店B`;
+  const rawB2 = `运输日期 ${TODAY}\n车牌号 粤B44444\n总重量 1.0吨\n门店A -> 门店B`;
+  const fdA2 = new FormData(); fdA2.append("routeId", ROUTE); fdA2.append("rawText", rawA2);
+  const fdB2 = new FormData(); fdB2.append("routeId", ROUTE); fdB2.append("rawText", rawB2);
+  const idA2 = (await toJson(await processMod.onRequestPost({ request: postFormReq("https://app.local/api/waybills/process", tokA, fdA2), env: envShare }))).waybill?.id;
+  const idB2 = (await toJson(await processMod.onRequestPost({ request: postFormReq("https://app.local/api/waybills/process", tokB, fdB2), env: envShare }))).waybill?.id;
+  check("共享模式下 A2/B2 上传成功", !!idA2 && !!idB2, "idA2=" + idA2 + " idB2=" + idB2);
+
+  // 同线路互见
+  let S1 = await toJson(await latestMod.onRequestGet({ request: getReq("https://app.local/api/waybills/latest?id=" + idA2, tokB), env: envShare }));
+  check("共享模式：uB 可读同线路 uA 的运单", S1.success && S1.waybill?.id === idA2, "id=" + S1.waybill?.id);
+  let H2 = await toJson(await historyMod.onRequestGet({ request: getReq("https://app.local/api/waybills/history?date=" + TODAY, tokB), env: envShare }));
+  check("共享模式：uB 历史当日可见 uA 单(count>=2)", H2.success && H2.count >= 2, "count=" + H2.count);
+
+  // 非本线路成员仍拒绝
+  let S2 = await toJson(await latestMod.onRequestGet({ request: getReq("https://app.local/api/waybills/latest?id=" + idA2, tokC), env: envShare }));
+  check("共享模式：非本线路 uC 仍读不到", S2.success && S2.waybill === null, "code=" + S2.code);
+  let S2b = await toJson(await historyMod.onRequestDelete({ request: getReq("https://app.local/api/waybills/history?date=" + TODAY + "&waybillId=" + idA2, tokC), env: envShare }));
+  check("共享模式：非本线路 uC 删除仍被拒", S2b.success !== true, "code=" + S2b.code);
+
+  // 临时线路不受开关影响（process 要求提交线路 == 用户当前调度线路，故用专属临时线路用户 uD）
+  const UD = "uD", tokD = "tok-D", TEMP_ROUTE = "__temp__:" + UD;
+  seed("session:" + tokD, { userId: UD, sessionVersion: 1 });
+  seed("user:" + UD, { id: UD, role: "user", boundRouteId: TEMP_ROUTE, dispatchRouteId: TEMP_ROUTE, routeDuty: "driver", sessionVersion: 1 });
+  const fdT = new FormData();
+  fdT.append("routeId", TEMP_ROUTE);
+  fdT.append("rawText", `运输日期 ${TODAY}\n车牌号 粤B55555\n总重量 1.0吨\n门店A -> 门店B`);
+  const rT = await toJson(await processMod.onRequestPost({ request: postFormReq("https://app.local/api/waybills/process", tokD, fdT), env: envShare }));
+  const idT = rT.waybill?.id;
+  check("临时线路运单创建成功", !!idT, "id=" + idT + " code=" + rT.code);
+  if (idT) {
+    let S3 = await toJson(await latestMod.onRequestGet({ request: getReq("https://app.local/api/waybills/latest?id=" + idT, tokA), env: envShare }));
+    check("共享模式不影响临时线路：uA 仍读不到 uD 的临时单", S3.success && S3.waybill === null);
+    let S4 = await toJson(await latestMod.onRequestGet({ request: getReq("https://app.local/api/waybills/latest?id=" + idT, tokD), env: envShare }));
+    check("临时线路本人仍可读", S4.success && S4.waybill?.id === idT);
+  }
+
   console.log(`\n==== 隔离回归：通过 ${pass} / 失败 ${fail} ====`);
   process.exit(fail === 0 ? 0 : 1);
 })().catch(e => { console.error("FATAL", e); process.exit(2); });
