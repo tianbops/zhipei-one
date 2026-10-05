@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>智配One · Android 真机 E2E 启动器</title>
+<style>
+  body{max-width:820px;margin:0 auto;padding:16px;font:14px/1.6 system-ui,sans-serif;color:#222}
+  h1{font-size:18px}h2{font-size:15px;margin-top:20px;border-left:4px solid #07c;padding-left:8px}
+  code,pre{background:#f4f4f5;border-radius:6px}code{padding:1px 5px}
+  input{width:100%;padding:8px;font:13px monospace;box-sizing:border-box;margin:4px 0}
+  .btn{background:#07c;color:#fff;border:0;border-radius:8px;padding:9px 14px;font-size:14px;cursor:pointer;margin:6px 6px 0 0}
+  .note{background:#fff7e6;border:1px solid #ffd591;padding:10px 12px;border-radius:8px;margin:8px 0}
+  #log{background:#111;color:#0f0;font:12px/1.5 monospace;padding:8px;border-radius:8px;white-space:pre-wrap;min-height:40px;margin-top:8px}
+</style>
+</head>
+<body>
+<h1>智配One · Android 真机 E2E 启动器</h1>
+<div class="note">
+  <b>用途</b>：手机 Chrome（普通标签页）打开本页 → 点「打开并注入」→ 同域打开生产 app 并自动注入浮动自检面板，
+  无需电脑、无需 DevTools。走查《Android 真机 E2E 用例清单》3.1–3.6。
+  <br><b>前提</b>：本页与生产 app 必须<b>同域</b>（都填你的生产自定义域名，或都在 pages.dev）。默认目标 = 本页同域首页。
+  <br><b>局限</b>：window.open 打开的是浏览器标签页（mode=browser），可验证返回逻辑/层级/防火墙/SW/手势/横屏；
+  唯独「PWA 安装的 standalone 物理返回键是否由页面接管（而非退出 PWA）」需另用 USB 调试或已装 PWA 手动确认。
+</div>
+
+<h2>一、目标页</h2>
+<input id="target" placeholder="留空=本页同域首页；或填完整同域 URL，如 https://zp.xxx.com/">
+<div>
+  <button class="btn" onclick="launch()">打开并注入</button>
+  <button class="btn" onclick="setHome()">填首页/</button>
+  <button class="btn" onclick="setAdmin()">填管理员/admin</button>
+</div>
+<div id="log">就绪。点「打开并注入」后，新开的 app 标签页左上角应出现绿色面板。</div>
+
+<h2>二、注入脚本（同 android-e2e-helper.html）</h2>
+<script id="inject">
+(function(){
+  if (document.getElementById('zpE2EHelper')) { console.log('[zpE2EHelper] 已存在'); return; }
+  var panel = document.createElement('div');
+  panel.id = 'zpE2EHelper';
+  panel.style.cssText = 'position:fixed;left:8px;top:8px;z-index:2147483647;width:300px;max-height:82vh;overflow:auto;background:rgba(17,17,17,.92);color:#0f0;font:12px/1.45 monospace;padding:8px;border:1px solid #0f0;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.4)';
+  function layer(){
+    var g = function(id){ var e=document.getElementById(id); if(!e) return 'n/a'; return e.hidden ? 'closed' : 'OPEN'; };
+    var confirm = 'n/a';
+    var cl = document.querySelector('#zpUiLayer .zp-confirm');
+    if (cl) confirm = cl.hidden ? 'closed' : 'OPEN';
+    return {
+      url: location.pathname + location.search,
+      mode: (window.matchMedia && matchMedia('(display-mode: standalone)').matches) ? 'standalone' : 'browser',
+      confirm: confirm, menuBg: g('menuBg'), menuPanel: g('menuPanel'),
+      uploadArea: g('uploadArea'), dlg: g('dlg')
+    };
+  }
+  function render(){
+    var s = layer();
+    var st = panel.querySelector('#st'); if (st) st.textContent = JSON.stringify(s);
+  }
+  panel.innerHTML = '<b style="color:#0ff">Android E2E Helper</b>'
+    + '<pre id="st" style="margin:4px 0;white-space:pre-wrap"></pre>'
+    + '<button id="bTop">zpHandleBack(顶部)</button> '
+    + '<button id="bHw">history.back(物理键)</button><br>'
+    + '<button id="bSw">查SW版本</button> '
+    + '<button id="bClear">清空日志</button> '
+    + '<button id="bExp">导出报告</button>'
+    + '<div id="log" style="margin-top:6px;white-space:pre-wrap;border-top:1px solid #0f0;padding-top:4px"></div>';
+  document.body.appendChild(panel);
+  var log = panel.querySelector('#log');
+  function rec(op){
+    var before = layer().url;
+    if (op === 'top') { try { window.zpHandleBack(); } catch(e){ log.textContent += 'ERR zpHandleBack: '+e+'\n'; } }
+    else { history.back(); }
+    setTimeout(function(){
+      var a = layer();
+      log.textContent += new Date().toLocaleTimeString() + ' ' + op + '  ' + before + ' -> ' + a.url
+        + '  | menuBg=' + a.menuBg + ' menuPanel=' + a.menuPanel + ' dlg=' + a.dlg + ' uploadArea=' + a.uploadArea + '\n';
+    }, 450);
+  }
+  panel.querySelector('#bTop').onclick = function(){ rec('top'); };
+  panel.querySelector('#bHw').onclick = function(){ rec('hw'); };
+  panel.querySelector('#bClear').onclick = function(){ log.textContent = ''; };
+  panel.querySelector('#bSw').onclick = function(){
+    fetch('/sw.js').then(function(r){return r.text();}).then(function(t){
+      var m = t.match(new RegExp('VERSION\\s*=\\s*"([^"]+)"'));
+      log.textContent += 'SW VERSION = ' + (m ? m[1] : 'NOT FOUND') + '\n';
+    }).catch(function(e){ log.textContent += 'SW FETCH ERR: ' + e + '\n'; });
+  };
+  panel.querySelector('#bExp').onclick = function(){
+    var txt = log.textContent;
+    if (navigator.clipboard) navigator.clipboard.writeText(txt).then(function(){ alert('报告已复制到剪贴板'); });
+    else alert(txt);
+  };
+  render();
+  var mo = new MutationObserver(render);
+  ['menuBg','menuPanel','uploadArea','dlg','zpUiLayer'].forEach(function(id){
+    var e = document.getElementById(id); if (e) mo.observe(e, {attributes:true, attributeFilter:['hidden']});
+  });
+  window.addEventListener('popstate', render);
+  window.addEventListener('hashchange', render);
+  console.log('[zpE2EHelper] ready');
+})();
+</script>
+
+<script>
+  function log(m){ var el=document.getElementById('log'); el.textContent += '\n' + m; el.scrollTop = el.scrollHeight; }
+  function setHome(){ document.getElementById('target').value = location.origin + '/'; }
+  function setAdmin(){ document.getElementById('target').value = location.origin + '/admin'; }
+  function launch(){
+    var t = document.getElementById('target').value.trim();
+    if (!t) t = location.origin + '/';
+    log('打开: ' + t);
+    var w = window.open(t, '_blank');
+    if (!w) { log('⚠ 弹窗被拦截，请在浏览器设置允许本页弹窗后重试'); return; }
+    var src = document.getElementById('inject').textContent;
+    var tries = 0;
+    function tryInject(){
+      tries++;
+      try {
+        if (w.closed) { log('⚠ 目标窗口已关闭'); return; }
+        var href = w.location && w.location.href;
+        if (!href || href.indexOf(location.origin) !== 0) {
+          if (tries < 40) { setTimeout(tryInject, 300); return; }
+          log('⚠ 跨域或尚未就绪（' + (href||'?') + '），无法注入。请确认目标与本页同域。'); return;
+        }
+        if (w.document.getElementById('zpE2EHelper')) { log('✓ 面板已存在'); return; }
+        if (typeof w.zpHandleBack === 'undefined') {
+          if (tries < 40) { setTimeout(tryInject, 300); return; }
+          log('⚠ 目标页脚本未就绪（无 zpHandleBack），可能页面未加载完'); return;
+        }
+        w.eval(src);
+        setTimeout(function(){ log('✓ 已注入到 ' + (w.location.pathname) + '，去那个标签页看绿色面板'); }, 200);
+      } catch(e) { log('✗ 注入失败: ' + e + '（跨域？请确认同域）'); }
+    }
+    w.addEventListener('load', function(){ setTimeout(tryInject, 400); });
+    setTimeout(tryInject, 700);
+  }
+</script>
+</body>
+</html>
