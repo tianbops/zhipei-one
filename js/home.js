@@ -346,7 +346,9 @@ loadHome();
    静默失败不阻塞首页，读不到就保持骨架占位（样式与「当前线路」数值一致）。 */
 (async()=>{
   try{
-    const r=await fetch("/api/me",{credentials:"same-origin",cache:"no-store"});
+    // 带时间戳参数：与登录页/管理端同一防缓存策略，任何按 URL 缓存的中间层
+    // 都无法用旧会话时代的 /api/me 响应冒充当前登录身份（2026-10-05 事故加固）。
+    const r=await fetch("/api/me?homeMe="+Date.now(),{credentials:"same-origin",cache:"no-store"});
     const d=await r.json().catch(()=>({}));
     const name=d&&d.user&&d.user.username?String(d.user.username):"";
     const el=$("menuUsername");
