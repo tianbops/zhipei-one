@@ -1,0 +1,14 @@
+{
+  "name": "zhipai-one",
+  "private": true,
+  "scripts": {
+    "test:unit": "node tests/unit-waybill-dedup-lua.test.cjs",
+    "test:nav": "node tests/nav-return.test.mjs",
+    "test:lifecycle": "node tests/integration-waybill-lifecycle.cjs",
+    "test:isolation": "node tests/integration-waybill-isolation.cjs",
+    "test:node": "node tests/unit-waybill-dedup-lua.test.cjs && node tests/nav-return.test.mjs && node tests/integration-waybill-lifecycle.cjs && node tests/integration-waybill-isolation.cjs"
+  },
+  "devDependencies": {
+    "fengari": "^0.1.4"
+  }
+}
