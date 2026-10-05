@@ -18,13 +18,7 @@ form?.addEventListener("submit",async e=>{e.preventDefault();message.textContent
   const d=await r.json().catch(()=>({}));if(!r.ok){const code=d.code||("HTTP_"+r.status);throw new Error("["+code+"] "+(d.error||"登录失败"))}
   const _role=d.user&&d.user.role;
   const _isAdmin=_role==="system_admin"||_role==="admin";
-  // 管理员端作为「独立工作区」打开：独立窗口拥有独立历史栈，系统返回只在管理员历史内
-  // 生效，绝不穿越到司机首页；数据仍同源共享（cookie/localStorage/接口）。仅独立 PWA
-  // 下启用，浏览器里沿用原 replace 行为（用户已认可「返回到浏览器页」为正常）。
-  const _standalone=(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||window.navigator.standalone===true;
-  if(_isAdmin&&_standalone){
-    let _w=null;try{_w=window.open("/admin.html?v="+Date.now(),"_blank")}catch(e){}
-    if(_w)return; // 已切到独立的管理员窗口，当前登录窗口保持不动
-    // 极少数被弹窗拦截：退回同窗口 replace，由 ui-unified 跨区防火墙兜底
-  }
+  // 管理员端与司机端同处一个 PWA 窗口：登录即栈底（location.replace 进入，背后无首页）。
+  // 系统返回由 ui-unified.js 守卫接管——第一次左滑停留并提示「再按一次退出」，
+  // 第二次左滑真正退出到手机桌面，绝不穿越到司机首页。
   location.replace(_isAdmin?"/admin.html?v="+Date.now():"/home.html?v="+Date.now())}catch(err){message.textContent=err.message||"登录失败";button.disabled=false;button.textContent="登录"}});

@@ -221,7 +221,7 @@
     if(zpIsWorkspaceRoot){
       if(zpExitArmed)return "leave"; // 第二次返回：放行，由系统退出 App
       zpExitArmed=true;
-      try{window.zpToast?window.zpToast("再按一次返回退出应用","info"):0}catch{}
+      try{window.zpToast?window.zpToast("再按一次退出","info"):0}catch{}
       clearTimeout(zpExitTimer);
       // 窗口过期：仅复位武装标记，不再补占位。
       // 安卓独立 PWA 下 window.close() 对「主页启动的顶层上下文」是空操作，
@@ -252,11 +252,10 @@
   }
 
   (function zpInstallBack(){
-    // 管理员端「独立工作区」：登录/切换管理员时优先以 window.open 打开独立窗口
-    // （见 login.js），其历史栈只有 [admin.html]，系统返回绝不会穿越到司机首页。
-    // 但 window.open 在部分无手势/被拦截场景会退化成同窗口 replace，此时历史里可能
-    // 残留业务端首页。下面的跨区退出标记负责兜底：离开管理员端时（或进入时若已非根）
-    // 置一次性标记，业务端页（全新加载 / bfcache 恢复都会触发）消费标记继续后退，
+    // 管理员端与司机端同处一个 PWA 窗口。登录即栈底（location.replace 进入，背后无首页），
+    // 故正常进入时 admin 就是历史首条记录；极少数「司机会话→退出→再登录管理员」路径下，
+    // 历史里会残留业务端首页（非根）。下面的跨区退出标记负责兜底：离开管理员端时（或进入时
+    // 若已非根）置一次性标记，业务端页（全新加载 / bfcache 恢复都会触发）消费标记继续后退，
     // 直到真正退出 PWA，绝不停在司机首页。
     // 非根判定：admin.html 加载时历史长度 >1，说明它底下还压着别的文档（如司机首页）。
     zpAdminNonRoot=(zpZone==="admin")&&(function(){try{return history.length>1}catch{return false}})();
@@ -268,7 +267,8 @@
       try{history.back()}catch{}
       return;
     }
-    // 同窗口进入且非根（window.open 退化）：进入即置标记，保证任何一次离开都能越过业务端首页
+    // 管理员端「非根」进入（历史里残留业务端首页，如司机会话→退出→再登录管理员）：
+    // 进入即置跨区退出标记，保证任何一次离开都能越过业务端首页，直接退到桌面。
     if(zpZone==="admin"&&zpAdminNonRoot){
       try{sessionStorage.setItem("zpExitAdmin","1")}catch{}
     }
