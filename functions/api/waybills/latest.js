@@ -2,6 +2,7 @@ import {json} from "../_json.js";
 import {currentUser} from "../_auth.js";
 import {get,command} from "../_redis.js";
 import {canUseRoute} from "../_permissions.js";
+import {canReadWaybill} from "../_waybill-acl.js";
 import {getRoute} from "../_route.js";
 
 const clean=v=>String(v??"").trim();
@@ -46,7 +47,7 @@ export async function onRequestGet({request,env}){
   const raw=await get(env,"waybill:"+id);if(!raw)return json({success:true,waybill:null});
   try{
    const waybill=typeof raw==="string"?JSON.parse(raw):raw;
-   if((confirmedOnly?!effectiveWaybill(waybill):!activeWaybill(waybill))||waybill.routeId!==routeId)return json({success:true,waybill:null});
+   if((confirmedOnly?!effectiveWaybill(waybill):!activeWaybill(waybill))||waybill.routeId!==routeId||!canReadWaybill(user,waybill,env))return json({success:true,waybill:null});
    return json({success:true,waybill:await withRouteData(waybill)});
   }catch{return json({success:false,code:"WAYBILL_DATA_INVALID",error:"运单数据异常"},500)}
  }
@@ -58,7 +59,7 @@ export async function onRequestGet({request,env}){
  let list=[];
  try{
   const rawList=await command(env,["MGET",...ids.map(x=>"zp:waybill:"+x)]);
-  list=(Array.isArray(rawList)?rawList:[]).map(raw=>{try{return typeof raw==="string"?JSON.parse(raw):raw}catch{return null}}).filter(w=>(confirmedOnly?effectiveWaybill(w):activeWaybill(w))&&w.routeId===routeId&&w.date===today);
+  list=(Array.isArray(rawList)?rawList:[]).map(raw=>{try{return typeof raw==="string"?JSON.parse(raw):raw}catch{return null}}).filter(w=>(confirmedOnly?effectiveWaybill(w):activeWaybill(w))&&w.routeId===routeId&&w.date===today&&canReadWaybill(user,w,env));
  }catch{}
  list.sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
  const waybill=list[list.length-1]||null;

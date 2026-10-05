@@ -2,6 +2,7 @@ import {json} from "../_json.js";
 import {currentUser} from "../_auth.js";
 import {get,command} from "../_redis.js";
 import {canUseRoute} from "../_permissions.js";
+import {canReadWaybill} from "../_waybill-acl.js";
 
 const clean=v=>String(v??"").trim();
 const parse=v=>{try{return typeof v==="string"?JSON.parse(v):v}catch{return null}};
@@ -29,7 +30,7 @@ export async function onRequestGet({request,env}){
       const id=String(key).replace(/^zp:/,"").replace(/^waybill:/,"");
       const raw=await get(env,"waybill:"+id);
       const w=parse(raw);
-      if(!w||w.routeId!==routeId)continue;
+      if(!w||w.routeId!==routeId||!canReadWaybill(user,w,env))continue;
       if(date&&clean(w.date)!==date)continue;
       if(vehicle&&clean(w.vehicle).toUpperCase()!==vehicle)continue;
       found.push({
