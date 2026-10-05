@@ -65,16 +65,22 @@ def main():
         page.click("#menuButton")
         page.wait_for_timeout(250)
         txt = page.text_content("#menuUsername") or ""
-        check("菜单显示用户名", txt.strip() == "driver_zhang_01", f"实际='{txt.strip()}'")
+        check("菜单直接显示用户名（无账号设置文字）", txt.strip() == "driver_zhang_01", f"实际='{txt.strip()}'")
         vis = page.is_visible("#menuUsername")
         check("用户名可见", vis)
-        # 溢出截断：元素宽度不超过菜单、且 overflow 样式生效
+        # 加载瞬间占位为「账号」，加载后被替换为真实用户名
+        has_label = page.evaluate("""(()=>{
+          const a=document.querySelector('#menuUsername').closest('a');
+          return (a.textContent||'').includes('账号设置');
+        })()""")
+        check("菜单不含「账号设置」文字", has_label is False)
+        # 溢出截断/左对齐作主标题
         m = page.evaluate("""(()=>{
           const el=document.getElementById('menuUsername');
           const cs=getComputedStyle(el);
-          return {w:el.offsetWidth, max:cs.maxWidth, ov:cs.textOverflow};
+          return {ml:cs.marginLeft, ov:cs.textOverflow, w:el.offsetWidth, color:cs.color};
         })()""")
-        check("长用户名省略号截断", m["ov"] == "ellipsis" and float(m["max"].rstrip("px")) >= m["w"], str(m))
+        check("用户名作主标题（左对齐、省略号截断）", m["ml"] in ("0px","0") and m["ov"] == "ellipsis", str(m))
         check("页面无 JS 报错", not errors, "; ".join(errors[:2]))
         page.screenshot(path="/tmp/home-menu-username.png")
         ctx.close()

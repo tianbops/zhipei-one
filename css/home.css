@@ -104,10 +104,9 @@
 /* 当前线路显示 */
 .home-menu-panel a#currentRouteMenu{justify-content:flex-start}
 .home-menu-panel .menu-route-value{margin-left:auto;max-width:82px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#B8C2CC;font-size:13px;font-weight:600}
-/* 账号设置右侧的用户名：比线路徽标稍宽，长用户名省略号截断。
-   标签禁止换行，用户名允许收缩，两者共存时不挤压成两行 */
-.home-menu-panel .menu-username{max-width:132px;min-width:0;flex:0 1 auto}
-.home-menu-panel a>span:not(.menu-item-icon){white-space:nowrap}
+/* 菜单项直接以用户名作主标题：左对齐、与菜单文字同色，撑满剩余宽度，
+   超长省略号截断，不换行 */
+.home-menu-panel .menu-username{margin-left:0;color:inherit;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1 1 auto;min-width:0;max-width:none}
 
 /* Final Android typography normalization: size/line-height only */
 .home-brand strong{font-size:20px;line-height:26px;letter-spacing:.5px}
