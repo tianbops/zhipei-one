@@ -6,6 +6,16 @@ document.addEventListener("click",e=>{if(menuPanel&&!menuPanel.hidden&&!menuPane
 const overlay=$("uploadArea"),cancel=$("sourceCancel");
 const todayCount=$("todayCount"),todayWeight=$("todayWeight"),menuRouteValue=$("currentRouteMenuValue"),dot=$("statusDot");
 let dispatchRouteId="";
+let boundRouteId="";
+const subBadge=$("substituteBadge");
+/* 代班态提示：用户当前调度线路与本人绑定线路不一致时，视为「代班中」。
+   仅作展示（今日配送卡片里一个「代班中」徽章），不碰任何权限逻辑；
+   线路名已由卡片 statusDot / 当前线路菜单项展示，这里只补一行状态文案。 */
+const renderSubstituteBadge=()=>{
+  if(!subBadge)return;
+  const isSubstitute=!!dispatchRouteId&&!!boundRouteId&&dispatchRouteId!==boundRouteId;
+  subBadge.hidden=!isSubstitute;
+};
 const setEmptyToday=()=>{todayCount.textContent="暂无运单";todayWeight.textContent=""};
 const setRouteBadge=(route)=>{if(!dot)return;const type=route?.type||"";const name=String(route?.name||"").trim();const badge=type==="temporary"||/临时/.test(name)?"临":(name.replace(/\s+/g,"").replace(/路$/,"" )||"—");dot.textContent=badge;dot.hidden=false};
 
@@ -329,6 +339,7 @@ async function loadHome(){
     if(!routesRes.ok||!routes.success)throw Error(routes.error||"线路读取失败");
     if(!dispatchRes.ok||!dispatch.success)throw Error(dispatch.error||"当前配送线路读取失败");
     dispatchRouteId=dispatch.dispatchRoute?.id||"";
+    renderSubstituteBadge();
     const route=dispatch.dispatchRoute||null;
     const routeName=route?.type==="temporary"?"临时用户":(route?.name||"未选择");
     setRouteBadge(route);
@@ -358,6 +369,8 @@ loadHome();
     const r=await fetch("/api/me?homeMe="+Date.now(),{credentials:"same-origin",cache:"no-store"});
     const d=await r.json().catch(()=>({}));
     const name=d&&d.user&&d.user.username?String(d.user.username):"";
+    boundRouteId=d&&d.user&&d.user.boundRouteId?String(d.user.boundRouteId):"";
+    renderSubstituteBadge();
     const el=$("menuUsername");
     if(el&&name)el.textContent=name;
   }catch{}
