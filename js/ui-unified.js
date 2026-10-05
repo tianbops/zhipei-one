@@ -188,7 +188,7 @@
       return true;
     }});
 
-  let zpExitArmed=false,zpExitTimer=0,zpLeaving=false;
+  let zpExitArmed=false,zpExitTimer=0,zpLeaving=false,zpAdminNonRoot=false;
   // 压一条「占位历史」，使第一次系统返回先触发 popstate（被本控制器接管），
   // 而不是直接越过首条记录由系统关掉 PWA（那样就没有「再按一次」提示了）。
   function zpPushGuard(){
@@ -228,7 +228,10 @@
       // 真正退出只能靠「越过首条记录让系统关掉 PWA」。武装期间刻意不补占位，
       // 第二次返回才能退到首条记录之前、由系统退回桌面；补占位反而会让第二次
       // 返回卡在管理端、要多按几次才滑出去（旧版就表现为「穿越到业务首页」）。
-      zpExitTimer=setTimeout(()=>{zpExitArmed=false},2000);
+      // 窗口过期：复位武装标记。仅当管理员端「非根」（同窗口进入、底下压着业务端首页）
+      // 时补回占位——这样停顿后再按会重新武装而非直接滑到司机首页；管理员端「根」
+      // （独立窗口，底下无业务页）则不补，保证停顿后下一次返回能越过首条记录由系统退出。
+      zpExitTimer=setTimeout(()=>{zpExitArmed=false;if(zpZone==="admin"&&zpAdminNonRoot)zpPushGuard()},2000);
       return "exit-armed";
     }
     // 离开页面前：页面级未保存拦截
@@ -249,10 +252,14 @@
   }
 
   (function zpInstallBack(){
-    // 跨区退出：管理员端「再按一次退出」后，若系统返回退到了业务端首页
-    // （多因 PWA 标签历史被恢复，背后残留着司机首页），继续后退直到真正退出 PWA，
-    // 绝不停在司机首页。机制：管理员端离开时置一次性标记，业务端页（全新加载或
-    // bfcache 恢复都会触发）消费标记并再退一步；登录/管理端页则清掉残留避免重开误退。
+    // 管理员端「独立工作区」：登录/切换管理员时优先以 window.open 打开独立窗口
+    // （见 login.js），其历史栈只有 [admin.html]，系统返回绝不会穿越到司机首页。
+    // 但 window.open 在部分无手势/被拦截场景会退化成同窗口 replace，此时历史里可能
+    // 残留业务端首页。下面的跨区退出标记负责兜底：离开管理员端时（或进入时若已非根）
+    // 置一次性标记，业务端页（全新加载 / bfcache 恢复都会触发）消费标记继续后退，
+    // 直到真正退出 PWA，绝不停在司机首页。
+    // 非根判定：admin.html 加载时历史长度 >1，说明它底下还压着别的文档（如司机首页）。
+    zpAdminNonRoot=(zpZone==="admin")&&(function(){try{return history.length>1}catch{return false}})();
     var _f=null;try{_f=sessionStorage.getItem("zpExitAdmin")}catch{}
     if(zpZone!=="business"){
       if(_f){try{sessionStorage.removeItem("zpExitAdmin")}catch{}} // 非业务页：清残留，防误触
@@ -260,6 +267,10 @@
       try{sessionStorage.removeItem("zpExitAdmin")}catch{}
       try{history.back()}catch{}
       return;
+    }
+    // 同窗口进入且非根（window.open 退化）：进入即置标记，保证任何一次离开都能越过业务端首页
+    if(zpZone==="admin"&&zpAdminNonRoot){
+      try{sessionStorage.setItem("zpExitAdmin","1")}catch{}
     }
     zpBindPageBack();
     window.addEventListener("pageshow",zpBindPageBack);

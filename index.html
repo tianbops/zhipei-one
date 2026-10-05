@@ -20,8 +20,13 @@
   .then(function(r){return r.ok?r.json():null})
   .then(function(d){
    var u=d&&d.user;if(!u)return;
-   location.replace(u.role==="admin"||u.role==="system_admin"?"/admin.html?v="+Date.now():"/home.html?v="+Date.now());
+   var _isAdmin=u.role==="admin"||u.role==="system_admin";
+   // 管理员端优先以「独立窗口」打开（仅独立 PWA）：历史栈独立，返回绝不穿越司机首页。
+   // 无手势场景 window.open 会被拦截、自动退回 replace；全新打开时 admin 即根，安全。
+   var _standalone=(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||window.navigator.standalone===true;
+   if(_isAdmin&&_standalone){var _w=null;try{_w=window.open("/admin.html?v="+Date.now(),"_blank")}catch(e){}if(_w)return;}
+   location.replace(_isAdmin?"/admin.html?v="+Date.now():"/home.html?v="+Date.now());
   }).catch(function(){});
 }catch(e){}})();
-</script><script src="/js/login.js?v=f9362c65"></script><script src="/js/pwa.js?v=864ce384"></script>
+</script><script src="/js/login.js?v=189f98f5"></script><script src="/js/pwa.js?v=864ce384"></script>
 </body></html>
