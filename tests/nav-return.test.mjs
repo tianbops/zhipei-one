@@ -45,18 +45,18 @@ function resolve(url, fallback) {
 console.log("一、来源驱动返回（业务端 12 条）");
 {
   const cases = [
-    ["/home.html", "", "/home.html", "首页即工作区根"],
-    ["/pages/today.html?from=home", "", "/home.html", "首页→今日运单→首页"],
-    ["/pages/history.html?from=home", "", "/home.html", "首页→历史记录→首页"],
-    ["/pages/data.html?from=home", "", "/home.html", "首页→数据中心→首页"],
-    ["/pages/account.html?from=home", "", "/home.html", "首页→账号设置→首页"],
-    ["/pages/dispatch.html?from=home", "", "/home.html", "首页→当前线路→首页"],
-    ["/pages/route_apply.html?from=home", "", "/home.html", "首页→绑定线路→首页"],
-    ["/pages/order_detail.html?id=W1&source=process&from=process", "", "/home.html", "识别/规划完成→运单详情→首页"],
-    ["/pages/order_detail.html?source=today&from=history&date=2026-10-02", "", "/pages/history.html", "历史→某日详情→回历史"],
-    ["/pages/data.html?from=order&id=W9&source=process", "", "/pages/order_detail.html?id=W9&source=process&from=process", "详情→数据资料→必须回到原来那张运单"],
-    ["/pages/data.html", "", "/home.html", "无来源→回落到工作区根"],
-    ["/pages/order_detail.html?from=today", "", "/pages/today.html", "今日运单→详情→回今日运单"],
+    ["/home", "", "/home", "首页即工作区根"],
+    ["/pages/today?from=home", "", "/home", "首页→今日运单→首页"],
+    ["/pages/history?from=home", "", "/home", "首页→历史记录→首页"],
+    ["/pages/data?from=home", "", "/home", "首页→数据中心→首页"],
+    ["/pages/account?from=home", "", "/home", "首页→账号设置→首页"],
+    ["/pages/dispatch?from=home", "", "/home", "首页→当前线路→首页"],
+    ["/pages/route_apply?from=home", "", "/home", "首页→绑定线路→首页"],
+    ["/pages/order_detail?id=W1&source=process&from=process", "", "/home", "识别/规划完成→运单详情→首页"],
+    ["/pages/order_detail?source=today&from=history&date=2026-10-02", "", "/pages/history", "历史→某日详情→回历史"],
+    ["/pages/data?from=order&id=W9&source=process", "", "/pages/order_detail?id=W9&source=process&from=process", "详情→数据资料→必须回到原来那张运单"],
+    ["/pages/data", "", "/home", "无来源→回落到工作区根"],
+    ["/pages/order_detail?from=today", "", "/pages/today", "今日运单→详情→回今日运单"],
   ];
   for (const [url, fb, want, name] of cases) {
     const got = resolve(url, fb);
@@ -68,18 +68,18 @@ console.log("一、来源驱动返回（业务端 12 条）");
 console.log("\n二、跨区防火墙（管理员端 12 条）");
 {
   const cases = [
-    ["/admin.html", "", "/admin.html", "管理员根本身就是工作区根"],
-    ["/admin.html?from=home", "", "/admin.html", "来源=home 不得回落业务首页"],
-    ["/admin.html?from=process", "", "/admin.html", "来源=process 不得回落业务首页"],
-    ["/admin.html?from=order&id=W9", "", "/admin.html", "来源=order 不得跳进业务详情"],
-    ["/admin.html?from=history", "", "/admin.html", "来源=history 不得跳进业务历史"],
-    ["/admin.html?from=data", "", "/admin.html", "来源=data 不得跳进业务数据"],
-    ["/admin.html", "/home.html", "/admin.html", "fallback 为业务首页→防火墙拦截"],
-    ["/admin.html", "/pages/data.html", "/admin.html", "fallback 为业务页→防火墙拦截"],
-    ["/admin.html?tab=1", "", "/admin.html", "四个面板是平级一级页，不构成历史层级"],
-    ["/home.html?from=admin", "", "/home.html", "反向越权：业务端不得进入管理端"],
-    ["/pages/data.html?from=admin", "", "/home.html", "反向越权：业务子页不得进入管理端"],
-    ["/admin.html?from=admin", "", "/admin.html", "自我返回→兜底到本区根，防死循环"],
+    ["/admin", "", "/admin", "管理员根本身就是工作区根"],
+    ["/admin?from=home", "", "/admin", "来源=home 不得回落业务首页"],
+    ["/admin?from=process", "", "/admin", "来源=process 不得回落业务首页"],
+    ["/admin?from=order&id=W9", "", "/admin", "来源=order 不得跳进业务详情"],
+    ["/admin?from=history", "", "/admin", "来源=history 不得跳进业务历史"],
+    ["/admin?from=data", "", "/admin", "来源=data 不得跳进业务数据"],
+    ["/admin", "/home", "/admin", "fallback 为业务首页→防火墙拦截"],
+    ["/admin", "/pages/data", "/admin", "fallback 为业务页→防火墙拦截"],
+    ["/admin?tab=1", "", "/admin", "四个面板是平级一级页，不构成历史层级"],
+    ["/home?from=admin", "", "/home", "反向越权：业务端不得进入管理端"],
+    ["/pages/data?from=admin", "", "/home", "反向越权：业务子页不得进入管理端"],
+    ["/admin?from=admin", "", "/admin", "自我返回→兜底到本区根，防死循环"],
   ];
   for (const [url, fb, want, name] of cases) {
     const got = resolve(url, fb);
