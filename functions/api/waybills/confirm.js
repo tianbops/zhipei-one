@@ -12,7 +12,9 @@ const normalized=v=>clean(v).replace(/[\u3000\s]+/g,"").replace(/[（）()【】
 // 杜绝跨临时用户确认（每个临时用户 routeId=__temp__:<userId>，互不相同）。
 function canConfirmWaybill(user,order){
  if(isTempRoute(order.routeId))return order.routeId===TEMP_ROUTE_PREFIX+user.id;
- return canMaintainRoute(user,order.routeId);
+ // 绑定二人共同维护；带班人员（未绑定、临时调度到该线路）可确认自己上传的运单，
+ // 否则带班上传后出现待定门店将无人能确认，流程卡死。
+ return canMaintainRoute(user,order.routeId)||(!!order.createdBy&&order.createdBy===user.id);
 }
 async function loadBase(env,id){const raw=await get(env,"route:"+id+":base");if(!raw)throw Object.assign(new Error("线路数据资料尚未建立"),{code:"BASE_NOT_FOUND"});let x;try{x=typeof raw==="string"?JSON.parse(raw):raw}catch{throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"})}if(!x||!Array.isArray(x.stores))throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"});return {...x,routeId:id}}
 // 读取运单主记录（zp:waybill:<id>）。此前 confirm.js 引用了未定义的 load，导致确认链路运行时报错，
