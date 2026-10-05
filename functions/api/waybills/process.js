@@ -165,24 +165,57 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
   order.businessFingerprint=await businessFingerprint(order);
   const fingerprintKey="zp:waybill:fingerprint:"+order.businessFingerprint;
   const indexKey=waybillIndexKey(routeId,clean(order.date));
-  const saveScript='local existing=redis.call("GET",KEYS[1]); if existing and existing~=ARGV[1] then local raw=redis.call("GET","zp:waybill:"..existing); if raw then redis.call("SADD",KEYS[3],existing); return existing else redis.call("DEL",KEYS[1]) end end; redis.call("SET",KEYS[1],ARGV[1]); redis.call("SET",KEYS[2],ARGV[2]); redis.call("SADD",KEYS[3],ARGV[1]); return ARGV[1]';
+  // 业务去重键：同线路 + 同日期 + 同车牌，当日只落库一条。
+  // 仅当车牌存在时启用；车牌缺失时退化为纯指纹幂等，避免把多条“无车牌”运单互相覆盖。
+  const dedupeKey=order.vehicle?("zp:waybill:dedupe:"+routeId+":"+clean(order.date)+":"+clean(order.vehicle)):("zp:waybills:noop:"+order.id);
+  // 历史运单未写入 dedupeKey，这里兜底扫描当日索引里的同车牌运单，命中即复用旧单（不新增）。
+  let dailyDupId=null;
+  if(order.vehicle){
+    const hasDedupe=await command(env,["GET",dedupeKey]);
+    if(!hasDedupe){
+      const members=await command(env,["SMEMBERS",indexKey]);
+      for(const id of (Array.isArray(members)?members:[])){
+        const raw=await command(env,["GET","zp:waybill:"+id]);
+        if(!raw)continue;
+        let w;try{w=typeof raw==="string"?JSON.parse(raw):raw}catch{continue}
+        if(clean(w?.vehicle)===clean(order.vehicle)){dailyDupId=id;break}
+      }
+    }
+  }
+  if(dailyDupId&&dailyDupId!==order.id){
+    const raw=await command(env,["GET","zp:waybill:"+dailyDupId]);
+    if(raw){
+      let w;try{w=typeof raw==="string"?JSON.parse(raw):raw}catch{w=null}
+      if(w){
+        await command(env,["SADD",indexKey,dailyDupId]);
+        await command(env,["SET",dedupeKey,dailyDupId]);
+        return json({success:true,waybill:w,idempotent:true,dedupe:"VEHICLE_DAILY",indexSync:"OK"});
+      }
+    }
+  }
+  // 保存脚本：原子地按「同车牌 > 内容指纹」顺序去重。
+  // 命中旧单返回 {"VEHICLE"|"FINGERPRINT", id}，新单返回 {"NEW", id}。
+  const saveScript='local fpKey=KEYS[1]; local wbKey=KEYS[2]; local idxKey=KEYS[3]; local dedupeKey=KEYS[4]; local vehId=redis.call("GET",dedupeKey); if vehId and vehId~="" then local raw=redis.call("GET","zp:waybill:"..vehId); if raw then redis.call("SADD",idxKey,vehId); return {"VEHICLE",vehId} end; redis.call("DEL",dedupeKey) end; local fpId=redis.call("GET",fpKey); if fpId and fpId~=ARGV[1] then local raw=redis.call("GET","zp:waybill:"..fpId); if raw then redis.call("SADD",idxKey,fpId); return {"FINGERPRINT",fpId} end; redis.call("DEL",fpKey) end; redis.call("SET",fpKey,ARGV[1]); redis.call("SET",wbKey,ARGV[2]); redis.call("SADD",idxKey,ARGV[1]); redis.call("SET",dedupeKey,ARGV[1]); return {"NEW",ARGV[1]}';
   let saveResult;
   try{
-    saveResult=await command(env,["EVAL",saveScript,"3",fingerprintKey,"zp:waybill:"+order.id,indexKey,order.id,JSON.stringify(order)]);
+    saveResult=await command(env,["EVAL",saveScript,"4",fingerprintKey,"zp:waybill:"+order.id,indexKey,dedupeKey,order.id,JSON.stringify(order)]);
   }catch(e){
     return json({success:false,code:"WAYBILL_SAVE_FAILED",error:"运单保存失败",detail:e?.message||String(e)},500);
   }
-  if(String(saveResult)!==order.id){
-    const existing=await get(env,"waybill:"+String(saveResult));
-    if(existing){
-      const existingOrder=typeof existing==="string"?JSON.parse(existing):existing;
-      await command(env,["SADD",waybillIndexKey(routeId,clean(existingOrder.date)),existingOrder.id]);
-      return json({success:true,waybill:existingOrder,idempotent:true,indexSync:"OK"});
-    }
-    return json({success:false,code:"WAYBILL_FINGERPRINT_CONFLICT",error:"相同业务运单正在保存，请稍后重试"},409);
+  let reason="NEW",savedId=order.id;
+  if(Array.isArray(saveResult)&&saveResult.length>=2){reason=String(saveResult[0]);savedId=String(saveResult[1])}
+  else if(typeof saveResult==="string"&&saveResult!==order.id){reason="FINGERPRINT";savedId=saveResult}
+  if(reason==="NEW"){
+    emit(100,"处理完成");
+    return json({success:true,waybill:order,pipeline:order.pipeline,summary:order.summary,indexSync:"OK"});
   }
-  emit(100,"处理完成");
-  return json({success:true,waybill:order,pipeline:order.pipeline,summary:order.summary,indexSync:"OK"});
+  const existingRaw=await command(env,["GET","zp:waybill:"+savedId]);
+  if(existingRaw){
+    const existingOrder=typeof existingRaw==="string"?JSON.parse(existingRaw):existingRaw;
+    await command(env,["SADD",indexKey,existingOrder.id]);
+    return json({success:true,waybill:existingOrder,idempotent:true,dedupe:reason,indexSync:"OK"});
+  }
+  return json({success:false,code:"WAYBILL_DEDUPE_LOOKUP_FAILED",error:"已存在的运单记录丢失，请重试"},409);
 }
 
 export async function onRequestPost({request,env}){
