@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>智配One · Android 真机 E2E 自检 Helper（载体页）</title>
+<style>
+  body{max-width:820px;margin:0 auto;padding:16px;font:14px/1.6 system-ui,sans-serif;color:#222}
+  h1{font-size:18px}h2{font-size:15px;margin-top:24px;border-left:4px solid #07c;padding-left:8px}
+  code,pre{background:#f4f4f5;border-radius:6px} code{padding:1px 5px}
+  pre{padding:12px;overflow:auto;font:12px/1.5 monospace;white-space:pre-wrap}
+  .btn{display:inline-block;background:#07c;color:#fff;border:0;border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer;margin:4px 6px 4px 0}
+  .note{background:#fff7e6;border:1px solid #ffd591;padding:10px 12px;border-radius:8px}
+  table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:6px 8px;text-align:left;font-size:13px}
+  th{background:#fafafa}
+</style>
+</head>
+<body>
+<h1>智配One · Android 真机 E2E 自检 Helper</h1>
+<p>用途：在真机生产 app 页面临时注入一个浮动自检面板，实时显示<strong>返回层级 hook 状态</strong>并触发
+  <strong>顶部返回</strong> / <strong>物理返回键（history.back）</strong>，走查《Android 真机 E2E 用例清单》3.1–3.6 时无需肉眼猜状态，结果可一键导出回传。</p>
+
+<div class="note">
+  <b>安全</b>：本脚本仅通过 DevTools Console 临时注入，<b>不留痕、不进仓库、不影响生产</b>。验证完刷新页面即消失。请勿将本载体页本身部署到生产。
+</div>
+
+<h2>一、真机执行步骤</h2>
+<ol>
+  <li>手机 Chrome 打开生产域名 → 菜单「添加到主屏幕」安装 PWA → <b>从桌面图标启动</b>（standalone 模式，无地址栏）。</li>
+  <li>手机开启 <b>USB 调试</b>，连电脑；桌面 Chrome 打开 <code>chrome://inspect/#devices</code> → 找到智配One 的 WebView/PWA → 点 <b>inspect</b>。</li>
+  <li>在打开的 DevTools <b>Console</b> 里粘贴下方「注入脚本」并回车（或点本页 <a href="#copy">复制注入脚本</a> 后粘贴）。页面出现绿色浮动面板即成功。</li>
+  <li>按清单逐步操作：每一步在面板上点 <code>zpHandleBack(顶部)</code> 或 <code>history.back(物理键)</code>，观察 URL 与层级变化，与预期核对。</li>
+  <li><b>手势返回</b>（清单 A1g/A2g/B2g）：从屏幕左边缘右滑，观察 URL 是否变化到预期（应等价于 history.back）。此项面板无法模拟，须手动触发。</li>
+  <li><b>SW 升级</b>（清单 S1/S2）：点面板 <code>查SW版本</code>，确认显示 <code>zp-pwa-16</code>。</li>
+  <li>走查完点 <code>导出报告</code> 复制 JSON，回传给我判断是否进 P1。</li>
+</ol>
+
+<h2>二、真机预期对照（速查）</h2>
+<table>
+  <tr><th>编号</th><th>操作</th><th>面板应显示</th></tr>
+  <tr><td>A1/C1</td><td>今日页 物理键</td><td>URL → /home</td></tr>
+  <tr><td>A2/C2</td><td>历史详情 物理键</td><td>URL → /pages/history</td></tr>
+  <tr><td>D3/AM3</td><td>详情菜单 Drawer 物理键</td><td>menuPanel: OPEN→closed，URL 不变</td></tr>
+  <tr><td>D1/AM4</td><td>首页上传 Sheet 物理键</td><td>uploadArea: OPEN→closed，URL 不变</td></tr>
+  <tr><td>B2/AM5</td><td>系统设置→修改密码→物理键</td><td>dlg: OPEN→closed，menuBg 仍 OPEN（两步返回）</td></tr>
+  <tr><td>B2b/AM5</td><td>系统设置抽屉 物理键</td><td>menuBg: OPEN→closed，URL 仍 /admin</td></tr>
+  <tr><td>B3/AM6</td><td>管理员根 物理键</td><td>首次 exit-armed（URL 不变），再按才退出</td></tr>
+  <tr><td>D7</td><td>横屏 Drawer 物理键</td><td>menuPanel→closed，URL 不变</td></tr>
+  <tr><td>E1</td><td>管理员 from=home 返回</td><td>URL 仍 /admin（防火墙拦截）</td></tr>
+  <tr><td>E2</td><td>业务端 from=admin 返回</td><td>URL → /home（防火墙拦截）</td></tr>
+  <tr><td>S1</td><td>查SW版本</td><td>zp-pwa-16</td></tr>
+</table>
+
+<h2 id="copy">三、注入脚本（点按钮复制，粘贴到真机 DevTools Console）</h2>
+<button class="btn" onclick="copyInject()">复制注入脚本</button>
+<button class="btn" onclick="showInject()">显示/隐藏脚本</button>
+<pre id="injectBox" style="display:none"></pre>
+
+<script id="inject">
+(function(){
+  if (document.getElementById('zpE2EHelper')) { console.log('[zpE2EHelper] 已存在'); return; }
+  var panel = document.createElement('div');
+  panel.id = 'zpE2EHelper';
+  panel.style.cssText = 'position:fixed;left:8px;top:8px;z-index:2147483647;width:300px;max-height:82vh;overflow:auto;background:rgba(17,17,17,.92);color:#0f0;font:12px/1.45 monospace;padding:8px;border:1px solid #0f0;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.4)';
+  function layer(){
+    var g = function(id){ var e=document.getElementById(id); if(!e) return 'n/a'; return e.hidden ? 'closed' : 'OPEN'; };
+    var confirm = 'n/a';
+    var cl = document.querySelector('#zpUiLayer .zp-confirm');
+    if (cl) confirm = cl.hidden ? 'closed' : 'OPEN';
+    return {
+      url: location.pathname + location.search,
+      mode: (window.matchMedia && matchMedia('(display-mode: standalone)').matches) ? 'standalone' : 'browser',
+      confirm: confirm, menuBg: g('menuBg'), menuPanel: g('menuPanel'),
+      uploadArea: g('uploadArea'), dlg: g('dlg')
+    };
+  }
+  function render(){
+    var s = layer();
+    var st = panel.querySelector('#st'); if (st) st.textContent = JSON.stringify(s);
+  }
+  panel.innerHTML = '<b style="color:#0ff">Android E2E Helper</b>'
+    + '<pre id="st" style="margin:4px 0;white-space:pre-wrap"></pre>'
+    + '<button id="bTop">zpHandleBack(顶部)</button> '
+    + '<button id="bHw">history.back(物理键)</button><br>'
+    + '<button id="bSw">查SW版本</button> '
+    + '<button id="bClear">清空日志</button> '
+    + '<button id="bExp">导出报告</button>'
+    + '<div id="log" style="margin-top:6px;white-space:pre-wrap;border-top:1px solid #0f0;padding-top:4px"></div>';
+  document.body.appendChild(panel);
+  var log = panel.querySelector('#log');
+  function rec(op){
+    var before = layer().url;
+    if (op === 'top') { try { window.zpHandleBack(); } catch(e){ log.textContent += 'ERR zpHandleBack: '+e+'\n'; } }
+    else { history.back(); }
+    setTimeout(function(){
+      var a = layer();
+      log.textContent += new Date().toLocaleTimeString() + ' ' + op + '  ' + before + ' -> ' + a.url
+        + '  | menuBg=' + a.menuBg + ' menuPanel=' + a.menuPanel + ' dlg=' + a.dlg + ' uploadArea=' + a.uploadArea + '\n';
+    }, 450);
+  }
+  panel.querySelector('#bTop').onclick = function(){ rec('top'); };
+  panel.querySelector('#bHw').onclick = function(){ rec('hw'); };
+  panel.querySelector('#bClear').onclick = function(){ log.textContent = ''; };
+  panel.querySelector('#bSw').onclick = function(){
+    fetch('/sw.js').then(function(r){return r.text();}).then(function(t){
+      var m = t.match(/VERSION\s*=\s*"([^"]+)"/);
+      log.textContent += 'SW VERSION = ' + (m ? m[1] : 'NOT FOUND') + '\n';
+    }).catch(function(e){ log.textContent += 'SW FETCH ERR: ' + e + '\n'; });
+  };
+  panel.querySelector('#bExp').onclick = function(){
+    var txt = log.textContent;
+    if (navigator.clipboard) navigator.clipboard.writeText(txt).then(function(){ alert('报告已复制到剪贴板'); });
+    else alert(txt);
+  };
+  render();
+  var mo = new MutationObserver(render);
+  ['menuBg','menuPanel','uploadArea','dlg','zpUiLayer'].forEach(function(id){
+    var e = document.getElementById(id); if (e) mo.observe(e, {attributes:true, attributeFilter:['hidden']});
+  });
+  window.addEventListener('popstate', render);
+  window.addEventListener('hashchange', render);
+  console.log('[zpE2EHelper] ready');
+})();
+</script>
+
+<script>
+  var src = document.getElementById('inject').textContent;
+  function copyInject(){
+    if (navigator.clipboard) navigator.clipboard.writeText(src).then(function(){ alert('注入脚本已复制，去真机 DevTools Console 粘贴'); });
+    else { var ta=document.createElement('textarea'); ta.value=src; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); alert('已复制'); }
+  }
+  function showInject(){ var b=document.getElementById('injectBox'); b.style.display = b.style.display==='none'?'block':'none'; b.textContent = src; }
+</script>
+</body>
+</html>
