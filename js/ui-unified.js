@@ -107,30 +107,41 @@
   */
   // 来源 → 返回目标。值可为字符串，也可为函数（携带上下文 id 精确回跳）
   const BACK_MAP={
-    history:"/pages/history.html",
-    today:"/pages/today.html",
-    process:"/home.html",
-    data:"/pages/data.html",
-    account:"/pages/account.html",
-    route:"/pages/route_apply.html",
-    home:"/home.html",
+    history:"/pages/history",
+    today:"/pages/today",
+    process:"/home",
+    data:"/pages/data",
+    account:"/pages/account",
+    route:"/pages/route_apply",
+    home:"/home",
     // 运单详情 → 数据资料 → 必须回到「原来那一张」运单：只带 from 不够，必须带 id
-    order:q=>"/pages/order_detail.html?id="+encodeURIComponent(q.get("id")||"")+"&source=process&from=process"
+    order:q=>"/pages/order_detail?id="+encodeURIComponent(q.get("id")||"")+"&source=process&from=process"
   };
 
-  // 工作区识别：业务端根 /home.html，管理员端根 /admin.html（独立工作区，互不串线）
+  // 工作区识别：业务端根 /home.html，管理员端根 /admin.html（独立工作区，互不串线）。
+  // ⚠ Cloudflare Pages 会把 /admin.html 308 重定向到 /admin（pretty URL），
+  // 因此线上 location.pathname 是「无扩展名」形态。所有判定必须先做规整化，
+  // 否则管理员页会被误判为业务页：第一次左滑直接 location.replace("/home.html")
+  // 穿越到司机首页（2026-10-05 生产事故根因）。
+  function zpNormPath(p){
+    let s=String(p||"").split("?")[0];
+    s=s.replace(/\.html$/,"");
+    if(s.length>1&&s.endsWith("/"))s=s.slice(0,-1);
+    return s||"/";
+  }
   function zpDetectZone(){
-    const p=location.pathname||"/";
+    const p=zpNormPath(location.pathname);
     const od=(document.body&&document.body.dataset&&document.body.dataset.zpZone)||"";
     if(od==="none")return null;
     if(od)return od;
-    if(/^\/admin\.html$/.test(p))return "admin";
-    if(/^\/(index|register|setup|offline|admin-bootstrap)\.html$/.test(p))return null; // 登录/引导页不装守卫
+    if(p==="/admin")return "admin";
+    if(p==="/"||p==="/index"||p==="/register"||p==="/setup"||p==="/offline"||p==="/admin-bootstrap")return null; // 登录/引导页不装守卫
     return "business";
   }
   const zpZone=zpDetectZone();
-  const zpRoot=zpZone==="admin"?"/admin.html":"/home.html";
-  const zpIsWorkspaceRoot=(location.pathname||"")===zpRoot;
+  // 区根用无扩展名形态（省一次 308 跳转；带 .html 的旧写法依赖重定向也能到）
+  const zpRoot=zpZone==="admin"?"/admin":"/home";
+  const zpIsWorkspaceRoot=zpNormPath(location.pathname)===zpNormPath(zpRoot);
 
   // 来源驱动返回。跨区防火墙：管理员端任何解析结果（含 fallback）若不是管理页，一律作废回落到本区根
   window.zpResolveBack=function(fallback){
@@ -138,10 +149,11 @@
     const v=BACK_MAP[q.get("from")];
     let target=typeof v==="function"?v(q):v;
     let out=target||fallback||zpRoot;
-    // 防火墙放在最后：fallback 也要挡住，管理员端永远不回落到业务端，业务端也永不进入管理端
-    if(zpZone==="admin"&&!/^\/admin\.html/.test(out))out=zpRoot;
-    if(zpZone!=="admin"&&/^\/admin\.html/.test(out))out=zpRoot;
-    if(out===location.pathname)out=zpRoot; // 兜底：绝不自我返回造成死循环
+    // 防火墙放在最后（判定用规整化路径，兼容 /admin 与 /admin.html 两种形态）：
+    // 管理员端永远不回落到业务端，业务端也永不进入管理端
+    if(zpZone==="admin"&&zpNormPath(out)!=="/admin")out=zpRoot;
+    if(zpZone!=="admin"&&zpNormPath(out)==="/admin")out=zpRoot;
+    if(zpNormPath(out)===zpNormPath(location.pathname))out=zpRoot; // 兜底：绝不自我返回造成死循环
     return out;
   };
   window.zpGoBack=function(fallback){location.replace(zpResolveBack(fallback))};
