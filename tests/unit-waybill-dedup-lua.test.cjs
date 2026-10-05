@@ -1,17 +1,21 @@
 /**
- * 运单当日去重（同线路+同日期+同车牌）单元测试
+ * 运单当日去重（同线路+同日期+同车辆+门店名称+门店数量+重量）单元测试
  * ------------------------------------------------------------------
  * 直接加载 process.js 中真实的 Lua 保存脚本（saveScript），用 fengari 在内存里
- * 跑一个 Redis 模拟器，验证「原子去重」语义：
- *   1. 同线路+同日期+同车牌 → 只落一条（无论内容是否因 OCR 抖动/确认而不同）。
- *   2. 车牌不同 / 日期不同 → 各自落一条。
- *   3. 并发双传同车牌 → 后者被复用，不产生第二条。
+ * 跑一个 Redis 模拟器，验证「原子去重」语义（按业务签名，而非仅车牌）：
+ *   业务签名 = 线路 + 日期 + 车辆 + 重量 + 门店名称(归一化排序) + 门店数量
+ *   1. 上述维度全部一致（含 PLANNED→CONFIRMED 的易变字段变化）→ 复用，只落一条。
+ *   2. 同车辆但门店/重量/数量任一不同 → 视为不同运单（同一车辆可多次出车），各落一条。
+ *   3. 不同车辆 / 不同日期 → 各落一条。
+ *   4. 并发双传同签名 → 后者被复用，不产生第二条。
+ *   5. 历史运单指纹命中（无业务签名键）→ 走 FINGERPRINT 兜底复用。
  *
  * 运行：node tests/unit-waybill-dedup-lua.test.cjs
  * 依赖：fengari（npm i fengari，已 no-save 安装）
  */
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 const fengari = require("fengari");
 const { lua, lauxlib, lualib, to_luastring, to_jsstring } = fengari;
 
@@ -28,6 +32,7 @@ const SAVE_SCRIPT = m[1];
 class MemStore {
   constructor() { this.m = new Map(); }
   call(cmd, args) {
+    if (!Array.isArray(args)) args = Array.prototype.slice.call(arguments, 1);
     cmd = String(cmd).toUpperCase();
     if (cmd === "GET") {
       const v = this.m.get(args[0]);
@@ -75,16 +80,12 @@ function makeRedisCall(store) {
   };
 }
 
-// 在 fengari 中执行一次 EVAL 语义：准备 KEYS/ARGV 全局，运行脚本，取返回表。
 function evalSave(store, keys, argv) {
   const L = lauxlib.luaL_newstate();
   lualib.luaL_openlibs(L);
-  // 注册全局 redis.call
   lua.lua_pushjsfunction(L, makeRedisCall(store));
   lua.lua_setglobal(L, to_luastring("redis_call"));
-  // 用 Lua 代码把 redis_call 包成 redis.call
   lauxlib.luaL_dostring(L, to_luastring('redis = { call = redis_call }'));
-  // KEYS / ARGV 全局
   const keysLua = "KEYS = {" + keys.map(k => `"${String(k).replace(/"/g, '\\"')}"`).join(",") + "}";
   const argvLua = "ARGV = {" + argv.map(a => `"${String(a).replace(/"/g, '\\"')}"`).join(",") + "}";
   const chunk = `${keysLua}\n${argvLua}\nlocal function __run()\n${SAVE_SCRIPT}\nend\nreturn __run()`;
@@ -93,7 +94,6 @@ function evalSave(store, keys, argv) {
     const msg = to_jsstring(lua.lua_tostring(L, -1));
     throw new Error("Lua 执行失败: " + msg);
   }
-  // r 是栈顶返回值（表或字符串）
   const t = lua.lua_type(L, -1);
   if (t === lua.LUA_TTABLE) {
     const out = [];
@@ -113,25 +113,55 @@ function evalSave(store, keys, argv) {
   return undefined;
 }
 
-// ---- 测试脚手架 ----
+// ---- 业务签名（镜像 _waybill-identity.js 的 dailySignature + sha256）----
 const ROUTE = "r-1001";
 const DATE = "2026-10-05";
 const VEH_A = "京A12345";
 const VEH_B = "京B67890";
-const FP = "zp:waybill:fingerprint:fp-x";
 const BASE = "zp:waybill:";
 
-function keysFor(vehicle, fp) {
-  const dedupe = vehicle
-    ? `zp:waybill:dedupe:${ROUTE}:${DATE}:${vehicle}`
-    : "zp:waybills:noop:" + (fp || FP);
-  return [fp || FP, BASE + "${ID}", `zp:route:${ROUTE}:waybills:${DATE}`, dedupe];
-}
-function buildOrder(id, vehicle, weight) {
+function sigString(order) {
+  const stores = Array.isArray(order.stores) ? order.stores : [];
+  const names = stores.map(s => String(s.name ?? "").trim()).filter(Boolean).sort();
   return JSON.stringify({
-    id, routeId: ROUTE, date: DATE, vehicle,
-    totalWeight: weight, stores: [{ name: "门店A", routeOrder: 1, storeId: "JM001" }],
+    routeId: String(order.routeId ?? "").trim(),
+    date: String(order.date ?? "").trim(),
+    vehicle: String(order.vehicle ?? "").trim(),
+    totalWeight: order.totalWeight == null ? null : Number(order.totalWeight),
+    storeCount: names.length,
+    storeNames: names,
   });
+}
+function sigKey(order) {
+  return "zp:waybill:dedupe:" + crypto.createHash("sha256").update(sigString(order)).digest("hex");
+}
+// 内容指纹键（镜像 _waybill-identity.js 的 businessFingerprint / canonicalWaybill）
+function fpKey(order) {
+  const stores = (Array.isArray(order.stores) ? order.stores : []).map(s => ({
+    storeId: String(s.storeId ?? "").trim() || null,
+    name: String(s.name ?? "").trim(),
+    routeOrder: Number.isFinite(Number(s.routeOrder)) ? Number(s.routeOrder) : null,
+    pending: !!s.pending,
+  }));
+  const canonical = JSON.stringify({
+    routeId: String(order.routeId ?? "").trim(),
+    date: String(order.date ?? "").trim(),
+    vehicle: String(order.vehicle ?? "").trim(),
+    totalWeight: order.totalWeight == null ? null : Number(order.totalWeight),
+    stores,
+  });
+  return "zp:waybill:fingerprint:" + crypto.createHash("sha256").update(canonical).digest("hex");
+}
+function keysFor(order) {
+  return [fpKey(order), BASE + order.id, `zp:route:${ROUTE}:waybills:${order.date}`, sigKey(order)];
+}
+function buildOrder(id, opt) {
+  return {
+    id, routeId: ROUTE, date: DATE,
+    vehicle: opt.vehicle ?? "",
+    totalWeight: opt.weight,
+    stores: opt.stores.map(s => ({ name: s.name, storeId: s.storeId ?? null, pending: !!s.pending })),
+  };
 }
 
 let passed = 0, failed = 0;
@@ -141,97 +171,129 @@ function assert(cond, label) {
 }
 
 function run() {
-  // 场景1：同线路+同日期+同车牌，内容一致 → 复用（FINGERPRINT/VEHICLE）
-  console.log("场景1：同线路+同日期+同车牌，逐字节一致");
+  // 场景1：全维度一致（逐字节一致）→ 复用 DAILY
+  console.log("场景1：线路+日期+车辆+门店+数量+重量 完全一致");
   {
     const store = new MemStore();
-    const id1 = "id-1";
-    const k = keysFor(VEH_A);
-    const r1 = evalSave(store, [k[0], BASE + id1, k[2], k[3]], [id1, buildOrder(id1, VEH_A, 1.2)]);
-    assert(JSON.stringify(r1) === JSON.stringify(["NEW", id1]), "首次上传落新单 NEW");
-    const r2 = evalSave(store, [k[0], BASE + "id-2", k[2], k[3]], ["id-2", buildOrder("id-2", VEH_A, 1.2)]);
-    assert(r2[0] === "FINGERPRINT" || r2[0] === "VEHICLE", "二次上传命中幂等（" + r2[0] + "）");
-    assert(r2[1] === id1, "复用首单 id-1，不产生 id-2");
-    assert(store.smembers(k[2]).length === 1, "当日索引只有 1 条（无重复落库）");
+    const o1 = buildOrder("id-1", { vehicle: VEH_A, weight: 1.2, stores: [{ name: "门店A" }] });
+    const k = keysFor(o1);
+    const r1 = evalSave(store, k, [o1.id, JSON.stringify(o1)]);
+    assert(JSON.stringify(r1) === JSON.stringify(["NEW", o1.id]), "首次上传落新单 NEW");
+    const o2 = buildOrder("id-2", { vehicle: VEH_A, weight: 1.2, stores: [{ name: "门店A" }] });
+    const r2 = evalSave(store, keysFor(o2), [o2.id, JSON.stringify(o2)]);
+    assert(r2[0] === "DAILY", "同签名命中复用 DAILY（" + r2[0] + "）");
+    assert(r2[1] === "id-1", "复用首单 id-1，不产生 id-2");
+    assert(store.smembers(`zp:route:${ROUTE}:waybills:${DATE}`).length === 1, "当日索引只有 1 条");
   }
 
-  // 场景2：同线路+同日期+同车牌，OCR 抖/确认导致内容不同 → 仍只落一条
-  console.log("场景2：同线路+同日期+同车牌，内容变化（OCR 抖动/门店确认）");
+  // 场景2：同车辆+同门店+同数量+同重量，但 PLANNED→CONFIRMED（易变字段变化）→ 仍复用
+  console.log("场景2：同一趟 PLANNED→CONFIRMED（storeId/pending 变化，业务签名不变）");
   {
     const store = new MemStore();
-    const id1 = "id-1";
-    const k = keysFor(VEH_A);
-    evalSave(store, [k[0], BASE + id1, k[2], k[3]], [id1, buildOrder(id1, VEH_A, 1.2)]);
-    // 第二次：车牌相同，但重量不同、门店名因 OCR 微变、指纹键也换一个新的
-    const fp2 = "zp:waybill:fingerprint:fp-y";
-    const k2 = [fp2, BASE + "id-2", k[2], k[3]];
-    const order2 = JSON.stringify({
-      id: "id-2", routeId: ROUTE, date: DATE, vehicle: VEH_A,
-      totalWeight: 1.5,
-      stores: [{ name: "门店A(确认)", routeOrder: 1, storeId: "JM001" }],
-    });
-    const r2 = evalSave(store, k2, ["id-2", order2]);
-    assert(r2[0] === "VEHICLE", "按车牌去重命中 VEHICLE（" + r2[0] + "）");
-    assert(r2[1] === id1, "复用首单，不新增 id-2");
-    assert(store.smembers(k[2]).length === 1, "当日索引仍只有 1 条");
+    const o1 = buildOrder("id-1", { vehicle: VEH_A, weight: 1.2, stores: [{ name: "门店A", pending: true }] });
+    evalSave(store, keysFor(o1), [o1.id, JSON.stringify(o1)]);
+    const o2 = buildOrder("id-2", { vehicle: VEH_A, weight: 1.2, stores: [{ name: "门店A", storeId: "JM001", pending: false }] });
+    const r2 = evalSave(store, keysFor(o2), [o2.id, JSON.stringify(o2)]);
+    assert(r2[0] === "DAILY" && r2[1] === "id-1", "忽略易变字段，复用首单（同一趟）");
+    assert(store.smembers(`zp:route:${ROUTE}:waybills:${DATE}`).length === 1, "索引仍仅 1 条");
   }
 
-  // 场景3：车牌不同 → 各自落一条
-  console.log("场景3：同线路+同日期，车牌不同");
+  // 场景3：同车辆，门店名不同 → 不同运单（另一趟）
+  console.log("场景3：同车辆，门店名不同 → 不同运单");
   {
     const store = new MemStore();
-    const id1 = "id-1";
-    const kA = keysFor(VEH_A);
-    evalSave(store, [kA[0], BASE + id1, kA[2], kA[3]], [id1, buildOrder(id1, VEH_A, 1.2)]);
-    const id2 = "id-2";
-    const kB = keysFor(VEH_B, "zp:waybill:fingerprint:fp-b");
-    const r2 = evalSave(store, [kB[0], BASE + id2, kB[2], kB[3]], [id2, buildOrder(id2, VEH_B, 1.2)]);
-    assert(r2[0] === "NEW", "不同车牌落新单 NEW");
-    assert(store.smembers(kA[2]).length === 2, "当日索引含 2 条（A、B 各一）");
+    const o1 = buildOrder("id-1", { vehicle: VEH_A, weight: 1.2, stores: [{ name: "门店A" }] });
+    evalSave(store, keysFor(o1), [o1.id, JSON.stringify(o1)]);
+    const o2 = buildOrder("id-2", { vehicle: VEH_A, weight: 1.2, stores: [{ name: "门店B" }] });
+    const r2 = evalSave(store, keysFor(o2), [o2.id, JSON.stringify(o2)]);
+    assert(r2[0] === "NEW", "门店不同 → 落新单 NEW（同车多趟）");
+    assert(store.smembers(`zp:route:${ROUTE}:waybills:${DATE}`).length === 2, "索引含 2 条");
   }
 
-  // 场景4：日期不同 → 各自落一条
-  console.log("场景4：同线路+同车牌，日期不同");
+  // 场景4：同车辆，重量不同 → 不同运单
+  console.log("场景4：同车辆，重量不同 → 不同运单");
   {
     const store = new MemStore();
-    const id1 = "id-1";
-    const k1 = ["zp:waybill:fingerprint:fp-1", BASE + id1, `zp:route:${ROUTE}:waybills:2026-10-04`, `zp:waybill:dedupe:${ROUTE}:2026-10-04:${VEH_A}`];
-    evalSave(store, k1, [id1, buildOrder(id1, VEH_A, 1.2)]);
-    const id2 = "id-2";
-    const k2 = ["zp:waybill:fingerprint:fp-2", BASE + id2, `zp:route:${ROUTE}:waybills:2026-10-05`, `zp:waybill:dedupe:${ROUTE}:2026-10-05:${VEH_A}`];
-    const r2 = evalSave(store, k2, [id2, buildOrder(id2, VEH_A, 1.2)]);
-    assert(r2[0] === "NEW", "不同日期落新单 NEW");
+    const o1 = buildOrder("id-1", { vehicle: VEH_A, weight: 1.2, stores: [{ name: "门店A" }] });
+    evalSave(store, keysFor(o1), [o1.id, JSON.stringify(o1)]);
+    const o2 = buildOrder("id-2", { vehicle: VEH_A, weight: 1.5, stores: [{ name: "门店A" }] });
+    const r2 = evalSave(store, keysFor(o2), [o2.id, JSON.stringify(o2)]);
+    assert(r2[0] === "NEW", "重量不同 → 落新单 NEW");
   }
 
-  // 场景5：并发双传同车牌（无内容指纹冲突）→ 后者被复用
-  console.log("场景5：并发双传同车牌（无指纹键干扰）");
+  // 场景5：同车辆，门店数量不同 → 不同运单
+  console.log("场景5：同车辆，门店数量不同 → 不同运单");
   {
     const store = new MemStore();
-    const id1 = "id-1";
-    const id2 = "id-2";
-    const k1 = ["zp:waybill:fingerprint:fp-1", BASE + id1, `zp:route:${ROUTE}:waybills:${DATE}`, `zp:waybill:dedupe:${ROUTE}:${DATE}:${VEH_A}`];
-    const k2 = ["zp:waybill:fingerprint:fp-2", BASE + id2, `zp:route:${ROUTE}:waybills:${DATE}`, `zp:waybill:dedupe:${ROUTE}:${DATE}:${VEH_A}`];
-    const r1 = evalSave(store, k1, [id1, buildOrder(id1, VEH_A, 1.2)]);
-    const r2 = evalSave(store, k2, [id2, buildOrder(id2, VEH_A, 1.3)]);
+    const o1 = buildOrder("id-1", { vehicle: VEH_A, weight: 1.2, stores: [{ name: "门店A" }] });
+    evalSave(store, keysFor(o1), [o1.id, JSON.stringify(o1)]);
+    const o2 = buildOrder("id-2", { vehicle: VEH_A, weight: 1.2, stores: [{ name: "门店A" }, { name: "门店B" }] });
+    const r2 = evalSave(store, keysFor(o2), [o2.id, JSON.stringify(o2)]);
+    assert(r2[0] === "NEW", "门店数量不同 → 落新单 NEW");
+  }
+
+  // 场景6：不同车辆，其余相同 → 不同运单
+  console.log("场景6：不同车辆，其余相同 → 不同运单");
+  {
+    const store = new MemStore();
+    const o1 = buildOrder("id-1", { vehicle: VEH_A, weight: 1.2, stores: [{ name: "门店A" }] });
+    evalSave(store, keysFor(o1), [o1.id, JSON.stringify(o1)]);
+    const o2 = buildOrder("id-2", { vehicle: VEH_B, weight: 1.2, stores: [{ name: "门店A" }] });
+    const r2 = evalSave(store, keysFor(o2), [o2.id, JSON.stringify(o2)]);
+    assert(r2[0] === "NEW", "不同车辆 → 落新单 NEW");
+  }
+
+  // 场景7：不同日期，其余相同 → 不同运单
+  console.log("场景7：不同日期，其余相同 → 不同运单");
+  {
+    const store = new MemStore();
+    const o1 = buildOrder("id-1", { vehicle: VEH_A, weight: 1.2, stores: [{ name: "门店A" }] });
+    evalSave(store, keysFor(o1), [o1.id, JSON.stringify(o1)]);
+    const o2 = buildOrder("id-2", { vehicle: VEH_A, weight: 1.2, stores: [{ name: "门店A" }] });
+    o2.date = "2026-10-04";
+    const r2 = evalSave(store, keysFor(o2), [o2.id, JSON.stringify(o2)]);
+    assert(r2[0] === "NEW", "不同日期 → 落新单 NEW");
+  }
+
+  // 场景8：并发双传同签名 → 后者被复用
+  console.log("场景8：并发双传同签名（无指纹键干扰）");
+  {
+    const store = new MemStore();
+    const o1 = buildOrder("id-1", { vehicle: VEH_A, weight: 1.2, stores: [{ name: "门店A" }] });
+    const o2 = buildOrder("id-2", { vehicle: VEH_A, weight: 1.2, stores: [{ name: "门店A" }] });
+    const r1 = evalSave(store, keysFor(o1), [o1.id, JSON.stringify(o1)]);
+    const r2 = evalSave(store, keysFor(o2), [o2.id, JSON.stringify(o2)]);
     assert(r1[0] === "NEW", "第一次 NEW");
-    assert(r2[0] === "VEHICLE" && r2[1] === id1, "第二次并发被车牌去重复用首单");
+    assert(r2[0] === "DAILY" && r2[1] === "id-1", "并发被业务签名去重复用首单");
     assert(store.smembers(`zp:route:${ROUTE}:waybills:${DATE}`).length === 1, "并发后索引仅 1 条");
   }
 
-  // 场景6：车牌缺失 → 退化为指纹幂等，不做车牌聚合（不互相覆盖）
-  console.log("场景6：车牌缺失时退化为指纹幂等，不聚合");
+  // 场景9：无车牌，同门店+同重量 → 仍按内容签名复用（不互相覆盖不同内容）
+  console.log("场景9：无车牌，按门店+重量签名去重");
   {
     const store = new MemStore();
-    const k1 = keysFor("", FP); // 无车牌：noop 键以指纹区分（真实代码以 order.id 区分，均为每单唯一）
-    const id1 = "id-1";
-    const r1 = evalSave(store, [k1[0], BASE + id1, k1[2], k1[3]], [id1, buildOrder(id1, "", 1.2)]);
-    assert(r1[0] === "NEW", "无车牌首单 NEW");
-    const id2 = "id-2";
-    const fp2 = "zp:waybill:fingerprint:fp-z";
-    const k2 = keysFor("", fp2); // 第二次上传使用不同 noop 键，互不聚合
-    const r2 = evalSave(store, [k2[0], BASE + id2, k2[2], k2[3]], [id2, buildOrder(id2, "", 1.2)]);
-    assert(r2[0] !== "VEHICLE", "无车牌不会被车牌去重聚合");
-    assert(r2[0] === "NEW", "无车牌内容不同 → 落新单 NEW（不强行覆盖）");
+    const o1 = buildOrder("id-1", { vehicle: "", weight: 1.2, stores: [{ name: "门店A" }] });
+    evalSave(store, keysFor(o1), [o1.id, JSON.stringify(o1)]);
+    const o2 = buildOrder("id-2", { vehicle: "", weight: 1.2, stores: [{ name: "门店A" }] });
+    const r2 = evalSave(store, keysFor(o2), [o2.id, JSON.stringify(o2)]);
+    assert(r2[0] === "DAILY" && r2[1] === "id-1", "无车牌同内容 → 复用");
+    const o3 = buildOrder("id-3", { vehicle: "", weight: 2.0, stores: [{ name: "门店A" }] });
+    const r3 = evalSave(store, keysFor(o3), [o3.id, JSON.stringify(o3)]);
+    assert(r3[0] === "NEW", "无车牌但重量不同 → 落新单（不聚合）");
+  }
+
+  // 场景10：历史运单仅命中内容指纹（无业务签名键）→ FINGERPRINT 兜底复用
+  console.log("场景10：历史仅指纹命中 → FINGERPRINT 兜底");
+  {
+    const store = new MemStore();
+    const o1 = buildOrder("id-1", { vehicle: VEH_A, weight: 1.2, stores: [{ name: "门店A" }] });
+    // 预置指纹键（历史行为）+ 运单主记录，但不写业务签名键
+    store.call("SET", fpKey(o1), "id-1");
+    store.call("SET", BASE + "id-1", JSON.stringify(o1));
+    store.call("SADD", `zp:route:${ROUTE}:waybills:${DATE}`, "id-1");
+    const o2 = buildOrder("id-2", { vehicle: VEH_A, weight: 1.2, stores: [{ name: "门店A" }] });
+    const r2 = evalSave(store, keysFor(o2), [o2.id, JSON.stringify(o2)]);
+    assert(r2[0] === "FINGERPRINT" && r2[1] === "id-1", "无签名键时走指纹兜底复用");
   }
 }
 

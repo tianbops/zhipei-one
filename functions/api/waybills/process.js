@@ -2,7 +2,7 @@ import {json} from "../_json.js";
 import {currentUser} from "../_auth.js";
 import {get,command,newId} from "../_redis.js";
 import {canUseRoute} from "../_permissions.js";
-import {businessFingerprint} from "../_waybill-identity.js";
+import {businessFingerprint,dailyWaybillKey,dailyWaybillSignatureString} from "../_waybill-identity.js";
 import {isTempRoute} from "../dispatch.js";
 import {getRoute} from "../_route.js";
 import {recognizeImage} from "./ocr.js";
@@ -165,21 +165,21 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
   order.businessFingerprint=await businessFingerprint(order);
   const fingerprintKey="zp:waybill:fingerprint:"+order.businessFingerprint;
   const indexKey=waybillIndexKey(routeId,clean(order.date));
-  // 业务去重键：同线路 + 同日期 + 同车牌，当日只落库一条。
-  // 仅当车牌存在时启用；车牌缺失时退化为纯指纹幂等，避免把多条“无车牌”运单互相覆盖。
-  const dedupeKey=order.vehicle?("zp:waybill:dedupe:"+routeId+":"+clean(order.date)+":"+clean(order.vehicle)):("zp:waybills:noop:"+order.id);
-  // 历史运单未写入 dedupeKey，这里兜底扫描当日索引里的同车牌运单，命中即复用旧单（不新增）。
+  // 当日业务去重键：线路 + 日期 + 车辆 + 重量 + 门店名称(归一化排序) + 门店数量。
+  // 同一车辆当天多趟（门店/重量不同）→ 签名不同 → 视为不同运单，不会被误合并。
+  const dailySig=await dailyWaybillKey(order);
+  const sigString=dailyWaybillSignatureString(order);
+  const dedupeKey="zp:waybill:dedupe:"+dailySig;
+  // 历史运单未写入 dedupeKey，这里兜底扫描当日索引里「业务签名一致」的运单，命中即复用旧单（不新增）。
   let dailyDupId=null;
-  if(order.vehicle){
-    const hasDedupe=await command(env,["GET",dedupeKey]);
-    if(!hasDedupe){
-      const members=await command(env,["SMEMBERS",indexKey]);
-      for(const id of (Array.isArray(members)?members:[])){
-        const raw=await command(env,["GET","zp:waybill:"+id]);
-        if(!raw)continue;
-        let w;try{w=typeof raw==="string"?JSON.parse(raw):raw}catch{continue}
-        if(clean(w?.vehicle)===clean(order.vehicle)){dailyDupId=id;break}
-      }
+  const hasDedupe=await command(env,["GET",dedupeKey]);
+  if(!hasDedupe){
+    const members=await command(env,["SMEMBERS",indexKey]);
+    for(const id of (Array.isArray(members)?members:[])){
+      const raw=await command(env,["GET","zp:waybill:"+id]);
+      if(!raw)continue;
+      let w;try{w=typeof raw==="string"?JSON.parse(raw):raw}catch{continue}
+      if(dailyWaybillSignatureString(w)===sigString){dailyDupId=id;break}
     }
   }
   if(dailyDupId&&dailyDupId!==order.id){
@@ -189,13 +189,13 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
       if(w){
         await command(env,["SADD",indexKey,dailyDupId]);
         await command(env,["SET",dedupeKey,dailyDupId]);
-        return json({success:true,waybill:w,idempotent:true,dedupe:"VEHICLE_DAILY",indexSync:"OK"});
+        return json({success:true,waybill:w,idempotent:true,dedupe:"DAILY_MATCH",indexSync:"OK"});
       }
     }
   }
-  // 保存脚本：原子地按「同车牌 > 内容指纹」顺序去重。
-  // 命中旧单返回 {"VEHICLE"|"FINGERPRINT", id}，新单返回 {"NEW", id}。
-  const saveScript='local fpKey=KEYS[1]; local wbKey=KEYS[2]; local idxKey=KEYS[3]; local dedupeKey=KEYS[4]; local vehId=redis.call("GET",dedupeKey); if vehId and vehId~="" then local raw=redis.call("GET","zp:waybill:"..vehId); if raw then redis.call("SADD",idxKey,vehId); return {"VEHICLE",vehId} end; redis.call("DEL",dedupeKey) end; local fpId=redis.call("GET",fpKey); if fpId and fpId~=ARGV[1] then local raw=redis.call("GET","zp:waybill:"..fpId); if raw then redis.call("SADD",idxKey,fpId); return {"FINGERPRINT",fpId} end; redis.call("DEL",fpKey) end; redis.call("SET",fpKey,ARGV[1]); redis.call("SET",wbKey,ARGV[2]); redis.call("SADD",idxKey,ARGV[1]); redis.call("SET",dedupeKey,ARGV[1]); return {"NEW",ARGV[1]}';
+  // 保存脚本：原子地按「业务签名 > 内容指纹」顺序去重。
+  // 命中旧单返回 {"DAILY"|"FINGERPRINT", id}，新单返回 {"NEW", id}。业务签名已含车辆+门店+重量，故同车多趟天然区分。
+  const saveScript='local fpKey=KEYS[1]; local wbKey=KEYS[2]; local idxKey=KEYS[3]; local dedupeKey=KEYS[4]; local sigId=redis.call("GET",dedupeKey); if sigId and sigId~="" then local raw=redis.call("GET","zp:waybill:"..sigId); if raw then redis.call("SADD",idxKey,sigId); return {"DAILY",sigId} end; redis.call("DEL",dedupeKey) end; local fpId=redis.call("GET",fpKey); if fpId and fpId~=ARGV[1] then local raw=redis.call("GET","zp:waybill:"..fpId); if raw then redis.call("SADD",idxKey,fpId); return {"FINGERPRINT",fpId} end; redis.call("DEL",fpKey) end; redis.call("SET",fpKey,ARGV[1]); redis.call("SET",wbKey,ARGV[2]); redis.call("SADD",idxKey,ARGV[1]); redis.call("SET",dedupeKey,ARGV[1]); return {"NEW",ARGV[1]}';
   let saveResult;
   try{
     saveResult=await command(env,["EVAL",saveScript,"4",fingerprintKey,"zp:waybill:"+order.id,indexKey,dedupeKey,order.id,JSON.stringify(order)]);

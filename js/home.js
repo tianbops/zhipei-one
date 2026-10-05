@@ -286,8 +286,8 @@ async function processSelectedFile(file){
       renderProcessingProgress(100);
       const detailId=encodeURIComponent(result.waybill.id);
       if(result.idempotent){
-        // 当日同线路+同车牌运单已存在：复用已有运单，不再生成重复记录。
-        try{window.zpToast?.("当日该线路+车牌运单已存在，已为你打开已有运单","info")}catch{}
+        // 当日同车辆+同门店+同重量运单已存在：复用已有运单，不再生成重复记录。
+        try{window.zpToast?.("当日该车辆、门店及重量一致的运单已存在，已为你打开已有运单","info")}catch{}
         location.replace("/pages/order_detail.html?id="+detailId+"&source=process&dedupe=1");
       }else{
         location.replace("/pages/order_detail.html?id="+detailId+"&source=process&from=process");
