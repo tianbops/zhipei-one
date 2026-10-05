@@ -1,0 +1,4 @@
+{
+  "//": "仅声明本目录（Cloudflare Pages Functions）内的 .js 为 ES Module，使 Node 侧测试/工具加载时无需依赖 Node 22 的模块类型自动探测（CI 用 Node 20/18 也能正确解析）。不影响根目录与前端 js/ 脚本。",
+  "type": "module"
+}
