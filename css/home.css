@@ -7,7 +7,7 @@
 .home-menu-button{width:42px;height:42px;border:1px solid rgba(255,255,255,.025);border-radius:50%;background:#18212B;color:#fff;padding:0;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
 .home-menu-button svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round}
 .home-menu-button:active{background:#B8C1C8;color:#0B1015;transform:scale(.97)}
-.home-menu-panel{position:absolute;right:0;top:50px;width:172px;overflow:hidden;padding:6px;border:1px solid #2A3540;border-radius:12px;background:#18212B;box-shadow:0 10px 24px rgba(0,0,0,.3);animation:zpMenuIn .14s ease-out}
+.home-menu-panel{position:absolute;right:0;top:50px;width:208px;overflow:hidden;padding:6px;border:1px solid #2A3540;border-radius:12px;background:#18212B;box-shadow:0 10px 24px rgba(0,0,0,.3);animation:zpMenuIn .14s ease-out}
 .home-menu-panel[hidden]{display:none}
 .home-menu-panel a,.home-menu-panel button{width:100%;height:48px;min-height:48px;padding:0 12px;gap:11px;border:0;border-radius:11px;background:transparent;color:#D5DCE2;text-align:left;text-decoration:none;font-size:14px;font-weight:600;display:flex;align-items:center;-webkit-tap-highlight-color:transparent}
 .home-menu-panel a:active,.home-menu-panel button:active{background:#26313C;transform:scale(.985)}
@@ -104,6 +104,10 @@
 /* 当前线路显示 */
 .home-menu-panel a#currentRouteMenu{justify-content:flex-start}
 .home-menu-panel .menu-route-value{margin-left:auto;max-width:82px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#B8C2CC;font-size:13px;font-weight:600}
+/* 账号设置右侧的用户名：比线路徽标稍宽，长用户名省略号截断。
+   标签禁止换行，用户名允许收缩，两者共存时不挤压成两行 */
+.home-menu-panel .menu-username{max-width:132px;min-width:0;flex:0 1 auto}
+.home-menu-panel a>span:not(.menu-item-icon){white-space:nowrap}
 
 /* Final Android typography normalization: size/line-height only */
 .home-brand strong{font-size:20px;line-height:26px;letter-spacing:.5px}

@@ -342,6 +342,18 @@ async function loadHome(){
 }
 loadHome();
 
+/* 三横菜单「账号设置」右侧显示当前用户名：用户打开菜单即可直接确认登录身份。
+   静默失败不阻塞首页，读不到就保持骨架占位（样式与「当前线路」数值一致）。 */
+(async()=>{
+  try{
+    const r=await fetch("/api/me",{credentials:"same-origin",cache:"no-store"});
+    const d=await r.json().catch(()=>({}));
+    const name=d&&d.user&&d.user.username?String(d.user.username):"";
+    const el=$("menuUsername");
+    if(el&&name)el.textContent=name;
+  }catch{}
+})();
+
 // 首页的「两次返回才退出」与系统返回已统一到 ui-unified.js 中央控制器。
 // 这里只注册本页返回层级：上传 Bottom Sheet → 下拉菜单。
 (window.zpBackHooks=window.zpBackHooks||[]).push(
