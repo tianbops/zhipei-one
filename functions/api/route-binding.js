@@ -1,11 +1,12 @@
 import {json} from "./_json.js";
 import {currentUser} from "./_auth.js";
 import {get,command} from "./_redis.js";
+import {canUseRoute} from "./_permissions.js";
 
 export async function onRequestPost({request,env}){
  const user=await currentUser(request,env);
  if(!user)return json({success:false,error:"未登录"},401);
- if(user.role==="admin")return json({success:false,error:"管理员不参与业务线路绑定"},403);
+ if(!canUseRoute(user))return json({success:false,error:"管理员不参与业务线路绑定"},403);
  const userKey="zp:user:"+user.id;
  const routeId=String(user.boundRouteId||"").trim();
  if(!routeId||!["driver","delivery"].includes(user.routeDuty))return json({success:false,code:"USER_BINDING_INCONSISTENT",error:"当前账号绑定数据异常，请联系管理员处理"},409);

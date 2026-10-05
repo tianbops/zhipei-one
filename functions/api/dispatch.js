@@ -2,6 +2,7 @@ import {json,body} from "./_json.js";
 import {currentUser} from "./_auth.js";
 import {get,command} from "./_redis.js";
 import {getRoute} from "./_route.js";
+import {canUseRoute} from "./_permissions.js";
 
 // 临时用户采用每人独立的临时线路（routeId = __temp__:<userId>），
 // 与正式线路共用同一索引结构（zp:route:<routeId>:waybills:<date>），
@@ -13,7 +14,7 @@ export function isTempRoute(routeId){return !!routeId&&typeof routeId==="string"
 export async function onRequestGet({request,env}){
  const user=await currentUser(request,env);
  if(!user)return json({success:false,error:"未登录"},401);
- if(user.role==="admin")return json({success:false,error:"管理员不参与业务调度"},403);
+ if(!canUseRoute(user))return json({success:false,error:"管理员不参与业务调度"},403);
  const routeId=user.dispatchRouteId||null;
  let routeInfo=null;
  if(routeId){
@@ -34,7 +35,7 @@ export async function onRequestGet({request,env}){
 export async function onRequestPost({request,env}){
  const user=await currentUser(request,env);
  if(!user)return json({success:false,error:"未登录"},401);
- if(user.role==="admin")return json({success:false,error:"管理员不参与业务调度"},403);
+ if(!canUseRoute(user))return json({success:false,error:"管理员不参与业务调度"},403);
  const input=await body(request);
  const routeId=String(input.routeId||"").trim();
  if(!routeId)return json({success:false,error:"请选择调度线路"},400);
