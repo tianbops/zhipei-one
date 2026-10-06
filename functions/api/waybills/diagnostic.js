@@ -4,7 +4,7 @@ import {get,command} from "../_redis.js";
 import {canUseRoute,isSystemAdmin} from "../_permissions.js";
 import {canReadWaybill} from "../_waybill-acl.js";
 import {listWaybillEvents} from "./_waybill-events.js";
-import {getProc} from "./_waybill-proc.js";
+import {getProc, failProc, effectiveStage} from "./_waybill-proc.js";
 import {scanConsistency,repairConsistency} from "./_consistency.js";
 import {computeStats} from "./_stats.js";
 
@@ -38,7 +38,13 @@ export async function onRequestGet({request,env}){
     if(!ticket)return json({success:false,error:"处理票据不存在或已过期"},404);
     const authorizedProc=isAdmin||ticket.userId===user.id||(ticket.routeId&&allowedRoutes.includes(ticket.routeId));
     if(!authorizedProc)return json({success:false,error:"无权查看该处理票据"},403);
-    return json({success:true,requestId:requestedProc,procTicket:ticket});
+    // 访问时回收：孤儿 PROCESSING（updatedAt 超阈值）在运维查看时落库为 TIMEOUT，闭环终态（不依赖 15min TTL 被动消失）
+    let eff=ticket;
+    if(ticket.stage==="PROCESSING" && effectiveStage(ticket)!=="PROCESSING"){
+      const reaped=await failProc(env,requestedProc,{stage:effectiveStage(ticket),recoverable:false,action:null,hint:null});
+      if(reaped)eff=reaped;
+    }
+    return json({success:true,requestId:requestedProc,procTicket:eff,effectiveStage:effectiveStage(eff)});
   }
   // 数据一致性自检（P1.5）：只读扫描索引/去重/指纹/事件链/主记录的引用完整性，输出可解释差异报告（不改动任何数据）。
   const wantCheck=clean(url.searchParams.get("check"));
@@ -100,13 +106,15 @@ export async function onRequestGet({request,env}){
         createdAt:w.createdAt||null,
         confirmedAt:w.confirmedAt||null
       });
-      if(found.length>=20)break;
     }
-    if(found.length>=20)break;
   }while(cursor!=="0");
 
   found.sort((a,b)=>String(b.createdAt||"").localeCompare(String(a.createdAt||"")));
-  return json({success:true,routeId,date:date||null,vehicle:vehicle||null,count:found.length,waybills:found});
+  const total=found.length;
+  const limit=20;
+  const truncated=total>limit;
+  const waybills=found.slice(0,limit);
+  return json({success:true,routeId,date:date||null,vehicle:vehicle||null,count:total,truncated,limit,waybills});
 }
 
 /**

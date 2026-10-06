@@ -18,8 +18,12 @@
 import { command } from "../_redis.js";
 
 const clean = v => String(v ?? "").trim();
-const PROC_TTL = 15 * 60; // 15 分钟；超时未终结的孤儿票据由 TTL 自动清理
-export const PROC_STAGES = ["PROCESSING", "TIMEOUT", "FAILED", "CANCELLED", "DONE"];
+const PROC_TTL = 15 * 60; // 15 分钟；TTL 是「垃圾回收时间」，只负责清理孤儿票据，不承担业务状态判定
+// 业务实时状态阈值（访问时判定，见 effectiveStage）：0–3min PROCESSING / 3–5min STALLED / >5min TIMEOUT
+// 阈值最终按真实 OCR（PP-OCRv6）耗时校准，先以 3/5 分钟为初值。
+export const PROC_STALLED_MS = 3 * 60 * 1000;
+export const PROC_TIMEOUT_MS = 5 * 60 * 1000;
+export const PROC_STAGES = ["PROCESSING", "STALLED", "TIMEOUT", "FAILED", "CANCELLED", "DONE"];
 const procKey = requestId => "zp:waybill:proc:" + clean(requestId);
 
 function nowISO() { return new Date().toISOString(); }
@@ -93,4 +97,21 @@ export async function finishProc(env, requestId, waybillId) {
   } catch { return null; }
 }
 
-export default { beginProc, failProc, getProc, finishProc, PROC_STAGES };
+/**
+ * 访问时有效阶段：孤儿 PROCESSING（updatedAt 超阈值）在视图/诊断上重分类为 STALLED/TIMEOUT，
+ * 避免「永久 PROCESSING」污染诊断统计。仅用于视图，不写回存储（存储终态仍由 failProc 落库）。
+ * @param {{stage?:string, updatedAt?:string}} proc
+ * @param {number} now 当前时间戳(ms)
+ * @returns {string|null}
+ */
+export function effectiveStage(proc, now = Date.now()) {
+  if (!proc) return null;
+  if (proc.stage !== "PROCESSING") return proc.stage;
+  const updated = proc.updatedAt ? Date.parse(proc.updatedAt) : NaN;
+  const age = Number.isFinite(updated) ? now - updated : 0; // 缺失 updatedAt（仅测试种子）视为新鲜：不误判 TIMEOUT
+  if (age >= PROC_TIMEOUT_MS) return "TIMEOUT";
+  if (age >= PROC_STALLED_MS) return "STALLED";
+  return "PROCESSING";
+}
+
+export default { beginProc, failProc, getProc, finishProc, effectiveStage, PROC_STALLED_MS, PROC_TIMEOUT_MS, PROC_STAGES };

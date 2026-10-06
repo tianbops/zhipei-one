@@ -18,7 +18,7 @@ function check(name, cond, info) {
   const { beginProc, failProc, getProc, finishProc, PROC_STAGES } = mod;
 
   console.log("【A】状态枚举与初始 PROCESSING");
-  check("导出 PROC_STAGES 含 5 个状态", PROC_STAGES.length === 5 && PROC_STAGES.includes("PROCESSING") && PROC_STAGES.includes("DONE") && PROC_STAGES.includes("TIMEOUT") && PROC_STAGES.includes("FAILED") && PROC_STAGES.includes("CANCELLED"));
+  check("导出 PROC_STAGES 含 6 个状态（含视图态 STALLED）", PROC_STAGES.length === 6 && PROC_STAGES.includes("PROCESSING") && PROC_STAGES.includes("STALLED") && PROC_STAGES.includes("DONE") && PROC_STAGES.includes("TIMEOUT") && PROC_STAGES.includes("FAILED") && PROC_STAGES.includes("CANCELLED"));
   const rid = "req-unit-1";
   const started = await beginProc(env, { requestId: rid, routeId: "route-x", userId: "u1", fileName: "w.png" });
   check("beginProc 返回 PROCESSING 票据", started && started.stage === "PROCESSING" && started.routeId === "route-x" && started.userId === "u1" && started.fileName === "w.png");

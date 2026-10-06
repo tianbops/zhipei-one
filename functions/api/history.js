@@ -98,13 +98,13 @@ export async function onRequestGet({request,env}){
    if(!validDate(date))return json({success:false,code:"DATE_INVALID",error:"日期无效"},400);
    if(!inRange(date,range))return json({success:false,code:"DATE_OUT_OF_RANGE",error:"日期不在历史查询范围内"},400);
    const waybills=await readDateWaybills(env,user,routeId,date),enriched=[];for(const w of waybills)enriched.push(await enrich(w));
-   return json({success:true,routeId,date,waybills:enriched,count:enriched.length,waybill:enriched[enriched.length-1]||null});
+   return json({success:true,routeId,date,waybills:enriched,count:enriched.length,waybillIds:enriched.map(w=>w.id),hasMultiple:enriched.length>1});
   }
   const entries=await readDates(env,routeId,range),batch=await readDateWaybillsBatch(env,user,entries),dates=[];
   for(const entry of entries){
    const list=batch.get(entry.date)||[];if(!list.length)continue;
    const storeCount=list.reduce((sum,w)=>sum+(Number(w.summary?.total)||w.stores.length),0),totalWeight=list.reduce((sum,w)=>sum+(Number(w.totalWeight)||0),0);
-   dates.push({date:entry.date,count:list.length,waybillId:list[list.length-1]?.id||null,storeCount,totalWeight});
+   dates.push({date:entry.date,count:list.length,waybillIds:list.map(w=>w.id),hasMultiple:list.length>1,storeCount,totalWeight});
   }
   const monthMap=new Map();
   for(const item of dates){const month=item.date.slice(0,7),current=monthMap.get(month)||{month,days:0,waybills:0,totalStores:0,totalWeight:0};current.days++;current.waybills+=item.count;current.totalStores+=item.storeCount;current.totalWeight+=item.totalWeight;monthMap.set(month,current)}

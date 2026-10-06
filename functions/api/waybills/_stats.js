@@ -14,6 +14,7 @@
  *   处理票据 zp:waybill:proc:<requestId>           → 近 15min 处理终态分布（OCR 可靠性）
  */
 import { command } from "../_redis.js";
+import { effectiveStage } from "./_waybill-proc.js";
 
 const WB_PREFIX = "zp:waybill:";
 const INDEX_PREFIX = "zp:route:";
@@ -128,14 +129,15 @@ export async function computeStats(env, { routeId = null, all = false, days = 30
 
   // 3. 处理票据（近 15min，TTL 自动清理）→ OCR 可靠性 / 可恢复失败率
   const procKeys = await scanAll(env, WB_PREFIX + "proc:*");
-  const proc = { total: 0, byStage: { PROCESSING: 0, DONE: 0, TIMEOUT: 0, FAILED: 0, CANCELLED: 0, OTHER: 0 }, recoverableFailures: 0 };
+  const proc = { total: 0, byStage: { PROCESSING: 0, STALLED: 0, DONE: 0, TIMEOUT: 0, FAILED: 0, CANCELLED: 0, OTHER: 0 }, recoverableFailures: 0 };
   for (const key of procKeys) {
     const raw = await command(env, ["GET", key]);
     let t = parseWaybill(raw);
     if (!t) continue;
     if (scopeRoute && clean(t.routeId) !== scopeRoute) continue; // 统计作用域贯穿处理票据：普通用户仅本线路终态计入
     proc.total++;
-    const s = t.stage;
+    // 访问时有效阶段：孤儿 PROCESSING（updatedAt 超阈值）按 effectiveStage 重分类为 STALLED/TIMEOUT，避免污染统计
+    const s = effectiveStage(t);
     if (proc.byStage[s] !== undefined) proc.byStage[s]++; else proc.byStage.OTHER++;
     if (s === "TIMEOUT" || s === "FAILED" || s === "CANCELLED") proc.recoverableFailures++;
   }

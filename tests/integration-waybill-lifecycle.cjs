@@ -104,7 +104,7 @@ async function toJson(resp) {
   console.log("\n【阶段3】历史(history) 读取 — 当日");
   resp = await historyMod.onRequestGet({request: getReq("https://app.local/api/waybills/history?date=" + TODAY, TOKEN), env});
   let H = await toJson(resp);
-  check("历史返回 A", H.success && H.waybill?.id === idA, "id=" + H.waybill?.id);
+  check("历史返回 A", H.success && Array.isArray(H.waybillIds) && H.waybillIds.includes(idA), "ids=" + JSON.stringify(H.waybillIds));
   check("历史日期列表含今日", true);
   resp = await historyMod.onRequestGet({request: getReq("https://app.local/api/waybills/history", TOKEN), env});
   let HM = await toJson(resp);
@@ -196,7 +196,7 @@ async function toJson(resp) {
   check("C 进入次日日期索引", red.sets.get(indexKey(TOMORROW))?.has(idC) === true);
   resp = await historyMod.onRequestGet({request: getReq("https://app.local/api/waybills/history?date=" + TOMORROW, TOKEN), env});
   let HC = await toJson(resp);
-  check("历史(次日)读取命中 C", HC.success && HC.waybill?.id === idC);
+  check("历史(次日)读取命中 C", HC.success && Array.isArray(HC.waybillIds) && HC.waybillIds.includes(idC));
 
   // ===================================================================
   console.log("\n【阶段9】当日业务去重（P0-3 去重 / P0-7 一致性）— 同日同签名重复上传");
