@@ -4,6 +4,7 @@ import {get,command} from "../_redis.js";
 import {canUseRoute} from "../_permissions.js";
 import {canReadWaybill} from "../_waybill-acl.js";
 import {getRoute} from "../_route.js";
+import {guard} from "../_safe.js";
 
 const clean=v=>String(v??"").trim();
 const todayCN=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
@@ -13,7 +14,7 @@ const effectiveWaybill=x=>activeWaybill(x)&&x.stage==="CONFIRMED";
 const waybillIndexKey=(routeId,date)=>"zp:route:"+routeId+":waybills:"+date;
 
 
-export async function onRequestGet({request,env}){
+async function latestGet({request,env}){
  const user=await currentUser(request,env);if(!user)return json({success:false,error:"未登录"},401);
  if(user.role==="admin"||!canUseRoute(user))return json({success:false,error:"无权查看配送业务"},403);
  const url=new URL(request.url),id=clean(url.searchParams.get("id")),confirmedOnly=url.searchParams.get("confirmed")==="1",routeId=clean(user.dispatchRouteId||user.boundRouteId);
@@ -65,3 +66,5 @@ export async function onRequestGet({request,env}){
  const waybill=list[list.length-1]||null;
  return json({success:true,waybill:await withRouteData(waybill)});
 }
+// 错误兜底（1.1 可靠性）：未被业务捕获的异常不再返回裸 500，而是结构化 503/500 + 截断 detail
+export const onRequestGet=guard(latestGet,"WAYBILL_LATEST_READ_FAILED");

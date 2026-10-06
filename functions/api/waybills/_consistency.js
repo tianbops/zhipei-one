@@ -20,6 +20,19 @@ const WB_PREFIX = "zp:waybill:";
 const INDEX_PREFIX = "zp:route:";
 const INDEX_SUFFIX = ":waybills:";
 const clean = v => String(v ?? "").trim();
+const isDate = v => /^\d{4}-\d{2}-\d{2}$/.test(String(v ?? "").trim());
+// Asia/Shanghai 日期：运单日期兜底与 createdAt 取日期均以此为准，避免时区错位。
+const cnDateParts = dateObj => {
+  const p = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(dateObj);
+  const v = Object.fromEntries(p.filter(x => x.type !== "literal").map(x => [x.type, x.value]));
+  return `${v.year}-${v.month}-${v.day}`;
+};
+const todayCN = () => cnDateParts(new Date());
+// 由 createdAt 推 YYYY-MM-DD；非法输入返回 null（上层再兜底到今天）
+const cnDateOf = iso => {
+  const t = Date.parse(String(iso ?? ""));
+  return Number.isFinite(t) ? cnDateParts(new Date(t)) : null;
+};
 
 async function scanAll(env, pattern) {
   const out = [];
@@ -79,10 +92,15 @@ export async function scanConsistency(env, { routeId = null, all = false } = {})
     if (w) waybills.set(id, w);
   }
 
+  const issues = [];
+  const MAX = 600;
+  const push = it => { if (issues.length < MAX) issues.push(it); };
+
   // 2. 索引集合
   const indexKeys = await scanAll(env, INDEX_PREFIX + "*" + INDEX_SUFFIX + "*");
   const indexMembers = new Map(); // `${routeId}|${date}` -> Set(id)
   const indexMeta = [];           // {routeId, date, key}
+  const inBadBucket = new Set();  // 已出现在非法日期桶中的运单 id（由 MALFORMED_INDEX_DATE 负责归档）
   for (const key of indexKeys) {
     const body = key.slice(INDEX_PREFIX.length);
     const idx = body.indexOf(INDEX_SUFFIX);
@@ -92,13 +110,24 @@ export async function scanConsistency(env, { routeId = null, all = false } = {})
     if (!inScope(rId)) continue;
     const members = await command(env, ["SMEMBERS", key]);
     const set = new Set(Array.isArray(members) ? members.map(clean).filter(Boolean) : []);
+    // 空/非法日期桶（如 zp:route:<routeId>:waybills: —— OCR 未识别日期的历史运单所在）：
+    // 历史查询按 YYYY-MM-DD 枚举、诊断列表按日期格式过滤，两处都取不到，运单会「凭空消失」。
+    // 因此单独成项，并给出「加入正确日期桶 + 移出非法桶」的两步修复。
+    if (!isDate(date)) {
+      for (const member of set) {
+        inBadBucket.add(member);
+        const w = waybills.get(member);
+        const target = w && isDate(clean(w.date)) ? clean(w.date) : cnDateOf(w && w.createdAt) || todayCN();
+        const correctKey = INDEX_PREFIX + rId + INDEX_SUFFIX + target;
+        push({ type: "MALFORMED_INDEX_DATE", severity: "auto", routeId: rId, date: date || "(空)", waybillId: member, targetDate: target,
+          detail: `索引日期栏位为 "${date || "(空)"}"（非 YYYY-MM-DD），成员 ${member} 在历史查询与诊断列表中均不可见；应归入 ${target} 桶`,
+          fix: [["SADD", correctKey, member], ["SREM", key, member]] });
+      }
+      continue;
+    }
     indexMembers.set(rId + "|" + date, set);
     indexMeta.push({ routeId: rId, date, key });
   }
-
-  const issues = [];
-  const MAX = 600;
-  const push = it => { if (issues.length < MAX) issues.push(it); };
 
   // 3. 索引成员 → 主记录 完整性（孤儿索引条目 / SUPERSEDED 仍留索引）
   for (const { routeId: rId, date, key } of indexMeta) {
@@ -126,6 +155,17 @@ export async function scanConsistency(env, { routeId = null, all = false } = {})
       continue;
     }
     if (!isReadable(w)) continue; // SUPERSEDED / 不可读本就不在索引，跳过
+    // 主记录本身没有合法配送日期（历史 OCR 未识别）：绝不能再按它拼 key 去做 SADD——
+    // 那会把记录塞回非法日期桶，与 MALFORMED_INDEX_DATE 的修复互相抵消形成死循环。
+    // 这里单独成项交由人工处理（一致性模块不改写主记录），实际归档由上述修复项接管。
+    if (!isDate(clean(w.date))) {
+      push({ type: "WAYBILL_DATE_INVALID", severity: "manual", routeId: w.routeId, waybillId: id,
+        detail: `主记录 ${id} 缺少合法配送日期（date="${clean(w.date)}"），历史/列表上的日期会显示为空；建议重新上传覆盖`,
+        fix: null });
+      continue;
+    }
+    // 已由 MALFORMED_INDEX_DATE 负责迁移归档的记录不再重复报 MISSING，避免同一张单被报两次
+    if (inBadBucket.has(id)) continue;
     const date = clean(w.date);
     const idxKey = INDEX_PREFIX + w.routeId + INDEX_SUFFIX + date;
     const set = indexMembers.get(w.routeId + "|" + date);
@@ -213,10 +253,15 @@ export async function repairConsistency(env, issues) {
   const repaired = [];
   const skipped = [];
   for (const it of issues || []) {
-    if (Array.isArray(it.fix) && it.fix.length) {
-      const { fix, ...meta } = it;
-      try { await command(env, fix); repaired.push({ type: it.type, ...meta }); }
-      catch (e) { skipped.push({ type: it.type, error: String(e?.message || e) }); }
+    const fix = it.fix;
+    // 兼容两种形态：单条命令 ["DEL", key]；或按顺序执行的多条命令 [["SADD",k,v],["SREM",k,v]]
+    const steps = Array.isArray(fix) && Array.isArray(fix[0]) ? fix : (Array.isArray(fix) && fix.length ? [fix] : []);
+    if (steps.length) {
+      const { fix: _drop, ...meta } = it;
+      try {
+        for (const step of steps) await command(env, step);
+        repaired.push({ type: it.type, ...meta });
+      } catch (e) { skipped.push({ type: it.type, error: String(e?.message || e) }); }
     } else {
       skipped.push({ type: it.type, reason: "MANUAL_OR_INFO" });
     }
