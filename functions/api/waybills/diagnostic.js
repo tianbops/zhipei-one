@@ -3,6 +3,7 @@ import {currentUser} from "../_auth.js";
 import {get,command} from "../_redis.js";
 import {canUseRoute} from "../_permissions.js";
 import {canReadWaybill} from "../_waybill-acl.js";
+import {listWaybillEvents} from "./_waybill-events.js";
 
 const clean=v=>String(v??"").trim();
 const parse=v=>{try{return typeof v==="string"?JSON.parse(v):v}catch{return null}};
@@ -43,6 +44,9 @@ export async function onRequestGet({request,env}){
         summary:w.summary||null,
         validation:w.validation||null,
         diagnostics:w.diagnostics||null,
+        quality:w.quality||null,
+        requestId:w.requestId||null,
+        events:await listWaybillEvents(env,id),
         pipeline:Array.isArray(w.pipeline)?w.pipeline:[],
         createdAt:w.createdAt||null,
         confirmedAt:w.confirmedAt||null

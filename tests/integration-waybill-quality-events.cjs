@@ -1,0 +1,119 @@
+/**
+ * 运单质量门 + 事件链 + 匹配可信度 · 端到端回归（1.1 核心增强）
+ * 复用 _mini-redis.cjs 真实加载 process / diagnostic，验证：
+ *   1. 正常运单：quality=OK、每门店 matchConfidence.level=HIGH、事件链含 WAYBILL_SAVED。
+ *   2. 异常运单（待定占比高）：quality=REVIEW、flags 含 MATCH_LOW_CONFIDENCE / MATCH_NO_AUTO。
+ *   3. diagnostic 端点返回 quality / requestId / events，运维可追溯。
+ * 运行：node tests/integration-waybill-quality-events.cjs
+ */
+const { pathToFileURL } = require("url");
+const { MiniRedis, makeUpstash } = require("./_mini-redis.cjs");
+
+const red = makeUpstash(new MiniRedis());
+let pass = 0, fail = 0;
+function check(name, cond, info) {
+  if (cond) { pass++; console.log("  ✅ " + name + (info ? "  " + info : "")); }
+  else { fail++; console.log("  ❌ " + name + "  " + (info || "")); }
+}
+
+const ROUTE = "route-qe1";
+const UA = "uQA", tokA = "tok-QA";
+const seed = (key, obj) => red._set("zp:" + key, JSON.stringify(obj));
+const read = (key) => { const r = red._get("zp:" + key); return r ? JSON.parse(r) : null; };
+
+const BASE = [
+  { storeId: "S001", name: "华润万家(龙华店)", originalName: "华润万家龙华店", aliases: ["华润万家龙华"], routeOrder: 1 },
+  { storeId: "S002", name: "沃尔玛(坂田店)", originalName: "沃尔玛坂田店", aliases: ["沃尔玛坂田"], routeOrder: 2 },
+  { storeId: "S003", name: "永辉超市(宝安中心店)", originalName: "永辉超市宝安中心店", aliases: [], routeOrder: 3 },
+  { storeId: "S004", name: "大润发(龙华店)", originalName: "大润发龙华店", aliases: ["大润发龙华"], routeOrder: 4 },
+  { storeId: "S005", name: "顺丰速运(坂田营业点)", originalName: "顺丰速运坂田营业点", aliases: [], routeOrder: 5 },
+  { storeId: "S006", name: "星巴克(深圳湾店)", originalName: "星巴克深圳湾店", aliases: [], routeOrder: 6 },
+  { storeId: "S007", name: "家乐福(梅林店)", originalName: "家乐福梅林店", aliases: [], routeOrder: 7 },
+  { storeId: "S008", name: "7-11便利店(福田店)", originalName: "7-11便利店福田店", aliases: ["711福田店"], routeOrder: 8 },
+];
+
+const RAW_GOOD = [
+  "运输日期 2026-10-06",
+  "车牌号 粤B12345",
+  "总重量 0.46吨",
+  "华润万家（龙华店）",
+  "沃尔玛坂田店",
+  "永辉超市宝安中心店",
+  "大润发龙华店",
+  "顺丰速运坂田营业点",
+  "星巴克深圳湾店",
+  "家乐福梅林店",
+  "7-11便利店福田店",
+].join("\n");
+
+const RAW_BAD = [
+  "运输日期 2026-10-06",
+  "车牌号 粤B99999",
+  "华润万家龙岗店",
+  "沃尔玛坂田2号店",
+  "星巴克深圳湾二店",
+  "麦当劳",
+  "肯德基",
+  "必胜客",
+].join("\n");
+
+function getReq(url, token) {
+  return { url, headers: { get: (h) => (String(h).toLowerCase() === "authorization" ? "Bearer " + token : null) } };
+}
+function formReq(url, token, fields) {
+  const m = new Map(Object.entries(fields));
+  return { url, headers: { get: (h) => (String(h).toLowerCase() === "authorization" ? "Bearer " + token : null) }, formData: async () => ({ get: (k) => (m.has(k) ? m.get(k) : null) }) };
+}
+async function toJson(resp) { return await resp.json(); }
+
+(async () => {
+  const env = { UPSTASH_REDIS_REST_URL: "https://upstash.local", UPSTASH_REDIS_REST_TOKEN: "x", PADDLEOCR_ACCESS_TOKEN: "x" };
+  seed("route:" + ROUTE, { status: "active", name: "质量测试线路", driverUserId: UA, deliveryUserId: "uQB" });
+  seed("route:" + ROUTE + ":base", { stores: BASE });
+  seed("user:" + UA, { id: UA, role: "user", boundRouteId: ROUTE, dispatchRouteId: ROUTE, routeDuty: "driver", sessionVersion: 1 });
+  seed("session:" + tokA, { userId: UA, sessionVersion: 1 });
+
+  const baseDir = pathToFileURL(__dirname + "/../functions/api/").href;
+  const processMod = await import(baseDir + "waybills/process.js");
+  const diagMod = await import(baseDir + "waybills/diagnostic.js");
+
+  console.log("【1】正常运单：质量门 + 可信度 + 事件链");
+  const goodResp = await processMod.onRequestPost({ request: formReq("https://t.zp/api/waybills/process", tokA, { routeId: ROUTE, rawText: RAW_GOOD, date: "2026-10-06", vehicle: "粤B12345" }), env });
+  const good = await toJson(goodResp);
+  check("正常运单保存成功", good.success === true, "stage=" + good.waybill?.stage);
+  check("正常运单 quality.level=OK", good.quality?.level === "OK", JSON.stringify(good.quality));
+  check("正常运单 requestId 已生成", typeof good.requestId === "string" && good.requestId.length > 0);
+  const goodItems = good.waybill?.stores || [];
+  check("正常运单全部自动匹配", goodItems.length === 8 && goodItems.every(s => !s.pending), "count=" + goodItems.length);
+  check("每门店携带 matchConfidence", goodItems.every(s => s.matchConfidence && ["HIGH", "MEDIUM", "LOW"].includes(s.matchConfidence.level)));
+  check("精确匹配为 HIGH 级", goodItems.every(s => s.matchConfidence.level === "HIGH"));
+
+  console.log("【2】异常运单（待定占比高）：质量门应报警但不阻断");
+  const badResp = await processMod.onRequestPost({ request: formReq("https://t.zp/api/waybills/process", tokA, { routeId: ROUTE, rawText: RAW_BAD, date: "2026-10-06", vehicle: "粤B99999" }), env });
+  const bad = await toJson(badResp);
+  check("异常运单仍保存成功（不硬阻断）", bad.success === true, "stage=" + bad.waybill?.stage);
+  check("异常运单 quality.level=REVIEW", bad.quality?.level === "REVIEW", JSON.stringify(bad.quality));
+  check("异常运单 flags 含 MATCH_LOW_CONFIDENCE", bad.quality?.flags.includes("MATCH_LOW_CONFIDENCE"));
+  const badItems = bad.waybill?.stores || [];
+  check("异常运单待定占比高", badItems.filter(s => s.pending).length / badItems.length >= 0.5, "pending=" + badItems.filter(s => s.pending).length + "/" + badItems.length);
+  check("待定门店 matchConfidence.level=PENDING", badItems.filter(s => s.pending).every(s => s.matchConfidence?.level === "PENDING"));
+
+  console.log("【3】diagnostic 端点：返回 quality / requestId / events");
+  const diagResp = await diagMod.onRequestGet({ request: getReq("https://t.zp/api/waybills/diagnostic?routeId=" + ROUTE, tokA), env });
+  const diag = await toJson(diagResp);
+  check("diagnostic 返回成功", diag.success === true, "count=" + diag.count);
+  check("diagnostic 含两条运单", (diag.waybills || []).length >= 2);
+  const withEvents = (diag.waybills || []).find(w => (w.events || []).some(e => e.event === "WAYBILL_SAVED"));
+  check("事件链含 WAYBILL_SAVED", Boolean(withEvents), withEvents ? "events=" + withEvents.events.length : "无");
+  const withQuality = (diag.waybills || []).find(w => w.quality && w.requestId);
+  check("diagnostic 暴露 quality + requestId", Boolean(withQuality));
+  if (withEvents) {
+    const types = withEvents.events.map(e => e.event);
+    check("事件链覆盖完整生命周期", ["WAYBILL_CREATED", "EXTRACT_COMPLETED", "MATCH_COMPLETED", "DEDUPE_COMPLETED", "PLAN_COMPLETED", "WAYBILL_SAVED"].every(t => types.includes(t)), types.join(","));
+  }
+
+  console.log("─".repeat(50));
+  console.log("质量门/事件链/可信度 回归：通过 " + pass + " / 失败 " + fail);
+  console.log(fail === 0 ? "✅ 全部通过" : "❌ 存在失败项");
+  process.exit(fail ? 1 : 0);
+})().catch(e => { console.error("测试运行异常：", e); process.exit(1); });

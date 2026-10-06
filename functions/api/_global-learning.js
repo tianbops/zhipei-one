@@ -33,6 +33,7 @@ export async function learnGlobal(env,input){
   await ensureMeta(env,{lockHeld:true});
   if(eventKey&&await get(env,eventKey)){const old=parse(await command(env,["HGET","zp:"+RECORDS,storeId]),null);return{record:old,event:null,duplicate:true}}
   const current=parse(await command(env,["HGET","zp:"+RECORDS,storeId]),null)||{storeId,standardName,originalName:clean(input.originalName||rawName),aliases:[],navigation:input.navigation||null,status:"CANDIDATE",confirmations:0,conflicts:0,createdAt:new Date().toISOString()};
+  const before={standardName:current.standardName||null,aliases:Array.isArray(current.aliases)?[...current.aliases]:[]};
   let conflictDetected=false;
   if(current.standardName&&current.standardName!==standardName){current.conflicts=Number(current.conflicts||0)+1;current.status="CONFLICT";conflictDetected=true}else current.standardName=standardName;
   current.aliases=Array.isArray(current.aliases)?current.aliases:[];const nk=normalizeLearningName(rawName);if(!conflictDetected&&nk&&nk!==normalizeLearningName(current.standardName)&&!current.aliases.some(x=>normalizeLearningName(x)===nk))current.aliases.push(rawName);
@@ -40,7 +41,8 @@ export async function learnGlobal(env,input){
   const aliasKeys=[normalizeLearningName(current.standardName),...(conflictDetected?[]:[nk])].filter(Boolean);
   const aliasValues=[];
   for(const key of aliasKeys){const oldRaw=await command(env,["HGET","zp:"+ALIASES,key]);const oldParsed=parse(oldRaw,null);if(oldRaw!==null&&oldRaw!==undefined&&(!Array.isArray(oldParsed)||oldParsed.some(id=>typeof id!=="string"||!id.trim())))throw new Error("GLOBAL_ALIAS_DATA_INVALID");const oldAliases=Array.isArray(oldParsed)?oldParsed:[];aliasValues.push([key,oldAliases.includes(storeId)?oldAliases:[...oldAliases,storeId]])}
-  const event={id:newId(),type:"CONFIRMED",storeId,rawName,standardName,routeId:routeId||null,waybillId:waybillId||null,userId:clean(input.userId)||null,createdAt:new Date().toISOString()};
+  const after={standardName:current.standardName,aliases:current.aliases};
+  const event={id:newId(),type:"CONFIRMED",storeId,rawName,standardName,routeId:routeId||null,waybillId:waybillId||null,userId:clean(input.userId)||null,confirmedBy:clean(input.userId)||null,confirmedAt:new Date().toISOString(),learningEventId:clean(input.learningEventId)||null,sourceWaybillId:waybillId||null,sourceRouteId:routeId||null,before,after};
   const script=`local eventKey=ARGV[1]
 if eventKey~="__none__" and redis.call("GET",eventKey) then return {"DUPLICATE"} end
 redis.call("HSET",KEYS[1],ARGV[2],ARGV[3])
@@ -110,6 +112,47 @@ redis.call("SET",KEYS[5],cjson.encode({schemaVersion="2",version=version}))
 return tostring(version)`;
   const version=Number(await command(env,["EVAL",script,"5","zp:"+RECORDS,"zp:"+ALIASES,"zp:"+EVENTS,"zp:"+META+":version","zp:"+META,storeId,JSON.stringify(record),canonicalKey,JSON.stringify([storeId]),JSON.stringify(event)]));
   return{resolved:true,record,event,version};
+ }finally{await command(env,["EVAL",'if redis.call("GET",KEYS[1])==ARGV[1] then return redis.call("DEL",KEYS[1]) else return 0 end',"1","zp:"+LOCK,lockToken]).catch(()=>{})}
+}
+
+/**
+ * 隔离（标记失效）一条全局学习记录：停止其参与后续自动匹配，但保留审计链。
+ * 隔离后 status=QUARANTINED，findGlobalMatches 仅采用 VERIFIED，故自动排除。
+ * 与"删除"的区别：删除会破坏审计链；隔离可随时恢复（restoreGlobalRecord）。
+ */
+export async function isolateGlobalRecord(env,input){
+ const storeId=clean(input.storeId),userId=clean(input.userId),reason=clean(input.reason||"");
+ if(!storeId)throw new Error("GLOBAL_ISOLATE_INPUT_INVALID");
+ const lockToken=newId(),locked=await command(env,["SET","zp:"+LOCK,lockToken,"NX","EX","30"]);
+ if(locked!=="OK")throw new Error("GLOBAL_LEARNING_BUSY");
+ try{
+  await ensureMeta(env,{lockHeld:true});
+  const raw=await command(env,["HGET","zp:"+RECORDS,storeId]),record=parse(raw,null);
+  if(!record)return{isolated:false,code:"GLOBAL_RECORD_NOT_FOUND"};
+  if(record.status==="QUARANTINED")return{isolated:false,code:"ALREADY_QUARANTINED",record};
+  const previousStatus=record.status;
+  record.status="QUARANTINED";record.updatedAt=new Date().toISOString();record.quarantinedBy=userId||null;record.quarantinedAt=record.updatedAt;record.quarantineReason=reason;
+  const event={id:newId(),type:"QUARANTINED",storeId,previousStatus,reason,userId:userId||null,createdAt:record.updatedAt};
+  const version=Number(await command(env,["EVAL",'local v=tonumber(redis.call("INCR",KEYS[2])) or 0; redis.call("HSET",KEYS[1],ARGV[1],ARGV[2]); redis.call("RPUSH",KEYS[3],ARGV[3]); redis.call("LTRIM",KEYS[3],"-5000","-1"); redis.call("SET",KEYS[4],cjson.encode({schemaVersion="2",version=v})); return v',"4","zp:"+RECORDS,"zp:"+META+":version","zp:"+EVENTS,"zp:"+META,storeId,JSON.stringify(record),JSON.stringify(event)]));
+  return{isolated:true,record,event,version};
+ }finally{await command(env,["EVAL",'if redis.call("GET",KEYS[1])==ARGV[1] then return redis.call("DEL",KEYS[1]) else return 0 end',"1","zp:"+LOCK,lockToken]).catch(()=>{})}
+}
+/** 恢复一条被隔离的记录为 CANDIDATE（重新进入学习闭环）。 */
+export async function restoreGlobalRecord(env,input){
+ const storeId=clean(input.storeId),userId=clean(input.userId);
+ if(!storeId)throw new Error("GLOBAL_RESTORE_INPUT_INVALID");
+ const lockToken=newId(),locked=await command(env,["SET","zp:"+LOCK,lockToken,"NX","EX","30"]);
+ if(locked!=="OK")throw new Error("GLOBAL_LEARNING_BUSY");
+ try{
+  await ensureMeta(env,{lockHeld:true});
+  const raw=await command(env,["HGET","zp:"+RECORDS,storeId]),record=parse(raw,null);
+  if(!record)return{restored:false,code:"GLOBAL_RECORD_NOT_FOUND"};
+  if(record.status!=="QUARANTINED")return{restored:false,code:"NOT_QUARANTINED",record};
+  const previousStatus=record.status;
+  record.status="CANDIDATE";record.confirmations=0;record.updatedAt=new Date().toISOString();record.restoredBy=userId||null;record.restoredAt=record.updatedAt;
+  const event={id:newId(),type:"RESTORED",storeId,previousStatus,userId:userId||null,createdAt:record.updatedAt};
+  const version=Number(await command(env,["EVAL",'local v=tonumber(redis.call("INCR",KEYS[2])) or 0; redis.call("HSET",KEYS[1],ARGV[1],ARGV[2]); redis.call("RPUSH",KEYS[3],ARGV[3]); redis.call("LTRIM",KEYS[3],"-5000","-1"); redis.call("SET",KEYS[4],cjson.encode({schemaVersion="2",version=v})); return v',"4","zp:"+RECORDS,"zp:"+META+":version","zp:"+EVENTS,"zp:"+META,storeId,JSON.stringify(record),JSON.stringify(event)]));
+  return{restored:true,record,event,version};
  }finally{await command(env,["EVAL",'if redis.call("GET",KEYS[1])==ARGV[1] then return redis.call("DEL",KEYS[1]) else return 0 end',"1","zp:"+LOCK,lockToken]).catch(()=>{})}
 }
 

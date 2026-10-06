@@ -322,13 +322,19 @@ export function matchOne(rawName, baseStores) {
   const top1 = scored[0] || null;
   const top2 = scored[1] || null;
   const candidates = scored.slice(0, MATCH_CONFIG.MAX_CANDIDATES).map(fmtCandidate);
+  const topScore = top1 ? Number(top1.score.toFixed(3)) : null;
+  const secondScore = top2 ? Number(top2.score.toFixed(3)) : null;
+  const scoreGap = top1 ? Number((top1.score - (top2?.score ?? 0)).toFixed(3)) : null;
+  const candidateCount = candidates.length;
 
-  if (!top1) return { status: "pending", reason: "no_candidate", candidates: [] };
+  if (!top1) {
+    return { status: "pending", reason: "no_candidate", candidateCount: 0, topScore: null, secondScore: null, scoreGap: null, candidates: [], confidence: { level: "PENDING", reason: "no_candidate", score: null, candidateCount: 0, topScore: null, secondScore: null, scoreGap: null } };
+  }
   if (top1.score < MATCH_CONFIG.AUTO_MATCH) {
-    return { status: "pending", reason: "below_threshold", candidates };
+    return { status: "pending", reason: "below_threshold", candidateCount, topScore, secondScore, scoreGap, candidates, confidence: { level: "PENDING", reason: "below_threshold", score: topScore, candidateCount, topScore, secondScore, scoreGap } };
   }
   if (top2 && top1.score - top2.score < MATCH_CONFIG.MIN_CONFIDENCE_GAP) {
-    return { status: "pending", reason: "ambiguous", candidates };
+    return { status: "pending", reason: "ambiguous", candidateCount, topScore, secondScore, scoreGap, candidates, confidence: { level: "PENDING", reason: "ambiguous（候选分差过小）", score: topScore, candidateCount, topScore, secondScore, scoreGap } };
   }
   return {
     status: "matched",
@@ -337,6 +343,20 @@ export function matchOne(rawName, baseStores) {
     signals: top1.signals,
     matchedName: top1.matchedName,
     candidates,
+    candidateCount,
+    topScore,
+    secondScore,
+    scoreGap,
+    confidence: {
+      level: top1.score >= 0.95 ? "HIGH" : "MEDIUM",
+      reason: top1.score >= 0.95 ? "高度相似（主体一致）" : "相似度达标（自动匹配）",
+      score: topScore,
+      candidateCount,
+      topScore,
+      secondScore,
+      scoreGap,
+      signals: top1.signals,
+    },
   };
 }
 
@@ -428,6 +448,15 @@ export function matchStores(items, baseStores) {
           correction: false,
           pending: true,
           candidates: r.candidates || [],
+          matchConfidence: r.confidence || {
+            level: "PENDING",
+            reason: r.reason || "no_candidate",
+            score: r.topScore ?? null,
+            candidateCount: r.candidateCount || 0,
+            topScore: r.topScore ?? null,
+            secondScore: r.secondScore ?? null,
+            scoreGap: r.scoreGap ?? null,
+          },
           matchDiagnostics: {
             baseStoreCount: stores.length,
             reason: r.reason || "no_candidate",
@@ -451,7 +480,16 @@ export function matchStores(items, baseStores) {
       routeOrder: Number(target.routeOrder) || index + 1,
       matchStatus: "matched",
       matchMethod: method,
-      matchConfidence: confidence,
+      matchConfidence: method === "similarity" && confidence ? confidence : {
+        level: "HIGH",
+        reason: method === "identity" || method === "identity-code" ? "身份ID/业务编码精确匹配" : "门店名称精确匹配",
+        score: method === "similarity" ? (confidence?.score ?? null) : 1,
+        candidateCount: method === "similarity" ? (confidence?.candidateCount ?? 0) : 0,
+        topScore: method === "similarity" ? (confidence?.topScore ?? null) : 1,
+        secondScore: method === "similarity" ? (confidence?.secondScore ?? null) : null,
+        scoreGap: method === "similarity" ? (confidence?.scoreGap ?? null) : null,
+        signals: method === "similarity" ? (confidence?.signals ?? null) : { exact: 1 },
+      },
       navigation: clean(target.navigation || item.navigation),
       note: clean(target.note || target.remark || item.note || item.remark),
       correction: method === "similarity" ? true : !isFormatOnly,

@@ -8,6 +8,8 @@ import {getRoute} from "../_route.js";
 import {recognizeImage} from "./ocr.js";
 import {findGlobalMatches} from "../_global-learning.js";
 import {clean,formatCompareKey,matchStores} from "./_store-match.js";
+import {evaluateQualityGates,countLines} from "./_quality-gate.js";
+import {appendWaybillEvent} from "./_waybill-events.js";
 
 const waybillIndexKey=(routeId,date)=>"zp:route:"+routeId+":waybills:"+date;
 const number=v=>{const n=Number(v);return Number.isFinite(n)?n:null};
@@ -145,8 +147,26 @@ function dedupe(items){
 }
 function plan(items,useRouteOrder=true){const list=useRouteOrder?[...items].sort((a,b)=>(number(a.routeOrder)??100000)-(number(b.routeOrder)??100000)||formatCompareKey(a.name).localeCompare(formatCompareKey(b.name),"zh-CN")):[...items];return list.map((s,i)=>({...s,routeOrder:i+1}))}
 
+/**
+ * 记录运单生命周期事件链（append-only，best-effort）。
+ * 仅用于运维追溯，失败不影响主保存流程。
+ */
+async function recordWaybillLifecycle(env, order, ctx) {
+  const { requestId, rawExtractCount, matched, pending, d } = ctx;
+  const events = [
+    { event: "WAYBILL_CREATED", stage: "CREATED", requestId, routeId: order.routeId, userId: order.createdBy },
+    { event: "EXTRACT_COMPLETED", stage: "EXTRACT", requestId, rawExtractCount, extractCount: order.stores.length },
+    { event: "MATCH_COMPLETED", stage: "MATCH", requestId, matched: matched.filter(x => !x.pending).length, pending: pending.length },
+    { event: "DEDUPE_COMPLETED", stage: "DEDUPE", requestId, before: matched.length, after: d.items.length, merged: d.merged },
+    { event: "PLAN_COMPLETED", stage: "PLAN", requestId, count: order.stores.length },
+    { event: "WAYBILL_SAVED", stage: "SAVED", requestId, id: order.id, qualityLevel: order.quality?.level, qualityFlags: order.quality?.flags || [] },
+  ];
+  for (const ev of events) await appendWaybillEvent(env, order.id, ev);
+}
+
 async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:providedUser=null}){
   emit(3,"运单已接收");
+  const requestId=newId();
   const user=providedUser||await currentUser(request,env);if(!user){emit(4,"身份验证失败");return json({success:false,code:"AUTH_REQUIRED",error:"未登录"},401)};if(user.role==="admin"||!canUseRoute(user)){emit(4,"无权处理运单");return json({success:false,code:"WAYBILL_PROCESS_FORBIDDEN",error:"无权处理运单"},403)};
   emit(5,"正在读取运单");
   let form=providedForm;try{if(!form)form=await request.formData()}catch{emit(5,"运单提交格式错误");return json({success:false,code:"WAYBILL_FORM_INVALID",error:"运单提交格式错误"},400)}
@@ -158,9 +178,10 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
   const recognizedMs=Date.now()-started;const baseStarted=Date.now();let baseStores=[];let baseAvailable=false;if(!isTempRoute(routeId)){try{baseStores=await base(env,routeId);baseAvailable=Array.isArray(baseStores)&&baseStores.length>0}catch(e){if(e?.code!=="BASE_NOT_FOUND")return json({success:false,code:e.code||"BASE_DATA_INVALID",message:e.message||"线路数据资料读取失败"},409)}}const baseMs=Date.now()-baseStarted;emit(56,baseAvailable?"已读取线路基准":"未建立线路基准，转入全局学习");
   const extractedStarted=Date.now();const extracted=extract(recognizedText);const rawExtractCount=extracted.stores.length;extracted.stores=splitByRouteBase(extracted.stores,baseStores);const splitExtractCount=extracted.stores.length;const extractMs=Date.now()-extractedStarted;emit(66,`已提取 ${extracted.stores.length} 家门店`);if(!extracted.stores.length)return json({success:false,code:"EXTRACT_EMPTY",message:"未提取到门店，请检查运单内容"},422);
   const rawExtractItems=extracted.stores.map((s,i)=>({index:i+1,rawName:s.rawName,name:s.name,storeId:s.storeId||null,sourceLine:s.sourceLine||null}));const matchStarted=Date.now();const locallyMatched=matchStores(extracted.stores,baseStores);const hasRouteBase=baseAvailable;const globalCandidates=hasRouteBase?[]:await findGlobalMatches(env,locallyMatched.filter(x=>x.pending));const globalMap=new Map(globalCandidates.map(x=>[x.rawName+"|"+(x.sourceLine||""),x]));const matched=locallyMatched.map(x=>{if(!x.pending)return x;const g=globalMap.get(x.rawName+"|"+(x.sourceLine||""));if(!g||g.globalMatchStatus!=="matched")return x;const standard=clean(g.name)||x.rawName;return {...x,...g,name:standard,correction:formatCompareKey(x.rawName)!==formatCompareKey(standard),pending:false,matchStatus:"matched",matchMethod:g.globalMatchMethod,routeOrder:100000};});const matchMs=Date.now()-matchStarted;emit(78,hasRouteBase?"已完成线路基准匹配":"已完成全局学习匹配");const dedupeStarted=Date.now();const d=dedupe(matched);const dedupeMs=Date.now()-dedupeStarted;emit(86,`已完成去重${d.merged?`，合并 ${d.merged} 家`:""}`);const planStarted=Date.now();const useRouteOrder=baseAvailable;const planned=plan(d.items,useRouteOrder);const planMs=Date.now()-planStarted;const pending=planned.filter(x=>x.pending);emit(92,`已完成线路规划，共 ${planned.length} 家`);
-  const formWeight=number(form.get("totalWeight"));const effectiveWeight=formWeight!=null&&formWeight>0?formWeight:extracted.totalWeight;const order={schemaVersion:"2",id:newId(),routeId,routeName:clean(route?.name)||"临时用户",date:clean(form.get("date"))||extracted.date||null,vehicle:clean(form.get("vehicle"))||extracted.vehicle||null,totalWeight:effectiveWeight,stores:planned,rawText:recognizedText,stage:pending.length?"PLANNED":"CONFIRMED",pipeline:["RECOGNIZED","EXTRACTED","MATCHED","DEDUPED","PLANNED","VALIDATED",...(pending.length?[]:["CONFIRMED"])],summary:{original:rawExtractCount,total:planned.length,matched:planned.length-pending.length,pending:pending.length,correction:planned.filter(x=>x.correction).length,merged:d.merged,newStores:0},timing:{recognizedMs,ocrMs,baseMs,extractMs,matchMs,dedupeMs,planMs,totalMs:Date.now()-started},ocr:ocr?{provider:ocr.provider||"PaddleOCR",model:ocr.model,jobId:ocr.jobId,lineCount:ocr.lineCount,fallback:ocr.fallback||null}:null,createdBy:user.id,createdAt:new Date().toISOString()};
+  const quality=evaluateQualityGates({recognizedTextLen:recognizedText.length,lineCount:countLines(recognizedText),rawExtractCount,extractCount:extracted.stores.length,plannedCount:planned.length,pendingCount:pending.length,autoMatchedCount:matched.filter(x=>!x.pending).length,dedupeBefore:matched.length,dedupeAfter:d.items.length,merged:d.merged});
+  const formWeight=number(form.get("totalWeight"));const effectiveWeight=formWeight!=null&&formWeight>0?formWeight:extracted.totalWeight;const order={schemaVersion:"2",id:newId(),routeId,routeName:clean(route?.name)||"临时用户",date:clean(form.get("date"))||extracted.date||null,vehicle:clean(form.get("vehicle"))||extracted.vehicle||null,totalWeight:effectiveWeight,stores:planned,rawText:recognizedText,stage:pending.length?"PLANNED":"CONFIRMED",pipeline:["RECOGNIZED","EXTRACTED","MATCHED","DEDUPED","PLANNED","VALIDATED",...(pending.length?[]:["CONFIRMED"])],summary:{original:rawExtractCount,total:planned.length,matched:planned.length-pending.length,pending:pending.length,correction:planned.filter(x=>x.correction).length,merged:d.merged,newStores:0},timing:{recognizedMs,ocrMs,baseMs,extractMs,matchMs,dedupeMs,planMs,totalMs:Date.now()-started},ocr:ocr?{provider:ocr.provider||"PaddleOCR",model:ocr.model,jobId:ocr.jobId,lineCount:ocr.lineCount,fallback:ocr.fallback||null}:null,createdBy:user.id,createdAt:new Date().toISOString(),requestId,quality};
   if(!pending.length){order.confirmedAt=order.createdAt;order.confirmedBy=user.id;}
-  const validation=validateResult(order);order.validation=validation;if(!validation.valid){const first=validation.errors?.[0]||"校验失败";const codeMap={"缺少运单日期":"WAYBILL_VALIDATION_DATE_MISSING","缺少车辆信息":"WAYBILL_VALIDATION_VEHICLE_MISSING","没有规划门店":"WAYBILL_VALIDATION_STORES_EMPTY","规划结果存在重复门店":"WAYBILL_VALIDATION_DUPLICATE_STORE","规划结果存在无效线路顺序":"WAYBILL_VALIDATION_ROUTE_ORDER_INVALID","规划结果存在重复线路顺序":"WAYBILL_VALIDATION_ROUTE_ORDER_DUPLICATE","线路顺序不连续":"WAYBILL_VALIDATION_ROUTE_ORDER_GAP"};return json({success:false,code:codeMap[first]||"WAYBILL_VALIDATION_FAILED",error:"运单规划结果校验失败："+first,validation},422)}order.diagnostics={matchMode:hasRouteBase?"ROUTE_BASE":"GLOBAL_LEARNING",baseStoreCount:baseStores.length,rawExtractCount,extractCount:extracted.stores.length,splitExtractCount,rawExtractItems,extractItems:extracted.stores.map((s,i)=>({index:i+1,rawName:s.rawName,name:s.name,storeId:s.storeId||null})),localMatchedCount:locallyMatched.filter(x=>!x.pending).length,localPendingCount:locallyMatched.filter(x=>x.pending).length,localPendingItems:locallyMatched.filter(x=>x.pending).map(x=>({rawName:x.rawName,candidates:x.candidates||[]})),globalMatchedCount:matched.filter(x=>!x.pending&&(x.matchMethod==="global-alias"||x.matchMethod==="global-identity")).length,globalPendingCount:hasRouteBase?0:matched.filter(x=>x.pending).length,finalPendingCount:pending.length,dedupeBefore:matched.length,dedupeAfter:d.items.length,merged:d.merged,dedupeConflicts:d.conflicts,dedupeRemoved:d.removed,correctionItems:planned.filter(x=>x.correction).map((s,i)=>({rawName:s.rawName,name:s.name,storeId:s.storeId||null,matchMethod:s.matchMethod||null})),plannedCount:planned.length,finalCount:order.stores.length,finalItems:planned.map((s,i)=>({index:i+1,rawName:s.rawName,name:s.name,storeId:s.storeId||null,pending:!!s.pending,matchMethod:s.matchMethod||null,routeOrder:s.routeOrder}))};
+  const validation=validateResult(order);order.validation=validation;if(!validation.valid){const first=validation.errors?.[0]||"校验失败";const codeMap={"缺少运单日期":"WAYBILL_VALIDATION_DATE_MISSING","缺少车辆信息":"WAYBILL_VALIDATION_VEHICLE_MISSING","没有规划门店":"WAYBILL_VALIDATION_STORES_EMPTY","规划结果存在重复门店":"WAYBILL_VALIDATION_DUPLICATE_STORE","规划结果存在无效线路顺序":"WAYBILL_VALIDATION_ROUTE_ORDER_INVALID","规划结果存在重复线路顺序":"WAYBILL_VALIDATION_ROUTE_ORDER_DUPLICATE","线路顺序不连续":"WAYBILL_VALIDATION_ROUTE_ORDER_GAP"};return json({success:false,code:codeMap[first]||"WAYBILL_VALIDATION_FAILED",error:"运单规划结果校验失败："+first,validation},422)}order.diagnostics={matchMode:hasRouteBase?"ROUTE_BASE":"GLOBAL_LEARNING",baseStoreCount:baseStores.length,rawExtractCount,extractCount:extracted.stores.length,splitExtractCount,rawExtractItems,extractItems:extracted.stores.map((s,i)=>({index:i+1,rawName:s.rawName,name:s.name,storeId:s.storeId||null})),localMatchedCount:locallyMatched.filter(x=>!x.pending).length,localPendingCount:locallyMatched.filter(x=>x.pending).length,localPendingItems:locallyMatched.filter(x=>x.pending).map(x=>({rawName:x.rawName,candidates:x.candidates||[]})),globalMatchedCount:matched.filter(x=>!x.pending&&(x.matchMethod==="global-alias"||x.matchMethod==="global-identity")).length,globalPendingCount:hasRouteBase?0:matched.filter(x=>x.pending).length,finalPendingCount:pending.length,dedupeBefore:matched.length,dedupeAfter:d.items.length,merged:d.merged,dedupeConflicts:d.conflicts,dedupeRemoved:d.removed,correctionItems:planned.filter(x=>x.correction).map((s,i)=>({rawName:s.rawName,name:s.name,storeId:s.storeId||null,matchMethod:s.matchMethod||null})),plannedCount:planned.length,finalCount:order.stores.length,finalItems:planned.map((s,i)=>({index:i+1,rawName:s.rawName,name:s.name,storeId:s.storeId||null,pending:!!s.pending,matchMethod:s.matchMethod||null,routeOrder:s.routeOrder,matchConfidence:s.matchConfidence||null})),requestId,quality};
   emit(96,"正在保存运单");
   order.businessFingerprint=await businessFingerprint(order);
   const fingerprintKey="zp:waybill:fingerprint:"+order.businessFingerprint;
@@ -189,7 +210,8 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
       if(w){
         await command(env,["SADD",indexKey,dailyDupId]);
         await command(env,["SET",dedupeKey,dailyDupId]);
-        return json({success:true,waybill:w,idempotent:true,dedupe:"DAILY_MATCH",indexSync:"OK"});
+        await appendWaybillEvent(env, dailyDupId, {event:"WAYBILL_IDEMPOTENT",stage:"SAVED",requestId,reuse:dailyDupId,dedupe:"DAILY_MATCH"});
+        return json({success:true,waybill:w,idempotent:true,dedupe:"DAILY_MATCH",indexSync:"OK",quality,requestId});
       }
     }
   }
@@ -207,13 +229,15 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
   else if(typeof saveResult==="string"&&saveResult!==order.id){reason="FINGERPRINT";savedId=saveResult}
   if(reason==="NEW"){
     emit(100,"处理完成");
-    return json({success:true,waybill:order,pipeline:order.pipeline,summary:order.summary,indexSync:"OK"});
+    await recordWaybillLifecycle(env, order, {requestId, rawExtractCount, matched, pending, d});
+    return json({success:true,waybill:order,pipeline:order.pipeline,summary:order.summary,indexSync:"OK",quality,requestId});
   }
   const existingRaw=await command(env,["GET","zp:waybill:"+savedId]);
   if(existingRaw){
     const existingOrder=typeof existingRaw==="string"?JSON.parse(existingRaw):existingRaw;
     await command(env,["SADD",indexKey,existingOrder.id]);
-    return json({success:true,waybill:existingOrder,idempotent:true,dedupe:reason,indexSync:"OK"});
+    await appendWaybillEvent(env, existingOrder.id, {event:"WAYBILL_IDEMPOTENT",stage:"SAVED",requestId,reuse:existingOrder.id,dedupe:reason});
+    return json({success:true,waybill:existingOrder,idempotent:true,dedupe:reason,indexSync:"OK",quality,requestId});
   }
   return json({success:false,code:"WAYBILL_DEDUPE_LOOKUP_FAILED",error:"已存在的运单记录丢失，请重试"},409);
 }
