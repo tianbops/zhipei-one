@@ -10,7 +10,7 @@
  * 缓存 key 一律用 pathname 规整化：页面 URL 常带 ?v=时间戳（防缓存），
  * 若按完整 URL 存，每次跳转都会产生一份新副本。
  */
-const VERSION = "zp-pwa-16";
+const VERSION = "zp-pwa-17";
 const STATIC_CACHE = VERSION + "-static";
 const PAGES_CACHE = VERSION + "-pages";
 const OFFLINE_URL = "/offline.html";
@@ -73,7 +73,21 @@ self.addEventListener("fetch", event => {
     (req.destination === "document") ||
     (req.headers.get("accept") || "").indexOf("text/html") > -1;
 
-  if (isDocument) { event.respondWith(navigateStrategy(req)); return; }
+  if (isDocument) {
+    /* 关键修复（2026-10-06）：在线时把导航交还给浏览器，不要调 respondWith。
+     * 原写法对所有页面导航都 respondWith，会令 Chrome 禁用 bfcache——
+     * 每次左滑返回都变成整页重载，旧 ui-unified.js 又压一条守卫历史项，
+     * 历史栈无限膨胀、退出永远够不着；弱网/离线时 SW 还直接吐 PAGES_CACHE
+     * 里的旧页面，表现为「在旧缓存里循环、退不出去」。
+     * 现在：在线 -> 浏览器走 bfcache/HTTP 缓存（即时恢复、不重载、不膨胀），
+     * 后台静默更新离线缓存；离线 -> 才用 SW 兜底（缓存页 / offline 页）。 */
+    if (self.navigator.onLine) {
+      event.waitUntil(updatePageCache(req));
+      return; // 交还浏览器，启用 bfcache
+    }
+    event.respondWith(navigateStrategy(req));
+    return;
+  }
   if (req.destination === "style" || req.destination === "script") { event.respondWith(freshStrategy(req)); return; }
   if (["image", "font"].includes(req.destination)) { event.respondWith(swrStrategy(req)); return; }
 });
@@ -83,16 +97,26 @@ async function navigateStrategy(req) {
   const key = cacheKeyOf(req.url);
   const cache = await caches.open(PAGES_CACHE);
   try {
-    const res = await fetch(req);
+    const res = await fetch(req, { cache: "no-cache" });
     if (res && res.ok) cache.put(key, res.clone());
     return res;
   } catch {
-    const hit = await cache.match(key);
+    const hit = await caches.match(req);          // 含 STATIC_CACHE 预缓存（home/today/offline 等）
     if (hit) return hit;
     const fallback = await caches.match(OFFLINE_URL);
     if (fallback) return fallback;
     return new Response("离线且无缓存", { status: 503, headers: { "content-type": "text/plain; charset=utf-8" } });
   }
+}
+
+/* 在线时后台静默把当前页面存进离线缓存，供日后离线打开；不接管响应。 */
+async function updatePageCache(req) {
+  const key = cacheKeyOf(req.url);
+  const cache = await caches.open(PAGES_CACHE);
+  try {
+    const res = await fetch(req, { cache: "no-cache" });
+    if (res && res.ok) cache.put(key, res.clone());
+  } catch { /* 离线或失败：忽略，下次再说 */ }
 }
 
 /* 静态资源（图片/字体）：先给缓存，后台更新 */
