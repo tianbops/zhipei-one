@@ -123,7 +123,7 @@ class MiniRedis {
         return [cursor, flat];
       }
       case "RPUSH": { const key = a[0]; let l = this.lists.get(key); if (!l) { l = []; this.lists.set(key, l); } for (let i = 1; i < a.length; i++) l.push(a[i]); return l.length; }
-      case "LTRIM": { const l = this.lists.get(a[0]); if (!l) return "OK"; const start = Number(a[1]), stop = Number(a[2]); if (stop < 0) stop = l.length + stop; const nw = l.slice(start, stop + 1); this.lists.set(a[0], nw); return "OK"; }
+      case "LTRIM": { const l = this.lists.get(a[0]); if (!l) return "OK"; let start = Number(a[1]), stop = Number(a[2]); if (stop < 0) stop = l.length + stop; const nw = l.slice(start, stop + 1); this.lists.set(a[0], nw); return "OK"; }
       case "LRANGE": { const l = this.lists.get(a[0]); if (!l) return []; let start = Number(a[1]), stop = Number(a[2]); if (start < 0) start = l.length + start; if (stop < 0) stop = l.length + stop; return l.slice(start, stop + 1); }
       case "LLEN": { const l = this.lists.get(a[0]); return l ? l.length : 0; }
       case "INCR": { const cur = Number(this._get(a[0]) || "0"); const nv = cur + 1; this._set(a[0], nv); return nv; }

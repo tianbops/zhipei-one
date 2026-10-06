@@ -124,6 +124,21 @@ async function toJson(resp) { return await resp.json(); }
   const noRouteJson = await toJson(noRoute);
   check("管理员未指定 routeId 被拒(400)", noRouteJson.success === false && noRouteJson.error.includes("routeId"));
 
+  console.log("【5】学习隔离可操作闭环（isolate → QUARANTINED → 退出匹配 → restore → CANDIDATE）");
+  const glMod = await import(baseDir + "_global-learning.js");
+  // 直接落库一条 VERIFIED 记录 + 别名索引（绕过 learnGlobal 的 Lua 以兼容测试桩）。
+  const seedStore = { storeId: "GX1", standardName: "测试店", originalName: "测试店", aliases: [], status: "VERIFIED", confirmations: 2 };
+  red.command(["HSET", "zp:global:learning:records", "GX1", JSON.stringify(seedStore)]);
+  red.command(["HSET", "zp:global:learning:aliases", "测试店", JSON.stringify(["GX1"])]);
+  const before = await glMod.findGlobalMatches(env, [{ rawName: "测试店" }]);
+  check("VERIFIED 记录可参与自动匹配", before[0] && before[0].globalMatchStatus === "matched", before[0] && before[0].globalMatchStatus);
+  const iso = await glMod.isolateGlobalRecord(env, { storeId: "GX1", userId: uAdmin, reason: "误匹配" });
+  check("isolate → QUARANTINED", iso.isolated === true && iso.record.status === "QUARANTINED");
+  const afterIso = await glMod.findGlobalMatches(env, [{ rawName: "测试店" }]);
+  check("隔离后退出自动匹配（保留审计，不动删除）", !(afterIso[0] && afterIso[0].globalMatchStatus === "matched"));
+  const res = await glMod.restoreGlobalRecord(env, { storeId: "GX1", userId: uAdmin });
+  check("restore → CANDIDATE（未删数据，保留审计链）", res.restored === true && res.record.status === "CANDIDATE");
+
   console.log("─".repeat(50));
   console.log("质量门/事件链/可信度 回归：通过 " + pass + " / 失败 " + fail);
   console.log(fail === 0 ? "✅ 全部通过" : "❌ 存在失败项");
