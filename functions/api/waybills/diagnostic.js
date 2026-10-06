@@ -1,7 +1,7 @@
 import {json} from "../_json.js";
 import {currentUser} from "../_auth.js";
 import {get,command} from "../_redis.js";
-import {canUseRoute} from "../_permissions.js";
+import {canUseRoute,isSystemAdmin} from "../_permissions.js";
 import {canReadWaybill} from "../_waybill-acl.js";
 import {listWaybillEvents} from "./_waybill-events.js";
 
@@ -11,14 +11,23 @@ const isPrimaryWaybillKey=key=>/^zp:waybill:[^:]+$/.test(String(key));
 
 export async function onRequestGet({request,env}){
   const user=await currentUser(request,env);
-  if(!user||user.role==="admin"||!canUseRoute(user))return json({success:false,error:"无权查看运单诊断"},403);
-
+  if(!user)return json({success:false,error:"未登录"},401);
+  const isAdmin=isSystemAdmin(user);
   const url=new URL(request.url);
   const date=clean(url.searchParams.get("date"));
   const vehicle=clean(url.searchParams.get("vehicle")).toUpperCase();
   const requestedRoute=clean(url.searchParams.get("routeId"));
-  const allowedRoutes=[clean(user.dispatchRouteId),clean(user.boundRouteId)].filter(Boolean);
-  const routeId=requestedRoute||clean(user.dispatchRouteId||user.boundRouteId);
+  let routeId, allowedRoutes;
+  if(isAdmin){
+    // 运维可观测性（1.1）：管理员指定 routeId 即可只读诊断任意线路，不依赖个人派单上下文。
+    routeId=requestedRoute;
+    allowedRoutes=requestedRoute?[requestedRoute]:[];
+    if(!routeId)return json({success:false,error:"管理员诊断需指定 routeId"},400);
+  }else{
+    if(!canUseRoute(user))return json({success:false,error:"无权查看运单诊断"},403);
+    allowedRoutes=[clean(user.dispatchRouteId),clean(user.boundRouteId)].filter(Boolean);
+    routeId=requestedRoute||clean(user.dispatchRouteId||user.boundRouteId);
+  }
   if(!routeId||!allowedRoutes.includes(routeId))return json({success:false,error:"无权诊断该线路"},403);
 
   let cursor="0";
@@ -31,7 +40,8 @@ export async function onRequestGet({request,env}){
       const id=String(key).replace(/^zp:/,"").replace(/^waybill:/,"");
       const raw=await get(env,"waybill:"+id);
       const w=parse(raw);
-      if(!w||w.routeId!==routeId||!canReadWaybill(user,w,env))continue;
+      if(!w||w.routeId!==routeId)continue;
+      if(!isAdmin&&!canReadWaybill(user,w,env))continue;
       if(date&&clean(w.date)!==date)continue;
       if(vehicle&&clean(w.vehicle).toUpperCase()!==vehicle)continue;
       found.push({

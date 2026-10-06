@@ -112,6 +112,18 @@ async function toJson(resp) { return await resp.json(); }
     check("事件链覆盖完整生命周期", ["WAYBILL_CREATED", "EXTRACT_COMPLETED", "MATCH_COMPLETED", "DEDUPE_COMPLETED", "PLAN_COMPLETED", "WAYBILL_SAVED"].every(t => types.includes(t)), types.join(","));
   }
 
+  console.log("【4】管理员可观测性：指定 routeId 即可诊断任意线路（此前 403）");
+  const uAdmin = "uQAdmin", tokAdmin = "tok-QAdmin";
+  seed("user:" + uAdmin, { id: uAdmin, role: "admin", boundRouteId: null, dispatchRouteId: null, sessionVersion: 1 });
+  seed("session:" + tokAdmin, { userId: uAdmin, sessionVersion: 1 });
+  const adminDiag = await diagMod.onRequestGet({ request: getReq("https://t.zp/api/waybills/diagnostic?routeId=" + ROUTE, tokAdmin), env });
+  const adminJson = await toJson(adminDiag);
+  check("管理员按 routeId 诊断成功（放开前被拒）", adminJson.success === true && (adminJson.waybills || []).length >= 2, "count=" + (adminJson.waybills || []).length);
+  check("管理员诊断返回质量/事件", Boolean((adminJson.waybills || [])[0]?.quality) && Boolean((adminJson.waybills || [])[0]?.events));
+  const noRoute = await diagMod.onRequestGet({ request: getReq("https://t.zp/api/waybills/diagnostic", tokAdmin), env });
+  const noRouteJson = await toJson(noRoute);
+  check("管理员未指定 routeId 被拒(400)", noRouteJson.success === false && noRouteJson.error.includes("routeId"));
+
   console.log("─".repeat(50));
   console.log("质量门/事件链/可信度 回归：通过 " + pass + " / 失败 " + fail);
   console.log(fail === 0 ? "✅ 全部通过" : "❌ 存在失败项");
