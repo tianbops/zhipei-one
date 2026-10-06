@@ -139,6 +139,17 @@ async function toJson(resp) { return await resp.json(); }
   const res = await glMod.restoreGlobalRecord(env, { storeId: "GX1", userId: uAdmin });
   check("restore → CANDIDATE（未删数据，保留审计链）", res.restored === true && res.record.status === "CANDIDATE");
 
+  console.log("【6】线路切换上下文保护（processingRouteId 二次校验，P1 #17）");
+  // 模拟"处理中切线路"：会话 dispatchRouteId 改为 OTHER，但提交时 processingRouteId 仍为 ROUTE。
+  seed("user:" + UA, { id: UA, role: "user", boundRouteId: ROUTE, dispatchRouteId: "route-OTHER", routeDuty: "driver", sessionVersion: 1 });
+  const switched = await processMod.onRequestPost({ request: formReq("https://t.zp/api/waybills/process", tokA, { routeId: ROUTE, processingRouteId: ROUTE, rawText: RAW_GOOD, date: "2026-10-06", vehicle: "粤B12345" }), env });
+  const switchedJson = await toJson(switched);
+  check("切线路后提交被拒(DISPATCH_ROUTE_CHANGED,可恢复)", switchedJson.success === false && switchedJson.code === "DISPATCH_ROUTE_CHANGED", "code=" + (switchedJson.code || ""));
+  // 恢复会话线路后 processingRouteId 与之匹配 → 成功（同线路保存）。
+  seed("user:" + UA, { id: UA, role: "user", boundRouteId: ROUTE, dispatchRouteId: ROUTE, routeDuty: "driver", sessionVersion: 1 });
+  const okAgain = await processMod.onRequestPost({ request: formReq("https://t.zp/api/waybills/process", tokA, { routeId: ROUTE, processingRouteId: ROUTE, rawText: RAW_GOOD, date: "2026-10-06", vehicle: "粤B12345" }), env });
+  check("线路一致时 processingRouteId 提交成功", (await toJson(okAgain)).success === true);
+
   console.log("─".repeat(50));
   console.log("质量门/事件链/可信度 回归：通过 " + pass + " / 失败 " + fail);
   console.log(fail === 0 ? "✅ 全部通过" : "❌ 存在失败项");

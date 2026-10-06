@@ -251,11 +251,15 @@ async function processSelectedFile(file){
       showProcessingError("DISPATCH_ROUTE_MISSING");
       return;
     }
+    // 处理开始时捕获线路：即使后续在流式 OCR 期间切线路，本次提交也固定用此线路，
+    // 由后端 processingRouteId 二次校验兜底，避免误写其它线路（P1 #17）。
+    const processingRouteIdLocal=dispatchRouteId;
     showProcessingUI();
     document.querySelectorAll(".source-option").forEach(b=>b.disabled=true);
     const fd=new FormData();
     fd.append("file",file);
-    fd.append("routeId",dispatchRouteId);
+    fd.append("routeId",processingRouteIdLocal);
+    fd.append("processingRouteId",processingRouteIdLocal);
     renderProcessingProgress(3);
     let r;
     try{
