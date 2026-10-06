@@ -27,7 +27,7 @@ const getReq = (url, token) => ({ url, headers: { get: (h) => (String(h).toLower
   seed("session:" + tok, { userId: uId, sessionVersion: 1 });
   seed("route:" + R, { id: R, name: "线路D", status: "active" });
 
-  // seed 25 张运单（同线路，制造 >20 截断）
+  // seed 25 张运单（同线路，制造 >20 截断）；同时写线路×日期索引（P1-4b 后列表走索引+MGET）
   for (let i = 1; i <= 25; i++) {
     seed("waybill:W" + i, {
       schemaVersion: "2", id: "W" + i, routeId: R, routeName: "线路D", date: TODAY,
@@ -38,6 +38,7 @@ const getReq = (url, token) => ({ url, headers: { get: (h) => (String(h).toLower
       createdBy: uId, createdAt: TODAY + "T08:00:00.000Z",
       quality: { level: "OK", flags: [] }, ocr: { provider: "PaddleOCR", lowConfidence: null }
     });
+    red.command(["SADD", "zp:route:" + R + ":waybills:" + TODAY, "W" + i]);
   }
 
   const baseDir = pathToFileURL(__dirname + "/../functions/api/").href;
@@ -53,6 +54,7 @@ const getReq = (url, token) => ({ url, headers: { get: (h) => (String(h).toLower
   check("limit=20", d.limit === 20);
   check("waybills 仅返回前 20 张", Array.isArray(d.waybills) && d.waybills.length === 20, "len=" + (d.waybills ? d.waybills.length : 0));
   check("返回内容含 waybillId 字段（前端可定位）", d.waybills && d.waybills[0] && !!d.waybills[0].id);
+  check("事件链字段为数组（pipeline LRANGE 批量读取）", d.waybills && Array.isArray(d.waybills[0].events));
 
   console.log("\nDIAG_TRUNCATION 集成：通过 " + pass + " / 失败 " + fail);
   process.exit(fail ? 1 : 0);

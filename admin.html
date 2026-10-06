@@ -431,7 +431,8 @@ async function renderDiagnostics(){
   let d;try{d=await api(q)}catch(e){$("diagnostics").innerHTML='<div class="empty">查询失败：'+esc(e.message)+'</div>';return}
   const list=d.waybills||[];
   if(!list.length){$("diagnostics").innerHTML='<div class="empty">该线路暂无运单或无权查看</div>';return}
-  $("diagnostics").innerHTML=list.map(w=>{
+  const truncHint=(d.truncated&&Number(d.count)>list.length)?'<div class="empty" style="color:#e8b34b">共 '+esc(d.count)+' 张运单，当前仅显示最近 20 张</div>':"";
+  $("diagnostics").innerHTML=truncHint+list.map(w=>{
     const lvl=(w.quality&&w.quality.level)||"OK";const ql=lvl==="REVIEW"?"review":"ok";
     const flags=(w.quality&&w.quality.flags||[]).join("、")||"正常";
     const evs=(w.events||[]).slice(-8).reverse().map(e=>esc(e.event)+(e.t?" · "+esc(String(e.t).slice(11,19)):"")).join("<br>");

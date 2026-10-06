@@ -1,16 +1,14 @@
 import {json} from "../_json.js";
 import {currentUser} from "../_auth.js";
-import {get,command} from "../_redis.js";
+import {command,pipeline} from "../_redis.js";
 import {canUseRoute,isSystemAdmin} from "../_permissions.js";
 import {canReadWaybill} from "../_waybill-acl.js";
-import {listWaybillEvents} from "./_waybill-events.js";
 import {getProc, failProc, effectiveStage} from "./_waybill-proc.js";
 import {scanConsistency,repairConsistency} from "./_consistency.js";
 import {computeStats} from "./_stats.js";
 
 const clean=v=>String(v??"").trim();
 const parse=v=>{try{return typeof v==="string"?JSON.parse(v):v}catch{return null}};
-const isPrimaryWaybillKey=key=>/^zp:waybill:[^:]+$/.test(String(key));
 
 export async function onRequestGet({request,env}){
   const user=await currentUser(request,env);
@@ -74,47 +72,89 @@ export async function onRequestGet({request,env}){
   if(isAdmin&&!routeId)return json({success:false,error:"管理员诊断需指定 routeId"},400);
   if(!routeId||!allowedRoutes.includes(routeId))return json({success:false,error:"无权诊断该线路"},403);
 
-  let cursor="0";
-  const found=[];
-  do{
-    const result=await command(env,["SCAN",cursor,"MATCH","zp:waybill:*","COUNT","100"]);
-    cursor=String(result?.[0]??"0");
-    for(const key of Array.isArray(result?.[1])?result[1]:[]){
-      if(!isPrimaryWaybillKey(key))continue;
-      const id=String(key).replace(/^zp:/,"").replace(/^waybill:/,"");
-      const raw=await get(env,"waybill:"+id);
-      const w=parse(raw);
-      if(!w||w.routeId!==routeId)continue;
-      if(!isAdmin&&!canReadWaybill(user,w,env))continue;
-      if(date&&clean(w.date)!==date)continue;
-      if(vehicle&&clean(w.vehicle).toUpperCase()!==vehicle)continue;
-      found.push({
-        id:w.id||id,
-        routeId:w.routeId,
-        date:w.date||null,
-        vehicle:w.vehicle||null,
-        totalWeight:w.totalWeight??null,
-        stage:w.stage||null,
-        summary:w.summary||null,
-        validation:w.validation||null,
-        diagnostics:w.diagnostics||null,
-        ocr:w.ocr||null,
-        quality:w.quality||null,
-        requestId:w.requestId||null,
-        events:await listWaybillEvents(env,id),
-        pipeline:Array.isArray(w.pipeline)?w.pipeline:[],
-        createdAt:w.createdAt||null,
-        confirmedAt:w.confirmedAt||null
-      });
+  // 列表查询（P1-4b 修订）：走「线路×日期」SET 索引（zp:route:<routeId>:waybills:<date>）
+  // + pipeline SMEMBERS + MGET 批量读，事件链只对返回的前 20 张用 pipeline LRANGE 读取。
+  // 此前实现是全键 SCAN zp:waybill:* + 逐张 GET + 逐张 LRANGE，子请求数 O(N)：
+  // 生产数据量下必超 Cloudflare Workers 每请求子请求上限（免费版约 50 个）→ 线上 500（2026-10-06 实测）。
+  // 索引缺失的孤儿运单不在此列出，由 ?check=consistency 一致性扫描兜底。
+  try{
+    const idxPrefix="zp:route:"+routeId+":waybills:";
+    const dateRe=/^\d{4}-\d{2}-\d{2}$/;
+    const dates=[];
+    if(date){
+      if(!dateRe.test(date))return json({success:false,code:"DATE_INVALID",error:"日期无效"},400);
+      dates.push(date);
+    }else{
+      let cursor="0";
+      do{
+        const r=await command(env,["SCAN",cursor,"MATCH",idxPrefix+"*","COUNT","100"]);
+        cursor=String(r?.[0]??"0");
+        for(const key of Array.isArray(r?.[1])?r[1]:[]){
+          const text=String(key);
+          if(!text.startsWith(idxPrefix))continue;
+          const d=text.slice(idxPrefix.length);
+          if(dateRe.test(d))dates.push(d);
+        }
+      }while(cursor!=="0");
     }
-  }while(cursor!=="0");
-
-  found.sort((a,b)=>String(b.createdAt||"").localeCompare(String(a.createdAt||"")));
-  const total=found.length;
-  const limit=20;
-  const truncated=total>limit;
-  const waybills=found.slice(0,limit);
-  return json({success:true,routeId,date:date||null,vehicle:vehicle||null,count:total,truncated,limit,waybills});
+    const ids=[];
+    for(let i=0;i<dates.length;i+=50){
+      const chunk=dates.slice(i,i+50);
+      const results=await pipeline(env,chunk.map(d=>["SMEMBERS",idxPrefix+d]));
+      for(const r of (Array.isArray(results)?results:[])){
+        for(const id of (Array.isArray(r)?r:[])){const v=clean(id);if(v)ids.push(v)}
+      }
+    }
+    const uniqueIds=[...new Set(ids)];
+    const records=[];
+    for(let i=0;i<uniqueIds.length;i+=100){
+      const chunk=uniqueIds.slice(i,i+100);
+      const rawList=await command(env,["MGET",...chunk.map(id=>"zp:waybill:"+id)]);
+      for(let j=0;j<chunk.length;j++){
+        const w=parse(Array.isArray(rawList)?rawList[j]:null);
+        if(!w||w.routeId!==routeId)continue;
+        if(!isAdmin&&!canReadWaybill(user,w,env))continue;
+        if(date&&clean(w.date)!==date)continue;
+        if(vehicle&&clean(w.vehicle).toUpperCase()!==vehicle)continue;
+        records.push({
+          id:w.id||chunk[j],
+          routeId:w.routeId,
+          date:w.date||null,
+          vehicle:w.vehicle||null,
+          totalWeight:w.totalWeight??null,
+          stage:w.stage||null,
+          summary:w.summary||null,
+          validation:w.validation||null,
+          diagnostics:w.diagnostics||null,
+          ocr:w.ocr||null,
+          quality:w.quality||null,
+          requestId:w.requestId||null,
+          pipeline:Array.isArray(w.pipeline)?w.pipeline:[],
+          createdAt:w.createdAt||null,
+          confirmedAt:w.confirmedAt||null,
+          _key:chunk[j]
+        });
+      }
+    }
+    records.sort((a,b)=>String(b.createdAt||"").localeCompare(String(a.createdAt||"")));
+    const total=records.length;
+    const limit=20;
+    const truncated=total>limit;
+    const top=records.slice(0,limit);
+    const eventsByKey=new Map();
+    for(let i=0;i<top.length;i+=50){
+      const chunk=top.slice(i,i+50);
+      const results=await pipeline(env,chunk.map(w=>["LRANGE","zp:waybill:"+w._key+":events","0","-1"]));
+      for(let j=0;j<chunk.length;j++){
+        const raw=Array.isArray(results?.[j])?results[j]:[];
+        eventsByKey.set(chunk[j]._key,raw.map(x=>{try{return typeof x==="string"?JSON.parse(x):x}catch{return null}}).filter(Boolean));
+      }
+    }
+    const waybills=top.map(w=>{const {_key,...rest}=w;return {...rest,events:eventsByKey.get(_key)||[]}});
+    return json({success:true,routeId,date:date||null,vehicle:vehicle||null,count:total,truncated,limit,waybills});
+  }catch(e){
+    return json({success:false,code:"DIAG_LIST_FAILED",error:"运单诊断查询失败",detail:String(e?.message||e||"UNKNOWN_ERROR").slice(0,180)},500);
+  }
 }
 
 /**
