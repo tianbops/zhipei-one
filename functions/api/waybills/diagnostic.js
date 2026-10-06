@@ -44,7 +44,10 @@ export async function onRequestGet({request,env}){
   const wantCheck=clean(url.searchParams.get("check"));
   if(wantCheck==="consistency"){
     const all=isAdmin&&clean(url.searchParams.get("all"))==="1";
-    if(!isAdmin&&!routeId)return json({success:false,error:"无权查看运单诊断"},403);
+    if(!isAdmin){
+      if(clean(url.searchParams.get("all"))==="1")return json({success:false,error:"非管理员不可查询全量"},403);
+      if(!routeId||!allowedRoutes.includes(routeId))return json({success:false,error:"无权诊断该线路"},403);
+    }
     if(isAdmin&&!routeId&&!all)return json({success:false,error:"管理员诊断需指定 routeId 或 all=1"},400);
     const report=await scanConsistency(env,{routeId:all?null:routeId,all});
     return json({success:true,scope:all?"ALL":routeId,...report});
@@ -54,7 +57,10 @@ export async function onRequestGet({request,env}){
   if(wantStats==="1"){
     const all=isAdmin&&clean(url.searchParams.get("all"))==="1";
     const days=Number(url.searchParams.get("days"))||30;
-    if(!isAdmin&&!routeId)return json({success:false,error:"无权查看运单诊断"},403);
+    if(!isAdmin){
+      if(clean(url.searchParams.get("all"))==="1")return json({success:false,error:"非管理员不可查询全量"},403);
+      if(!routeId||!allowedRoutes.includes(routeId))return json({success:false,error:"无权诊断该线路"},403);
+    }
     if(isAdmin&&!routeId&&!all)return json({success:false,error:"管理员诊断需指定 routeId 或 all=1"},400);
     const stats=await computeStats(env,{routeId:all?null:routeId,all,days});
     return json({success:true,...stats});

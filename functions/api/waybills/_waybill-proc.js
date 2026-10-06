@@ -61,6 +61,7 @@ export async function failProc(env, requestId, patch) {
       action: patch.action || null,
       hint: patch.hint || null,
       detail: patch.detail || null,
+      order: patch.order || null,
       updatedAt: nowISO(),
     };
     if (patch.waybillId) next.waybillId = patch.waybillId;

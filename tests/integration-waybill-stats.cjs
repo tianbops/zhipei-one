@@ -62,9 +62,9 @@ const store = (level, pending = false) => ({ rawName: "门店", name: "门店", 
   red.command(["SADD", IDX(R1) + OUT, "Z"]);
   red.command(["SADD", IDX(R2) + TODAY, "R2A"]);
 
-  // 处理票据
+  // 处理票据（生产环境 beginProc 落库必带 routeId；统计按线路隔离依赖该字段）
   for (const [req, stage] of [["r1", "DONE"], ["r2", "TIMEOUT"], ["r3", "FAILED"], ["r4", "CANCELLED"], ["r5", "PROCESSING"]]) {
-    red.command(["SET", "zp:waybill:proc:" + req, JSON.stringify({ stage, requestId: req })]);
+    red.command(["SET", "zp:waybill:proc:" + req, JSON.stringify({ requestId: req, routeId: R1, stage })]);
   }
 
   console.log("【1】R1 窗口内聚合");

@@ -64,10 +64,11 @@ export async function computeStats(env, { routeId = null, all = false, days = 30
   const inWindow = d => d >= win.start && d <= win.end;
 
   // 1. 收集窗口内、作用域内的运单 id
-  const ids = [];
+  const ids = new Set();
+  const indexEntriesScanned = { value: 0 };
   const truncated = { value: false };
   const addIds = arr => {
-    for (const id of arr) { if (ids.length >= MAX_SCANNED) { truncated.value = true; return; } ids.push(id); }
+    for (const id of arr) { indexEntriesScanned.value++; if (ids.size >= MAX_SCANNED) { truncated.value = true; return; } ids.add(id); }
   };
   if (scopeRoute === null) {
     const indexKeys = await scanAll(env, INDEX_PREFIX + "*" + INDEX_SUFFIX + "*");
@@ -97,8 +98,9 @@ export async function computeStats(env, { routeId = null, all = false, days = 30
     pending: { waybillsWithPending: 0, totalStores: 0, pendingStores: 0, pendingRate: null },
     ocr: { lowConfidence: 0, total: 0 }
   };
-  for (let i = 0; i < ids.length; i += 50) {
-    const chunk = ids.slice(i, i + 50);
+  const uniqueIds = [...ids];
+  for (let i = 0; i < uniqueIds.length; i += 50) {
+    const chunk = uniqueIds.slice(i, i + 50);
     const raws = await command(env, ["MGET", ...chunk.map(id => WB_PREFIX + id)]);
     for (const raw of raws) {
       const w = parseWaybill(raw);
@@ -131,6 +133,7 @@ export async function computeStats(env, { routeId = null, all = false, days = 30
     const raw = await command(env, ["GET", key]);
     let t = parseWaybill(raw);
     if (!t) continue;
+    if (scopeRoute && clean(t.routeId) !== scopeRoute) continue; // 统计作用域贯穿处理票据：普通用户仅本线路终态计入
     proc.total++;
     const s = t.stage;
     if (proc.byStage[s] !== undefined) proc.byStage[s]++; else proc.byStage.OTHER++;
@@ -140,7 +143,8 @@ export async function computeStats(env, { routeId = null, all = false, days = 30
   return {
     scope: scopeRoute === null ? "ALL" : scopeRoute,
     window: { start: win.start, end: win.end, days: win.days },
-    scannedWaybills: ids.length,
+    scannedWaybills: ids.size,
+    indexEntriesScanned: indexEntriesScanned.value,
     waybills: agg.waybills,
     quality: agg.quality,
     matchConfidence: agg.matchConfidence,

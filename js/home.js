@@ -191,7 +191,7 @@ const PROCESS_ERROR_TEXT={
   DISPATCH_ROUTE_MISSING:"请先在首页选择调度线路",
   WAYBILL_FILE_MISSING:"请选择运单文件"
 };
-function showProcessingError(message, hint, action, recoverable){
+function showProcessingError(message, hint, action, recoverable, requestId){
   stopProcessingClock();
   if(processingCancelBtn)processingCancelBtn.hidden=true;
   if(processingPanel)processingPanel.hidden=true;
@@ -201,6 +201,7 @@ function showProcessingError(message, hint, action, recoverable){
   if(processingErrorMessage)processingErrorMessage.textContent=text+(hint?(" "+hint+" "):"");
   // 仅当后端声明可恢复且给出了动作时，按钮才是「一键重试」；否则隐藏为关闭按钮
   lastFailureAction=(recoverable&&action)?action:null;
+  lastFailureRequestId=(recoverable&&action)?(requestId||null):null;
   if(processingRetry)processingRetry.textContent=retryActionInfo(lastFailureAction)?.label||"关闭";
   if(processingError)processingError.hidden=false;
 }
@@ -237,8 +238,11 @@ processingCancelBtn?.addEventListener("click",()=>{
 processingRetry?.addEventListener("click",()=>{
   if(processingFile)return;   // 处理中禁止重复触发
   const info=retryActionInfo(lastFailureAction);
-  if(info&&info.autoRetry&&lastProcessingFile){
-    // RETRY_OCR / RETRY_SAVE / REPROCESS：直接复用同一文件重跑，无需重新选择
+  if(lastFailureAction==="RETRY_SAVE"&&lastProcessingFile&&lastFailureRequestId){
+    // RETRY_SAVE：仅重保存（后端按 resumeRequestId 复用已构建 order，跳过 OCR/提取/匹配/规划），不重 OCR
+    processSelectedFile(lastProcessingFile, lastFailureRequestId);
+  }else if(info&&info.autoRetry&&lastProcessingFile){
+    // RETRY_OCR / REPROCESS：复用同一文件重跑完整链路（含 OCR）
     processSelectedFile(lastProcessingFile);
   }else if(info&&lastFailureAction==="RESUBMIT"){
     // 需重新选文件：回到来源菜单
@@ -274,14 +278,14 @@ document.querySelectorAll(".source-option").forEach(btn=>btn.addEventListener("c
 let processingFile=false;
 let lastProcessingFile=null;   // 最近一次处理的文件，供「一键重试」复用（仅 RETRY_OCR/RETRY_SAVE/REPROCESS 自动复用同一文件）
 let lastFailureAction=null;    // 最近一次失败的处理动作（action）；null 表示不可重试，按钮作关闭用
-async function processSelectedFile(file){
+let lastFailureRequestId=null; // 最近一次失败的处理票据 requestId（RETRY_SAVE 仅重保存时回传后端 resume）
+async function processSelectedFile(file, resumeRequestId){
   if(!file||processingFile)return;
   processingFile=true;
   lastProcessingFile=file;
   const controller=new AbortController();
   processingController=controller;
   if(processingCancelBtn){processingCancelBtn.hidden=true;processingCancelBtn.disabled=false}
-  const timer=setTimeout(()=>controller.abort(),60000);
   try{
     if(!(await ensureDispatchRoute())){
       showProcessingError("DISPATCH_ROUTE_MISSING");
@@ -296,6 +300,7 @@ async function processSelectedFile(file){
     fd.append("file",file);
     fd.append("routeId",processingRouteIdLocal);
     fd.append("processingRouteId",processingRouteIdLocal);
+    if(resumeRequestId)fd.append("resumeRequestId",resumeRequestId);
     renderProcessingProgress(3);
     let r;
     try{
@@ -339,7 +344,7 @@ async function processSelectedFile(file){
       if(!result.success){
         const code=result.code||result.errorCode||"PROCESS_FAILED";
         // 透传 action/recoverable：前者驱动「一键重试」按钮行为，后者决定按钮是否出现
-        throw Object.assign(new Error(result.message||result.error||"处理失败"),{code, hint:result.hint||null, action:result.action||null, recoverable:!!result.recoverable});
+        throw Object.assign(new Error(result.message||result.error||"处理失败"),{code, hint:result.hint||null, action:result.action||null, recoverable:!!result.recoverable, requestId:result.requestId||null});
       }
       renderProcessingProgress(100);
       const detailId=encodeURIComponent(result.waybill.id);
@@ -360,9 +365,8 @@ async function processSelectedFile(file){
     }
   }catch(e){
     // 优先展示服务端友好 message（与 code 不同时）；纯 code 场景走映射表
-    showProcessingError(e?.message&&e.message!==e.code?e.message:(e?.code||"PROCESS_FAILED"), e?.hint, e?.action, e?.recoverable);
+    showProcessingError(e?.message&&e.message!==e.code?e.message:(e?.code||"PROCESS_FAILED"), e?.hint, e?.action, e?.recoverable, e?.requestId);
   }finally{
-    clearTimeout(timer);
     stopProcessingClock();
     document.querySelectorAll(".source-option").forEach(b=>b.disabled=false);
     processingFile=false;

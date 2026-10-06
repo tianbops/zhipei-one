@@ -10,7 +10,7 @@ import {findGlobalMatches} from "../_global-learning.js";
 import {clean,formatCompareKey,matchStores} from "./_store-match.js";
 import {evaluateQualityGates,countLines} from "./_quality-gate.js";
 import {appendWaybillEvent} from "./_waybill-events.js";
-import {beginProc,failProc,finishProc} from "./_waybill-proc.js";
+import {beginProc,failProc,finishProc,getProc} from "./_waybill-proc.js";
 
 const waybillIndexKey=(routeId,date)=>"zp:route:"+routeId+":waybills:"+date;
 const number=v=>{const n=Number(v);return Number.isFinite(n)?n:null};
@@ -171,7 +171,7 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
   // 处理失败统一收口：写状态机票据（PROCESSING→FAILED/TIMEOUT/CANCELLED）+ 返回可恢复提示（P1 #18）。
   const failProcess=async(code,message,status,opts={})=>{
     const {stage="FAILED",recoverable=false,action=null,hint=null,detail=null,jobId=null,validation=null}=opts;
-    await failProc(env,requestId,{stage,recoverable,action,hint,detail:detail||(jobId?String(jobId):null)});
+    await failProc(env,requestId,{stage,recoverable,action,hint,detail:detail||(jobId?String(jobId):null), order:opts.order||null});
     return json({success:false,code,error:message,message,requestId,recoverable,action,hint,detail,jobId,validation},status);
   };
   const user=providedUser||await currentUser(request,env);if(!user){emit(4,"身份验证失败");return json({success:false,code:"AUTH_REQUIRED",error:"未登录"},401)};if(user.role==="admin"||!canUseRoute(user)){emit(4,"无权处理运单");return json({success:false,code:"WAYBILL_PROCESS_FORBIDDEN",error:"无权处理运单"},403)};
@@ -190,6 +190,13 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
   if(requestedRouteId&&requestedRouteId!==routeId){emit(0,"线路校验失败");return failProcess("DISPATCH_ROUTE_MISMATCH","提交线路与处理线路不一致，请刷新后重试",403,{recoverable:true,action:"REPROCESS",hint:"提交线路与处理线路不一致，请刷新后重试"});}
   let route=null;if(!isTempRoute(routeId)){emit(6,"正在校验配送线路");route=await getRoute(env,routeId);if(!route||route.status!=="active"){emit(6,"当前配送线路不可用");return failProcess("DISPATCH_ROUTE_INACTIVE","当前调度线路不存在或已停用，请重新选择线路",409,{recoverable:true,action:"REPROCESS",hint:"当前调度线路不存在或已停用，请重新选择线路"});}}
   const rawText=clean(form.get("rawText")),file=form.get("file");if(!rawText&&!(file instanceof File)){emit(6,"未找到运单");return failProcess("WAYBILL_FILE_MISSING","请选择运单",400,{recoverable:true,action:"RESUBMIT",hint:"请选择运单文件后重试"});};emit(6,"已读取运单");
+  // 仅重保存（RETRY_SAVE）：复用已落 proc 票据的 order，跳过 OCR/提取/匹配/去重/规划/校验，直接重跑保存脚本（不重 OCR）。
+  const resumeRequestId=clean(form.get("resumeRequestId"));
+  if(resumeRequestId){
+    const t=await getProc(env,resumeRequestId);
+    if(!t||t.userId!==user.id||t.stage!=="FAILED"||t.action!=="RETRY_SAVE"||!t.order)return failProcess("RESUME_INVALID","保存任务已失效，请重新上传运单",422,{recoverable:true,action:"RESUBMIT",hint:"保存任务已失效，请重新上传运单"});
+    return await saveWaybill(t.order, requestId, true);
+  }
   const started=Date.now();let ocr=null,recognizedText=rawText,ocrMs=0;
   if(!recognizedText){const ocrStarted=Date.now();emit(8,"运单已上传，正在排队识别…");try{ocr=await recognizeImage(env,file,p=>{const v=Number(p||0);emit(8+Math.round(v*0.44),v<=10?"运单已上传，正在排队识别…":"正在识别运单…");},request?.signal);recognizedText=ocr.rawText;ocrMs=Date.now()-ocrStarted}catch(e){const ocrCode=e.code||"OCR_FAILED";const ocrHint={OCR_TIMEOUT:"OCR识别超时，可重新上传运单重试",OCR_CANCELLED:"已取消识别，可重新上传运单",OCR_JOB_FAILED:"OCR识别失败，请上传更清晰的运单照片",OCR_EMPTY:"OCR未识别到文字，请上传更清晰的运单照片",OCR_RESULT_MISSING:"OCR结果缺失，请重新上传运单",OCR_RESULT_FETCH:"OCR结果读取失败，请重新上传运单",OCR_RESULT_TIMEOUT:"OCR结果读取超时，请重新上传运单",OCR_NETWORK_TIMEOUT:"OCR服务响应超时，请稍后重试",OCR_SUBMIT_FAILED:"OCR任务提交失败，请稍后重试",OCR_API:"OCR服务暂时不可用，请稍后重试",OCR_BAD_RESPONSE:"OCR服务返回异常，请稍后重试",OCR_AUTH:"OCR鉴权失败，请联系管理员",OCR_ENDPOINT:"OCR服务地址异常，请联系管理员"};const ocrStage=ocrCode==="OCR_TIMEOUT"?"TIMEOUT":(ocrCode==="OCR_CANCELLED"?"CANCELLED":"FAILED");const ocrRecoverable=ocrCode!=="OCR_NOT_CONFIGURED";return failProcess(ocrCode,e.message||"OCR识别失败",e.code==="OCR_NOT_CONFIGURED"?503:422,{stage:ocrStage,recoverable:ocrRecoverable,action:ocrRecoverable?"RETRY_OCR":null,hint:ocrHint[ocrCode]||"OCR识别失败，请稍后重试",jobId:e.jobId||null,detail:e.message||null})}}
   const recognizedMs=Date.now()-started;const baseStarted=Date.now();let baseStores=[];let baseAvailable=false;if(!isTempRoute(routeId)){try{baseStores=await base(env,routeId);baseAvailable=Array.isArray(baseStores)&&baseStores.length>0}catch(e){if(e?.code!=="BASE_NOT_FOUND")return failProcess(e.code||"BASE_DATA_INVALID",e.message||"线路数据资料读取失败",409,{recoverable:false,hint:"线路数据资料读取失败，请联系管理员",detail:e.message||null});}}const baseMs=Date.now()-baseStarted;emit(56,baseAvailable?"已读取线路基准":"未建立线路基准，转入全局学习");
@@ -199,6 +206,10 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
   const formWeight=number(form.get("totalWeight"));const effectiveWeight=formWeight!=null&&formWeight>0?formWeight:extracted.totalWeight;const order={schemaVersion:"2",id:newId(),routeId,routeName:clean(route?.name)||"临时用户",date:clean(form.get("date"))||extracted.date||null,vehicle:clean(form.get("vehicle"))||extracted.vehicle||null,totalWeight:effectiveWeight,stores:planned,rawText:recognizedText,stage:pending.length?"PLANNED":"CONFIRMED",pipeline:["RECOGNIZED","EXTRACTED","MATCHED","DEDUPED","PLANNED","VALIDATED",...(pending.length?[]:["CONFIRMED"])],summary:{original:rawExtractCount,total:planned.length,matched:planned.length-pending.length,pending:pending.length,correction:planned.filter(x=>x.correction).length,merged:d.merged,newStores:0},timing:{recognizedMs,ocrMs,baseMs,extractMs,matchMs,dedupeMs,planMs,totalMs:Date.now()-started},ocr:ocr?{provider:ocr.provider||"PaddleOCR",model:ocr.model,jobId:ocr.jobId,lineCount:ocr.lineCount,lowConfidence:ocr.lowConfidence||null,fallback:ocr.fallback||null}:null,createdBy:user.id,createdAt:new Date().toISOString(),requestId,quality,processingRouteId,routeIdAtProcessing:routeId};
   if(!pending.length){order.confirmedAt=order.createdAt;order.confirmedBy=user.id;}
   const validation=validateResult(order);order.validation=validation;if(!validation.valid){const first=validation.errors?.[0]||"校验失败";const codeMap={"缺少运单日期":"WAYBILL_VALIDATION_DATE_MISSING","缺少车辆信息":"WAYBILL_VALIDATION_VEHICLE_MISSING","没有规划门店":"WAYBILL_VALIDATION_STORES_EMPTY","规划结果存在重复门店":"WAYBILL_VALIDATION_DUPLICATE_STORE","规划结果存在无效线路顺序":"WAYBILL_VALIDATION_ROUTE_ORDER_INVALID","规划结果存在重复线路顺序":"WAYBILL_VALIDATION_ROUTE_ORDER_DUPLICATE","线路顺序不连续":"WAYBILL_VALIDATION_ROUTE_ORDER_GAP"};return failProcess(codeMap[first]||"WAYBILL_VALIDATION_FAILED","运单规划结果校验失败："+first,422,{recoverable:true,action:"RESUBMIT",hint:"运单规划结果校验失败："+first,validation})}order.diagnostics={matchMode:hasRouteBase?"ROUTE_BASE":"GLOBAL_LEARNING",baseStoreCount:baseStores.length,rawExtractCount,extractCount:extracted.stores.length,splitExtractCount,rawExtractItems,extractItems:extracted.stores.map((s,i)=>({index:i+1,rawName:s.rawName,name:s.name,storeId:s.storeId||null})),localMatchedCount:locallyMatched.filter(x=>!x.pending).length,localPendingCount:locallyMatched.filter(x=>x.pending).length,localPendingItems:locallyMatched.filter(x=>x.pending).map(x=>({rawName:x.rawName,candidates:x.candidates||[]})),globalMatchedCount:matched.filter(x=>!x.pending&&(x.matchMethod==="global-alias"||x.matchMethod==="global-identity")).length,globalPendingCount:hasRouteBase?0:matched.filter(x=>x.pending).length,finalPendingCount:pending.length,dedupeBefore:matched.length,dedupeAfter:d.items.length,merged:d.merged,dedupeConflicts:d.conflicts,dedupeRemoved:d.removed,correctionItems:planned.filter(x=>x.correction).map((s,i)=>({rawName:s.rawName,name:s.name,storeId:s.storeId||null,matchMethod:s.matchMethod||null})),plannedCount:planned.length,finalCount:order.stores.length,finalItems:planned.map((s,i)=>({index:i+1,rawName:s.rawName,name:s.name,storeId:s.storeId||null,pending:!!s.pending,matchMethod:s.matchMethod||null,routeOrder:s.routeOrder,matchConfidence:s.matchConfidence||null})),requestId,quality};
+  return await saveWaybill(order, requestId, false);
+async function saveWaybill(order, requestId, resumed){
+  const routeId=order.routeId;
+  const quality=order.quality;
   emit(96,"正在保存运单");
   order.businessFingerprint=await businessFingerprint(order);
   const fingerprintKey="zp:waybill:fingerprint:"+order.businessFingerprint;
@@ -245,7 +256,10 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
   if(Array.isArray(saveResult)&&saveResult.length>=2){reason=String(saveResult[0]);savedId=String(saveResult[1])}
   else if(typeof saveResult==="string"&&saveResult!==order.id){reason="FINGERPRINT";savedId=saveResult}
   if(reason==="NEW"){
-    emit(100,"处理完成"); await recordWaybillLifecycle(env, order, {requestId, rawExtractCount, matched, pending, d}); await finishProc(env, requestId, order.id); return json({success:true,waybill:order,pipeline:order.pipeline,summary:order.summary,indexSync:"OK",quality,requestId});
+    emit(100,"处理完成");
+    if(resumed){ await appendWaybillEvent(env, order.id, {event:"WAYBILL_RESUMED_SAVE",stage:"SAVED",requestId,id:order.id,qualityLevel:order.quality?.level,qualityFlags:order.quality?.flags||[]}); }
+    else { await recordWaybillLifecycle(env, order, {requestId, rawExtractCount, matched, pending, d}); }
+    await finishProc(env, requestId, order.id); return json({success:true,waybill:order,pipeline:order.pipeline,summary:order.summary,indexSync:"OK",quality,requestId});
   }
   const existingRaw=await command(env,["GET","zp:waybill:"+savedId]);
   if(existingRaw){
@@ -254,7 +268,8 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
     await appendWaybillEvent(env, existingOrder.id, {event:"WAYBILL_IDEMPOTENT",stage:"SAVED",requestId,reuse:existingOrder.id,dedupe:reason});
     await finishProc(env, requestId, existingOrder.id); return json({success:true,waybill:existingOrder,idempotent:true,dedupe:reason,indexSync:"OK",quality,requestId});
   }
-  return failProcess("WAYBILL_DEDUPE_LOOKUP_FAILED","已存在的运单记录丢失，请重试",409,{recoverable:true,action:"RETRY_SAVE",hint:"已存在的运单记录丢失，请重试保存"});
+  return failProcess("WAYBILL_DEDUPE_LOOKUP_FAILED","已存在的运单记录丢失，请重试",409,{recoverable:true,action:"RETRY_SAVE",hint:"已存在的运单记录丢失，请重试保存",order});
+}
 }
 
 export async function onRequestPost({request,env}){
