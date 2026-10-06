@@ -5,6 +5,7 @@ import {canUseRoute,isSystemAdmin} from "../_permissions.js";
 import {canReadWaybill} from "../_waybill-acl.js";
 import {listWaybillEvents} from "./_waybill-events.js";
 import {getProc} from "./_waybill-proc.js";
+import {scanConsistency,repairConsistency} from "./_consistency.js";
 
 const clean=v=>String(v??"").trim();
 const parse=v=>{try{return typeof v==="string"?JSON.parse(v):v}catch{return null}};
@@ -37,6 +38,15 @@ export async function onRequestGet({request,env}){
     const authorizedProc=isAdmin||ticket.userId===user.id||(ticket.routeId&&allowedRoutes.includes(ticket.routeId));
     if(!authorizedProc)return json({success:false,error:"无权查看该处理票据"},403);
     return json({success:true,requestId:requestedProc,procTicket:ticket});
+  }
+  // 数据一致性自检（P1.5）：只读扫描索引/去重/指纹/事件链/主记录的引用完整性，输出可解释差异报告（不改动任何数据）。
+  const wantCheck=clean(url.searchParams.get("check"));
+  if(wantCheck==="consistency"){
+    const all=isAdmin&&clean(url.searchParams.get("all"))==="1";
+    if(!isAdmin&&!routeId)return json({success:false,error:"无权查看运单诊断"},403);
+    if(isAdmin&&!routeId&&!all)return json({success:false,error:"管理员诊断需指定 routeId 或 all=1"},400);
+    const report=await scanConsistency(env,{routeId:all?null:routeId,all});
+    return json({success:true,scope:all?"ALL":routeId,...report});
   }
   if(isAdmin&&!routeId)return json({success:false,error:"管理员诊断需指定 routeId"},400);
   if(!routeId||!allowedRoutes.includes(routeId))return json({success:false,error:"无权诊断该线路"},403);
@@ -80,4 +90,32 @@ export async function onRequestGet({request,env}){
 
   found.sort((a,b)=>String(b.createdAt||"").localeCompare(String(a.createdAt||"")));
   return json({success:true,routeId,date:date||null,vehicle:vehicle||null,count:found.length,waybills:found});
+}
+
+/**
+ * 数据一致性安全修复（P1.5，仅管理员）。
+ * 先扫描，再仅应用「自动修复」项（删除悬空引用 / 按主记录补回缺失索引），绝不触碰主记录或 MANUAL/INFO 项。
+ * 默认扫描全部线路（all），可指定 routeId 限定单线。
+ */
+export async function onRequestPost({request,env}){
+  const user=await currentUser(request,env);
+  if(!user)return json({success:false,error:"未登录"},401);
+  if(!isSystemAdmin(user))return json({success:false,error:"仅管理员可执行一致性修复"},403);
+  const url=new URL(request.url);
+  const action=clean(url.searchParams.get("action"));
+  if(action!=="repair-consistency")return json({success:false,error:"未知操作"},400);
+  const routeId=clean(url.searchParams.get("routeId"));
+  const all=routeId?false:true;
+  const report=await scanConsistency(env,{routeId:all?null:routeId,all});
+  const result=await repairConsistency(env,report.issues);
+  return json({
+    success:true,
+    scope:all?"ALL":routeId,
+    scanned:report.scanned,
+    repairedCount:result.repairedCount,
+    skippedCount:result.skippedCount,
+    repaired:result.repaired,
+    skipped:result.skipped,
+    remainingManual:report.issues.filter(i=>!i.fix).map(i=>({type:i.type,waybillId:i.waybillId||null,key:i.key||null}))
+  });
 }
