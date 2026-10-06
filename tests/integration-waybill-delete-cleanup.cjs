@@ -11,6 +11,11 @@
 //   (1) 删除最新运单 → 主记录/索引/事件链/日去重键/业务指纹键 全部归零；
 //   (2) 删除一个被「覆盖」的旧单（指纹键/日去重键已改派给新单）→ 这两个键不误删；
 //   (3) 删除后同内容重传 → 不被 stale 孤儿卡住，正常落库且去重键/指纹键指向新单。
+//
+// ⚠️ 已知覆盖盲区（2026-10-07 由线上巡检报告暴露）：本用例手工组装记录并**不经过 confirm.js**，
+// 因此隐含假设「一张运单只有一个业务指纹键」——而 businessFingerprint 含门店 pending 标记，
+// 确认补齐待定门店会让指纹漂移，旧键继续指向本单并成为遗留孤儿（线上实测 8 条）。
+// 该漂移路径由 tests/integration-fingerprint-drift.cjs 专门覆盖，改动 fingerprint 逻辑时请一并运行。
 const { pathToFileURL } = require("url");
 const { MiniRedis, makeUpstash } = require("./_mini-redis.cjs");
 

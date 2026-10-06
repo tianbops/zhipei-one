@@ -17,6 +17,30 @@ function canConfirmWaybill(user,order){
  // 否则带班上传后出现待定门店将无人能确认，流程卡死。
  return canMaintainRoute(user,order.routeId)||(!!order.createdBy&&order.createdBy===user.id);
 }
+/**
+ * 指纹漂移回收（2026-10-07 生产实测发现）。
+ * businessFingerprint 的入参包含每个门店的 pending / routeOrder / storeId，
+ * 确认会把待定门店补齐（pending true→false、补 storeId），于是**指纹必然变化**；
+ * commitScript 会写下新指纹键，但旧指纹键仍指向本单且再无人回收。
+ * 后果：日后删除该运单时，history.js 只清理 record.businessFingerprint（当前那一个），
+ * 旧键就成了「悬空指纹键」——线上巡检实测 8 条，且会持续累积，
+ * 把巡检报告长期污染成噪声（真问题反而被淹没）。
+ *
+ * 安全边界：仅当旧键当前**仍指向本单**才删除；若已被再上传/覆盖链改派给别的运单，绝不动，
+ * 以免破坏 process.js 的幂等去重链（与 history.js 删除清理的保护策略一致）。
+ */
+async function retireStaleFingerprintKey(env, { prevFingerprint, nextFingerprint, ownerId }) {
+  const prev = clean(prevFingerprint), next = clean(nextFingerprint);
+  if (!prev || prev === next) return false; // 未漂移时不动作（该键正被本次提交复用）
+  const key = "zp:waybill:fingerprint:" + prev;
+  try {
+    const ref = await command(env, ["GET", key]);
+    if (String(ref ?? "") !== String(ownerId || "")) return false; // 已改派他人，保护幂等链
+    await command(env, ["DEL", key]);
+    return true;
+  } catch { return false; } // 清理失败不影响确认主流程
+}
+
 async function loadBase(env,id){const raw=await get(env,"route:"+id+":base");if(!raw)throw Object.assign(new Error("线路数据资料尚未建立"),{code:"BASE_NOT_FOUND"});let x;try{x=typeof raw==="string"?JSON.parse(raw):raw}catch{throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"})}if(!x||!Array.isArray(x.stores))throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"});return {...x,routeId:id}}
 // 读取运单主记录（zp:waybill:<id>）。此前 confirm.js 引用了未定义的 load，导致确认链路运行时报错，
 // 此处补全与 base.js/learning.js 同构的本地实现。
@@ -137,6 +161,9 @@ export async function onRequestPost({request,env}){
   }
   const finalStores=ordered.map((s,i)=>({...s,routeOrder:i+1}));
   const pending=finalStores.filter(s=>s.pending).length;
+  // 指纹失漏回收：确认会把待定门店补齐，指纹必然漂移；旧键会在删除本单后变成悬空指纹键。
+  // 必须在 order.stores 被 finalStores 覆盖**之前**记下旧指纹。参见 retireStaleFingerprintKey 注释。
+  const prevFingerprint=clean(order.businessFingerprint);
   order.stores=finalStores;order.stage=pending?"PLANNED":"CONFIRMED";order.summary={...(order.summary||{}),total:finalStores.length,matched:finalStores.length-pending,pending,correction:finalStores.filter(s=>s.correction).length,merged:(order.summary?.merged||0)+merged,newStores:finalStores.filter(s=>s.matchMethod==="confirmed-new").length};
   const confirmedNow=new Date().toISOString();if(pending===0){order.confirmedAt=confirmedNow;order.confirmedBy=user.id;}else{order.lastConfirmedAt=confirmedNow;order.lastConfirmedBy=user.id;}order.confirmRequestId=confirmRequestId||null;
   if(learned.length&&!isTempRoute(order.routeId)){base.version=(Number(base.version)||1)+1;base.updatedAt=new Date().toISOString();base.updatedBy=user.id}
@@ -147,6 +174,9 @@ export async function onRequestPost({request,env}){
   const commitScript='local okOrder,order=pcall(cjson.decode,ARGV[1]); if not okOrder or type(order)~="table" then return 2 end; local rawDone=redis.call("GET",KEYS[2]); if rawDone then return 3 end; local existingFingerprint=redis.call("GET",KEYS[6]); if existingFingerprint and existingFingerprint~=order.id then return 7 end; local okItems,items=pcall(cjson.decode,ARGV[2]); if not okItems or type(items)~="table" then return 4 end; for _,item in ipairs(items) do if type(item)~="table" or type(item.field)~="string" or item.field=="" or type(item.value)~="string" or item.value=="" then return 6 end end; if ARGV[3]~="" then local okBase,base=pcall(cjson.decode,ARGV[3]); if not okBase or type(base)~="table" then return 5 end end; if ARGV[3]~="" then redis.call("SET",KEYS[4],ARGV[3]) end; redis.call("SET",KEYS[1],ARGV[1]); redis.call("SET",KEYS[2],"1"); redis.call("SET",KEYS[6],order.id); for _,item in ipairs(items) do redis.call("HSET",KEYS[3],item.field,item.value) end; if ARGV[4]~="" then redis.call("SADD",KEYS[5],order.id) end; return 1';
   const commitResult=await command(env,["EVAL",commitScript,"6","zp:waybill:"+order.id,"zp:"+doneKey,"zp:waybill:"+order.id+":learning-repair","zp:route:"+order.routeId+":base",indexKey||"zp:waybills:noop","zp:waybill:fingerprint:"+order.businessFingerprint,JSON.stringify(order),JSON.stringify(learningEntries),basePayload,indexKey?"1":"",confirmedNow,order.businessFingerprint]);
   if(Number(commitResult)===3){const committed=await load(env,waybillId);if(!committed)throw Object.assign(new Error("运单不存在"),{code:"WAYBILL_NOT_FOUND"});order=committed;let learning=await retryLearningRepairs(env,waybillId,user.id);await appendWaybillEvent(env,waybillId,{event:"WAYBILL_ALREADY_CONFIRMED",stage:"CONFIRM",requestId:order.requestId||null,userId:user.id});if(routeBaseLock){await releaseLock(env,routeBaseLock);routeBaseLock=null}await releaseLock(env,waybillLock);waybillLock=null;await releaseLock(env,requestLock);requestLock=null;return json({success:true,waybill:order,learning:learning==="RECORDED"?"ALREADY_CONFIRMED":"DEFERRED"});}if(Number(commitResult)!==1)throw new Error("WAYBILL_COMMIT_FAILED");
+  // 指纹漂移回收：只在提交成功后执行——提交失败时保留原状，仍可安全重试。详见 retireStaleFingerprintKey 注释。
+  const retiredFp=await retireStaleFingerprintKey(env,{prevFingerprint,nextFingerprint:order.businessFingerprint,ownerId:order.id});
+  if(retiredFp)await appendWaybillEvent(env, order.id, {event:"WAYBILL_IDENTITY_RETIRED",stage:"CONFIRM",requestId:confirmRequestId||null,userId:user.id,reason:"FINGERPRINT_DRIFT"});
   let learningStatus=learned.length?await retryLearningRepairs(env,order.id,user.id):"NONE";
   await appendWaybillEvent(env, order.id, {event:"CONFIRM_COMPLETED",stage:"CONFIRM",requestId:order.requestId||null,userId:user.id,confirmedBy:user.id,pending:finalStores.filter(s=>s.pending).length,learned:learned.length});
   if(learned.length)await appendWaybillEvent(env, order.id, {event:"LEARNING_COMPLETED",stage:"LEARNING",requestId:order.requestId||null,userId:user.id,learned:learned.length});
