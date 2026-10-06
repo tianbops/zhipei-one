@@ -6,6 +6,7 @@ import {canReadWaybill} from "../_waybill-acl.js";
 import {listWaybillEvents} from "./_waybill-events.js";
 import {getProc} from "./_waybill-proc.js";
 import {scanConsistency,repairConsistency} from "./_consistency.js";
+import {computeStats} from "./_stats.js";
 
 const clean=v=>String(v??"").trim();
 const parse=v=>{try{return typeof v==="string"?JSON.parse(v):v}catch{return null}};
@@ -47,6 +48,16 @@ export async function onRequestGet({request,env}){
     if(isAdmin&&!routeId&&!all)return json({success:false,error:"管理员诊断需指定 routeId 或 all=1"},400);
     const report=await scanConsistency(env,{routeId:all?null:routeId,all});
     return json({success:true,scope:all?"ALL":routeId,...report});
+  }
+  // 运营统计（1.3）：只读聚合健康度（待定率 / 低置信率 / OCR 超时失败率 / 确认率 / 质量门分布），支撑长期稳定运行。
+  const wantStats=clean(url.searchParams.get("stats"));
+  if(wantStats==="1"){
+    const all=isAdmin&&clean(url.searchParams.get("all"))==="1";
+    const days=Number(url.searchParams.get("days"))||30;
+    if(!isAdmin&&!routeId)return json({success:false,error:"无权查看运单诊断"},403);
+    if(isAdmin&&!routeId&&!all)return json({success:false,error:"管理员诊断需指定 routeId 或 all=1"},400);
+    const stats=await computeStats(env,{routeId:all?null:routeId,all,days});
+    return json({success:true,...stats});
   }
   if(isAdmin&&!routeId)return json({success:false,error:"管理员诊断需指定 routeId"},400);
   if(!routeId||!allowedRoutes.includes(routeId))return json({success:false,error:"无权诊断该线路"},403);
