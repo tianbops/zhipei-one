@@ -13,7 +13,7 @@
  *   主记录   zp:waybill:<id>                       → quality / stores.matchConfidence / pending / ocr.lowConfidence
  *   处理票据 zp:waybill:proc:<requestId>           → 近 15min 处理终态分布（OCR 可靠性）
  */
-import { command } from "../_redis.js";
+import { command, pipeline } from "../_redis.js";
 import { effectiveStage } from "./_waybill-proc.js";
 
 const WB_PREFIX = "zp:waybill:";
@@ -22,14 +22,43 @@ const INDEX_SUFFIX = ":waybills:";
 const clean = v => String(v ?? "").trim();
 const MAX_SCANNED = 5000;
 
+// Cloudflare Workers 每请求子请求上限约 50（免费版），每条 Redis 调用算 1 次：
+// 旧实现「按窗口日期逐个 SMEMBERS」（days=90 就是 90 次）+「全键 SCAN + 逐键 GET/SMEMBERS」，
+// 与诊断列表 / 一致性巡检是同一类缺陷（2026-10-07 Error 1101）。这里统一批量化。
+const SCAN_COUNT = 500;
+const MGET_BATCH = 100;
+const PIPELINE_BATCH = 50;
+
 async function scanAll(env, pattern) {
   const out = [];
   let cursor = "0";
   do {
-    const r = await command(env, ["SCAN", cursor, "MATCH", pattern, "COUNT", "200"]);
+    const r = await command(env, ["SCAN", cursor, "MATCH", pattern, "COUNT", String(SCAN_COUNT)]);
     cursor = String(r?.[0] ?? "0");
     for (const k of Array.isArray(r?.[1]) ? r[1] : []) out.push(String(k));
   } while (cursor !== "0");
+  return out;
+}
+
+/** 批量 SMEMBERS：pipeline 一次请求跑多条命令 */
+async function smembersMap(env, keys) {
+  const out = new Map();
+  for (let i = 0; i < keys.length; i += PIPELINE_BATCH) {
+    const chunk = keys.slice(i, i + PIPELINE_BATCH);
+    const res = await pipeline(env, chunk.map(k => ["SMEMBERS", k]));
+    for (let j = 0; j < chunk.length; j++) out.set(chunk[j], Array.isArray(res?.[j]) ? res[j] : []);
+  }
+  return out;
+}
+
+/** 批量 MGET：N 个子请求压到 ceil(N/100)，返回按入参顺序排列的 raw 列表 */
+async function mgetList(env, keys) {
+  const out = [];
+  for (let i = 0; i < keys.length; i += MGET_BATCH) {
+    const chunk = keys.slice(i, i + MGET_BATCH);
+    const raws = await command(env, ["MGET", ...chunk]);
+    for (const r of (Array.isArray(raws) ? raws : [])) out.push(r);
+  }
   return out;
 }
 
@@ -72,21 +101,22 @@ export async function computeStats(env, { routeId = null, all = false, days = 30
     for (const id of arr) { indexEntriesScanned.value++; if (ids.size >= MAX_SCANNED) { truncated.value = true; return; } ids.add(id); }
   };
   if (scopeRoute === null) {
-    const indexKeys = await scanAll(env, INDEX_PREFIX + "*" + INDEX_SUFFIX + "*");
-    for (const key of indexKeys) {
+    const indexKeys = (await scanAll(env, INDEX_PREFIX + "*" + INDEX_SUFFIX + "*")).filter(key => {
       const body = key.slice(INDEX_PREFIX.length);
       const idx = body.indexOf(INDEX_SUFFIX);
-      if (idx < 0) continue;
-      const date = body.slice(idx + INDEX_SUFFIX.length);
-      if (!inWindow(date)) continue;
-      const members = await command(env, ["SMEMBERS", key]);
-      addIds(Array.isArray(members) ? members.map(clean).filter(Boolean) : []);
+      return idx >= 0 && inWindow(body.slice(idx + INDEX_SUFFIX.length));
+    });
+    const members = await smembersMap(env, indexKeys);           // 旧：逐键 SMEMBERS（O(N)）
+    for (const key of indexKeys) {
+      addIds(Array.isArray(members.get(key)) ? members.get(key).map(clean).filter(Boolean) : []);
       if (truncated.value) break;
     }
   } else {
+    const keys = win.dates.map(d => INDEX_PREFIX + scopeRoute + INDEX_SUFFIX + d);
+    const members = await smembersMap(env, keys);                 // 旧：窗口内每天 1 次调用（days=90 → 90 次）
     for (const date of win.dates) {
-      const members = await command(env, ["SMEMBERS", INDEX_PREFIX + scopeRoute + INDEX_SUFFIX + date]);
-      addIds(Array.isArray(members) ? members.map(clean).filter(Boolean) : []);
+      const list = members.get(INDEX_PREFIX + scopeRoute + INDEX_SUFFIX + date);
+      addIds(Array.isArray(list) ? list.map(clean).filter(Boolean) : []);
       if (truncated.value) break;
     }
   }
@@ -130,9 +160,9 @@ export async function computeStats(env, { routeId = null, all = false, days = 30
   // 3. 处理票据（近 15min，TTL 自动清理）→ OCR 可靠性 / 可恢复失败率
   const procKeys = await scanAll(env, WB_PREFIX + "proc:*");
   const proc = { total: 0, byStage: { PROCESSING: 0, STALLED: 0, DONE: 0, TIMEOUT: 0, FAILED: 0, CANCELLED: 0, OTHER: 0 }, recoverableFailures: 0 };
-  for (const key of procKeys) {
-    const raw = await command(env, ["GET", key]);
-    let t = parseWaybill(raw);
+  const procRaws = await mgetList(env, procKeys);                 // 旧：逐键 GET（O(N)）
+  for (let i = 0; i < procKeys.length; i++) {
+    const t = parseWaybill(procRaws[i]);
     if (!t) continue;
     if (scopeRoute && clean(t.routeId) !== scopeRoute) continue; // 统计作用域贯穿处理票据：普通用户仅本线路终态计入
     proc.total++;

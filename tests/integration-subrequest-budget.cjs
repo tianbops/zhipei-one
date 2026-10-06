@@ -81,6 +81,24 @@ function seedWaybills(from, to) {
   check("增量 ≤ 2（旧的逐张模式增量约 " + (N1 * 2) + "）", Math.abs(b.sub - a.sub) <= 2, `${a.sub} → ${b.sub}`);
   check("200% 数据量下未退化到 N 倍子请求", b.sub < N1, "sub=" + b.sub + " vs N=" + (N1 * 2));
 
+  console.log("【3】运营统计 ?stats=1：窗口日期不得再变成「逐天 1 次 Redis 调用」");
+  // 旧实现 scoped 路径按窗口每天 1 次 SMEMBERS（days=90 → 90 次，必然爆预算），
+  // 全量路径还会叠上「全键 SCAN + 逐键 GET」。这里断言窗口拉到 90 天仍然便宜。
+  // 注意：必须复用文件顶部包裹 global.fetch 的 subrequests 计数器，另起变量会恒为 0（假通过）
+  const countFetch = async fn => { subrequests = 0; const r = await fn(); return { r, sub: subrequests }; };
+  const statMod = await import(baseDir + "waybills/_stats.js");
+  const statsFor = days => countFetch(() => statMod.computeStats(env, { routeId: R, days }));
+  const s30 = await statsFor(30);
+  const s90 = await statsFor(90);
+  check("days=30 统计成功", s30.r.scannedWaybills > 0, "scannedWaybills=" + s30.r.scannedWaybills);
+  check("days=30 子请求在预算内", s30.sub <= BASE_BUDGET, "subrequests=" + s30.sub);
+  check("窗口从 30 天拉到 90 天，子请求数不得增长到 3 倍（旧实现 ≈ 天数量级）",
+    s90.sub <= BASE_BUDGET && s90.sub <= Math.max(s30.sub + 2, s30.sub * 1.5), s30.sub + " → " + s90.sub);
+  const sAll = await countFetch(() => statMod.computeStats(env, { all: true, days: 90 }));
+  check("全量统计同样在预算内", sAll.sub <= BASE_BUDGET, "subrequests=" + sAll.sub);
+  check("全量统计结果正确（覆盖全部线路）", sAll.r.scannedWaybills >= s90.r.scannedWaybills,
+    "all=" + sAll.r.scannedWaybills + " vs scoped=" + s90.r.scannedWaybills);
+
   console.log("\nSUBREQUEST_BUDGET 集成：通过 " + pass + " / 失败 " + fail);
   process.exit(fail ? 1 : 0);
 })();
