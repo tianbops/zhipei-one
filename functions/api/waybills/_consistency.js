@@ -14,7 +14,7 @@
  *   事件链   zp:waybill:<id>:events                (List)
  *   处理票据 zp:waybill:proc:<requestId>           (TTL 15min)
  */
-import { command } from "../_redis.js";
+import { command, pipeline } from "../_redis.js";
 
 const WB_PREFIX = "zp:waybill:";
 const INDEX_PREFIX = "zp:route:";
@@ -34,15 +34,71 @@ const cnDateOf = iso => {
   return Number.isFinite(t) ? cnDateParts(new Date(t)) : null;
 };
 
-async function scanAll(env, pattern) {
-  const out = [];
-  let cursor = "0";
+// ====== Cloudflare Workers 资源边界护栏（2026-10-07 生产事故修） ======
+// Workers 免费版每请求子请求上限约 50。巡检走两条成本线：
+//   ① SCAN 迭代：每次迭代 = 1 个子请求；键空间大 + MATCH 稀疏时迭代次数 ≈ 键空间/COUNT
+//   ② 逐键读取：GET / SMEMBERS 每个键 = 1 个子请求
+// 旧实现两条都是 O(N)：先是逐键 GET/SMEMBERS，再叠加无上限的稀疏 SCAN，
+// 生产数据量下必然爆预算 → Worker 抛异常 → Cloudflare Error 1101。
+// 因此这里同时收紧三者：COUNT 放大、MGET/pipeline 批量、**全局预算 + 相位数上限**。
+// 预算耗尽时不等平台掐断，而是主动截断并在报告里标注 degraded —— 宁可给出「可能不完整」的结论，
+// 也不能让一致性工具沉默地返回一个「什么问题都没有」的假绿灯。
+const SUBREQUEST_LIMIT = 40;   // 留 10 给鉴权 / 日志 / 响应
+const SCAN_COUNT = 500;        // 单次 SCAN 覆盖的槽位数，越大迭代越少（一次迭代 = 一次子请求）
+const KEY_CAP = 5000;          // 单模式返回键上限，防御内存与 CPU 时间
+const MGET_BATCH = 100;
+const PIPELINE_BATCH = 50;
+const SCAN_ITER_CAP_WAYBILL = 12;
+const SCAN_ITER_CAP_INDEX = 8;
+
+function makeBudget(max = SUBREQUEST_LIMIT) {
+  return {
+    max, used: 0, exhausted: false,
+    take(n = 1) { if (this.used + n > this.max) { this.exhausted = true; return false; } this.used += n; return true; }
+  };
+}
+
+/** 预算受控的 SCAN：迭代超预算立即停止并声明 complete=false，绝不把 worker 拖到 1101 */
+async function scanKeys(env, pattern, budget, { cap = KEY_CAP, iterCap = Infinity } = {}) {
+  const keys = [];
+  let complete = true, cursor = "0", iter = 0;
   do {
-    const r = await command(env, ["SCAN", cursor, "MATCH", pattern, "COUNT", "200"]);
+    if (iter >= iterCap || !budget.take(1)) { complete = false; break; }
+    const r = await command(env, ["SCAN", cursor, "MATCH", pattern, "COUNT", String(SCAN_COUNT)]);
     cursor = String(r?.[0] ?? "0");
-    for (const k of Array.isArray(r?.[1]) ? r[1] : []) out.push(String(k));
+    iter++;
+    for (const k of Array.isArray(r?.[1]) ? r[1] : []) {
+      keys.push(String(k));
+      if (keys.length >= cap) { cursor = "0"; complete = false; break; }
+    }
   } while (cursor !== "0");
-  return out;
+  return { keys, complete };
+}
+
+/** 批量 MGET：N 个子请求压到 ceil(N/100)，返回 Map(key -> raw) */
+async function mgetMap(env, keys, budget) {
+  const out = new Map();
+  let complete = true;
+  for (let i = 0; i < keys.length; i += MGET_BATCH) {
+    const chunk = keys.slice(i, i + MGET_BATCH);
+    if (!budget.take(1)) { complete = false; break; }
+    const raws = await command(env, ["MGET", ...chunk]);
+    for (let j = 0; j < chunk.length; j++) out.set(chunk[j], Array.isArray(raws) ? raws[j] : null);
+  }
+  return { map: out, complete };
+}
+
+/** 批量 SMEMBERS：pipeline 一次请求跑多条命令 */
+async function smembersMap(env, keys, budget) {
+  const out = new Map();
+  let complete = true;
+  for (let i = 0; i < keys.length; i += PIPELINE_BATCH) {
+    const chunk = keys.slice(i, i + PIPELINE_BATCH);
+    if (!budget.take(1)) { complete = false; break; }
+    const res = await pipeline(env, chunk.map(k => ["SMEMBERS", k]));
+    for (let j = 0; j < chunk.length; j++) out.set(chunk[j], Array.isArray(res?.[j]) ? res[j] : []);
+  }
+  return { map: out, complete };
 }
 
 const parseWaybill = raw => {
@@ -73,31 +129,63 @@ export async function scanConsistency(env, { routeId = null, all = false } = {})
   const scopeRoute = all ? null : clean(routeId);
   const inScope = r => scopeRoute === null || clean(r) === scopeRoute;
 
+  const budget = makeBudget();
   // 1. 收集所有运单命名空间键
-  const wbKeys = await scanAll(env, WB_PREFIX + "*");
+  let complete = true;
+  const wbScan = await scanKeys(env, WB_PREFIX + "*", budget, { iterCap: SCAN_ITER_CAP_WAYBILL });
+  complete = complete && wbScan.complete;
+  const wbKeys = wbScan.keys;
   const waybills = new Map();   // id -> parsed
   const eventIds = new Set();   // 有事件链的 waybill id
   const dedupeKeys = [];        // {key, pointsTo}
   const fpKeys = [];            // {key, pointsTo}
   const procTickets = [];       // {key}
+  const primaryIds = [], dedupeKeyList = [], fpKeyList = [];
   for (const key of wbKeys) {
     const rest = key.slice(WB_PREFIX.length);
     if (rest.endsWith(":events")) { eventIds.add(rest.slice(0, -(":events".length))); continue; }
-    if (rest.startsWith("dedupe:")) { const id = await command(env, ["GET", key]); dedupeKeys.push({ key, pointsTo: clean(id) }); continue; }
-    if (rest.startsWith("fingerprint:")) { const id = await command(env, ["GET", key]); fpKeys.push({ key, pointsTo: clean(id) }); continue; }
+    if (rest.startsWith("dedupe:")) { dedupeKeyList.push(key); continue; }
+    if (rest.startsWith("fingerprint:")) { fpKeyList.push(key); continue; }
     if (rest.startsWith("proc:")) { procTickets.push({ key }); continue; }
-    const id = rest; // 主记录
-    if (waybills.has(id)) continue;
-    const w = parseWaybill(await command(env, ["GET", key]));
-    if (w) waybills.set(id, w);
+    if (rest.includes(":")) continue; // 其余子命名空间（如 learning-repair）不属本巡检范围
+    primaryIds.push(rest);
   }
+  // 批量读取（旧实现为逐键 GET，子请求数 O(N) → 1101）
+  const primaryRead = await mgetMap(env, primaryIds.map(id => WB_PREFIX + id), budget);
+  complete = complete && primaryRead.complete;
+  for (const id of primaryIds) { const w = parseWaybill(primaryRead.map.get(WB_PREFIX + id)); if (w) waybills.set(id, w); }
+  const dedupeRead = await mgetMap(env, dedupeKeyList, budget);
+  complete = complete && dedupeRead.complete;
+  for (const key of dedupeKeyList) dedupeKeys.push({ key, pointsTo: clean(dedupeRead.map.get(key)) });
+  const fpRead = await mgetMap(env, fpKeyList, budget);
+  complete = complete && fpRead.complete;
+  for (const key of fpKeyList) fpKeys.push({ key, pointsTo: clean(fpRead.map.get(key)) });
 
   const issues = [];
   const MAX = 600;
   const push = it => { if (issues.length < MAX) issues.push(it); };
 
   // 2. 索引集合
-  const indexKeys = await scanAll(env, INDEX_PREFIX + "*" + INDEX_SUFFIX + "*");
+  // 限定线路时把 SCAN 收窄到该线路的索引前缀——不限定时才扫全部线路（仅运维）
+  const indexPattern = scopeRoute === null
+    ? INDEX_PREFIX + "*" + INDEX_SUFFIX + "*"
+    : INDEX_PREFIX + scopeRoute + INDEX_SUFFIX + "*";
+  const idxScan = await scanKeys(env, indexPattern, budget, { iterCap: SCAN_ITER_CAP_INDEX });
+  complete = complete && idxScan.complete;
+  const indexKeys = idxScan.keys.filter(key => {
+    const body = key.slice(INDEX_PREFIX.length);
+    const idx = body.indexOf(INDEX_SUFFIX);
+    return idx >= 0 && inScope(body.slice(0, idx));
+  });
+  const idxRead = await smembersMap(env, indexKeys, budget);
+  complete = complete && idxRead.complete;
+  const membersMap = idxRead.map;
+  // 「主记录视图」与「索引视图」是否完整：这是**能否做引用完整性判定**的前提。
+  // 键空间被截断时，某个主记录没被读到并不代表它不存在——若照常报 ORPHAN/MISSING，
+  // 就会把「扫不全」伪装成「数据坏了」，诱导运维执行错误的删除修复。
+  // 因此凡依赖「另一侧不存在」的判定，一律在视图不完整时停报，只保留单侧可见即可证实的项。
+  const refsComplete = wbScan.complete && primaryRead.complete;
+  const indexComplete = idxScan.complete && idxRead.complete;
   const indexMembers = new Map(); // `${routeId}|${date}` -> Set(id)
   const indexMeta = [];           // {routeId, date, key}
   const inBadBucket = new Set();  // 已出现在非法日期桶中的运单 id（由 MALFORMED_INDEX_DATE 负责归档）
@@ -108,7 +196,7 @@ export async function scanConsistency(env, { routeId = null, all = false } = {})
     const rId = body.slice(0, idx);
     const date = body.slice(idx + INDEX_SUFFIX.length);
     if (!inScope(rId)) continue;
-    const members = await command(env, ["SMEMBERS", key]);
+    const members = membersMap.get(key);
     const set = new Set(Array.isArray(members) ? members.map(clean).filter(Boolean) : []);
     // 空/非法日期桶（如 zp:route:<routeId>:waybills: —— OCR 未识别日期的历史运单所在）：
     // 历史查询按 YYYY-MM-DD 枚举、诊断列表按日期格式过滤，两处都取不到，运单会「凭空消失」。
@@ -134,6 +222,7 @@ export async function scanConsistency(env, { routeId = null, all = false } = {})
     for (const member of indexMembers.get(rId + "|" + date) || []) {
       const w = waybills.get(member);
       if (!w) {
+        if (!refsComplete) continue; // 主记录视图不完整，「找不到」不能当作「不存在」
         push({ type: "ORPHAN_INDEX_ENTRY", severity: "auto", routeId: rId, date, waybillId: member,
           detail: `索引 ${key} 含成员 ${member}，但主记录 zp:waybill:${member} 不存在`,
           fix: ["SREM", key, member] });
@@ -170,6 +259,7 @@ export async function scanConsistency(env, { routeId = null, all = false } = {})
     const idxKey = INDEX_PREFIX + w.routeId + INDEX_SUFFIX + date;
     const set = indexMembers.get(w.routeId + "|" + date);
     if (!set || !set.has(id)) {
+      if (!(refsComplete && indexComplete)) continue; // 视图不全时报告 MISSING 只会误导
       push({ type: "MISSING_INDEX_ENTRY", severity: "auto", routeId: w.routeId, date, waybillId: id,
         detail: `主记录 ${id}（${w.routeId} ${date}）未在索引 ${idxKey} 中，列表查询将遗漏`,
         fix: ["SADD", idxKey, id] });
@@ -179,7 +269,7 @@ export async function scanConsistency(env, { routeId = null, all = false } = {})
   // 5. 去重键 / 指纹键 悬空
   for (const { key, pointsTo } of dedupeKeys) {
     if (!pointsTo) continue;
-    if (!waybills.has(pointsTo) && inScopeOfId(pointsTo, waybills, scopeRoute)) {
+    if (!waybills.has(pointsTo) && refsComplete && inScopeOfId(pointsTo, waybills, scopeRoute)) {
       push({ type: "ORPHAN_DEDUPE_KEY", severity: "auto", key, pointsTo,
         detail: `去重键 ${key} 指向不存在的主记录 ${pointsTo}`,
         fix: ["DEL", key] });
@@ -187,7 +277,7 @@ export async function scanConsistency(env, { routeId = null, all = false } = {})
   }
   for (const { key, pointsTo } of fpKeys) {
     if (!pointsTo) continue;
-    if (!waybills.has(pointsTo) && inScopeOfId(pointsTo, waybills, scopeRoute)) {
+    if (!waybills.has(pointsTo) && refsComplete && inScopeOfId(pointsTo, waybills, scopeRoute)) {
       push({ type: "ORPHAN_FINGERPRINT_KEY", severity: "auto", key, pointsTo,
         detail: `指纹键 ${key} 指向不存在的主记录 ${pointsTo}`,
         fix: ["DEL", key] });
@@ -197,7 +287,7 @@ export async function scanConsistency(env, { routeId = null, all = false } = {})
   // 6. 事件链孤儿
   for (const id of eventIds) {
     if (waybills.has(id)) continue;
-    if (inScopeOfId(id, waybills, scopeRoute)) {
+    if (refsComplete && wbScan.complete && inScopeOfId(id, waybills, scopeRoute)) {
       push({ type: "ORPHAN_EVENT_LIST", severity: "auto", waybillId: id, key: WB_PREFIX + id + ":events",
         detail: `事件链 zp:waybill:${id}:events 存在，但主记录 ${id} 不存在`,
         fix: ["DEL", WB_PREFIX + id + ":events"] });
@@ -228,6 +318,14 @@ export async function scanConsistency(env, { routeId = null, all = false } = {})
       fix: null });
   }
 
+  // 9. 扫描完整性：预算耗尽/未跑完键空间时，必须显式声明「结果可能不完整」，
+  //    绝不能沉默地返回 0 问题让运维误判数据健康。
+  if (!complete) {
+    push({ type: "SCAN_TRUNCATED", severity: "info",
+      detail: `本次巡检未完整覆盖 Redis 键空间（已触及平台子请求预算上限 ${SUBREQUEST_LIMIT}），结论可能遗漏问题；请用 routeId 缩小范围后重扫`,
+      fix: null });
+  }
+
   const counts = {};
   for (const it of issues) counts[it.type] = (counts[it.type] || 0) + 1;
   const autoRepairable = issues.filter(i => i.fix).length;
@@ -241,6 +339,9 @@ export async function scanConsistency(env, { routeId = null, all = false } = {})
       procTickets: procTickets.length
     },
     issues,
+    // degraded=true 表示本次结论不完整（截断），运维不得据此判定「数据无问题」
+    degraded: !complete,
+    budget: { limit: SUBREQUEST_LIMIT, used: budget.used, hitsServerlessLimit: budget.exhausted },
     summary: { total: issues.length, autoRepairable, manual: issues.length - autoRepairable, counts, truncated: issues.length >= MAX }
   };
 }

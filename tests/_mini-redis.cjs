@@ -71,20 +71,35 @@ class MiniRedis {
   }
   _get(k) { return this.strings.has(k) ? this.strings.get(k) : null; }
   _set(k, v) { this.strings.set(k, String(v)); return "OK"; }
+  _allKeys() {
+    const set = new Set([...this.strings.keys(), ...this.sets.keys(), ...this.hashes.keys(), ...this.lists.keys()]);
+    return [...set].sort();
+  }
   _scanKeys(pattern) {
     const out = [];
     const p = pattern.replace(/[-/\\^$+?.()|{}]/g, "\\$&").replace(/\*/g, ".*");
     const re = new RegExp("^" + p + "$");
-    for (const k of [...this.strings.keys(), ...this.sets.keys(), ...this.hashes.keys(), ...this.lists.keys()]) {
-      if (re.test(k)) out.push(k);
-    }
-    out.sort();
+    for (const k of this._allKeys()) { if (re.test(k)) out.push(k); }
     return out;
   }
-  _scan(pattern) {
-    // 返回 Redis 原生形状 [cursor, [keys]]（history.js 读 r[0]/r[1]）
-    const keys = this._scanKeys(pattern);
-    return ["0", keys];
+  /**
+   * 真实 Redis SCAN 语义：游标 + COUNT 分页。
+   * 每次调用只在 keyspace 上前进 COUNT 个「槽位」，返回其中匹配 pattern 的键——
+   * 因此「keyspace 大 + pattern 稀疏」时必然产生**多次往返**，每次往返在生产上就是 1 个子请求。
+   * 旧实现（一次返回全部）掩盖了这类成本，导致 2026-10-07 的 Error 1101 在本地测试里完全测不出来。
+   */
+  _scan(cursor, pattern, count) {
+    const p = String(pattern ?? "*").replace(/[-/\\^$+?.()|{}]/g, "\\$&").replace(/\*/g, ".*");
+    const re = new RegExp("^" + p + "$");
+    const all = this._allKeys();
+    const step = Math.max(1, Number(count) || 10);
+    let start = Number(cursor) || 0;
+    if (!Number.isFinite(start) || start < 0) start = 0;
+    if (start >= all.length) return ["0", []];       // 键可能已被删除，游标越过末尾即结束
+    const end = Math.min(start + step, all.length);
+    const matched = [];
+    for (let i = start; i < end; i++) if (re.test(all[i])) matched.push(all[i]);
+    return [end >= all.length ? "0" : String(end), matched];
   }
   command(parts) {
     const cmd = String(parts[0]).toUpperCase();
@@ -105,7 +120,7 @@ class MiniRedis {
       case "SMEMBERS": return this.sets.has(a[0]) ? [...this.sets.get(a[0])] : [];
       case "MGET": return a.map(k => this._get(k));
       case "SCAN": {
-        const [cursor, items] = this._scan(a[2] || "*");
+        const [cursor, items] = this._scan(a[0], a[2] || "*", a[4]);
         return [cursor, items];
       }
       case "HSET": {
@@ -118,9 +133,8 @@ class MiniRedis {
       case "HDEL": { const h = this.hashes.get(a[0]); if (!h) return 0; let n = 0; for (let i = 1; i < a.length; i++) if (h.delete(a[i])) n++; return n; }
       case "HLEN": { const h = this.hashes.get(a[0]); return h ? h.size : 0; }
       case "HSCAN": {
-        const [cursor] = this._scan(a[2] || "*");
         const flat = []; for (const k of this._scanKeys(a[2] || "*")) { const h = this.hashes.get(k); if (h) for (const [f, v] of h) flat.push(f, v); }
-        return [cursor, flat];
+        return ["0", flat];
       }
       case "RPUSH": { const key = a[0]; let l = this.lists.get(key); if (!l) { l = []; this.lists.set(key, l); } for (let i = 1; i < a.length; i++) l.push(a[i]); return l.length; }
       case "LTRIM": { const l = this.lists.get(a[0]); if (!l) return "OK"; let start = Number(a[1]), stop = Number(a[2]); if (stop < 0) stop = l.length + stop; const nw = l.slice(start, stop + 1); this.lists.set(a[0], nw); return "OK"; }

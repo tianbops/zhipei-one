@@ -6,11 +6,12 @@ import {canReadWaybill} from "../_waybill-acl.js";
 import {getProc, failProc, effectiveStage} from "./_waybill-proc.js";
 import {scanConsistency,repairConsistency} from "./_consistency.js";
 import {computeStats} from "./_stats.js";
+import {guard} from "../_safe.js";
 
 const clean=v=>String(v??"").trim();
 const parse=v=>{try{return typeof v==="string"?JSON.parse(v):v}catch{return null}};
 
-export async function onRequestGet({request,env}){
+async function diagnosticGet({request,env}){
   const user=await currentUser(request,env);
   if(!user)return json({success:false,error:"未登录"},401);
   const isAdmin=isSystemAdmin(user);
@@ -158,11 +159,13 @@ export async function onRequestGet({request,env}){
 }
 
 /**
- * 数据一致性安全修复（P1.5，仅管理员）。
- * 先扫描，再仅应用「自动修复」项（删除悬空引用 / 按主记录补回缺失索引），绝不触碰主记录或 MANUAL/INFO 项。
- * 默认扫描全部线路（all），可指定 routeId 限定单线。
+ * 错误兜底（1.1 可靠性）：一致性巡检 / 运营统计 / 列表三族路径都可能触碰
+ * Cloudflare Workers 的子请求上限。被平台掐断时若不加包装，异常会直接冒出 Cloudflare
+ * 的 HTML 错误页（Error 1101），前端 JSON.parse 失败、运维只拿到一个 Ray ID 无从下手。
+ * guard() 把任何漏网异常转成结构化 `{code,error,detail}`，并区分数据服务类失败（503）。
  */
-export async function onRequestPost({request,env}){
+export const onRequestGet=guard(diagnosticGet,"WAYBILL_DIAGNOSTIC_FAILED");
+export const onRequestPost=guard(async ({request,env})=>{
   const user=await currentUser(request,env);
   if(!user)return json({success:false,error:"未登录"},401);
   if(!isSystemAdmin(user))return json({success:false,error:"仅管理员可执行一致性修复"},403);
@@ -183,4 +186,4 @@ export async function onRequestPost({request,env}){
     skipped:result.skipped,
     remainingManual:report.issues.filter(i=>!i.fix).map(i=>({type:i.type,waybillId:i.waybillId||null,key:i.key||null}))
   });
-}
+},"WAYBILL_REPAIR_FAILED");
