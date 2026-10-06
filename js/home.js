@@ -154,6 +154,23 @@ function resetProcessingUI(){
   sourceMenu.hidden=false;processingPanel.hidden=true;
   renderProcessingProgress(0);
 }
+/* ===== 处理失败 → 重试动作映射（纯函数，tests/unit-retry-action.test.mjs 切片验证） =====
+   与后端 process.js 的 failProcess 信封对齐：recoverable && action 才允许前端重试。
+   - autoRetry=true 且复用同一文件：RETRY_OCR / RETRY_SAVE / REPROCESS（点按钮即重跑同一文件）
+   - autoRetry=false：RESUBMIT 需重新选文件（回来源菜单）、RETRY_LATER 仅提示稍后（按钮作关闭用） */
+/* [RETRY-MAP-START] */
+const RETRY_ACTION_INFO={
+  RETRY_OCR:{label:"重新识别",autoRetry:true},
+  RETRY_SAVE:{label:"重试保存",autoRetry:true},
+  REPROCESS:{label:"重新处理",autoRetry:true},
+  RESUBMIT:{label:"重新上传",autoRetry:false},
+  RETRY_LATER:{label:"请稍后重试",autoRetry:false}
+};
+function retryActionInfo(action){
+  if(!action||!RETRY_ACTION_INFO[action])return null;
+  return RETRY_ACTION_INFO[action];
+}
+/* [RETRY-MAP-END] */
 const PROCESS_ERROR_TEXT={
   OCR_RESULT_TIMEOUT:"OCR结果读取超时（已自动重试仍失败），请重新上传重试",
   OCR_TIMEOUT:"OCR识别超时，请稍后重试",
@@ -174,7 +191,7 @@ const PROCESS_ERROR_TEXT={
   DISPATCH_ROUTE_MISSING:"请先在首页选择调度线路",
   WAYBILL_FILE_MISSING:"请选择运单文件"
 };
-function showProcessingError(message, hint){
+function showProcessingError(message, hint, action, recoverable){
   stopProcessingClock();
   if(processingCancelBtn)processingCancelBtn.hidden=true;
   if(processingPanel)processingPanel.hidden=true;
@@ -182,6 +199,9 @@ function showProcessingError(message, hint){
   if(overlay)overlay.classList.add("processing-error-state");
   const text=PROCESS_ERROR_TEXT[message]||message||"处理失败，请重试";
   if(processingErrorMessage)processingErrorMessage.textContent=text+(hint?(" "+hint+" "):"");
+  // 仅当后端声明可恢复且给出了动作时，按钮才是「一键重试」；否则隐藏为关闭按钮
+  lastFailureAction=(recoverable&&action)?action:null;
+  if(processingRetry)processingRetry.textContent=retryActionInfo(lastFailureAction)?.label||"关闭";
   if(processingError)processingError.hidden=false;
 }
 function showProcessingUI(){
@@ -214,7 +234,20 @@ processingCancelBtn?.addEventListener("click",()=>{
   processingCancelBtn.disabled=true;
   try{processingController.abort()}catch{}
 });
-processingRetry?.addEventListener("click",()=>{if(processingFile)return;closeUpload();});
+processingRetry?.addEventListener("click",()=>{
+  if(processingFile)return;   // 处理中禁止重复触发
+  const info=retryActionInfo(lastFailureAction);
+  if(info&&info.autoRetry&&lastProcessingFile){
+    // RETRY_OCR / RETRY_SAVE / REPROCESS：直接复用同一文件重跑，无需重新选择
+    processSelectedFile(lastProcessingFile);
+  }else if(info&&lastFailureAction==="RESUBMIT"){
+    // 需重新选文件：回到来源菜单
+    openUpload();
+  }else{
+    // 不可重试（含非 recoverable）：按钮作关闭用
+    closeUpload();
+  }
+});
 overlay?.addEventListener("click",e=>{if(e.target===overlay)closeUpload()});
 
 async function ensureDispatchRoute(){
@@ -239,9 +272,12 @@ function chooseFile(source){
 document.querySelectorAll(".source-option").forEach(btn=>btn.addEventListener("click",()=>chooseFile(btn.dataset.source)));
 
 let processingFile=false;
+let lastProcessingFile=null;   // 最近一次处理的文件，供「一键重试」复用（仅 RETRY_OCR/RETRY_SAVE/REPROCESS 自动复用同一文件）
+let lastFailureAction=null;    // 最近一次失败的处理动作（action）；null 表示不可重试，按钮作关闭用
 async function processSelectedFile(file){
   if(!file||processingFile)return;
   processingFile=true;
+  lastProcessingFile=file;
   const controller=new AbortController();
   processingController=controller;
   if(processingCancelBtn){processingCancelBtn.hidden=true;processingCancelBtn.disabled=false}
@@ -302,7 +338,8 @@ async function processSelectedFile(file){
       if(!result)throw Object.assign(new Error("处理连接中断，请重试"),{code:"PROCESS_STREAM_INTERRUPTED"});
       if(!result.success){
         const code=result.code||result.errorCode||"PROCESS_FAILED";
-        throw Object.assign(new Error(result.message||result.error||"处理失败"),{code, hint:result.hint||null});
+        // 透传 action/recoverable：前者驱动「一键重试」按钮行为，后者决定按钮是否出现
+        throw Object.assign(new Error(result.message||result.error||"处理失败"),{code, hint:result.hint||null, action:result.action||null, recoverable:!!result.recoverable});
       }
       renderProcessingProgress(100);
       const detailId=encodeURIComponent(result.waybill.id);
@@ -323,7 +360,7 @@ async function processSelectedFile(file){
     }
   }catch(e){
     // 优先展示服务端友好 message（与 code 不同时）；纯 code 场景走映射表
-    showProcessingError(e?.message&&e.message!==e.code?e.message:(e?.code||"PROCESS_FAILED"), e?.hint);
+    showProcessingError(e?.message&&e.message!==e.code?e.message:(e?.code||"PROCESS_FAILED"), e?.hint, e?.action, e?.recoverable);
   }finally{
     clearTimeout(timer);
     stopProcessingClock();
