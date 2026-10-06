@@ -11,7 +11,8 @@
   "test:consistency": "node tests/integration-waybill-consistency.cjs",
   "test:stats": "node tests/integration-waybill-stats.cjs",
   "test:multiuser": "node tests/integration-waybill-multiuser.cjs",
-  "test:node": "node tests/unit-waybill-dedup-lua.test.cjs && node tests/nav-return.test.mjs && node tests/integration-waybill-lifecycle.cjs && node tests/integration-waybill-isolation.cjs && node tests/unit-quality-gate.test.cjs && node tests/integration-waybill-quality-events.cjs && node tests/unit-waybill-proc.test.cjs && node tests/integration-waybill-state-machine.cjs && node tests/integration-waybill-consistency.cjs && node tests/integration-waybill-stats.cjs && node tests/integration-waybill-multiuser.cjs"
+  "test:delete-cleanup": "node tests/integration-waybill-delete-cleanup.cjs",
+  "test:node": "node tests/unit-waybill-dedup-lua.test.cjs && node tests/nav-return.test.mjs && node tests/integration-waybill-lifecycle.cjs && node tests/integration-waybill-isolation.cjs && node tests/unit-quality-gate.test.cjs && node tests/integration-waybill-quality-events.cjs && node tests/unit-waybill-proc.test.cjs && node tests/integration-waybill-state-machine.cjs && node tests/integration-waybill-consistency.cjs && node tests/integration-waybill-stats.cjs && node tests/integration-waybill-multiuser.cjs && node tests/integration-waybill-delete-cleanup.cjs"
   },
   "devDependencies": {
     "fengari": "^0.1.4"

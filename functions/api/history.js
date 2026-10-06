@@ -4,6 +4,7 @@ import {get,command,pipeline} from "./_redis.js";
 import {canUseRoute} from "./_permissions.js";
 import {canReadWaybill,canWriteWaybill} from "./_waybill-acl.js";
 import {getRoute} from "./_route.js";
+import {dailyWaybillKey} from "./_waybill-identity.js";
 
 const clean=v=>String(v??"").trim();
 const todayCN=()=>{const parts=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());const values=Object.fromEntries(parts.filter(p=>p.type!=="literal").map(p=>[p.type,p.value]));return `${values.year}-${values.month}-${values.day}`;};
@@ -112,13 +113,28 @@ export async function onRequestGet({request,env}){
 }
 
 async function deleteWaybill(env,routeId,date,waybillId){
- const errors=[];let mainOk=false,indexOk=false,childrenOk=true;
+ const errors=[];let mainOk=false,indexOk=false,childrenOk=true,refOk=true;
+ // 删除前先读主记录，以恢复反向去重键（日去重键 / 业务指纹键）。
+ // 删除后若这些键仍指向本单则一并清除；已被覆盖/再上传改派给新单的键不删（保护幂等/覆盖链）。
+ let record=null;
+ try{const raw=await command(env,["GET","zp:waybill:"+waybillId]);if(raw)record=typeof raw==="string"?JSON.parse(raw):raw}catch(e){errors.push(e)}
  try{await command(env,["SREM",waybillIndexKey(routeId,date),waybillId]);indexOk=true}catch(e){errors.push(e)}
  try{await command(env,["DEL","zp:waybill:"+waybillId]);mainOk=true}catch(e){errors.push(e)}
  let cursor="0";const prefix="zp:waybill:"+waybillId+":";
  do{let keys=[];try{const r=await command(env,["SCAN",cursor,"MATCH",prefix+"*","COUNT","100"]);cursor=String(r?.[0]??"0");keys=Array.isArray(r?.[1])?r[1]:[]}catch(e){errors.push(e);childrenOk=false;break}
     if(keys.length){try{await command(env,["DEL",...keys])}catch(e){errors.push(e);childrenOk=false}}}while(cursor!=="0");
- return {mainOk,indexOk,childrenOk,errors};
+ if(record){
+  const refKeys=[];
+  if(record.businessFingerprint)refKeys.push("zp:waybill:fingerprint:"+record.businessFingerprint);
+  try{const sig=await dailyWaybillKey(record);refKeys.push("zp:waybill:dedupe:"+sig)}catch{}
+  for(const k of refKeys){
+   try{
+    const ref=await command(env,["GET",k]);
+    if(String(ref??"")===String(waybillId))await command(env,["DEL",k]);
+   }catch(e){refOk=false;errors.push(e)}
+  }
+ }
+ return {mainOk,indexOk,childrenOk,refOk,errors};
 }
 
 export async function onRequestDelete({request,env}){
@@ -127,7 +143,7 @@ export async function onRequestDelete({request,env}){
  const url=new URL(request.url),routeId=clean(url.searchParams.get("routeId")||user.dispatchRouteId||user.boundRouteId),date=clean(url.searchParams.get("date")),month=clean(url.searchParams.get("month")),currentRoute=clean(user.dispatchRouteId)||clean(user.boundRouteId);
  if(!routeId||routeId!==currentRoute)return json({success:false,error:"无权操作该线路历史"},403);
   const range=historyRange(todayCN(),env?.WAYBILL_HISTORY_MONTHS);
-  const summarize=results=>{let deleted=0,mainFailed=false,partial=false;for(const r of results){if(r.mainOk)deleted++;else mainFailed=true;if(!r.indexOk||!r.childrenOk)partial=true}return {deleted,mainFailed,partial}};
+  const summarize=results=>{let deleted=0,mainFailed=false,partial=false;for(const r of results){if(r.mainOk)deleted++;else mainFailed=true;if(!r.indexOk||!r.childrenOk||!r.refOk)partial=true}return {deleted,mainFailed,partial}};
   if(month){
    if(!/^\d{4}-\d{2}$/.test(month))return json({success:false,code:"MONTH_INVALID",error:"月份格式错误"},400);
    if(!monthInRange(month,range))return json({success:false,code:"MONTH_OUT_OF_RANGE",error:"月份不在历史查询范围内"},400);
@@ -147,7 +163,7 @@ export async function onRequestDelete({request,env}){
   if(!canWriteWaybill(user,target,env))return json({success:false,code:"WAYBILL_FORBIDDEN",error:"无权删除该运单"},403);
   const r=await deleteWaybill(env,routeId,date,target.id);
   if(!r.mainOk)return json({success:false,code:"WAYBILL_DELETE_FAILED",error:"运单主记录删除失败,请重试",deleted:0,waybillId});
-  return json({success:true,code:r.indexOk&&r.childrenOk?undefined:"PARTIAL_FAILURE",message:r.indexOk&&r.childrenOk?undefined:"部分索引或子键清理未完成,建议稍后执行修复",deleted:1,deletedWaybills:1,waybillId});
+  return json({success:true,code:r.indexOk&&r.childrenOk&&r.refOk?undefined:"PARTIAL_FAILURE",message:r.indexOk&&r.childrenOk&&r.refOk?undefined:"部分索引或子键清理未完成,建议稍后执行修复",deleted:1,deletedWaybills:1,waybillId});
  }
  const readable=await readDateWaybills(env,user,routeId,date);const results=[];
  for(const order of readable.filter(w=>canWriteWaybill(user,w,env))){results.push(await deleteWaybill(env,routeId,date,order.id))}
