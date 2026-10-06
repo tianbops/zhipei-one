@@ -10,7 +10,7 @@ let boundRouteId="";
 const TEMP_ROUTE_PREFIX="__temp__:";
 const subBadge=$("substituteBadge");
 /* 代班态提示：用户当前调度线路是「真实线路」且与本人绑定线路不一致时，视为「代班中」。
-   仅作展示（今日配送卡片里一个「代班中」徽章），不碰任何权限逻辑；
+   仅作展示（今日配送卡片里一个「代班」状态文字），不碰任何权限逻辑；
    线路名已由卡片 statusDot / 当前线路菜单项展示，这里只补一行状态文案。
    判定要点：
      - 新注册用户 boundRouteId 默认为 null（仅管理员绑定后才有值），且 dispatch GET 会给

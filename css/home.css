@@ -23,8 +23,8 @@
 .task-date{margin:0;text-align:right;white-space:nowrap;color:#7F8A95;font-size:15px;line-height:23px;font-weight:500}
 .status-dot{width:26px;height:26px;min-width:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:#5B7188;color:#fff;border:1px solid rgba(255,255,255,.14);font:650 11px/26px Arial,"Microsoft YaHei",sans-serif}
 .status-dot[hidden]{display:none}
-.sub-badge{display:inline-flex;align-items:center;height:20px;padding:0 9px;border-radius:999px;background:rgba(245,166,35,.16);color:#F5A623;border:1px solid rgba(245,166,35,.42);font:600 12px/20px "Microsoft YaHei",sans-serif;white-space:nowrap}
-.sub-badge[hidden]{display:none}
+.today-summary .sub-badge{display:inline;color:#F2F5F7;font:600 14px/29px "Microsoft YaHei",sans-serif;white-space:nowrap}
+.today-summary .sub-badge[hidden]{display:none}
 .task-main{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:8px;margin-top:13px}
 .task-info{min-width:0;color:#9AA6B2;font-size:15px;line-height:27px}
 .today-summary{display:flex;align-items:baseline;gap:9px;white-space:nowrap;line-height:29px}

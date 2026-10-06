@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="智配One">
 <link rel="stylesheet" href="/css/app.css?v=e634d2ad"><link rel="stylesheet" href="/css/ui-unified.css?v=902cf092">
-<link rel="stylesheet" href="/css/home.css?v=7d007c4d">
+<link rel="stylesheet" href="/css/home.css?v=8c1d42ea">
 </head>
 <body>
 <main class="home-app">
@@ -39,13 +39,12 @@
       <div class="task-name">
         <span id="todayTitle">今日配送</span>
         <span class="status-dot" id="statusDot" aria-label="当前线路" hidden></span>
-        <span id="substituteBadge" class="sub-badge" hidden>代班中</span>
       </div>
       <div id="todayDate" class="today-date task-date">今日</div>
     </div>
     <div class="task-main">
       <div class="task-info">
-        <div class="today-summary"><strong id="todayCount">加载中…</strong><span id="todayWeight"></span></div>
+        <div class="today-summary"><strong id="todayCount">加载中…</strong><span id="todayWeight"></span><span id="substituteBadge" class="sub-badge" hidden>代班</span></div>
       </div>
       <div class="delivery-man" aria-hidden="true"><img src="/assets/delivery-route.png" alt=""></div>
     </div>
@@ -99,7 +98,7 @@
   <input id="photoInput" type="file" accept="image/*" hidden>
   <input id="documentInput" type="file" accept="application/pdf,.pdf" hidden>
 </main>
-<script src="/js/home.js?v=02fb1532"></script>
+<script src="/js/home.js?v=9e2a57b4"></script>
 <script>
 (()=>{const d=document.getElementById("todayDate");if(d){const f=new Intl.DateTimeFormat("zh-CN",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit",weekday:"short"});d.textContent=f.format(new Date()).replaceAll("/","-")}})();
 document.getElementById("logout")?.addEventListener("click",async()=>{const ok=window.zpConfirm?await window.zpConfirm("退出登录","确定要退出当前账号吗？","退出"):true;if(!ok)return;try{await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"})}finally{location.replace("/")}})
