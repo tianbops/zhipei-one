@@ -4,6 +4,7 @@ import {get,command} from "../_redis.js";
 import {canUseRoute,isSystemAdmin} from "../_permissions.js";
 import {canReadWaybill} from "../_waybill-acl.js";
 import {listWaybillEvents} from "./_waybill-events.js";
+import {getProc} from "./_waybill-proc.js";
 
 const clean=v=>String(v??"").trim();
 const parse=v=>{try{return typeof v==="string"?JSON.parse(v):v}catch{return null}};
@@ -22,12 +23,22 @@ export async function onRequestGet({request,env}){
     // 运维可观测性（1.1）：管理员指定 routeId 即可只读诊断任意线路，不依赖个人派单上下文。
     routeId=requestedRoute;
     allowedRoutes=requestedRoute?[requestedRoute]:[];
-    if(!routeId)return json({success:false,error:"管理员诊断需指定 routeId"},400);
   }else{
     if(!canUseRoute(user))return json({success:false,error:"无权查看运单诊断"},403);
     allowedRoutes=[clean(user.dispatchRouteId),clean(user.boundRouteId)].filter(Boolean);
     routeId=requestedRoute||clean(user.dispatchRouteId||user.boundRouteId);
   }
+  // 统一 requestId 诊断（P1.5）：处理票据按 requestId 直接回看，放在 routeId 校验之前，
+  // 使“仅持 requestId（如 OCR 超时失败）”即可追溯，无需先知道线路。
+  const requestedProc=clean(url.searchParams.get("requestId"));
+  if(requestedProc){
+    const ticket=await getProc(env,requestedProc);
+    if(!ticket)return json({success:false,error:"处理票据不存在或已过期"},404);
+    const authorizedProc=isAdmin||ticket.userId===user.id||(ticket.routeId&&allowedRoutes.includes(ticket.routeId));
+    if(!authorizedProc)return json({success:false,error:"无权查看该处理票据"},403);
+    return json({success:true,requestId:requestedProc,procTicket:ticket});
+  }
+  if(isAdmin&&!routeId)return json({success:false,error:"管理员诊断需指定 routeId"},400);
   if(!routeId||!allowedRoutes.includes(routeId))return json({success:false,error:"无权诊断该线路"},403);
 
   let cursor="0";
@@ -54,6 +65,7 @@ export async function onRequestGet({request,env}){
         summary:w.summary||null,
         validation:w.validation||null,
         diagnostics:w.diagnostics||null,
+        ocr:w.ocr||null,
         quality:w.quality||null,
         requestId:w.requestId||null,
         events:await listWaybillEvents(env,id),

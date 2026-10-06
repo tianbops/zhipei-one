@@ -174,14 +174,14 @@ const PROCESS_ERROR_TEXT={
   DISPATCH_ROUTE_MISSING:"请先在首页选择调度线路",
   WAYBILL_FILE_MISSING:"请选择运单文件"
 };
-function showProcessingError(message){
+function showProcessingError(message, hint){
   stopProcessingClock();
   if(processingCancelBtn)processingCancelBtn.hidden=true;
   if(processingPanel)processingPanel.hidden=true;
   if(sourceMenu)sourceMenu.hidden=true;
   if(overlay)overlay.classList.add("processing-error-state");
   const text=PROCESS_ERROR_TEXT[message]||message||"处理失败，请重试";
-  if(processingErrorMessage)processingErrorMessage.textContent=text;
+  if(processingErrorMessage)processingErrorMessage.textContent=text+(hint?(" "+hint+" "):"");
   if(processingError)processingError.hidden=false;
 }
 function showProcessingUI(){
@@ -302,7 +302,7 @@ async function processSelectedFile(file){
       if(!result)throw Object.assign(new Error("处理连接中断，请重试"),{code:"PROCESS_STREAM_INTERRUPTED"});
       if(!result.success){
         const code=result.code||result.errorCode||"PROCESS_FAILED";
-        throw Object.assign(new Error(result.message||result.error||"处理失败"),{code});
+        throw Object.assign(new Error(result.message||result.error||"处理失败"),{code, hint:result.hint||null});
       }
       renderProcessingProgress(100);
       const detailId=encodeURIComponent(result.waybill.id);
@@ -323,7 +323,7 @@ async function processSelectedFile(file){
     }
   }catch(e){
     // 优先展示服务端友好 message（与 code 不同时）；纯 code 场景走映射表
-    showProcessingError(e?.message&&e.message!==e.code?e.message:(e?.code||"PROCESS_FAILED"));
+    showProcessingError(e?.message&&e.message!==e.code?e.message:(e?.code||"PROCESS_FAILED"), e?.hint);
   }finally{
     clearTimeout(timer);
     stopProcessingClock();

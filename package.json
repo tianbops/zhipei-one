@@ -7,7 +7,8 @@
     "test:lifecycle": "node tests/integration-waybill-lifecycle.cjs",
     "test:isolation": "node tests/integration-waybill-isolation.cjs",
     "test:quality": "node tests/unit-quality-gate.test.cjs && node tests/integration-waybill-quality-events.cjs",
-    "test:node": "node tests/unit-waybill-dedup-lua.test.cjs && node tests/nav-return.test.mjs && node tests/integration-waybill-lifecycle.cjs && node tests/integration-waybill-isolation.cjs && node tests/unit-quality-gate.test.cjs && node tests/integration-waybill-quality-events.cjs"
+    "test:state": "node tests/unit-waybill-proc.test.cjs && node tests/integration-waybill-state-machine.cjs",
+    "test:node": "node tests/unit-waybill-dedup-lua.test.cjs && node tests/nav-return.test.mjs && node tests/integration-waybill-lifecycle.cjs && node tests/integration-waybill-isolation.cjs && node tests/unit-quality-gate.test.cjs && node tests/integration-waybill-quality-events.cjs && node tests/unit-waybill-proc.test.cjs && node tests/integration-waybill-state-machine.cjs"
   },
   "devDependencies": {
     "fengari": "^0.1.4"

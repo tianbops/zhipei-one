@@ -157,6 +157,6 @@ export async function onRequestPost({request,env}){
   return json({success:true,waybill:order,learning:learningStatus,indexSync});
  }catch(e){
   try{if(routeBaseLock)await releaseLock(env,routeBaseLock);if(waybillLock)await releaseLock(env,waybillLock);if(requestLock)await releaseLock(env,requestLock);}catch{}
-  return json({success:false,code:e?.code||"CONFIRM_INTERNAL_ERROR",error:e?.message||"确认待定门店失败"},500);
+  return json({success:false,code:e?.code||"CONFIRM_INTERNAL_ERROR",error:e?.message||"确认待定门店失败",recoverable:true,action:"RETRY_LATER",hint:"确认失败，请稍后重试"},500);
  }
 }

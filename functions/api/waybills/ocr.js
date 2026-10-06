@@ -36,14 +36,18 @@ function collectText(value, out = []) {
   return out;
 }
 
-async function requestJson(url, init, timeoutMs = 8000) {
+async function requestJson(url, init, timeoutMs = 8000, abortSignal = null) {
   const controller = new AbortController();
+  if (abortSignal) { try { abortSignal.addEventListener("abort", () => controller.abort()); } catch {} }
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   let r;
   try {
     r = await fetch(url, { ...(init || {}), signal: controller.signal });
   } catch (e) {
-    if (e?.name === "AbortError") throw fail("OCR_NETWORK_TIMEOUT", "OCR服务响应超时");
+    if (e?.name === "AbortError") {
+      if (abortSignal && abortSignal.aborted) throw fail("OCR_CANCELLED", "已取消识别");
+      throw fail("OCR_NETWORK_TIMEOUT", "OCR服务响应超时");
+    }
     throw e;
   } finally { clearTimeout(timer); }
   const text = await r.text();
@@ -60,7 +64,7 @@ async function requestJson(url, init, timeoutMs = 8000) {
   return data;
 }
 
-export async function recognizeImage(env, file, onProgress = () => {}) {
+export async function recognizeImage(env, file, onProgress = () => {}, signal = null) {
   onProgress(0);
   const token = clean(env?.PADDLEOCR_ACCESS_TOKEN);
   if (!token) throw fail("OCR_NOT_CONFIGURED", "OCR服务尚未配置");
@@ -81,7 +85,7 @@ export async function recognizeImage(env, file, onProgress = () => {}) {
       method: "POST",
       headers: { Authorization: "Bearer " + token, Accept: "application/json" },
       body: form,
-    }, 10000);
+    }, 10000, signal);
   } catch (e) {
     throw fail(e?.code || "OCR_API", e?.message || "OCR服务请求失败", { status: e?.status, detail: e?.detail, base });
   }
@@ -100,7 +104,7 @@ export async function recognizeImage(env, file, onProgress = () => {}) {
       status = await requestJson(
         base + JOB_PATH + "/" + encodeURIComponent(jobId),
         { headers: { Authorization: "Bearer " + token, Accept: "application/json" } },
-        6000
+        6000, signal
       );
     } catch (e) {
       throw fail(e?.code || "OCR_API", e?.message || "OCR服务请求失败", { status: e?.status, detail: e?.detail, jobId, base });
@@ -153,9 +157,10 @@ export async function recognizeImage(env, file, onProgress = () => {}) {
           try { collectText(JSON.parse(line), texts); } catch {}
         }
         const unique = [...new Set(texts)].filter(Boolean);
+        const lowConfidence = unique.length < 3 || unique.join("").replace(/\s/g, "").length < 20;
         if (!unique.length) throw fail("OCR_EMPTY", "OCR未识别到文字", { jobId });
         onProgress(100);
-        return { jobId, provider: "aistudio", model: MODEL, rawText: unique.join("\n"), lineCount: unique.length };
+        return { jobId, provider: "aistudio", model: MODEL, rawText: unique.join("\n"), lineCount: unique.length, lowConfidence };
       };
 
       let url = url0, lastError = null;
