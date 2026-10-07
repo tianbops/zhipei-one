@@ -40,6 +40,7 @@
 <body>
   <h1>发布门禁 · 手机核验清单</h1>
   <p class="sub">同源页面，自动携带登录 Cookie。勾完两项、点「导出核验结果」把 JSON 贴回项目助手即可闭环。</p>
+  <div id="whoami" class="card" style="padding:10px 14px;font-size:14px;">身份检查中…</div>
 
   <label for="rid">线路 ID (routeId)</label>
   <input id="rid" value="route_6cc0f23ea7e445b585cf165fd6b8b79a" autocapitalize="off" autocorrect="off" spellcheck="false" />
@@ -72,6 +73,20 @@
 const $ = id => document.getElementById(id);
 const rid = () => ($("rid").value || "").trim();
 const esc = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+(async function whoAmI(){
+  const el = $("whoami");
+  try{
+    const r = await fetch("/api/me?adminCheck=" + Date.now());
+    if(r.status === 401){ el.innerHTML = '<span style="color:var(--bad);font-weight:700;">未登录</span> —— 请先打开 <a style="color:var(--acc)" href="https://tianyou-zhipei.pages.dev/">首页</a> 用管理员账号登录后再回来。'; return; }
+    const j = await r.json();
+    const u = j.user || {};
+    const ok = u.role === "admin" || u.role === "system_admin";
+    el.innerHTML = ok
+      ? `✅ 当前登录：<b>${esc(u.username||"?")}</b> · 角色：<b style="color:var(--ok)">${esc(u.role)}</b> —— 可以核验`
+      : `⚠️ 当前登录：<b>${esc(u.username||"?")}</b> · 角色：<b style="color:var(--bad)">${esc(u.role||"user")}</b>（非管理员）—— 请先退出，用管理员账号登录，否则第 2 项无法操作`;
+  }catch(e){ el.textContent = "身份检查失败：" + e.message; }
+})();
 
 $("btnList").onclick = async () => {
   const rid_ = rid(); if(!rid_){ alert("请先填线路 ID"); return; }
