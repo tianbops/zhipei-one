@@ -28,7 +28,7 @@
 .order-vehicle{font-size:15px;line-height:20px;color:#fff;font-weight:650;white-space:nowrap}
 .order-store-list{min-height:0;flex:1 1 auto;overflow-y:auto;padding:0 2px calc(24px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
 .order-store-list::-webkit-scrollbar{width:4px}.order-store-list::-webkit-scrollbar-thumb{background:#3A4654;border-radius:8px}.order-store-list::-webkit-scrollbar-track{background:transparent}
-.order-store-item{display:grid;grid-template-columns:34px minmax(0,1fr);gap:6px;padding:10px 3px;border-bottom:1px solid rgba(255,255,255,.055);min-height:56px}
+.order-store-item{display:grid;grid-template-columns:34px minmax(0,1fr);gap:6px;padding:10px 3px;border-bottom:1px solid var(--zp-divider);min-height:56px}
 .order-store-item:last-child{border-bottom:0}.order-store-index{color:#7F8A95;font-size:12px;line-height:22px;font-weight:600}
 .order-store-main{min-width:0}.order-store-name{font-size:15px;line-height:22px;color:#fff;font-weight:600;word-break:break-all}
 .order-store-name.nav{display:inline;color:#fff!important;text-decoration:none!important;-webkit-text-decoration:none!important;cursor:pointer}
@@ -53,7 +53,7 @@
 /* pending-list 占据标题与按钮之间的剩余空间并内部滚动：
    缺少 flex:1+min-height:0 时内容会把面板撑高，被 overflow:hidden 硬裁，
    表现为"文字超出显示框"（2026-10-03 修复） */
-.pending-list{flex:1 1 auto;min-height:0;padding:12px 14px;overflow:auto}.pending-box{padding:14px 0;border-bottom:1px solid rgba(255,255,255,.055)}.pending-box:last-child{border-bottom:0}
+.pending-list{flex:1 1 auto;min-height:0;padding:12px 14px;overflow:auto}.pending-box{padding:14px 0;border-bottom:1px solid var(--zp-divider)}.pending-box:last-child{border-bottom:0}
 .pending-title{font-size:14px;font-weight:650;line-height:20px}.pending-hint{margin-top:4px;color:#7F8A95;font-size:11px;line-height:17px}
 .candidate-list{display:grid;gap:7px;margin-top:9px}
 /* 选项按钮：轻底色 + 细边框 + 大圆角，柔化"深色方块"感（全局统一）；

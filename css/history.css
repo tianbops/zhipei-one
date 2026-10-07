@@ -422,9 +422,13 @@
 .history-month.expanded .history-month-body{
   display:block;
 }
+/* 列表行分隔线统一到 --zp-divider（.055 → .06）。
+   注意本文件里 .history-month / .history-month-body 那几条 .055 / .065 / .07 / .075
+   刻意没动：它们是「月份分组容器」的内部分隔，不是列表行的行分隔线，
+   语义不同 —— 顺手统一会让分组边界和行边界看起来一样重，反而丢掉层级。 */
 .history-swipe-row{
   background:rgba(10,14,19,.88);
-  border-bottom:1px solid rgba(255,255,255,.055);
+  border-bottom:1px solid var(--zp-divider);
 }
 .history-month-body .history-swipe-row:last-child{
   border-bottom:0;

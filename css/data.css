@@ -20,7 +20,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
    .data-swipe-actions 是 absolute + 垂直居中，按钮 34→48 后，若店铺没有 meta
    （data.html 里 meta 为空时整块不渲染），该行只有 22(店名)+24(padding)=46px，
    48px 的按钮会上下各溢出 1px。给行兜一个 48px 下限即可，内容多的行不受影响。 */
-.data-store-row{position:relative;display:grid;grid-template-columns:32px minmax(0,1fr);gap:10px;min-height:var(--zp-control-height);padding:12px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.data-store-row{position:relative;display:grid;grid-template-columns:32px minmax(0,1fr);gap:10px;min-height:var(--zp-control-height);padding:12px 0;border-bottom:1px solid var(--zp-divider)}
 .data-store-row:last-child{border-bottom:0}
 .data-store-index{display:flex;align-items:flex-start;justify-content:center;padding-top:1px;color:#7F8A95;font-size:12px;font-variant-numeric:tabular-nums}
 .data-store-main{min-width:0}

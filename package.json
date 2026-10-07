@@ -19,7 +19,8 @@
     "verify:css-rules": "node tests/tools/css-rules-diff.cjs",
     "verify:css-vars": "node tests/tools/css-var-resolve.cjs",
     "verify:css-buttons": "node tests/tools/css-button-resolve.cjs",
-    "verify:css-button-audit": "node tests/tools/css-button-audit.cjs report css/app.css css/ui-unified.css css/mobile-ui.css css/home.css css/business-pages.css css/data.css css/history.css css/order_detail.css"
+    "verify:css-button-audit": "node tests/tools/css-button-audit.cjs report css/app.css css/ui-unified.css css/mobile-ui.css css/home.css css/business-pages.css css/data.css css/history.css css/order_detail.css",
+    "verify:css-cardrow": "node tests/tools/css-cardrow-audit.cjs css/app.css css/ui-unified.css css/mobile-ui.css css/home.css css/business-pages.css css/data.css css/history.css css/order_detail.css"
   },
   "devDependencies": {
     "fengari": "^0.1.4",
