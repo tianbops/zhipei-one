@@ -1,5 +1,6 @@
 import {json,body} from "./_json.js";
 import {get,set,newId,sessionCookie} from "./_redis.js";
+import {Budget,mgetBatchMap,SUBREQUEST_LIMIT} from "./_redis-budget.js";
 async function hash(value){const data=new TextEncoder().encode(value);const digest=await crypto.subtle.digest("SHA-256",data);return [...new Uint8Array(digest)].map(x=>x.toString(16).padStart(2,"0")).join("")}
 export async function onRequestPost({request,env}){
  const input=await body(request);
@@ -12,8 +13,12 @@ export async function onRequestPost({request,env}){
  if(!raw){
   const idsRaw=await get(env,"users:index");
   let ids=[];try{ids=JSON.parse(idsRaw||"[]")}catch{ids=[]}
-  for(const id of Array.isArray(ids)?ids:[]){
-   const candidate=await get(env,"user:"+id);
+  const candidateIds=Array.isArray(ids)?[...new Set(ids.map(x=>String(x||"").trim()).filter(Boolean))]:[];
+  const budget=new Budget(SUBREQUEST_LIMIT);
+  const {map,complete}=await mgetBatchMap(env,candidateIds.map(id=>"zp:user:"+id),budget,{batch:100});
+  if(!complete)return json({success:false,error:"账号数据正在恢复，请稍后重试",code:"LOGIN_USER_DATA_BUSY"},503);
+  for(const id of candidateIds){
+   const candidate=map.get("zp:user:"+id);
    if(!candidate)continue;
    try{const parsed=JSON.parse(candidate);if(String(parsed.username||"").toLowerCase()===username.toLowerCase()){raw=candidate;break}}catch{}
   }
