@@ -155,7 +155,9 @@
 
 /* ===== 配送趋势 · Smart Trend：工业物流终端风（无渐变/发光/玻璃拟态） ===== */
 .trend-card{
-  margin-top:12px;padding:15px 15px 13px;
+  margin-top:12px;
+  touch-action:pan-y;   /* 纵向可滚动，横向手势留给 JS 切月 */
+  padding:15px 15px 13px;
   border:1px solid #27323D;border-radius:16px;background:#151D26;overflow:hidden;
 }
 .trend-card.is-in{animation:trendIn .22s ease-out}

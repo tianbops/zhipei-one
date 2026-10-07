@@ -248,17 +248,35 @@
   metricWeightBtn?.addEventListener("click",()=>setMetric("weight"));
   metricCountBtn?.addEventListener("click",()=>setMetric("count"));
   yearBtn?.addEventListener("click",toggleYear);
-  // 左右滑动切换月份（左滑→更新月，右滑→更旧月）；垂直手势不拦截
-  wrap?.addEventListener("touchstart",e=>{const t=e.changedTouches?.[0];if(!t)return;touchX=t.clientX;touchY=t.clientY;},{passive:true});
-  wrap?.addEventListener("touchend",e=>{
-    if(yearMode)return;
-    const t=e.changedTouches?.[0];if(!t)return;
-    const dx=t.clientX-touchX,dy=t.clientY-touchY;
-    if(Math.abs(dx)>48&&Math.abs(dx)>Math.abs(dy)*1.25){
-      if(dx<0)navigate(-1);   // 左滑 → 更新月份（未来不可达时 no-op）
-      else navigate(1);       // 右滑 → 更旧月份
-    }
-  },{passive:true});
+  // 左右滑动切换月份（整张卡片可滑；左滑→更新月，右滑→更旧月）。
+  // 安卓 Chrome 纵向页面里横向滑动会被浏览器接管并发 touchcancel，故：
+  // ① 监听挂整张卡片 ② 横向意图时 touchmove preventDefault 阻止滚动抢占 ③ 同时处理 touchcancel。
+  (function bindSwipe(){
+    if(!card)return;
+    let sx=0,sy=0,active=false;
+    const down=e=>{const t=e.touches?.[0]||e;if(!t)return;sx=t.clientX;sy=t.clientY;active=true;};
+    const move=e=>{
+      if(!active||yearMode)return;
+      const t=e.touches?.[0]||e;if(!t)return;
+      const dx=t.clientX-sx,dy=t.clientY-sy;
+      if(Math.abs(dx)>10&&Math.abs(dx)>Math.abs(dy)){if(e.cancelable)e.preventDefault();} // 横向意图：吃下手势，避免页面滚动抢走
+    };
+    const up=e=>{
+      if(!active){return;}
+      active=false;
+      if(yearMode)return;
+      const t=e.changedTouches?.[0]||e;if(!t)return;
+      const dx=t.clientX-sx,dy=t.clientY-sy;
+      if(Math.abs(dx)>48&&Math.abs(dx)>Math.abs(dy)*1.25){
+        if(dx<0)navigate(-1);   // 左滑 → 更新月份（未来不可达时 no-op）
+        else navigate(1);       // 右滑 → 更旧月份
+      }
+    };
+    card.addEventListener("touchstart",down,{passive:true});
+    card.addEventListener("touchmove",move,{passive:false});
+    card.addEventListener("touchend",up,{passive:true});
+    card.addEventListener("touchcancel",up,{passive:true});
+  })();
 
   /* ---------- 数据加载 ---------- */
   async function load(){
