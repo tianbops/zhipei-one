@@ -249,7 +249,7 @@ async function toJson(resp) { return await resp.json(); }
   const sRepair = await toJson(await diagMod.onRequestPost({ request: postReq("https://app.local/api/waybills/diagnostic?action=repair-consistency", tokS), env }));
   check("非管理员 S 修复被拒(403)", sRepair.success !== true && sRepair.error === "仅管理员可执行一致性修复", "code=" + (sRepair.code) + " err=" + (sRepair.error));
   const admRepair = await toJson(await diagMod.onRequestPost({ request: postReq("https://app.local/api/waybills/diagnostic?action=repair-consistency", tokADM), env }));
-  check("管理员修复成功(应用自动项, 含 OTHER2 孤儿)", admRepair.success === true && admRepair.repairedCount >= 1, "repaired=" + (admRepair.repairedCount));
+  check("管理员修复成功(应用自动项, 含 OTHER2 孤儿)", admRepair.success === true && admRepair.repairedCount >= 1, "success=" + admRepair.success + " code=" + (admRepair.code || "") + " repaired=" + (admRepair.repairedCount) + " verifyFail=" + (admRepair.verificationFailedCount || 0) + " verifyComplete=" + (admRepair.verificationComplete));
   const afterRepair = await toJson(await diagGet(tokADM, "check=consistency&all=1"));
   check("修复后 OTHER2 孤儿已清除", !(afterRepair.issues || []).some(i => i.type === "ORPHAN_INDEX_ENTRY" && i.routeId === OTHER2));
 
