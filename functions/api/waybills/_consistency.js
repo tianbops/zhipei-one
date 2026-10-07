@@ -300,21 +300,59 @@ export async function scanConsistency(env, { routeId = null, all = false } = {})
 export async function repairConsistency(env, issues) {
   const repaired = [];
   const skipped = [];
+  const budget = new Budget();
+
   for (const it of issues || []) {
     const fix = it.fix;
-    // 兼容两种形态：单条命令 ["DEL", key]；或按顺序执行的多条命令 [["SADD",k,v],["SREM",k,v]]
     const steps = Array.isArray(fix) && Array.isArray(fix[0]) ? fix : (Array.isArray(fix) && fix.length ? [fix] : []);
-    if (steps.length) {
-      const { fix: _drop, ...meta } = it;
-      try {
-        for (const step of steps) await command(env, step);
-        repaired.push({ type: it.type, ...meta });
-      } catch (e) { skipped.push({ type: it.type, error: String(e?.message || e) }); }
-    } else {
+    if (!steps.length) {
       skipped.push({ type: it.type, reason: "MANUAL_OR_INFO" });
+      continue;
+    }
+    // 每个 issue 最多消耗 1 个 Workers 子请求；预算不足立即停止，避免修复过程再次触发 1101。
+    if (!budget.canTake(1)) {
+      skipped.push({ type: it.type, reason: "BUDGET_EXCEEDED" });
+      continue;
+    }
+
+    const { fix: _drop, ...meta } = it;
+    try {
+      // 日期索引迁移必须原子完成：先加入正确桶，再移出错误桶，不能出现半迁移状态。
+      if (
+        steps.length === 2 &&
+        steps[0][0] === "SADD" &&
+        steps[1][0] === "SREM" &&
+        steps[0].length === 3 &&
+        steps[1].length === 3
+      ) {
+        await command(env, [
+          "EVAL",
+          "redis.call('SADD',KEYS[1],ARGV[1]); return redis.call('SREM',KEYS[2],ARGV[2])",
+          "2",
+          steps[0][1],
+          steps[1][1],
+          steps[0][2],
+          steps[1][2]
+        ]);
+      } else if (steps.length === 1) {
+        await command(env, steps[0]);
+      } else {
+        skipped.push({ type: it.type, ...meta, reason: "UNSUPPORTED_ATOMIC_FIX" });
+        continue;
+      }
+      budget.take(1);
+      repaired.push({ type: it.type, ...meta });
+    } catch (e) {
+      skipped.push({ type: it.type, ...meta, error: String(e?.message || e) });
     }
   }
-  return { repaired, skipped, repairedCount: repaired.length, skippedCount: skipped.length };
-}
 
+  return {
+    repaired,
+    skipped,
+    repairedCount: repaired.length,
+    skippedCount: skipped.length,
+    budgetExceeded: skipped.some(x => x.reason === "BUDGET_EXCEEDED")
+  };
+}
 export default { scanConsistency, repairConsistency };
