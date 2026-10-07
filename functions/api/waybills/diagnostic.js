@@ -189,6 +189,18 @@ export const onRequestPost=guard(async ({request,env})=>{
     },503);
   }
   const result=await repairConsistency(env,report.issues);
+  if(result.budgetExceeded){
+    return json({
+      success:false,
+      code:"CONSISTENCY_REPAIR_BUDGET_EXCEEDED",
+      error:"一致性修复达到资源预算，已停止继续修复；已完成部分会保留，请缩小线路范围后重试",
+      scope:all?"ALL":routeId,
+      repairedCount:result.repairedCount,
+      skippedCount:result.skippedCount,
+      repaired:result.repaired,
+      skipped:result.skipped
+    },503);
+  }
   return json({
     success:true,
     scope:all?"ALL":routeId,
