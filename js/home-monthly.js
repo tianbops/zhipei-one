@@ -115,7 +115,8 @@
     }else{
       hint.innerHTML="本月暂无配送记录";
     }
-    // 配送节奏（每日活跃度轨迹，非传统柱状图）
+    // 配送节奏（每日活跃度轨迹，非传统柱状图）；月度视图恢复显示（年度视图会隐藏）
+    rhythm.hidden=false;
     renderRhythm(data.map(x=>valOf(x)));
     // 轴：首日 / 月中 / 末日
     axis.innerHTML="";
@@ -169,8 +170,8 @@
     // 轴：1 / 4 / 7 / 10 / 12 月
     axis.innerHTML="";
     [1,4,7,10,12].forEach(m=>{const s=document.createElement("span");s.textContent=m+"月";axis.appendChild(s);});
-    // 节奏轨迹：复用为 12 月小条（与柱同源，增强年度呼吸感）
-    renderRhythm(vals);
+    // 节奏轨迹：年度视图不渲染（12 月柱已在上方，避免同源数据出现两套柱状）
+    rhythm.hidden=true;rhythm.innerHTML="";
     // 汇总（无环比）
     animateNumber(waybillsEl,total,v=>String(Math.round(v)));
     animateNumber(weightEl,weight,v=>v.toFixed(2));
@@ -180,8 +181,12 @@
     let busiest=null;
     for(const it of daily){if(!String(it.date).startsWith(yk))continue;if(!busiest||(Number(it.count)||0)>busiest.count)busiest={date:it.date,count:Number(it.count)||0};}
     const peakMonth=vals[peakMi]>0?(peakMi+1)+"月":"—";
-    hint.innerHTML="年度峰值 <b>"+peakMonth+" · "+vals[peakMi]+"单</b>"
-      +(busiest&&busiest.count>0?"　最繁忙配送日 <b>"+busiest.date.slice(5).replace("-","月")+"日 · "+busiest.count+"单</b>":"");
+    let busiestTxt="";
+    if(busiest&&busiest.count>0){
+      const [,bm,bd]=busiest.date.split("-").map(Number);
+      busiestTxt="　最忙 "+bm+"月"+bd+"日 · "+busiest.count+"单";
+    }
+    hint.innerHTML="年度峰值 <b>"+peakMonth+" · "+vals[peakMi]+"单</b>"+busiestTxt;
     titleEl.textContent=year+" 年配送";
     monthEl.textContent=year+" 年度";
     metricWrap.hidden=true;
