@@ -26,6 +26,13 @@ export const PROC_TIMEOUT_MS = 5 * 60 * 1000;
 export const PROC_STAGES = ["PROCESSING", "STALLED", "TIMEOUT", "FAILED", "CANCELLED", "DONE"];
 const procKey = requestId => "zp:waybill:proc:" + clean(requestId);
 
+// 保存竞态保护：PROCESSING 票据只有在“保存声明”尚未建立时才允许被取消。
+// cancel 与 claim 都在 Redis EVAL 内完成，二者谁先成功谁决定最终时序：
+//   CANCELLED 先成功 → 后续保存声明失败；
+//   SAVE_CLAIMED 先成功 → 取消不再抢占，保存完成后 DONE 胜出。
+const claimSaveScript = `local raw=redis.call("GET",KEYS[1]); if not raw then return 0 end; local ok,rec=pcall(cjson.decode,raw); if not ok or type(rec)~="table" then return 0 end; if rec.stage=="CANCELLED" or rec.stage=="DONE" then return 0 end; if rec.saveClaimedAt then return 1 end; rec.saveClaimedAt=ARGV[1]; rec.updatedAt=ARGV[1]; redis.call("SET",KEYS[1],cjson.encode(rec),"EX",ARGV[2]); return 1`;
+const cancelScript = `local raw=redis.call("GET",KEYS[1]); if not raw then return 0 end; local ok,rec=pcall(cjson.decode,raw); if not ok or type(rec)~="table" then return 0 end; if rec.stage=="DONE" or rec.saveClaimedAt then return 0 end; rec.stage="CANCELLED"; rec.recoverable=true; rec.action=ARGV[1]; rec.hint=ARGV[2]; rec.detail=ARGV[3]; rec.updatedAt=ARGV[4]; redis.call("SET",KEYS[1],cjson.encode(rec),"EX",ARGV[5]); return 1`;
+
 function nowISO() { return new Date().toISOString(); }
 
 /** 写入初始 PROCESSING 票据。best-effort：失败不影响主流程。 */
@@ -74,7 +81,7 @@ export async function failProc(env, requestId, patch) {
   } catch { return null; }
 }
 
-/** 读取票据（运维/前端按 requestId 诊断）。 */
+/**\n * 在正式保存前原子声明“保存权”。\n * 返回 false 表示该请求已经被取消/完成，调用方不得进入保存 EVAL。\n */\nexport async function claimProcSave(env, requestId) {\n  if (!requestId) return false;\n  try {\n    const result = await command(env, ["EVAL", claimSaveScript, "1", procKey(requestId), nowISO(), String(PROC_TTL)]);\n    return Number(result) === 1;\n  } catch { return false; }\n}\n\n/**\n * 客户端取消的原子处理。若保存声明已经建立，则取消让位给保存，最终由 DONE 胜出。\n */\nexport async function cancelProc(env, requestId, { action = "REPROCESS", hint = "本次处理已取消，可重新上传运单", detail = null } = {}) {\n  if (!requestId) return false;\n  try {\n    const result = await command(env, ["EVAL", cancelScript, "1", procKey(requestId), action, hint, detail || "", nowISO(), String(PROC_TTL)]);\n    return Number(result) === 1;\n  } catch { return false; }\n}\n\n/** 读取票据（运维/前端按 requestId 诊断）。 */
 export async function getProc(env, requestId) {
   if (!requestId) return null;
   try {
@@ -91,7 +98,7 @@ export async function finishProc(env, requestId, waybillId) {
     const raw = await command(env, ["GET", procKey(requestId)]);
     const rec = raw ? (typeof raw === "string" ? JSON.parse(raw) : raw) : null;
     if (!rec) return null;
-    const next = { ...rec, stage: "DONE", waybillId: waybillId || null, updatedAt: nowISO() };
+    if (rec.stage === "CANCELLED") return rec;\n    const next = { ...rec, stage: "DONE", waybillId: waybillId || null, updatedAt: nowISO() };
     await command(env, ["SET", procKey(requestId), JSON.stringify(next), "EX", String(PROC_TTL)]);
     return next;
   } catch { return null; }
@@ -114,4 +121,4 @@ export function effectiveStage(proc, now = Date.now()) {
   return "PROCESSING";
 }
 
-export default { beginProc, failProc, getProc, finishProc, effectiveStage, PROC_STALLED_MS, PROC_TIMEOUT_MS, PROC_STAGES };
+export default { beginProc, failProc, getProc, finishProc, claimProcSave, cancelProc, effectiveStage, PROC_STALLED_MS, PROC_TIMEOUT_MS, PROC_STAGES };
