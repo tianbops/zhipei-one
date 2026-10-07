@@ -65,6 +65,15 @@ export async function failProc(env, requestId, patch) {
     const raw = await command(env, ["GET", procKey(requestId)]);
     const rec = raw ? (typeof raw === "string" ? JSON.parse(raw) : raw) : null;
     if (!rec) return null;
+
+    // 终态保护：取消或已完成的票据不能被迟到的失败路径覆盖。
+    // 特别是保存声明已经建立后，客户端断开/取消与后端保存失败可能交错：
+    //   SAVE_CLAIMED + save failure -> FAILED（允许恢复）
+    //   SAVE_CLAIMED + late CANCELLED -> 不允许改写
+    //   DONE -> 永远保持 DONE
+    if (rec.stage === "DONE") return rec;
+    if (rec.stage === "CANCELLED" && !patch.force) return rec;
+
     const next = {
       ...rec,
       stage: patch.stage || "FAILED",
