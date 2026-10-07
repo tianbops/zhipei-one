@@ -21,12 +21,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   width:min(calc(100% - 24px),560px);
   padding:max(10px,env(safe-area-inset-top)) 0 calc(28px + env(safe-area-inset-bottom));
 }
-.topbar{
-  min-height:var(--zp-header-height);
-  padding:0 2px 10px;
-}
-.topbar strong{font-size:18px;letter-spacing:.1px}
-.topbar a{min-height:var(--zp-control-height);display:inline-flex;align-items:center;justify-content:center}
+/* 阶段 6 · 5A：移除遗留 .topbar 死规则（无 HTML 用裸 .topbar）；.topbar/.app-back 现定义于 css/ui-unified.css。 */
 .card{
   background:var(--zp-surface);
   border:1px solid var(--zp-line);
@@ -61,6 +56,6 @@ button:disabled,select:disabled,input:disabled{opacity:.45}
   *,*::before,*::after{scroll-behavior:auto!important;transition-duration:0.01ms!important;animation-duration:0.01ms!important}
 }
 /* Android typography normalization: size/line-height only */
-.topbar strong{font-size:20px;line-height:26px}
+/* .topbar strong 已由 ui-unified.css 统一（阶段 6 · 5A 移除遗留 .topbar strong） */
 .card h2{font-size:18px;line-height:24px}
 .primary-btn,.secondary-btn,.grid a{font-size:16px;line-height:22px}

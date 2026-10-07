@@ -256,7 +256,7 @@
   };
 
   function zpBindPageBack(){
-    document.querySelectorAll(".page2-back,.dispatch-back,.history-back,.data-page-back,#backBtn").forEach(el=>{
+    document.querySelectorAll(".app-back,.page2-back,.dispatch-back,.history-back,.data-page-back,#backBtn").forEach(el=>{
       if(el.dataset.zpBackBound==="1")return;
       el.dataset.zpBackBound="1";
       el.addEventListener("click",e=>{e.preventDefault();zpHandleBack()});

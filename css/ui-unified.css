@@ -103,9 +103,37 @@ button:active{transform:translateY(0)}
 .card,.page2-card{border-radius:var(--ui-radius)}
 .confirm-panel,.pending-box{background:var(--ui-surface-2);border-color:rgba(255,255,255,.07)}
 
-/* 顶部栏统一：标题居中/左右操作，减少重复标题层 */
-.topbar,.page2-head,.dispatch-head,.order-topbar{position:relative}
+/* 顶部栏统一：标准 Header 钩子 .topbar（阶段 6 · 5A）
+   布局由各页旧类规则承载（保留差异：dispatch 白字标题 / data 头 padding / history 占位 /
+   order 按钮返回 #backBtn / home flex 无返回），.topbar 仅提供统一钩子 + 共享三栏排版 +
+   标题字重。不在此设 margin-bottom（dispatch/data 头间距由各自规则控制，避免零回归外的位移）。
+   详见资产审计台账第二十四章。 */
+.topbar{
+  display:grid;
+  grid-template-columns:var(--zp-control-height) 1fr var(--zp-control-height);
+  align-items:center;
+  min-height:var(--zp-header-height);
+  position:relative;
+}
 .topbar strong,.page2-head h1,.dispatch-head h1,.order-title{font-weight:650}
+/* 统一返回钩子 .app-back（阶段 6 · 5A）：link 型返回键统一为 48px 触控靶区；
+   order 页返回为 <button id="backBtn>（由 ID 接线，不在此类）。 */
+.app-back{
+  width:var(--zp-control-height);
+  height:var(--zp-control-height);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border:0;
+  border-radius:12px;
+  background:transparent;
+  color:var(--ui-muted);
+  text-decoration:none;
+  font-size:0;
+  box-sizing:border-box;
+}
+.app-back svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.app-back:active{background:rgba(20,28,37,.80);color:#fff}
 .page2-back,.dispatch-back{color:var(--ui-muted)}
 .page2-back:active,.dispatch-back:active{color:#fff}
 

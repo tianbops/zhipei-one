@@ -35,18 +35,8 @@ body {
   padding: 14px 0 40px;
 }
 
-.topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  min-height: 52px;
-  padding: 0 2px 10px;
-}
-
-.topbar strong {
-  font-size: 19px;
-  letter-spacing: .2px;
-}
+/* 阶段 6 · 5A：移除遗留 .topbar 死规则（无任何 HTML 使用裸 .topbar）。
+   标准 Header 钩子 .topbar 现统一定义于 css/ui-unified.css（权威层）。详见资产审计台账第二十四章。 */
 
 .card {
   background: var(--card);
