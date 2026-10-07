@@ -1,13 +1,13 @@
 /* 智配One · 首页移动端 UI */
 .home-app{width:min(100%,430px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:16px 16px calc(28px + env(safe-area-inset-bottom));background:#05070A}
-.home-topbar{height:56px;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:10}
+.home-topbar{height:var(--zp-header-height);display:flex;align-items:center;justify-content:space-between;position:relative;z-index:10}
 .home-brand{display:flex;flex-direction:column;line-height:1.2}
 .home-brand strong{font-size:22px;font-weight:700;letter-spacing:1px;color:#fff}
 .home-brand span{margin-top:2px;font-size:12px;color:#7F8B98;letter-spacing:2px}
-.home-menu-button{width:42px;height:42px;border:1px solid rgba(255,255,255,.025);border-radius:50%;background:rgba(20,28,37,.80);color:#fff;padding:0;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
+.home-menu-button{width:var(--zp-control-height);height:var(--zp-control-height);border:1px solid rgba(255,255,255,.025);border-radius:50%;background:rgba(20,28,37,.80);color:#fff;padding:0;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
 .home-menu-button svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round}
 .home-menu-button:active{background:#B8C1C8;color:#0B1015;transform:scale(.97)}
-.home-menu-panel{position:absolute;right:0;top:50px;width:208px;overflow:hidden;padding:6px;border:1px solid #2A3540;border-radius:12px;background:rgba(20,28,37,.80);box-shadow:0 10px 24px rgba(0,0,0,.3);animation:zpMenuIn .14s ease-out}
+.home-menu-panel{position:absolute;right:0;top:56px;width:208px;overflow:hidden;padding:6px;border:1px solid #2A3540;border-radius:12px;background:rgba(20,28,37,.80);box-shadow:0 10px 24px rgba(0,0,0,.3);animation:zpMenuIn .14s ease-out}
 .home-menu-panel[hidden]{display:none}
 .home-menu-panel a,.home-menu-panel button{width:100%;height:48px;min-height:48px;padding:0 12px;gap:11px;border:0;border-radius:11px;background:transparent;color:#D5DCE2;text-align:left;text-decoration:none;font-size:14px;font-weight:600;display:flex;align-items:center;-webkit-tap-highlight-color:transparent}
 .home-menu-panel a:active,.home-menu-panel button:active{background:rgba(28,37,47,.82);transform:scale(.985)}

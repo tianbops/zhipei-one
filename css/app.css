@@ -181,8 +181,8 @@ body {
 }
 
 .menu-button {
-  width: 40px;
-  height: 40px;
+  width: var(--zp-control-height);
+  height: var(--zp-control-height);
   padding: 0;
   background: transparent;
   color: var(--muted);

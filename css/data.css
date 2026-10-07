@@ -106,9 +106,9 @@ body.data-panel-open .data-float-scroll{opacity:0!important;visibility:hidden!im
 }
 
 /* 数据资料 2.0 顶部导航与菜单 */
-.data-page-head{position:relative;display:grid;grid-template-columns:42px minmax(0,1fr) 42px;align-items:center;min-height:54px;padding:0 0 8px}
+.data-page-head{position:relative;display:grid;grid-template-columns:var(--zp-control-height) minmax(0,1fr) var(--zp-control-height);align-items:center;min-height:var(--zp-header-height);padding:0 0 8px}
 .data-page-head h1{margin:0;text-align:center;font-size:18px;line-height:24px;font-weight:650}
-.data-page-back,.data-page-menu-btn{width:42px;height:42px;display:flex;align-items:center;justify-content:center;border:1px solid #2A3540;border-radius:11px;background:rgba(10,14,19,.88);color:#fff;text-decoration:none;box-sizing:border-box}
+.data-page-back,.data-page-menu-btn{width:var(--zp-control-height);height:var(--zp-control-height);display:flex;align-items:center;justify-content:center;border:1px solid #2A3540;border-radius:11px;background:rgba(10,14,19,.88);color:#fff;text-decoration:none;box-sizing:border-box}
 .data-page-back{font-size:30px;line-height:1;font-weight:300;padding-bottom:3px}
 .data-page-menu-btn{font-size:19px;line-height:1}
 .data-page-back:active,.data-page-menu-btn:active{background:rgba(28,37,47,.82)}

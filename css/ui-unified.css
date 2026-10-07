@@ -29,6 +29,20 @@
   --zp-card-translucent:rgba(20,28,37,.80);
   --zp-card-translucent-2:rgba(10,14,19,.88);
 
+  /* ===== 间距与控件尺寸（方案第九 / 十一 / 十二章） =====
+     取值取自当前代码的实际分布，不是凭空定的理想值，避免引入尺寸跳变：
+       header-height 54px —— 现有值为 42/48/52/54/56，取方案第十一章推荐的标准值。
+         注意：矮屏 @media(max-height:700px) 的压缩态属响应式特例，不套用此变量。
+       control-height 48px —— Android 最小可靠触控靶区。现有取值从 40 到 44 不等，
+         全部低于该标准，故本轮是「只放大不缩小」的单向收敛（见 css-touch-audit.cjs）。 */
+  --zp-header-height:54px;
+  --zp-control-height:48px;
+  --zp-space-1:4px;
+  --zp-space-2:8px;
+  --zp-space-3:12px;
+  --zp-space-4:16px;
+  --zp-space-5:20px;
+
   --ui-bg:var(--zp-bg);
   --ui-surface:var(--zp-surface);
   --ui-surface-2:var(--zp-surface-2);
