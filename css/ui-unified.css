@@ -28,6 +28,12 @@
   /* app.css 独有的两种半透明卡片底色（不同于不透明的 surface 系列，需独立保留） */
   --zp-card-translucent:rgba(20,28,37,.80);
   --zp-card-translucent-2:rgba(10,14,19,.88);
+  /* 不透明卡片底色（solid），管理员端 admin.html 的 .route/.dialog/.tab.active/.add 在用。
+     取值 #1C2530 介于 --zp-surface(#18212B) 与 --zp-surface-2(#11171D) 之间，是独立的实体卡片色，
+     与「半透明」的 --zp-card-translucent 取值不同、用途不同，切勿合并。
+     此前 admin.html 在内联 :root 写死 --card:#1C2530（游离于 --zp-* 体系外，主题改动传不到管理端）；
+     现提升为全局单一定义（Commit 4D），admin.html 改为 --card:var(--zp-card) 订阅本真相源。 */
+  --zp-card:#1C2530;
 
   /* 列表分隔线（方案第十五章 Row）。
      取值不是拍的：现有代码里 .account-row / .request-row / .page2-row 用
