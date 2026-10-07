@@ -87,6 +87,8 @@ function render(){
  if(Number(s.merged)>0)metrics.push('合并'+s.merged+'家');
  if(Number(s.newStores)>0)metrics.push('新增'+s.newStores+'家');
  if(pending.length)metrics.push('待定'+pending.length+'家');
+ // 质量门只做提示不硬阻断；但 REVIEW 不能在详情页被用户误认为“完全正常”。
+ if(order.quality?.level==='REVIEW')metrics.push('需复核');
  $('metrics').innerHTML=metrics.map(x=>'<span>'+esc(x)+'</span>').join('');
  $('routeList').innerHTML=stores.length?stores.map((x,i)=>{
    const name=esc(x.name||x.rawName||'未识别门店'), nav=safeUrl(navOf(x));
