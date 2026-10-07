@@ -1,17 +1,46 @@
 /* 智配One · 全局 UI 统一层 2.1
    只负责视觉、层级、触控与反馈，不承载任何业务规则。 */
 :root{
-  --ui-bg:#05070A;
-  --ui-surface:#18212B;
-  --ui-surface-2:#11171D;
-  --ui-surface-3:#202B36;
-  --ui-line:#2A3540;
-  --ui-text:#FFFFFF;
-  --ui-muted:#B8C2CC;
-  --ui-soft:#7F8A95;
+  /* ===== 全局设计 Token · 单一真相源（Commit 2A） =====
+     背景：历史上并存三套割裂的变量 —— app.css 的无前缀版（--bg/--card/--card2/--line/--muted/--soft）、
+           mobile-ui.css 的 --zp-* 版、本文件的 --ui-* 版，同一语义写三遍，改主题必须改三处。
+     做法：将取值完全一致的语义统一收敛到 --zp-* 名下，放在本 :root。
+           之所以选本文件作为权威层，是因为它是**唯一被全部页面加载**的 CSS
+           （ui-unified.css 覆盖 14/14；app.css 缺 admin.html；mobile-ui.css 仅覆盖 7/14）。
+     兼容：旧变量名一律保留为别名指向新 token，任何既有 var(...) 的解析结果逐字节不变。
+
+     未合并项（勿强行统一，强行合并会造成视觉漂移）：
+       ◆ danger 双值共役：--zp-danger=#FFB4AB（mobile-ui.css，当前 .message.error 在用，1 处）
+                          --ui-danger =#FF8278（本文件，4 处在用）
+         两者都在服役且取值不同，合并必然改变某一方的红色外观，故保持独立，列为待决策项。
+       ◆ app.css 的 --soft=#202B36 其实是表面色（等同 surface-3），并非弱文字色，属历史命名错误。
+         但更正它会改变 13 个页面的级联解析值，超出本次「视觉不变」的边界，
+         故本提交原样保留，交由阶段 10（CSS 清理）连同命名一并校正。 */
+  --zp-bg:#05070A;
+  --zp-surface:#18212B;
+  --zp-surface-2:#11171D;
+  --zp-surface-3:#202B36;
+  --zp-line:#2A3540;
+  --zp-text:#FFFFFF;
+  --zp-muted:#B8C2CC;
+  --zp-soft:#7F8A95;
+  --zp-radius:14px;
+  /* app.css 独有的两种半透明卡片底色（不同于不透明的 surface 系列，需独立保留） */
+  --zp-card-translucent:rgba(20,28,37,.80);
+  --zp-card-translucent-2:rgba(10,14,19,.88);
+
+  --ui-bg:var(--zp-bg);
+  --ui-surface:var(--zp-surface);
+  --ui-surface-2:var(--zp-surface-2);
+  --ui-surface-3:var(--zp-surface-3);
+  --ui-line:var(--zp-line);
+  --ui-text:var(--zp-text);
+  --ui-muted:var(--zp-muted);
+  --ui-soft:var(--zp-soft);
+  --ui-radius:var(--zp-radius);
+  /* danger 保持独立取值（不与 --zp-danger 合并），理由见顶部注释 */
   --ui-danger:#FF8278;
   --ui-danger-soft:rgba(255,130,120,.08);
-  --ui-radius:14px;
   --ui-dialog-radius:18px;
   --ui-control-radius:11px;
 

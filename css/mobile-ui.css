@@ -3,16 +3,12 @@
    Goals: compact Android-style hierarchy, touch-safe controls, safe-area handling,
    consistent dialogs/forms/status states, responsive narrow screens. */
 :root{
-  --zp-bg:#05070A;
-  --zp-surface:#18212B;
-  --zp-surface-2:#11171D;
-  --zp-surface-3:#202B36;
-  --zp-line:#2A3540;
-  --zp-text:#FFFFFF;
-  --zp-muted:#B8C2CC;
-  --zp-soft:#7F8A95;
+  /* Commit 2A：--zp-* 的权威定义已上移至 ui-unified.css（唯一被全部页面加载的层）。
+     本文件原先重复声明一遍同值变量，属双份真相源，一旦改动必然漂移，故删除重复项。
+     仅保留 --zp-danger：它与 ui-unified.css 的 --ui-danger 取值不同且两者都在服役
+     （本文件的 .message.error 用 #FFB4AB，ui-unified 侧 4 处用 #FF8278），
+     强行合并会改变外观，保持独立，列为待决策项。 */
   --zp-danger:#FFB4AB;
-  --zp-radius:14px;
 }
 html{background:var(--zp-bg);-webkit-text-size-adjust:100%}
 body{background:var(--zp-bg);color:var(--zp-text);overscroll-behavior-y:none}
