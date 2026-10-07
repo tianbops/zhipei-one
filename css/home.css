@@ -151,3 +151,27 @@
 
 /* 首页菜单轻入场：opacity + 轻微上移，弱化「Web Dropdown」观感 */
 @keyframes zpMenuIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+
+
+/* 本月配送：轻量业务趋势卡，不抢首页主操作 */
+.monthly-card{margin-top:18px;padding:16px 16px 13px;background:#151D26;border:1px solid rgba(255,255,255,.075);border-radius:16px;opacity:0;transform:translateY(4px);transition:opacity .22s ease,transform .22s ease}
+.monthly-card[hidden]{display:none}
+.monthly-card.is-ready{opacity:1;transform:none}
+.monthly-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.monthly-title-row{display:flex;align-items:baseline;gap:9px}
+.monthly-title-row strong{color:#F2F5F7;font-size:16px;line-height:22px;font-weight:650}
+.monthly-month{color:#7F8A95;font-size:12px;line-height:18px}
+.monthly-summary{display:flex;align-items:baseline;gap:14px;margin-top:7px;color:#B8C2CC;font-size:13px;line-height:20px}
+.monthly-summary b{color:#F2F5F7;font-size:18px;line-height:22px;font-weight:650;font-variant-numeric:tabular-nums}
+.monthly-more{padding:3px 0;color:#7F8A95;font-size:12px;line-height:18px;text-decoration:none}
+.monthly-more:active{color:#F2F5F7}
+.monthly-chart-wrap{height:78px;margin-top:8px}
+.monthly-chart{display:block;width:100%;height:100%;overflow:visible}
+.monthly-chart-line{fill:none;stroke:#B8C2CC;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;stroke-dasharray:600;stroke-dashoffset:600;transition:stroke-dashoffset .55s ease}
+.monthly-card.is-ready .monthly-chart-line{stroke-dashoffset:0}
+.monthly-chart-dot{fill:#F2F5F7;opacity:0;transition:opacity .2s ease .5s}
+.monthly-card.is-ready .monthly-chart-dot{opacity:1}
+.monthly-axis{display:flex;justify-content:space-between;margin-top:1px;color:#66727D;font-size:10px;line-height:14px;font-variant-numeric:tabular-nums}
+@media(prefers-reduced-motion:reduce){
+ .monthly-card{transition:none}.monthly-chart-line{transition:none}.monthly-chart-dot{transition:none}
+}
