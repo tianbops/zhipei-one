@@ -60,6 +60,7 @@ async function retryLearningRepairs(env,waybillId,userId){
   const remaining=Number(await command(env,["HLEN","zp:"+key]))||0;
   if(remaining===0)await command(env,["DEL","zp:"+key]);
   return remaining?"DEFERRED":"RECORDED";
+ }catch{return "DEFERRED";
  }finally{await releaseLock(env,lock)}
 }
 // 释放分布式锁：仅在当前令牌与持锁令牌一致时删除，避免误删他人锁。
@@ -173,13 +174,13 @@ export async function onRequestPost({request,env}){
   const indexKey=/^\d{4}-\d{2}-\d{2}$/.test(clean(order.date))?waybillIndexKey(order.routeId,clean(order.date)):"";
   const commitScript='local okOrder,order=pcall(cjson.decode,ARGV[1]); if not okOrder or type(order)~="table" then return 2 end; local rawDone=redis.call("GET",KEYS[2]); if rawDone then return 3 end; local existingFingerprint=redis.call("GET",KEYS[6]); if existingFingerprint and existingFingerprint~=order.id then return 7 end; local okItems,items=pcall(cjson.decode,ARGV[2]); if not okItems or type(items)~="table" then return 4 end; for _,item in ipairs(items) do if type(item)~="table" or type(item.field)~="string" or item.field=="" or type(item.value)~="string" or item.value=="" then return 6 end end; if ARGV[3]~="" then local okBase,base=pcall(cjson.decode,ARGV[3]); if not okBase or type(base)~="table" then return 5 end end; if ARGV[3]~="" then redis.call("SET",KEYS[4],ARGV[3]) end; redis.call("SET",KEYS[1],ARGV[1]); redis.call("SET",KEYS[2],"1"); redis.call("SET",KEYS[6],order.id); for _,item in ipairs(items) do redis.call("HSET",KEYS[3],item.field,item.value) end; if ARGV[4]~="" then redis.call("SADD",KEYS[5],order.id) end; return 1';
   const commitResult=await command(env,["EVAL",commitScript,"6","zp:waybill:"+order.id,"zp:"+doneKey,"zp:waybill:"+order.id+":learning-repair","zp:route:"+order.routeId+":base",indexKey||"zp:waybills:noop","zp:waybill:fingerprint:"+order.businessFingerprint,JSON.stringify(order),JSON.stringify(learningEntries),basePayload,indexKey?"1":"",confirmedNow,order.businessFingerprint]);
-  if(Number(commitResult)===3){const committed=await load(env,waybillId);if(!committed)throw Object.assign(new Error("运单不存在"),{code:"WAYBILL_NOT_FOUND"});order=committed;let learning=await retryLearningRepairs(env,waybillId,user.id);await appendWaybillEvent(env,waybillId,{event:"WAYBILL_ALREADY_CONFIRMED",stage:"CONFIRM",requestId:order.requestId||null,userId:user.id});if(routeBaseLock){await releaseLock(env,routeBaseLock);routeBaseLock=null}await releaseLock(env,waybillLock);waybillLock=null;await releaseLock(env,requestLock);requestLock=null;return json({success:true,waybill:order,learning:learning==="RECORDED"?"ALREADY_CONFIRMED":"DEFERRED"});}if(Number(commitResult)!==1)throw new Error("WAYBILL_COMMIT_FAILED");
+  if(Number(commitResult)===3){const committed=await load(env,waybillId);if(!committed)throw Object.assign(new Error("运单不存在"),{code:"WAYBILL_NOT_FOUND"});order=committed;let learning=await retryLearningRepairs(env,waybillId,user.id);try{await appendWaybillEvent(env,waybillId,{event:"WAYBILL_ALREADY_CONFIRMED",stage:"CONFIRM",requestId:order.requestId||null,userId:user.id});}catch{}if(routeBaseLock){await releaseLock(env,routeBaseLock);routeBaseLock=null}await releaseLock(env,waybillLock);waybillLock=null;await releaseLock(env,requestLock);requestLock=null;return json({success:true,waybill:order,learning:learning==="RECORDED"?"ALREADY_CONFIRMED":"DEFERRED"});}if(Number(commitResult)!==1)throw new Error("WAYBILL_COMMIT_FAILED");
   // 指纹漂移回收：只在提交成功后执行——提交失败时保留原状，仍可安全重试。详见 retireStaleFingerprintKey 注释。
   const retiredFp=await retireStaleFingerprintKey(env,{prevFingerprint,nextFingerprint:order.businessFingerprint,ownerId:order.id});
-  if(retiredFp)await appendWaybillEvent(env, order.id, {event:"WAYBILL_IDENTITY_RETIRED",stage:"CONFIRM",requestId:confirmRequestId||null,userId:user.id,reason:"FINGERPRINT_DRIFT"});
+  if(retiredFp)try{await appendWaybillEvent(env, order.id, {event:"WAYBILL_IDENTITY_RETIRED",stage:"CONFIRM",requestId:confirmRequestId||null,userId:user.id,reason:"FINGERPRINT_DRIFT"});}catch{}
   let learningStatus=learned.length?await retryLearningRepairs(env,order.id,user.id):"NONE";
-  await appendWaybillEvent(env, order.id, {event:"CONFIRM_COMPLETED",stage:"CONFIRM",requestId:order.requestId||null,userId:user.id,confirmedBy:user.id,pending:finalStores.filter(s=>s.pending).length,learned:learned.length});
-  if(learned.length)await appendWaybillEvent(env, order.id, {event:"LEARNING_COMPLETED",stage:"LEARNING",requestId:order.requestId||null,userId:user.id,learned:learned.length});
+  try{await appendWaybillEvent(env, order.id, {event:"CONFIRM_COMPLETED",stage:"CONFIRM",requestId:order.requestId||null,userId:user.id,confirmedBy:user.id,pending:finalStores.filter(s=>s.pending).length,learned:learned.length});}catch{}
+  if(learned.length)try{await appendWaybillEvent(env, order.id, {event:"LEARNING_COMPLETED",stage:"LEARNING",requestId:order.requestId||null,userId:user.id,learned:learned.length});}catch{}
   const indexSync="OK";
   if(routeBaseLock){await releaseLock(env,routeBaseLock);routeBaseLock=null}
   await releaseLock(env,waybillLock);waybillLock=null;
