@@ -19,26 +19,29 @@ const validWaybill=x=>!!x&&x.schemaVersion==="2"&&typeof x.id==="string"&&typeof
 const historyReadable=x=>validWaybill(x)&&["PLANNED","CONFIRMED"].includes(x.stage);
 const waybillIndexKey=(routeId,date)=>"zp:route:"+routeId+":waybills:"+date;
 
-async function readWaybills(env,ids){
+async function readWaybills(env,ids,budget=null){
  const cleanIds=[...new Set((ids||[]).map(clean).filter(Boolean))];if(!cleanIds.length)return [];
  try{
+  if(budget&&!budget.take(1))throwBudgetExceeded(budget.max,"history-read-waybills");
   const rawList=await command(env,["MGET",...cleanIds.map(id=>"zp:waybill:"+id)]);
   return (Array.isArray(rawList)?rawList:[]).map(raw=>{if(!raw)return null;try{const x=typeof raw==="string"?JSON.parse(raw):raw;return historyReadable(x)?x:null}catch{return null}}).filter(Boolean);
- }catch{
+ }catch(error){
+  if(budget)throw error;
   const out=[];
   for(const id of cleanIds){const raw=await get(env,"waybill:"+id);try{const x=typeof raw==="string"?JSON.parse(raw):raw;if(historyReadable(x))out.push(x)}catch{}}
   return out;
  }
 }
 
-async function readIndexMembers(env,routeId,date){
+async function readIndexMembers(env,routeId,date,budget=null){
+ if(budget&&!budget.take(1))throwBudgetExceeded(budget.max,"history-read-index");
  const raw=await command(env,["SMEMBERS",waybillIndexKey(routeId,date)]).catch(()=>[]);
  return Array.isArray(raw)?raw.map(clean).filter(Boolean):[];
 }
 
-async function readDateWaybills(env,user,routeId,date){
- const ids=await readIndexMembers(env,routeId,date);
- const waybills=await readWaybills(env,ids);
+async function readDateWaybills(env,user,routeId,date,budget=null){
+ const ids=await readIndexMembers(env,routeId,date,budget);
+ const waybills=await readWaybills(env,ids,budget);
  return waybills.filter(w=>w.routeId===routeId&&w.date===date&&canReadWaybill(user,w,env)).sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
 }
 
@@ -60,13 +63,20 @@ async function readDateWaybillsBatch(env,user,entries){
  return out;
 }
 
-async function readDates(env,routeId,range){
- const dates=[];let cursor="0";const prefix="zp:route:"+routeId+":waybills:";
- do{
-  const r=await command(env,["SCAN",cursor,"MATCH",prefix+"*","COUNT","100"]);
-  cursor=String(r?.[0]??"0");
-  for(const key of (r?.[1]||[])){const text=String(key);if(!text.startsWith(prefix))continue;const date=text.slice(prefix.length);if(validDate(date)&&inRange(date,range))dates.push({routeId,date})}
- }while(cursor!=="0");
+async function readDates(env,routeId,range,budget=null){
+ const dates=[];const prefix="zp:route:"+routeId+":waybills:";
+ if(budget){
+  const scanned=await scanKeysBudgeted(env,prefix+"*",budget,{count:500,cap:5000});
+  for(const key of scanned.keys){const text=String(key);if(!text.startsWith(prefix))continue;const date=text.slice(prefix.length);if(validDate(date)&&inRange(date,range))dates.push({routeId,date})}
+  if(!scanned.complete)throwBudgetExceeded(budget.max,"history-read-dates");
+ }else{
+  let cursor="0";
+  do{
+   const r=await command(env,["SCAN",cursor,"MATCH",prefix+"*","COUNT","100"]);
+   cursor=String(r?.[0]??"0");
+   for(const key of (r?.[1]||[])){const text=String(key);if(!text.startsWith(prefix))continue;const date=text.slice(prefix.length);if(validDate(date)&&inRange(date,range))dates.push({routeId,date})}
+  }while(cursor!=="0");
+ }
  return [...new Map(dates.map(x=>[x.date,x])).values()].sort((a,b)=>b.date.localeCompare(a.date));
 }
 
@@ -155,8 +165,8 @@ export async function onRequestDelete({request,env}){
   if(month){
    if(!/^\d{4}-\d{2}$/.test(month))return json({success:false,code:"MONTH_INVALID",error:"月份格式错误"},400);
    if(!monthInRange(month,range))return json({success:false,code:"MONTH_OUT_OF_RANGE",error:"月份不在历史查询范围内"},400);
-   const entries=await readDates(env,routeId,range);const results=[];let total=0;const budget=new Budget();
-   for(const entry of entries){if(!entry.date.startsWith(month))continue;const list=await readDateWaybills(env,user,routeId,entry.date);total+=list.length;for(const order of list.filter(w=>canWriteWaybill(user,w,env))){try{results.push(await deleteWaybill(env,routeId,entry.date,order.id,budget))}catch(e){if(e?.code===SUBREQUEST_BUDGET_EXCEEDED){return json({success:false,code:"PARTIAL_FAILURE",error:"删除已达到单次资源预算，请继续重试完成剩余运单",deleted:results.filter(x=>x.mainOk).length,month,partial:true,budgetUsed:budget.used,budgetMax:budget.max},503)}throw e}}}
+   const budget=new Budget();const entries=await readDates(env,routeId,range,budget);const results=[];let total=0;
+   for(const entry of entries){if(!entry.date.startsWith(month))continue;const list=await readDateWaybills(env,user,routeId,entry.date,budget);total+=list.length;for(const order of list.filter(w=>canWriteWaybill(user,w,env))){try{results.push(await deleteWaybill(env,routeId,entry.date,order.id,budget))}catch(e){if(e?.code===SUBREQUEST_BUDGET_EXCEEDED){return json({success:false,code:"PARTIAL_FAILURE",error:"删除已达到单次资源预算，请继续重试完成剩余运单",deleted:results.filter(x=>x.mainOk).length,month,partial:true,budgetUsed:budget.used,budgetMax:budget.max},503)}throw e}}}
    const s=summarize(results);const skipped=total-results.length;
    if(s.mainFailed)return json({success:false,code:"WAYBILL_DELETE_FAILED",error:"部分运单主记录删除失败,请重试",deleted:s.deleted,skipped,total,month});
    return json({success:true,code:skipped>0?"PARTIAL_DELETE":(s.partial?"PARTIAL_FAILURE":undefined),message:skipped>0?`已删除 ${s.deleted} 单，另有 ${skipped} 单因无权限未删除`:(s.partial?"部分索引或子键清理未完成,建议稍后执行修复":undefined),deleted:s.deleted,skipped,total,deletedWaybills:s.deleted,month});
@@ -173,7 +183,7 @@ export async function onRequestDelete({request,env}){
   if(!r.mainOk)return json({success:false,code:"WAYBILL_DELETE_FAILED",error:"运单主记录删除失败,请重试",deleted:0,waybillId});
   return json({success:true,code:r.indexOk&&r.childrenOk&&r.refOk?undefined:"PARTIAL_FAILURE",message:r.indexOk&&r.childrenOk&&r.refOk?undefined:"部分索引或子键清理未完成,建议稍后执行修复",deleted:1,deletedWaybills:1,waybillId});
  }
- const readable=await readDateWaybills(env,user,routeId,date);const results=[];const budget=new Budget();
+ const budget=new Budget();const readable=await readDateWaybills(env,user,routeId,date,budget);const results=[];
  for(const order of readable.filter(w=>canWriteWaybill(user,w,env))){try{results.push(await deleteWaybill(env,routeId,date,order.id,budget))}catch(e){if(e?.code===SUBREQUEST_BUDGET_EXCEEDED){const s=summarize(results);return json({success:false,code:"PARTIAL_FAILURE",error:"删除已达到单次资源预算，请继续重试完成剩余运单",deleted:s.deleted,skipped:readable.length-results.length,date,budgetUsed:budget.used,budgetMax:budget.max},503)}throw e}}
  const s=summarize(results);const skipped=readable.length-results.length;
  if(s.mainFailed)return json({success:false,code:"WAYBILL_DELETE_FAILED",error:"运单主记录删除失败,请重试",deleted:s.deleted,skipped,total:readable.length,date});
