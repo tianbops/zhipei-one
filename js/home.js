@@ -306,8 +306,16 @@ async function processSelectedFile(file, resumeRequestId){
     try{
       r=await fetch("/api/waybills/process?stream=1",{method:"POST",body:fd,credentials:"same-origin",signal:controller.signal});
       if(!r.ok){
-        const httpError=new Error("运单处理服务暂时不可用，请重试");
-        httpError.code="PROCESS_HTTP_"+r.status;
+        // HTTP 错误也可能携带后端的可恢复动作（例如 RETRY_SAVE / RESUBMIT）。
+        // 不能只看状态码，否则 503 后端已明确允许重试时，前端会把动作信息丢掉。
+        let errorBody=null;
+        try{errorBody=await r.clone().json()}catch{}
+        const httpError=new Error(errorBody?.message||errorBody?.error||"运单处理服务暂时不可用，请重试");
+        httpError.code=errorBody?.code||("PROCESS_HTTP_"+r.status);
+        httpError.hint=errorBody?.hint||null;
+        httpError.action=errorBody?.action||null;
+        httpError.recoverable=!!errorBody?.recoverable;
+        httpError.requestId=errorBody?.requestId||null;
         throw httpError;
       }
       const reader=r.body?.getReader();
