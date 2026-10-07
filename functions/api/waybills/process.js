@@ -226,6 +226,8 @@ async function saveWaybill(order, requestId, resumed){
   // 同一车辆当天多趟（门店/重量不同）→ 签名不同 → 视为不同运单，不会被误合并。
   const dailySig=await dailyWaybillKey(order);
   const sigString=dailyWaybillSignatureString(order);
+  // 将当日业务签名显式固化到主记录，供保存 EVAL 校验反向去重键，防止“键指向错误运单”时被误判为幂等。
+  order.dailyDedupeKey=dailySig;
   const dedupeKey="zp:waybill:dedupe:"+dailySig;
   // 历史运单未写入 dedupeKey，这里兜底扫描当日索引里「业务签名一致」的运单，命中即复用旧单（不新增）。
   let dailyDupId=null;
@@ -269,16 +271,41 @@ async function saveWaybill(order, requestId, resumed){
   }
   // 保存脚本：原子地按「业务签名 > 内容指纹」顺序去重。
   // 命中旧单返回 {"DAILY"|"FINGERPRINT", id}，新单返回 {"NEW", id}。业务签名已含车辆+门店+重量，故同车多趟天然区分。
-  const saveScript='local fpKey=KEYS[1]; local wbKey=KEYS[2]; local idxKey=KEYS[3]; local dedupeKey=KEYS[4]; local sigId=redis.call("GET",dedupeKey); if sigId and sigId~="" then local raw=redis.call("GET","zp:waybill:"..sigId); if raw then redis.call("SADD",idxKey,sigId); return {"DAILY",sigId} end; redis.call("DEL",dedupeKey) end; local fpId=redis.call("GET",fpKey); if fpId and fpId~=ARGV[1] then local raw=redis.call("GET","zp:waybill:"..fpId); if raw then redis.call("SADD",idxKey,fpId); return {"FINGERPRINT",fpId} end; redis.call("DEL",fpKey) end; redis.call("SET",fpKey,ARGV[1]); redis.call("SET",wbKey,ARGV[2]); redis.call("SADD",idxKey,ARGV[1]); redis.call("SET",dedupeKey,ARGV[1]); return {"NEW",ARGV[1]}';
+  const saveScript='local fpKey=KEYS[1]; local wbKey=KEYS[2]; local idxKey=KEYS[3]; local dedupeKey=KEYS[4]; local sigId=redis.call("GET",dedupeKey); if sigId and sigId~="" then local raw=redis.call("GET","zp:waybill:"..sigId); if raw then local ok,existing=pcall(cjson.decode,raw); if ok and type(existing)=="table" and existing.dailyDedupeKey==ARGV[3] then redis.call("SADD",idxKey,sigId); return {"DAILY",sigId} end; if not ok or type(existing)~="table" or not existing.dailyDedupeKey then return {"VERIFY_DAILY",sigId} end; redis.call("DEL",dedupeKey) end; redis.call("DEL",dedupeKey) end; local fpId=redis.call("GET",fpKey); if fpId and fpId~=ARGV[1] then local raw=redis.call("GET","zp:waybill:"..fpId); if raw then local ok,existing=pcall(cjson.decode,raw); if ok and type(existing)=="table" and existing.businessFingerprint==ARGV[4] then redis.call("SADD",idxKey,fpId); return {"FINGERPRINT",fpId} end; if not ok or type(existing)~="table" or not existing.businessFingerprint then return {"VERIFY_FINGERPRINT",fpId} end; redis.call("DEL",fpKey) end; redis.call("DEL",fpKey) end; redis.call("SET",fpKey,ARGV[1]); redis.call("SET",wbKey,ARGV[2]); redis.call("SADD",idxKey,ARGV[1]); redis.call("SET",dedupeKey,ARGV[1]); return {"NEW",ARGV[1]}';
   let saveResult;
   try{
-    saveResult=await command(env,["EVAL",saveScript,"4",fingerprintKey,"zp:waybill:"+order.id,indexKey,dedupeKey,order.id,JSON.stringify(order)]);
+    saveResult=await command(env,["EVAL",saveScript,"4",fingerprintKey,"zp:waybill:"+order.id,indexKey,dedupeKey,order.id,JSON.stringify(order),dailySig,order.businessFingerprint]);
   }catch(e){
     return failProcess("WAYBILL_SAVE_FAILED","运单保存失败",500,{recoverable:true,action:"RETRY_SAVE",hint:"运单保存失败，可重试保存",detail:e?.message||String(e)});
   }
   let reason="NEW",savedId=order.id;
   if(Array.isArray(saveResult)&&saveResult.length>=2){reason=String(saveResult[0]);savedId=String(saveResult[1])}
   else if(typeof saveResult==="string"&&saveResult!==order.id){reason="FINGERPRINT";savedId=saveResult}
+  if(reason==="VERIFY_DAILY"||reason==="VERIFY_FINGERPRINT"){
+    const verifyId=String(savedId||"");
+    const verifyRaw=verifyId?await command(env,["GET","zp:waybill:"+verifyId]):null;
+    let verifyOrder=null;try{verifyOrder=verifyRaw?JSON.parse(verifyRaw):null}catch{}
+    const valid=reason==="VERIFY_DAILY"
+      ? !!verifyOrder && dailyWaybillSignatureString(verifyOrder)===sigString
+      : !!verifyOrder && String(verifyOrder.businessFingerprint||"")===String(order.businessFingerprint||"");
+    if(valid){
+      const repairKey=reason==="VERIFY_DAILY"?dedupeKey:fingerprintKey;
+      const repair=await command(env,["EVAL",'if redis.call("GET",KEYS[1])==ARGV[1] then redis.call("SADD",KEYS[2],ARGV[1]); return 1 end; return 0',"2",repairKey,indexKey,verifyId]);
+      if(Number(repair)===1){
+        await finishProc(env, requestId, verifyId);
+        try{await appendWaybillEvent(env,verifyId,{event:"WAYBILL_IDEMPOTENT",stage:"SAVED",requestId,reuse:verifyId,dedupe:reason==="VERIFY_DAILY"?"DAILY_MATCH_LEGACY":"FINGERPRINT_LEGACY"});}catch{}
+        return json({success:true,waybill:verifyOrder,idempotent:true,dedupe:reason==="VERIFY_DAILY"?"DAILY_MATCH_LEGACY":"FINGERPRINT_LEGACY",indexSync:"OK",quality,requestId});
+      }
+      return failProcess("WAYBILL_DEDUPE_RETRY","去重键正在变化，请重试保存",409,{recoverable:true,action:"RETRY_SAVE",hint:"去重键正在变化，请重试保存",order});
+    }
+    // 已存在的反向键与主记录身份不一致：仅 CAS 删除错误引用，不删除主运单。
+    const keyToClean=reason==="VERIFY_DAILY"?dedupeKey:fingerprintKey;
+    await command(env,["EVAL",'if redis.call("GET",KEYS[1])==ARGV[1] then return redis.call("DEL",KEYS[1]) else return 0 end',"1",keyToClean,verifyId]).catch(()=>{});
+    saveResult=await command(env,["EVAL",saveScript,"4",fingerprintKey,"zp:waybill:"+order.id,indexKey,dedupeKey,order.id,JSON.stringify(order),dailySig,order.businessFingerprint]);
+    reason=Array.isArray(saveResult)?String(saveResult[0]||"NEW"):"NEW";
+    savedId=Array.isArray(saveResult)?String(saveResult[1]||order.id):order.id;
+    if(reason==="VERIFY_DAILY"||reason==="VERIFY_FINGERPRINT") return failProcess("WAYBILL_DEDUPE_CORRUPT","去重索引与运单身份不一致，请稍后重试",409,{recoverable:true,action:"RETRY_SAVE",hint:"发现旧去重索引异常，已安全隔离，请重试保存",order});
+  }
   if(reason==="NEW"){
     emit(100,"处理完成");
     if(resumed){ try { await appendWaybillEvent(env, order.id, {event:"WAYBILL_RESUMED_SAVE",stage:"SAVED",requestId,id:order.id,qualityLevel:order.quality?.level,qualityFlags:order.quality?.flags||[]}); } catch { /* best-effort */ } }
