@@ -48,13 +48,43 @@ const WANT = new Set([
   "border-radius", "font-size", "background", "background-color", "color",
 ]);
 
+/** 与 css-button-resolve.cjs 保持同一套排除口径：
+    svg / path 等是按钮内部的图形，不是触控靶区；opacity:0 的是可访问性隐藏控件。 */
+const DECOR_RE = /^(svg|path|circle|rect|g|polyline|line|use|i|span|em|strong|img|br|label)$/i;
+const HIDDEN_RE = /(opacity:\s*0|pointer-events:\s*none|visibility:\s*hidden)/i;
+
 function isButtonLike(sel) {
   const single = sel.split(/[\s,>~+]+/).filter(Boolean);
+  if (DECOR_RE.test(single[single.length - 1])) return false;
   // 只要选择器任一段命中按钮/输入，且没有任何一段是纯容器，就当作按钮规则
   const hit = single.some((s) => BTN_RE.test(s) || INPUT_RE.test(s));
   if (!hit) return false;
   const last = single[single.length - 1];
   return !CONTAINER_RE.test(last);
+}
+
+/**
+ * 两条容易被判错的语义，必须先分清楚再谈合规：
+ *
+ * 1. icon 按钮 vs 文字按钮 —— 方案第十三章的字号其实是两条标准：
+ *      文字标签 14–16px，图标 18–20px。
+ *    头一版把两者混为一谈，于是 48×48 的 ☰ / ‹ › / × 全被报成「font 20 违规」，
+ *    而 20 恰恰是 icon 区间内的合规值。判据：宽高相等的正方形按钮按 icon 判定。
+ *
+ * 2. chip vs button —— 趋势指标那种胶囊小标签（border-radius:999px）是 chip，
+ *    不适用 Button 规范。按 10–12 去「修」它会把组件类型改掉，属于帮倒忙。
+ */
+const SPEC_ICON = { fontMin: 18, fontMax: 20 };
+function buttonKind(o, vars) {
+  const r = px(o["border-radius"], vars);
+  if (r !== null && r >= 100) return "chip";
+  // 判据用字号而不是「是否正方形」：文字标签的规范上限是 16px，
+  // 所以凡是 ≥18px 的字号，必然是拿字符当图标用（☰ / ‹ › / × / ↺），
+  // 反之 .data-swipe-actions 那种 48×48 但写着「编辑」的，字号 14 就该按文字判。
+  // 用正方形判会把它错分成 icon，进而把 font 14 报成违规。
+  const fs = px(o["font-size"], vars);
+  if (fs !== null && fs >= 18) return "icon";
+  return "text";
 }
 
 /** 数值化：先把 var(--x) 解析为真实值，再提取 px。
@@ -115,11 +145,16 @@ function collect(file, bucket, vars = new Map()) {
     const sel = `${prefix}${String(node.selector).trim()}`;
     if (isButtonLike(sel)) {
       const got = {};
+      let hidden = false;
       node.each((d) => {
         if (d.type !== "decl") return;
+        if (["opacity", "pointer-events", "visibility"].includes(d.prop)) {
+          if (HIDDEN_RE.test(`${d.prop}:${d.value}`)) hidden = true;
+        }
         if (!WANT.has(d.prop)) return;
         got[d.prop] = String(d.value).trim();
       });
+      if (hidden) return;   // 视觉隐藏控件不是触控靶区，不参与达标判定
       if (Object.keys(got).length) {
         bucket.set(sel, { ...(bucket.get(sel) || {}), ...got, __ctx: prefix.trim(), __file: path.basename(file) });
       }
@@ -162,19 +197,25 @@ function modeReport(files) {
     const r = px(o["border-radius"], vars);
     const fs2 = px(o["font-size"], vars);
     const p = padX(o, vars);
+    const kind = buttonKind(o, vars);
+    const fontSpec = kind === "icon" ? SPEC_ICON : SPEC;
     const issues = [];
     if (h !== null && h < SPEC.minTouch) issues.push(`触控 ${h}<${SPEC.minTouch}`);
-    if (r !== null && (r < SPEC.radiusMin || r > SPEC.radiusMax)) issues.push(`radius ${r}`);
-    if (fs2 !== null && (fs2 < SPEC.fontMin || fs2 > SPEC.fontMax)) issues.push(`font ${fs2}`);
-    if (p !== null && p < SPEC.padX) issues.push(`padX ${p}`);
-    rows.push({ sel, file: o.__file, ctx: o.__ctx, h, r, f: fs2, p, issues, bg: o.background || o["background-color"] || "" });
+    if (kind === "chip") {
+      // chip 不适用 Button 规范，只在注释里说明，不计偏差
+    } else {
+      if (r !== null && (r < SPEC.radiusMin || r > SPEC.radiusMax)) issues.push(`radius ${r}`);
+      if (fs2 !== null && (fs2 < fontSpec.fontMin || fs2 > fontSpec.fontMax)) issues.push(`font ${fs2}(${kind})`);
+      if (p !== null && p < SPEC.padX) issues.push(`padX ${p}`);
+    }
+    rows.push({ sel, file: o.__file, ctx: o.__ctx, h, r, f: fs2, p, issues, kind, bg: o.background || o["background-color"] || "" });
   }
   rows.sort((a, b) => (a.h ?? 999) - (b.h ?? 999));
 
   console.log("========== 按钮 / 输入框现状台账（方案第十三章） ==========");
   console.log(`规范：触控≥${SPEC.minTouch}  radius ${SPEC.radiusMin}-${SPEC.radiusMax}  font ${SPEC.fontMin}-${SPEC.fontMax}  padX≥${SPEC.padX}\n`);
   const pad = (s, n) => String(s).padEnd(n);
-  console.log(pad("文件", 20) + pad("选择器", 46) + pad("触控", 7) + pad("radius", 8) + pad("font", 6) + pad("padX", 6) + "偏差");
+  console.log(pad("文件", 20) + pad("选择器", 46) + pad("触控", 7) + pad("radius", 8) + pad("font", 6) + pad("padX", 6) + pad("类别", 6) + "偏差");
   console.log("-".repeat(120));
   for (const r of rows) {
     console.log(
@@ -183,6 +224,7 @@ function modeReport(files) {
       pad(r.r === null ? "-" : r.r + "px", 8) +
       pad(r.f === null ? "-" : r.f + "px", 6) +
       pad(r.p === null ? "-" : r.p + "px", 6) +
+      pad(r.kind, 6) +
       (r.issues.length ? "⚠ " + r.issues.join(" / ") : "合规")
     );
   }
@@ -242,8 +284,13 @@ function modeCheck(beforeDir, afterDir, names) {
       if (hb < ha) { violations++; lines.push(`  🔴 触控缩小（硬违规）  ${sel}\n        ${ha}px -> ${hb}px`); }
       else { improved++; lines.push(`  🟢 触控增大  ${sel}\n        ${ha}px -> ${hb}px`); }
     }
+    // chip 不适用 Button 规范，跳过视觉参数判定（触控尺寸仍看）
+    if (buttonKind(b, varsB) === "chip") continue;
+    const fs = buttonKind(b, varsB) === "icon" ? SPEC_ICON : SPEC;
     cmp("radius", (o, v) => px(o["border-radius"], v), SPEC.radiusMin, SPEC.radiusMax);
-    cmp("font", (o, v) => px(o["font-size"], v), SPEC.fontMin, SPEC.fontMax);
+    cmp("font", (o, v) => px(o["font-size"], v), fs.fontMin, fs.fontMax);
+    // padding-x 只有下限（≥16），没有上限 —— 用 Infinity 作上界即可复用同一套距离逻辑
+    cmp("padX", (o, v) => padX(o, v), SPEC.padX, Infinity);
   }
 
   console.log(`比对 ${names.length} 个文件（before=${beforeDir}  after=${afterDir}）\n`);

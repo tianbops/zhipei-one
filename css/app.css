@@ -93,7 +93,7 @@ body {
 .route-select {
   width: 100%;
   height: 48px;
-  padding: 0 13px;
+  padding: 0 16px;
   border: 1px solid #394652;
   border-radius: 11px;
   background: #0E141A;
@@ -180,13 +180,21 @@ body {
   position: relative;
 }
 
+/* font-size 22→20。两点必须说清：
+   1. 这里的字号是字符图标（☰）的大小，不是文字标签大小。方案第十三章有两条字号标准
+      —— 文字 14–16px、icon 18–20px，3A 的审计把两者混为一谈才误判成「font 22 违规」。
+      按 icon 标准取区间上限 20px，变化最小且达标。
+   2. 本规则当前**没有任何页面元素引用**：全站实际用的是 home.css 的 .home-menu-button，
+      且它渲染的是 22×22 的 svg 而非字符。也就是说这次改动不产生任何视觉变化，
+      属于死代码。真正的清理（连同 .data-page-back 那条被 font-size:0 盖掉的 30px）
+      归入阶段 10 CSS 清理，本轮不动结构。 */
 .menu-button {
   width: var(--zp-control-height);
   height: var(--zp-control-height);
   padding: 0;
   background: transparent;
   color: var(--muted);
-  font-size: 22px;
+  font-size: 20px;
   line-height: 40px;
   border: 0;
   border-radius: 10px;
@@ -216,10 +224,10 @@ body {
 .menu-panel a,.menu-panel button {
   display: block;
   width: 100%;
-  padding: 11px 12px;
+  padding: 11px 16px;
   background: transparent;
   border: 0;
-  border-radius: 8px;
+  border-radius: 10px;
   color: #fff;
   text-align: left;
   font-size: 14px;
@@ -425,7 +433,7 @@ body {
 .auth-card input {
   height: 50px;
   margin-top: 7px;
-  padding: 0 14px;
+  padding: 0 16px;
   font-size: 16px;
   outline: none;
 }
@@ -754,13 +762,19 @@ body {
   border-bottom: 0;
 }
 
+/* 行内小按钮：radius 8→10、font 12→14、padding 5px 8px→8px 16px。
+   它是「没有显式 height、高度由 padding+font 撑出来」的那类按钮，
+   实测高度仅约 27px —— 3A 只统计显式 min-height/height，把它整条漏掉了
+   （已在 css-button-resolve.cjs 补隐式高度估算才暴露出来）。
+   补到 8px 16px 后约 36px，仍不足 48px：再往上撑会顶破 .request-row 的单行布局，
+   故留到 Row 阶段（方案第十五章）连同行高一起处理，此处不硬凑数值。 */
 .request-row button {
   border: 1px solid #35404C;
-  border-radius: 8px;
+  border-radius: 10px;
   background: rgba(10,14,19,.88);
   color: #fff;
-  padding: 5px 8px;
-  font-size: 12px;
+  padding: 8px 16px;
+  font-size: 14px;
 }
 
 .request-row div {
@@ -825,7 +839,7 @@ body {
   height: 48px;
   box-sizing: border-box;
   margin: 0;
-  padding: 0 13px;
+  padding: 0 16px;
   border: 1px solid #35404C;
   border-radius: 11px;
   outline: none;

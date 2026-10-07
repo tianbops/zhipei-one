@@ -26,7 +26,7 @@
 .history-toolbar strong{font-size:15px;line-height:22px;font-weight:650}
 .history-toolbar button{
   height:var(--zp-control-height);
-  padding:0 13px;
+  padding:0 16px;
   border:1px solid #35404C;
   border-radius:10px;
   background:rgba(10,14,19,.88);
@@ -184,6 +184,7 @@
   text-align:center;
 }
 .history-picker-head strong{font-size:16px;line-height:22px;font-weight:650}
+/* font-size 24→20：翻页箭头 ‹ › 是字符图标，适用 icon 18–20px 标准（非文字 14–16px）。 */
 .history-picker-head button{
   width:var(--zp-control-height);
   height:var(--zp-control-height);
@@ -191,7 +192,7 @@
   border-radius:10px;
   background:rgba(10,14,19,.88);
   color:#E8EDF2;
-  font-size:24px;
+  font-size:20px;
   line-height:1;
 }
 .history-picker-head button:active{background:rgba(28,37,47,.82)}
@@ -354,7 +355,7 @@
 }
 .history-toolbar button{
   height:var(--zp-control-height);
-  padding:0 14px;
+  padding:0 16px;
   border:1px solid #35404C;
   border-radius:11px;
   background:rgba(20,28,37,.80);

@@ -46,7 +46,10 @@
 .order-dialog-head strong{font-size:16px}/* 弹窗右上角关闭键：34×34 是全站最小的触控目标，本轮补到 48×48。
    能直接放大的前提是 .order-dialog-head 有固定 height:54px（>48），
    按钮放大不会顶破标题行；若哪天该头部高度被收敛到 48 以下，这里必须重新评估。 */
-.order-dialog-head button{width:var(--zp-control-height);height:var(--zp-control-height);border:0;background:transparent;color:#B8C2CC;font-size:26px}
+/* font-size 26→20：× 关闭键是字符图标，适用 icon 18–20px 标准。
+   这是全站变化最大的一项（-6px），× 仍清晰可辨 —— 它是 48×48 按钮里的图形，
+   不是承载信息的文字，缩小不影响可读性。 */
+.order-dialog-head button{width:var(--zp-control-height);height:var(--zp-control-height);border:0;background:transparent;color:#B8C2CC;font-size:20px}
 /* pending-list 占据标题与按钮之间的剩余空间并内部滚动：
    缺少 flex:1+min-height:0 时内容会把面板撑高，被 overflow:hidden 硬裁，
    表现为"文字超出显示框"（2026-10-03 修复） */
@@ -55,7 +58,7 @@
 .candidate-list{display:grid;gap:7px;margin-top:9px}
 /* 选项按钮：轻底色 + 细边框 + 大圆角，柔化"深色方块"感（全局统一）；
    padding 9px 12px + word-break，长店名换行绝不贴边/出框 */
-.choice-btn{min-height:var(--zp-control-height);padding:9px 12px;border:1px solid rgba(255,255,255,.10);border-radius:12px;background:rgba(255,255,255,.035);color:#fff;text-align:left;font-size:13px;line-height:19px;word-break:break-word}
+.choice-btn{min-height:var(--zp-control-height);padding:9px 16px;border:1px solid rgba(255,255,255,.10);border-radius:12px;background:rgba(255,255,255,.035);color:#fff;text-align:left;font-size:13px;line-height:19px;word-break:break-word}
 .choice-btn.selected{border-color:#93A3B1;background:rgba(26,38,46,.82)}.choice-btn:active{background:rgba(20,33,44,.82)}
 /* 首位候选为系统推荐项，用左侧标记区分，避免用户面对同级选项时无从判断 */
 .choice-btn.recommended{border-left:3px solid #5F6E7C}
