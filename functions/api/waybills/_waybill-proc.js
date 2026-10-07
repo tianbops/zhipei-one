@@ -81,7 +81,30 @@ export async function failProc(env, requestId, patch) {
   } catch { return null; }
 }
 
-/**\n * 在正式保存前原子声明“保存权”。\n * 返回 false 表示该请求已经被取消/完成，调用方不得进入保存 EVAL。\n */\nexport async function claimProcSave(env, requestId) {\n  if (!requestId) return false;\n  try {\n    const result = await command(env, ["EVAL", claimSaveScript, "1", procKey(requestId), nowISO(), String(PROC_TTL)]);\n    return Number(result) === 1;\n  } catch { return false; }\n}\n\n/**\n * 客户端取消的原子处理。若保存声明已经建立，则取消让位给保存，最终由 DONE 胜出。\n */\nexport async function cancelProc(env, requestId, { action = "REPROCESS", hint = "本次处理已取消，可重新上传运单", detail = null } = {}) {\n  if (!requestId) return false;\n  try {\n    const result = await command(env, ["EVAL", cancelScript, "1", procKey(requestId), action, hint, detail || "", nowISO(), String(PROC_TTL)]);\n    return Number(result) === 1;\n  } catch { return false; }\n}\n\n/** 读取票据（运维/前端按 requestId 诊断）。 */
+/**
+ * 在正式保存前原子声明“保存权”。
+ * 返回 false 表示该请求已经被取消/完成，调用方不得进入保存 EVAL。
+ */
+export async function claimProcSave(env, requestId) {
+  if (!requestId) return false;
+  try {
+    const result = await command(env, ["EVAL", claimSaveScript, "1", procKey(requestId), nowISO(), String(PROC_TTL)]);
+    return Number(result) === 1;
+  } catch { return false; }
+}
+
+/**
+ * 客户端取消的原子处理。若保存声明已经建立，则取消让位给保存，最终由 DONE 胜出。
+ */
+export async function cancelProc(env, requestId, { action = "REPROCESS", hint = "本次处理已取消，可重新上传运单", detail = null } = {}) {
+  if (!requestId) return false;
+  try {
+    const result = await command(env, ["EVAL", cancelScript, "1", procKey(requestId), action, hint, detail || "", nowISO(), String(PROC_TTL)]);
+    return Number(result) === 1;
+  } catch { return false; }
+}
+
+/** 读取票据（运维/前端按 requestId 诊断）。 */
 export async function getProc(env, requestId) {
   if (!requestId) return null;
   try {
@@ -98,7 +121,8 @@ export async function finishProc(env, requestId, waybillId) {
     const raw = await command(env, ["GET", procKey(requestId)]);
     const rec = raw ? (typeof raw === "string" ? JSON.parse(raw) : raw) : null;
     if (!rec) return null;
-    if (rec.stage === "CANCELLED") return rec;\n    const next = { ...rec, stage: "DONE", waybillId: waybillId || null, updatedAt: nowISO() };
+    if (rec.stage === "CANCELLED") return rec;
+    const next = { ...rec, stage: "DONE", waybillId: waybillId || null, updatedAt: nowISO() };
     await command(env, ["SET", procKey(requestId), JSON.stringify(next), "EX", String(PROC_TTL)]);
     return next;
   } catch { return null; }
