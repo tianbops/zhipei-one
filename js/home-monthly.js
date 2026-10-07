@@ -16,9 +16,10 @@
   const axis=$("trendAxis"),hint=$("trendHint");
 
   const prefersReduced=window.matchMedia&&window.matchMedia("(prefers-reduced-motion:reduce)").matches;
-  let daily=[],byMonth=new Map(),availableMonths=[],currentMonth="";
+  let daily=[],byMonth=new Map(),currentMonth="";
   let metric="weight";            // 月度曲线指标：weight(按重量 t，默认) / count(按单量)
   let yearMode=false,year=0;
+  let monthSeq=[],yearSeq=[],monthIdx=0,yearIdx=0;  // 可滑动序列（仅含「有数据」年/月 + 当前年/月终点）
   let animating=false,touchX=0,touchY=0;
 
   /* ---------- 基础工具 ---------- */
@@ -26,7 +27,22 @@
     const p=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
     return p.slice(0,7); // YYYY-MM
   };
-  const monthDiff=(a,b)=>{const [ay,am]=a.split("-").map(Number),[by,bm]=b.split("-").map(Number);return (ay-by)*12+am-bm;};
+  // 可滑动序列：仅「有数据」的年月 + 当前年/月(终点，不超今日)，升序去重。
+  // 滑动即在序列上 ±1，无数据年/月天然不在序列 → 自动跳过，边界即序列首尾(越界 no-op)。
+  function buildSeqs(){
+    const today=cnMonth(),ty=Number(today.slice(0,4));
+    const mSet=new Set(),ySet=new Set();
+    for(const [k,v] of byMonth){
+      if((Number(v.waybills)||0)>0||(Number(v.totalWeight)||0)>0){mSet.add(k);ySet.add(Number(k.slice(0,4)));}
+    }
+    mSet.add(today); ySet.add(ty);                 // 当前月/年强制为最新终点（即使无数据）
+    monthSeq=[...mSet].sort();                     // "YYYY-MM" 字典序即时间序
+    yearSeq=[...ySet].sort((a,b)=>a-b);
+    monthIdx=Math.max(0,monthSeq.indexOf(today));
+    yearIdx=Math.max(0,yearSeq.indexOf(ty));
+    currentMonth=monthSeq[monthIdx]||today;
+    year=yearSeq[yearIdx]||ty;
+  }
   const daysInMonth=ym=>{const [y,m]=ym.split("-").map(Number);return new Date(Date.UTC(y,m,0)).getUTCDate();};
   const label=ym=>{const [y,m]=ym.split("-").map(Number);return y+"年"+m+"月";};
   const esc=v=>String(v==null?"":v).replace(/[&<>"]/g,"");
@@ -132,8 +148,8 @@
     titleEl.textContent="月度配送";
     monthEl.textContent=label(currentMonth);
     metricWrap.hidden=false;
-    prev.disabled=availableMonths.indexOf(currentMonth)>=availableMonths.length-1; // 最旧月
-    next.disabled=availableMonths.indexOf(currentMonth)<=0;                        // 当前月（未来禁止）
+    prev.disabled=monthIdx<=0;                        // 已是最旧有数据月
+    next.disabled=monthIdx>=monthSeq.length-1;        // 已是当前月（未来禁止）
   }
 
   function prevMonthKey(ym){
@@ -190,7 +206,8 @@
     titleEl.textContent="年度配送";
     monthEl.textContent=year+" 年度";
     metricWrap.hidden=false;   // 与月度画面统一：同样提供 重量/单量 切换
-    prev.disabled=true;next.disabled=true;
+    prev.disabled=yearIdx<=0;                         // 已是最旧有数据年
+    next.disabled=yearIdx>=yearSeq.length-1;         // 已是当前年（未来禁止）
   }
 
   /* ---------- 切换动画（曲线滑出 / 新曲线滑入 + 数字计数） ---------- */
@@ -218,13 +235,19 @@
   }
 
   /* ---------- 导航 ---------- */
-  function navigate(dir){
-    const i=availableMonths.indexOf(currentMonth);
-    if(i<0)return;
-    const ni=i+dir;
-    if(ni<0||ni>=availableMonths.length)return;   // 未来月份自然不可达（availableMonths 不超今日）
-    currentMonth=availableMonths[ni];
-    animateSwap(dir,renderMonth);
+  // 在序列上 ±1：delta=+1 向「当前」(更新，到年/月边界止)；delta=-1 向「更旧」(跳过无数据)。
+  // 序列本身只含「有数据」年/月 + 当前年/月，故边界即序列首尾，越界 no-op。
+  function stepMonth(delta){
+    const ni=monthIdx+delta;
+    if(ni<0||ni>=monthSeq.length)return;
+    monthIdx=ni;currentMonth=monthSeq[ni];
+    animateSwap(delta>0?-1:1,renderMonth);   // 更新方向内容左移、旧方向内容右移
+  }
+  function stepYear(delta){
+    const ni=yearIdx+delta;
+    if(ni<0||ni>=yearSeq.length)return;
+    yearIdx=ni;year=yearSeq[ni];
+    animateSwap(delta>0?-1:1,renderYear);
   }
   // 年份按钮文案随视图状态同步
   function syncYearBtn(){
@@ -233,30 +256,16 @@
   }
   function enterYear(){
     if(yearMode)return;
-    yearMode=true;year=Number(cnMonth().slice(0,4));syncYearBtn();renderYear();
+    yearMode=true; yearIdx=yearSeq.length-1; year=yearSeq[yearIdx]; syncYearBtn(); renderYear(); // 进入年度默认定位今年
   }
   function exitYear(){
     if(!yearMode)return;
-    yearMode=false;syncYearBtn();renderMonth();
+    yearMode=false; monthIdx=monthSeq.length-1; currentMonth=monthSeq[monthIdx]; syncYearBtn(); renderMonth(); // 退出年度默认定位当月
   }
   function toggleYear(){ if(yearMode)exitYear();else enterYear(); }
-  // 年度视图内跨年切换（仅在有数据的相邻年份间移动）
-  function yearList(){
-    const s=new Set(availableMonths.map(m=>Number(m.slice(0,4))));
-    for(const k of byMonth.keys())s.add(Number(k.slice(0,4)));
-    return [...s].sort((a,b)=>a-b);
-  }
-  function goYear(delta){
-    if(!yearMode)return;
-    const ys=yearList(),i=ys.indexOf(year);
-    if(i<0)return;
-    const ni=i+delta;
-    if(ni<0||ni>=ys.length)return;
-    year=ys[ni];renderYear();
-  }
   // 左右滑动意图（与按钮、动画解耦，保证手势始终可识别）
-  function onSwipeLeft(){  if(yearMode)goYear(-1); else navigate(1); }  // 左滑：更旧月 / 更旧年
-  function onSwipeRight(){ if(yearMode)exitYear(); else enterYear(); }  // 右滑：进入「年度配送」/ 返回月度
+  function onSwipeLeft(){  if(yearMode)stepYear(1); else stepMonth(1); }   // 左滑：向当前(更新)，到年/月边界止
+  function onSwipeRight(){ if(yearMode)stepYear(-1);else stepMonth(-1); }  // 右滑：向更旧(跳过无数据年/月)
   function setMetric(m){
     if(m!=="weight"&&m!=="count")return;
     metric=m;
@@ -268,12 +277,12 @@
   }
 
   /* ---------- 事件 ---------- */
-  prev?.addEventListener("click",()=>navigate(1));    // 上一个月（更旧）
-  next?.addEventListener("click",()=>navigate(-1));   // 下一个月（更新；当前月时禁用）
+  prev?.addEventListener("click",()=> yearMode?stepYear(-1):stepMonth(-1));  // ‹ 更旧年/月
+  next?.addEventListener("click",()=> yearMode?stepYear(1):stepMonth(1));    // › 更新(到当前年/月止)
   metricWeightBtn?.addEventListener("click",()=>setMetric("weight"));
   metricCountBtn?.addEventListener("click",()=>setMetric("count"));
   yearBtn?.addEventListener("click",toggleYear);
-  // 左右滑动：月度下 左滑=更旧月、右滑=进入「年度配送」；年度下 左滑=更旧年、右滑=返回月度。
+  // 左右滑动：月度 左滑=向当前月(到当月止)、右滑=更旧月；年度 左滑=向今年(到今年止)、右滑=更旧年（均跳过无数据）。
   // 安卓 Chrome 在可纵向滚动页面里：用方向锁定（先到 6px 即判定 X/Y），横向意图时 touchmove
   // preventDefault 吃下手势、阻止浏览器纵向滚动接管并发 touchcancel 误杀手势。
   (function bindSwipe(){
@@ -311,14 +320,7 @@
       if(!d?.success||!Array.isArray(d.history))return;
       daily=d.history.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(String(x?.date||"")));
       byMonth=new Map((Array.isArray(d.months)?d.months:[]).map(x=>[String(x.month),x]));
-      const today=cnMonth();
-      const list=[];
-      for(let i=0;i<13;i++){
-        const [y,m]=today.split("-").map(Number),idx=y*12+(m-1)-i;
-        list.push(Math.floor(idx/12)+"-"+String(idx%12+1).padStart(2,"0"));
-      }
-      availableMonths=list.filter(m=>monthDiff(m,today)<=0); // 仅保留不晚于今日的月份（更早月份可左滑查看）
-      currentMonth=today;
+      buildSeqs();   // 构建可滑动序列（有数据年/月 + 当前年/月）并定位到当前
       card.hidden=false;
       card.classList.add("is-in");
       renderMonth();
