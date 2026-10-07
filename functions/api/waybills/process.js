@@ -168,7 +168,9 @@ async function recordWaybillLifecycle(env, order, ctx) {
     { event: "PLAN_COMPLETED", stage: "PLAN", requestId, count: order.stores.length },
     { event: "WAYBILL_SAVED", stage: "SAVED", requestId, id: order.id, qualityLevel: order.quality?.level, qualityFlags: order.quality?.flags || [] },
   ];
-  for (const ev of events) await appendWaybillEvent(env, order.id, ev);
+  for (const ev of events) {
+    try { await appendWaybillEvent(env, order.id, ev); } catch { /* best-effort: lifecycle events never invalidate a successful save */ }
+  }
 }
 
 async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:providedUser=null}){
@@ -250,10 +252,18 @@ async function saveWaybill(order, requestId, resumed){
     if(raw){
       let w;try{w=typeof raw==="string"?JSON.parse(raw):raw}catch{w=null}
       if(w){
-        await command(env,["SADD",indexKey,dailyDupId]);
-        await command(env,["SET",dedupeKey,dailyDupId]);
-        await appendWaybillEvent(env, dailyDupId, {event:"WAYBILL_IDEMPOTENT",stage:"SAVED",requestId,reuse:dailyDupId,dedupe:"DAILY_MATCH"});
-        await finishProc(env, requestId, dailyDupId); return json({success:true,waybill:w,idempotent:true,dedupe:"DAILY_MATCH",indexSync:"OK",quality,requestId});
+        // 历史去重命中后的索引/指纹补齐也必须原子化，避免与并发保存互相覆盖 dedupeKey。
+        const repairScript='local current=redis.call("GET",KEYS[1]); if current and current~="" then local raw=redis.call("GET","zp:waybill:"..current); if raw then redis.call("SADD",KEYS[2],current); return current end; redis.call("DEL",KEYS[1]) end; redis.call("SADD",KEYS[2],ARGV[1]); redis.call("SET",KEYS[1],ARGV[1]); return ARGV[1]';
+        const repairedId=await command(env,["EVAL",repairScript,"2",dedupeKey,indexKey,dailyDupId]);
+        const finalId=String(repairedId||dailyDupId);
+        if(finalId!==dailyDupId){
+          const finalRaw=await command(env,["GET","zp:waybill:"+finalId]);
+          if(finalRaw){
+            w=typeof finalRaw==="string"?JSON.parse(finalRaw):finalRaw;
+          }
+        }
+        try { await appendWaybillEvent(env, finalId, {event:"WAYBILL_IDEMPOTENT",stage:"SAVED",requestId,reuse:finalId,dedupe:"DAILY_MATCH"}); } catch { /* best-effort */ }
+        await finishProc(env, requestId, finalId); return json({success:true,waybill:w,idempotent:true,dedupe:"DAILY_MATCH",indexSync:"OK",quality,requestId});
       }
     }
   }
