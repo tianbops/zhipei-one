@@ -75,8 +75,10 @@ class MiniRedis {
   advance(ms) { this.clockOffset += Number(ms) || 0; return this.now(); }
   _expireIfDue(k) {
     const e = this.expiries.get(k);
-    if (e !== undefined && this.now() >= e) { this.expiries.delete(k); this.strings.delete(k); }
+    if (e !== undefined && this.now() >= e) { this.expiries.delete(k); this.strings.delete(k); this.sets.delete(k); this.hashes.delete(k); this.lists.delete(k); }
   }
+  /** 键是否「当前存在」：已过期视为不存在（真实 Redis 惰性过期后的观测结果） */
+  _alive(k) { this._expireIfDue(k); return this.strings.has(k) || this.sets.has(k) || this.hashes.has(k) || this.lists.has(k); }
   _get(k) { return this.strings.has(k) ? this.strings.get(k) : null; }
   _set(k, v) { this.strings.set(k, String(v)); return "OK"; }
   _allKeys() {
@@ -117,6 +119,7 @@ class MiniRedis {
    * 导致本地测试永远扫不出多轮往返，2026-10-07 的 HSCAN 无预算风险在本地完全不可见。
    */
   _hscan(key, cursor, args) {
+    this._expireIfDue(key);
     const h = this.hashes.get(key);
     if (!h) return ["0", []];
     const fields = [...h.keys()];
@@ -144,51 +147,69 @@ class MiniRedis {
     switch (cmd) {
       case "GET": { this._expireIfDue(a[0]); return this._get(a[0]); }
       case "SET": {
-        const hasNX = a.includes("NX");
+        // 真实语义：NX（仅当不存在）/ XX（仅当存在）/ KEEPTTL（保留原 TTL）/
+        //            EX 秒 / PX 毫秒。NX 与 XX 同时给出是语法错误（ERR）。
+        const hasNX = a.some(x => String(x).toUpperCase() === "NX");
+        const hasXX = a.some(x => String(x).toUpperCase() === "XX");
+        if (hasNX && hasXX) throw new Error("ERR syntax error");
         this._expireIfDue(a[0]);
         if (hasNX && this.strings.has(a[0])) return null;
-        // 支持 SET key val EX <ttl>（P2-11：session 键 TTL 回归需要真实过期语义）
+        if (hasXX && !this.strings.has(a[0])) return null;      // 键不存在 → 不写入、不创建（此前错误地创建）
+        const keepTTL = a.some(x => String(x).toUpperCase() === "KEEPTTL");
+        const prevTTL = this.expiries.get(a[0]);
         const exIdx = a.findIndex(x => String(x).toUpperCase() === "EX");
-        if (exIdx > 0) {
-          const ok = this._set(a[0], a[1]);
-          this.expiries.set(a[0], this.now() + Number(a[exIdx + 1]) * 1000);
-          return ok;
-        }
-        return this._set(a[0], a[1]);
+        const pxIdx = a.findIndex(x => String(x).toUpperCase() === "PX");
+        const ok = this._set(a[0], a[1]);
+        if (exIdx > 0) this.expiries.set(a[0], this.now() + Math.floor(Number(a[exIdx + 1])) * 1000);
+        else if (pxIdx > 0) this.expiries.set(a[0], this.now() + Number(a[pxIdx + 1]));   // PX 是毫秒
+        else if (keepTTL && prevTTL !== undefined) this.expiries.set(a[0], prevTTL);
+        else this.expiries.delete(a[0]);                        // 无 TTL 选项 → 清除旧 TTL
+        return ok;
       }
       case "TTL": { this._expireIfDue(a[0]); const e = this.expiries.get(a[0]); if (e === undefined) return this.strings.has(a[0]) ? -1 : -2; return Math.max(0, Math.ceil((e - this.now()) / 1000)); }
-      case "EXPIRE": { this._expireIfDue(a[0]); if (!this.strings.has(a[0])) return 0; this.expiries.set(a[0], this.now() + Number(a[1]) * 1000); return 1; }
-      case "DEL": { let n = 0; for (const k of a) { if (this.strings.delete(k)) n++; if (this.sets.delete(k)) n++; if (this.hashes.delete(k)) n++; if (this.lists.delete(k)) n++; } return n; }
+      case "PTTL": { this._expireIfDue(a[0]); const e = this.expiries.get(a[0]); if (e === undefined) return this.strings.has(a[0]) ? -1 : -2; return Math.max(0, e - this.now()); }
+      case "EXISTS": { let n = 0; for (const k of a) if (this._alive(k)) n++; return n; }   // 已过期计为不存在
+      case "EXPIRE": { if (!this._alive(a[0])) return 0; this.expiries.set(a[0], this.now() + Number(a[1]) * 1000); return 1; }
+      case "PERSIST": { if (!this._alive(a[0])) return 0; if (!this.expiries.has(a[0])) return 0; this.expiries.delete(a[0]); return 1; }
+      case "DEL": { let n = 0; for (const k of a) { if (this.strings.delete(k)) n++; if (this.sets.delete(k)) n++; if (this.hashes.delete(k)) n++; if (this.lists.delete(k)) n++; this.expiries.delete(k); } return n; }
       case "SADD": {
-        const key = a[0]; let s = this.sets.get(key); if (!s) { s = new Set(); this.sets.set(key, s); }
+        const key = a[0]; this._expireIfDue(key); let s = this.sets.get(key); if (!s) { s = new Set(); this.sets.set(key, s); }
         let n = 0; for (let i = 1; i < a.length; i++) { if (!s.has(a[i])) { s.add(a[i]); n++; } } return n;
       }
-      case "SREM": { const s = this.sets.get(a[0]); if (!s) return 0; let n = 0; for (let i = 1; i < a.length; i++) if (s.delete(a[i])) n++; return n; }
-      case "SMEMBERS": return this.sets.has(a[0]) ? [...this.sets.get(a[0])] : [];
-      case "SISMEMBER": return this.sets.has(a[0]) && this.sets.get(a[0]).has(a[1]) ? 1 : 0;
-      case "MGET": return a.map(k => this._get(k));
+      case "SREM": { this._expireIfDue(a[0]); const s = this.sets.get(a[0]); if (!s) return 0; let n = 0; for (let i = 1; i < a.length; i++) if (s.delete(a[i])) n++; return n; }
+      // 已过期的集合/哈希/列表必须返回空 —— 真实 Redis 惰性过期后观测为空。
+      // 桩此前只清理 strings，导致「集合 TTL 到期后本地仍返回全量数据」，相关生产逻辑本地完全测不出。
+      case "SMEMBERS": { this._expireIfDue(a[0]); return this.sets.has(a[0]) ? [...this.sets.get(a[0])] : []; }
+      case "SISMEMBER": { this._expireIfDue(a[0]); return this.sets.has(a[0]) && this.sets.get(a[0]).has(a[1]) ? 1 : 0; }
+      case "MGET": return a.map(k => { this._expireIfDue(k); return this._get(k); });
       case "SCAN": {
         const [cursor, items] = this._scan(a[0], a[2] || "*", a[4]);
         return [cursor, items];
       }
       case "HSET": {
-        const key = a[0]; let h = this.hashes.get(key); if (!h) { h = new Map(); this.hashes.set(key, h); }
+        const key = a[0]; this._expireIfDue(key); let h = this.hashes.get(key); if (!h) { h = new Map(); this.hashes.set(key, h); }
         let n = 0; for (let i = 1; i + 1 < a.length; i += 2) { const f = a[i], v = a[i + 1]; if (!h.has(f)) n++; h.set(f, v); } return n;
       }
-      case "HGET": { const h = this.hashes.get(a[0]); return h && h.has(a[1]) ? h.get(a[1]) : null; }
-      case "HGETALL": { const h = this.hashes.get(a[0]); if (!h) return []; const out = []; for (const [f, v] of h) { out.push(f, v); } return out; }
-      case "HMGET": { const h = this.hashes.get(a[0]); return a.slice(1).map(f => (h && h.has(f)) ? h.get(f) : null); }
-      case "HDEL": { const h = this.hashes.get(a[0]); if (!h) return 0; let n = 0; for (let i = 1; i < a.length; i++) if (h.delete(a[i])) n++; return n; }
-      case "HLEN": { const h = this.hashes.get(a[0]); return h ? h.size : 0; }
+      case "HGET": { this._expireIfDue(a[0]); const h = this.hashes.get(a[0]); return h && h.has(a[1]) ? h.get(a[1]) : null; }
+      case "HGETALL": { this._expireIfDue(a[0]); const h = this.hashes.get(a[0]); if (!h) return []; const out = []; for (const [f, v] of h) { out.push(f, v); } return out; }
+      case "HMGET": { this._expireIfDue(a[0]); const h = this.hashes.get(a[0]); return a.slice(1).map(f => (h && h.has(f)) ? h.get(f) : null); }
+      case "HDEL": { this._expireIfDue(a[0]); const h = this.hashes.get(a[0]); if (!h) return 0; let n = 0; for (let i = 1; i < a.length; i++) if (h.delete(a[i])) n++; return n; }
+      case "HLEN": { this._expireIfDue(a[0]); const h = this.hashes.get(a[0]); return h ? h.size : 0; }
       case "HSCAN": {
         const [cursor, flat] = this._hscan(a[0], a[1], a);
         return [cursor, flat];
       }
-      case "RPUSH": { const key = a[0]; let l = this.lists.get(key); if (!l) { l = []; this.lists.set(key, l); } for (let i = 1; i < a.length; i++) l.push(a[i]); return l.length; }
-      case "LTRIM": { const l = this.lists.get(a[0]); if (!l) return "OK"; let start = Number(a[1]), stop = Number(a[2]); if (stop < 0) stop = l.length + stop; const nw = l.slice(start, stop + 1); this.lists.set(a[0], nw); return "OK"; }
-      case "LRANGE": { const l = this.lists.get(a[0]); if (!l) return []; let start = Number(a[1]), stop = Number(a[2]); if (start < 0) start = l.length + start; if (stop < 0) stop = l.length + stop; return l.slice(start, stop + 1); }
-      case "LLEN": { const l = this.lists.get(a[0]); return l ? l.length : 0; }
-      case "INCR": { const cur = Number(this._get(a[0]) || "0"); const nv = cur + 1; this._set(a[0], nv); return nv; }
+      case "RPUSH": { const key = a[0]; this._expireIfDue(key); let l = this.lists.get(key); if (!l) { l = []; this.lists.set(key, l); } for (let i = 1; i < a.length; i++) l.push(a[i]); return l.length; }
+      case "LTRIM": { this._expireIfDue(a[0]); const l = this.lists.get(a[0]); if (!l) return "OK"; let start = Number(a[1]), stop = Number(a[2]); if (stop < 0) stop = l.length + stop; const nw = l.slice(start, stop + 1); this.lists.set(a[0], nw); return "OK"; }
+      case "LRANGE": { this._expireIfDue(a[0]); const l = this.lists.get(a[0]); if (!l) return []; let start = Number(a[1]), stop = Number(a[2]); if (start < 0) start = l.length + start; if (stop < 0) stop = l.length + stop; return l.slice(start, stop + 1); }
+      case "LLEN": { this._expireIfDue(a[0]); const l = this.lists.get(a[0]); return l ? l.length : 0; }
+      case "INCR": {
+        this._expireIfDue(a[0]);
+        const cur = this.strings.has(a[0]) ? Number(this._get(a[0])) : 0;
+        // 真实 Redis 对非整数字符串返回 ERR；桩此前算出 NaN 静默写入，会掩盖生产数据异常
+        if (!Number.isFinite(cur)) throw new Error("ERR value is not an integer or out of range");
+        const nv = cur + 1; this._set(a[0], nv); return nv;
+      }
       case "EVAL": {
         const numkeys = Number(a[1]);
         const keys = a.slice(2, 2 + numkeys);
