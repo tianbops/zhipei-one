@@ -16,6 +16,7 @@
  */
 import { command } from "../_redis.js";
 import { Budget, SUBREQUEST_LIMIT, scanKeysBudgeted, mgetBatchMap, smembersBatch } from "../_redis-budget.js";
+import { businessFingerprint, dailyWaybillKey } from "../_waybill-identity.js";
 
 const WB_PREFIX = "zp:waybill:";
 const INDEX_PREFIX = "zp:route:";
@@ -213,20 +214,56 @@ export async function scanConsistency(env, { routeId = null, all = false } = {})
     }
   }
 
-  // 5. 去重键 / 指纹键 悬空
+  // 5. 去重键 / 指纹键：不仅检查“悬空”，还校验 key 与目标运单是否真正对应。
+  //    这能抓住跨线路/错位引用：目标主记录存在并不代表这个引用就是合法的。
+  //    key 本身由 canonicalWaybill/dailySignature 派生，发现错位时只删除引用键，不删除主记录。
   for (const { key, pointsTo } of dedupeKeys) {
     if (!pointsTo) continue;
-    if (!waybills.has(pointsTo) && refsComplete && inScopeOfId(pointsTo, waybills, scopeRoute)) {
-      push({ type: "ORPHAN_DEDUPE_KEY", severity: "auto", key, pointsTo,
-        detail: `去重键 ${key} 指向不存在的主记录 ${pointsTo}`,
+    const w = waybills.get(pointsTo);
+    if (!w) {
+      if (refsComplete && inScopeOfId(pointsTo, waybills, scopeRoute)) {
+        push({ type: "ORPHAN_DEDUPE_KEY", severity: "auto", key, pointsTo,
+          detail: `去重键 ${key} 指向不存在的主记录 ${pointsTo}`,
+          fix: ["DEL", key] });
+      }
+      continue;
+    }
+    if (!inScope(w.routeId)) continue;
+    if (w.historyStatus === "SUPERSEDED" || !["PLANNED", "CONFIRMED"].includes(w.stage)) {
+      push({ type: "STALE_DEDUPE_KEY", severity: "auto", key, pointsTo,
+        detail: `去重键 ${key} 指向不可作为当前业务去重目标的运单 ${pointsTo}（${w.stage || "UNKNOWN"}${w.historyStatus ? "/" + w.historyStatus : ""}）`,
+        fix: ["DEL", key] });
+      continue;
+    }
+    const expectedKey = "zp:waybill:dedupe:" + await dailyWaybillKey(w);
+    if (expectedKey !== key) {
+      push({ type: "MISPLACED_DEDUPE_KEY", severity: "auto", key, pointsTo,
+        detail: `去重键 ${key} 与目标运单 ${pointsTo} 的业务签名不一致，疑似跨线路或错位引用`,
         fix: ["DEL", key] });
     }
   }
   for (const { key, pointsTo } of fpKeys) {
     if (!pointsTo) continue;
-    if (!waybills.has(pointsTo) && refsComplete && inScopeOfId(pointsTo, waybills, scopeRoute)) {
-      push({ type: "ORPHAN_FINGERPRINT_KEY", severity: "auto", key, pointsTo,
-        detail: `指纹键 ${key} 指向不存在的主记录 ${pointsTo}`,
+    const w = waybills.get(pointsTo);
+    if (!w) {
+      if (refsComplete && inScopeOfId(pointsTo, waybills, scopeRoute)) {
+        push({ type: "ORPHAN_FINGERPRINT_KEY", severity: "auto", key, pointsTo,
+          detail: `指纹键 ${key} 指向不存在的主记录 ${pointsTo}`,
+          fix: ["DEL", key] });
+      }
+      continue;
+    }
+    if (!inScope(w.routeId)) continue;
+    if (w.historyStatus === "SUPERSEDED" || !["PLANNED", "CONFIRMED"].includes(w.stage)) {
+      push({ type: "STALE_FINGERPRINT_KEY", severity: "auto", key, pointsTo,
+        detail: `指纹键 ${key} 指向不可作为当前业务指纹目标的运单 ${pointsTo}（${w.stage || "UNKNOWN"}${w.historyStatus ? "/" + w.historyStatus : ""}）`,
+        fix: ["DEL", key] });
+      continue;
+    }
+    const expectedKey = "zp:waybill:fingerprint:" + await businessFingerprint(w);
+    if (expectedKey !== key) {
+      push({ type: "MISPLACED_FINGERPRINT_KEY", severity: "auto", key, pointsTo,
+        detail: `指纹键 ${key} 与目标运单 ${pointsTo} 的内容指纹不一致，疑似跨线路或错位引用`,
         fix: ["DEL", key] });
     }
   }
