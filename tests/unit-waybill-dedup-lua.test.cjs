@@ -81,6 +81,12 @@ function makeRedisCall(store) {
 }
 
 function evalSave(store, keys, argv) {
+  // 与生产 saveWaybill 对齐：新主记录固化 dailyDedupeKey / businessFingerprint，
+  // 让 Lua 能验证反向键身份；测试调用仍保持 [id, json] 简洁形式。
+  let order = JSON.parse(argv[1]);
+  order.dailyDedupeKey = String(keys[3]).replace(/^zp:waybill:dedupe:/, "");
+  order.businessFingerprint = String(keys[0]).replace(/^zp:waybill:fingerprint:/, "").replace(/^zp:waybill:fingerprint:/, "");
+  argv = [argv[0], JSON.stringify(order), order.dailyDedupeKey, order.businessFingerprint];
   const L = lauxlib.luaL_newstate();
   lualib.luaL_openlibs(L);
   lua.lua_pushjsfunction(L, makeRedisCall(store));
