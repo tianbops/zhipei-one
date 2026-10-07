@@ -10,7 +10,7 @@ import {findGlobalMatches} from "../_global-learning.js";
 import {clean,formatCompareKey,matchStores} from "./_store-match.js";
 import {evaluateQualityGates,countLines} from "./_quality-gate.js";
 import {appendWaybillEvent} from "./_waybill-events.js";
-import {beginProc,failProc,finishProc,getProc} from "./_waybill-proc.js";
+import {beginProc,failProc,finishProc,getProc,claimProcSave,cancelProc} from "./_waybill-proc.js";
 import {Budget,mgetBatchMap} from "../_redis-budget.js";
 
 const waybillIndexKey=(routeId,date)=>"zp:route:"+routeId+":waybills:"+date;
@@ -186,8 +186,10 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
   const stopIfClientCancelled=async(stage)=>{
     if(!request?.signal?.aborted)return false;
     emit(0,"已取消处理");
-    await failProc(env,requestId,{stage:"CANCELLED",recoverable:true,action:"REPROCESS",hint:"本次处理已取消，可重新上传运单",detail:stage||null});
-    return true;
+    // 取消与正式保存声明在 Redis 内原子竞争：如果保存声明已经建立，
+    // 说明业务已进入不可撤销的原子保存窗口，此时让保存完成并由 DONE 胜出。
+    const cancelled=await cancelProc(env,requestId,{action:"REPROCESS",hint:"本次处理已取消，可重新上传运单",detail:stage||null});
+    return cancelled || !["SAVE","POST_SAVE"].includes(stage);
   };
   const user=providedUser||await currentUser(request,env);if(!user){emit(4,"身份验证失败");return json({success:false,code:"AUTH_REQUIRED",error:"未登录"},401)};if(user.role==="admin"||!canUseRoute(user)){emit(4,"无权处理运单");return json({success:false,code:"WAYBILL_PROCESS_FORBIDDEN",error:"无权处理运单"},403)};
   emit(5,"正在读取运单");
@@ -231,6 +233,18 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
   return await saveWaybill(order, requestId, false);
 async function saveWaybill(order, requestId, resumed){
   if(await stopIfClientCancelled("SAVE"))return json({success:false,code:"PROCESS_CANCELLED",error:"已取消处理",message:"已取消处理",requestId,recoverable:true,action:"REPROCESS",hint:"本次处理已取消，可重新上传运单"},499);
+  // 最终 Redis 保存 EVAL 前再做一次原子“保存声明”。
+  // cancel 先赢则这里失败；claim 先赢则后续取消不再覆盖，保存完成后 DONE 胜出。
+  if(!await claimProcSave(env,requestId)){
+    const proc=await getProc(env,requestId);
+    if(proc?.stage==="CANCELLED")return json({success:false,code:"PROCESS_CANCELLED",error:"已取消处理",message:"已取消处理",requestId,recoverable:true,action:"REPROCESS",hint:"本次处理已取消，可重新上传运单"},499);
+    if(proc?.stage==="DONE"&&proc?.waybillId){
+      const existingRaw=await command(env,["GET","zp:waybill:"+proc.waybillId]);
+      const existing=existingRaw?(typeof existingRaw==="string"?JSON.parse(existingRaw):existingRaw):null;
+      if(existing)return json({success:true,waybill:existing,idempotent:true,requestId});
+    }
+    return failProcess("WAYBILL_SAVE_CLAIM_FAILED","保存任务状态发生变化，请重试",409,{recoverable:true,action:"RETRY_SAVE",hint:"保存任务状态发生变化，请重试保存",order});
+  }
   const routeId=order.routeId;
   const quality=order.quality;
   emit(96,"正在保存运单");
