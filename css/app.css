@@ -3,7 +3,7 @@
   font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   background: #05070A;
   color: #fff;
-  /* 以下 6 个无前缀变量为历史遗留写法，现全部转为指向 ui-unified.css 的 --zp-* 单一真相源。
+  /* 以下 5 个无前缀变量（--bg/--card/--card2/--line/--muted）为历史遗留写法，现全部转为指向 ui-unified.css 的 --zp-* 单一真相源；--soft 为死定义已于 Commit 4B 删除（admin.html 走内联 --soft:#7F8A95）。
      之所以放在 app.css 而由别名指向别处：本文件未被 admin.html 加载，
      若把权威定义写在本层，管理员端会取到未定义值。详见 ui-unified.css 顶部注释。 */
   --bg: var(--zp-bg);
@@ -11,11 +11,6 @@
   --card2: var(--zp-card-translucent-2);
   --line: var(--zp-line);
   --muted: var(--zp-muted);
-  /* 保留原值 #202B36（= surface-3 表面色），不做语义替换。
-     原因：本文件变量名为 --soft 而取值实为表面色，属历史命名错误；
-     但校正它会改变 13 个页面的级联解析值（#202B36 → #7F8A95），超出本次「视觉不变」的边界。
-     该项归入阶段 10（CSS 清理）处理，届时可连同命名一并校正。 */
-  --soft: #202B36;
 }
 
 * {
@@ -733,16 +728,11 @@ body {
     margin-bottom: 22px;
   }
 
-  .login-logo {
-    width: min(100%,500px);
-    max-height: 192px;
+    .login-logo {
+      width: min(100%,500px);
+      max-height: 192px;
+    }
   }
-
-  .login-field input,.login-submit {
-    height: 46px;
-    line-height: 46px;
-  }
-}
 
 @media (max-height:620px) {
   .login-shell {
