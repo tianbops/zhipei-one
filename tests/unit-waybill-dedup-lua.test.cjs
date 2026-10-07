@@ -296,14 +296,15 @@ function run() {
     assert(r3[0] === "NEW", "无车牌但重量不同 → 落新单（不聚合）");
   }
 
-  // 场景10：历史运单仅命中内容指纹（无业务签名键）→ FINGERPRINT 兜底复用
-  console.log("场景10：历史仅指纹命中 → FINGERPRINT 兜底");
+  // 场景10：历史运单仅命中内容指纹（无业务签名键），且主记录已固化指纹 → FINGERPRINT 兜底复用
+  console.log("场景10：历史仅指纹命中（主记录含指纹）→ FINGERPRINT 兜底");
   {
     const store = new MemStore();
     const o1 = buildOrder("id-1", { vehicle: VEH_A, weight: 1.2, stores: [{ name: "门店A" }] });
     // 预置指纹键（历史行为）+ 运单主记录，但不写业务签名键
     store.call("SET", fpKey(o1), "id-1");
-    store.call("SET", BASE + "id-1", JSON.stringify(o1));
+    const legacy = { ...o1, businessFingerprint: fpKey(o1).replace(/^zp:waybill:fingerprint:/, "") };
+    store.call("SET", BASE + "id-1", JSON.stringify(legacy));
     store.call("SADD", `zp:route:${ROUTE}:waybills:${DATE}`, "id-1");
     const o2 = buildOrder("id-2", { vehicle: VEH_A, weight: 1.2, stores: [{ name: "门店A" }] });
     const r2 = evalSave(store, keysFor(o2), [o2.id, JSON.stringify(o2)]);
