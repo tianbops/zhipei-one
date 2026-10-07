@@ -489,6 +489,10 @@ async function learnRestore(storeId){
   let sx=0,sy=0,axis="",live=false,from=0,t0=0,onRow=false;
   function down(e){
     if(busy()||e.touches.length>1){axis="skip";return}
+    // 线路已左滑展开后，删除按钮本身必须完全脱离分页/行手势。
+    // 否则点击删除时这里先执行 closeSwipes()，按钮会在 click 发生前被收回，
+    // 用户看到的就是“点击删除 → 删除按钮向右滑回去 → 无法删除”。
+    if(e.target&&e.target.closest&&e.target.closest(".route-delete")){axis="skip";return}
     if(document.querySelector(".row.open,.route.open")){closeSwipes();axis="skip";return}
     const t=e.touches[0];
     sx=t.clientX;sy=t.clientY;axis="";live=false;from=S.page;t0=e.timeStamp||Date.now();
