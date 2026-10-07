@@ -13,7 +13,7 @@
  *   主记录   zp:waybill:<id>                       → quality / stores.matchConfidence / pending / ocr.lowConfidence
  *   处理票据 zp:waybill:proc:<requestId>           → 近 15min 处理终态分布（OCR 可靠性）
  */
-import { command, pipeline } from "../_redis.js";
+import { Budget, SUBREQUEST_LIMIT, MGET_BATCH, PIPELINE_BATCH, scanKeysBudgeted, mgetBatchList, smembersBatch } from "../_redis-budget.js";
 import { effectiveStage } from "./_waybill-proc.js";
 
 const WB_PREFIX = "zp:waybill:";
@@ -24,43 +24,9 @@ const MAX_SCANNED = 5000;
 
 // Cloudflare Workers 每请求子请求上限约 50（免费版），每条 Redis 调用算 1 次：
 // 旧实现「按窗口日期逐个 SMEMBERS」（days=90 就是 90 次）+「全键 SCAN + 逐键 GET/SMEMBERS」，
-// 与诊断列表 / 一致性巡检是同一类缺陷（2026-10-07 Error 1101）。这里统一批量化。
-const SCAN_COUNT = 500;
-const MGET_BATCH = 100;
-const PIPELINE_BATCH = 50;
-
-async function scanAll(env, pattern) {
-  const out = [];
-  let cursor = "0";
-  do {
-    const r = await command(env, ["SCAN", cursor, "MATCH", pattern, "COUNT", String(SCAN_COUNT)]);
-    cursor = String(r?.[0] ?? "0");
-    for (const k of Array.isArray(r?.[1]) ? r[1] : []) out.push(String(k));
-  } while (cursor !== "0");
-  return out;
-}
-
-/** 批量 SMEMBERS：pipeline 一次请求跑多条命令 */
-async function smembersMap(env, keys) {
-  const out = new Map();
-  for (let i = 0; i < keys.length; i += PIPELINE_BATCH) {
-    const chunk = keys.slice(i, i + PIPELINE_BATCH);
-    const res = await pipeline(env, chunk.map(k => ["SMEMBERS", k]));
-    for (let j = 0; j < chunk.length; j++) out.set(chunk[j], Array.isArray(res?.[j]) ? res[j] : []);
-  }
-  return out;
-}
-
-/** 批量 MGET：N 个子请求压到 ceil(N/100)，返回按入参顺序排列的 raw 列表 */
-async function mgetList(env, keys) {
-  const out = [];
-  for (let i = 0; i < keys.length; i += MGET_BATCH) {
-    const chunk = keys.slice(i, i + MGET_BATCH);
-    const raws = await command(env, ["MGET", ...chunk]);
-    for (const r of (Array.isArray(raws) ? raws : [])) out.push(r);
-  }
-  return out;
-}
+// 与诊断列表 / 一致性巡检是同一类缺陷（2026-10-07 Error 1101）。
+// 预算逻辑已统一收口到 _redis-budget.js（Budget / scanKeysBudgeted / mgetBatchList / smembersBatch）：
+// 所有 SCAN / MGET / SMEMBERS 都纳入同一预算，超限即截断并置 truncated=true，绝不把 worker 拖到平台硬限。
 
 function dateWindow(days) {
   const n = Math.max(1, Math.min(90, Math.floor(Number(days) || 30)));
@@ -92,6 +58,7 @@ export async function computeStats(env, { routeId = null, all = false, days = 30
   const scopeRoute = all ? null : clean(routeId);
   const win = dateWindow(days);
   const inWindow = d => d >= win.start && d <= win.end;
+  const budget = new Budget(SUBREQUEST_LIMIT);   // 统一预算护栏：子请求超限即截断并置 truncated，绝不触发 Cloudflare Error 1101
 
   // 1. 收集窗口内、作用域内的运单 id
   const ids = new Set();
@@ -101,21 +68,25 @@ export async function computeStats(env, { routeId = null, all = false, days = 30
     for (const id of arr) { indexEntriesScanned.value++; if (ids.size >= MAX_SCANNED) { truncated.value = true; return; } ids.add(id); }
   };
   if (scopeRoute === null) {
-    const indexKeys = (await scanAll(env, INDEX_PREFIX + "*" + INDEX_SUFFIX + "*")).filter(key => {
+    const idxScan = await scanKeysBudgeted(env, INDEX_PREFIX + "*" + INDEX_SUFFIX + "*", budget);
+    if (!idxScan.complete) truncated.value = true;
+    const indexKeys = idxScan.keys.filter(key => {
       const body = key.slice(INDEX_PREFIX.length);
       const idx = body.indexOf(INDEX_SUFFIX);
       return idx >= 0 && inWindow(body.slice(idx + INDEX_SUFFIX.length));
     });
-    const members = await smembersMap(env, indexKeys);           // 旧：逐键 SMEMBERS（O(N)）
+    const members = await smembersBatch(env, indexKeys, budget, { batch: PIPELINE_BATCH });
+    if (!members.complete) truncated.value = true;
     for (const key of indexKeys) {
-      addIds(Array.isArray(members.get(key)) ? members.get(key).map(clean).filter(Boolean) : []);
+      addIds(Array.isArray(members.map.get(key)) ? members.map.get(key).map(clean).filter(Boolean) : []);
       if (truncated.value) break;
     }
   } else {
     const keys = win.dates.map(d => INDEX_PREFIX + scopeRoute + INDEX_SUFFIX + d);
-    const members = await smembersMap(env, keys);                 // 旧：窗口内每天 1 次调用（days=90 → 90 次）
+    const members = await smembersBatch(env, keys, budget, { batch: PIPELINE_BATCH });   // 窗口内日期桶 SMEMBERS 走 pipeline 批量
+    if (!members.complete) truncated.value = true;
     for (const date of win.dates) {
-      const list = members.get(INDEX_PREFIX + scopeRoute + INDEX_SUFFIX + date);
+      const list = members.map.get(INDEX_PREFIX + scopeRoute + INDEX_SUFFIX + date);
       addIds(Array.isArray(list) ? list.map(clean).filter(Boolean) : []);
       if (truncated.value) break;
     }
@@ -130,37 +101,38 @@ export async function computeStats(env, { routeId = null, all = false, days = 30
     ocr: { lowConfidence: 0, total: 0 }
   };
   const uniqueIds = [...ids];
-  for (let i = 0; i < uniqueIds.length; i += 50) {
-    const chunk = uniqueIds.slice(i, i + 50);
-    const raws = await command(env, ["MGET", ...chunk.map(id => WB_PREFIX + id)]);
-    for (const raw of raws) {
-      const w = parseWaybill(raw);
-      if (!w || w.schemaVersion !== "2") continue;
-      agg.waybills.total++;
-      const st = agg.waybills.byStage;
-      if (st[w.stage] !== undefined) st[w.stage]++; else st.OTHER++;
-      const ql = (w.quality && w.quality.level) || "UNKNOWN";
-      if (agg.quality[ql] !== undefined) agg.quality[ql]++; else agg.quality.UNKNOWN++;
-      const stores = Array.isArray(w.stores) ? w.stores : [];
-      let hasPending = false;
-      for (const s of stores) {
-        agg.pending.totalStores++;
-        if (s.pending) { agg.pending.pendingStores++; hasPending = true; }
-        const lvl = s.matchConfidence && s.matchConfidence.level;
-        if (lvl && agg.matchConfidence[lvl] !== undefined) agg.matchConfidence[lvl]++;
-        else agg.matchConfidence.UNKNOWN++;
-      }
-      if (hasPending) agg.pending.waybillsWithPending++;
-      if (w.ocr) { agg.ocr.total++; if (w.ocr.lowConfidence) agg.ocr.lowConfidence++; }
+  const rawsList = (await mgetBatchList(env, uniqueIds.map(id => WB_PREFIX + id), budget, { batch: 50 })).list;
+  if (rawsList.length < uniqueIds.length) truncated.value = true;   // 预算耗尽提前停
+  for (const raw of rawsList) {
+    const w = parseWaybill(raw);
+    if (!w || w.schemaVersion !== "2") continue;
+    agg.waybills.total++;
+    const st = agg.waybills.byStage;
+    if (st[w.stage] !== undefined) st[w.stage]++; else st.OTHER++;
+    const ql = (w.quality && w.quality.level) || "UNKNOWN";
+    if (agg.quality[ql] !== undefined) agg.quality[ql]++; else agg.quality.UNKNOWN++;
+    const stores = Array.isArray(w.stores) ? w.stores : [];
+    let hasPending = false;
+    for (const s of stores) {
+      agg.pending.totalStores++;
+      if (s.pending) { agg.pending.pendingStores++; hasPending = true; }
+      const lvl = s.matchConfidence && s.matchConfidence.level;
+      if (lvl && agg.matchConfidence[lvl] !== undefined) agg.matchConfidence[lvl]++;
+      else agg.matchConfidence.UNKNOWN++;
     }
+    if (hasPending) agg.pending.waybillsWithPending++;
+    if (w.ocr) { agg.ocr.total++; if (w.ocr.lowConfidence) agg.ocr.lowConfidence++; }
   }
   agg.waybills.confirmedRate = agg.waybills.total ? +(agg.waybills.byStage.CONFIRMED / agg.waybills.total).toFixed(4) : null;
   agg.pending.pendingRate = agg.pending.totalStores ? +(agg.pending.pendingStores / agg.pending.totalStores).toFixed(4) : null;
 
   // 3. 处理票据（近 15min，TTL 自动清理）→ OCR 可靠性 / 可恢复失败率
-  const procKeys = await scanAll(env, WB_PREFIX + "proc:*");
+  const procScan = await scanKeysBudgeted(env, WB_PREFIX + "proc:*", budget);
+  if (!procScan.complete) truncated.value = true;
+  const procKeys = procScan.keys;
   const proc = { total: 0, byStage: { PROCESSING: 0, STALLED: 0, DONE: 0, TIMEOUT: 0, FAILED: 0, CANCELLED: 0, OTHER: 0 }, recoverableFailures: 0 };
-  const procRaws = await mgetList(env, procKeys);                 // 旧：逐键 GET（O(N)）
+  const procRaws = (await mgetBatchList(env, procKeys, budget, { batch: MGET_BATCH })).list;   // 批量 GET 纳入预算
+  if (procRaws.length < procKeys.length) truncated.value = true;
   for (let i = 0; i < procKeys.length; i++) {
     const t = parseWaybill(procRaws[i]);
     if (!t) continue;

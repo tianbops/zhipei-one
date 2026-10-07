@@ -1,6 +1,7 @@
 import {json,body} from "./_json.js";
 import {currentUser} from "./_auth.js";
-import {get,set,newId,command,pipeline} from "./_redis.js";
+import {get,set,newId,command} from "./_redis.js";
+import {Budget,SUBREQUEST_LIMIT,scanKeysBudgeted,smembersBatch,mgetBatchMap} from "./_redis-budget.js";
 import {getRoute,saveRoute,routeId,cleanRouteName} from "./_route.js";
 import {isSystemAdmin} from "./_permissions.js";
 import {dailyWaybillKey} from "./_waybill-identity.js";
@@ -19,18 +20,18 @@ async function cleanupRouteRequests(env,routeId){let removed=0;for(let attempt=0
  */
 async function cleanupRouteWaybills(env,routeId){
  const idxPrefix="zp:route:"+routeId+":waybills:";
- // 1) 枚举本线路日期桶（不再 SCAN 全键空间）
- const buckets=[];
- {let c="0";do{const s=await command(env,["SCAN",c,"MATCH",idxPrefix+"*","COUNT","200"]);c=String(s?.[0]??"0");for(const k of Array.isArray(s?.[1])?s[1]:[])buckets.push(String(k));}while(c!=="0");}
+ // 1) 枚举本线路日期桶（不再 SCAN 全键空间）；统一预算收口到 _redis-budget.js
+ const budget=new Budget(SUBREQUEST_LIMIT);
+ const {keys:buckets}=await scanKeysBudgeted(env,idxPrefix+"*",budget,{count:200});
  // 2) pipeline SMEMBERS 取每个桶成员（运单 id）
  const ids=new Set();
- for(let i=0;i<buckets.length;i+=50){const chunk=buckets.slice(i,i+50);const res=await pipeline(env,chunk.map(k=>["SMEMBERS",k]));chunk.forEach((k,j)=>{for(const m of Array.isArray(res[j])?res[j]:[]){const id=clean(m);if(id)ids.add(id);}});}
+ {const members=await smembersBatch(env,buckets,budget,{batch:50});for(const b of buckets)for(const m of (Array.isArray(members.map.get(b))?members.map.get(b):[])){const id=clean(m);if(id)ids.add(id);}}
  // 3) 预算护栏：超大线路同步删除会越平台上限 → 明确拒绝而非 1101
  const est=1+Math.ceil(buckets.length/50)+Math.ceil(ids.size/100)+Math.ceil((ids.size*5+buckets.length)/100);
  if(est>40)throw Object.assign(new Error("线路运单量过大，单次删除预计需 "+est+" 次子请求，超过平台上限 40，请分批或联系平台"),{code:"ROUTE_TOO_LARGE"});
  // 4) 批量 MGET 主记录（取 businessFingerprint / requestId / dedupe 所需字段）
  const recs=new Map();
- {const all=[...ids];for(let i=0;i<all.length;i+=100){const idBatch=all.slice(i,i+100);const raws=await command(env,["MGET",...idBatch.map(id=>"zp:waybill:"+id)]);idBatch.forEach((id,j)=>{const raw=Array.isArray(raws)?raws[j]:null;if(!raw)return;try{recs.set(id,typeof raw==="string"?JSON.parse(raw):raw)}catch{}});}}
+ {const all=[...ids];const r=await mgetBatchMap(env,all.map(id=>"zp:waybill:"+id),budget,{batch:100});for(const id of all){const raw=r.map.get("zp:waybill:"+id);if(!raw)continue;try{recs.set(id,typeof raw==="string"?JSON.parse(raw):raw)}catch{}}}
  // 5) 组装删除键（与 history.js 单删逻辑对齐：主键 / 事件 / 处理票据 / 指纹 / 去重）
  const del=[];
  for(const id of ids){const r=recs.get(id);del.push("zp:waybill:"+id,"zp:waybill:"+id+":events");if(r?.requestId)del.push("zp:waybill:proc:"+clean(r.requestId));if(r?.businessFingerprint)del.push("zp:waybill:fingerprint:"+r.businessFingerprint);if(r){try{const sig=await dailyWaybillKey(r);if(sig)del.push("zp:waybill:dedupe:"+sig)}catch{}}}

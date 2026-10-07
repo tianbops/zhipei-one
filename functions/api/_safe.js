@@ -12,6 +12,7 @@
 import { json } from "./_json.js";
 
 const REDIS_MARKERS = ["REDIS_NOT_CONFIGURED", "REDIS_ERROR", "REDIS_PIPELINE_ERROR"];
+const BUDGET_MARKERS = ["SUBREQUEST_BUDGET_EXCEEDED"];
 
 /** 判定是否为数据服务（Redis/Upstash）类失败 */
 export function isDataStoreError(e) {
@@ -19,11 +20,24 @@ export function isDataStoreError(e) {
   return REDIS_MARKERS.some(m => msg.startsWith(m));
 }
 
+/** 判定是否为「单次请求子请求预算耗尽」（架构级护栏，见 _redis-budget.js） */
+export function isBudgetError(e) {
+  const msg = String(e?.message || e || "");
+  return BUDGET_MARKERS.some(m => msg.startsWith(m));
+}
+
 /** 把异常规整为 {code,error,detail,status} */
 export function classify(e) {
   if (isDataStoreError(e)) {
     return { code: "DATA_STORE_UNAVAILABLE", status: 503,
       error: "数据服务暂时不可用，请稍后重试", detail: String(e?.message || e).slice(0, 180) };
+  }
+  if (isBudgetError(e)) {
+    // 不是服务故障，而是「本次请求要扫描的数据量超过平台单次上限」——用户应缩小范围后重试，
+    // 而非把它当成 5xx 内部错误（避免前端误报、运维误判）。
+    return { code: "REQUEST_BUDGET_EXCEEDED", status: 503,
+      error: "本次请求需扫描的数据量超出平台单次上限，请缩小范围后重试",
+      detail: String(e?.message || e).slice(0, 180) };
   }
   return { code: "INTERNAL_ERROR", status: 500,
     error: "服务处理失败，请稍后重试", detail: String(e?.message || e || "UNKNOWN_ERROR").slice(0, 180) };

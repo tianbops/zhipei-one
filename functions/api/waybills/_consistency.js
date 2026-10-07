@@ -14,7 +14,8 @@
  *   事件链   zp:waybill:<id>:events                (List)
  *   处理票据 zp:waybill:proc:<requestId>           (TTL 15min)
  */
-import { command, pipeline } from "../_redis.js";
+import { command } from "../_redis.js";
+import { Budget, SUBREQUEST_LIMIT, scanKeysBudgeted, mgetBatchMap, smembersBatch } from "../_redis-budget.js";
 
 const WB_PREFIX = "zp:waybill:";
 const INDEX_PREFIX = "zp:route:";
@@ -41,65 +42,11 @@ const cnDateOf = iso => {
 // 旧实现两条都是 O(N)：先是逐键 GET/SMEMBERS，再叠加无上限的稀疏 SCAN，
 // 生产数据量下必然爆预算 → Worker 抛异常 → Cloudflare Error 1101。
 // 因此这里同时收紧三者：COUNT 放大、MGET/pipeline 批量、**全局预算 + 相位数上限**。
-// 预算耗尽时不等平台掐断，而是主动截断并在报告里标注 degraded —— 宁可给出「可能不完整」的结论，
-// 也不能让一致性工具沉默地返回一个「什么问题都没有」的假绿灯。
-const SUBREQUEST_LIMIT = 40;   // 留 10 给鉴权 / 日志 / 响应
-const SCAN_COUNT = 500;        // 单次 SCAN 覆盖的槽位数，越大迭代越少（一次迭代 = 一次子请求）
-const KEY_CAP = 5000;          // 单模式返回键上限，防御内存与 CPU 时间
-const MGET_BATCH = 100;
-const PIPELINE_BATCH = 50;
+// 预算逻辑已统一收口到 _redis-budget.js（Budget / scanKeysBudgeted / mgetBatchMap / smembersBatch），
+// 此处只保留一致性扫描专属的迭代上限。预算耗尽时不等平台掐断，而是主动截断并在报告里标注
+// degraded —— 宁可给出「可能不完整」的结论，也不能让一致性工具沉默地返回一个「什么问题都没有」的假绿灯。
 const SCAN_ITER_CAP_WAYBILL = 12;
 const SCAN_ITER_CAP_INDEX = 8;
-
-function makeBudget(max = SUBREQUEST_LIMIT) {
-  return {
-    max, used: 0, exhausted: false,
-    take(n = 1) { if (this.used + n > this.max) { this.exhausted = true; return false; } this.used += n; return true; }
-  };
-}
-
-/** 预算受控的 SCAN：迭代超预算立即停止并声明 complete=false，绝不把 worker 拖到 1101 */
-async function scanKeys(env, pattern, budget, { cap = KEY_CAP, iterCap = Infinity } = {}) {
-  const keys = [];
-  let complete = true, cursor = "0", iter = 0;
-  do {
-    if (iter >= iterCap || !budget.take(1)) { complete = false; break; }
-    const r = await command(env, ["SCAN", cursor, "MATCH", pattern, "COUNT", String(SCAN_COUNT)]);
-    cursor = String(r?.[0] ?? "0");
-    iter++;
-    for (const k of Array.isArray(r?.[1]) ? r[1] : []) {
-      keys.push(String(k));
-      if (keys.length >= cap) { cursor = "0"; complete = false; break; }
-    }
-  } while (cursor !== "0");
-  return { keys, complete };
-}
-
-/** 批量 MGET：N 个子请求压到 ceil(N/100)，返回 Map(key -> raw) */
-async function mgetMap(env, keys, budget) {
-  const out = new Map();
-  let complete = true;
-  for (let i = 0; i < keys.length; i += MGET_BATCH) {
-    const chunk = keys.slice(i, i + MGET_BATCH);
-    if (!budget.take(1)) { complete = false; break; }
-    const raws = await command(env, ["MGET", ...chunk]);
-    for (let j = 0; j < chunk.length; j++) out.set(chunk[j], Array.isArray(raws) ? raws[j] : null);
-  }
-  return { map: out, complete };
-}
-
-/** 批量 SMEMBERS：pipeline 一次请求跑多条命令 */
-async function smembersMap(env, keys, budget) {
-  const out = new Map();
-  let complete = true;
-  for (let i = 0; i < keys.length; i += PIPELINE_BATCH) {
-    const chunk = keys.slice(i, i + PIPELINE_BATCH);
-    if (!budget.take(1)) { complete = false; break; }
-    const res = await pipeline(env, chunk.map(k => ["SMEMBERS", k]));
-    for (let j = 0; j < chunk.length; j++) out.set(chunk[j], Array.isArray(res?.[j]) ? res[j] : []);
-  }
-  return { map: out, complete };
-}
 
 const parseWaybill = raw => {
   if (!raw) return null;
@@ -129,10 +76,10 @@ export async function scanConsistency(env, { routeId = null, all = false } = {})
   const scopeRoute = all ? null : clean(routeId);
   const inScope = r => scopeRoute === null || clean(r) === scopeRoute;
 
-  const budget = makeBudget();
+  const budget = new Budget();
   // 1. 收集所有运单命名空间键
   let complete = true;
-  const wbScan = await scanKeys(env, WB_PREFIX + "*", budget, { iterCap: SCAN_ITER_CAP_WAYBILL });
+  const wbScan = await scanKeysBudgeted(env, WB_PREFIX + "*", budget, { iterCap: SCAN_ITER_CAP_WAYBILL });
   complete = complete && wbScan.complete;
   const wbKeys = wbScan.keys;
   const waybills = new Map();   // id -> parsed
@@ -151,13 +98,13 @@ export async function scanConsistency(env, { routeId = null, all = false } = {})
     primaryIds.push(rest);
   }
   // 批量读取（旧实现为逐键 GET，子请求数 O(N) → 1101）
-  const primaryRead = await mgetMap(env, primaryIds.map(id => WB_PREFIX + id), budget);
+  const primaryRead = await mgetBatchMap(env, primaryIds.map(id => WB_PREFIX + id), budget);
   complete = complete && primaryRead.complete;
   for (const id of primaryIds) { const w = parseWaybill(primaryRead.map.get(WB_PREFIX + id)); if (w) waybills.set(id, w); }
-  const dedupeRead = await mgetMap(env, dedupeKeyList, budget);
+  const dedupeRead = await mgetBatchMap(env, dedupeKeyList, budget);
   complete = complete && dedupeRead.complete;
   for (const key of dedupeKeyList) dedupeKeys.push({ key, pointsTo: clean(dedupeRead.map.get(key)) });
-  const fpRead = await mgetMap(env, fpKeyList, budget);
+  const fpRead = await mgetBatchMap(env, fpKeyList, budget);
   complete = complete && fpRead.complete;
   for (const key of fpKeyList) fpKeys.push({ key, pointsTo: clean(fpRead.map.get(key)) });
 
@@ -170,14 +117,14 @@ export async function scanConsistency(env, { routeId = null, all = false } = {})
   const indexPattern = scopeRoute === null
     ? INDEX_PREFIX + "*" + INDEX_SUFFIX + "*"
     : INDEX_PREFIX + scopeRoute + INDEX_SUFFIX + "*";
-  const idxScan = await scanKeys(env, indexPattern, budget, { iterCap: SCAN_ITER_CAP_INDEX });
+  const idxScan = await scanKeysBudgeted(env, indexPattern, budget, { iterCap: SCAN_ITER_CAP_INDEX });
   complete = complete && idxScan.complete;
   const indexKeys = idxScan.keys.filter(key => {
     const body = key.slice(INDEX_PREFIX.length);
     const idx = body.indexOf(INDEX_SUFFIX);
     return idx >= 0 && inScope(body.slice(0, idx));
   });
-  const idxRead = await smembersMap(env, indexKeys, budget);
+  const idxRead = await smembersBatch(env, indexKeys, budget);
   complete = complete && idxRead.complete;
   const membersMap = idxRead.map;
   // 「主记录视图」与「索引视图」是否完整：这是**能否做引用完整性判定**的前提。
