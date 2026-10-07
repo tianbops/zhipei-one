@@ -7,7 +7,7 @@
 .order-icon-btn:active{background:rgba(28,37,47,.82);transform:scale(.97)}
 .order-menu{position:absolute;right:0;top:48px;width:190px;background:rgba(20,28,37,.80);border:1px solid #2A3540;border-radius:12px;box-shadow:0 10px 24px rgba(0,0,0,.3);overflow:hidden;animation:zpMenuIn .14s ease-out}
 .order-menu[hidden],.order-dialog[hidden]{display:none}
-.order-menu button,.order-menu-route{width:100%;min-height:46px;border:0;border-bottom:1px solid rgba(255,255,255,.045);background:transparent;color:#fff;text-align:left;padding:0 16px;font-size:14px}
+.order-menu button,.order-menu-route{width:100%;min-height:var(--zp-control-height);border:0;border-bottom:1px solid rgba(255,255,255,.045);background:transparent;color:#fff;text-align:left;padding:0 16px;font-size:14px}
 .order-menu-route{display:flex;align-items:center;background:#1C2530;font-weight:650}
 .order-menu button{display:flex;align-items:center}
 .order-menu button:active{background:rgba(28,37,47,.82)}.order-menu .logout{color:#FF8278;border-bottom:0}
@@ -43,7 +43,10 @@
 /* 弹窗：放宽尺寸上限（用户反馈"显示框调大一点"），高度用 dvh 并带 vh 兜底 */
 .order-dialog-panel{width:min(100%,460px);max-height:min(90vh,800px);max-height:min(90dvh,800px);display:flex;flex-direction:column;background:rgba(20,28,37,.80);border:1px solid #2A3540;border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.5);overflow:hidden}
 .order-dialog-head{height:54px;flex:0 0 54px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid rgba(255,255,255,.06)}
-.order-dialog-head strong{font-size:16px}.order-dialog-head button{width:34px;height:34px;border:0;background:transparent;color:#B8C2CC;font-size:26px}
+.order-dialog-head strong{font-size:16px}/* 弹窗右上角关闭键：34×34 是全站最小的触控目标，本轮补到 48×48。
+   能直接放大的前提是 .order-dialog-head 有固定 height:54px（>48），
+   按钮放大不会顶破标题行；若哪天该头部高度被收敛到 48 以下，这里必须重新评估。 */
+.order-dialog-head button{width:var(--zp-control-height);height:var(--zp-control-height);border:0;background:transparent;color:#B8C2CC;font-size:26px}
 /* pending-list 占据标题与按钮之间的剩余空间并内部滚动：
    缺少 flex:1+min-height:0 时内容会把面板撑高，被 overflow:hidden 硬裁，
    表现为"文字超出显示框"（2026-10-03 修复） */
@@ -52,7 +55,7 @@
 .candidate-list{display:grid;gap:7px;margin-top:9px}
 /* 选项按钮：轻底色 + 细边框 + 大圆角，柔化"深色方块"感（全局统一）；
    padding 9px 12px + word-break，长店名换行绝不贴边/出框 */
-.choice-btn{min-height:42px;padding:9px 12px;border:1px solid rgba(255,255,255,.10);border-radius:12px;background:rgba(255,255,255,.035);color:#fff;text-align:left;font-size:13px;line-height:19px;word-break:break-word}
+.choice-btn{min-height:var(--zp-control-height);padding:9px 12px;border:1px solid rgba(255,255,255,.10);border-radius:12px;background:rgba(255,255,255,.035);color:#fff;text-align:left;font-size:13px;line-height:19px;word-break:break-word}
 .choice-btn.selected{border-color:#93A3B1;background:rgba(26,38,46,.82)}.choice-btn:active{background:rgba(20,33,44,.82)}
 /* 首位候选为系统推荐项，用左侧标记区分，避免用户面对同级选项时无从判断 */
 .choice-btn.recommended{border-left:3px solid #5F6E7C}
@@ -70,7 +73,7 @@
 .pending-list::-webkit-scrollbar-thumb,.pending-options::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:999px}
 .pending-list{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.14) transparent}
 .order-dialog-actions{display:flex;flex:0 0 auto;gap:8px;padding:12px 14px;border-top:1px solid rgba(255,255,255,.06)}
-.order-dialog-actions button{flex:1;height:44px;border-radius:11px;border:0;font-size:14px;font-weight:650}
+.order-dialog-actions button{flex:1;height:var(--zp-control-height);border-radius:11px;border:0;font-size:14px;font-weight:650}
 .order-dialog-actions .secondary-btn{background:rgba(10,14,19,.88);color:#E3E8ED;border:1px solid #35404C}.order-dialog-actions .primary-btn{background:rgba(28,37,47,.82);color:#fff;border:0}.order-dialog-actions .primary-btn:disabled{opacity:.45}
 @media(max-width:430px){.order-shell{padding-left:10px;padding-right:10px}.order-summary-main{font-size:22px}.order-route-card{padding-left:10px;padding-right:10px}}
 @media(max-height:700px){.order-shell{padding-top:6px}.order-topbar{height:42px;flex-basis:42px;margin-bottom:7px}.order-icon-btn{width:42px;height:42px}.order-summary-card{padding:10px 12px;margin-bottom:8px}.order-summary-main{margin-top:2px}.order-metrics{margin-top:5px}.order-route-card{padding-top:10px}.order-store-item{padding-top:8px;padding-bottom:8px;min-height:52px}}

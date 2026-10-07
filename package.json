@@ -17,7 +17,9 @@
     "test:admin-fifthpage": "node tests/integration-admin-fifthpage.cjs",
     "test:node": "node tests/mini-redis-fidelity.cjs && node tests/unit-waybill-dedup-lua.test.cjs && node tests/nav-return.test.mjs && node tests/integration-waybill-lifecycle.cjs && node tests/integration-waybill-isolation.cjs && node tests/unit-quality-gate.test.cjs && node tests/integration-waybill-quality-events.cjs && node tests/unit-waybill-proc.test.cjs && node tests/integration-waybill-state-machine.cjs && node tests/integration-waybill-consistency.cjs && node tests/integration-waybill-stats.cjs && node tests/integration-waybill-multiuser.cjs && node tests/integration-waybill-delete-cleanup.cjs && node tests/unit-retry-action.test.mjs && node tests/integration-diagnostic-auth.cjs && node tests/integration-admin-fifthpage.cjs && node tests/unit-waybill-proc-stage.test.cjs && node tests/integration-stats-stale.cjs && node tests/integration-diagnostic-truncation.cjs && node tests/integration-history-waybillids.cjs && node tests/integration-retry-save-expiry.cjs && node tests/integration-index-date-repair.cjs && node tests/integration-subrequest-budget.cjs && node tests/integration-consistency-budget.cjs && node tests/integration-error-guard.cjs && node tests/integration-fingerprint-drift.cjs && node tests/integration-route-delete-budget.cjs && node tests/route-closure-batch1.cjs && node tests/route-closure-batch2.cjs && node tests/route-closure-batch3.cjs && node tests/integration-redis-budget.cjs && node tests/integration-admin-budget.cjs",
     "verify:css-rules": "node tests/tools/css-rules-diff.cjs",
-    "verify:css-vars": "node tests/tools/css-var-resolve.cjs"
+    "verify:css-vars": "node tests/tools/css-var-resolve.cjs",
+    "verify:css-buttons": "node tests/tools/css-button-resolve.cjs",
+    "verify:css-button-audit": "node tests/tools/css-button-audit.cjs report css/app.css css/ui-unified.css css/mobile-ui.css css/home.css css/business-pages.css css/data.css css/history.css css/order_detail.css"
   },
   "devDependencies": {
     "fengari": "^0.1.4",

@@ -23,9 +23,45 @@ const path = require("path");
 const { loadPostcss } = require("./_css-toolkit.cjs");
 const postcss = loadPostcss();
 
-const [beforeDir, afterDir, htmlRepo] = process.argv.slice(2);
+/**
+ * 无参自检模式（Commit 3A 补）：
+ *   Commit 2A 把本工具挂成了 npm run verify:css-vars，但没带 <beforeDir> <afterDir>，
+ *   结果这个脚本从挂上去那天起就永远 EXIT=2 —— 一个跑不动的检查比没有检查更危险，
+ *   它让「我们有变量等价验证」这句话变成假的。
+ *   现在不传参数时自动用 git HEAD 版本的 css/ 作基线，与工作区比对，
+ *   于是任何时候（包括 CI）都能直接跑：验证「本次改动有没有造成变量解析漂移」。
+ */
+function baselineFromGit(repo) {
+  const os = require("os");
+  const { execFileSync } = require("child_process");
+  const files = fs.readdirSync(path.join(repo, "css")).filter((f) => f.endsWith(".css"));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "cssbase-"));
+  fs.mkdirSync(path.join(tmp, "css"), { recursive: true });
+  let n = 0;
+  for (const f of files) {
+    let content;
+    try {
+      content = execFileSync("git", ["show", `HEAD:css/${f}`], { cwd: repo, encoding: "utf8" });
+    } catch {
+      continue; // HEAD 里不存在的文件（本次新增）无从比对，跳过即可
+    }
+    fs.writeFileSync(path.join(tmp, "css", f), content);
+    n++;
+  }
+  console.log(`自检模式：以 git HEAD 的 css/ 为基线（${n} 个文件），工作区为改动后`);
+  return tmp;
+}
+
+let [beforeDir, afterDir, htmlRepo] = process.argv.slice(2);
+if (!beforeDir && !afterDir && !htmlRepo) {
+  const repo = process.cwd();
+  beforeDir = baselineFromGit(repo);
+  afterDir = repo;
+  htmlRepo = repo;
+}
 if (!beforeDir || !afterDir || !htmlRepo) {
-  console.error("用法: node css-var-resolve.cjs <beforeDir> <afterDir> <htmlRepo>");
+  console.error("用法: node css-var-resolve.cjs [beforeDir] [afterDir] [htmlRepo]");
+  console.error("      不带参数 = 以 git HEAD 的 css/ 为基线自检");
   process.exit(2);
 }
 

@@ -70,7 +70,7 @@
 .processing-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px}
 .processing-stage{min-width:0;overflow:hidden;color:#B8C2CC;text-align:left;font-size:14px;line-height:20px;text-overflow:ellipsis;white-space:nowrap}
 .processing-elapsed{flex:none;color:#7F8A95;font-size:13px;line-height:20px;font-variant-numeric:tabular-nums}
-.processing-cancel-btn{display:block;width:100%;min-height:44px;margin-top:16px;border:1px solid #2A3540;border-radius:12px;background:rgba(10,14,19,.88);color:#B8C2CC;font-size:15px;font-weight:650;-webkit-tap-highlight-color:transparent}
+.processing-cancel-btn{display:block;width:100%;min-height:var(--zp-control-height);margin-top:16px;border:1px solid #2A3540;border-radius:12px;background:rgba(10,14,19,.88);color:#B8C2CC;font-size:15px;font-weight:650;-webkit-tap-highlight-color:transparent}
 .processing-cancel-btn[hidden]{display:none}
 .processing-cancel-btn:active{background:rgba(20,28,37,.80);color:#F2F5F7}
 /* 停滞但存活：进度条叠加流动微光，表示"服务端仍在运行"而非卡死。

@@ -25,7 +25,7 @@
 }
 .history-toolbar strong{font-size:15px;line-height:22px;font-weight:650}
 .history-toolbar button{
-  height:36px;
+  height:var(--zp-control-height);
   padding:0 13px;
   border:1px solid #35404C;
   border-radius:10px;
@@ -173,16 +173,20 @@
   border-radius:18px;
   box-shadow:0 18px 50px rgba(0,0,0,.42);
 }
+/* 月份/日期选择器的左右翻页箭头：格子与按钮必须同步放大。
+   按钮 40→48 而 grid 仍留 42px 的话，48 的按钮会溢出格子把中间标题挤歪 ——
+   与 Commit 2B 里 home-menu-panel 的 top 补偿是同一类牵连：改触控尺寸时，
+   凡是「用具体数值给按钮预留位置」的地方都要跟着改。 */
 .history-picker-head{
   display:grid;
-  grid-template-columns:42px 1fr 42px;
+  grid-template-columns:var(--zp-control-height) 1fr var(--zp-control-height);
   align-items:center;
   text-align:center;
 }
 .history-picker-head strong{font-size:16px;line-height:22px;font-weight:650}
 .history-picker-head button{
-  width:40px;
-  height:40px;
+  width:var(--zp-control-height);
+  height:var(--zp-control-height);
   border:0;
   border-radius:10px;
   background:rgba(10,14,19,.88);
@@ -278,7 +282,7 @@
 }
 .history-dialog-actions button{
   flex:1;
-  height:46px;
+  height:var(--zp-control-height);
   border:1px solid #35404C;
   border-radius:11px;
   background:rgba(10,14,19,.88);
@@ -349,7 +353,7 @@
   font-weight:650;
 }
 .history-toolbar button{
-  height:38px;
+  height:var(--zp-control-height);
   padding:0 14px;
   border:1px solid #35404C;
   border-radius:11px;

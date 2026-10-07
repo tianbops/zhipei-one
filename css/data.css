@@ -16,7 +16,11 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-list-title{font-size:14px;font-weight:600}
 .data-list-count{color:#7F8A95;font-size:12px}
 .data-store-list{margin:0}
-.data-store-row{position:relative;display:grid;grid-template-columns:32px minmax(0,1fr);gap:10px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+/* 补 min-height 是为了容纳放大后的滑动操作按钮，不是顺手统一行高：
+   .data-swipe-actions 是 absolute + 垂直居中，按钮 34→48 后，若店铺没有 meta
+   （data.html 里 meta 为空时整块不渲染），该行只有 22(店名)+24(padding)=46px，
+   48px 的按钮会上下各溢出 1px。给行兜一个 48px 下限即可，内容多的行不受影响。 */
+.data-store-row{position:relative;display:grid;grid-template-columns:32px minmax(0,1fr);gap:10px;min-height:var(--zp-control-height);padding:12px 0;border-bottom:1px solid rgba(255,255,255,.07)}
 .data-store-row:last-child{border-bottom:0}
 .data-store-index{display:flex;align-items:flex-start;justify-content:center;padding-top:1px;color:#7F8A95;font-size:12px;font-variant-numeric:tabular-nums}
 .data-store-main{min-width:0}
@@ -40,7 +44,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-textarea:focus{border-color:#687584}
 .data-preview{min-height:19px;margin-top:8px}
 .data-import-actions{position:sticky;bottom:0;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px -16px 0;padding:12px 16px calc(14px + env(safe-area-inset-bottom));background:rgba(20,28,37,.80);border-top:1px solid rgba(255,255,255,.05)}
-.data-import-actions button{height:46px;border:1px solid #35404C;border-radius:10px;background:rgba(10,14,19,.88);color:#fff;font-size:15px}
+.data-import-actions button{height:var(--zp-control-height);border:1px solid #35404C;border-radius:10px;background:rgba(10,14,19,.88);color:#fff;font-size:15px}
 .data-import-actions #importSave{background:rgba(28,37,47,.82)}
 @media(min-width:600px){.data-import{align-items:center}.data-import-panel{border-radius:18px}}
 /* 轻量入场动效：只做透明度+上滑，不改布局与结构；系统开启"减弱动态效果"时自动关闭 */
@@ -51,7 +55,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-editor-panel{padding-top:16px}
 .data-field{display:block;margin-top:14px}
 .data-field>span{display:block;margin-bottom:6px;color:#B8C2CC;font-size:14px;line-height:20px}
-.data-input{display:block;width:100%;height:46px;box-sizing:border-box;border:1px solid #35404C;border-radius:10px;background:#10161D;color:#E8EDF2;padding:0 12px;font:inherit;font-size:14px;outline:none}
+.data-input{display:block;width:100%;height:var(--zp-control-height);box-sizing:border-box;border:1px solid #35404C;border-radius:10px;background:#10161D;color:#E8EDF2;padding:0 12px;font:inherit;font-size:14px;outline:none}
 .data-input:focus,.data-note:focus{border-color:#687584}
 .data-note{min-height:100px;margin-top:0}
 
@@ -73,7 +77,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-tools-card{padding:12px 14px}
 .data-maintenance{display:grid;gap:9px}
 .data-maintenance-group{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-.data-action-btn{width:100%;min-height:44px;margin:0;padding:0 10px;border:1px solid #35404C;border-radius:10px;background:rgba(10,14,19,.88);color:#E8EDF2;font-size:14px;font-weight:500}
+.data-action-btn{width:100%;min-height:var(--zp-control-height);margin:0;padding:0 10px;border:1px solid #35404C;border-radius:10px;background:rgba(10,14,19,.88);color:#E8EDF2;font-size:14px;font-weight:500}
 .data-action-btn:active{background:rgba(28,37,47,.82)}
 .data-action-primary{background:#2E3B47;border-color:#4A5A68;color:#fff;font-weight:700}
 .data-store-row{touch-action:pan-y;user-select:none;transition:opacity .18s ease,transform .18s ease}
@@ -98,7 +102,11 @@ body.data-panel-open .data-float-scroll{opacity:0!important;visibility:hidden!im
 .data-swipe-actions{position:absolute;right:0;top:50%;display:flex;gap:6px;align-items:center;opacity:0;visibility:hidden;transform:translate(12px,-50%);transition:opacity .16s ease,transform .16s ease,visibility .16s ease}
 .data-store-row.data-swipe-open .data-store-main{padding-right:116px}
 .data-store-row.data-swipe-open .data-swipe-actions{opacity:1;visibility:visible;transform:translate(0,-50%)}
-.data-swipe-actions button{min-width:48px;height:34px;padding:0 9px;border:1px solid #35404C;border-radius:9px;background:rgba(10,14,19,.88);color:#E8EDF2;font-size:12px}
+/* 滑动操作按钮：本轮唯一从 34px 起改的项（34 → 48，+14px）。
+   可以直接放大的依据：.data-swipe-actions 是 position:absolute + top:50% + translateY(-50%)，
+   垂直居中且脱离文档流，撑不高 .data-store-row；而该行实际内容高度（店名 22 + meta 20 + padding 24）
+   约 71px 起，容纳 48px 有余。若它参与文档流，这里就不能只改高度而不动行高。 */
+.data-swipe-actions button{min-width:48px;height:var(--zp-control-height);padding:0 9px;border:1px solid #35404C;border-radius:9px;background:rgba(10,14,19,.88);color:#E8EDF2;font-size:12px}
 .data-swipe-actions .data-swipe-delete{color:#D4B6B6}
 @media(min-width:600px){
  .data-swipe-actions{right:0}
@@ -118,7 +126,7 @@ body.data-panel-open .data-float-scroll{opacity:0!important;visibility:hidden!im
 .data-summary strong{font-size:17px;font-weight:600}
 .data-route-hint{margin-top:4px}
 .data-page-menu{position:fixed;top:calc(58px + env(safe-area-inset-top));right:14px;z-index:130;width:108px;padding:6px;background:rgba(20,28,37,.80);border:1px solid #2A3540;border-radius:12px;box-shadow:0 14px 34px rgba(0,0,0,.42)}
-.data-page-menu button{display:block;width:100%;height:42px;border:0;border-radius:8px;background:transparent;color:#fff;text-align:left;padding:0 12px;font-size:14px}
+.data-page-menu button{display:block;width:100%;height:var(--zp-control-height);border:0;border-radius:8px;background:transparent;color:#fff;text-align:left;padding:0 12px;font-size:14px}
 .data-page-menu button:active{background:rgba(28,37,47,.82)}
 @media(min-width:600px){.data-page-menu{right:24px}}
 

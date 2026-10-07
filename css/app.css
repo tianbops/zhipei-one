@@ -335,7 +335,7 @@ body {
 }
 
 .confirm-panel-actions button {
-  height: 46px;
+  height: var(--zp-control-height);
   border-radius: 10px;
   font-size: 15px;
 }
@@ -660,7 +660,7 @@ body {
 }
 
 .data-toolbar .secondary-btn,.data-maintain .secondary-btn,.data-save {
-  min-height: 46px;
+  min-height: var(--zp-control-height);
   margin-top: 0;
   padding: 0 16px;
   border-radius: 10px;
@@ -731,7 +731,7 @@ body {
 }
 
 .data-import-actions button {
-  height: 46px;
+  height: var(--zp-control-height);
   border: 1px solid #35404C;
   border-radius: 10px;
   background: rgba(10,14,19,.88);
