@@ -63,7 +63,7 @@ var dataBaseline="";// 门店资料基线：用于判断是否存在「暂存但
   const p=new URLSearchParams(location.search);
   if(p.get("from")==="order"){
     const oid=p.get("id");
-    if(oid){const a=document.querySelector(".data-page-back");if(a)a.href="/pages/order_detail.html?id="+encodeURIComponent(oid)+"&source=process&from=process"}
+    if(oid){const a=document.querySelector(".app-back");if(a)a.href="/pages/order_detail.html?id="+encodeURIComponent(oid)+"&source=process&from=process"}
   }
 })();
 async function api(u,o={}){const r=await fetch(u,{credentials:"same-origin",...o});const d=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(d.error||d.message||"请求失败");e.code=d.code||"HTTP_"+r.status;e.detail=d.detail||"";throw e}return d}
