@@ -1,6 +1,6 @@
 /* 智配One · 首页移动端 UI */
 .home-app{width:min(100%,430px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:16px 16px calc(28px + env(safe-area-inset-bottom));background:#05070A}
-.home-topbar{height:var(--zp-header-height);display:flex;align-items:center;justify-content:space-between;position:relative;z-index:10}
+.home-app .topbar{display:flex;justify-content:space-between;align-items:center;position:relative;z-index:10}
 .home-brand{display:flex;flex-direction:column;line-height:1.2}
 .home-brand strong{font-size:22px;font-weight:700;letter-spacing:1px;color:#fff}
 .home-brand span{margin-top:2px;font-size:12px;color:#7F8B98;letter-spacing:2px}
