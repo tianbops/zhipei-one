@@ -255,8 +255,8 @@ async function saveWaybill(order, requestId, resumed){
       let w;try{w=typeof raw==="string"?JSON.parse(raw):raw}catch{w=null}
       if(w){
         // 历史去重命中后的索引/指纹补齐也必须原子化，避免与并发保存互相覆盖 dedupeKey。
-        const repairScript='local current=redis.call("GET",KEYS[1]); if current and current~="" then local raw=redis.call("GET","zp:waybill:"..current); if raw then redis.call("SADD",KEYS[2],current); return current end; redis.call("DEL",KEYS[1]) end; redis.call("SADD",KEYS[2],ARGV[1]); redis.call("SET",KEYS[1],ARGV[1]); return ARGV[1]';
-        const repairedId=await command(env,["EVAL",repairScript,"2",dedupeKey,indexKey,dailyDupId]);
+        const repairScript='local current=redis.call("GET",KEYS[1]); if current and current~="" then local raw=redis.call("GET","zp:waybill:"..current); if raw then local ok,existing=pcall(cjson.decode,raw); if ok and type(existing)=="table" and existing.dailyDedupeKey==ARGV[2] then redis.call("SADD",KEYS[2],current); return current end; redis.call("DEL",KEYS[1]) else redis.call("DEL",KEYS[1]) end; end; redis.call("SADD",KEYS[2],ARGV[1]); redis.call("SET",KEYS[1],ARGV[1]); return ARGV[1]';
+        const repairedId=await command(env,["EVAL",repairScript,"2",dedupeKey,indexKey,dailyDupId,dailySig]);
         const finalId=String(repairedId||dailyDupId);
         if(finalId!==dailyDupId){
           const finalRaw=await command(env,["GET","zp:waybill:"+finalId]);
