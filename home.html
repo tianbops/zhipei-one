@@ -65,6 +65,31 @@
     </a>
   </nav>
 
+
+  <section class="monthly-card" id="monthlyCard" aria-labelledby="monthlyTitle" hidden>
+    <div class="monthly-head">
+      <div>
+        <div class="monthly-title-row">
+          <strong id="monthlyTitle">本月配送</strong>
+          <span id="monthlyMonth" class="monthly-month"></span>
+        </div>
+        <div class="monthly-summary" aria-label="本月配送汇总">
+          <span><b id="monthlyWaybills">0</b> 单</span>
+          <span><b id="monthlyWeight">0.00</b> t</span>
+        </div>
+      </div>
+      <a class="monthly-more" href="/pages/history.html?from=home" aria-label="查看本月历史">查看</a>
+    </div>
+    <div class="monthly-chart-wrap">
+      <svg id="monthlyChart" class="monthly-chart" viewBox="0 0 360 96" preserveAspectRatio="none" role="img" aria-label="本月每日配送趋势">
+        <path id="monthlyChartLine" class="monthly-chart-line" d=""></path>
+        <circle id="monthlyChartDot" class="monthly-chart-dot" cx="0" cy="0" r="3.5"></circle>
+      </svg>
+    </div>
+    <div id="monthlyAxis" class="monthly-axis" aria-hidden="true"></div>
+  </section>
+
+
   <div id="uploadArea" class="upload-overlay" hidden aria-hidden="true">
     <div class="upload-sheet" role="dialog" aria-modal="true" aria-labelledby="uploadTitle">
       <div class="sheet-handle" aria-hidden="true"></div>
@@ -98,7 +123,7 @@
   <input id="photoInput" type="file" accept="image/*" multiple hidden>
   <input id="documentInput" type="file" accept="application/pdf,.pdf" hidden>
 </main>
-<script src="/js/home.js?v=9e2a57b4"></script>
+<script src="/js/home.js?v=monthly-1"></script>
 <script>
 (()=>{const d=document.getElementById("todayDate");if(d){const f=new Intl.DateTimeFormat("zh-CN",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit",weekday:"short"});d.textContent=f.format(new Date()).replaceAll("/","-")}})();
 document.getElementById("logout")?.addEventListener("click",async()=>{const ok=window.zpConfirm?await window.zpConfirm("退出登录","确定要退出当前账号吗？","退出"):true;if(!ok)return;try{await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"})}finally{location.replace("/")}})
