@@ -69,8 +69,8 @@
   <section class="trend-card" id="trendCard" aria-labelledby="trendTitle" hidden>
     <div class="trend-head">
       <div class="trend-title-row">
-        <h2 id="trendTitle" class="trend-title">本月配送</h2>
-        <button id="trendYearBtn" class="trend-year" type="button">2026 年度 ›</button>
+        <h2 id="trendTitle" class="trend-title">月度统计</h2>
+        <button id="trendYearBtn" class="trend-year" type="button">年度</button>
       </div>
       <div class="trend-month-row" id="trendMonthRow">
         <button id="trendPrev" class="trend-nav" type="button" aria-label="上一个月">‹</button>
@@ -133,7 +133,7 @@
   <input id="documentInput" type="file" accept="application/pdf,.pdf" hidden>
 </main>
 <script src="/js/home.js?v=monthly-1"></script>
-<script src="/js/home-monthly.js?v=swipe3"></script>
+<script src="/js/home-monthly.js?v=swipe4"></script>
 <script>
 (()=>{const d=document.getElementById("todayDate");if(d){const f=new Intl.DateTimeFormat("zh-CN",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit",weekday:"short"});d.textContent=f.format(new Date()).replaceAll("/","-")}})();
 document.getElementById("logout")?.addEventListener("click",async()=>{const ok=window.zpConfirm?await window.zpConfirm("退出登录","确定要退出当前账号吗？","退出"):true;if(!ok)return;try{await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"})}finally{location.replace("/")}})

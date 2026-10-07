@@ -1,5 +1,5 @@
 (()=>{"use strict";
-  // 首页「配送趋势 · Smart Trend」模块（内部代号；用户界面仅显示「本月配送」等业务词，无英文技术词）。
+  // 首页「配送趋势 · Smart Trend」模块（内部代号；用户界面仅显示「月度统计」「年度统计」等业务词，无英文技术词）。
   // 设计约束：工业物流终端科技感 —— 来自精细网格 + 数据节点 + 平滑曲线 + 动态切换 + 数字变化，
   // 严禁霓虹蓝/紫渐变、发光、3D、玻璃拟态等廉价科技风。任何异常均静默处理，不得影响 home.js 主流程。
   const $=id=>document.getElementById(id);
@@ -145,7 +145,7 @@
     setDelta(wbDelta,total,pm?Number(pm.waybills)||0:null);
     setDelta(wtDelta,weight,pm?Number(pm.totalWeight)||0:null);
     // 抬头（两画面统一：月度/年度）
-    titleEl.textContent="月度配送";
+    titleEl.textContent="月度统计";
     monthEl.textContent=label(currentMonth);
     metricWrap.hidden=false;
     prev.disabled=monthIdx<=0;                        // 已是最旧有数据月
@@ -203,7 +203,7 @@
       busiestTxt="　最忙 "+bm+"月"+bd+"日 · "+busiest.count+"单";
     }
     hint.innerHTML="年度峰值 <b>"+peakMonth+" · "+fmtV(vals[peakMi])+"</b>"+busiestTxt;
-    titleEl.textContent="年度配送";
+    titleEl.textContent="年度统计";
     monthEl.textContent=year+" 年度";
     metricWrap.hidden=false;   // 与月度画面统一：同样提供 重量/单量 切换
     prev.disabled=yearIdx<=0;                         // 已是最旧有数据年
@@ -251,8 +251,9 @@
   }
   // 年份按钮文案随视图状态同步
   function syncYearBtn(){
-    if(yearMode){yearBtn.textContent="‹ 月度";yearBtn.classList.add("is-active");}
-    else{yearBtn.textContent=cnMonth().slice(0,4)+" 年度 ›";yearBtn.classList.remove("is-active");}
+    // 右上角统一命名：当前在年度视图→按钮显示「月度」(点回月度)；在月度视图→显示「年度」
+    if(yearMode){yearBtn.textContent="月度";yearBtn.classList.add("is-active");}
+    else{yearBtn.textContent="年度";yearBtn.classList.remove("is-active");}
   }
   function enterYear(){
     if(yearMode)return;
