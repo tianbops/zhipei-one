@@ -124,37 +124,42 @@ export async function onRequestGet({request,env}){
 }
 
 async function deleteWaybill(env,routeId,date,waybillId,budget){
- const cmd=async parts=>{if(!budget.take(1))throwBudgetExceeded(budget.max,"history-delete");return command(env,parts)};
  const errors=[];let mainOk=false,indexOk=false,childrenOk=true,refOk=true;
- // 删除前先读主记录，以恢复反向去重键（日去重键 / 业务指纹键）。
- // 删除后若这些键仍指向本单则一并清除；已被覆盖/再上传改派给新单的键不删（保护幂等/覆盖链）。
  let record=null;
- try{const raw=await cmd(["GET","zp:waybill:"+waybillId]);if(raw)record=typeof raw==="string"?JSON.parse(raw):raw}catch(e){errors.push(e)}
- try{await cmd(["SREM",waybillIndexKey(routeId,date),waybillId]);indexOk=true}catch(e){errors.push(e)}
- try{await cmd(["DEL","zp:waybill:"+waybillId]);mainOk=true}catch(e){errors.push(e)}
+ try{if(!budget.take(1))throwBudgetExceeded(budget.max,"history-delete-read");const raw=await command(env,["GET","zp:waybill:"+waybillId]);if(raw)record=typeof raw==="string"?JSON.parse(raw):raw}catch(e){errors.push(e)}
  const prefix="zp:waybill:"+waybillId+":";
+ let childKeys=[];
  try{
   const scanned=await scanKeysBudgeted(env,prefix+"*",budget,{count:500,cap:5000});
-  if(!scanned.complete){childrenOk=false;errors.push(Object.assign(new Error("历史删除子键扫描未完成"),{code:SUBREQUEST_BUDGET_EXCEEDED}));}
-  if(scanned.keys.length){
-   if(!budget.take(1))throwBudgetExceeded(budget.max,"history-delete-children");
-   await command(env,["DEL",...scanned.keys]);
+  if(!scanned.complete){
+   return {mainOk:false,indexOk:true,childrenOk:false,refOk:true,budgetExceeded:true,errors:[Object.assign(new Error("历史删除子键扫描未完成"),{code:SUBREQUEST_BUDGET_EXCEEDED})]};
   }
- }catch(e){errors.push(e);childrenOk=false}
- if(record){
-  const refKeys=[];
-  if(record.businessFingerprint)refKeys.push("zp:waybill:fingerprint:"+record.businessFingerprint);
-  try{const sig=await dailyWaybillKey(record);refKeys.push("zp:waybill:dedupe:"+sig)}catch{}
-  for(const k of refKeys){
-   try{
-    const ref=await cmd(["GET",k]);
-    if(String(ref??"")===String(waybillId))await cmd(["DEL",k]);
-   }catch(e){refOk=false;errors.push(e)}
-  }
+  childKeys=scanned.keys;
+ }catch(e){
+  return {mainOk:false,indexOk:true,childrenOk:false,refOk:true,budgetExceeded:e?.code===SUBREQUEST_BUDGET_EXCEEDED,errors:[e]};
  }
- return {mainOk,indexOk,childrenOk,refOk,errors};
+ const refKeys=[];
+ if(record?.businessFingerprint)refKeys.push("zp:waybill:fingerprint:"+record.businessFingerprint);
+ if(record){try{const sig=await dailyWaybillKey(record);refKeys.push("zp:waybill:dedupe:"+sig)}catch{}}
+ // 破坏性操作前预留完整预算：SREM + 主记录 DEL + 子键 DEL（如有）+
+ // 每个反向引用最多 GET+DEL 两次。预算不足时不删除主记录，保证重试仍可找到原单。
+ const required=2+(childKeys.length?1:0)+(refKeys.length*2);
+ if(!budget.canTake(required)){
+  return {mainOk:false,indexOk:true,childrenOk:false,refOk:true,budgetExceeded:true,errors:[Object.assign(new Error("历史删除资源预算不足"),{code:SUBREQUEST_BUDGET_EXCEEDED})]};
+ }
+ try{budget.take(1);await command(env,["SREM",waybillIndexKey(routeId,date),waybillId]);indexOk=true}catch(e){errors.push(e)}
+ try{budget.take(1);await command(env,["DEL","zp:waybill:"+waybillId]);mainOk=true}catch(e){errors.push(e)}
+ if(childKeys.length){
+  try{budget.take(1);await command(env,["DEL",...childKeys])}catch(e){errors.push(e);childrenOk=false}
+ }
+ for(const k of refKeys){
+  try{
+   budget.take(1);const ref=await command(env,["GET",k]);
+   if(String(ref??"")===String(waybillId)){budget.take(1);await command(env,["DEL",k])}
+  }catch(e){refOk=false;errors.push(e)}
+ }
+ return {mainOk,indexOk,childrenOk,refOk,budgetExceeded:false,errors};
 }
-
 export async function onRequestDelete({request,env}){
  const user=await currentUser(request,env);if(!user)return json({success:false,error:"未登录"},401);
  if(user.role==="admin"||!canUseRoute(user))return json({success:false,error:"无权删除历史数据"},403);
