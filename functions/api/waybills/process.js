@@ -24,7 +24,9 @@ async function base(env,id){const raw=await get(env,"route:"+id+":base");if(!raw
 
 function extract(rawText){
   const stores=[]; let date=null,vehicle=null,totalWeight=null;
-  const lines=clean(rawText).split(/\r?\n+/).map(x=>x.trim()).filter(Boolean).slice(0,5000);
+  // 多截图属于同一张运单。截图来源标记只用于诊断，不得进入门店提取文本。
+  const normalizedInput=String(rawText||"").replace(/【第\\d+张截图】/g,"\\n");
+  const lines=clean(normalizedInput).split(/\r?\n+/).map(x=>x.trim()).filter(Boolean).slice(0,5000);
   const full=lines.join(" ");
   const dm=full.match(/(20\d{2}[-/.年]\d{1,2}[-/.月]\d{1,2}日?)/);
   if(dm){const p=dm[1].replace(/[年月/.]/g,"-").replace(/日$/,"").split("-").map(x=>x.padStart(2,"0"));if(p.length===3)date=p.join("-")}
@@ -250,7 +252,38 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
           return failProcess(ocrCode,e.message||"OCR识别失败",e.code==="OCR_NOT_CONFIGURED"?503:422,{stage:ocrStage,recoverable:ocrRecoverable,action:ocrRecoverable?"RETRY_OCR":null,hint:ocrHint[ocrCode]||"OCR识别失败，请稍后重试",jobId:e.jobId||null,detail:e.message||null});
         }
       }
-      recognizedText=results.map((x,i)=>`【第${i+1}张截图】\n${x.rawText||""}`).join("\n\n");
+      const imageTexts=results.map(x=>String(x.rawText||""));
+      // 相邻截图可能包含上一张末尾的重复内容。按“前图尾部/后图头部”做保守重叠裁剪，
+      // 只删除确认连续重复的文字；没有足够重叠时保持原文，绝不凭猜测删除业务内容。
+      const mergeOcrImages=(texts)=>{
+        const out=[];
+        const norm=s=>String(s||"").replace(/[\\s\\u200b\\uFEFF]+/g,"");
+        for(const text of texts){
+          if(!out.length){out.push(text);continue}
+          const prev=out[out.length-1];
+          const a=norm(prev),b=norm(text);
+          let overlap=0;
+          const max=Math.min(a.length,b.length,1600);
+          for(let len=max;len>=12;len--){
+            if(a.slice(-len)===b.slice(0,len)){overlap=len;break;}
+          }
+          if(overlap){
+            let removeChars=0,seen=0;
+            for(const ch of String(text)){
+              if(/\\s|\\u200b|\\uFEFF/.test(ch)) continue;
+              seen++;
+              removeChars++;
+              if(seen>=overlap)break;
+            }
+            out[out.length-1]=prev+String(text).slice(removeChars);
+          }else{
+            out.push(text);
+          }
+        }
+        return out.join("\\n");
+      };
+      recognizedText=mergeOcrImages(imageTexts);
+      ocr={provider:"aistudio",model:"PP-OCRv6",jobId:results.map(x=>x.jobId).filter(Boolean),lineCount:results.reduce((n,x)=>n+(Number(x.lineCount)||0),0),lowConfidence:results.some(x=>x.lowConfidence),imageCount:results.length,imageTexts};
       ocr={provider:"aistudio",model:"PP-OCRv6",jobId:results.map(x=>x.jobId).filter(Boolean),lineCount:results.reduce((n,x)=>n+(Number(x.lineCount)||0),0),lowConfidence:results.some(x=>x.lowConfidence),imageCount:results.length};
       ocrMs=Date.now()-ocrStarted;
       emit(54,totalFiles>1?`已完成 ${totalFiles} 张截图识别`:"已完成运单识别");
