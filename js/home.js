@@ -422,37 +422,6 @@ async function loadHome(){
   }
 }
 loadHome();
-const monthlyState={year:0,month:0,cache:new Map(),touchX:0,touchY:0};
-const monthlyNow=()=>{const p=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date()),o=Object.fromEntries(p.filter(x=>x.type!=="literal").map(x=>[x.type,x.value]));return {year:Number(o.year),month:Number(o.month),day:Number(o.day)}};
-const monthlyKey=(y,m)=>`${y}-${String(m).padStart(2,"0")}`;
-const monthlyLabel=(y,m)=>`${y}年${m}月`;
-const monthlyFetch=async(y,m)=>{const k=monthlyKey(y,m);if(monthlyState.cache.has(k))return monthlyState.cache.get(k);const r=await fetch("/api/home/monthly?month="+k,{credentials:"same-origin",cache:"no-store"}),d=await r.json().catch(()=>({}));if(!r.ok||!d.success||!d.month)throw Error();monthlyState.cache.set(k,d);return d};
-const monthlyPath=pts=>{if(!pts.length)return "";if(pts.length===1)return "M"+pts[0][0].toFixed(1)+" "+pts[0][1].toFixed(1);let d="M"+pts[0][0].toFixed(1)+" "+pts[0][1].toFixed(1);for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i],x=(a[0]+b[0])/2;d+=" C"+x.toFixed(1)+" "+a[1].toFixed(1)+", "+x.toFixed(1)+" "+b[1].toFixed(1)+", "+b[0].toFixed(1)+" "+b[1].toFixed(1)}return d};
-async function loadMonthlyOverview(){
- const card=$("monthlyCard"),monthEl=$("monthlyMonth"),nav=$("monthlyNavLabel"),wb=$("monthlyWaybills"),wt=$("monthlyWeight"),growth=$("monthlyGrowth"),wrap=$("monthlyChartWrap"),area=$("monthlyChartArea"),line=$("monthlyChartLine"),nodes=$("monthlyChartNodes"),axis=$("monthlyAxis"),activity=$("monthlyActivity"),prev=$("monthlyPrev"),next=$("monthlyNext"),yearBtn=$("monthlyYearButton"),yearView=$("monthlyYearView"),yearTitle=$("monthlyYearTitle"),yearWb=$("monthlyYearWaybills"),yearWt=$("monthlyYearWeight"),bars=$("monthlyYearBars"),peak=$("monthlyYearPeak"),status=$("monthlyStatus"),monthBtn=$("monthlyMonthButton");
- if(!card||!line)return;const now=monthlyNow();monthlyState.year=now.year;monthlyState.month=now.month;
- const renderMonth=async(dir)=>{\n  monthlyState.view="month";
-  yearView.hidden=true;wrap.hidden=false;axis.hidden=false;activity.hidden=false;document.querySelector(".monthly-nav")?.removeAttribute("hidden");
-  const y=monthlyState.year,m=monthlyState.month;try{
-   const d=await monthlyFetch(y,m);monthEl.textContent=monthlyLabel(y,m);nav.textContent=monthlyLabel(y,m);wb.textContent=d.waybills;wt.textContent=(Number(d.totalWeight)||0).toFixed(2);status.textContent=(y===now.year&&m===now.month)?"当前月份":"历史月份";
-   const pdDate=new Date(Date.UTC(y,m-2,1)),py=pdDate.getUTCFullYear(),pm=pdDate.getUTCMonth()+1;let pd=null;try{pd=await monthlyFetch(py,pm)}catch{}
-   if(pd&&Number(pd.waybills)){const rate=(Number(d.waybills)-Number(pd.waybills))/Number(pd.waybills)*100;growth.hidden=false;growth.textContent=(rate>=0?"↑ ":"↓ ")+Math.abs(rate).toFixed(0)+"%";growth.classList.toggle("is-down",rate<0)}else growth.hidden=true;
-   const days=Array.isArray(d.days)?d.days:[],vals=days.map(x=>Math.max(0,Number(x.waybills)||0)),max=Math.max(1,...vals),last=Math.max(1,vals.length-1),pts=vals.map((v,i)=>[3+i/last*354,100-(v/max)*76,v]),dPath=monthlyPath(pts);
-   line.setAttribute("d",dPath);area.setAttribute("d",pts.length?dPath+" L"+pts[pts.length-1][0].toFixed(1)+" 104 L"+pts[0][0].toFixed(1)+" 104 Z":"");nodes.innerHTML="";
-   [...new Set([0,...Array.from({length:5},(_,i)=>Math.min(vals.length-1,Math.round((vals.length-1)*(i+1)/6))),Math.max(0,vals.length-1)])].forEach((i,n)=>{if(!pts[i])return;const c=document.createElementNS("http://www.w3.org/2000/svg","circle");c.setAttribute("cx",pts[i][0]);c.setAttribute("cy",pts[i][1]);c.setAttribute("r",i===pts.length-1?"3.4":"2.1");c.className.baseVal=i===pts.length-1?"is-current":"";c.style.setProperty("--node-delay",n*45+"ms");nodes.appendChild(c)});
-   axis.innerHTML="";[0,.25,.5,.75,1].map(x=>Math.round((days.length-1)*x)).filter((v,i,a)=>a.indexOf(v)===i).forEach(i=>{const s=document.createElement("span");s.textContent=String(Number(days[i]?.day)||i+1);axis.appendChild(s)});
-   activity.innerHTML="";vals.slice(-18).forEach(v=>{const i=document.createElement("i");i.style.setProperty("--activity",(0.18+v/max*.82).toFixed(2));activity.appendChild(i)});
-   prev.disabled=y===2000&&m===1;next.disabled=y===now.year&&m===now.month;card.hidden=false;requestAnimationFrame(()=>{card.classList.add("is-ready");card.classList.remove("is-slide-left","is-slide-right");void card.offsetWidth;card.classList.add(dir==="next"?"is-slide-left":"is-slide-right")});setTimeout(()=>card.classList.remove("is-slide-left","is-slide-right"),280);
-  }catch{wb.textContent="—";wt.textContent="—";growth.hidden=true;status.textContent="暂时无法读取";line.setAttribute("d","");area.setAttribute("d","");nodes.innerHTML=""}
- };
- const renderYear=async()=>{\n  monthlyState.view="year";wrap.hidden=true;axis.hidden=true;activity.hidden=true;document.querySelector(".monthly-nav")?.setAttribute("hidden","");yearView.hidden=false;yearTitle.textContent=monthlyState.year+" 年度";status.textContent="年度统计";try{const r=await fetch("/api/home/monthly?view=year&year="+monthlyState.year,{credentials:"same-origin",cache:"no-store"}),d=await r.json();if(!r.ok||!d.success)throw Error();yearWb.textContent=d.waybills;yearWt.textContent=(Number(d.totalWeight)||0).toFixed(2);bars.innerHTML="";const ms=d.months||[],mx=Math.max(1,...ms.map(x=>Number(x.waybills)||0));ms.forEach(x=>{const b=document.createElement("button");b.type="button";b.className="monthly-year-bar";b.innerHTML="<i></i><b>"+x.waybills+"</b><span>"+x.month+"月</span>";b.querySelector("i").style.height=Math.max(5,(Number(x.waybills)||0)/mx*100)+"%";b.onclick=()=>{monthlyState.month=Number(x.month);monthlyState.view="month";renderMonth()};bars.appendChild(b)});const p=ms.reduce((a,b)=>(Number(b.waybills)||0)>(Number(a?.waybills)||0)?b:a,null);peak.textContent=p&&p.waybills?("高峰 · "+p.month+"月 · "+p.waybills+"单"):"本年度暂无配送记录"}catch{yearWb.textContent="—";yearWt.textContent="—";bars.innerHTML="";peak.textContent="年度数据暂时无法读取"}};
- prev?.addEventListener("click",()=>{const d=new Date(Date.UTC(monthlyState.year,monthlyState.month-2,1));monthlyState.year=d.getUTCFullYear();monthlyState.month=d.getUTCMonth()+1;renderMonth("prev")});
- next?.addEventListener("click",()=>{if(next.disabled)return;const d=new Date(Date.UTC(monthlyState.year,monthlyState.month,1)),n=monthlyNow();if(d.getUTCFullYear()>n.year||(d.getUTCFullYear()===n.year&&d.getUTCMonth()+1>n.month))return;monthlyState.year=d.getUTCFullYear();monthlyState.month=d.getUTCMonth()+1;renderMonth("next")});
- monthBtn?.addEventListener("click",()=>{if(monthlyState.view==="year")renderMonth()});yearBtn?.addEventListener("click",()=>{monthlyState.view==="year"?renderMonth():renderYear()});
- wrap?.addEventListener("touchstart",e=>{monthlyState.touchX=e.touches[0].clientX;monthlyState.touchY=e.touches[0].clientY},{passive:true});wrap?.addEventListener("touchend",e=>{const dx=e.changedTouches[0].clientX-monthlyState.touchX,dy=e.changedTouches[0].clientY-monthlyState.touchY;if(Math.abs(dx)<48||Math.abs(dx)<Math.abs(dy)*1.25)return;if(dx<0)next?.click();else prev?.click()},{passive:true});
- await renderMonth();
-}
-loadMonthlyOverview();
 
 /* 三横菜单「账号设置」右侧显示当前用户名：用户打开菜单即可直接确认登录身份。
    静默失败不阻塞首页，读不到就保持骨架占位（样式与「当前线路」数值一致）。 */
