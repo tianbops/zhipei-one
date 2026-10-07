@@ -14,7 +14,7 @@
  *   事件链   zp:waybill:<id>:events                (List)
  *   处理票据 zp:waybill:proc:<requestId>           (TTL 15min)
  */
-import { command } from "../_redis.js";
+import { command, pipeline } from "../_redis.js";
 import { Budget, SUBREQUEST_LIMIT, scanKeysBudgeted, mgetBatchMap, smembersBatch } from "../_redis-budget.js";
 import { businessFingerprint, dailyWaybillKey } from "../_waybill-identity.js";
 
@@ -346,15 +346,14 @@ export async function repairConsistency(env, issues) {
       skipped.push({ type: it.type, reason: "MANUAL_OR_INFO" });
       continue;
     }
-    // 每个 issue 最多消耗 1 个 Workers 子请求；预算不足立即停止，避免修复过程再次触发 1101。
-    if (!budget.canTake(1)) {
+    // 预留 1 个子请求给最终批量验证，避免“修复全额耗尽预算后无法验证”。
+    if (!budget.canTake(2)) {
       skipped.push({ type: it.type, reason: "BUDGET_EXCEEDED" });
       continue;
     }
 
     const { fix: _drop, ...meta } = it;
     try {
-      // 日期索引迁移必须原子完成：先加入正确桶，再移出错误桶，不能出现半迁移状态。
       if (
         steps.length === 2 &&
         steps[0][0] === "SADD" &&
@@ -378,18 +377,75 @@ export async function repairConsistency(env, issues) {
         continue;
       }
       budget.take(1);
-      repaired.push({ type: it.type, ...meta });
+      repaired.push({ type: it.type, ...meta, _steps: steps });
     } catch (e) {
       skipped.push({ type: it.type, ...meta, error: String(e?.message || e) });
     }
   }
 
+  // 所有已执行修复统一用一次 pipeline 做二次验证，防止接口返回“成功”但实际仍残留。
+  const verification = [];
+  if (repaired.length) {
+    if (!budget.take(1)) {
+      return {
+        repaired: repaired.map(({_steps,...x}) => x),
+        skipped,
+        repairedCount: repaired.length,
+        skippedCount: skipped.length,
+        budgetExceeded: true,
+        verificationComplete: false,
+        verificationFailed: repaired.map(({_steps,...x}) => ({...x, reason:"VERIFICATION_BUDGET_EXCEEDED"}))
+      };
+    }
+    const commands = [];
+    for (const item of repaired) {
+      const steps = item._steps;
+      if (steps.length === 2 && steps[0][0] === "SADD" && steps[1][0] === "SREM") {
+        commands.push(["SISMEMBER",steps[0][1],steps[0][2]]);
+        commands.push(["SISMEMBER",steps[1][1],steps[1][2]]);
+      } else if (steps.length === 1 && steps[0][0] === "DEL") {
+        commands.push(["GET",steps[0][1]]);
+      } else {
+        commands.push(["PING"]);
+      }
+    }
+    try {
+      const results = await pipeline(env,commands);
+      let ri = 0;
+      for (const item of repaired) {
+        const steps = item._steps;
+        let ok = false;
+        if (steps.length === 2 && steps[0][0] === "SADD" && steps[1][0] === "SREM") {
+          ok = Number(results?.[ri]) === 1 && Number(results?.[ri+1]) === 0;
+          ri += 2;
+        } else if (steps.length === 1 && steps[0][0] === "DEL") {
+          ok = results?.[ri] == null || results?.[ri] === "";
+          ri += 1;
+        } else {
+          ok = true;
+          ri += 1;
+        }
+        const {_steps,...meta} = item;
+        verification.push({ ...meta, verified: ok, reason: ok ? null : "REPAIR_VERIFICATION_FAILED" });
+      }
+    } catch (e) {
+      for (const item of repaired) {
+        const {_steps,...meta} = item;
+        verification.push({ ...meta, verified:false, reason:"REPAIR_VERIFICATION_ERROR", error:String(e?.message||e) });
+      }
+    }
+  }
+
+  const failedVerification=verification.filter(x=>!x.verified);
   return {
-    repaired,
+    repaired: repaired.map(({_steps,...x})=>x),
     skipped,
     repairedCount: repaired.length,
     skippedCount: skipped.length,
-    budgetExceeded: skipped.some(x => x.reason === "BUDGET_EXCEEDED")
+    budgetExceeded: skipped.some(x=>x.reason==="BUDGET_EXCEEDED"),
+    verificationComplete: repaired.length===0 || verification.length===repaired.length,
+    verification,
+    verificationFailedCount: failedVerification.length
   };
 }
 export default { scanConsistency, repairConsistency };
