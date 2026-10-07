@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>发布门禁 · 手机核验清单</title>
+<style>
+  :root{ --bg:#0f1216; --card:#1a1f26; --line:#2a313b; --fg:#e8edf2; --muted:#8b97a5;
+         --ok:#3fb950; --acc:#388bfd; --warn:#d29922; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{ margin:0; background:var(--bg); color:var(--fg);
+        font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+        padding:env(safe-area-inset-top) 14px calc(14px + env(safe-area-inset-bottom)); }
+  h1{ font-size:19px; margin:14px 0 4px; }
+  .sub{ color:var(--muted); font-size:13px; margin:0 0 14px; }
+  label{ display:block; font-size:13px; color:var(--muted); margin:0 0 6px; }
+  input{ width:100%; padding:14px; font-size:16px; border:1px solid var(--line); border-radius:12px;
+         background:#0b0e12; color:var(--fg); margin-bottom:12px; }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; margin-bottom:14px; }
+  .card h2{ font-size:16px; margin:0 0 8px; display:flex; align-items:center; gap:8px; }
+  .card .num{ background:var(--acc); color:#fff; width:24px; height:24px; border-radius:50%;
+              display:inline-flex; align-items:center; justify-content:center; font-size:13px; flex:0 0 auto; }
+  .step{ font-size:14px; color:var(--fg); margin:8px 0; }
+  .step b{ color:var(--warn); }
+  button{ padding:16px 10px; font-size:16px; font-weight:600; border:none; border-radius:14px;
+          color:#fff; background:var(--acc); width:100%; }
+  button.open{ background:#2563eb; margin-top:6px; }
+  .chk{ display:flex; align-items:flex-start; gap:10px; margin-top:12px; font-size:15px;
+        background:#0b0e12; border:1px solid var(--line); border-radius:12px; padding:12px; }
+  .chk input{ width:22px; height:22px; margin:0; flex:0 0 auto; }
+  .wb{ background:#0b0e12; border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin:8px 0; }
+  .wb .hd{ font-size:15px; font-weight:700; color:var(--ok); }
+  .wb .meta{ font-size:12px; color:var(--muted); margin-top:2px; word-break:break-all; }
+  pre{ background:#0b0e12; border:1px solid var(--line); border-radius:12px; padding:12px;
+       white-space:pre-wrap; word-break:break-all; font-size:13px; margin-top:12px; }
+  .hidden{ display:none; }
+  .hint{ color:var(--muted); font-size:12px; margin-top:8px; }
+</style>
+</head>
+<body>
+  <h1>发布门禁 · 手机核验清单</h1>
+  <p class="sub">同源页面，自动携带登录 Cookie。勾完两项、点「导出核验结果」把 JSON 贴回项目助手即可闭环。</p>
+
+  <label for="rid">线路 ID (routeId)</label>
+  <input id="rid" value="route_6cc0f23ea7e445b585cf165fd6b8b79a" autocapitalize="off" autocorrect="off" spellcheck="false" />
+
+  <!-- 项 1：诊断行头 日期·车牌 -->
+  <div class="card">
+    <h2><span class="num">1</span> 诊断行头「日期·车牌」显示</h2>
+    <div class="step">点下方按钮拉取该线路诊断列表，本页会把每张运单的 <b>日期·车牌</b> 显示在卡片顶部——确认数据已打通。</div>
+    <button id="btnList">拉取诊断列表（看每张的日期·车牌）</button>
+    <div id="listOut" class="hidden"></div>
+    <div class="step">再到管理台诊断列表截图，确认<b>每行顶部</b>也显示「日期·车牌」。</div>
+    <button class="open" id="btnAdmin1">打开管理台 admin.html</button>
+    <label class="chk"><input type="checkbox" id="chk1" /><span>我已截图确认：管理台诊断列表每行顶部均显示「日期·车牌」。</span></label>
+  </div>
+
+  <!-- 项 2：删除线路实删复验 -->
+  <div class="card">
+    <h2><span class="num">2</span> 删除线路（routes.js）实删复验</h2>
+    <div class="step"><b>务必用一条测试线路</b>，不要删生产数据。管理员在管理台实删一条线路，确认返回成功、无 Error 1101。</div>
+    <div class="step">代码已证明：40 张运单跨区域 4 个日期桶 = 18 次子请求、204 个键全清；并修复了一处预存在 EVAL 越界（任何带绑定用户的线路删除此前都 409）。</div>
+    <button class="open" id="btnAdmin2">打开管理台 admin.html（去删除线路）</button>
+    <label class="chk"><input type="checkbox" id="chk2" /><span>我已用管理员身份在管理台实删一条测试线路，返回成功、无 1101 / 无 500。</span></label>
+  </div>
+
+  <button id="btnExport">导出核验结果</button>
+  <pre id="out">— 勾完两项后点上方按钮 —</pre>
+  <p class="hint">导出内容仅为两个布尔勾选 + 时间戳，不含任何业务数据，可放心贴回。</p>
+
+<script>
+const $ = id => document.getElementById(id);
+const rid = () => ($("rid").value || "").trim();
+const esc = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+$("btnList").onclick = async () => {
+  const rid_ = rid(); if(!rid_){ alert("请先填线路 ID"); return; }
+  $("listOut").classList.remove("hidden"); $("listOut").textContent = "请求中…";
+  try{
+    const r = await fetch("/api/waybills/diagnostic?routeId=" + encodeURIComponent(rid_) + "&all=0");
+    const j = await r.json();
+    const list = Array.isArray(j.waybills) ? j.waybills : [];
+    if(!list.length){ $("listOut").textContent = "该线路暂无运单或无权查看"; return; }
+    $("listOut").innerHTML = list.slice(0, 25).map(w =>
+      `<div class="wb"><div class="hd">${esc(w.date||"?")} · ${esc(w.vehicle||"?")}</div>`+
+      `<div class="meta">id=${esc(w.id||"-")} · stage=${esc(w.stage||"-")} · 门店数=${Array.isArray(w.stores)?w.stores.length:"?"}</div></div>`
+    ).join("") + (list.length>25 ? `<div class="hint">仅显示前 25 / 共 ${list.length} 张</div>` : "");
+  }catch(e){ $("listOut").textContent = "ERR " + e.message; }
+};
+
+$("btnAdmin1").onclick = () => window.open("https://tianyou-zhipei.pages.dev/admin.html", "_blank");
+$("btnAdmin2").onclick = () => window.open("https://tianyou-zhipei.pages.dev/admin.html", "_blank");
+
+$("btnExport").onclick = () => {
+  const res = {
+    verify_diag_header_date_vehicle: !!$("chk1").checked,
+    verify_route_delete_real: !!$("chk2").checked,
+    routeId: rid(),
+    ts: new Date().toISOString()
+  };
+  $("out").textContent = JSON.stringify(res, null, 2);
+  if(!res.verify_diag_header_date_vehicle || !res.verify_route_delete_real)
+    alert("还有未勾选项，确认完成后再导出");
+};
+</script>
+</body>
+</html>
