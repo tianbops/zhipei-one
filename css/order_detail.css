@@ -2,16 +2,16 @@
 .order-shell{width:100%;max-width:520px;height:100vh;height:100dvh;margin:0 auto;padding:10px 12px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden}
 .order-topbar{height:48px;flex:0 0 48px;display:grid;grid-template-columns:42px 1fr 42px;align-items:center;gap:8px;position:relative;z-index:30;margin-bottom:10px}
 .order-title{text-align:center;font-size:18px;line-height:24px;font-weight:700}
-.order-icon-btn{width:42px;height:42px;border:1px solid #2A3540;border-radius:13px;background:#18212B;color:#fff;display:flex;align-items:center;justify-content:center}
+.order-icon-btn{width:42px;height:42px;border:1px solid #2A3540;border-radius:13px;background:rgba(20,28,37,.80);color:#fff;display:flex;align-items:center;justify-content:center}
 .order-icon-btn svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.order-icon-btn:active{background:#26313C;transform:scale(.97)}
-.order-menu{position:absolute;right:0;top:48px;width:190px;background:#18212B;border:1px solid #2A3540;border-radius:12px;box-shadow:0 10px 24px rgba(0,0,0,.3);overflow:hidden;animation:zpMenuIn .14s ease-out}
+.order-icon-btn:active{background:rgba(28,37,47,.82);transform:scale(.97)}
+.order-menu{position:absolute;right:0;top:48px;width:190px;background:rgba(20,28,37,.80);border:1px solid #2A3540;border-radius:12px;box-shadow:0 10px 24px rgba(0,0,0,.3);overflow:hidden;animation:zpMenuIn .14s ease-out}
 .order-menu[hidden],.order-dialog[hidden]{display:none}
 .order-menu button,.order-menu-route{width:100%;min-height:46px;border:0;border-bottom:1px solid rgba(255,255,255,.045);background:transparent;color:#fff;text-align:left;padding:0 16px;font-size:14px}
 .order-menu-route{display:flex;align-items:center;background:#1C2530;font-weight:650}
 .order-menu button{display:flex;align-items:center}
-.order-menu button:active{background:#26313C}.order-menu .logout{color:#FF8278;border-bottom:0}
-.order-summary-card,.order-route-card{background:#18212B;border:1px solid #2A3540;border-radius:16px;box-shadow:none}
+.order-menu button:active{background:rgba(28,37,47,.82)}.order-menu .logout{color:#FF8278;border-bottom:0}
+.order-summary-card,.order-route-card{background:rgba(20,28,37,.80);border:1px solid #2A3540;border-radius:16px;box-shadow:none}
 .order-summary-card{padding:14px 15px 13px;flex:0 0 auto;margin-bottom:10px}
 .order-date{text-align:center;font-size:14px;line-height:22px;color:#fff;font-weight:650}
 .order-summary-main{display:flex;align-items:baseline;justify-content:center;gap:3px;margin-top:5px;font-size:22px;line-height:30px;font-weight:700;letter-spacing:.1px}
@@ -38,10 +38,10 @@
 .order-store-status{display:inline-flex;margin-left:6px;padding:1px 5px;border-radius:5px;background:#2A3540;color:#B8C2CC;font-size:10px;line-height:16px;vertical-align:2px;font-weight:600}
 .order-store-status.pending{background:rgba(255,176,32,.12);color:#FFB020}
 .order-empty{text-align:center;color:#7F8A95;font-size:14px;padding:48px 18px}
-.order-diagnostics{margin-top:8px;max-height:180px;overflow:auto;white-space:pre-wrap;background:#11171D;border:1px solid #2A3540;border-radius:10px;padding:10px;font:11px/1.5 monospace;color:#B8C2CC}
+.order-diagnostics{margin-top:8px;max-height:180px;overflow:auto;white-space:pre-wrap;background:rgba(10,14,19,.88);border:1px solid #2A3540;border-radius:10px;padding:10px;font:11px/1.5 monospace;color:#B8C2CC}
 
 /* 弹窗：放宽尺寸上限（用户反馈"显示框调大一点"），高度用 dvh 并带 vh 兜底 */
-.order-dialog-panel{width:min(100%,460px);max-height:min(90vh,800px);max-height:min(90dvh,800px);display:flex;flex-direction:column;background:#18212B;border:1px solid #2A3540;border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.5);overflow:hidden}
+.order-dialog-panel{width:min(100%,460px);max-height:min(90vh,800px);max-height:min(90dvh,800px);display:flex;flex-direction:column;background:rgba(20,28,37,.80);border:1px solid #2A3540;border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.5);overflow:hidden}
 .order-dialog-head{height:54px;flex:0 0 54px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid rgba(255,255,255,.06)}
 .order-dialog-head strong{font-size:16px}.order-dialog-head button{width:34px;height:34px;border:0;background:transparent;color:#B8C2CC;font-size:26px}
 /* pending-list 占据标题与按钮之间的剩余空间并内部滚动：
@@ -53,7 +53,7 @@
 /* 选项按钮：轻底色 + 细边框 + 大圆角，柔化"深色方块"感（全局统一）；
    padding 9px 12px + word-break，长店名换行绝不贴边/出框 */
 .choice-btn{min-height:42px;padding:9px 12px;border:1px solid rgba(255,255,255,.10);border-radius:12px;background:rgba(255,255,255,.035);color:#fff;text-align:left;font-size:13px;line-height:19px;word-break:break-word}
-.choice-btn.selected{border-color:#93A3B1;background:#202B36}.choice-btn:active{background:#1A232E}
+.choice-btn.selected{border-color:#93A3B1;background:rgba(26,38,46,.82)}.choice-btn:active{background:rgba(20,33,44,.82)}
 /* 首位候选为系统推荐项，用左侧标记区分，避免用户面对同级选项时无从判断 */
 .choice-btn.recommended{border-left:3px solid #5F6E7C}
 .choice-btn.recommended.selected{border-left-color:#D6DEE6}
@@ -71,22 +71,22 @@
 .pending-list{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.14) transparent}
 .order-dialog-actions{display:flex;flex:0 0 auto;gap:8px;padding:12px 14px;border-top:1px solid rgba(255,255,255,.06)}
 .order-dialog-actions button{flex:1;height:44px;border-radius:11px;border:0;font-size:14px;font-weight:650}
-.order-dialog-actions .secondary-btn{background:#11171D;color:#E3E8ED;border:1px solid #35404C}.order-dialog-actions .primary-btn{background:#26313C;color:#fff;border:0}.order-dialog-actions .primary-btn:disabled{opacity:.45}
+.order-dialog-actions .secondary-btn{background:rgba(10,14,19,.88);color:#E3E8ED;border:1px solid #35404C}.order-dialog-actions .primary-btn{background:rgba(28,37,47,.82);color:#fff;border:0}.order-dialog-actions .primary-btn:disabled{opacity:.45}
 @media(max-width:430px){.order-shell{padding-left:10px;padding-right:10px}.order-summary-main{font-size:22px}.order-route-card{padding-left:10px;padding-right:10px}}
 @media(max-height:700px){.order-shell{padding-top:6px}.order-topbar{height:42px;flex-basis:42px;margin-bottom:7px}.order-icon-btn{width:38px;height:38px}.order-summary-card{padding:10px 12px;margin-bottom:8px}.order-summary-main{margin-top:2px}.order-metrics{margin-top:5px}.order-route-card{padding-top:10px}.order-store-item{padding-top:8px;padding-bottom:8px;min-height:52px}}
 
 .order-pending-fab{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:40;height:44px;padding:0 18px;border:1px solid #2A3540;border-radius:12px;background:#B8C1C8;color:#0B1015;font-size:13px;font-weight:700;box-shadow:0 10px 28px rgba(0,0,0,.35)}.order-pending-fab:active{transform:translateX(-50%) scale(.98)}
 /* 2.0：同日多运单选择与待确认操作统一为成熟移动端卡片 */
-.order-history-choice{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"head status" "main status";gap:3px 10px;padding:12px 10px;margin:0 0 8px;border:1px solid #2A3540;border-radius:13px;background:#11171D;color:#fff;text-align:left;min-height:68px;cursor:pointer}
+.order-history-choice{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"head status" "main status";gap:3px 10px;padding:12px 10px;margin:0 0 8px;border:1px solid #2A3540;border-radius:13px;background:rgba(10,14,19,.88);color:#fff;text-align:left;min-height:68px;cursor:pointer}
 .order-history-choice:last-child{margin-bottom:0}
-.order-history-choice:active{background:#26313C;transform:scale(.995)}
+.order-history-choice:active{background:rgba(28,37,47,.82);transform:scale(.995)}
 .history-choice-head{grid-area:head;display:flex;align-items:center;gap:9px;min-width:0}
 .history-choice-head strong{font-size:13px;line-height:20px;font-weight:700;white-space:nowrap}
 .history-choice-head em{font-style:normal;color:#B8C2CC;font-size:13px;line-height:20px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .history-choice-main{grid-area:main;color:#fff;font-size:13px;line-height:19px;font-weight:600}
-.history-choice-status{grid-area:status;align-self:center;justify-self:end;padding:4px 7px;border-radius:7px;background:#26313C;color:#B8C2CC;font-size:10px;line-height:16px;font-weight:650;white-space:nowrap}
-.order-pending-fab{height:46px;padding:0 20px;border-radius:13px;background:#18212B;color:#fff;border:1px solid #53606D;box-shadow:0 10px 30px rgba(0,0,0,.42);font-size:14px}
-.order-pending-fab:active{background:#26313C}
+.history-choice-status{grid-area:status;align-self:center;justify-self:end;padding:4px 7px;border-radius:7px;background:rgba(28,37,47,.82);color:#B8C2CC;font-size:10px;line-height:16px;font-weight:650;white-space:nowrap}
+.order-pending-fab{height:46px;padding:0 20px;border-radius:13px;background:rgba(20,28,37,.80);color:#fff;border:1px solid #53606D;box-shadow:0 10px 30px rgba(0,0,0,.42);font-size:14px}
+.order-pending-fab:active{background:rgba(28,37,47,.82)}
 
 /* 统一手势：左滑删除、右滑返回 */
 .order-history-swipe-row{position:relative;display:flex;overflow:hidden;border-radius:13px;margin:0 0 8px}
@@ -275,14 +275,14 @@
   background:transparent;
 }
 .order-icon-btn:active{
-  background:#18212B;
+  background:rgba(20,28,37,.80);
   transform:none;
 }
 .order-summary-card{
   padding:15px 16px 14px;
   margin-bottom:12px;
   border-radius:16px;
-  background:#18212B;
+  background:rgba(20,28,37,.80);
   border:1px solid rgba(255,255,255,.075);
 }
 .order-date{
@@ -385,7 +385,7 @@
 }
 .order-pending-fab:active{
   transform:scale(.97);
-  background:#26313C;
+  background:rgba(28,37,47,.82);
 }
 @media(max-width:360px){
   .order-pending-fab{

@@ -182,8 +182,8 @@ input,select,textarea{
 .zp-confirm-panel p{margin:8px 0 0;color:var(--ui-muted);font-size:13px;line-height:20px;word-break:break-word}
 .zp-confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
 .zp-confirm-actions button{min-height:46px;border-radius:11px;font-size:14px;font-weight:550}
-.zp-confirm-actions button:first-child{border:1px solid #35404C;background:#11171D;color:#E8EDF2}
-.zp-confirm-actions button:last-child{border:1px solid #3A4652;background:#202B36;color:#fff}
+.zp-confirm-actions button:first-child{border:1px solid #35404C;background:rgba(10,14,19,.88);color:#E8EDF2}
+.zp-confirm-actions button:last-child{border:1px solid #3A4652;background:rgba(26,38,46,.82);color:#fff}
 
 /* Android 移动端文字规范 2.4
    仅调整文字尺寸与行高，不改变业务规则、数据结构、交互逻辑或页面布局。
@@ -257,7 +257,7 @@ input,select,textarea{
   padding:0;
   border:1px solid #35404C;
   border-radius:50%;
-  background:#18212B;
+  background:rgba(20,28,37,.80);
   color:#E8EDF2;
   box-shadow:0 8px 24px rgba(0,0,0,.35);
   font-size:19px;
@@ -277,7 +277,7 @@ input,select,textarea{
   visibility:visible;
   transform:translateY(0);
 }
-.zp-float-scroll:active{background:#26313C}
+.zp-float-scroll:active{background:rgba(28,37,47,.82)}
 @media(max-width:380px){
   .zp-float-scroll-wrap{right:12px}
 }
@@ -286,7 +286,7 @@ input,select,textarea{
 /* 全局密码显隐 2.7：所有密码输入统一使用小眼睛，空值时隐藏，输入后即时出现。 */
 .zp-password-control{
   position:relative;display:flex;align-items:center;width:100%;min-height:48px;
-  border:1px solid #35414D;border-radius:11px;background:#11171D;
+  border:1px solid #35414D;border-radius:11px;background:rgba(10,14,19,.88);
   transition:border-color .16s ease,box-shadow .16s ease;
 }
 .zp-password-control:focus-within{border-color:#687584;box-shadow:0 0 0 3px rgba(184,194,204,.08)}
@@ -305,7 +305,7 @@ input,select,textarea{
   cursor:pointer;-webkit-tap-highlight-color:transparent;
 }
 .zp-password-eye svg{display:block;width:19px;height:19px;pointer-events:none}
-.zp-password-eye:active{background:#26313C;color:#E8EDF2}
+.zp-password-eye:active{background:rgba(28,37,47,.82);color:#E8EDF2}
 .zp-password-eye[hidden]{display:none!important}
 .field .zp-password-control{margin-top:0}
 .page2-label>.zp-password-control{margin-top:6px}
@@ -486,7 +486,7 @@ input,select,textarea{
 .page2-primary,
 .confirm-submit,
 .data-save{
-  background:#26313C;
+  background:rgba(28,37,47,.82);
   border-radius:var(--ui-control-radius);
   color:#fff;
 }

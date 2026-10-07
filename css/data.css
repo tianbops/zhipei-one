@@ -31,17 +31,17 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-import{position:fixed;inset:0;z-index:120;background:rgba(0,0,0,.58);padding:16px;display:flex;align-items:flex-end;justify-content:center}
 /* 面板为纵向 flex：内容区滚动，底部「取消/确认」操作条 sticky 常驻，
    长表单（单独追加/编辑门店）在小屏上不再需要面板内滚动才能看到按钮 */
-.data-import-panel{width:min(100%,620px);max-height:min(88vh,760px);max-height:min(88dvh,760px);overflow:auto;display:flex;flex-direction:column;background:#18212B;border:1px solid #2A3540;border-radius:18px 18px 12px 12px;padding:18px 16px 0;box-shadow:0 -10px 40px rgba(0,0,0,.35)}
+.data-import-panel{width:min(100%,620px);max-height:min(88vh,760px);max-height:min(88dvh,760px);overflow:auto;display:flex;flex-direction:column;background:rgba(20,28,37,.80);border:1px solid #2A3540;border-radius:18px 18px 12px 12px;padding:18px 16px 0;box-shadow:0 -10px 40px rgba(0,0,0,.35)}
 .data-import-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
 .data-import-head h3{margin:0;font-size:17px;line-height:24px}
-.data-import-close{width:34px;height:34px;border:1px solid #35404C;border-radius:9px;background:#11171D;color:#B8C2CC;font-size:18px}
+.data-import-close{width:34px;height:34px;border:1px solid #35404C;border-radius:9px;background:rgba(10,14,19,.88);color:#B8C2CC;font-size:18px}
 .data-file{width:100%;margin:12px 0;color:#B8C2CC;font-size:13px}
 .data-textarea{width:100%;min-height:230px;resize:vertical;border:1px solid #35404C;border-radius:12px;background:#10161D;color:#E8EDF2;padding:12px;font:inherit;font-size:14px;line-height:1.6;outline:none}
 .data-textarea:focus{border-color:#687584}
 .data-preview{min-height:19px;margin-top:8px}
-.data-import-actions{position:sticky;bottom:0;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px -16px 0;padding:12px 16px calc(14px + env(safe-area-inset-bottom));background:#18212B;border-top:1px solid rgba(255,255,255,.05)}
-.data-import-actions button{height:46px;border:1px solid #35404C;border-radius:10px;background:#11171D;color:#fff;font-size:15px}
-.data-import-actions #importSave{background:#26313C}
+.data-import-actions{position:sticky;bottom:0;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px -16px 0;padding:12px 16px calc(14px + env(safe-area-inset-bottom));background:rgba(20,28,37,.80);border-top:1px solid rgba(255,255,255,.05)}
+.data-import-actions button{height:46px;border:1px solid #35404C;border-radius:10px;background:rgba(10,14,19,.88);color:#fff;font-size:15px}
+.data-import-actions #importSave{background:rgba(28,37,47,.82)}
 @media(min-width:600px){.data-import{align-items:center}.data-import-panel{border-radius:18px}}
 /* 轻量入场动效：只做透明度+上滑，不改布局与结构；系统开启"减弱动态效果"时自动关闭 */
 @keyframes dataSheetIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
@@ -60,7 +60,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 
 .data-route-kicker{margin-bottom:4px;color:#687584;font-size:11px;line-height:17px;letter-spacing:.02em}
 .data-route-title h2{min-width:0}
-.data-route-badge{background:#11171D}
+.data-route-badge{background:rgba(10,14,19,.88)}
 .data-tools-card{margin-top:0}
 .data-maintain{display:block}
 .data-maintain-info{margin-bottom:10px;color:#687584;font-size:11px;line-height:17px}
@@ -73,8 +73,8 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-tools-card{padding:12px 14px}
 .data-maintenance{display:grid;gap:9px}
 .data-maintenance-group{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-.data-action-btn{width:100%;min-height:44px;margin:0;padding:0 10px;border:1px solid #35404C;border-radius:10px;background:#11171D;color:#E8EDF2;font-size:14px;font-weight:500}
-.data-action-btn:active{background:#26313C}
+.data-action-btn{width:100%;min-height:44px;margin:0;padding:0 10px;border:1px solid #35404C;border-radius:10px;background:rgba(10,14,19,.88);color:#E8EDF2;font-size:14px;font-weight:500}
+.data-action-btn:active{background:rgba(28,37,47,.82)}
 .data-action-primary{background:#2E3B47;border-color:#4A5A68;color:#fff;font-weight:700}
 .data-store-row{touch-action:pan-y;user-select:none;transition:opacity .18s ease,transform .18s ease}
 .data-store-row.data-drag-active{opacity:.72;transform:scale(.99);background:rgba(255,255,255,.025)}
@@ -82,11 +82,11 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-store-swipe-hint{display:none}
 .data-store-hidden{display:none}
 .data-store-meta-label{color:#687584}
-.data-float-scroll{position:fixed;right:16px;top:50%;z-index:90;width:40px;height:40px;border:1px solid #35404C;border-radius:50%;background:#18212B;color:#E8EDF2;box-shadow:0 8px 24px rgba(0,0,0,.35);font-size:19px;line-height:38px;text-align:center;opacity:0;visibility:hidden;transform:translateY(8px);transition:opacity .18s ease,transform .18s ease,visibility .18s ease}
+.data-float-scroll{position:fixed;right:16px;top:50%;z-index:90;width:40px;height:40px;border:1px solid #35404C;border-radius:50%;background:rgba(20,28,37,.80);color:#E8EDF2;box-shadow:0 8px 24px rgba(0,0,0,.35);font-size:19px;line-height:38px;text-align:center;opacity:0;visibility:hidden;transform:translateY(8px);transition:opacity .18s ease,transform .18s ease,visibility .18s ease}
 .data-float-scroll.show{opacity:1;visibility:visible;transform:translateY(0)}
 /* 弹窗/面板打开时隐藏快速滚动箭头：浮动箭头属于页面层，不应出现在模态层之上 */
 body.data-panel-open .data-float-scroll{opacity:0!important;visibility:hidden!important;pointer-events:none!important}
-.data-float-scroll:active{background:#26313C}
+.data-float-scroll:active{background:rgba(28,37,47,.82)}
 .data-float-up{top:calc(50% - 48px);transform:translateY(8px)}
 .data-float-down{top:calc(50% + 8px);transform:translateY(8px)}
 .data-float-up.show,.data-float-down.show{transform:translateY(0)}
@@ -98,7 +98,7 @@ body.data-panel-open .data-float-scroll{opacity:0!important;visibility:hidden!im
 .data-swipe-actions{position:absolute;right:0;top:50%;display:flex;gap:6px;align-items:center;opacity:0;visibility:hidden;transform:translate(12px,-50%);transition:opacity .16s ease,transform .16s ease,visibility .16s ease}
 .data-store-row.data-swipe-open .data-store-main{padding-right:116px}
 .data-store-row.data-swipe-open .data-swipe-actions{opacity:1;visibility:visible;transform:translate(0,-50%)}
-.data-swipe-actions button{min-width:48px;height:34px;padding:0 9px;border:1px solid #35404C;border-radius:9px;background:#11171D;color:#E8EDF2;font-size:12px}
+.data-swipe-actions button{min-width:48px;height:34px;padding:0 9px;border:1px solid #35404C;border-radius:9px;background:rgba(10,14,19,.88);color:#E8EDF2;font-size:12px}
 .data-swipe-actions .data-swipe-delete{color:#D4B6B6}
 @media(min-width:600px){
  .data-swipe-actions{right:0}
@@ -108,18 +108,18 @@ body.data-panel-open .data-float-scroll{opacity:0!important;visibility:hidden!im
 /* 数据资料 2.0 顶部导航与菜单 */
 .data-page-head{position:relative;display:grid;grid-template-columns:42px minmax(0,1fr) 42px;align-items:center;min-height:54px;padding:0 0 8px}
 .data-page-head h1{margin:0;text-align:center;font-size:18px;line-height:24px;font-weight:650}
-.data-page-back,.data-page-menu-btn{width:42px;height:42px;display:flex;align-items:center;justify-content:center;border:1px solid #2A3540;border-radius:11px;background:#11171D;color:#fff;text-decoration:none;box-sizing:border-box}
+.data-page-back,.data-page-menu-btn{width:42px;height:42px;display:flex;align-items:center;justify-content:center;border:1px solid #2A3540;border-radius:11px;background:rgba(10,14,19,.88);color:#fff;text-decoration:none;box-sizing:border-box}
 .data-page-back{font-size:30px;line-height:1;font-weight:300;padding-bottom:3px}
 .data-page-menu-btn{font-size:19px;line-height:1}
-.data-page-back:active,.data-page-menu-btn:active{background:#26313C}
+.data-page-back:active,.data-page-menu-btn:active{background:rgba(28,37,47,.82)}
 .data-route-title{display:block}
 .data-route-title h2{font-size:20px;line-height:28px}
 .data-summary{margin-top:10px;padding-top:0;border-top:0}
 .data-summary strong{font-size:17px;font-weight:600}
 .data-route-hint{margin-top:4px}
-.data-page-menu{position:fixed;top:calc(58px + env(safe-area-inset-top));right:14px;z-index:130;width:108px;padding:6px;background:#18212B;border:1px solid #2A3540;border-radius:12px;box-shadow:0 14px 34px rgba(0,0,0,.42)}
+.data-page-menu{position:fixed;top:calc(58px + env(safe-area-inset-top));right:14px;z-index:130;width:108px;padding:6px;background:rgba(20,28,37,.80);border:1px solid #2A3540;border-radius:12px;box-shadow:0 14px 34px rgba(0,0,0,.42)}
 .data-page-menu button{display:block;width:100%;height:42px;border:0;border-radius:8px;background:transparent;color:#fff;text-align:left;padding:0 12px;font-size:14px}
-.data-page-menu button:active{background:#26313C}
+.data-page-menu button:active{background:rgba(28,37,47,.82)}
 @media(min-width:600px){.data-page-menu{right:24px}}
 
 /* 线路名称与门店数量同排 */
@@ -128,7 +128,7 @@ body.data-panel-open .data-float-scroll{opacity:0!important;visibility:hidden!im
 .data-route-title .data-summary{flex:none;margin:0;padding:0;border:0}
 .data-route-title .data-summary strong{font-size:17px;white-space:nowrap}
 
-.data-feedback{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:160;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;max-width:calc(100vw - 32px);padding:10px 14px;border:1px solid #35404C;border-radius:10px;background:#18212B;color:#fff;font-size:13px;line-height:18px;box-shadow:0 10px 28px rgba(0,0,0,.4);text-align:center}.data-feedback.success{background:#1D2A24}.data-feedback.error{background:#302326;border-color:#594048}.data-feedback-action{flex:none;min-height:32px;padding:0 10px;border:1px solid #596674;border-radius:8px;background:#18212B;color:#fff;font-size:12px;font-weight:600}
+.data-feedback{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:160;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;max-width:calc(100vw - 32px);padding:10px 14px;border:1px solid #35404C;border-radius:10px;background:rgba(20,28,37,.80);color:#fff;font-size:13px;line-height:18px;box-shadow:0 10px 28px rgba(0,0,0,.4);text-align:center}.data-feedback.success{background:#1D2A24}.data-feedback.error{background:#302326;border-color:#594048}.data-feedback-action{flex:none;min-height:32px;padding:0 10px;border:1px solid #596674;border-radius:8px;background:rgba(20,28,37,.80);color:#fff;font-size:12px;font-weight:600}
 
 /* Android typography normalization: size/line-height only */
 .data-route-badge{font-size:11px;line-height:16px}
