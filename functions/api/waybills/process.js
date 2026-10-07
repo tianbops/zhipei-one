@@ -189,7 +189,13 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
     // 取消与正式保存声明在 Redis 内原子竞争：如果保存声明已经建立，
     // 说明业务已进入不可撤销的原子保存窗口，此时让保存完成并由 DONE 胜出。
     const cancelled=await cancelProc(env,requestId,{action:"REPROCESS",hint:"本次处理已取消，可重新上传运单",detail:stage||null});
-    return cancelled || !["SAVE","POST_SAVE"].includes(stage);
+    if(cancelled)return true;
+    if(stage!=="SAVE"&&stage!=="POST_SAVE")return true;
+    // SAVE 阶段取消 CAS 失败时必须 fail-closed：只有确认已经取得保存声明，
+    // 才允许继续进入正式保存 EVAL；否则宁可要求重试，也不能把“已取消”运单继续落库。
+    const proc=await getProc(env,requestId);
+    if(proc?.saveClaimedAt)return false;
+    return true;
   };
   const user=providedUser||await currentUser(request,env);if(!user){emit(4,"身份验证失败");return json({success:false,code:"AUTH_REQUIRED",error:"未登录"},401)};if(user.role==="admin"||!canUseRoute(user)){emit(4,"无权处理运单");return json({success:false,code:"WAYBILL_PROCESS_FORBIDDEN",error:"无权处理运单"},403)};
   emit(5,"正在读取运单");
