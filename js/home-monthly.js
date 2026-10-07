@@ -226,12 +226,37 @@
     currentMonth=availableMonths[ni];
     animateSwap(dir,renderMonth);
   }
-  function toggleYear(){
-    yearMode=!yearMode;
-    if(yearMode){year=Number(cnMonth().slice(0,4));yearBtn.textContent="‹ 月度";yearBtn.classList.add("is-active");}
-    else{yearBtn.textContent=year+" 年度 ›";yearBtn.classList.remove("is-active");}
-    if(yearMode)renderYear();else renderMonth();
+  // 年份按钮文案随视图状态同步
+  function syncYearBtn(){
+    if(yearMode){yearBtn.textContent="‹ 月度";yearBtn.classList.add("is-active");}
+    else{yearBtn.textContent=cnMonth().slice(0,4)+" 年度 ›";yearBtn.classList.remove("is-active");}
   }
+  function enterYear(){
+    if(yearMode)return;
+    yearMode=true;year=Number(cnMonth().slice(0,4));syncYearBtn();renderYear();
+  }
+  function exitYear(){
+    if(!yearMode)return;
+    yearMode=false;syncYearBtn();renderMonth();
+  }
+  function toggleYear(){ if(yearMode)exitYear();else enterYear(); }
+  // 年度视图内跨年切换（仅在有数据的相邻年份间移动）
+  function yearList(){
+    const s=new Set(availableMonths.map(m=>Number(m.slice(0,4))));
+    for(const k of byMonth.keys())s.add(Number(k.slice(0,4)));
+    return [...s].sort((a,b)=>a-b);
+  }
+  function goYear(delta){
+    if(!yearMode)return;
+    const ys=yearList(),i=ys.indexOf(year);
+    if(i<0)return;
+    const ni=i+delta;
+    if(ni<0||ni>=ys.length)return;
+    year=ys[ni];renderYear();
+  }
+  // 左右滑动意图（与按钮、动画解耦，保证手势始终可识别）
+  function onSwipeLeft(){  if(yearMode)goYear(-1); else navigate(1); }  // 左滑：更旧月 / 更旧年
+  function onSwipeRight(){ if(yearMode)exitYear(); else enterYear(); }  // 右滑：进入「年度配送」/ 返回月度
   function setMetric(m){
     if(m!=="weight"&&m!=="count")return;
     metric=m;
@@ -248,29 +273,28 @@
   metricWeightBtn?.addEventListener("click",()=>setMetric("weight"));
   metricCountBtn?.addEventListener("click",()=>setMetric("count"));
   yearBtn?.addEventListener("click",toggleYear);
-  // 左右滑动切换月份（整张卡片可滑；左滑→更新月，右滑→更旧月）。
-  // 安卓 Chrome 纵向页面里横向滑动会被浏览器接管并发 touchcancel，故：
-  // ① 监听挂整张卡片 ② 横向意图时 touchmove preventDefault 阻止滚动抢占 ③ 同时处理 touchcancel。
+  // 左右滑动：月度下 左滑=更旧月、右滑=进入「年度配送」；年度下 左滑=更旧年、右滑=返回月度。
+  // 安卓 Chrome 在可纵向滚动页面里：用方向锁定（先到 6px 即判定 X/Y），横向意图时 touchmove
+  // preventDefault 吃下手势、阻止浏览器纵向滚动接管并发 touchcancel 误杀手势。
   (function bindSwipe(){
     if(!card)return;
-    let sx=0,sy=0,active=false;
-    const down=e=>{const t=e.touches?.[0]||e;if(!t)return;sx=t.clientX;sy=t.clientY;active=true;};
+    let sx=0,sy=0,active=false,locked=null;
+    const MIN=44;
+    const down=e=>{const t=e.touches?.[0]||e;if(!t)return;sx=t.clientX;sy=t.clientY;active=true;locked=null;};
     const move=e=>{
-      if(!active||yearMode)return;
+      if(!active)return;
       const t=e.touches?.[0]||e;if(!t)return;
       const dx=t.clientX-sx,dy=t.clientY-sy;
-      if(Math.abs(dx)>10&&Math.abs(dx)>Math.abs(dy)){if(e.cancelable)e.preventDefault();} // 横向意图：吃下手势，避免页面滚动抢走
+      if(locked===null&&(Math.abs(dx)>6||Math.abs(dy)>6))locked=Math.abs(dx)>Math.abs(dy)?"x":"y";
+      if(locked==="x"&&e.cancelable)e.preventDefault(); // 横向意图：阻止页面滚动抢走手势
     };
     const up=e=>{
-      if(!active){return;}
-      active=false;
-      if(yearMode)return;
+      if(!active)return;active=false;
+      if(locked!=="x")return;             // 纵向手势不触发切换
       const t=e.changedTouches?.[0]||e;if(!t)return;
       const dx=t.clientX-sx,dy=t.clientY-sy;
-      if(Math.abs(dx)>48&&Math.abs(dx)>Math.abs(dy)*1.25){
-        if(dx<0)navigate(-1);   // 左滑 → 更新月份（未来不可达时 no-op）
-        else navigate(1);       // 右滑 → 更旧月份
-      }
+      if(Math.abs(dx)<MIN||Math.abs(dx)<Math.abs(dy))return;
+      if(dx<0)onSwipeLeft();else onSwipeRight();
     };
     card.addEventListener("touchstart",down,{passive:true});
     card.addEventListener("touchmove",move,{passive:false});
@@ -293,11 +317,12 @@
         const [y,m]=today.split("-").map(Number),idx=y*12+(m-1)-i;
         list.push(Math.floor(idx/12)+"-"+String(idx%12+1).padStart(2,"0"));
       }
-      availableMonths=list.filter(m=>monthDiff(m,today)>=0); // 未来月份永不出现
+      availableMonths=list.filter(m=>monthDiff(m,today)<=0); // 仅保留不晚于今日的月份（更早月份可左滑查看）
       currentMonth=today;
       card.hidden=false;
       card.classList.add("is-in");
       renderMonth();
+      syncYearBtn();
     }catch{}
   }
   load();
