@@ -68,10 +68,19 @@ class MiniRedis {
     this.sets = new Map();    // key -> Set<string>
     this.hashes = new Map();  // key -> Map<string,string>
     this.lists = new Map();   // key -> string[]
+    this.expiries = new Map();// key -> 过期时间戳(ms)，P2-11 session TTL 用
+    this.clockOffset = 0;     // 测试可推进的假时钟(ms)，避免真等
+  }
+  now() { return Date.now() + this.clockOffset; }
+  advance(ms) { this.clockOffset += Number(ms) || 0; return this.now(); }
+  _expireIfDue(k) {
+    const e = this.expiries.get(k);
+    if (e !== undefined && this.now() >= e) { this.expiries.delete(k); this.strings.delete(k); }
   }
   _get(k) { return this.strings.has(k) ? this.strings.get(k) : null; }
   _set(k, v) { this.strings.set(k, String(v)); return "OK"; }
   _allKeys() {
+    for (const k of [...this.expiries.keys()]) this._expireIfDue(k);
     const set = new Set([...this.strings.keys(), ...this.sets.keys(), ...this.hashes.keys(), ...this.lists.keys()]);
     return [...set].sort();
   }
@@ -133,12 +142,22 @@ class MiniRedis {
     const cmd = String(parts[0]).toUpperCase();
     const a = parts.slice(1);
     switch (cmd) {
-      case "GET": return this._get(a[0]);
+      case "GET": { this._expireIfDue(a[0]); return this._get(a[0]); }
       case "SET": {
         const hasNX = a.includes("NX");
+        this._expireIfDue(a[0]);
         if (hasNX && this.strings.has(a[0])) return null;
+        // 支持 SET key val EX <ttl>（P2-11：session 键 TTL 回归需要真实过期语义）
+        const exIdx = a.findIndex(x => String(x).toUpperCase() === "EX");
+        if (exIdx > 0) {
+          const ok = this._set(a[0], a[1]);
+          this.expiries.set(a[0], this.now() + Number(a[exIdx + 1]) * 1000);
+          return ok;
+        }
         return this._set(a[0], a[1]);
       }
+      case "TTL": { this._expireIfDue(a[0]); const e = this.expiries.get(a[0]); if (e === undefined) return this.strings.has(a[0]) ? -1 : -2; return Math.max(0, Math.ceil((e - this.now()) / 1000)); }
+      case "EXPIRE": { this._expireIfDue(a[0]); if (!this.strings.has(a[0])) return 0; this.expiries.set(a[0], this.now() + Number(a[1]) * 1000); return 1; }
       case "DEL": { let n = 0; for (const k of a) { if (this.strings.delete(k)) n++; if (this.sets.delete(k)) n++; if (this.hashes.delete(k)) n++; if (this.lists.delete(k)) n++; } return n; }
       case "SADD": {
         const key = a[0]; let s = this.sets.get(key); if (!s) { s = new Set(); this.sets.set(key, s); }

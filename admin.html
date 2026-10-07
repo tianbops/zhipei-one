@@ -71,7 +71,11 @@ body{touch-action:pan-y}
 .search input::placeholder{color:#68737E}
 input,select{color:#fff;outline:none}
 select option{background:#11171D;color:#fff}
-.dialog-bg{position:fixed;inset:0;z-index:var(--ui-z-modal,1000);display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(2,5,9,.8);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+/* P2-12 收口：移除全屏遮罩上的 backdrop-filter。
+   原因：backdrop-filter 强制 GPU 每帧重新合成遮罩后方的整屏内容，在移动端/低端机上是弹窗
+   打开与页面跳转掉帧的最典型来源（与已做过的半透明卡片叠加后合成成本更高）。
+   改为「稍重的纯色遮罩 + 原有投影」保持视觉层次，弹窗内容本身不受任何影响。 */
+.dialog-bg{position:fixed;inset:0;z-index:var(--ui-z-modal,1000);display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(2,5,9,.88)}
 .dialog-bg[hidden]{display:none!important}
 .dialog{width:min(100%,380px);max-height:88dvh;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:17px;padding:18px;box-shadow:0 18px 50px rgba(0,0,0,.45)}
 /* 弹窗内表单控件通栏：下拉框/输入框不再窄条贴左，与弹窗同宽，观感整齐 */

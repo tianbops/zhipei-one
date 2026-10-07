@@ -192,7 +192,11 @@ async function toJson(resp) { return await resp.json(); }
   };
   const realDateNow = Date.now;
   let fake = realDateNow();
-  global.Date.now = () => { fake += 1_000_000; return fake; };
+  // P2-11 桩修正配套：MiniRedis 现已真实实现 SET..EX 过期语义（此前忽略 EX）。
+  // 业务超时判定 PROC_TIMEOUT_MS=5 分钟 / 票据 TTL PROC_TTL=15 分钟，
+  // 旧假时钟「每次 +1000s(≈16.7min)」远超 TTL，会让票据在断言前被回收。
+  // 改为 60s/次：足以跨过 5 分钟超时线，又远小于 15 分钟 TTL。
+  global.Date.now = () => { fake += 60_000; return fake; };
   let ocrR;
   try {
     const FileCtor = global.File || class { constructor() { this.name = "w.png"; } };

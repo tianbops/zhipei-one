@@ -1,5 +1,5 @@
 import {json,body} from "./_json.js";
-import {get,set,newId,sessionCookie} from "./_redis.js";
+import {get,setEx,newId,sessionCookie,SESSION_TTL_SECONDS} from "./_redis.js";
 import {Budget,mgetBatchMap,SUBREQUEST_LIMIT} from "./_redis-budget.js";
 async function hash(value){const data=new TextEncoder().encode(value);const digest=await crypto.subtle.digest("SHA-256",data);return [...new Uint8Array(digest)].map(x=>x.toString(16).padStart(2,"0")).join("")}
 export async function onRequestPost({request,env}){
@@ -29,7 +29,9 @@ export async function onRequestPost({request,env}){
  if(user.passwordHash!==await hash(password))return json({success:false,error:"账号或密码错误",code:"LOGIN_INVALID_CREDENTIALS"},401);
  const token=newId();
  const version=user.sessionVersion??1;
- await set(env,"session:"+token,{userId:user.id,sessionVersion:version,createdAt:new Date().toISOString()});
+ // P2-11 收口：session 键加 TTL，与 Cookie 的 Max-Age 严格同寿命（7 天）。
+ // 原实现裸 SET 永不过期 → 浏览器丢弃 Cookie 后服务端会话永久驻留，zp:session:* 无界增长。
+ await setEx(env,"session:"+token,{userId:user.id,sessionVersion:version,createdAt:new Date().toISOString()},SESSION_TTL_SECONDS);
  return new Response(JSON.stringify({success:true,user:{
   id:user.id,username:user.username,role:user.role||"user",name:user.name||"",
   boundRouteId:user.boundRouteId||null,routeDuty:user.routeDuty||null,dispatchRouteId:user.dispatchRouteId||null

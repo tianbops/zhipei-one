@@ -80,10 +80,14 @@ export async function onRequestPost({request,env}){
     return json(result);
   }
 
-  if(action==="normalize-roles"){
-    const r=await normalizeLegacyRoles(env);
-    return json({success:true,scanned:r.scanned,normalized:r.normalized,errors:r.errors});
-  }
+ if(action==="normalize-roles"){
+  // P2-10 收口：迁移现已纳入统一子请求预算，耗尽时返回结构化 503 提示可重试，
+  // 绝不把「只归一化了一部分」当成 success 上报（与第一批 P1-01 同一诚实性原则）。
+  let r;
+  try{r=await normalizeLegacyRoles(env);}
+  catch(e){if(e?.code==="SUBREQUEST_BUDGET_EXCEEDED")return json({success:false,code:"SUBREQUEST_BUDGET_EXCEEDED",error:"账号数量达到单次迁移预算，请稍后重试（迁移为幂等，可重复执行）"},503);throw e}
+  return json({success:true,scanned:r.scanned,normalized:r.normalized,errors:r.errors,complete:r.complete});
+ }
 
   return json({success:false,error:"不支持的操作"},400);
 }
