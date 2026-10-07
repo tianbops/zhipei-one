@@ -13,7 +13,7 @@
   const wbDelta=$("trendWaybillsDelta"),wtDelta=$("trendWeightDelta");
   const wrap=$("trendChartWrap"),chart=$("trendChart");
   const grid=$("trendGrid"),area=$("trendArea"),line=$("trendLine"),points=$("trendPoints");
-  const rhythm=$("trendRhythm"),axis=$("trendAxis"),hint=$("trendHint");
+  const axis=$("trendAxis"),hint=$("trendHint");
 
   const prefersReduced=window.matchMedia&&window.matchMedia("(prefers-reduced-motion:reduce)").matches;
   let daily=[],byMonth=new Map(),availableMonths=[],currentMonth="";
@@ -115,10 +115,7 @@
     }else{
       hint.innerHTML="本月暂无配送记录";
     }
-    // 配送节奏（每日活跃度轨迹，非传统柱状图）；月度视图恢复显示（年度视图会隐藏）
-    rhythm.hidden=false;
-    renderRhythm(data.map(x=>valOf(x)));
-    // 轴：首日 / 月中 / 末日
+    // 轴：首日 / 月中 / 末日（只保留一排趋势线，无下方节奏条）
     axis.innerHTML="";
     const last=daysInMonth(currentMonth);
     [1,Math.round(last/2),last].forEach(d=>{
@@ -131,8 +128,8 @@
     const pm=prevKey?byMonth.get(prevKey):null;
     setDelta(wbDelta,total,pm?Number(pm.waybills)||0:null);
     setDelta(wtDelta,weight,pm?Number(pm.totalWeight)||0:null);
-    // 抬头
-    titleEl.textContent=currentMonth===cnMonth()?"本月配送":"配送记录";
+    // 抬头（两画面统一：月度/年度）
+    titleEl.textContent="月度配送";
     monthEl.textContent=label(currentMonth);
     metricWrap.hidden=false;
     prev.disabled=availableMonths.indexOf(currentMonth)>=availableMonths.length-1; // 最旧月
@@ -149,10 +146,13 @@
     const yk=String(year);
     const months=[];
     for(let m=1;m<=12;m++)months.push(yk+"-"+String(m).padStart(2,"0"));
-    const vals=months.map(mk=>{const x=byMonth.get(mk);return x?Number(x.waybills)||0:0;});
-    const total=vals.reduce((a,b)=>a+b,0);
+    // 与月度视图共用同一指标（重量 t / 单量），两画面统一
+    const isW=metric==="weight";
+    const vals=months.map(mk=>{const x=byMonth.get(mk);if(!x)return 0;return isW?(Number(x.totalWeight)||0):(Number(x.waybills)||0);});
+    const total=months.reduce((s,mk)=>{const x=byMonth.get(mk);return s+(x?Number(x.waybills)||0:0);},0);
     const weight=months.reduce((s,mk)=>{const x=byMonth.get(mk);return s+(x?Number(x.totalWeight)||0:0);},0);
-    const max=Math.max(1,...vals);
+    const safeMax=isW?0.01:1;
+    const max=Math.max(safeMax,...vals);
     // 12 月活动柱（工业风：细柱 + 峰值略亮）
     const w=360,h=120,left=10,right=10,top=14,bottom=14;
     const cw=w-left-right,slot=cw/12,barW=Math.min(18,slot*0.46);
@@ -160,8 +160,9 @@
     vals.forEach((v,i)=>{
       const x=left+slot*i+slot/2,hh=(v<=0?0.04:v/max)*(h-top-bottom),yy=h-bottom-hh;
       const isPeak=v===max&&v>0;
+      const fmtV=v=>isW?v.toFixed(2)+"t":v+"单";
       bars+='<rect x="'+(x-barW/2).toFixed(1)+'" y="'+yy.toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+hh.toFixed(1)
-        +'" rx="1.5" class="trend-year-bar'+(isPeak?" is-peak":"")+'"><title>'+label(months[i])+" · "+v+"单</title></rect>";
+        +'" rx="1.5" class="trend-year-bar'+(isPeak?" is-peak":"")+'"><title>'+label(months[i])+" · "+fmtV(v)+"</title></rect>";
     });
     // 基线 + 柱（用 line 通道绘制基线，area 留空）
     grid.setAttribute("d","M "+left+" "+(h-bottom)+" H "+(w-right));
@@ -170,42 +171,26 @@
     // 轴：1 / 4 / 7 / 10 / 12 月
     axis.innerHTML="";
     [1,4,7,10,12].forEach(m=>{const s=document.createElement("span");s.textContent=m+"月";axis.appendChild(s);});
-    // 节奏轨迹：年度视图不渲染（12 月柱已在上方，避免同源数据出现两套柱状）
-    rhythm.hidden=true;rhythm.innerHTML="";
     // 汇总（无环比）
     animateNumber(waybillsEl,total,v=>String(Math.round(v)));
     animateNumber(weightEl,weight,v=>v.toFixed(2));
     wbDelta.textContent="";wtDelta.textContent="";
-    // 峰值信息（仅核心）：年度峰值月 + 最繁忙配送日
+    // 峰值信息（随指标切换）：年度峰值月（重量口径显示 t）
     let peakMi=0;vals.forEach((v,i)=>{if(v>vals[peakMi])peakMi=i;});
     let busiest=null;
     for(const it of daily){if(!String(it.date).startsWith(yk))continue;if(!busiest||(Number(it.count)||0)>busiest.count)busiest={date:it.date,count:Number(it.count)||0};}
-    const peakMonth=vals[peakMi]>0?(peakMi+1)+"月":"—";
+    const fmtV=v=>isW?v.toFixed(2)+"t":Math.round(v)+"单";
+    const peakMonth=vals[peakMi]>safeMax?(peakMi+1)+"月":"—";
     let busiestTxt="";
-    if(busiest&&busiest.count>0){
+    if(!isW&&busiest&&busiest.count>0){
       const [,bm,bd]=busiest.date.split("-").map(Number);
       busiestTxt="　最忙 "+bm+"月"+bd+"日 · "+busiest.count+"单";
     }
-    hint.innerHTML="年度峰值 <b>"+peakMonth+" · "+vals[peakMi]+"单</b>"+busiestTxt;
-    titleEl.textContent=year+" 年配送";
+    hint.innerHTML="年度峰值 <b>"+peakMonth+" · "+fmtV(vals[peakMi])+"</b>"+busiestTxt;
+    titleEl.textContent="年度配送";
     monthEl.textContent=year+" 年度";
-    metricWrap.hidden=true;
+    metricWrap.hidden=false;   // 与月度画面统一：同样提供 重量/单量 切换
     prev.disabled=true;next.disabled=true;
-  }
-
-  /* ---------- 配送节奏轨迹 ---------- */
-  function renderRhythm(values){
-    const max=Math.max(1,...values);
-    rhythm.innerHTML="";
-    const n=values.length;
-    for(let i=0;i<n;i++){
-      const bar=document.createElement("span");
-      bar.className="trend-rhythm-bar";
-      const ratio=values[i]<=0?0:values[i]/max;
-      bar.style.height=(values[i]<=0?6:(6+ratio*88))+"%";
-      if(values[i]===max&&max>0)bar.classList.add("is-peak");
-      rhythm.appendChild(bar);
-    }
   }
 
   /* ---------- 切换动画（曲线滑出 / 新曲线滑入 + 数字计数） ---------- */
@@ -254,7 +239,7 @@
     metricCountBtn.classList.toggle("is-active",m==="count");
     metricWeightBtn.setAttribute("aria-pressed",String(m==="weight"));
     metricCountBtn.setAttribute("aria-pressed",String(m==="count"));
-    if(!yearMode)renderMonth();
+    if(yearMode)renderYear();else renderMonth();   // 两画面共用同一指标，切换即重绘当前视图
   }
 
   /* ---------- 事件 ---------- */

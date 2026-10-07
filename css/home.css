@@ -200,16 +200,12 @@
 .trend-point:focus-visible{stroke:#fff;stroke-width:2.5}
 .trend-year-bar{fill:#3A4651}
 .trend-year-bar.is-peak{fill:#C7D0D9}
-.trend-rhythm{display:flex;align-items:flex-end;gap:1px;height:22px;margin:6px -2px 0}
-.trend-rhythm-bar{flex:1 1 0;min-width:1px;background:#2C3742;border-radius:1px;transition:height .22s ease}
-.trend-rhythm-bar.is-peak{background:#55636F}
 .trend-axis{height:18px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 3px;color:#65717D;font-size:10px;line-height:14px;font-variant-numeric:tabular-nums}
 .trend-hint{min-height:17px;margin-top:4px;color:#7F8A95;font-size:11px;line-height:17px;text-align:right}
 .trend-hint b{color:#9BA7B3;font-weight:600;font-variant-numeric:tabular-nums}
 @media(prefers-reduced-motion:reduce){
   .trend-card.is-in{animation:none}
   .trend-chart-wrap{transition:none!important}
-  .trend-rhythm-bar{transition:none}
 }
 @media(max-width:380px){
   .trend-card{padding:14px 13px 12px}
