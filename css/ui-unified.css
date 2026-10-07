@@ -95,13 +95,13 @@ button:active{transform:translateY(0)}
   box-shadow:none;
 }
 .card,.page2-card{border-radius:var(--ui-radius)}
-.route-summary,.confirm-panel,.pending-box{background:var(--ui-surface-2);border-color:rgba(255,255,255,.07)}
+.confirm-panel,.pending-box{background:var(--ui-surface-2);border-color:rgba(255,255,255,.07)}
 
 /* 顶部栏统一：标题居中/左右操作，减少重复标题层 */
 .topbar,.page2-head,.dispatch-head,.order-topbar{position:relative}
 .topbar strong,.page2-head h1,.dispatch-head h1,.order-title{font-weight:650}
-.text-button,.page2-back,.dispatch-back{color:var(--ui-muted)}
-.text-button:active,.page2-back:active,.dispatch-back:active{color:#fff}
+.page2-back,.dispatch-back{color:var(--ui-muted)}
+.page2-back:active,.dispatch-back:active{color:#fff}
 
 /* 菜单统一为单层浮层 */
 .menu-panel,.home-menu-panel,.data-page-menu,.order-menu{
@@ -120,33 +120,33 @@ button:active{transform:translateY(0)}
 .menu-divider{background:rgba(255,255,255,.07)}
 
 /* 统一按钮语义：主操作右侧、取消/次要操作左侧 */
-.ui-actions,.data-import-actions,.history-dialog-actions,.order-dialog-actions,.account-dialog-actions{
+.data-import-actions,.history-dialog-actions,.order-dialog-actions,.account-dialog-actions{
   display:grid;
   grid-template-columns:1fr 1fr;
   gap:10px;
 }
-.ui-actions button,.data-import-actions button,.history-dialog-actions button,.order-dialog-actions button,.account-dialog-actions button{
+.data-import-actions button,.history-dialog-actions button,.order-dialog-actions button,.account-dialog-actions button{
   min-height:var(--zp-control-height);
   border-radius:var(--ui-control-radius);
   font-size:14px;
   font-weight:550;
 }
-.ui-actions button:first-child,.data-import-actions button:first-child,.history-dialog-actions button:first-child,.order-dialog-actions button:first-child,.account-dialog-actions button:first-child{
+.data-import-actions button:first-child,.history-dialog-actions button:first-child,.order-dialog-actions button:first-child,.account-dialog-actions button:first-child{
   background:var(--ui-surface-2);
   border:1px solid #35404C;
   color:#E8EDF2;
 }
-.ui-actions button:last-child,.data-import-actions button:last-child,.history-dialog-actions button:last-child,.order-dialog-actions button:last-child,.account-dialog-actions button:last-child{
+.data-import-actions button:last-child,.history-dialog-actions button:last-child,.order-dialog-actions button:last-child,.account-dialog-actions button:last-child{
   background:var(--ui-surface-3);
   border:1px solid #3A4652;
   color:#fff;
 }
 
 /* 统一模态层：只保留一层遮罩 + 一个内容面板 */
-.order-dialog,.history-dialog,.data-import,.account-dialog-bg,.upload-overlay{
+.order-dialog,.history-dialog,.data-import,.upload-overlay{
   background:rgba(0,0,0,.58)!important;
 }
-.order-dialog-panel,.history-dialog-panel,.data-import-panel,.data-confirm-panel,.account-dialog,.upload-sheet{
+.order-dialog-panel,.history-dialog-panel,.data-import-panel,.account-dialog,.upload-sheet{
   background:var(--ui-surface);
   border:1px solid var(--ui-line);
   border-radius:var(--ui-dialog-radius);
@@ -168,9 +168,6 @@ button:active{transform:translateY(0)}
 }
 
 /* 二次确认：不再使用大图标/装饰层，突出标题、风险说明、操作 */
-.data-confirm-icon{width:30px;height:30px;margin:0 auto 9px;font-size:14px}
-.data-confirm-panel p{margin-top:8px}
-.data-confirm-panel .data-import-actions{margin-top:18px}
 .page2-danger-btn,.data-swipe-delete{color:var(--ui-danger)!important}
 
 /* 上传/处理：同一面板内切换内容，不叠加第二个面板 */
@@ -211,7 +208,7 @@ input,select,textarea{
 .ui-toast.error{background:#302326;border-color:#594048}
 
 /* 状态文字与列表节奏统一 */
-.empty,.page2-state,.dispatch-empty,.dispatch-message,.history-state{
+.empty,.dispatch-empty,.dispatch-message,.history-state{
   color:var(--ui-soft);
 }
 .store-row,.account-row,.request-row{
@@ -220,7 +217,7 @@ input,select,textarea{
 
 /* 小屏：进一步减少外层留白，不缩小触控目标 */
 @media(max-width:380px){
-  .order-dialog,.history-dialog,.data-import,.account-dialog-bg,.upload-overlay{padding:14px}
+  .order-dialog,.history-dialog,.data-import,.upload-overlay{padding:14px}
   .order-dialog-panel,.history-dialog-panel,.data-import-panel,.account-dialog{border-radius:16px}
 }
 @media(prefers-reduced-motion:reduce){
@@ -242,13 +239,13 @@ input,select,textarea{
    仅调整文字尺寸与行高，不改变业务规则、数据结构、交互逻辑或页面布局。
    目标层级：页面标题 20px / 区块标题 18px / 正文 16px / 辅助 15px / 元信息 14px。 */
 .topbar strong,.page2-head h1,.dispatch-head h1,.order-title{font-size:20px!important;line-height:26px!important}
-.card h2,.page2-card h2,.section-title,.page2-title,.data-route-title h2,.history-toolbar strong{font-size:18px!important;line-height:24px!important}
-.text-button,.page2-back,.dispatch-back,.history-toolbar button{font-size:16px!important;line-height:22px!important}
-.ui-actions button,.data-import-actions button,.history-dialog-actions button,.order-dialog-actions button,.account-dialog-actions button,.zp-confirm-actions button{font-size:16px!important;line-height:22px!important}
+.card h2,.page2-card h2,.section-title,.data-route-title h2,.history-toolbar strong{font-size:18px!important;line-height:24px!important}
+.page2-back,.dispatch-back,.history-toolbar button{font-size:16px!important;line-height:22px!important}
+.data-import-actions button,.history-dialog-actions button,.order-dialog-actions button,.account-dialog-actions button,.zp-confirm-actions button{font-size:16px!important;line-height:22px!important}
 .order-dialog-head strong,.data-import-head h3,.history-dialog-panel>strong,.account-dialog h2,.zp-confirm-panel h3{font-size:18px!important;line-height:24px!important}
 .order-dialog-panel>p,.history-dialog-panel>p,.account-dialog>p,.zp-confirm-panel p{font-size:15px!important;line-height:22px!important}
 .ui-toast{font-size:15px!important;line-height:21px!important}
-.empty,.page2-state,.dispatch-empty,.dispatch-message,.history-state{font-size:15px!important;line-height:22px!important}
+.empty,.dispatch-empty,.dispatch-message,.history-state{font-size:15px!important;line-height:22px!important}
 
 /* Modal positioning 2.5
    所有业务弹窗统一居中显示；菜单、Toast、悬浮操作不属于模态弹窗，不参与居中规则。 */
@@ -256,7 +253,6 @@ input,select,textarea{
 .history-dialog,
 .history-picker,
 .data-import,
-.account-dialog-bg,
 .upload-overlay{
   align-items:center!important;
   justify-content:center!important;
@@ -280,7 +276,6 @@ input,select,textarea{
   .history-dialog,
   .history-picker,
   .data-import,
-  .account-dialog-bg,
   .upload-overlay{padding:14px!important}
   .order-dialog-panel,
   .history-dialog-panel,
@@ -388,7 +383,6 @@ input,select,textarea{
 .order-dialog,
 .history-dialog,
 .data-import,
-.account-dialog-bg,
 .upload-overlay{
   z-index:var(--ui-z-modal)!important;
 }
@@ -455,7 +449,6 @@ input,select,textarea{
 .order-dialog,
 .history-dialog,
 .history-picker,
-.account-dialog-bg,
 .upload-overlay{
   position:fixed!important;
   top:0!important;right:0!important;bottom:0!important;left:0!important;inset:0!important;
@@ -541,8 +534,7 @@ input,select,textarea{
 .primary-btn,
 .login-submit,
 .page2-primary,
-.confirm-submit,
-.data-save{
+.confirm-submit{
   background:rgba(28,37,47,.82);
   border-radius:var(--ui-control-radius);
   color:#fff;
@@ -576,7 +568,6 @@ input,select,textarea{
    注意：history-state 在 history.css 里被定义了两次（22px 16px 与 18px 8px），
    此处收口为同一个值，消除"改一处不生效"。 */
 .empty,
-.page2-state,
 .data-empty,
 .history-state,
 .dispatch-empty,
@@ -615,12 +606,6 @@ textarea:disabled,
 }
 
 /* --- 5.8 小标签 / 状态胶囊：同圆角、同行高 --- */
-.page2-status,
-.data-route-badge,
-.history-month-count{
-  border-radius:7px;
-  line-height:20px;
-}
 
 /* UI 2.6：页面进入动效统一——
    所有业务页加载时统一 fade + 6px 上移（120ms），消除「页面突然换掉」的生硬感。

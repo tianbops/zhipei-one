@@ -26,7 +26,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   padding:0 2px 10px;
 }
 .topbar strong{font-size:18px;letter-spacing:.1px}
-.topbar a,.topbar .text-button{min-height:var(--zp-control-height);display:inline-flex;align-items:center;justify-content:center}
+.topbar a{min-height:var(--zp-control-height);display:inline-flex;align-items:center;justify-content:center}
 .card{
   background:var(--zp-surface);
   border:1px solid var(--zp-line);
