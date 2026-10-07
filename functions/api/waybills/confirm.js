@@ -47,6 +47,7 @@ async function loadBase(env,id){const raw=await get(env,"route:"+id+":base");if(
 async function load(env,waybillId){const raw=await get(env,"waybill:"+waybillId);if(!raw)return null;try{return typeof raw==="string"?JSON.parse(raw):raw}catch{return null}}
 async function retryLearningRepairs(env,waybillId,userId){
  const key="waybill:"+waybillId+":learning-repair";
+ const MAX_REPAIRS=3;
  const lock={key:key+":lock",token:newId()};
  const locked=await command(env,["SET","zp:"+lock.key,lock.token,"NX","EX","60"]);
  if(locked!=="OK")return"DEFERRED";
@@ -54,8 +55,10 @@ async function retryLearningRepairs(env,waybillId,userId){
   const raw=await command(env,["HGETALL","zp:"+key]);
   const entries=[];const invalidKey="zp:"+key+":invalid";
   for(let i=0;i<(raw?.length||0);i+=2){const field=raw[i],value=raw[i+1];if(!field||!value)continue;let item=null;try{item=typeof value==="string"?JSON.parse(value):value}catch{}if(!item||typeof item.storeId!=="string"||!item.storeId||typeof item.rawName!=="string"||!item.rawName||typeof item.standardName!=="string"||!item.standardName){await command(env,["HSET",invalidKey,field,JSON.stringify({status:"INVALID",field,raw:value,markedAt:new Date().toISOString()})]);await command(env,["HDEL",key,field]);continue}entries.push([field,item])}
+  let processed=0;
   for(const [field,item] of entries){
-   try{await learnGlobal(env,{...item,routeId:item.routeId,waybillId,userId:item.userId||userId});await command(env,["HDEL","zp:"+key,field])}catch{}
+   if(processed>=MAX_REPAIRS)break;
+   try{await learnGlobal(env,{...item,routeId:item.routeId,waybillId,userId:item.userId||userId});await command(env,["HDEL","zp:"+key,field]);processed++;}catch{}
   }
   const remaining=Number(await command(env,["HLEN","zp:"+key]))||0;
   if(remaining===0)await command(env,["DEL","zp:"+key]);
