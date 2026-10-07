@@ -35,7 +35,7 @@ export async function onRequestPost({request,env}){
     if(actor.passwordHash!==await hash(currentPassword))return json({success:false,error:"当前密码错误"},403);
     const nextHash=await hash(password);
     const key="zp:user:"+actor.id;
-    const script="local raw=redis.call('GET',KEYS[1]); if not raw then return 2 end; local ok,u=pcall(cjson.decode,raw); if not ok or type(u)~='table' or u.id~=ARGV[2] or u.role~='admin' then return 3 end; u.passwordHash=ARGV[1]; u.sessionVersion=(u.sessionVersion or 1)+1; redis.call('SET',KEYS[1],cjson.encode(u)); return 1";
+    const script="local raw=redis.call('GET',KEYS[1]); if not raw then return 2 end; local ok,u=pcall(cjson.decode,raw); if not ok or type(u)~='table' or u.id~=ARGV[2] or (u.role~='admin' and u.role~='system_admin') then return 3 end; u.passwordHash=ARGV[1]; u.sessionVersion=(u.sessionVersion or 1)+1; redis.call('SET',KEYS[1],cjson.encode(u)); return 1";
     const code=Number(await command(env,["EVAL",script,"1",key,nextHash,actor.id]));
     if(code!==1)return json({success:false,error:"管理员账号状态已变化，请刷新后重试"},409);
     return json({success:true});
