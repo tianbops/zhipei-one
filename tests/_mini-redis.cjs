@@ -118,6 +118,7 @@ class MiniRedis {
       }
       case "SREM": { const s = this.sets.get(a[0]); if (!s) return 0; let n = 0; for (let i = 1; i < a.length; i++) if (s.delete(a[i])) n++; return n; }
       case "SMEMBERS": return this.sets.has(a[0]) ? [...this.sets.get(a[0])] : [];
+      case "SISMEMBER": return this.sets.has(a[0]) && this.sets.get(a[0]).has(a[1]) ? 1 : 0;
       case "MGET": return a.map(k => this._get(k));
       case "SCAN": {
         const [cursor, items] = this._scan(a[0], a[2] || "*", a[4]);
