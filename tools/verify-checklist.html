@@ -6,7 +6,7 @@
 <title>发布门禁 · 手机核验清单</title>
 <style>
   :root{ --bg:#0f1216; --card:#1a1f26; --line:#2a313b; --fg:#e8edf2; --muted:#8b97a5;
-         --ok:#3fb950; --acc:#388bfd; --warn:#d29922; }
+         --ok:#3fb950; --acc:#388bfd; --warn:#d29922; --bad:#f85149; }
   *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   body{ margin:0; background:var(--bg); color:var(--fg);
         font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
@@ -65,9 +65,19 @@
     <label class="chk"><input type="checkbox" id="chk2" /><span>我已用管理员身份在管理台实删一条测试线路，返回成功、无 1101 / 无 500。</span></label>
   </div>
 
+  <!-- 项 3：后端删除自测（绕过管理台左滑 UI） -->
+  <div class="card">
+    <h2><span class="num">3</span> 删除线路后端自测（绕过管理台左滑）</h2>
+    <div class="step">管理台「线路管理」的删除按钮需<b>左滑卡片</b>才露出（纯点击点不到）。这里直接走后端删除接口，免手势，结果即时可见：</div>
+    <button id="btnCreateTest">① 新建一条临时测试线路</button>
+    <button id="btnDelTest" class="open" disabled>② 删除该测试线路（真实接口）</button>
+    <div id="delOut" class="hidden"></div>
+    <label class="chk"><input type="checkbox" id="chk2b" /><span>后端删除返回 success、无 1101/500（与下方 JSON 一致），即闭环「删除线路实删复验」。</span></label>
+  </div>
+
   <button id="btnExport">导出核验结果</button>
   <pre id="out">— 勾完两项后点上方按钮 —</pre>
-  <p class="hint">导出内容仅为两个布尔勾选 + 时间戳，不含任何业务数据，可放心贴回。</p>
+  <p class="hint">导出内容仅含三个布尔勾选 + 时间戳，不含任何业务数据，可放心贴回。</p>
 
 <script>
 const $ = id => document.getElementById(id);
@@ -106,10 +116,42 @@ $("btnList").onclick = async () => {
 $("btnAdmin1").onclick = () => window.open("https://tianyou-zhipei.pages.dev/admin.html", "_blank");
 $("btnAdmin2").onclick = () => window.open("https://tianyou-zhipei.pages.dev/admin.html", "_blank");
 
+async function postJSON(url, body){
+  const r = await fetch(url, {method:"POST", headers:{"content-type":"application/json"},
+    credentials:"same-origin", cache:"no-store", body:JSON.stringify(body)});
+  let j = {}; try{ j = await r.json(); }catch{}
+  return {status:r.status, json:j};
+}
+let testRouteId = null;
+$("btnCreateTest").onclick = async () => {
+  $("delOut").classList.remove("hidden"); $("delOut").textContent = "新建中…";
+  try{
+    const name = "__verify_del_" + Date.now();
+    const res = await postJSON("/api/routes", {name});
+    if(res.status !== 200 || !res.json || !res.json.route || !res.json.route.id){
+      $("delOut").textContent = "新建失败：" + JSON.stringify(res.json) + " (HTTP " + res.status + ")"; return;
+    }
+    testRouteId = res.json.route.id;
+    $("delOut").textContent = "已新建测试线路：" + testRouteId + "\n（空线路，删除应为 0 次子请求、无 1101）";
+    $("btnDelTest").disabled = false;
+  }catch(e){ $("delOut").textContent = "ERR " + e.message; }
+};
+$("btnDelTest").onclick = async () => {
+  if(!testRouteId){ alert("请先点「① 新建测试线路」"); return; }
+  if(!confirm("确认删除测试线路 " + testRouteId + "？\n（仅删刚建的空测试线路，不动生产数据）")) return;
+  $("delOut").textContent = "删除中…";
+  try{
+    const res = await postJSON("/api/routes", {action:"delete", routeId:testRouteId});
+    $("delOut").textContent = JSON.stringify(res.json, null, 2) + "\n(HTTP " + res.status + ")";
+    if(res.json && res.json.success){ testRouteId = null; $("btnDelTest").disabled = true; }
+  }catch(e){ $("delOut").textContent = "ERR " + e.message; }
+};
+
 $("btnExport").onclick = () => {
   const res = {
     verify_diag_header_date_vehicle: !!$("chk1").checked,
     verify_route_delete_real: !!$("chk2").checked,
+    verify_route_delete_backend: !!$("chk2b").checked,
     routeId: rid(),
     ts: new Date().toISOString()
   };
