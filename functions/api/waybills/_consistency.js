@@ -406,7 +406,8 @@ export async function repairConsistency(env, issues) {
       } else if (steps.length === 1 && steps[0][0] === "DEL") {
         commands.push(["GET",steps[0][1]]);
       } else {
-        commands.push(["PING"]);
+        // 当前自动修复仅允许上述两类；保留兼容分支时使用 GET，避免依赖非必要命令。
+        commands.push(["GET", "__zp_consistency_verify_noop__"]);
       }
     }
     try {
