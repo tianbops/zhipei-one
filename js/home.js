@@ -240,10 +240,10 @@ processingRetry?.addEventListener("click",()=>{
   const info=retryActionInfo(lastFailureAction);
   if(lastFailureAction==="RETRY_SAVE"&&lastProcessingFile&&lastFailureRequestId){
     // RETRY_SAVE：仅重保存（后端按 resumeRequestId 复用已构建 order，跳过 OCR/提取/匹配/规划），不重 OCR
-    processSelectedFile(lastProcessingFile, lastFailureRequestId);
+    processSelectedFiles(lastProcessingFile, lastFailureRequestId);
   }else if(info&&info.autoRetry&&lastProcessingFile){
     // RETRY_OCR / REPROCESS：复用同一文件重跑完整链路（含 OCR）
-    processSelectedFile(lastProcessingFile);
+    processSelectedFiles(lastProcessingFile);
   }else if(info&&lastFailureAction==="RESUBMIT"){
     // 需重新选文件：回到来源菜单
     openUpload();
@@ -276,13 +276,15 @@ function chooseFile(source){
 document.querySelectorAll(".source-option").forEach(btn=>btn.addEventListener("click",()=>chooseFile(btn.dataset.source)));
 
 let processingFile=false;
-let lastProcessingFile=null;   // 最近一次处理的文件，供「一键重试」复用（仅 RETRY_OCR/RETRY_SAVE/REPROCESS 自动复用同一文件）
+let lastProcessingFile=null;   // 最近一次处理的运单图片组/文件，供一键重试复用
 let lastFailureAction=null;    // 最近一次失败的处理动作（action）；null 表示不可重试，按钮作关闭用
 let lastFailureRequestId=null; // 最近一次失败的处理票据 requestId（RETRY_SAVE 仅重保存时回传后端 resume）
-async function processSelectedFile(file, resumeRequestId){
-  if(!file||processingFile)return;
+async function processSelectedFiles(files, resumeRequestId){
+  if(!Array.isArray(files))files=files?[files]:[];
+  files=files.filter(Boolean);
+  if(!files.length||processingFile)return;
   processingFile=true;
-  lastProcessingFile=file;
+  lastProcessingFile=files.slice();
   const controller=new AbortController();
   processingController=controller;
   if(processingCancelBtn){processingCancelBtn.hidden=true;processingCancelBtn.disabled=false}
@@ -297,7 +299,8 @@ async function processSelectedFile(file, resumeRequestId){
     showProcessingUI();
     document.querySelectorAll(".source-option").forEach(b=>b.disabled=true);
     const fd=new FormData();
-    fd.append("file",file);
+    files.forEach(file=>fd.append("file",file));
+    fd.append("fileCount",String(files.length));
     fd.append("routeId",processingRouteIdLocal);
     fd.append("processingRouteId",processingRouteIdLocal);
     if(resumeRequestId)fd.append("resumeRequestId",resumeRequestId);
@@ -386,7 +389,7 @@ async function processSelectedFile(file, resumeRequestId){
     }
   }
 }
-["cameraInput","photoInput","documentInput"].forEach(id=>$(id)?.addEventListener("change",e=>processSelectedFile(e.target.files?.[0])));
+["cameraInput","photoInput","documentInput"].forEach(id=>$(id)?.addEventListener("change",e=>processSelectedFiles(Array.from(e.target.files||[]))));
 
 async function loadHome(){
   try{
