@@ -80,12 +80,13 @@
   }
 
   function setDelta(el,cur,prev,unit){
-    if(prev==null||prev<=0){el.textContent="";el.className="trend-delta";return;}
+    if(prev==null||prev<=0){el.textContent="";el.className="trend-delta";el.title="";return;}
     const pct=(cur-prev)/prev*100;
-    if(!isFinite(pct)){el.textContent="";el.className="trend-delta";return;}
+    if(!isFinite(pct)){el.textContent="";el.className="trend-delta";el.title="";return;}
     const up=pct>=0;
     el.textContent=(up?"↑ ":"↓ ")+Math.abs(pct).toFixed(1)+"%";
     el.className="trend-delta "+(up?"is-up":"is-down");
+    el.title="同比（对比去年同月）";
   }
 
   /* ---------- 月度视图渲染 ---------- */
@@ -137,13 +138,13 @@
     [1,Math.round(last/2),last].forEach(d=>{
       const s=document.createElement("span");s.textContent=String(d).padStart(2,"0")+"日";axis.appendChild(s);
     });
-    // 汇总 + 环比（对比上一自然月）
+    // 汇总 + 同比（对比去年同月，比环比更能剥离季节性、看出真实增减）
     animateNumber(waybillsEl,total,v=>String(Math.round(v)));
     animateNumber(weightEl,weight,v=>v.toFixed(2));
-    const prevKey=prevMonthKey(currentMonth);
-    const pm=prevKey?byMonth.get(prevKey):null;
-    setDelta(wbDelta,total,pm?Number(pm.waybills)||0:null);
-    setDelta(wtDelta,weight,pm?Number(pm.totalWeight)||0:null);
+    const lyKey=sameMonthLastYearKey(currentMonth);
+    const ly=lyKey?byMonth.get(lyKey):null;
+    setDelta(wbDelta,total,ly?Number(ly.waybills)||0:null);
+    setDelta(wtDelta,weight,ly?Number(ly.totalWeight)||0:null);
     // 抬头（两画面统一：月度/年度）
     titleEl.textContent="月度统计";
     monthEl.textContent=label(currentMonth);
@@ -152,9 +153,10 @@
     next.disabled=monthIdx>=monthSeq.length-1;        // 已是当前月（未来禁止）
   }
 
-  function prevMonthKey(ym){
-    const [y,m]=ym.split("-").map(Number),idx=y*12+(m-1)-1;
-    return Math.floor(idx/12)+"-"+String(idx%12+1).padStart(2,"0");
+  // 去年同月（同比基准）：2026-10 → 2025-10
+  function sameMonthLastYearKey(ym){
+    const [y,m]=ym.split("-").map(Number);
+    return (y-1)+"-"+String(m).padStart(2,"0");
   }
 
   /* ---------- 年度视图渲染 ---------- */
@@ -315,7 +317,9 @@
   /* ---------- 数据加载 ---------- */
   async function load(){
     try{
-      const r=await fetch("/api/history",{credentials:"same-origin",cache:"no-store"});
+      // 同比需要去年同月数据：默认历史窗口仅 13 个月（起于 11 个月前），不含去年同月，
+      // 故首页主动请求 25 个月窗口，保证当前及近 13 个月均可算同比（最早月份无去年同期时自然留空）。
+      const r=await fetch("/api/history?months=25",{credentials:"same-origin",cache:"no-store"});
       if(!r.ok)return;
       const d=await r.json().catch(()=>null);
       if(!d?.success||!Array.isArray(d.history))return;

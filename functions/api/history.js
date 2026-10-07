@@ -104,7 +104,11 @@ export async function onRequestGet({request,env}){
   const url=new URL(request.url),routeId=clean(url.searchParams.get("routeId")||user.dispatchRouteId||user.boundRouteId),date=clean(url.searchParams.get("date"));
   if(!routeId)return json({success:true,routeId:null,months:[],history:[]});
   const currentRoute=clean(user.dispatchRouteId)||clean(user.boundRouteId);if(routeId!==currentRoute)return json({success:false,error:"无权查看该线路历史"},403);
-  const range=historyRange(todayCN(),env?.WAYBILL_HISTORY_MONTHS),enrich=await enrichFactory(env,routeId);
+  const monthsParam=clean(url.searchParams.get("months"));
+  // 前端可经 ?months= 放宽查询窗口（仅 GET 生效，受 1–120 钳制）；默认沿用 env WAYBILL_HISTORY_MONTHS。
+  // DELETE 路径不使用此参数，维持 env 默认窗口，避免客户端扩大可删除范围。
+  const monthsN=monthsParam?Math.max(1,Math.min(120,Math.floor(Number(monthsParam)||13))):env?.WAYBILL_HISTORY_MONTHS;
+  const range=historyRange(todayCN(),monthsN),enrich=await enrichFactory(env,routeId);
   if(date){
    if(!validDate(date))return json({success:false,code:"DATE_INVALID",error:"日期无效"},400);
    if(!inRange(date,range))return json({success:false,code:"DATE_OUT_OF_RANGE",error:"日期不在历史查询范围内"},400);
