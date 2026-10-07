@@ -18,16 +18,17 @@ const clean=x=>String(x??"").trim().slice(0,100);
 async function retryRouteLearningRepairs(env,routeId){
  const key="zp:route:"+routeId+":learning-repair";
  const invalidKey=key+":invalid";
+ const MAX_REPAIRS=3;
  const raw=await command(env,["HGETALL",key]);
- for(let i=0;i<(raw?.length||0);i+=2){
+ let processed=0;
+ for(let i=0;i<(raw?.length||0)&&processed<MAX_REPAIRS;i+=2){
   const field=raw[i],value=raw[i+1];if(!field||!value)continue;
   let item=null;try{item=typeof value==="string"?JSON.parse(value):value}catch{}
   if(!item||!item?.storeId||!item?.rawName||!item?.standardName){
    await command(env,["HSET",invalidKey,field,JSON.stringify({status:"INVALID",field,raw:value,markedAt:new Date().toISOString()})]);
-   await command(env,["HDEL",key,field]);
-   continue;
+   await command(env,["HDEL",key,field]);processed++;continue;
   }
-  try{await learnGlobal(env,item);await command(env,["HDEL",key,field])}catch{}
+  try{await learnGlobal(env,item);await command(env,["HDEL",key,field]);processed++;}catch{}
  }
  const remaining=Number(await command(env,["HLEN",key]))||0;
  if(remaining===0)await command(env,["DEL",key]);
