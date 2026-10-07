@@ -175,6 +175,19 @@ export const onRequestPost=guard(async ({request,env})=>{
   const routeId=clean(url.searchParams.get("routeId"));
   const all=routeId?false:true;
   const report=await scanConsistency(env,{routeId:all?null:routeId,all});
+  // 破坏性修复安全闸门：扫描被 Budget 截断时，不能把“未读到主记录”当成“主记录不存在”。
+  if(report.degraded){
+    return json({
+      success:false,
+      code:"CONSISTENCY_SCAN_INCOMPLETE",
+      error:"一致性巡检未完整覆盖，已阻止修复；请缩小线路范围后重试",
+      scope:all?"ALL":routeId,
+      scanned:report.scanned,
+      degraded:true,
+      budget:report.budget,
+      summary:report.summary
+    },503);
+  }
   const result=await repairConsistency(env,report.issues);
   return json({
     success:true,
