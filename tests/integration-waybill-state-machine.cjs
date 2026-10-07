@@ -39,7 +39,7 @@ function getReq(url, token) {
 }
 function formReq(url, token, fields) {
   const m = new Map(Object.entries(fields));
-  return { url, headers: { get: (h) => (String(h).toLowerCase() === "authorization" ? "Bearer " + token : null) }, formData: async () => ({ get: (k) => (m.has(k) ? m.get(k) : null) }) };
+  return { url, headers: { get: (h) => (String(h).toLowerCase() === "authorization" ? "Bearer " + token : null) }, formData: async () => ({ get: (k) => (m.has(k) ? m.get(k) : null), getAll: (k) => (m.has(k) ? [m.get(k)] : []) }) };
 }
 async function toJson(resp) { return await resp.json(); }
 
