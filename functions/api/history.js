@@ -165,7 +165,7 @@ export async function onRequestDelete({request,env}){
   if(month){
    if(!/^\d{4}-\d{2}$/.test(month))return json({success:false,code:"MONTH_INVALID",error:"月份格式错误"},400);
    if(!monthInRange(month,range))return json({success:false,code:"MONTH_OUT_OF_RANGE",error:"月份不在历史查询范围内"},400);
-   const budget=new Budget();const entries=await readDates(env,routeId,range,budget);const results=[];let total=0;
+   const budget=new Budget();let entries;try{entries=await readDates(env,routeId,range,budget)}catch(e){if(e?.code===SUBREQUEST_BUDGET_EXCEEDED)return json({success:false,code:"PARTIAL_FAILURE",error:"删除范围读取已达到资源预算，请缩小范围或稍后重试",deleted:0,month,budgetUsed:budget.used,budgetMax:budget.max},503);throw e}const results=[];let total=0;
    for(const entry of entries){if(!entry.date.startsWith(month))continue;const list=await readDateWaybills(env,user,routeId,entry.date,budget);total+=list.length;for(const order of list.filter(w=>canWriteWaybill(user,w,env))){try{results.push(await deleteWaybill(env,routeId,entry.date,order.id,budget))}catch(e){if(e?.code===SUBREQUEST_BUDGET_EXCEEDED){return json({success:false,code:"PARTIAL_FAILURE",error:"删除已达到单次资源预算，请继续重试完成剩余运单",deleted:results.filter(x=>x.mainOk).length,month,partial:true,budgetUsed:budget.used,budgetMax:budget.max},503)}throw e}}}
    const s=summarize(results);const skipped=total-results.length;
    if(s.mainFailed)return json({success:false,code:"WAYBILL_DELETE_FAILED",error:"部分运单主记录删除失败,请重试",deleted:s.deleted,skipped,total,month});
@@ -183,7 +183,7 @@ export async function onRequestDelete({request,env}){
   if(!r.mainOk)return json({success:false,code:"WAYBILL_DELETE_FAILED",error:"运单主记录删除失败,请重试",deleted:0,waybillId});
   return json({success:true,code:r.indexOk&&r.childrenOk&&r.refOk?undefined:"PARTIAL_FAILURE",message:r.indexOk&&r.childrenOk&&r.refOk?undefined:"部分索引或子键清理未完成,建议稍后执行修复",deleted:1,deletedWaybills:1,waybillId});
  }
- const budget=new Budget();const readable=await readDateWaybills(env,user,routeId,date,budget);const results=[];
+ const budget=new Budget();let readable;try{readable=await readDateWaybills(env,user,routeId,date,budget)}catch(e){if(e?.code===SUBREQUEST_BUDGET_EXCEEDED)return json({success:false,code:"PARTIAL_FAILURE",error:"删除范围读取已达到资源预算，请稍后重试",deleted:0,date,budgetUsed:budget.used,budgetMax:budget.max},503);throw e}const results=[];
  for(const order of readable.filter(w=>canWriteWaybill(user,w,env))){try{results.push(await deleteWaybill(env,routeId,date,order.id,budget))}catch(e){if(e?.code===SUBREQUEST_BUDGET_EXCEEDED){const s=summarize(results);return json({success:false,code:"PARTIAL_FAILURE",error:"删除已达到单次资源预算，请继续重试完成剩余运单",deleted:s.deleted,skipped:readable.length-results.length,date,budgetUsed:budget.used,budgetMax:budget.max},503)}throw e}}
  const s=summarize(results);const skipped=readable.length-results.length;
  if(s.mainFailed)return json({success:false,code:"WAYBILL_DELETE_FAILED",error:"运单主记录删除失败,请重试",deleted:s.deleted,skipped,total:readable.length,date});
