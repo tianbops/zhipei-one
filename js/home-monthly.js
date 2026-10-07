@@ -10,6 +10,7 @@
   const axis=$("monthlyAxis"),hint=$("monthlyHint");
   let months=new Map(),history=[],currentMonth="",availableMonths=[];
   let touchX=0,touchY=0;
+  let metric="weight"; // 趋势指标：weight=按重量(t)显示起伏（默认）；count=按单量。两种口径前端已有数据，切换不另发请求
 
   const cnToday=()=>{
     const p=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
@@ -55,12 +56,15 @@
     const data=buildMonthData(currentMonth);
     const total=data.reduce((s,x)=>s+x.count,0);
     const weight=data.reduce((s,x)=>s+x.weight,0);
-    const max=Math.max(1,...data.map(x=>x.count));
+    // 趋势指标：默认按「重量(t)」显示起伏；可切到「单量」。两种口径前端都有数据，切换不另发请求。
+    const valOf=x=>metric==="weight"?x.weight:x.count;
+    const safeMax=metric==="weight"?0.01:1; // 重量为 0 时避免除零，保证基线可见
+    const max=Math.max(safeMax,...data.map(valOf));
     const w=360,h=112,left=8,right=8,top=10,bottom=14;
     const cw=w-left-right,ch=h-top-bottom;
     const pts=data.map((x,i)=>{
       const px=left+(data.length===1?cw/2:i*cw/(data.length-1));
-      const py=top+(1-x.count/max)*ch;
+      const py=top+(1-valOf(x)/max)*ch;
       return [px,py];
     });
     const path=smoothPath(pts);
@@ -80,14 +84,16 @@
       c.setAttribute("cx",p[0]);c.setAttribute("cy",p[1]);c.setAttribute("r",i===data.length-1?4:3);
       c.setAttribute("class","monthly-point");
       c.setAttribute("tabindex","0");
-      c.setAttribute("aria-label",x.date+" "+x.count+"单");
+      c.setAttribute("aria-label",x.date+" "+x.count+"单 · "+x.weight.toFixed(2)+"t");
       c.addEventListener("click",()=>{hint.textContent=x.date+" · "+x.count+"单 · "+x.weight.toFixed(2)+"t"});
       points.appendChild(c);
     });
-    const maxIndex=data.reduce((best,x,i)=>x.count>data[best].count?i:best,0);
+    const maxIndex=data.reduce((best,x,i)=>valOf(x)>valOf(data[best])?i:best,0);
     if(total){
       const peak=data[maxIndex];
-      hint.textContent="峰值 "+peak.day+"日 · "+peak.count+"单";
+      hint.textContent=metric==="weight"
+        ? "峰值 "+peak.day+"日 · "+peak.weight.toFixed(2)+"t"
+        : "峰值 "+peak.day+"日 · "+peak.count+"单";
     }else{
       hint.textContent="本月暂无配送记录";
     }
@@ -119,6 +125,18 @@
 
   prev?.addEventListener("click",()=>move(1));
   next?.addEventListener("click",()=>move(-1));
+  const metricWeightBtn=$("metricWeight"),metricCountBtn=$("metricCount");
+  function setMetric(m){
+    if(m!=="weight"&&m!=="count")return;
+    metric=m;
+    metricWeightBtn?.classList.toggle("is-active",m==="weight");
+    metricCountBtn?.classList.toggle("is-active",m==="count");
+    metricWeightBtn?.setAttribute("aria-pressed",String(m==="weight"));
+    metricCountBtn?.setAttribute("aria-pressed",String(m==="count"));
+    render();
+  }
+  metricWeightBtn?.addEventListener("click",()=>setMetric("weight"));
+  metricCountBtn?.addEventListener("click",()=>setMetric("count"));
   chart?.addEventListener("touchstart",e=>{
     const t=e.changedTouches?.[0];if(!t)return;
     touchX=t.clientX;touchY=t.clientY;

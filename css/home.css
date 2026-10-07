@@ -194,6 +194,10 @@
 .monthly-point:focus-visible{stroke-width:2.5}
 .monthly-axis{height:18px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 3px;color:#65717D;font-size:10px;line-height:14px;font-variant-numeric:tabular-nums}
 .monthly-hint{min-height:17px;margin-top:2px;color:#7F8A95;font-size:11px;line-height:17px;text-align:right}
+.monthly-metric{display:flex;gap:6px;margin-top:5px}
+.monthly-metric-btn{appearance:none;border:1px solid #26313C;background:#161E26;color:#B8C2CC;font-size:12px;line-height:18px;padding:2px 11px;border-radius:999px;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.monthly-metric-btn.is-active{background:#B8C2CC;color:#0E141A;border-color:#B8C2CC;font-weight:600}
+.monthly-metric-btn:active{transform:translateY(.5px)}
 @media(prefers-reduced-motion:reduce){.monthly-card.is-changing{animation:none}}
 @media(max-width:380px){
   .monthly-card{padding:14px 13px 11px}
