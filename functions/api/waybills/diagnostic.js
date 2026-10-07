@@ -189,6 +189,20 @@ export const onRequestPost=guard(async ({request,env})=>{
     },503);
   }
   const result=await repairConsistency(env,report.issues);
+  if(result.verificationFailedCount>0 || !result.verificationComplete){
+    return json({
+      success:false,
+      code:"CONSISTENCY_REPAIR_VERIFICATION_FAILED",
+      error:"一致性修复后的二次验证未完全通过，已停止报告为成功；请缩小线路范围后重试",
+      scope:all?"ALL":routeId,
+      repairedCount:result.repairedCount,
+      skippedCount:result.skippedCount,
+      verificationFailedCount:result.verificationFailedCount,
+      verification:result.verification,
+      repaired:result.repaired,
+      skipped:result.skipped
+    },503);
+  }
   if(result.budgetExceeded){
     return json({
       success:false,
