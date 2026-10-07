@@ -11,6 +11,7 @@ import {clean,formatCompareKey,matchStores} from "./_store-match.js";
 import {evaluateQualityGates,countLines} from "./_quality-gate.js";
 import {appendWaybillEvent} from "./_waybill-events.js";
 import {beginProc,failProc,finishProc,getProc} from "./_waybill-proc.js";
+import {Budget,mgetBatchMap} from "../_redis-budget.js";
 
 const waybillIndexKey=(routeId,date)=>"zp:route:"+routeId+":waybills:"+date;
 // 运单日期兜底（1.1 数据一致性）：OCR 未识别日期且未手填时，原实现会写 null，
@@ -229,8 +230,16 @@ async function saveWaybill(order, requestId, resumed){
   const hasDedupe=await command(env,["GET",dedupeKey]);
   if(!hasDedupe){
     const members=await command(env,["SMEMBERS",indexKey]);
-    for(const id of (Array.isArray(members)?members:[])){
-      const raw=await command(env,["GET","zp:waybill:"+id]);
+    const ids=Array.isArray(members)?[...new Set(members.map(String).filter(Boolean))]:[];
+    // 历史旧运单可能没有 dedupeKey。兜底仍需检查业务签名，但禁止逐单 GET：
+    // 一次 MGET 批量读取，并受统一 Redis 预算保护；预算不足时宁可让保存可重试，也不能冒险继续并可能产生重复单。
+    const budget=new Budget();
+    const read=await mgetBatchMap(env,ids,budget,{batch:100});
+    if(!read.complete){
+      return failProcess("WAYBILL_DEDUPE_SCAN_BUDGET","历史去重校验达到资源预算，请稍后重试保存",503,{recoverable:true,action:"RETRY_SAVE",hint:"历史去重校验资源不足，请重试保存",budgetUsed:budget.used,budgetMax:budget.max});
+    }
+    for(const id of ids){
+      const raw=read.map.get("zp:waybill:"+id);
       if(!raw)continue;
       let w;try{w=typeof raw==="string"?JSON.parse(raw):raw}catch{continue}
       if(dailyWaybillSignatureString(w)===sigString){dailyDupId=id;break}
