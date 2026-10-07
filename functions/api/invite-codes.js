@@ -8,7 +8,7 @@ function safe(c){return {id:c.id,code:c.code,enabled:c.enabled!==false,maxUses:c
 export async function onRequestGet({request,env}){
  const actor=await currentUser(request,env);if(!isSystemAdmin(actor))return json({success:false,error:"无权限"},403);
  const raw=await get(env,"invite-codes:index");let ids=[];try{ids=raw?(typeof raw==="string"?JSON.parse(raw):raw):[]}catch{return json({success:false,code:"INVITE_INDEX_INVALID",error:"邀请码索引数据异常，请联系管理员处理"},409)}if(!Array.isArray(ids))return json({success:false,code:"INVITE_INDEX_INVALID",error:"邀请码索引数据异常，请联系管理员处理"},409)
- const codes=[];for(const id of Array.isArray(ids)?ids:[]){if(typeof id!=="string"||!id)return json({success:false,code:"INVITE_INDEX_INVALID",error:"邀请码索引数据异常，请联系管理员处理"},409);const base=await get(env,"invite-code:"+id);if(!base)return json({success:false,code:"INVITE_DATA_INVALID",error:"邀请码索引包含缺失的邀请码数据，请联系管理员处理"},409);try{const b=typeof base==="string"?JSON.parse(base):base;if(!b||b.id!==id||typeof b.code!=="string"||!b.code)return json({success:false,code:"INVITE_DATA_INVALID",error:"邀请码数据异常，请联系管理员处理"},409);const r=await get(env,"invite-code:code:"+b.code);if(!r)return json({success:false,code:"INVITE_DATA_INCONSISTENT",error:"邀请码主记录与编码索引不一致，请联系管理员处理"},409);const d=typeof r==="string"?JSON.parse(r):r;if(!d||d.id!==id||d.code!==b.code)return json({success:false,code:"INVITE_DATA_INCONSISTENT",error:"邀请码主记录与编码索引不一致，请联系管理员处理"},409);const expired=d.expiresAt&&Date.parse(d.expiresAt)<=Date.now();const complete=Number(d.maxUses||0)>0&&Number(d.usedCount||0)>=Number(d.maxUses||0);if(d.enabled!==false&&!expired&&!complete)codes.push(safe(d))}catch{return json({success:false,code:"INVITE_DATA_INVALID",error:"邀请码数据异常，请联系管理员处理"},409)}}
+ const codes=[];for(const id of Array.isArray(ids)?ids:[]){if(typeof id!=="string"||!id)return json({success:false,code:"INVITE_INDEX_INVALID",error:"邀请码索引数据异常，请联系管理员处理"},409);const base=await get(env,"invite-code:"+id);if(!base)return json({success:false,code:"INVITE_DATA_INVALID",error:"邀请码索引包含缺失的邀请码数据，请联系管理员处理"},409);try{const b=typeof base==="string"?JSON.parse(base):base;if(!b||b.id!==id||typeof b.code!=="string"||!b.code)return json({success:false,code:"INVITE_DATA_INVALID",error:"邀请码数据异常，请联系管理员处理"},409);const r=await get(env,"invite-code:code:"+b.code);if(!r)return json({success:false,code:"INVITE_DATA_INCONSISTENT",error:"邀请码主记录与编码索引不一致，请联系管理员处理"},409);const d=typeof r==="string"?JSON.parse(r):r;if(!d||d.id!==id||d.code!==b.code)return json({success:false,code:"INVITE_DATA_INCONSISTENT",error:"邀请码主记录与编码索引不一致，请联系管理员处理"},409);const expired=!!(d.expiresAt&&Date.parse(d.expiresAt)<=Date.now());const complete=Number(d.maxUses||0)>0&&Number(d.usedCount||0)>=Number(d.maxUses||0);codes.push({...safe(d),expired,exhausted:complete})}catch{return json({success:false,code:"INVITE_DATA_INVALID",error:"邀请码数据异常，请联系管理员处理"},409)}}
  return json({success:true,codes});
 }
 
@@ -26,6 +26,22 @@ export async function onRequestPost({request,env}){
   const result=Number(await command(env,["EVAL",script,"3",indexKey,idKey,codeKey,id,JSON.stringify(c),JSON.stringify({...c,id})]));
   if(result===4)return json({success:false,code:"INVITE_INDEX_INVALID",error:"邀请码索引数据异常，请联系管理员处理"},409); if(result!==1)return json({success:false,error:"邀请码创建失败，请稍后重试"},500);
   return json({success:true,code:safe(c)},201);
+ }
+ if(action==="remove"){
+  const id=String(input.id||"").trim();if(!id)return json({success:false,error:"邀请码参数无效"},400);
+  const raw=await get(env,"invite-codes:index");let ids=[];
+  if(raw){try{ids=typeof raw==="string"?JSON.parse(raw):raw}catch{return json({success:false,code:"INVITE_INDEX_INVALID",error:"邀请码索引数据异常，请联系管理员处理"},409)}if(!Array.isArray(ids))return json({success:false,code:"INVITE_INDEX_INVALID",error:"邀请码索引数据异常，请联系管理员处理"},409)}
+  const targetRaw=await get(env,"invite-code:"+id);if(!targetRaw)return json({success:false,error:"邀请码不存在"},404);
+  let target;try{target=typeof targetRaw==="string"?JSON.parse(targetRaw):targetRaw}catch{return json({success:false,code:"INVITE_DATA_INVALID",error:"邀请码数据异常，请联系管理员处理"},409)}
+  if(!target||target.id!==id||typeof target.code!=="string"||!target.code)return json({success:false,code:"INVITE_DATA_INVALID",error:"邀请码数据异常，请联系管理员处理"},409);
+  const indexKey="zp:invite-codes:index",key="zp:invite-code:"+id,codeKey="zp:invite-code:code:"+target.code;
+  const script="local raw=redis.call('GET',KEYS[1]); if not raw then return 2 end; local ok,ids=pcall(cjson.decode,raw); if not ok or type(ids)~='table' then return 3 end; local found=false; local next={}; for _,x in ipairs(ids) do if x==ARGV[1] then found=true else table.insert(next,x) end end; if not found then return 4 end; local main=redis.call('GET',KEYS[2]); local code=redis.call('GET',KEYS[3]); if not main or not code then return 5 end; local okm,m=pcall(cjson.decode,main); local okc,c=pcall(cjson.decode,code); if not okm or type(m)~='table' or not okc or type(c)~='table' then return 6 end; if m.id~=ARGV[1] or c.id~=ARGV[1] or m.code~=c.code or m.code~=ARGV[2] then return 7 end; m.enabled=false; m.removedAt=ARGV[3]; c.enabled=false; c.removedAt=ARGV[3]; redis.call('SET',KEYS[2],cjson.encode(m)); redis.call('SET',KEYS[3],cjson.encode(c)); redis.call('SET',KEYS[1],cjson.encode(next)); return 1";
+  const result=Number(await command(env,["EVAL",script,"3",indexKey,key,codeKey,id,target.code,new Date().toISOString()]));
+  if(result===2||result===3)return json({success:false,code:"INVITE_INDEX_INVALID",error:"邀请码索引数据异常，请联系管理员处理"},409);
+  if(result===4)return json({success:false,error:"邀请码已不存在，请刷新后重试"},404);
+  if(result===5||result===6)return json({success:false,code:"INVITE_DATA_INVALID",error:"邀请码数据异常，请联系管理员处理"},409);
+  if(result===7)return json({success:false,code:"INVITE_DATA_INCONSISTENT",error:"邀请码数据不一致，请联系管理员处理"},409);
+  return json({success:true,removed:id});
  }
  if(action==="disable"||action==="enable"){
   const id=String(input.id||"").trim(); if(!id)return json({success:false,error:"邀请码参数无效"},400);
