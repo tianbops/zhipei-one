@@ -15,7 +15,7 @@ function check(name, cond, info) {
   const red = makeUpstash(new MiniRedis());
   const env = { UPSTASH_REDIS_REST_URL: "https://upstash.local", UPSTASH_REDIS_REST_TOKEN: "x" };
   const mod = await import("../functions/api/waybills/_waybill-proc.js");
-  const { beginProc, failProc, getProc, finishProc, PROC_STAGES } = mod;
+  const { beginProc, failProc, getProc, finishProc, claimProcSave, cancelProc, PROC_STAGES } = mod;
 
   console.log("【A】状态枚举与初始 PROCESSING");
   check("导出 PROC_STAGES 含 6 个状态（含视图态 STALLED）", PROC_STAGES.length === 6 && PROC_STAGES.includes("PROCESSING") && PROC_STAGES.includes("STALLED") && PROC_STAGES.includes("DONE") && PROC_STAGES.includes("TIMEOUT") && PROC_STAGES.includes("FAILED") && PROC_STAGES.includes("CANCELLED"));
@@ -49,7 +49,26 @@ function check(name, cond, info) {
   const g3 = await getProc(env, rid3);
   check("getProc 读回 DONE + waybillId", g3.stage === "DONE" && g3.waybillId === "wb-abc");
 
-  console.log("【E】边界：缺少 requestId 安全返回 null");
+  console.log("【E】保存声明与取消竞态：取消先赢 → 禁止保存");
+  const rid4 = "req-unit-race-cancel-first";
+  await beginProc(env, { requestId: rid4, routeId: "route-x", userId: "u1" });
+  const cancelledFirst = await cancelProc(env, rid4, { action: "REPROCESS", hint: "已取消" });
+  const claimAfterCancel = await claimProcSave(env, rid4);
+  check("取消先成功", cancelledFirst === true);
+  check("取消后保存声明失败", claimAfterCancel === false);
+  check("取消终态保持 CANCELLED", (await getProc(env, rid4)).stage === "CANCELLED");
+
+  console.log("【F】保存声明先赢 → 迟到取消不得覆盖，最终 DONE");
+  const rid5 = "req-unit-race-save-first";
+  await beginProc(env, { requestId: rid5, routeId: "route-x", userId: "u1" });
+  const claimFirst = await claimProcSave(env, rid5);
+  const cancelledLate = await cancelProc(env, rid5, { action: "REPROCESS", hint: "已取消" });
+  const doneAfterClaim = await finishProc(env, rid5, "wb-race");
+  check("保存声明成功", claimFirst === true);
+  check("保存声明后迟到取消被拒绝", cancelledLate === false);
+  check("保存完成后终态为 DONE", doneAfterClaim && doneAfterClaim.stage === "DONE" && doneAfterClaim.waybillId === "wb-race");
+
+  console.log("【G】边界：缺少 requestId 安全返回 null");
   check("beginProc(null) 返回 null", (await beginProc(env, { requestId: null, routeId: "r", userId: "u" })) === null);
   check("getProc(unknown) 返回 null", (await getProc(env, "nope")) === null);
 
