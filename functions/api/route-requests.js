@@ -3,13 +3,22 @@ import {currentUser} from "./_auth.js";
 import {get,command,newId} from "./_redis.js";
 import {getRoute,validDuty} from "./_route.js";
 import {canUseRoute,isSystemAdmin} from "./_permissions.js";
+import {Budget,mgetBatchMap,throwBudgetExceeded,SUBREQUEST_LIMIT} from "./_redis-budget.js";
 function parse(v){try{return typeof v==="string"?JSON.parse(v):v}catch{return null}}
 async function loadRequest(env,id){return parse(await get(env,"route-request:"+id))}
 async function list(env){const raw=await get(env,"route-requests:index");if(!raw)return [];const v=parse(raw);if(!Array.isArray(v))throw Object.assign(new Error("ROUTE_REQUEST_INDEX_INVALID"),{code:"ROUTE_REQUEST_INDEX_INVALID"});return v}
 export async function onRequestGet({request,env}){
  const user=await currentUser(request,env);if(!user)return json({success:false,error:"未登录"},401);
- let ids;try{ids=await list(env)}catch{return json({success:false,code:"ROUTE_REQUEST_INDEX_INVALID",error:"线路申请索引数据异常，请联系管理员处理"},409)} const items=[];
- for(const id of Array.isArray(ids)?ids:[]){if(typeof id!=="string"||!id)return json({success:false,code:"ROUTE_REQUEST_INDEX_INVALID",error:"线路申请索引数据异常，请联系管理员处理"},409);const x=await loadRequest(env,id);if(!x)return json({success:false,code:"ROUTE_REQUEST_DATA_INVALID",error:"线路申请索引包含缺失或损坏的申请记录，请联系管理员处理"},409);if(typeof x.id!=="string"||x.id!==id||typeof x.userId!=="string"||typeof x.routeId!=="string"||!validDuty(x.duty)||!["pending","approved","rejected"].includes(x.status))return json({success:false,code:"ROUTE_REQUEST_DATA_INVALID",error:"线路申请数据异常，请联系管理员处理"},409);if(isSystemAdmin(user)?x.status==="pending":x.userId===user.id)items.push(x)}
+ let ids;try{ids=await list(env)}catch{return json({success:false,code:"ROUTE_REQUEST_INDEX_INVALID",error:"线路申请索引数据异常，请联系管理员处理"},409)}
+ const all=Array.isArray(ids)?ids:[];
+ for(const id of all){if(typeof id!=="string"||!id)return json({success:false,code:"ROUTE_REQUEST_INDEX_INVALID",error:"线路申请索引数据异常，请联系管理员处理"},409)}
+ // P1-04 收口：原实现逐条 loadRequest（每条 1 个 GET）= N 子请求，
+ // 现统一 MGET 分批 + 共享 Budget，预算不足即抛错，绝不返回「只列了一半申请」的 success。
+ const budget=new Budget(SUBREQUEST_LIMIT);
+ const {map,complete}=await mgetBatchMap(env,all.map(id=>"zp:route-request:"+id),budget,{batch:100});
+ if(!complete)throwBudgetExceeded(budget.max,"route-requests-list");
+ const items=[];
+ for(const id of all){const x=parse(map.get("zp:route-request:"+id));if(!x)return json({success:false,code:"ROUTE_REQUEST_DATA_INVALID",error:"线路申请索引包含缺失或损坏的申请记录，请联系管理员处理"},409);if(typeof x.id!=="string"||x.id!==id||typeof x.userId!=="string"||typeof x.routeId!=="string"||!validDuty(x.duty)||!["pending","approved","rejected"].includes(x.status))return json({success:false,code:"ROUTE_REQUEST_DATA_INVALID",error:"线路申请数据异常，请联系管理员处理"},409);if(isSystemAdmin(user)?x.status==="pending":x.userId===user.id)items.push(x)}
  return json({success:true,requests:items});
 }
 export async function onRequestPost({request,env}){

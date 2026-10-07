@@ -3,20 +3,18 @@ import {currentUser} from "../_auth.js";
 import {resolveGlobalConflict,listGlobalConflicts,isolateGlobalRecord,restoreGlobalRecord} from "../_global-learning.js";
 import {isSystemAdmin} from "../_permissions.js";
 import {command} from "../_redis.js";
+import {Budget,hscanBudgeted,SUBREQUEST_LIMIT} from "../_redis-budget.js";
 
 /** 列出被隔离（QUARANTINED）的全局学习记录，供管理员人工处理。 */
 async function listQuarantined(env,{limit=100}={}){
  const size=Math.min(200,Math.max(1,Number(limit)||100));
- const out=[];let cursor="0";
- do{
-  const r=await command(env,["HSCAN","zp:global:learning:records",cursor,"COUNT",String(Math.min(200,size*2))]);
-  cursor=String(r?.[0]??"0");
-  const data=Array.isArray(r?.[1])?r[1]:[];
-  for(let i=0;i<data.length;i+=2){const rec=JSON.parse(data[i+1]||"null");if(rec&&rec.status==="QUARANTINED")out.push(rec);if(out.length>=size)break}
-  if(out.length>=size||cursor==="0")break;
- }while(true);
+ // P1-05 收口：原为裸 HSCAN + do{...}while(true)，无预算上限 → 记录量大时越过平台子请求硬限。
+ const budget=new Budget(SUBREQUEST_LIMIT);
+ const {entries,complete}=await hscanBudgeted(env,"zp:global:learning:records",budget,{count:200});
+ const out=[];
+ for(const [,raw]of entries){const rec=JSON.parse(raw||"null");if(rec&&rec.status==="QUARANTINED")out.push(rec);if(out.length>=size)break}
  out.sort((a,b)=>String(b.quarantinedAt||b.updatedAt||"").localeCompare(String(a.quarantinedAt||a.updatedAt||"")));
- return{records:out,count:out.length};
+ return{records:out,count:out.length,partial:!complete};
 }
 
 export async function onRequestGet({request,env}){

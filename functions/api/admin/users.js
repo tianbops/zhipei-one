@@ -6,8 +6,10 @@ import {atomicBind,atomicUnbind} from "../_binding.js";
 import {getRoute} from "../_route.js";
 import {isSystemAdmin} from "../_permissions.js";
 async function read(env,id){const raw=await get(env,"user:"+id);if(!raw)return null;try{return typeof raw==="string"?JSON.parse(raw):raw}catch{return null}}
+// 批量路径的解析助手：与 read() 同语义（坏数据视为缺失，交由调用方报 USER_DATA_INVALID）
+function parseUser(raw){if(raw===null||raw===undefined)return null;if(typeof raw==="object")return raw;try{return JSON.parse(raw)}catch{return null}}
 async function ids(env){const raw=await get(env,"users:index");if(!raw)return [];try{const v=typeof raw==="string"?JSON.parse(raw):raw;if(!Array.isArray(v))throw new Error("INVALID_INDEX");return v}catch{throw Object.assign(new Error("USER_INDEX_INVALID"),{code:"USER_INDEX_INVALID"})}}
-async function safe(env,u){const r=u.boundRouteId?await getRoute(env,u.boundRouteId):null;return {id:u.id,username:u.username,name:u.name||"",role:u.role||"user",disabled:!!u.disabled,boundRouteId:u.boundRouteId||null,routeDuty:u.routeDuty||null,routeName:r?.name||null,createdAt:u.createdAt||null}}
+async function safe(env,u,routeMap=null){const r=u.boundRouteId?(routeMap?routeMap.get(u.boundRouteId)||null:await getRoute(env,u.boundRouteId)):null;return {id:u.id,username:u.username,name:u.name||"",role:u.role||"user",disabled:!!u.disabled,boundRouteId:u.boundRouteId||null,routeDuty:u.routeDuty||null,routeName:r?.name||null,createdAt:u.createdAt||null}}
 async function loadRequestIds(env){const raw=await get(env,"route-requests:index");if(!raw)return [];try{const v=typeof raw==="string"?JSON.parse(raw):raw;if(!Array.isArray(v)||v.some(x=>typeof x!=="string"||!x.trim()))throw 0;return v}catch{return null}}
 // 删用户时清理其会话：原实现 SCAN zp:session:* 全键空间遍历，会话多时 O(总会话数) 子请求 → 潜在 1101。
 // 现统一收口到 _redis-budget.js：scanKeysBudgeted 受预算 + 迭代上限约束，MGET 分批(100)，绝不静默越限。
@@ -48,7 +50,34 @@ async function cleanupUserRequests(env,userId){
  }
  return removed;
 }
-export async function onRequestGet({request,env}){const actor=await currentUser(request,env);if(!actor||!isSystemAdmin(actor))return json({success:false,error:"无权限"},403);let userIds;try{userIds=await ids(env)}catch{return json({success:false,code:"USER_INDEX_INVALID",error:"用户索引数据异常，请联系管理员处理"},409)}const list=[];for(const id of userIds){const u=await read(env,id);if(!u)return json({success:false,code:"USER_DATA_INVALID",error:"用户索引包含缺失或损坏的用户数据，请联系管理员处理"},409);list.push(await safe(env,u))}return json({success:true,users:list})}
+// P1-02 收口：原实现 for(userIds){ read(逐个 GET 用户) → safe(内含逐个 GET 线路) }，
+// 用户数 N 时子请求达 2N（用户 + 线路各一遍），必然越过 Workers 每请求约 50 子请求上限 → Error 1101。
+// 现统一收口到 _redis-budget.js：用户 MGET 分批(100) + 线路 MGET 分批(100)，共享同一 Budget，
+// 任一批次预算不足即 throwBudgetExceeded，绝不返回「只列了一半用户」的 success。
+export async function onRequestGet({request,env}){
+ const actor=await currentUser(request,env);
+ if(!actor||!isSystemAdmin(actor))return json({success:false,error:"无权限"},403);
+ let userIds;try{userIds=await ids(env)}catch{return json({success:false,code:"USER_INDEX_INVALID",error:"用户索引数据异常，请联系管理员处理"},409)}
+ const budget=new Budget(SUBREQUEST_LIMIT);
+ const {map,complete}=await mgetBatchMap(env,userIds.map(id=>"zp:user:"+id),budget,{batch:100});
+ if(!complete)throwBudgetExceeded(budget.max,"admin-users-list");
+ const users=[];
+ for(const id of userIds){
+  const u=parseUser(map.get("zp:user:"+id));
+  if(!u)return json({success:false,code:"USER_DATA_INVALID",error:"用户索引包含缺失或损坏的用户数据，请联系管理员处理"},409);
+  users.push(u);
+ }
+ // 线路名同样批量取，避免「每用户一次 GET route」的第二个 O(N)
+ const routeIds=[...new Set(users.map(u=>String(u.boundRouteId||"")).filter(Boolean))];
+ const routeMap=new Map();
+ if(routeIds.length){
+  const {map:rmap,complete:rOk}=await mgetBatchMap(env,routeIds.map(rid=>"zp:route:"+rid),budget,{batch:100});
+  if(!rOk)throwBudgetExceeded(budget.max,"admin-users-routes");
+  for(const rid of routeIds){const r=parseUser(rmap.get("zp:route:"+rid));if(r)routeMap.set(rid,r)}
+ }
+ const list=[];for(const u of users)list.push(await safe(env,u,routeMap));
+ return json({success:true,users:list});
+}
 export async function onRequestPost({request,env}){const actor=await currentUser(request,env);if(!actor||!isSystemAdmin(actor))return json({success:false,error:"无权限"},403);const input=await body(request);const action=String(input.action||"");const id=String(input.userId||"");const u=await read(env,id);if(!u)return json({success:false,error:"用户不存在"},404);if(isSystemAdmin(u))return json({success:false,error:"系统管理员账号不能通过此接口修改"},403);
 if(action==="disable"||action==="enable"){
  const disabling=action==="disable";

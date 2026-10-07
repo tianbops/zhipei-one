@@ -3,10 +3,37 @@ import {currentUser} from "../_auth.js";
 import {get,command} from "../_redis.js";
 import {getRoute} from "../_route.js";
 import {isSystemAdmin} from "../_permissions.js";
+import {Budget,mgetBatchMap,throwBudgetExceeded,SUBREQUEST_LIMIT} from "../_redis-budget.js";
 function parse(v){try{return typeof v==="string"?JSON.parse(v):v}catch{return null}}
 async function req(env,id){return parse(await get(env,"route-request:"+id))}
 async function user(env,id){return parse(await get(env,"user:"+id))}
-export async function onRequestGet({request,env}){const actor=await currentUser(request,env);if(!actor||!isSystemAdmin(actor))return json({success:false,error:"无权限"},403);const raw=await get(env,"route-requests:index");let ids;if(!raw)ids=[];else{ids=parse(raw);if(!Array.isArray(ids))return json({success:false,code:"ROUTE_REQUEST_INDEX_INVALID",error:"线路申请索引数据异常，请联系管理员处理"},409)}const out=[];for(const id of ids){if(typeof id!=="string"||!id.trim())return json({success:false,code:"ROUTE_REQUEST_DATA_INVALID",error:"线路申请索引包含无效数据，请联系管理员处理"},409);const x=await req(env,id);if(!x||x.id!==id||typeof x.userId!=="string"||typeof x.routeId!=="string"||!["driver","delivery"].includes(x.duty)||!["pending","approved","rejected"].includes(x.status))return json({success:false,code:"ROUTE_REQUEST_DATA_INVALID",error:"线路申请数据异常，请联系管理员处理"},409);const u=await user(env,x.userId);const r=await getRoute(env,x.routeId);if(!u||u.id!==x.userId||typeof u.username!=="string"||!r||r.id!==x.routeId||typeof r.name!=="string"||!r.name.trim())return json({success:false,code:"ROUTE_REQUEST_DATA_INVALID",error:"线路申请关联数据异常，请联系管理员处理"},409);if(x.status==="pending")out.push({...x,username:u.username,name:u.name||"",routeName:r.name})}return json({success:true,requests:out})}
+// P1-04 收口：原实现对每条申请各 GET 一次申请 + 一次用户 + 一次线路 = 3N 子请求，
+// 申请数上百即越过 Workers 每请求约 50 子请求上限 → Error 1101。
+// 现统一收口到 _redis-budget.js：申请 / 用户 / 线路各自 MGET 分批(100)，共享同一 Budget，
+// 任一批次预算不足即 throwBudgetExceeded，绝不返回「只审了一部分申请」的 success。
+export async function onRequestGet({request,env}){
+ const actor=await currentUser(request,env);if(!actor||!isSystemAdmin(actor))return json({success:false,error:"无权限"},403);
+ const raw=await get(env,"route-requests:index");let ids;if(!raw)ids=[];else{ids=parse(raw);if(!Array.isArray(ids))return json({success:false,code:"ROUTE_REQUEST_INDEX_INVALID",error:"线路申请索引数据异常，请联系管理员处理"},409)}
+ for(const id of ids){if(typeof id!=="string"||!id.trim())return json({success:false,code:"ROUTE_REQUEST_DATA_INVALID",error:"线路申请索引包含无效数据，请联系管理员处理"},409)}
+ const budget=new Budget(SUBREQUEST_LIMIT);
+ const {map:reqMap,complete:reqOk}=await mgetBatchMap(env,ids.map(id=>"zp:route-request:"+id),budget,{batch:100});
+ if(!reqOk)throwBudgetExceeded(budget.max,"admin-route-requests-list");
+ const items=[];
+ for(const id of ids){const x=parse(reqMap.get("zp:route-request:"+id));if(!x||x.id!==id||typeof x.userId!=="string"||typeof x.routeId!=="string"||!["driver","delivery"].includes(x.duty)||!["pending","approved","rejected"].includes(x.status))return json({success:false,code:"ROUTE_REQUEST_DATA_INVALID",error:"线路申请数据异常，请联系管理员处理"},409);items.push(x)}
+ // 仅对 pending 申请批量取关联用户 / 线路（已处理的不需要，省下子请求）
+ const pending=items.filter(x=>x.status==="pending");
+ const userIds=[...new Set(pending.map(x=>x.userId))],routeIds=[...new Set(pending.map(x=>x.routeId))];
+ const userMap=new Map(),routeMap=new Map();
+ if(userIds.length){const {map,complete}=await mgetBatchMap(env,userIds.map(uid=>"zp:user:"+uid),budget,{batch:100});if(!complete)throwBudgetExceeded(budget.max,"admin-route-requests-users");for(const uid of userIds)userMap.set(uid,parse(map.get("zp:user:"+uid)))}
+ if(routeIds.length){const {map,complete}=await mgetBatchMap(env,routeIds.map(rid=>"zp:route:"+rid),budget,{batch:100});if(!complete)throwBudgetExceeded(budget.max,"admin-route-requests-routes");for(const rid of routeIds)routeMap.set(rid,parse(map.get("zp:route:"+rid)))}
+ const out=[];
+ for(const x of pending){
+  const u=userMap.get(x.userId),r=routeMap.get(x.routeId);
+  if(!u||u.id!==x.userId||typeof u.username!=="string"||!r||r.id!==x.routeId||typeof r.name!=="string"||!r.name.trim())return json({success:false,code:"ROUTE_REQUEST_DATA_INVALID",error:"线路申请关联数据异常，请联系管理员处理"},409);
+  out.push({...x,username:u.username,name:u.name||"",routeName:r.name});
+ }
+ return json({success:true,requests:out});
+}
 export async function onRequestPost({request,env}){const actor=await currentUser(request,env);if(!actor||!isSystemAdmin(actor))return json({success:false,error:"无权限"},403);const input=await body(request);const id=String(input.requestId||"").trim();const action=String(input.action||"");if(!id||!["approve","reject"].includes(action))return json({success:false,error:"审核参数无效"},400);const item=await req(env,id);if(!item||item.status!=="pending")return json({success:false,error:"申请不存在或已处理"},409);if(action==="reject"){const reqKey="zp:route-request:"+id;const now=new Date().toISOString();const script="local raw=redis.call('GET',KEYS[1]); if not raw then return 2 end; local ok,q=pcall(cjson.decode,raw); if not ok or type(q)~='table' then return 4 end; if q.status~='pending' then return 3 end; q.status='rejected'; q.reviewedAt=ARGV[1]; q.reviewedBy=ARGV[2]; redis.call('SET',KEYS[1],cjson.encode(q)); return 1"; const code=await command(env,["EVAL",script,"1",reqKey,now,actor.id]); if(code===4)return json({success:false,code:"ROUTE_REQUEST_INVALID",error:"申请数据异常，请联系管理员处理"},409); if(code!==1)return json({success:false,error:"申请不存在或已处理"},409); return json({success:true,request:{...item,status:"rejected",reviewedAt:now,reviewedBy:actor.id}})}
 const r=await getRoute(env,item.routeId);const u=await user(env,item.userId);if(!r||r.status!=="active"||!u||u.disabled)return json({success:false,error:"线路或用户状态已变化"},409);
 const userKey="zp:user:"+u.id,routeKey="zp:route:"+r.id,reqKey="zp:route-request:"+id;

@@ -101,6 +101,34 @@ class MiniRedis {
     for (let i = start; i < end; i++) if (re.test(all[i])) matched.push(all[i]);
     return [end >= all.length ? "0" : String(end), matched];
   }
+  /**
+   * 真实 Redis HSCAN 语义：游标在**哈希 field 槽位**上前进，每次调用只前进 COUNT 个槽位。
+   * 生产代码形如 HSCAN <key> <cursor> [MATCH pat] [COUNT n] —— 参数位置固定，
+   * 旧实现把 a[2]（此处是 "COUNT"）当成 MATCH 模式、且一次返回全部，
+   * 导致本地测试永远扫不出多轮往返，2026-10-07 的 HSCAN 无预算风险在本地完全不可见。
+   */
+  _hscan(key, cursor, args) {
+    const h = this.hashes.get(key);
+    if (!h) return ["0", []];
+    const fields = [...h.keys()];
+    // MATCH / COUNT 均为可选且顺序不固定，需按 token 解析（生产代码只传 COUNT）
+    let matchPat = "*", count = 10;
+    for (let i = 0; i < args.length; i++) {
+      const t = String(args[i]).toUpperCase();
+      if (t === "MATCH") matchPat = args[++i];
+      else if (t === "COUNT") count = args[++i];
+    }
+    const step = Math.max(1, Number(count) || 10);
+    let start = Number(cursor) || 0;
+    if (!Number.isFinite(start) || start < 0) start = 0;
+    if (start >= fields.length) return ["0", []];
+    const end = Math.min(start + step, fields.length);
+    const p = String(matchPat).replace(/[-/\\^$+?.()|{}]/g, "\\$&").replace(/\*/g, ".*");
+    const re = new RegExp("^" + p + "$");
+    const flat = [];
+    for (let i = start; i < end; i++) { const f = fields[i]; if (re.test(f)) flat.push(f, h.get(f)); }
+    return [end >= fields.length ? "0" : String(end), flat];
+  }
   command(parts) {
     const cmd = String(parts[0]).toUpperCase();
     const a = parts.slice(1);
@@ -134,8 +162,8 @@ class MiniRedis {
       case "HDEL": { const h = this.hashes.get(a[0]); if (!h) return 0; let n = 0; for (let i = 1; i < a.length; i++) if (h.delete(a[i])) n++; return n; }
       case "HLEN": { const h = this.hashes.get(a[0]); return h ? h.size : 0; }
       case "HSCAN": {
-        const flat = []; for (const k of this._scanKeys(a[2] || "*")) { const h = this.hashes.get(k); if (h) for (const [f, v] of h) flat.push(f, v); }
-        return ["0", flat];
+        const [cursor, flat] = this._hscan(a[0], a[1], a);
+        return [cursor, flat];
       }
       case "RPUSH": { const key = a[0]; let l = this.lists.get(key); if (!l) { l = []; this.lists.set(key, l); } for (let i = 1; i < a.length; i++) l.push(a[i]); return l.length; }
       case "LTRIM": { const l = this.lists.get(a[0]); if (!l) return "OK"; let start = Number(a[1]), stop = Number(a[2]); if (stop < 0) stop = l.length + stop; const nw = l.slice(start, stop + 1); this.lists.set(a[0], nw); return "OK"; }

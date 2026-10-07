@@ -5,7 +5,7 @@ import {canUseRoute} from "./_permissions.js";
 import {canReadWaybill,canWriteWaybill} from "./_waybill-acl.js";
 import {getRoute} from "./_route.js";
 import {dailyWaybillKey} from "./_waybill-identity.js";
-import {Budget,scanKeysBudgeted,throwBudgetExceeded,SUBREQUEST_BUDGET_EXCEEDED} from "./_redis-budget.js";
+import {Budget,scanKeysBudgeted,mgetBatchMap,throwBudgetExceeded,SUBREQUEST_BUDGET_EXCEEDED} from "./_redis-budget.js";
 
 const clean=v=>String(v??"").trim();
 const todayCN=()=>{const parts=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());const values=Object.fromEntries(parts.filter(p=>p.type!=="literal").map(p=>[p.type,p.value]));return `${values.year}-${values.month}-${values.day}`;};
@@ -21,14 +21,22 @@ const waybillIndexKey=(routeId,date)=>"zp:route:"+routeId+":waybills:"+date;
 
 async function readWaybills(env,ids,budget=null){
  const cleanIds=[...new Set((ids||[]).map(clean).filter(Boolean))];if(!cleanIds.length)return [];
+ const decode=raw=>{if(!raw)return null;try{const x=typeof raw==="string"?JSON.parse(raw):raw;return historyReadable(x)?x:null}catch{return null}};
  try{
   if(budget&&!budget.take(1))throwBudgetExceeded(budget.max,"history-read-waybills");
   const rawList=await command(env,["MGET",...cleanIds.map(id=>"zp:waybill:"+id)]);
-  return (Array.isArray(rawList)?rawList:[]).map(raw=>{if(!raw)return null;try{const x=typeof raw==="string"?JSON.parse(raw):raw;return historyReadable(x)?x:null}catch{return null}}).filter(Boolean);
+  return (Array.isArray(rawList)?rawList:[]).map(decode).filter(Boolean);
  }catch(error){
-  if(budget)throw error;
+  // MGET 失败（如单次 URL 过长被拒）时降级为**分批** MGET，而非无预算的逐条 GET 循环
+  if(budget){
+   if(error?.code===SUBREQUEST_BUDGET_EXCEEDED)throw error;
+   const {map,complete}=await mgetBatchMap(env,cleanIds.map(id=>"zp:waybill:"+id),budget,{batch:100});
+   if(!complete)throwBudgetExceeded(budget.max,"history-read-waybills-fallback");
+   const out=[];for(const id of cleanIds){const w=decode(map.get("zp:waybill:"+id));if(w)out.push(w)}
+   return out;
+  }
   const out=[];
-  for(const id of cleanIds){const raw=await get(env,"waybill:"+id);try{const x=typeof raw==="string"?JSON.parse(raw):raw;if(historyReadable(x))out.push(x)}catch{}}
+  for(const id of cleanIds){const raw=await get(env,"waybill:"+id);const w=decode(raw);if(w)out.push(w)}
   return out;
  }
 }
@@ -45,14 +53,19 @@ async function readDateWaybills(env,user,routeId,date,budget=null){
  return waybills.filter(w=>w.routeId===routeId&&w.date===date&&canReadWaybill(user,w,env)).sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
 }
 
-async function readDateWaybillsBatch(env,user,entries){
+async function readDateWaybillsBatch(env,user,entries,budget=null){
  const out=new Map();const valid=entries.filter(Boolean);
+ // P1-06 收口：原实现调 readWaybills 时**不传 budget**，一旦 MGET 失败就静默降级为
+ // 「逐条 GET waybill」的 O(N) 循环且无任何预算约束 → 大范围历史查询必然越过平台硬限。
+ // 现把 budget 一路透传：预算不足即抛 SUBREQUEST_BUDGET_EXCEEDED，
+ // 由调用方转成结构化 503「请缩小范围」，而不是把 worker 拖到 Error 1101。
  for(let i=0;i<valid.length;i+=50){
   const chunk=valid.slice(i,i+50);
+  if(budget&&!budget.take(1))throwBudgetExceeded(budget.max,"history-read-dates-batch");
   const results=await pipeline(env,chunk.map(x=>["SMEMBERS",waybillIndexKey(x.routeId,x.date)]));
   const allIds=[];const idsByDate=new Map();
   for(let j=0;j<chunk.length;j++){const ids=Array.isArray(results?.[j])?results[j].map(clean).filter(Boolean):[];idsByDate.set(chunk[j].date,ids);allIds.push(...ids)}
-  const waybills=await readWaybills(env,allIds);
+  const waybills=await readWaybills(env,allIds,budget);
   const byId=new Map(waybills.map(w=>[w.id,w]));
   for(const entry of chunk){
    const ids=idsByDate.get(entry.date)||[];
@@ -115,7 +128,19 @@ export async function onRequestGet({request,env}){
    const waybills=await readDateWaybills(env,user,routeId,date),enriched=[];for(const w of waybills)enriched.push(await enrich(w));
    return json({success:true,routeId,date,waybills:enriched,count:enriched.length,waybillIds:enriched.map(w=>w.id),hasMultiple:enriched.length>1});
   }
-  const entries=await readDates(env,routeId,range),batch=await readDateWaybillsBatch(env,user,entries),dates=[];
+  // P1-06 收口：readDates / readDateWaybillsBatch 共享同一 Budget，
+ // 预算不足即抛 SUBREQUEST_BUDGET_EXCEEDED → 转结构化 503「请缩小查询范围」，
+ // 而不是让 worker 在无预算的裸循环里撞上平台硬限（Error 1101）。
+ const budget=new Budget();
+ let entries,batch;
+ try{
+  entries=await readDates(env,routeId,range,budget);
+  batch=await readDateWaybillsBatch(env,user,entries,budget);
+ }catch(e){
+  if(e?.code===SUBREQUEST_BUDGET_EXCEEDED)return json({success:false,code:"PARTIAL_FAILURE",error:"历史查询范围过大，请缩小查询月份后重试",range,budgetUsed:budget.used,budgetMax:budget.max},503);
+  throw e;
+ }
+ const dates=[];
   for(const entry of entries){
    const list=batch.get(entry.date)||[];if(!list.length)continue;
    const storeCount=list.reduce((sum,w)=>sum+(Number(w.summary?.total)||w.stores.length),0),totalWeight=list.reduce((sum,w)=>sum+(Number(w.totalWeight)||0),0);

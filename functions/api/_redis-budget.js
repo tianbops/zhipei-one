@@ -91,6 +91,46 @@ export async function scanKeysBudgeted(env, pattern, budget, { count = SCAN_COUN
   return { keys, complete };
 }
 
+/**
+ * 预算受控 HSCAN：与 scanKeysBudgeted 同语义，但作用于**单个哈希的 field 槽位**。
+ * 每次迭代 = 1 个子请求（游标分页的真实 Workers 成本）。
+ * 原 listGlobalConflicts / listQuarantined 是裸 do{...}while(true) 的 HSCAN，
+ * 记录哈希涨到几万条时必然越过平台每请求约 50 子请求上限 → Error 1101。
+ *
+ * 返回值带 cursor：HSCAN 游标本就是服务端不透明状态，**跨请求续扫是合法的**，
+ * 因此这里不抛错而是返回 complete=false，由调用方把 cursor 透给前端继续翻页
+ * （列表类读路径可续清，不该像写路径那样整请求失败）。写路径请自行判断是否 throw。
+ *
+ * 诚实性约定（勿改）：
+ *   1. 截断时**绝不**把 cursor 伪造成 "0"——那会让前端以为已扫完、从此漏掉全部剩余记录。
+ *      cursor 始终是真实的「下一轮起始位置」。
+ *   2. 键数上限只在**批次边界**判定：单批 field 要么整批收下、要么整批不扫，
+ *      绝不「收一半丢一半」——否则被丢字段永远续扫不回来。
+ *
+ * @returns {{entries:Array<[string,string]>, cursor:string, complete:boolean}}
+ */
+export async function hscanBudgeted(env, key, budget, { match = "*", count = SCAN_COUNT, iterCap = Infinity, cap = KEY_CAP, cursor: startCursor = "0" } = {}) {
+  const entries = [];
+  let complete = true;
+  let cursor = String(startCursor ?? "0");
+  let iter = 0;
+  do {
+    // 预算/迭代上限：在**发起本次请求之前**判定，此时 cursor 仍指向未扫描的起点，可安全续扫
+    if (iter >= iterCap || !budget.take(1)) { complete = false; break; }
+    // 键数上限同样在批次边界判定：本批要么整批取回（可能超 cap 但绝不丢字段）
+    if (entries.length >= cap) { complete = false; break; }
+    const parts = ["HSCAN", key, cursor];
+    if (match && match !== "*") parts.push("MATCH", match);
+    parts.push("COUNT", String(count));
+    const r = await command(env, parts);
+    cursor = String(r?.[0] ?? "0");
+    iter++;
+    const data = Array.isArray(r?.[1]) ? r[1] : [];
+    for (let i = 0; i + 1 < data.length; i += 2) entries.push([String(data[i]), data[i + 1]]);
+  } while (cursor !== "0");
+  return { entries, cursor, complete };
+}
+
 /** 批量 MGET：N 个子请求压成 ceil(N/BATCH)，返回 Map(key -> raw) */
 export async function mgetBatchMap(env, keys, budget, { batch = MGET_BATCH } = {}) {
   const out = new Map();
@@ -157,6 +197,6 @@ export function createScopedClient(env, max = SUBREQUEST_LIMIT) {
 
 export default {
   Budget, SUBREQUEST_BUDGET_EXCEEDED, throwBudgetExceeded,
-  scanKeysBudgeted, mgetBatchMap, mgetBatchList, smembersBatch, createScopedClient,
+  scanKeysBudgeted, hscanBudgeted, mgetBatchMap, mgetBatchList, smembersBatch, createScopedClient,
   SUBREQUEST_LIMIT, SCAN_COUNT, KEY_CAP, MGET_BATCH, PIPELINE_BATCH,
 };

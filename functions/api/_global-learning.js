@@ -1,4 +1,5 @@
 import {get,set,newId,command} from "./_redis.js";
+import {Budget,hscanBudgeted,SUBREQUEST_LIMIT} from "./_redis-budget.js";
 
 const KEY="global:learning";
 const RECORDS=KEY+":records";
@@ -61,7 +62,18 @@ return {"OK",tostring(version)}`;
 }
 
 
-export async function listGlobalConflicts(env,{limit=100,cursor="0"}={}){const size=Math.min(200,Math.max(1,Number(limit)||100));let cur=String(cursor||"0");const out=[];do{const r=await command(env,["HSCAN","zp:"+RECORDS,cur,"COUNT",String(Math.min(200,size*2))]);cur=String(r?.[0]??"0");const data=Array.isArray(r?.[1])?r[1]:[];for(let i=0;i<data.length;i+=2){const rec=parse(data[i+1],null);if(rec&&rec.status==="CONFLICT")out.push(rec);if(out.length>=size)break}if(out.length>=size||cur==="0")break}while(true);out.sort((a,b)=>String(b.updatedAt||b.createdAt||"").localeCompare(String(a.updatedAt||a.createdAt||"")));return{records:out,cursor:cur,hasMore:cur!=="0"}}
+export async function listGlobalConflicts(env,{limit=100,cursor="0"}={}){
+ const size=Math.min(200,Math.max(1,Number(limit)||100));
+ // P1-05 收口：原实现是裸 HSCAN + do{...}while(true)，记录哈希涨到几万条时
+ // 必然越过 Workers 每请求约 50 子请求上限 → Error 1101。现统一走 hscanBudgeted，
+ // 预算/迭代上限截断即返回 partial=true + 续扫游标，绝不静默假装扫完了。
+ const budget=new Budget(SUBREQUEST_LIMIT);
+ const {entries,cursor:endCur,complete}=await hscanBudgeted(env,"zp:"+RECORDS,budget,{count:200,cursor:String(cursor||"0")});
+ const out=[];
+ for(const [,raw]of entries){const rec=parse(raw,null);if(rec&&rec.status==="CONFLICT")out.push(rec);if(out.length>=size)break}
+ out.sort((a,b)=>String(b.updatedAt||b.createdAt||"").localeCompare(String(a.updatedAt||a.createdAt||"")));
+ return{records:out,cursor:endCur,hasMore:!complete||endCur!=="0",partial:!complete};
+}
 
 export async function resolveGlobalConflict(env,input){
  const storeId=clean(input.storeId),standardName=clean(input.standardName),userId=clean(input.userId);
