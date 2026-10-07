@@ -64,29 +64,44 @@ const getkv = async k => { const r = await red.command(["GET", "zp:" + k]); if (
   check("非旧模式键不被误删（user:keep）", (await getkv("user:keep")) !== null);
   check("非旧模式键不被误删（route:R）", (await getkv("route:R")) !== null);
   check("reset 子请求 ≤ " + BASE_BUDGET, subrequests <= BASE_BUDGET, "subrequests=" + subrequests);
+  check("reset 正常规模显式声明 complete=true（诚实信号，未静默 success）", j.complete === true, "complete=" + j.complete);
 
-  // ============ 【2】cleanupUserSessions：正确性 + 预算受控 ============
+  // ============ 【2】cleanupUserSessions：正确性 + 预算受控 + 截断诚实信号 ============
   console.log("【2】cleanupUserSessions：删用户时仅清该用户会话，且子请求在预算内");
 
   // 中量：uA 600 + uB 600 会话
   for (let i = 0; i < 600; i++) { await setkv("session:sA" + i, { userId: "uA", sessionVersion: 1 }); }
   for (let i = 0; i < 600; i++) { await setkv("session:sB" + i, { userId: "uB", sessionVersion: 1 }); }
   subrequests = 0;
-  const delA = await usersMod.cleanupUserSessions(env, "uA");
-  check("删除数等于 uA 会话数 (600)", delA === 600, "deleted=" + delA);
+  const rA = await usersMod.cleanupUserSessions(env, "uA");
+  check("删除数等于 uA 会话数 (600)", rA.deleted === 600, "deleted=" + rA.deleted);
+  check("中量未截断 complete=true", rA.complete === true, "complete=" + rA.complete);
   let aLeft = 0, bLeft = 0;
   for (let i = 0; i < 600; i++) { if (await getkv("session:sA" + i)) aLeft++; if (await getkv("session:sB" + i)) bLeft++; }
   check("uA 会话全部清除", aLeft === 0, "remaining=" + aLeft);
   check("uB 会话未被误删", bLeft === 600, "remaining=" + bLeft);
   check("子请求 ≤ " + BASE_BUDGET, subrequests <= BASE_BUDGET, "subrequests=" + subrequests);
 
-  // 海量：8000 会话，验证护栏生效（不退化成 N 倍子请求、不抛错）
+  // 海量：8000 会话，验证护栏生效（不退化成 N 倍子请求、不抛错、截断显式标记）
   for (let i = 0; i < 4000; i++) { await setkv("session:hA" + i, { userId: "uH", sessionVersion: 1 }); }
   subrequests = 0;
   let threw = false;
-  try { await usersMod.cleanupUserSessions(env, "uH"); } catch (e) { threw = true; }
+  let rH;
+  try { rH = await usersMod.cleanupUserSessions(env, "uH"); } catch (e) { threw = true; }
   check("海量会话下不抛错（护栏截断而非 1101）", !threw);
   check("海量会话下子请求仍 ≤ " + BASE_BUDGET + "（护栏生效）", subrequests <= BASE_BUDGET, "subrequests=" + subrequests);
+  check("海量会话截断被显式标记 complete=false（诚实信号，未静默漏清）", !threw && rH && rH.complete === false, "complete=" + (rH && rH.complete));
+
+  // ============ 【3】reset 超大规模：截断诚实信号（不静默报 success）============
+  console.log("【3】reset 超大规模旧数据：complete=false 信号");
+  for (let i = 0; i < 3000; i++) { await setkv("waybill:WH" + i, { id: "WH" + i, routeId: "R2", date: "2026-02-1" }); }
+  subrequests = 0;
+  const res3 = await manageMod.onRequestPost({ request: req({ action: "reset", password: "secret123" }), env });
+  const j3 = await res3.json();
+  check("reset 超大规模返回 success", j3.success === true, "HTTP " + res3.status);
+  check("reset 超大规模显式标记 complete=false（诚实信号，可续清）", j3.complete === false, "complete=" + j3.complete);
+  check("reset 超大规模携带续清提示", typeof j3.message === "string" && j3.message.length > 0, "message=" + (j3.message || ""));
+  check("reset 超大规模子请求仍 ≤ " + BASE_BUDGET + "（护栏不退化）", subrequests <= BASE_BUDGET, "subrequests=" + subrequests);
 
   console.log("\nADMIN_BUDGET 集成：通过 " + pass + " / 失败 " + fail);
   process.exit(fail ? 1 : 0);

@@ -13,17 +13,18 @@ async function loadRequestIds(env){const raw=await get(env,"route-requests:index
 // 现统一收口到 _redis-budget.js：scanKeysBudgeted 受预算 + 迭代上限约束，MGET 分批(100)，绝不静默越限。
 export async function cleanupUserSessions(env,userId){
   const budget=new Budget(SUBREQUEST_LIMIT);
-  const {keys}=await scanKeysBudgeted(env,"zp:session:*",budget,{count:200,iterCap:12});
-  let deleted=0;
+  const {keys,complete:scanOk}=await scanKeysBudgeted(env,"zp:session:*",budget,{count:200,iterCap:12});
+  let deleted=0, delOk=true;
   for(let i=0;i<keys.length;i+=100){
-    if(!budget.take(1))break; // 预算门控 MGET
+    if(!budget.take(1)){delOk=false;break;} // 预算门控 MGET
     const chunk=keys.slice(i,i+100);
     const vals=await command(env,["MGET",...chunk]);
     const gone=[];
     for(let j=0;j<chunk.length;j++){let v=vals?.[j];try{v=typeof v==="string"?JSON.parse(v):v}catch{v=null}if(v?.userId===userId)gone.push(chunk[j]);}
-    if(gone.length){ if(!budget.take(1))break; await command(env,["DEL",...gone]); deleted+=gone.length; } // 预算门控 DEL
+    if(gone.length){ if(!budget.take(1)){delOk=false;break;} await command(env,["DEL",...gone]); deleted+=gone.length; } // 预算门控 DEL
   }
-  return deleted;
+  // 截断（iterCap / 预算 / 键数上限）显式上报 complete，复用删除路径的 503 重试语义，绝不静默漏清
+  return {deleted, complete: scanOk && delOk};
 }
 async function cleanupUserRequests(env,userId){
  const budget=new Budget(SUBREQUEST_LIMIT);let removed=0;
@@ -72,8 +73,11 @@ if(action==="bind"||action==="unbind"||action==="delete"){
  const args=routeKey?[JSON.stringify({...route,[u.routeDuty==="driver"?"driverUserId":"deliveryUserId"]:null}),id,JSON.stringify(userIds.filter(x=>x!==id)),u.routeDuty||"",route.id]:[id,JSON.stringify(userIds.filter(x=>x!==id))];
  const script=routeKey?"local rr=redis.call('GET',KEYS[1]); local uu=redis.call('GET',KEYS[2]); if not rr or not uu then return 2 end; local r=cjson.decode(rr); local u=cjson.decode(uu); if u.id~=ARGV[2] then return 3 end; if u.boundRouteId~=r.id or u.routeDuty~=ARGV[4] then return 4 end; local slot=ARGV[4]=='driver' and 'driverUserId' or 'deliveryUserId'; if r[slot]~=u.id then return 5 end; redis.call('SET',KEYS[1],ARGV[1]); redis.call('SET',KEYS[3],ARGV[3]); redis.call('DEL',KEYS[2]); return 1":"local uu=redis.call('GET',KEYS[1]); if not uu then return 2 end; local u=cjson.decode(uu); if u.id~=ARGV[1] then return 3 end; redis.call('SET',KEYS[2],ARGV[2]); redis.call('DEL',KEYS[1]); return 1";
  const code=Number(await command(env,["EVAL",script,String(keys.length),...keys,...args]));if(code!==1)return json({success:false,error:"账号状态已变化，请刷新后重试"},409);
- await del(env,"user:index:"+String(u.username).toLowerCase());
- try{await cleanupUserRequests(env,id);await cleanupUserSessions(env,id)}catch(e){if(e?.code==="SUBREQUEST_BUDGET_EXCEEDED")return json({success:false,code:"USER_DELETE_CLEANUP_BUDGET",error:"账号已删除，但关联清理达到资源预算，请稍后重试清理"},503);throw e}
- return json({success:true})
+    await del(env,"user:index:"+String(u.username).toLowerCase());
+    try{
+      const requestsCleaned=await cleanupUserRequests(env,id);
+      const sess=await cleanupUserSessions(env,id);
+      return json({success:true,requestsCleaned,sessionsCleaned:sess.deleted,sessionsCleanupComplete:sess.complete});
+    }catch(e){if(e?.code==="SUBREQUEST_BUDGET_EXCEEDED")return json({success:false,code:"USER_DELETE_CLEANUP_BUDGET",error:"账号已删除，但关联清理达到资源预算，请稍后重试清理"},503);throw e}
 }
 if(action==="rename"){const name=String(input.name||"").trim();if(!name)return json({success:false,error:"名称不能为空"},400);const nextName=name.slice(0,40);const code=Number(await command(env,["EVAL","local raw=redis.call('GET',KEYS[1]); if not raw then return 2 end; local ok,x=pcall(cjson.decode,raw); if not ok then return 3 end; if x.id~=ARGV[2] then return 4 end; if x.role=='admin' then return 5 end; x.name=ARGV[1]; redis.call('SET',KEYS[1],cjson.encode(x)); return 1","1","zp:user:"+id,nextName,id]));if(code!==1)return json({success:false,error:"账号状态已变化，请刷新后重试"},409);u.name=nextName;return json({success:true,user:await safe(env,u)})}return json({success:false,error:"不支持的操作"},400)}

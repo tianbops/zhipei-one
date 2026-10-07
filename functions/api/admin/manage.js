@@ -57,20 +57,27 @@ export async function onRequestPost({request,env}){
       "zp:route:*:history:*",
       "zp:history:*"
     ];
-    let deleted=0;
+    // 全局共享同一 Budget（每请求一个）：7 个旧数据模式合计不超过 SUBREQUEST_LIMIT，
+    // 即便其中多个模式在大键空间下不匹配也绝不越过平台 ~50 子请求上限（避免 1101）。
+    const budget=new Budget(SUBREQUEST_LIMIT);
+    let deleted=0, complete=true;
     for(const pattern of oldPatterns){
       // 原实现 SCAN 全键空间无上限循环，大运单量下 O(全键空间) 子请求 → 潜在 1101。
       // 现统一收口到 _redis-budget.js：scanKeysBudgeted 受预算 + 迭代上限约束，DEL 分批(100)且受预算门控。
-      const budget=new Budget(SUBREQUEST_LIMIT);
-      const {keys}=await scanKeysBudgeted(env,pattern,budget,{count:200,iterCap:12});
+      // 截断（iterCap 触顶 / 预算耗尽 / 键数超限）须显式上报 complete=false，绝不静默报 success——与 consistency/stats/diagnostic 约定对齐。
+      const {keys,complete:scanOk}=await scanKeysBudgeted(env,pattern,budget,{count:200,iterCap:12});
+      if(!scanOk)complete=false;
       for(let i=0;i<keys.length;i+=100){
-        if(!budget.take(1))break; // 预算门控 DEL（避免 1101）；可再次 reset 续清剩余旧数据
+        if(!budget.take(1)){complete=false;break;} // 预算门控 DEL（避免 1101）；可再次 reset 续清剩余旧数据
         const batch=keys.slice(i,i+100);
         await command(env,["DEL",...batch]);
         deleted+=batch.length;
       }
+      if(!budget.remaining)break; // 预算耗尽，停止后续模式扫描（共享预算，整体不越平台限）
     }
-    return json({success:true,deleted});
+    const result={success:true,deleted,complete};
+    if(!complete)result.message="旧数据规模超出单次清理预算，已尽力清理部分数据；可再次执行 reset 续清剩余项";
+    return json(result);
   }
 
   if(action==="normalize-roles"){
