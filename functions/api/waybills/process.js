@@ -281,7 +281,7 @@ async function saveWaybill(order, requestId, resumed){
   else if(typeof saveResult==="string"&&saveResult!==order.id){reason="FINGERPRINT";savedId=saveResult}
   if(reason==="NEW"){
     emit(100,"处理完成");
-    if(resumed){ await appendWaybillEvent(env, order.id, {event:"WAYBILL_RESUMED_SAVE",stage:"SAVED",requestId,id:order.id,qualityLevel:order.quality?.level,qualityFlags:order.quality?.flags||[]}); }
+    if(resumed){ try { await appendWaybillEvent(env, order.id, {event:"WAYBILL_RESUMED_SAVE",stage:"SAVED",requestId,id:order.id,qualityLevel:order.quality?.level,qualityFlags:order.quality?.flags||[]}); } catch { /* best-effort */ } }
     else { await recordWaybillLifecycle(env, order, {requestId, rawExtractCount, matched, pending, d}); }
     await finishProc(env, requestId, order.id); return json({success:true,waybill:order,pipeline:order.pipeline,summary:order.summary,indexSync:"OK",quality,requestId});
   }
@@ -289,7 +289,7 @@ async function saveWaybill(order, requestId, resumed){
   if(existingRaw){
     const existingOrder=typeof existingRaw==="string"?JSON.parse(existingRaw):existingRaw;
     await command(env,["SADD",indexKey,existingOrder.id]);
-    await appendWaybillEvent(env, existingOrder.id, {event:"WAYBILL_IDEMPOTENT",stage:"SAVED",requestId,reuse:existingOrder.id,dedupe:reason});
+    try { await appendWaybillEvent(env, existingOrder.id, {event:"WAYBILL_IDEMPOTENT",stage:"SAVED",requestId,reuse:existingOrder.id,dedupe:reason}); } catch { /* best-effort */ }
     await finishProc(env, requestId, existingOrder.id); return json({success:true,waybill:existingOrder,idempotent:true,dedupe:reason,indexSync:"OK",quality,requestId});
   }
   return failProcess("WAYBILL_DEDUPE_LOOKUP_FAILED","已存在的运单记录丢失，请重试",409,{recoverable:true,action:"RETRY_SAVE",hint:"已存在的运单记录丢失，请重试保存",order});
