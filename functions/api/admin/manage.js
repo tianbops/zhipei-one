@@ -20,9 +20,10 @@ export async function onRequestPost({request,env}){
     const oldKey="zp:user:index:"+String(actor.username||"").toLowerCase();
     const newKey="zp:user:index:"+username.toLowerCase();
     const userKey="zp:user:"+actor.id;
-    const script="local raw=redis.call('GET',KEYS[3]); if not raw then return 2 end; local ok,u=pcall(cjson.decode,raw); if not ok or type(u)~='table' or u.id~=ARGV[2] or (u.role~='admin' and u.role~='system_admin') then return 3 end; local existing=redis.call('GET',KEYS[2]); if existing and existing~=ARGV[2] then return 4 end; local old=redis.call('GET',KEYS[1]); if old and old~=ARGV[2] then return 5 end; redis.call('DEL',KEYS[1]); u.username=ARGV[1]; u.name=ARGV[1]; u.sessionVersion=(u.sessionVersion or 1)+1; redis.call('SET',KEYS[3],cjson.encode(u)); redis.call('SET',KEYS[2],ARGV[2]); return 1";
+    const script="local raw=redis.call('GET',KEYS[3]); if not raw then return 2 end; local ok,u=pcall(cjson.decode,raw); if not ok or type(u)~='table' or u.id~=ARGV[2] or (u.role~='admin' and u.role~='system_admin') then return 3 end; local existing=redis.call('GET',KEYS[2]); if existing and existing~=ARGV[2] then return 4 end; local old=redis.call('GET',KEYS[1]); if old and old~=ARGV[2] then return 5 end; redis.call('DEL',KEYS[1]); u.username=ARGV[1]; u.name=ARGV[1]; redis.call('SET',KEYS[3],cjson.encode(u)); redis.call('SET',KEYS[2],ARGV[2]); return 1";
     const code=Number(await command(env,["EVAL",script,"3",oldKey,newKey,userKey,username,actor.id]));
-    if(code===4)return json({success:false,error:"管理员账号已存在"},409);\n    if(code===5)return json({success:false,error:"管理员账号索引状态已变化，请刷新后重试"},409);
+    if(code===4)return json({success:false,error:"管理员账号已存在"},409);
+    if(code===5)return json({success:false,error:"管理员账号索引状态已变化，请刷新后重试"},409);
     if(code!==1)return json({success:false,error:"管理员账号状态已变化，请刷新后重试"},409);
     return json({success:true,user:{id:actor.id,username}});
   }
