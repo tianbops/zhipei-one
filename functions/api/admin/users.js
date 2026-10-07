@@ -25,7 +25,28 @@ export async function cleanupUserSessions(env,userId){
   }
   return deleted;
 }
-async function cleanupUserRequests(env,userId){let removed=0;for(let attempt=0;attempt<3;attempt++){const raw=await get(env,"route-requests:index");if(!raw) return removed;let ids;try{ids=typeof raw==="string"?JSON.parse(raw):raw}catch{return removed}if(!Array.isArray(ids)||ids.some(x=>typeof x!=="string"||!x.trim()))return removed;const keep=[];const deleteKeys=[];for(const rid of ids){const item=await get(env,"route-request:"+rid);let q=null;try{q=typeof item==="string"?JSON.parse(item):item}catch{}if(q?.userId===userId){deleteKeys.push("zp:route-request:"+rid);removed++;}else keep.push(rid)}if(deleteKeys.length)await command(env,["DEL",...deleteKeys]);const check=await command(env,["EVAL",'if redis.call("GET",KEYS[1])==ARGV[1] then redis.call("SET",KEYS[1],ARGV[2]); return 1 end; return 0',"1","zp:route-requests:index",String(raw),JSON.stringify(keep)]);if(Number(check)===1)return removed}return removed}
+async function cleanupUserRequests(env,userId){
+ const budget=new Budget(SUBREQUEST_LIMIT);let removed=0;
+ for(let attempt=0;attempt<3;attempt++){
+  if(!budget.take(1))throwBudgetExceeded(budget.max,"cleanup-user-requests-index");
+  const raw=await get(env,"route-requests:index");if(!raw)return removed;
+  let ids;try{ids=typeof raw==="string"?JSON.parse(raw):raw}catch{return removed}
+  if(!Array.isArray(ids)||ids.some(x=>typeof x!=="string"||!x.trim()))return removed;
+  const requestIds=[...new Set(ids.map(x=>String(x).trim()).filter(Boolean))];
+  const {map,complete}=await mgetBatchMap(env,requestIds.map(rid=>"zp:route-request:"+rid),budget,{batch:100});
+  if(!complete)throwBudgetExceeded(budget.max,"cleanup-user-requests-read");
+  const keep=[],deleteKeys=[];
+  for(const rid of requestIds){
+   let q=null;try{const item=map.get("zp:route-request:"+rid);q=typeof item==="string"?JSON.parse(item):item}catch{}
+   if(q?.userId===userId)deleteKeys.push("zp:route-request:"+rid);else keep.push(rid);
+  }
+  if(deleteKeys.length){if(!budget.take(1))throwBudgetExceeded(budget.max,"cleanup-user-requests-delete");await command(env,["DEL",...deleteKeys]);removed+=deleteKeys.length}
+  if(!budget.take(1))throwBudgetExceeded(budget.max,"cleanup-user-requests-cas");
+  const check=await command(env,["EVAL",'if redis.call("GET",KEYS[1])==ARGV[1] then redis.call("SET",KEYS[1],ARGV[2]); return 1 end; return 0',"1","zp:route-requests:index",String(raw),JSON.stringify(keep)]);
+  if(Number(check)===1)return removed;
+ }
+ return removed;
+}
 export async function onRequestGet({request,env}){const actor=await currentUser(request,env);if(!actor||!isSystemAdmin(actor))return json({success:false,error:"无权限"},403);let userIds;try{userIds=await ids(env)}catch{return json({success:false,code:"USER_INDEX_INVALID",error:"用户索引数据异常，请联系管理员处理"},409)}const list=[];for(const id of userIds){const u=await read(env,id);if(!u)return json({success:false,code:"USER_DATA_INVALID",error:"用户索引包含缺失或损坏的用户数据，请联系管理员处理"},409);list.push(await safe(env,u))}return json({success:true,users:list})}
 export async function onRequestPost({request,env}){const actor=await currentUser(request,env);if(!actor||!isSystemAdmin(actor))return json({success:false,error:"无权限"},403);const input=await body(request);const action=String(input.action||"");const id=String(input.userId||"");const u=await read(env,id);if(!u)return json({success:false,error:"用户不存在"},404);if(isSystemAdmin(u))return json({success:false,error:"系统管理员账号不能通过此接口修改"},403);
 if(action==="disable"||action==="enable"){
