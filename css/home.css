@@ -151,3 +151,52 @@
 
 /* 首页菜单轻入场：opacity + 轻微上移，弱化「Web Dropdown」观感 */
 @keyframes zpMenuIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+
+
+/* ===== 本月配送趋势：独立、低侵入式首页模块 ===== */
+.monthly-card{
+  margin-top:12px;
+  padding:15px 15px 12px;
+  border:1px solid #27323D;
+  border-radius:16px;
+  background:#151D26;
+  overflow:hidden;
+}
+.monthly-card.is-changing{animation:monthlyCardIn .18s ease-out}
+@keyframes monthlyCardIn{from{opacity:.72;transform:translateX(4px)}to{opacity:1;transform:none}}
+.monthly-kicker{font-size:11px;line-height:16px;color:#7F8A95;letter-spacing:1.5px}
+.monthly-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.monthly-title-row{display:flex;align-items:center;gap:5px;margin-top:1px}
+.monthly-title-row strong{font-size:17px;line-height:24px;color:#F2F5F7;font-weight:650}
+.monthly-nav{
+  width:28px;height:28px;min-width:28px;padding:0;
+  border:0;border-radius:8px;background:transparent;color:#B8C2CC;
+  font-size:24px;line-height:24px;font-weight:400;
+  display:flex;align-items:center;justify-content:center;
+}
+.monthly-nav:active{background:#26313C;color:#fff}
+.monthly-nav:disabled{opacity:.22;pointer-events:none}
+.monthly-month{margin-top:1px;color:#7F8A95;font-size:12px;line-height:18px}
+.monthly-summary{display:flex;gap:12px;margin-top:6px;color:#B8C2CC;font-size:13px;line-height:20px}
+.monthly-summary b{color:#F2F5F7;font-size:17px;font-weight:650;font-variant-numeric:tabular-nums}
+.monthly-more{
+  flex:none;margin-top:5px;padding:5px 2px;
+  color:#9BA7B3;text-decoration:none;font-size:12px;line-height:18px;
+}
+.monthly-more:active{color:#F2F5F7}
+.monthly-chart-wrap{height:112px;margin:8px -2px 0}
+.monthly-chart{width:100%;height:100%;display:block;overflow:visible;touch-action:pan-y}
+.monthly-chart-grid{fill:none;stroke:#26313C;stroke-width:1;stroke-dasharray:2 5}
+.monthly-chart-area{fill:#B8C2CC;fill-opacity:.045;stroke:none}
+.monthly-chart-line{fill:none;stroke:#B8C2CC;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.monthly-point{fill:#18212B;stroke:#F2F5F7;stroke-width:1.5;cursor:pointer}
+.monthly-point:focus{outline:none}
+.monthly-point:focus-visible{stroke-width:2.5}
+.monthly-axis{height:18px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 3px;color:#65717D;font-size:10px;line-height:14px;font-variant-numeric:tabular-nums}
+.monthly-hint{min-height:17px;margin-top:2px;color:#7F8A95;font-size:11px;line-height:17px;text-align:right}
+@media(prefers-reduced-motion:reduce){.monthly-card.is-changing{animation:none}}
+@media(max-width:380px){
+  .monthly-card{padding:14px 13px 11px}
+  .monthly-title-row strong{font-size:16px}
+  .monthly-chart-wrap{height:104px}
+}
