@@ -9,6 +9,9 @@
  *   - overflowX    : 横向溢出像素（须 0）
  *   - topbarHook   : .topbar 钩子数量（改后应 >=1）
  *   - appBackHook  : .app-back 钩子数量（link-back 页改后应 >=1；order 页为 0）
+ *   - backColor    : link 型返回元素 computed color（白色 back 的关键差异；order 体系 #backBtn 为 button 返回，不测 → null）
+ *   - titleColor   : 头部标题元素 computed color（dispatch 深头白字的关键差异；无标题 → null）
+ *   - titleFontSize/titleLineHeight/titleFontWeight : 标题排版断言（捕获 5D 旧类别名清理中「20px→18px」等字号/字重回归盲区）
  *
  * 用法：node inspect_header.js <url1> [url2 ...] [--shots <dir>]
  *   输出 JSON 数组到 stdout（每行一个结果），并可选截图到 <dir>/<basename>.png。
@@ -59,20 +62,31 @@ if (!urls.length) { console.error('usage: node inspect_header.js <url1> [url2 ..
       const topbarHook = document.querySelectorAll('.topbar').length;
       const appBackHook = document.querySelectorAll('.app-back').length;
       let headerHeight = null, titlePresent = false, backSize = null, overflowX = 0;
+      let backColor = null, titleColor = null;
+      let titleFontSize = null, titleLineHeight = null, titleFontWeight = null;
       if (header) {
         const hr = header.getBoundingClientRect();
         headerHeight = Math.round(hr.height);
         const titleEl = header.querySelector('strong,h1,.order-title');
         titlePresent = !!(titleEl || (header.textContent || '').trim().length > 0);
+        if (titleEl) {
+          const ts = getComputedStyle(titleEl);
+          titleColor = ts.color;
+          titleFontSize = ts.fontSize;
+          titleLineHeight = ts.lineHeight;
+          titleFontWeight = ts.fontWeight;
+        }
         const backEl = header.querySelector('a[href="/home.html"],a[aria-label*="返回"],button#backBtn');
         if (backEl) {
           const br = backEl.getBoundingClientRect();
           backSize = Math.round(Math.min(br.width, br.height));
+          // order 体系 #backBtn 为 button 返回，不在「白色 back」断言范围内 → 仅 link 型测 color
+          if (!(backEl.id === 'backBtn')) backColor = getComputedStyle(backEl).color;
         }
       }
       const de = document.documentElement;
       overflowX = Math.max(0, de.scrollWidth - de.clientWidth);
-      return { headerHeight, titlePresent, backSize, overflowX, topbarHook, appBackHook };
+      return { headerHeight, titlePresent, backSize, overflowX, topbarHook, appBackHook, backColor, titleColor, titleFontSize, titleLineHeight, titleFontWeight };
     });
     r.url = url;
     r.navOk = navOk;
