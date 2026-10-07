@@ -164,7 +164,6 @@
 }
 .monthly-card.is-changing{animation:monthlyCardIn .18s ease-out}
 @keyframes monthlyCardIn{from{opacity:.72;transform:translateX(4px)}to{opacity:1;transform:none}}
-.monthly-kicker{font-size:11px;line-height:16px;color:#7F8A95;letter-spacing:1.5px}
 .monthly-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
 .monthly-title-row{display:flex;align-items:center;gap:5px;margin-top:1px}
 .monthly-title-row strong{font-size:17px;line-height:24px;color:#F2F5F7;font-weight:650}

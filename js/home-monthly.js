@@ -99,7 +99,7 @@
     }
     waybillsEl.textContent=String(total);
     weightEl.textContent=weight.toFixed(2);
-    title.textContent=currentMonth===cnToday().slice(0,7)?"本月配送":"配送记录";
+    title.textContent=currentMonth===cnToday().slice(0,7)?"本月趋势":"配送记录";
     monthEl.textContent=label(currentMonth);
     prev.disabled=!availableMonths.length||availableMonths.indexOf(currentMonth)>=availableMonths.length-1;
     next.disabled=!availableMonths.length||availableMonths.indexOf(currentMonth)<=0;
