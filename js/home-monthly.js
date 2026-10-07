@@ -1,49 +1,49 @@
 (()=>{"use strict";
-  // 首页月度趋势：独立模块。任何异常均静默处理，不得影响 home.js 主流程。
+  // 首页「配送趋势 · Smart Trend」模块（内部代号；用户界面仅显示「本月配送」等业务词，无英文技术词）。
+  // 设计约束：工业物流终端科技感 —— 来自精细网格 + 数据节点 + 平滑曲线 + 动态切换 + 数字变化，
+  // 严禁霓虹蓝/紫渐变、发光、3D、玻璃拟态等廉价科技风。任何异常均静默处理，不得影响 home.js 主流程。
   const $=id=>document.getElementById(id);
-  const card=$("monthlyCard");
+  const card=$("trendCard");
   if(!card)return;
 
-  const prev=$("monthlyPrev"),next=$("monthlyNext"),title=$("monthlyTitle");
-  const monthEl=$("monthlyMonth"),waybillsEl=$("monthlyWaybills"),weightEl=$("monthlyWeight");
-  const chart=$("monthlyChart"),grid=$("monthlyGrid"),area=$("monthlyChartArea"),line=$("monthlyChartLine"),points=$("monthlyChartPoints");
-  const axis=$("monthlyAxis"),hint=$("monthlyHint");
-  let months=new Map(),history=[],currentMonth="",availableMonths=[];
-  let touchX=0,touchY=0;
-  let metric="weight"; // 趋势指标：weight=按重量(t)显示起伏（默认）；count=按单量。两种口径前端已有数据，切换不另发请求
+  const titleEl=$("trendTitle"),yearBtn=$("trendYearBtn"),monthRow=$("trendMonthRow");
+  const prev=$("trendPrev"),next=$("trendNext"),monthEl=$("trendMonth");
+  const metricWrap=$("trendMetric"),metricWeightBtn=$("metricWeight"),metricCountBtn=$("metricCount");
+  const waybillsEl=$("trendWaybills"),weightEl=$("trendWeight");
+  const wbDelta=$("trendWaybillsDelta"),wtDelta=$("trendWeightDelta");
+  const wrap=$("trendChartWrap"),chart=$("trendChart");
+  const grid=$("trendGrid"),area=$("trendArea"),line=$("trendLine"),points=$("trendPoints");
+  const rhythm=$("trendRhythm"),axis=$("trendAxis"),hint=$("trendHint");
 
-  const cnToday=()=>{
+  const prefersReduced=window.matchMedia&&window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+  let daily=[],byMonth=new Map(),availableMonths=[],currentMonth="";
+  let metric="weight";            // 月度曲线指标：weight(按重量 t，默认) / count(按单量)
+  let yearMode=false,year=0;
+  let animating=false,touchX=0,touchY=0;
+
+  /* ---------- 基础工具 ---------- */
+  const cnMonth=()=>{
     const p=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
-    return p;
+    return p.slice(0,7); // YYYY-MM
   };
-  const monthDiff=(a,b)=>{
-    const [ay,am]=a.split("-").map(Number),[by,bm]=b.split("-").map(Number);
-    return (ay-by)*12+am-bm;
-  };
-  const daysInMonth=ym=>{
-    const [y,m]=ym.split("-").map(Number);
-    return new Date(Date.UTC(y,m,0)).getUTCDate();
-  };
-  const label=ym=>{
-    const [y,m]=ym.split("-").map(Number);
-    return y+"年"+m+"月";
-  };
-  const escSvg=v=>String(v).replace(/[&<>"]/g,"");
+  const monthDiff=(a,b)=>{const [ay,am]=a.split("-").map(Number),[by,bm]=b.split("-").map(Number);return (ay-by)*12+am-bm;};
+  const daysInMonth=ym=>{const [y,m]=ym.split("-").map(Number);return new Date(Date.UTC(y,m,0)).getUTCDate();};
+  const label=ym=>{const [y,m]=ym.split("-").map(Number);return y+"年"+m+"月";};
+  const esc=v=>String(v==null?"":v).replace(/[&<>"]/g,"");
   const smoothPath=pts=>{
     if(!pts.length)return "";
     if(pts.length===1)return "M "+pts[0][0]+" "+pts[0][1];
     let d="M "+pts[0][0]+" "+pts[0][1];
     for(let i=1;i<pts.length;i++){
-      const p0=pts[i-1],p1=pts[i];
-      const mx=(p0[0]+p1[0])/2;
+      const p0=pts[i-1],p1=pts[i],mx=(p0[0]+p1[0])/2;
       d+=" C "+mx+" "+p0[1]+", "+mx+" "+p1[1]+", "+p1[0]+" "+p1[1];
     }
     return d;
   };
 
+  /* ---------- 月度数据（补齐缺勤日 = 0） ---------- */
   function buildMonthData(ym){
-    const days=daysInMonth(ym),byDate=new Map(history.map(x=>[x.date,x]));
-    const out=[];
+    const days=daysInMonth(ym),byDate=new Map(daily.map(x=>[x.date,x])),out=[];
     for(let d=1;d<=days;d++){
       const date=ym+"-"+String(d).padStart(2,"0"),item=byDate.get(date);
       out.push({date,day:d,count:Number(item?.count)||0,weight:Number(item?.totalWeight)||0});
@@ -51,16 +51,36 @@
     return out;
   }
 
-  function render(){
-    if(!currentMonth)return;
+  function animateNumber(el,to,fmt){
+    const from=Number(el.dataset.v||0);
+    el.dataset.v=String(to);
+    if(prefersReduced){el.textContent=fmt(to);return;}
+    const t0=performance.now(),dur=320;
+    (function step(t){
+      const k=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-k,3);
+      el.textContent=fmt(from+(to-from)*e);
+      if(k<1)requestAnimationFrame(step);
+    })(t0);
+  }
+
+  function setDelta(el,cur,prev,unit){
+    if(prev==null||prev<=0){el.textContent="";el.className="trend-delta";return;}
+    const pct=(cur-prev)/prev*100;
+    if(!isFinite(pct)){el.textContent="";el.className="trend-delta";return;}
+    const up=pct>=0;
+    el.textContent=(up?"↑ ":"↓ ")+Math.abs(pct).toFixed(1)+"%";
+    el.className="trend-delta "+(up?"is-up":"is-down");
+  }
+
+  /* ---------- 月度视图渲染 ---------- */
+  function renderMonth(){
     const data=buildMonthData(currentMonth);
     const total=data.reduce((s,x)=>s+x.count,0);
     const weight=data.reduce((s,x)=>s+x.weight,0);
-    // 趋势指标：默认按「重量(t)」显示起伏；可切到「单量」。两种口径前端都有数据，切换不另发请求。
     const valOf=x=>metric==="weight"?x.weight:x.count;
-    const safeMax=metric==="weight"?0.01:1; // 重量为 0 时避免除零，保证基线可见
+    const safeMax=metric==="weight"?0.01:1;            // 重量为 0 时兜底，避免除零、保证基线可见
     const max=Math.max(safeMax,...data.map(valOf));
-    const w=360,h=112,left=8,right=8,top=10,bottom=14;
+    const w=360,h=120,left=10,right=10,top=12,bottom=16;
     const cw=w-left-right,ch=h-top-bottom;
     const pts=data.map((x,i)=>{
       const px=left+(data.length===1?cw/2:i*cw/(data.length-1));
@@ -69,105 +89,208 @@
     });
     const path=smoothPath(pts);
     const areaPath=path?path+" L "+pts[pts.length-1][0]+" "+(h-bottom)+" L "+pts[0][0]+" "+(h-bottom)+" Z":"";
-    const gridPath=[0,.5,1].map(r=>{
-      const y=top+r*ch;
-      return "M "+left+" "+y+" H "+(w-right);
-    }).join(" ");
+    const gridPath=[0,.5,1].map(r=>{const y=top+r*ch;return "M "+left+" "+y+" H "+(w-right);}).join(" ");
     grid.setAttribute("d",gridPath);
     line.setAttribute("d",path);
     area.setAttribute("d",areaPath);
     points.innerHTML="";
+    const peakIdx=data.reduce((b,x,i)=>valOf(x)>valOf(data[b])?i:b,0);
     data.forEach((x,i)=>{
-      if(!x.count)return;
-      const p=pts[i];
-      const c=document.createElementNS("http://www.w3.org/2000/svg","circle");
-      c.setAttribute("cx",p[0]);c.setAttribute("cy",p[1]);c.setAttribute("r",i===data.length-1?4:3);
-      c.setAttribute("class","monthly-point");
+      if(!valOf(x))return;
+      const p=pts[i],c=document.createElementNS("http://www.w3.org/2000/svg","circle");
+      const isPeak=i===peakIdx&&total>0;
+      c.setAttribute("cx",p[0]);c.setAttribute("cy",p[1]);
+      c.setAttribute("r",isPeak?4.5:2.6);
+      c.setAttribute("class","trend-point"+(isPeak?" is-peak":""));
       c.setAttribute("tabindex","0");
       c.setAttribute("aria-label",x.date+" "+x.count+"单 · "+x.weight.toFixed(2)+"t");
-      c.addEventListener("click",()=>{hint.textContent=x.date+" · "+x.count+"单 · "+x.weight.toFixed(2)+"t"});
+      c.addEventListener("click",()=>{hint.innerHTML=esc(x.date)+" · "+x.count+"单 · "+x.weight.toFixed(2)+"t";});
       points.appendChild(c);
     });
-    const maxIndex=data.reduce((best,x,i)=>valOf(x)>valOf(data[best])?i:best,0);
     if(total){
-      const peak=data[maxIndex];
-      hint.textContent=metric==="weight"
+      const peak=data[peakIdx];
+      hint.innerHTML=metric==="weight"
         ? "峰值 "+peak.day+"日 · "+peak.weight.toFixed(2)+"t"
         : "峰值 "+peak.day+"日 · "+peak.count+"单";
     }else{
-      hint.textContent="本月暂无配送记录";
+      hint.innerHTML="本月暂无配送记录";
     }
-    waybillsEl.textContent=String(total);
-    weightEl.textContent=weight.toFixed(2);
-    title.textContent=currentMonth===cnToday().slice(0,7)?"本月趋势":"配送记录";
-    monthEl.textContent=label(currentMonth);
-    prev.disabled=!availableMonths.length||availableMonths.indexOf(currentMonth)>=availableMonths.length-1;
-    next.disabled=!availableMonths.length||availableMonths.indexOf(currentMonth)<=0;
+    // 配送节奏（每日活跃度轨迹，非传统柱状图）
+    renderRhythm(data.map(x=>valOf(x)));
+    // 轴：首日 / 月中 / 末日
     axis.innerHTML="";
-    const ticks=[1,Math.ceil(data.length/2),data.length];
-    [...new Set(ticks)].forEach(day=>{
-      const s=document.createElement("span");s.textContent=String(day).padStart(2,"0")+"日";axis.appendChild(s);
+    const last=daysInMonth(currentMonth);
+    [1,Math.round(last/2),last].forEach(d=>{
+      const s=document.createElement("span");s.textContent=String(d).padStart(2,"0")+"日";axis.appendChild(s);
     });
-    card.hidden=false;
-    card.classList.remove("is-changing");
-    void card.offsetWidth;
-    card.classList.add("is-changing");
+    // 汇总 + 环比（对比上一自然月）
+    animateNumber(waybillsEl,total,v=>String(Math.round(v)));
+    animateNumber(weightEl,weight,v=>v.toFixed(2));
+    const prevKey=prevMonthKey(currentMonth);
+    const pm=prevKey?byMonth.get(prevKey):null;
+    setDelta(wbDelta,total,pm?Number(pm.waybills)||0:null);
+    setDelta(wtDelta,weight,pm?Number(pm.totalWeight)||0:null);
+    // 抬头
+    titleEl.textContent=currentMonth===cnMonth()?"本月配送":"配送记录";
+    monthEl.textContent=label(currentMonth);
+    metricWrap.hidden=false;
+    prev.disabled=availableMonths.indexOf(currentMonth)>=availableMonths.length-1; // 最旧月
+    next.disabled=availableMonths.indexOf(currentMonth)<=0;                        // 当前月（未来禁止）
   }
 
-  function move(dir){
+  function prevMonthKey(ym){
+    const [y,m]=ym.split("-").map(Number),idx=y*12+(m-1)-1;
+    return Math.floor(idx/12)+"-"+String(idx%12+1).padStart(2,"0");
+  }
+
+  /* ---------- 年度视图渲染 ---------- */
+  function renderYear(){
+    const yk=String(year);
+    const months=[];
+    for(let m=1;m<=12;m++)months.push(yk+"-"+String(m).padStart(2,"0"));
+    const vals=months.map(mk=>{const x=byMonth.get(mk);return x?Number(x.waybills)||0:0;});
+    const total=vals.reduce((a,b)=>a+b,0);
+    const weight=months.reduce((s,mk)=>{const x=byMonth.get(mk);return s+(x?Number(x.totalWeight)||0:0);},0);
+    const max=Math.max(1,...vals);
+    // 12 月活动柱（工业风：细柱 + 峰值略亮）
+    const w=360,h=120,left=10,right=10,top=14,bottom=14;
+    const cw=w-left-right,slot=cw/12,barW=Math.min(18,slot*0.46);
+    let d="",bars="";
+    vals.forEach((v,i)=>{
+      const x=left+slot*i+slot/2,hh=(v<=0?0.04:v/max)*(h-top-bottom),yy=h-bottom-hh;
+      const isPeak=v===max&&v>0;
+      bars+='<rect x="'+(x-barW/2).toFixed(1)+'" y="'+yy.toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+hh.toFixed(1)
+        +'" rx="1.5" class="trend-year-bar'+(isPeak?" is-peak":"")+'"><title>'+label(months[i])+" · "+v+"单</title></rect>";
+    });
+    // 基线 + 柱（用 line 通道绘制基线，area 留空）
+    grid.setAttribute("d","M "+left+" "+(h-bottom)+" H "+(w-right));
+    line.setAttribute("d","");area.setAttribute("d","");
+    points.innerHTML=bars;
+    // 轴：1 / 4 / 7 / 10 / 12 月
+    axis.innerHTML="";
+    [1,4,7,10,12].forEach(m=>{const s=document.createElement("span");s.textContent=m+"月";axis.appendChild(s);});
+    // 节奏轨迹：复用为 12 月小条（与柱同源，增强年度呼吸感）
+    renderRhythm(vals);
+    // 汇总（无环比）
+    animateNumber(waybillsEl,total,v=>String(Math.round(v)));
+    animateNumber(weightEl,weight,v=>v.toFixed(2));
+    wbDelta.textContent="";wtDelta.textContent="";
+    // 峰值信息（仅核心）：年度峰值月 + 最繁忙配送日
+    let peakMi=0;vals.forEach((v,i)=>{if(v>vals[peakMi])peakMi=i;});
+    let busiest=null;
+    for(const it of daily){if(!String(it.date).startsWith(yk))continue;if(!busiest||(Number(it.count)||0)>busiest.count)busiest={date:it.date,count:Number(it.count)||0};}
+    const peakMonth=vals[peakMi]>0?(peakMi+1)+"月":"—";
+    hint.innerHTML="年度峰值 <b>"+peakMonth+" · "+vals[peakMi]+"单</b>"
+      +(busiest&&busiest.count>0?"　最繁忙配送日 <b>"+busiest.date.slice(5).replace("-","月")+"日 · "+busiest.count+"单</b>":"");
+    titleEl.textContent=year+" 年配送";
+    monthEl.textContent=year+" 年度";
+    metricWrap.hidden=true;
+    prev.disabled=true;next.disabled=true;
+  }
+
+  /* ---------- 配送节奏轨迹 ---------- */
+  function renderRhythm(values){
+    const max=Math.max(1,...values);
+    rhythm.innerHTML="";
+    const n=values.length;
+    for(let i=0;i<n;i++){
+      const bar=document.createElement("span");
+      bar.className="trend-rhythm-bar";
+      const ratio=values[i]<=0?0:values[i]/max;
+      bar.style.height=(values[i]<=0?6:(6+ratio*88))+"%";
+      if(values[i]===max&&max>0)bar.classList.add("is-peak");
+      rhythm.appendChild(bar);
+    }
+  }
+
+  /* ---------- 切换动画（曲线滑出 / 新曲线滑入 + 数字计数） ---------- */
+  function animateSwap(dir,renderFn){
+    if(animating){return;}
+    if(prefersReduced){renderFn();return;}
+    animating=true;
+    const exitX=dir<0?-40:40;     // dir=-1 前往更新月份：旧内容向左滑出
+    const enterX=dir<0?40:-40;
+    wrap.style.transition="transform .14s ease, opacity .14s ease";
+    wrap.style.transform="translateX("+exitX+"px)";wrap.style.opacity=".12";
+    monthEl.style.transition="transform .14s ease";monthEl.style.transform="translateX("+(exitX*0.4)+"px)";
+    setTimeout(()=>{
+      renderFn();
+      wrap.style.transition="none";wrap.style.transform="translateX("+enterX+"px)";wrap.style.opacity="0";
+      monthEl.style.transition="none";monthEl.style.transform="translateX("+(enterX*0.4)+"px)";
+      void wrap.offsetWidth;
+      requestAnimationFrame(()=>{
+        wrap.style.transition="transform .26s cubic-bezier(.22,.61,.36,1), opacity .26s ease";
+        wrap.style.transform="translateX(0)";wrap.style.opacity="1";
+        monthEl.style.transition="transform .26s cubic-bezier(.22,.61,.36,1)";monthEl.style.transform="translateX(0)";
+      });
+      setTimeout(()=>{animating=false;},280);
+    },150);
+  }
+
+  /* ---------- 导航 ---------- */
+  function navigate(dir){
     const i=availableMonths.indexOf(currentMonth);
     if(i<0)return;
     const ni=i+dir;
-    if(ni<0||ni>=availableMonths.length)return;
+    if(ni<0||ni>=availableMonths.length)return;   // 未来月份自然不可达（availableMonths 不超今日）
     currentMonth=availableMonths[ni];
-    render();
+    animateSwap(dir,renderMonth);
   }
-
-  prev?.addEventListener("click",()=>move(1));
-  next?.addEventListener("click",()=>move(-1));
-  const metricWeightBtn=$("metricWeight"),metricCountBtn=$("metricCount");
+  function toggleYear(){
+    yearMode=!yearMode;
+    if(yearMode){year=Number(cnMonth().slice(0,4));yearBtn.textContent="‹ 月度";yearBtn.classList.add("is-active");}
+    else{yearBtn.textContent=year+" 年度 ›";yearBtn.classList.remove("is-active");}
+    if(yearMode)renderYear();else renderMonth();
+  }
   function setMetric(m){
     if(m!=="weight"&&m!=="count")return;
     metric=m;
-    metricWeightBtn?.classList.toggle("is-active",m==="weight");
-    metricCountBtn?.classList.toggle("is-active",m==="count");
-    metricWeightBtn?.setAttribute("aria-pressed",String(m==="weight"));
-    metricCountBtn?.setAttribute("aria-pressed",String(m==="count"));
-    render();
+    metricWeightBtn.classList.toggle("is-active",m==="weight");
+    metricCountBtn.classList.toggle("is-active",m==="count");
+    metricWeightBtn.setAttribute("aria-pressed",String(m==="weight"));
+    metricCountBtn.setAttribute("aria-pressed",String(m==="count"));
+    if(!yearMode)renderMonth();
   }
+
+  /* ---------- 事件 ---------- */
+  prev?.addEventListener("click",()=>navigate(1));    // 上一个月（更旧）
+  next?.addEventListener("click",()=>navigate(-1));   // 下一个月（更新；当前月时禁用）
   metricWeightBtn?.addEventListener("click",()=>setMetric("weight"));
   metricCountBtn?.addEventListener("click",()=>setMetric("count"));
-  chart?.addEventListener("touchstart",e=>{
-    const t=e.changedTouches?.[0];if(!t)return;
-    touchX=t.clientX;touchY=t.clientY;
-  },{passive:true});
-  chart?.addEventListener("touchend",e=>{
+  yearBtn?.addEventListener("click",toggleYear);
+  // 左右滑动切换月份（左滑→更新月，右滑→更旧月）；垂直手势不拦截
+  wrap?.addEventListener("touchstart",e=>{const t=e.changedTouches?.[0];if(!t)return;touchX=t.clientX;touchY=t.clientY;},{passive:true});
+  wrap?.addEventListener("touchend",e=>{
+    if(yearMode)return;
     const t=e.changedTouches?.[0];if(!t)return;
     const dx=t.clientX-touchX,dy=t.clientY-touchY;
-    if(Math.abs(dx)>48&&Math.abs(dx)>Math.abs(dy)*1.25)move(dx>0?1:-1);
+    if(Math.abs(dx)>48&&Math.abs(dx)>Math.abs(dy)*1.25){
+      if(dx<0)navigate(-1);   // 左滑 → 更新月份（未来不可达时 no-op）
+      else navigate(1);       // 右滑 → 更旧月份
+    }
   },{passive:true});
 
+  /* ---------- 数据加载 ---------- */
   async function load(){
     try{
       const r=await fetch("/api/history",{credentials:"same-origin",cache:"no-store"});
       if(!r.ok)return;
       const d=await r.json().catch(()=>null);
       if(!d?.success||!Array.isArray(d.history))return;
-      history=d.history.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(String(x?.date||"")));
-      months=new Map((Array.isArray(d.months)?d.months:[]).map(x=>[String(x.month),x]));
-      const todayMonth=cnToday().slice(0,7);
-      const rangeMonths=[];
+      daily=d.history.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(String(x?.date||"")));
+      byMonth=new Map((Array.isArray(d.months)?d.months:[]).map(x=>[String(x.month),x]));
+      const today=cnMonth();
+      const list=[];
       for(let i=0;i<13;i++){
-        const [y,m]=todayMonth.split("-").map(Number);
-        const idx=y*12+(m-1)-i,yy=Math.floor(idx/12),mm=idx%12+1;
-        rangeMonths.push(yy+"-"+String(mm).padStart(2,"0"));
+        const [y,m]=today.split("-").map(Number),idx=y*12+(m-1)-i;
+        list.push(Math.floor(idx/12)+"-"+String(idx%12+1).padStart(2,"0"));
       }
-      // 即使某个月没有运单，也允许左右查看；未来月份永不出现。
-      availableMonths=rangeMonths.filter(m=>monthDiff(m,todayMonth)>=0);
-      currentMonth=todayMonth;
-      render();
+      availableMonths=list.filter(m=>monthDiff(m,today)>=0); // 未来月份永不出现
+      currentMonth=today;
+      card.hidden=false;
+      card.classList.add("is-in");
+      renderMonth();
     }catch{}
   }
-
   load();
 })();

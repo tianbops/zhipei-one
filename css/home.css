@@ -153,53 +153,68 @@
 @keyframes zpMenuIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 
 
-/* ===== 本月配送趋势：独立、低侵入式首页模块 ===== */
-.monthly-card{
-  margin-top:12px;
-  padding:15px 15px 12px;
-  border:1px solid #27323D;
-  border-radius:16px;
-  background:#151D26;
-  overflow:hidden;
+/* ===== 配送趋势 · Smart Trend：工业物流终端风（无渐变/发光/玻璃拟态） ===== */
+.trend-card{
+  margin-top:12px;padding:15px 15px 13px;
+  border:1px solid #27323D;border-radius:16px;background:#151D26;overflow:hidden;
 }
-.monthly-card.is-changing{animation:monthlyCardIn .18s ease-out}
-@keyframes monthlyCardIn{from{opacity:.72;transform:translateX(4px)}to{opacity:1;transform:none}}
-.monthly-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-.monthly-title-row{display:flex;align-items:center;gap:5px;margin-top:1px}
-.monthly-title-row strong{font-size:17px;line-height:24px;color:#F2F5F7;font-weight:650}
-.monthly-nav{
-  width:28px;height:28px;min-width:28px;padding:0;
-  border:0;border-radius:8px;background:transparent;color:#B8C2CC;
-  font-size:24px;line-height:24px;font-weight:400;
-  display:flex;align-items:center;justify-content:center;
+.trend-card.is-in{animation:trendIn .22s ease-out}
+@keyframes trendIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.trend-head{display:flex;flex-direction:column;gap:7px}
+.trend-title-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.trend-title{margin:0;font-size:17px;line-height:24px;color:#F2F5F7;font-weight:650;letter-spacing:.5px}
+.trend-year{
+  appearance:none;margin:0;padding:4px 10px;border:1px solid #2C3742;border-radius:999px;
+  background:#161E26;color:#9BA7B3;font-size:12px;line-height:16px;cursor:pointer;white-space:nowrap;
+  transition:background .15s,color .15s,border-color .15s;
 }
-.monthly-nav:active{background:#26313C;color:#fff}
-.monthly-nav:disabled{opacity:.22;pointer-events:none}
-.monthly-month{margin-top:1px;color:#7F8A95;font-size:12px;line-height:18px}
-.monthly-summary{display:flex;gap:12px;margin-top:6px;color:#B8C2CC;font-size:13px;line-height:20px}
-.monthly-summary b{color:#F2F5F7;font-size:17px;font-weight:650;font-variant-numeric:tabular-nums}
-.monthly-more{
-  flex:none;margin-top:5px;padding:5px 2px;
-  color:#9BA7B3;text-decoration:none;font-size:12px;line-height:18px;
+.trend-year:active,.trend-year.is-active{background:#222C36;color:#F2F5F7;border-color:#3A4651}
+.trend-month-row{display:flex;align-items:center;justify-content:center;gap:14px}
+.trend-nav{
+  width:30px;height:30px;min-width:30px;padding:0;border:0;border-radius:9px;background:transparent;
+  color:#B8C2CC;font-size:22px;line-height:1;font-weight:400;
+  display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;
 }
-.monthly-more:active{color:#F2F5F7}
-.monthly-chart-wrap{height:112px;margin:8px -2px 0}
-.monthly-chart{width:100%;height:100%;display:block;overflow:visible;touch-action:pan-y}
-.monthly-chart-grid{fill:none;stroke:#26313C;stroke-width:1;stroke-dasharray:2 5}
-.monthly-chart-area{fill:#B8C2CC;fill-opacity:.045;stroke:none}
-.monthly-chart-line{fill:none;stroke:#B8C2CC;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.monthly-point{fill:#18212B;stroke:#F2F5F7;stroke-width:1.5;cursor:pointer}
-.monthly-point:focus{outline:none}
-.monthly-point:focus-visible{stroke-width:2.5}
-.monthly-axis{height:18px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 3px;color:#65717D;font-size:10px;line-height:14px;font-variant-numeric:tabular-nums}
-.monthly-hint{min-height:17px;margin-top:2px;color:#7F8A95;font-size:11px;line-height:17px;text-align:right}
-.monthly-metric{display:flex;gap:6px;margin-top:5px}
-.monthly-metric-btn{appearance:none;border:1px solid #26313C;background:#161E26;color:#B8C2CC;font-size:12px;line-height:18px;padding:2px 11px;border-radius:999px;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
-.monthly-metric-btn.is-active{background:#B8C2CC;color:#0E141A;border-color:#B8C2CC;font-weight:600}
-.monthly-metric-btn:active{transform:translateY(.5px)}
-@media(prefers-reduced-motion:reduce){.monthly-card.is-changing{animation:none}}
+.trend-nav:active{background:#26313C;color:#fff}
+.trend-nav:disabled{opacity:.2;pointer-events:none}
+.trend-month{color:#C2CBD4;font-size:13px;line-height:20px;font-variant-numeric:tabular-nums;letter-spacing:.5px;will-change:transform}
+.trend-metric{display:flex;gap:6px}
+.trend-metric-btn{appearance:none;border:1px solid #2C3742;background:#161E26;color:#B8C2CC;font-size:12px;line-height:18px;padding:2px 11px;border-radius:999px;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.trend-metric-btn.is-active{background:#C7D0D9;color:#0E141A;border-color:#C7D0D9;font-weight:600}
+.trend-metric-btn:active{transform:translateY(.5px)}
+.trend-summary{display:flex;gap:22px;margin-top:9px;align-items:baseline}
+.trend-stat{display:flex;align-items:baseline;gap:3px;color:#B8C2CC;font-size:13px;line-height:20px}
+.trend-stat b{color:#F2F5F7;font-size:22px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:.5px}
+.trend-stat i{font-style:normal;color:#7F8A95;font-size:12px}
+.trend-delta{margin-left:5px;font-size:11px;font-style:normal;font-variant-numeric:tabular-nums}
+.trend-delta.is-up{color:#7FB38A}
+.trend-delta.is-down{color:#C98C7F}
+.trend-chart-wrap{height:120px;margin:10px -2px 0;will-change:transform,opacity;touch-action:pan-y}
+.trend-chart{width:100%;height:100%;display:block;overflow:visible}
+.trend-grid{fill:none;stroke:#222C36;stroke-width:1;stroke-dasharray:2 5}
+.trend-area{fill:#C7D0D9;fill-opacity:.05;stroke:none}
+.trend-line{fill:none;stroke:#C7D0D9;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.trend-point{fill:#18212B;stroke:#C7D0D9;stroke-width:1.5;cursor:pointer;transition:r .15s}
+.trend-point.is-peak{fill:#F2F5F7;stroke:#F2F5F7;stroke-width:1.5}
+.trend-point:focus{outline:none}
+.trend-point:focus-visible{stroke:#fff;stroke-width:2.5}
+.trend-year-bar{fill:#3A4651}
+.trend-year-bar.is-peak{fill:#C7D0D9}
+.trend-rhythm{display:flex;align-items:flex-end;gap:1px;height:22px;margin:6px -2px 0}
+.trend-rhythm-bar{flex:1 1 0;min-width:1px;background:#2C3742;border-radius:1px;transition:height .22s ease}
+.trend-rhythm-bar.is-peak{background:#55636F}
+.trend-axis{height:18px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 3px;color:#65717D;font-size:10px;line-height:14px;font-variant-numeric:tabular-nums}
+.trend-hint{min-height:17px;margin-top:4px;color:#7F8A95;font-size:11px;line-height:17px;text-align:right}
+.trend-hint b{color:#9BA7B3;font-weight:600;font-variant-numeric:tabular-nums}
+@media(prefers-reduced-motion:reduce){
+  .trend-card.is-in{animation:none}
+  .trend-chart-wrap{transition:none!important}
+  .trend-rhythm-bar{transition:none}
+}
 @media(max-width:380px){
-  .monthly-card{padding:14px 13px 11px}
-  .monthly-title-row strong{font-size:16px}
-  .monthly-chart-wrap{height:104px}
+  .trend-card{padding:14px 13px 12px}
+  .trend-title{font-size:16px}
+  .trend-chart-wrap{height:112px}
+  .trend-stat b{font-size:20px}
+  .trend-summary{gap:18px}
 }

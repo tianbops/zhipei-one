@@ -66,36 +66,37 @@
   </nav>
 
 
-  <section class="monthly-card" id="monthlyCard" aria-labelledby="monthlyTitle" hidden>
-    <div class="monthly-head">
-      <div>
-        <div class="monthly-title-row">
-          <button id="monthlyPrev" class="monthly-nav" type="button" aria-label="上一个月">‹</button>
-          <strong id="monthlyTitle">本月趋势</strong>
-          <button id="monthlyNext" class="monthly-nav" type="button" aria-label="下一个月">›</button>
-        </div>
-        <div id="monthlyMonth" class="monthly-month"></div>
-        <div class="monthly-metric" role="group" aria-label="趋势指标切换">
-          <button id="metricWeight" type="button" class="monthly-metric-btn is-active" aria-pressed="true">重量</button>
-          <button id="metricCount" type="button" class="monthly-metric-btn" aria-pressed="false">单量</button>
-        </div>
-        <div class="monthly-summary" aria-label="当月配送汇总">
-          <span><b id="monthlyWaybills">0</b> 单</span>
-          <span><b id="monthlyWeight">0.00</b> t</span>
-        </div>
+  <section class="trend-card" id="trendCard" aria-labelledby="trendTitle" hidden>
+    <div class="trend-head">
+      <div class="trend-title-row">
+        <h2 id="trendTitle" class="trend-title">本月配送</h2>
+        <button id="trendYearBtn" class="trend-year" type="button">2026 年度 ›</button>
       </div>
-      <a class="monthly-more" href="/pages/history.html?from=home" aria-label="查看历史运单">查看</a>
+      <div class="trend-month-row" id="trendMonthRow">
+        <button id="trendPrev" class="trend-nav" type="button" aria-label="上一个月">‹</button>
+        <span id="trendMonth" class="trend-month">2026年10月</span>
+        <button id="trendNext" class="trend-nav" type="button" aria-label="下一个月">›</button>
+      </div>
+      <div class="trend-metric" id="trendMetric" role="group" aria-label="趋势指标切换">
+        <button id="metricWeight" type="button" class="trend-metric-btn is-active" aria-pressed="true">重量</button>
+        <button id="metricCount" type="button" class="trend-metric-btn" aria-pressed="false">单量</button>
+      </div>
     </div>
-    <div class="monthly-chart-wrap">
-      <svg id="monthlyChart" class="monthly-chart" viewBox="0 0 360 112" preserveAspectRatio="none" role="img" aria-label="当月每日配送趋势">
-        <path id="monthlyGrid" class="monthly-chart-grid" d=""></path>
-        <path id="monthlyChartArea" class="monthly-chart-area" d=""></path>
-        <path id="monthlyChartLine" class="monthly-chart-line" d=""></path>
-        <g id="monthlyChartPoints"></g>
+    <div class="trend-summary" aria-label="配送汇总">
+      <div class="trend-stat"><b id="trendWaybills">0</b><i>单</i><em id="trendWaybillsDelta" class="trend-delta"></em></div>
+      <div class="trend-stat"><b id="trendWeight">0.00</b><i>t</i><em id="trendWeightDelta" class="trend-delta"></em></div>
+    </div>
+    <div class="trend-chart-wrap" id="trendChartWrap">
+      <svg id="trendChart" class="trend-chart" viewBox="0 0 360 120" preserveAspectRatio="none" role="img" aria-label="配送趋势">
+        <path id="trendGrid" class="trend-grid" d=""></path>
+        <path id="trendArea" class="trend-area" d=""></path>
+        <path id="trendLine" class="trend-line" d=""></path>
+        <g id="trendPoints"></g>
       </svg>
+      <div id="trendRhythm" class="trend-rhythm" aria-hidden="true"></div>
     </div>
-    <div id="monthlyAxis" class="monthly-axis" aria-hidden="true"></div>
-    <div id="monthlyHint" class="monthly-hint" aria-live="polite"></div>
+    <div id="trendAxis" class="trend-axis" aria-hidden="true"></div>
+    <div id="trendHint" class="trend-hint" aria-live="polite"></div>
   </section>
 
 
@@ -133,7 +134,7 @@
   <input id="documentInput" type="file" accept="application/pdf,.pdf" hidden>
 </main>
 <script src="/js/home.js?v=monthly-1"></script>
-<script src="/js/home-monthly.js?v=title1"></script>
+<script src="/js/home-monthly.js?v=smart1"></script>
 <script>
 (()=>{const d=document.getElementById("todayDate");if(d){const f=new Intl.DateTimeFormat("zh-CN",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit",weekday:"short"});d.textContent=f.format(new Date()).replaceAll("/","-")}})();
 document.getElementById("logout")?.addEventListener("click",async()=>{const ok=window.zpConfirm?await window.zpConfirm("退出登录","确定要退出当前账号吗？","退出"):true;if(!ok)return;try{await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"})}finally{location.replace("/")}})
