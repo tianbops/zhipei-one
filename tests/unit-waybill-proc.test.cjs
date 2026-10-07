@@ -68,6 +68,12 @@ function check(name, cond, info) {
   check("保存声明后迟到取消被拒绝", cancelledLate === false);
   check("保存完成后终态为 DONE", doneAfterClaim && doneAfterClaim.stage === "DONE" && doneAfterClaim.waybillId === "wb-race");
 
+  console.log("【G】终态保护：迟到失败不得覆盖 CANCELLED / DONE");
+  const lateCancel = await failProc(env, rid4, { stage: "FAILED", recoverable: true, action: "RETRY_SAVE", hint: "迟到失败" });
+  const lateDone = await failProc(env, rid5, { stage: "FAILED", recoverable: true, action: "RETRY_SAVE", hint: "迟到失败" });
+  check("CANCELLED 不被迟到 FAILED 覆盖", lateCancel && lateCancel.stage === "CANCELLED");
+  check("DONE 不被迟到 FAILED 覆盖", lateDone && lateDone.stage === "DONE" && lateDone.waybillId === "wb-race");
+
   console.log("【G】边界：缺少 requestId 安全返回 null");
   check("beginProc(null) 返回 null", (await beginProc(env, { requestId: null, routeId: "r", userId: "u" })) === null);
   check("getProc(unknown) 返回 null", (await getProc(env, "nope")) === null);
