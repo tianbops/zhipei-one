@@ -20,7 +20,7 @@
 .viewport{margin-top:14px}.title{display:flex;align-items:center;justify-content:space-between;min-height:30px;margin-bottom:9px;font-size:16px;font-weight:700}
 .add{width:34px;height:34px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:#fff;font-size:20px;line-height:1}
 .search{margin-bottom:8px}.search input{width:100%;padding:0 12px;color:#fff}
-.row,.route,.card,.invite{border:1px solid rgba(42,53,64,.8);box-shadow:none}.invite{position:relative;overflow:hidden;touch-action:pan-y;-webkit-user-select:none;user-select:none}.invite-content{position:relative;z-index:2;background:var(--panel);padding:13px 14px;transition:transform .18s ease}.invite-actions{position:absolute;inset:0 0 0 auto;width:148px;display:flex;align-items:stretch;z-index:1;margin:0;padding:0;border:0}.invite-actions .small-action{width:74px;min-width:0;border:0;border-radius:0;background:#26313C;color:#fff}.invite-actions .small-action.danger{background:#4A2528;border-color:transparent;color:#FFD5D1}.invite.open .invite-content{transform:translateX(-148px)}.invite-actions .small-action{touch-action:manipulation;-webkit-tap-highlight-color:transparent}.row{margin-bottom:6px;overflow:hidden}.row .content{min-height:54px}
+.row,.route,.card,.invite{border:1px solid rgba(42,53,64,.8);box-shadow:none}.invite{position:relative;overflow:hidden;touch-action:pan-y;-webkit-user-select:none;user-select:none}.invite-head{display:flex;align-items:center;gap:8px}.invite-head .code{margin-right:auto}.invite-head .q-badge{margin-left:auto}.invite-head .copy{flex:0 0 auto}.invite-content{position:relative;z-index:2;background:var(--panel);padding:13px 14px;transition:transform .18s ease}.invite-actions{position:absolute;inset:0 0 0 auto;width:148px;display:flex;align-items:stretch;z-index:1;margin:0;padding:0;border:0}.invite-actions .small-action{width:74px;min-width:0;border:0;border-radius:0;background:#26313C;color:#fff}.invite-actions .small-action.danger{background:#4A2528;border-color:transparent;color:#FFD5D1}.invite.open .invite-content{transform:translateX(-148px)}.invite-actions .small-action{touch-action:manipulation;-webkit-tap-highlight-color:transparent}.row{margin-bottom:6px;overflow:hidden}.row .content{min-height:54px}
 .row .main strong{font-size:14px}.row .meta,.meta{color:var(--soft);font-size:12px}
 .route{margin-bottom:7px;background:var(--card);overflow:hidden}.route-content{padding:13px 14px;background:transparent}
 .route-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}.route-name{font-size:14px;font-weight:700}.route-count{color:var(--muted);font-size:12px}
@@ -402,7 +402,7 @@ function swInvite(el){
   },{passive:true});
   el.addEventListener("touchend",e=>{
     if(!active||!dlg.hidden||!menuBg.hidden){active=false;return}
-    if(e.target.closest(".invite-actions")){active=false;return}
+    if(e.target.closest(".invite-actions")){e.stopPropagation();active=false;return}
     const t=e.changedTouches[0],dx=t.clientX-x,dy=t.clientY-y;active=false;
     if(Math.abs(dx)>34&&Math.abs(dx)>Math.abs(dy)*1.05){
       e.stopPropagation();closeSwipes();
@@ -541,7 +541,7 @@ async function learnRestore(storeId){
     // 线路已左滑展开后，删除按钮本身必须完全脱离分页/行手势。
     // 否则点击删除时这里先执行 closeSwipes()，按钮会在 click 发生前被收回，
     // 用户看到的就是“点击删除 → 删除按钮向右滑回去 → 无法删除”。
-    if(e.target&&e.target.closest&&e.target.closest(".route-delete,.invite-actions")){axis="skip";return}
+    if(e.target&&e.target.closest&&e.target.closest(".route-delete,.invite")){axis="skip";return}
     if(document.querySelector(".row.open,.route.open")){closeSwipes();axis="skip";return}
     const t=e.touches[0];
     sx=t.clientX;sy=t.clientY;axis="";live=false;from=S.page;t0=e.timeStamp||Date.now();
