@@ -66,7 +66,9 @@
           if(node.nodeType===1)setupPasswordToggles(node);
         }));
       });
-      observer.observe(document.body,{childList:true,subtree:true});
+      // 收敛（阶段 8 P3）：去掉 subtree:true —— 回调对新增节点递归查密码框，subtree 冗余；
+      // 密码框或其容器是 body 直接子 addedNode 即被 childList 捕获（验证见 tests/tools/visual/inspect_observer.js）。
+      observer.observe(document.body,{childList:true});
     }
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",initPasswordToggles,{once:true});
@@ -354,7 +356,9 @@
     eventTarget.addEventListener("scroll",update,{passive:true});
     window.addEventListener("resize",update);
     // 列表内容后续重渲染/增减时重测是否继续显示箭头（内容长高不改变盒子尺寸，须监听子节点变化）
-    if(window.MutationObserver)new MutationObserver(update).observe(el===document.scrollingElement?document.body:el,{childList:true,subtree:true});
+    // 收敛（阶段 8 P3）：保存 observer 引用（消除「实例未保存无法 disconnect」代码异味）；
+    // 监听目标统一为 el（整页滚动时 el 即 scrollingElement，范围与原 observe body 一致；列表容器滚动时本就小）。
+    if(window.MutationObserver){const mo=new MutationObserver(update);mo.observe(el,{childList:true,subtree:true});}
     setTimeout(update,80);
   }
   window.addEventListener("load",setupGlobalScrollButtons,{once:true});
