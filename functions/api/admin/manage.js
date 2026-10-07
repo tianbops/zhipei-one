@@ -1,6 +1,7 @@
 import {json,body} from "../_json.js";
 import {currentUser} from "../_auth.js";
 import {get,command} from "../_redis.js";
+import {Budget,scanKeysBudgeted,SUBREQUEST_LIMIT} from "../_redis-budget.js";
 import {hash} from "../login.js";
 import {isSystemAdmin} from "../_permissions.js";
 import {normalizeLegacyRoles} from "../_migrations.js";
@@ -57,13 +58,16 @@ export async function onRequestPost({request,env}){
     ];
     let deleted=0;
     for(const pattern of oldPatterns){
-      let cursor="0";
-      do{
-        const scan=await command(env,["SCAN",cursor,"MATCH",pattern,"COUNT","200"]);
-        cursor=String(scan?.[0]??"0");
-        const keys=Array.isArray(scan?.[1])?scan[1].map(String).filter(Boolean):[];
-        if(keys.length){await command(env,["DEL",...keys]);deleted+=keys.length;}
-      }while(cursor!=="0");
+      // 原实现 SCAN 全键空间无上限循环，大运单量下 O(全键空间) 子请求 → 潜在 1101。
+      // 现统一收口到 _redis-budget.js：scanKeysBudgeted 受预算 + 迭代上限约束，DEL 分批(100)且受预算门控。
+      const budget=new Budget(SUBREQUEST_LIMIT);
+      const {keys}=await scanKeysBudgeted(env,pattern,budget,{count:200,iterCap:12});
+      for(let i=0;i<keys.length;i+=100){
+        if(!budget.take(1))break; // 预算门控 DEL（避免 1101）；可再次 reset 续清剩余旧数据
+        const batch=keys.slice(i,i+100);
+        await command(env,["DEL",...batch]);
+        deleted+=batch.length;
+      }
     }
     return json({success:true,deleted});
   }

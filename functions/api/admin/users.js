@@ -1,6 +1,7 @@
 import {json,body} from "../_json.js";
 import {currentUser} from "../_auth.js";
 import {get,set,del,command} from "../_redis.js";
+import {Budget,scanKeysBudgeted,SUBREQUEST_LIMIT} from "../_redis-budget.js";
 import {atomicBind,atomicUnbind} from "../_binding.js";
 import {getRoute} from "../_route.js";
 import {isSystemAdmin} from "../_permissions.js";
@@ -8,7 +9,22 @@ async function read(env,id){const raw=await get(env,"user:"+id);if(!raw)return n
 async function ids(env){const raw=await get(env,"users:index");if(!raw)return [];try{const v=typeof raw==="string"?JSON.parse(raw):raw;if(!Array.isArray(v))throw new Error("INVALID_INDEX");return v}catch{throw Object.assign(new Error("USER_INDEX_INVALID"),{code:"USER_INDEX_INVALID"})}}
 async function safe(env,u){const r=u.boundRouteId?await getRoute(env,u.boundRouteId):null;return {id:u.id,username:u.username,name:u.name||"",role:u.role||"user",disabled:!!u.disabled,boundRouteId:u.boundRouteId||null,routeDuty:u.routeDuty||null,routeName:r?.name||null,createdAt:u.createdAt||null}}
 async function loadRequestIds(env){const raw=await get(env,"route-requests:index");if(!raw)return [];try{const v=typeof raw==="string"?JSON.parse(raw):raw;if(!Array.isArray(v)||v.some(x=>typeof x!=="string"||!x.trim()))throw 0;return v}catch{return null}}
-async function cleanupUserSessions(env,userId){let c="0",deleted=0;do{const s=await command(env,["SCAN",c,"MATCH","zp:session:*","COUNT","200"]);c=String(s?.[0]??"0");const keys=s?.[1]||[];if(keys.length){const vals=await command(env,["MGET",...keys]);const gone=[];for(let i=0;i<keys.length;i++){let v=vals?.[i];try{v=typeof v==="string"?JSON.parse(v):v}catch{v=null}if(v?.userId===userId)gone.push(keys[i])}if(gone.length){await command(env,["DEL",...gone]);deleted+=gone.length}}}while(c!=="0");return deleted}
+// 删用户时清理其会话：原实现 SCAN zp:session:* 全键空间遍历，会话多时 O(总会话数) 子请求 → 潜在 1101。
+// 现统一收口到 _redis-budget.js：scanKeysBudgeted 受预算 + 迭代上限约束，MGET 分批(100)，绝不静默越限。
+export async function cleanupUserSessions(env,userId){
+  const budget=new Budget(SUBREQUEST_LIMIT);
+  const {keys}=await scanKeysBudgeted(env,"zp:session:*",budget,{count:200,iterCap:12});
+  let deleted=0;
+  for(let i=0;i<keys.length;i+=100){
+    if(!budget.take(1))break; // 预算门控 MGET
+    const chunk=keys.slice(i,i+100);
+    const vals=await command(env,["MGET",...chunk]);
+    const gone=[];
+    for(let j=0;j<chunk.length;j++){let v=vals?.[j];try{v=typeof v==="string"?JSON.parse(v):v}catch{v=null}if(v?.userId===userId)gone.push(chunk[j]);}
+    if(gone.length){ if(!budget.take(1))break; await command(env,["DEL",...gone]); deleted+=gone.length; } // 预算门控 DEL
+  }
+  return deleted;
+}
 async function cleanupUserRequests(env,userId){let removed=0;for(let attempt=0;attempt<3;attempt++){const raw=await get(env,"route-requests:index");if(!raw) return removed;let ids;try{ids=typeof raw==="string"?JSON.parse(raw):raw}catch{return removed}if(!Array.isArray(ids)||ids.some(x=>typeof x!=="string"||!x.trim()))return removed;const keep=[];const deleteKeys=[];for(const rid of ids){const item=await get(env,"route-request:"+rid);let q=null;try{q=typeof item==="string"?JSON.parse(item):item}catch{}if(q?.userId===userId){deleteKeys.push("zp:route-request:"+rid);removed++;}else keep.push(rid)}if(deleteKeys.length)await command(env,["DEL",...deleteKeys]);const check=await command(env,["EVAL",'if redis.call("GET",KEYS[1])==ARGV[1] then redis.call("SET",KEYS[1],ARGV[2]); return 1 end; return 0',"1","zp:route-requests:index",String(raw),JSON.stringify(keep)]);if(Number(check)===1)return removed}return removed}
 export async function onRequestGet({request,env}){const actor=await currentUser(request,env);if(!actor||!isSystemAdmin(actor))return json({success:false,error:"无权限"},403);let userIds;try{userIds=await ids(env)}catch{return json({success:false,code:"USER_INDEX_INVALID",error:"用户索引数据异常，请联系管理员处理"},409)}const list=[];for(const id of userIds){const u=await read(env,id);if(!u)return json({success:false,code:"USER_DATA_INVALID",error:"用户索引包含缺失或损坏的用户数据，请联系管理员处理"},409);list.push(await safe(env,u))}return json({success:true,users:list})}
 export async function onRequestPost({request,env}){const actor=await currentUser(request,env);if(!actor||!isSystemAdmin(actor))return json({success:false,error:"无权限"},403);const input=await body(request);const action=String(input.action||"");const id=String(input.userId||"");const u=await read(env,id);if(!u)return json({success:false,error:"用户不存在"},404);if(isSystemAdmin(u))return json({success:false,error:"系统管理员账号不能通过此接口修改"},403);
