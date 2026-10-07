@@ -92,6 +92,14 @@ function evalSave(store, keys, argv) {
   lua.lua_pushjsfunction(L, makeRedisCall(store));
   lua.lua_setglobal(L, to_luastring("redis_call"));
   lauxlib.luaL_dostring(L, to_luastring('redis = { call = redis_call }'));
+  // fengari 不内置 Redis 的 cjson；生产 Redis Lua 环境提供 cjson.decode。
+  // 这里为真实 saveScript 提供等价的最小字段解码能力，保持测试运行时与生产脚本一致。
+  const cjsonShim = 'cjson = { decode = function(s) ' +
+    'local d = s:match(\'"dailyDedupeKey"%s*:%s*"([^"]*)"\'); ' +
+    'local f = s:match(\'"businessFingerprint"%s*:%s*"([^"]*)"\'); ' +
+    'if not d and not f then error("invalid test json") end; ' +
+    'return { dailyDedupeKey = d, businessFingerprint = f } end }';
+  lauxlib.luaL_dostring(L, to_luastring(cjsonShim));
   const keysLua = "KEYS = {" + keys.map(k => `"${String(k).replace(/"/g, '\\"')}"`).join(",") + "}";
   const argvLua = "ARGV = {" + argv.map(a => `"${String(a).replace(/"/g, '\\"')}"`).join(",") + "}";
   const chunk = `${keysLua}\n${argvLua}\nlocal function __run()\n${SAVE_SCRIPT}\nend\nreturn __run()`;
