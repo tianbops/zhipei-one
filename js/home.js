@@ -422,6 +422,43 @@ async function loadHome(){
   }
 }
 loadHome();
+async function loadMonthlyOverview(){
+  const card=$("monthlyCard"),monthEl=$("monthlyMonth"),waybillEl=$("monthlyWaybills"),weightEl=$("monthlyWeight"),chart=$("monthlyChart"),line=$("monthlyChartLine"),dotEl=$("monthlyChartDot"),axis=$("monthlyAxis");
+  if(!card||!line)return;
+  try{
+    const r=await fetch("/api/home/monthly",{credentials:"same-origin",cache:"no-store"});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok||!d.success||!d.month)return;
+    const days=Array.isArray(d.days)?d.days:[], total=Number(d.waybills)||0, weight=Number(d.totalWeight)||0;
+    card.hidden=false;
+    monthEl.textContent=String(d.month).replace(/^\\d{4}-/,"")+"月";
+    waybillEl.textContent=String(total);
+    weightEl.textContent=(Math.round(weight*100)/100).toFixed(2);
+    const width=360,height=96,padX=2,padY=12;
+    const values=days.map(x=>Math.max(0,Number(x.waybills)||0));
+    const max=Math.max(1,...values),lastIndex=Math.max(0,values.length-1);
+    const points=values.map((v,i)=>{
+      const x=lastIndex?padX+(i/lastIndex)*(width-padX*2):width/2;
+      const y=height-padY-(v/max)*(height-padY*2);
+      return [x,y];
+    });
+    line.setAttribute("d",points.length?points.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" "):"");
+    if(points.length){
+      const p=points[points.length-1];
+      dotEl.setAttribute("cx",p[0]);dotEl.setAttribute("cy",p[1]);
+    }
+    axis.innerHTML="";
+    const marks=[0,Math.floor((days.length-1)*.25),Math.floor((days.length-1)*.5),Math.floor((days.length-1)*.75),Math.max(0,days.length-1)];
+    [...new Set(marks)].forEach(i=>{
+      const s=document.createElement("span");
+      s.textContent=String(Number(days[i]?.day)||i+1);
+      axis.appendChild(s);
+    });
+    requestAnimationFrame(()=>card.classList.add("is-ready"));
+  }catch{}
+}
+
+loadMonthlyOverview();
 
 /* 三横菜单「账号设置」右侧显示当前用户名：用户打开菜单即可直接确认登录身份。
    静默失败不阻塞首页，读不到就保持骨架占位（样式与「当前线路」数值一致）。 */
