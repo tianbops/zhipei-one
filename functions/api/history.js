@@ -5,6 +5,7 @@ import {canUseRoute} from "./_permissions.js";
 import {canReadWaybill,canWriteWaybill} from "./_waybill-acl.js";
 import {getRoute} from "./_route.js";
 import {dailyWaybillKey} from "./_waybill-identity.js";
+import {Budget,scanKeysBudgeted,throwBudgetExceeded,SUBREQUEST_BUDGET_EXCEEDED} from "./_redis-budget.js";
 
 const clean=v=>String(v??"").trim();
 const todayCN=()=>{const parts=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());const values=Object.fromEntries(parts.filter(p=>p.type!=="literal").map(p=>[p.type,p.value]));return `${values.year}-${values.month}-${values.day}`;};
@@ -112,25 +113,32 @@ export async function onRequestGet({request,env}){
  }catch(e){return json({success:false,code:"HISTORY_READ_FAILED",error:"统一运单查询失败",detail:String(e?.message||e||"UNKNOWN_ERROR").slice(0,180)},500)}
 }
 
-async function deleteWaybill(env,routeId,date,waybillId){
+async function deleteWaybill(env,routeId,date,waybillId,budget){
+ const cmd=async parts=>{if(!budget.take(1))throwBudgetExceeded(budget.max,"history-delete");return command(env,parts)};
  const errors=[];let mainOk=false,indexOk=false,childrenOk=true,refOk=true;
  // 删除前先读主记录，以恢复反向去重键（日去重键 / 业务指纹键）。
  // 删除后若这些键仍指向本单则一并清除；已被覆盖/再上传改派给新单的键不删（保护幂等/覆盖链）。
  let record=null;
- try{const raw=await command(env,["GET","zp:waybill:"+waybillId]);if(raw)record=typeof raw==="string"?JSON.parse(raw):raw}catch(e){errors.push(e)}
- try{await command(env,["SREM",waybillIndexKey(routeId,date),waybillId]);indexOk=true}catch(e){errors.push(e)}
- try{await command(env,["DEL","zp:waybill:"+waybillId]);mainOk=true}catch(e){errors.push(e)}
- let cursor="0";const prefix="zp:waybill:"+waybillId+":";
- do{let keys=[];try{const r=await command(env,["SCAN",cursor,"MATCH",prefix+"*","COUNT","100"]);cursor=String(r?.[0]??"0");keys=Array.isArray(r?.[1])?r[1]:[]}catch(e){errors.push(e);childrenOk=false;break}
-    if(keys.length){try{await command(env,["DEL",...keys])}catch(e){errors.push(e);childrenOk=false}}}while(cursor!=="0");
+ try{const raw=await cmd(["GET","zp:waybill:"+waybillId]);if(raw)record=typeof raw==="string"?JSON.parse(raw):raw}catch(e){errors.push(e)}
+ try{await cmd(["SREM",waybillIndexKey(routeId,date),waybillId]);indexOk=true}catch(e){errors.push(e)}
+ try{await cmd(["DEL","zp:waybill:"+waybillId]);mainOk=true}catch(e){errors.push(e)}
+ const prefix="zp:waybill:"+waybillId+":";
+ try{
+  const scanned=await scanKeysBudgeted(env,prefix+"*",budget,{count:500,cap:5000});
+  if(!scanned.complete){childrenOk=false;errors.push(Object.assign(new Error("历史删除子键扫描未完成"),{code:SUBREQUEST_BUDGET_EXCEEDED}));}
+  if(scanned.keys.length){
+   if(!budget.take(1))throwBudgetExceeded(budget.max,"history-delete-children");
+   await command(env,["DEL",...scanned.keys]);
+  }
+ }catch(e){errors.push(e);childrenOk=false}
  if(record){
   const refKeys=[];
   if(record.businessFingerprint)refKeys.push("zp:waybill:fingerprint:"+record.businessFingerprint);
   try{const sig=await dailyWaybillKey(record);refKeys.push("zp:waybill:dedupe:"+sig)}catch{}
   for(const k of refKeys){
    try{
-    const ref=await command(env,["GET",k]);
-    if(String(ref??"")===String(waybillId))await command(env,["DEL",k]);
+    const ref=await cmd(["GET",k]);
+    if(String(ref??"")===String(waybillId))await cmd(["DEL",k]);
    }catch(e){refOk=false;errors.push(e)}
   }
  }
@@ -143,12 +151,12 @@ export async function onRequestDelete({request,env}){
  const url=new URL(request.url),routeId=clean(url.searchParams.get("routeId")||user.dispatchRouteId||user.boundRouteId),date=clean(url.searchParams.get("date")),month=clean(url.searchParams.get("month")),currentRoute=clean(user.dispatchRouteId)||clean(user.boundRouteId);
  if(!routeId||routeId!==currentRoute)return json({success:false,error:"无权操作该线路历史"},403);
   const range=historyRange(todayCN(),env?.WAYBILL_HISTORY_MONTHS);
-  const summarize=results=>{let deleted=0,mainFailed=false,partial=false;for(const r of results){if(r.mainOk)deleted++;else mainFailed=true;if(!r.indexOk||!r.childrenOk||!r.refOk)partial=true}return {deleted,mainFailed,partial}};
+  const summarize=results=>{let deleted=0,mainFailed=false,partial=false,budgetExceeded=false;for(const r of results){if(r.mainOk)deleted++;else mainFailed=true;if(!r.indexOk||!r.childrenOk||!r.refOk)partial=true;if(r.budgetExceeded)budgetExceeded=true}return {deleted,mainFailed,partial,budgetExceeded}};
   if(month){
    if(!/^\d{4}-\d{2}$/.test(month))return json({success:false,code:"MONTH_INVALID",error:"月份格式错误"},400);
    if(!monthInRange(month,range))return json({success:false,code:"MONTH_OUT_OF_RANGE",error:"月份不在历史查询范围内"},400);
-   const entries=await readDates(env,routeId,range);const results=[];let total=0;
-   for(const entry of entries){if(!entry.date.startsWith(month))continue;const list=await readDateWaybills(env,user,routeId,entry.date);total+=list.length;for(const order of list.filter(w=>canWriteWaybill(user,w,env))){results.push(await deleteWaybill(env,routeId,entry.date,order.id))}}
+   const entries=await readDates(env,routeId,range);const results=[];let total=0;const budget=new Budget();
+   for(const entry of entries){if(!entry.date.startsWith(month))continue;const list=await readDateWaybills(env,user,routeId,entry.date);total+=list.length;for(const order of list.filter(w=>canWriteWaybill(user,w,env))){try{results.push(await deleteWaybill(env,routeId,entry.date,order.id,budget))}catch(e){if(e?.code===SUBREQUEST_BUDGET_EXCEEDED){return json({success:false,code:"PARTIAL_FAILURE",error:"删除已达到单次资源预算，请继续重试完成剩余运单",deleted:results.filter(x=>x.mainOk).length,month,partial:true,budgetUsed:budget.used,budgetMax:budget.max},503)}throw e}}}
    const s=summarize(results);const skipped=total-results.length;
    if(s.mainFailed)return json({success:false,code:"WAYBILL_DELETE_FAILED",error:"部分运单主记录删除失败,请重试",deleted:s.deleted,skipped,total,month});
    return json({success:true,code:skipped>0?"PARTIAL_DELETE":(s.partial?"PARTIAL_FAILURE":undefined),message:skipped>0?`已删除 ${s.deleted} 单，另有 ${skipped} 单因无权限未删除`:(s.partial?"部分索引或子键清理未完成,建议稍后执行修复":undefined),deleted:s.deleted,skipped,total,deletedWaybills:s.deleted,month});
@@ -161,12 +169,12 @@ export async function onRequestDelete({request,env}){
   const target=orders.find(order=>order.id===waybillId);
   if(!target)return json({success:false,code:"WAYBILL_NOT_FOUND",error:"运单不存在或已删除"},404);
   if(!canWriteWaybill(user,target,env))return json({success:false,code:"WAYBILL_FORBIDDEN",error:"无权删除该运单"},403);
-  const r=await deleteWaybill(env,routeId,date,target.id);
+  const budget=new Budget();let r;try{r=await deleteWaybill(env,routeId,date,target.id,budget)}catch(e){if(e?.code===SUBREQUEST_BUDGET_EXCEEDED)return json({success:false,code:"PARTIAL_FAILURE",error:"删除已达到单次资源预算，请稍后重试",deleted:0,waybillId,budgetUsed:budget.used,budgetMax:budget.max},503);throw e}
   if(!r.mainOk)return json({success:false,code:"WAYBILL_DELETE_FAILED",error:"运单主记录删除失败,请重试",deleted:0,waybillId});
   return json({success:true,code:r.indexOk&&r.childrenOk&&r.refOk?undefined:"PARTIAL_FAILURE",message:r.indexOk&&r.childrenOk&&r.refOk?undefined:"部分索引或子键清理未完成,建议稍后执行修复",deleted:1,deletedWaybills:1,waybillId});
  }
- const readable=await readDateWaybills(env,user,routeId,date);const results=[];
- for(const order of readable.filter(w=>canWriteWaybill(user,w,env))){results.push(await deleteWaybill(env,routeId,date,order.id))}
+ const readable=await readDateWaybills(env,user,routeId,date);const results=[];const budget=new Budget();
+ for(const order of readable.filter(w=>canWriteWaybill(user,w,env))){try{results.push(await deleteWaybill(env,routeId,date,order.id,budget))}catch(e){if(e?.code===SUBREQUEST_BUDGET_EXCEEDED){const s=summarize(results);return json({success:false,code:"PARTIAL_FAILURE",error:"删除已达到单次资源预算，请继续重试完成剩余运单",deleted:s.deleted,skipped:readable.length-results.length,date,budgetUsed:budget.used,budgetMax:budget.max},503)}throw e}}
  const s=summarize(results);const skipped=readable.length-results.length;
  if(s.mainFailed)return json({success:false,code:"WAYBILL_DELETE_FAILED",error:"运单主记录删除失败,请重试",deleted:s.deleted,skipped,total:readable.length,date});
  return json({success:true,code:skipped>0?"PARTIAL_DELETE":(s.partial?"PARTIAL_FAILURE":undefined),message:skipped>0?`已删除 ${s.deleted} 单，另有 ${skipped} 单因无权限未删除`:(s.partial?"部分索引或子键清理未完成,建议稍后执行修复":undefined),deleted:s.deleted,skipped,total:readable.length,deletedWaybills:s.deleted,date});
