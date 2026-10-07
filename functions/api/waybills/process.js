@@ -25,7 +25,7 @@ async function base(env,id){const raw=await get(env,"route:"+id+":base");if(!raw
 function extract(rawText){
   const stores=[]; let date=null,vehicle=null,totalWeight=null;
   // 多截图属于同一张运单。截图来源标记只用于诊断，不得进入门店提取文本。
-  const normalizedInput=String(rawText||"").replace(/【第\\d+张截图】/g,"\\n");
+  const normalizedInput=String(rawText||"").replace(/【第\d+张截图】/g,"\n");
   const lines=clean(normalizedInput).split(/\r?\n+/).map(x=>x.trim()).filter(Boolean).slice(0,5000);
   const full=lines.join(" ");
   const dm=full.match(/(20\d{2}[-/.年]\d{1,2}[-/.月]\d{1,2}日?)/);
@@ -257,7 +257,7 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
       // 只删除确认连续重复的文字；没有足够重叠时保持原文，绝不凭猜测删除业务内容。
       const mergeOcrImages=(texts)=>{
         const out=[];
-        const norm=s=>String(s||"").replace(/[\\s\\u200b\\uFEFF]+/g,"");
+        const norm=s=>String(s||"").replace(/[\s\u200b\uFEFF]+/g,"");
         for(const text of texts){
           if(!out.length){out.push(text);continue}
           const prev=out[out.length-1];
@@ -270,7 +270,7 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
           if(overlap){
             let removeChars=0,seen=0;
             for(const ch of String(text)){
-              if(/\\s|\\u200b|\\uFEFF/.test(ch)) continue;
+              if(/\s|\u200b|\uFEFF/.test(ch)) continue;
               seen++;
               removeChars++;
               if(seen>=overlap)break;
@@ -284,7 +284,6 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
       };
       recognizedText=mergeOcrImages(imageTexts);
       ocr={provider:"aistudio",model:"PP-OCRv6",jobId:results.map(x=>x.jobId).filter(Boolean),lineCount:results.reduce((n,x)=>n+(Number(x.lineCount)||0),0),lowConfidence:results.some(x=>x.lowConfidence),imageCount:results.length,imageTexts};
-      ocr={provider:"aistudio",model:"PP-OCRv6",jobId:results.map(x=>x.jobId).filter(Boolean),lineCount:results.reduce((n,x)=>n+(Number(x.lineCount)||0),0),lowConfidence:results.some(x=>x.lowConfidence),imageCount:results.length};
       ocrMs=Date.now()-ocrStarted;
       emit(54,totalFiles>1?`已完成 ${totalFiles} 张截图识别`:"已完成运单识别");
     }catch(e){throw e}
