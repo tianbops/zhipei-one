@@ -66,29 +66,20 @@
   </nav>
 
 
-  <section class="monthly-card" id="monthlyCard" aria-labelledby="monthlyTitle" hidden>
+    <section class="monthly-card" id="monthlyCard" aria-labelledby="monthlyTitle" hidden>
     <div class="monthly-head">
-      <div>
-        <div class="monthly-title-row">
-          <strong id="monthlyTitle">本月配送</strong>
-          <span id="monthlyMonth" class="monthly-month"></span>
-        </div>
-        <div class="monthly-summary" aria-label="本月配送汇总">
-          <span><b id="monthlyWaybills">0</b> 单</span>
-          <span><b id="monthlyWeight">0.00</b> t</span>
-        </div>
-      </div>
-      <a class="monthly-more" href="/pages/history.html?from=home" aria-label="查看本月历史">查看</a>
+      <div class="monthly-head-main"><div class="monthly-title-row"><strong id="monthlyTitle">本月配送</strong><button id="monthlyMonthButton" class="monthly-month-button" type="button"><span id="monthlyMonth"></span><span class="monthly-chevron">⌄</span></button></div>
+      <div class="monthly-summary"><span><b id="monthlyWaybills">0</b> 单</span><span><b id="monthlyWeight">0.00</b> t</span><span id="monthlyGrowth" class="monthly-growth" hidden></span></div></div>
+      <button id="monthlyYearButton" class="monthly-year-button" type="button">年度</button>
     </div>
-    <div class="monthly-chart-wrap">
-      <svg id="monthlyChart" class="monthly-chart" viewBox="0 0 360 96" preserveAspectRatio="none" role="img" aria-label="本月每日配送趋势">
-        <path id="monthlyChartLine" class="monthly-chart-line" d=""></path>
-        <circle id="monthlyChartDot" class="monthly-chart-dot" cx="0" cy="0" r="3.5"></circle>
-      </svg>
+    <div class="monthly-nav" aria-label="月份切换"><button id="monthlyPrev" type="button" aria-label="上一个月">‹</button><div class="monthly-nav-track"><span id="monthlyNavLabel"></span><span class="monthly-swipe-hint">左右滑动</span></div><button id="monthlyNext" type="button" aria-label="下一个月">›</button></div>
+    <div class="monthly-chart-wrap" id="monthlyChartWrap">
+      <svg id="monthlyChart" class="monthly-chart" viewBox="0 0 360 112" preserveAspectRatio="none" role="img" aria-label="每日配送趋势"><g class="monthly-grid"><path d="M0 22H360M0 56H360M0 90H360"></path></g><path id="monthlyChartArea" class="monthly-chart-area" d=""></path><path id="monthlyChartLine" class="monthly-chart-line" d=""></path><g id="monthlyChartNodes" class="monthly-chart-nodes"></g></svg>
     </div>
-    <div id="monthlyAxis" class="monthly-axis" aria-hidden="true"></div>
+    <div id="monthlyAxis" class="monthly-axis"></div><div id="monthlyActivity" class="monthly-activity"></div>
+    <div id="monthlyYearView" class="monthly-year-view" hidden><div class="monthly-year-head"><div><strong id="monthlyYearTitle">2026 年度</strong><span>配送节奏</span></div><div class="monthly-year-total"><b id="monthlyYearWaybills">0</b> 单 · <b id="monthlyYearWeight">0.00</b> t</div></div><div id="monthlyYearBars" class="monthly-year-bars"></div><div id="monthlyYearPeak" class="monthly-year-peak"></div></div>
+    <div class="monthly-foot"><a class="monthly-more" href="/pages/history.html?from=home">查看历史</a><span id="monthlyStatus" class="monthly-status"></span></div>
   </section>
-
 
   <div id="uploadArea" class="upload-overlay" hidden aria-hidden="true">
     <div class="upload-sheet" role="dialog" aria-modal="true" aria-labelledby="uploadTitle">
