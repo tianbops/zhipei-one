@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="智配One">
 <link rel="stylesheet" href="/css/app.css?v=e634d2ad"><link rel="stylesheet" href="/css/ui-unified.css?v=902cf092">
-<link rel="stylesheet" href="/css/home.css?v=title1">
+<link rel="stylesheet" href="/css/home.css?v=title2">
 </head>
 <body>
 <main class="home-app">
@@ -70,16 +70,18 @@
     <div class="trend-head">
       <div class="trend-title-row">
         <h2 id="trendTitle" class="trend-title">月度统计</h2>
-        <button id="trendYearBtn" class="trend-year" type="button">年度</button>
+        <div class="trend-controls">
+          <div class="trend-metric" id="trendMetric" role="group" aria-label="趋势指标切换">
+            <button id="metricWeight" type="button" class="trend-metric-btn is-active" aria-pressed="true">重量</button>
+            <button id="metricCount" type="button" class="trend-metric-btn" aria-pressed="false">单量</button>
+          </div>
+          <button id="trendYearBtn" class="trend-year" type="button">年度</button>
+        </div>
       </div>
       <div class="trend-month-row" id="trendMonthRow">
         <button id="trendPrev" class="trend-nav" type="button" aria-label="上一个月">‹</button>
         <span id="trendMonth" class="trend-month">2026年10月</span>
         <button id="trendNext" class="trend-nav" type="button" aria-label="下一个月">›</button>
-      </div>
-      <div class="trend-metric" id="trendMetric" role="group" aria-label="趋势指标切换">
-        <button id="metricWeight" type="button" class="trend-metric-btn is-active" aria-pressed="true">重量</button>
-        <button id="metricCount" type="button" class="trend-metric-btn" aria-pressed="false">单量</button>
       </div>
     </div>
     <div class="trend-summary" aria-label="配送汇总">
