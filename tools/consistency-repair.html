@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>一致性巡检 / 孤儿指纹修复</title>
+<style>
+  :root{ --bg:#0f1216; --card:#1a1f26; --line:#2a313b; --fg:#e8edf2; --muted:#8b97a5;
+         --ok:#3fb950; --warn:#d29922; --bad:#f85149; --acc:#388bfd; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{ margin:0; background:var(--bg); color:var(--fg);
+        font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+        padding:env(safe-area-inset-top) 14px calc(14px + env(safe-area-inset-bottom)); }
+  h1{ font-size:19px; margin:14px 0 4px; }
+  .sub{ color:var(--muted); font-size:13px; margin:0 0 14px; }
+  label{ display:block; font-size:13px; color:var(--muted); margin:0 0 6px; }
+  input{ width:100%; padding:14px; font-size:16px; border:1px solid var(--line); border-radius:12px;
+         background:#0b0e12; color:var(--fg); margin-bottom:14px; }
+  .row{ display:flex; gap:10px; }
+  button{ flex:1; padding:18px 10px; font-size:16px; font-weight:600; border:none; border-radius:14px;
+          color:#fff; background:var(--acc); active{ transform:scale(.98); } }
+  button.check{ background:#2563eb; }
+  button.repair{ background:var(--ok); }
+  button.recheck{ background:#6e40c9; }
+  pre{ background:#0b0e12; border:1px solid var(--line); border-radius:12px; padding:12px;
+       white-space:pre-wrap; word-break:break-all; font-size:13px; margin-top:14px; max-height:46vh; overflow:auto; }
+  .kv{ display:grid; grid-template-columns:auto 1fr; gap:4px 12px; margin-top:12px; font-size:15px; }
+  .kv b{ color:var(--muted); font-weight:500; }
+  .badge{ display:inline-block; padding:2px 10px; border-radius:999px; font-size:13px; font-weight:600; }
+  .b-ok{ background:rgba(63,185,80,.18); color:var(--ok); }
+  .b-bad{ background:rgba(248,81,73,.18); color:var(--bad); }
+  .hint{ color:var(--muted); font-size:12px; margin-top:10px; }
+</style>
+</head>
+<body>
+  <h1>一致性巡检 / 孤儿指纹修复</h1>
+  <p class="sub">同源页面，自动携带登录 Cookie。仅管理员可用，repair 只删指向缺失主记录的孤儿指纹键。</p>
+
+  <label for="rid">线路 ID (routeId)</label>
+  <input id="rid" value="route_6cc0f23ea7e445b585cf165fd6b8b79a" autocapitalize="off" autocorrect="off" spellcheck="false" />
+
+  <div class="row">
+    <button class="check"  id="btnCheck">① 巡检</button>
+    <button class="recheck" id="btnRecheck">③ 复测</button>
+  </div>
+  <div class="row" style="margin-top:10px;">
+    <button class="repair" id="btnRepair">② 修复孤儿指纹</button>
+  </div>
+
+  <div id="kv" class="kv"></div>
+  <pre id="out">— 点击上方按钮开始 —</pre>
+  <p class="hint">巡检/复测为只读 GET；修复为写操作 POST。修复后请点「③ 复测」确认 total=0。</p>
+
+<script>
+const $ = id => document.getElementById(id);
+const rid = () => ($("rid").value || "").trim();
+const esc = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+function renderKV(j, kind){
+  const kv = $("kv"); kv.innerHTML = "";
+  if (kind === "repair"){
+    kv.innerHTML =
+      `<b>repairedCount</b><span>${j.repairedCount ?? "—"}</span>`+
+      `<b>skippedCount</b><span>${j.skippedCount ?? "—"}</span>`+
+      `<b>remainingManual</b><span>${Array.isArray(j.remainingManual)? j.remainingManual.length : "—"}</span>`+
+      `<b>success</b><span>${j.success ? '<span class="badge b-ok">true</span>' : '<span class="badge b-bad">false</span>'}</span>`;
+  } else if (j && j.summary){
+    const total = j.summary.total ?? "—";
+    kv.innerHTML =
+      `<b>degraded</b><span>${j.degraded ? '<span class="badge b-bad">true</span>' : '<span class="badge b-ok">false</span>'}</span>`+
+      `<b>summary.total</b><span>${total}</span>`+
+      `<b>ORPHAN_FP</b><span>${j.summary.counts?.ORPHAN_FINGERPRINT_KEY ?? "—"}</span>`+
+      `<b>budget.used</b><span>${j.budget?.used ?? "—"} / ${j.budget?.limit ?? "?"}</span>`+
+      `<b>hitsLimit</b><span>${j.budget?.hitsServerlessLimit ? '<span class="badge b-bad">true</span>' : '<span class="badge b-ok">false</span>'}</span>`;
+  }
+}
+
+async function getCheck(){
+  const rid_ = rid(); if(!rid_){ alert("请先填线路 ID"); return; }
+  $("out").textContent = "请求中…";
+  try{
+    const r = await fetch("/api/waybills/diagnostic?check=consistency&routeId=" + encodeURIComponent(rid_));
+    const j = await r.json();
+    renderKV(j, "check");
+    $("out").textContent = JSON.stringify(j, null, 2);
+  }catch(e){ $("out").textContent = "ERR " + e.message; }
+}
+
+async function postRepair(){
+  const rid_ = rid(); if(!rid_){ alert("请先填线路 ID"); return; }
+  if(!confirm("确认修复线路 " + rid_ + " 的孤儿指纹键？该操作会删除悬空指纹键。")) return;
+  $("out").textContent = "请求中…";
+  try{
+    const r = await fetch("/api/waybills/diagnostic?action=repair-consistency&routeId=" + encodeURIComponent(rid_), {method:"POST"});
+    const j = await r.json();
+    renderKV(j, "repair");
+    $("out").textContent = JSON.stringify(j, null, 2);
+    if (j.repairedCount > 0) alert("已修复 " + j.repairedCount + " 条，请点「③ 复测」确认 total=0");
+  }catch(e){ $("out").textContent = "ERR " + e.message; }
+}
+
+$("btnCheck").onclick = getCheck;
+$("btnRecheck").onclick = getCheck;
+$("btnRepair").onclick = postRepair;
+</script>
+</body>
+</html>
