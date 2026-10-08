@@ -408,14 +408,9 @@ async function loadHome(){
     const todayKey=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
     let w=null;
 
-    // 第一层读取最新运单；失败/超时只触发日期历史兜底，不阻塞首页。
-    try{
-      const {res,data}=await fetchJson("/api/waybills/latest");
-      if(res.ok&&data.success&&data.waybill)w=data.waybill;
-    }catch{}
-
-    // 第二层按线路+日期读取历史，和月度统计使用同一数据源。
-    if(!w&&dispatchRouteId){
+    // 第一层直接读取“当天历史”：首页今日配送与月度统计使用同一历史数据源，
+    // 避免 latest 索引与首页日期上下文出现分叉。
+    if(dispatchRouteId){
       try{
         const {res,data}=await fetchJson("/api/history?date="+encodeURIComponent(todayKey));
         const list=Array.isArray(data.waybills)?data.waybills:[];
@@ -423,6 +418,30 @@ async function loadHome(){
           const usable=list.filter(x=>x&&x.routeId===dispatchRouteId&&x.date===todayKey);
           usable.sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
           w=usable[usable.length-1]||null;
+        }
+      }catch{}
+    }
+
+    // 第二层读取最新运单：仅作为当天历史异常时的独立兜底。
+    if(!w){
+      try{
+        const {res,data}=await fetchJson("/api/waybills/latest");
+        if(res.ok&&data.success&&data.waybill&&data.waybill.routeId===dispatchRouteId&&data.waybill.date===todayKey)w=data.waybill;
+      }catch{}
+    }
+
+    // 第三层复用月度统计已经成功读取的数据索引。若单日接口异常，
+    // 只要月度历史能看到今天，就根据当天运单 ID 再取完整运单，避免出现“月度有数据、今日却为空”。
+    if(!w&&dispatchRouteId){
+      try{
+        const {res,data}=await fetchJson("/api/history?months=25");
+        if(res.ok&&data.success!==false){
+          const todayEntry=(Array.isArray(data.history)?data.history:[]).find(x=>x?.date===todayKey&&Number(x?.count)>0);
+          const id=Array.isArray(todayEntry?.waybillIds)?todayEntry.waybillIds[todayEntry.waybillIds.length-1]:"";
+          if(id){
+            const {res:detailRes,data:detail}=await fetchJson("/api/waybills/latest?id="+encodeURIComponent(id));
+            if(detailRes.ok&&detail.success&&detail.waybill&&detail.waybill.routeId===dispatchRouteId&&detail.waybill.date===todayKey)w=detail.waybill;
+          }
         }
       }catch{}
     }
