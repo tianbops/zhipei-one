@@ -372,6 +372,11 @@ export function matchOne(rawName, baseStores) {
 export function matchStores(items, baseStores) {
   const stores = Array.isArray(baseStores) ? baseStores : [];
 
+  // 同一张运单内的身份占用保护：
+  // 不同原始识别项如果最终争用同一个 storeId，不能让后续 dedupe
+  // 因标准化 name 相同而把它们吞掉。真正相同的 OCR 重复项仍允许正常去重。
+  const occupiedStoreIds = new Map();
+
   // ---- 索引构建 ----
   const byId = new Map();
   const byCode = new Map();
@@ -467,6 +472,55 @@ export function matchStores(items, baseStores) {
     }
 
     const standard = clean(target.name) || rawName;
+    const targetStoreId = clean(target.storeId);
+    const rawIdentityKey = formatCompareKey(rawName);
+    const prior = targetStoreId ? occupiedStoreIds.get(targetStoreId) : null;
+
+    // 关键安全规则：
+    // A、B 是不同原始识别项，但都被匹配到同一个 storeId。
+    // 不能把 B 继续标成 matched，否则后续标准化 name 会一样并被 dedupe 吞掉。
+    // 保留 B 为待定，交人工确认；绝不自动丢失门店。
+    if (targetStoreId && prior && prior.identityKey !== rawIdentityKey) {
+      return {
+        ...item,
+        rawName,
+        storeId: null,
+        name: rawName,
+        originalName: rawName,
+        routeOrder: 100000 + index,
+        matchStatus: "pending",
+        matchMethod: null,
+        correction: false,
+        pending: true,
+        candidates: [{
+          storeId: targetStoreId,
+          name: standard,
+          score: method === "similarity" ? (confidence?.score ?? null) : 1,
+          reason: "同一运单中不同识别项指向同一门店，存在身份冲突",
+        }],
+        matchConfidence: {
+          level: "PENDING",
+          reason: "STORE_ID_COLLISION",
+          score: method === "similarity" ? (confidence?.score ?? null) : 1,
+          candidateCount: 1,
+          topScore: method === "similarity" ? (confidence?.score ?? null) : 1,
+          secondScore: null,
+          scoreGap: null,
+        },
+        matchDiagnostics: {
+          baseStoreCount: stores.length,
+          reason: "STORE_ID_COLLISION",
+          rawName,
+          previousRawName: prior.rawName,
+          storeId: targetStoreId,
+        },
+      };
+    }
+
+    if (targetStoreId) {
+      occupiedStoreIds.set(targetStoreId, {identityKey: rawIdentityKey, rawName});
+    }
+
     const isFormatOnly =
       formatCompareKey(rawName) === formatCompareKey(standard) ||
       identityFields(target).some(f => formatCompareKey(f) === formatCompareKey(rawName));
@@ -474,7 +528,7 @@ export function matchStores(items, baseStores) {
     return {
       ...item,
       rawName,
-      storeId: clean(target.storeId),
+      storeId: targetStoreId,
       name: standard,
       originalName: clean(target.originalName) || rawName,
       routeOrder: Number(target.routeOrder) || index + 1,
