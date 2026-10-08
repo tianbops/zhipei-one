@@ -430,9 +430,20 @@ async function loadHome(){
     // /api/history 的响应体里回显了服务端实际使用的 routeId，用它比对可免疫漂移。
     let cmpRouteId=effectiveRouteId;
 
-    // 第一层直接读取“当天历史”：首页今日配送与月度统计使用同一历史数据源，
-    // 避免 latest 索引与首页日期上下文出现分叉。
+    // 首页“今日配送”以 latest 后端选择结果为唯一权威候选。
+    // 历史接口负责列表/统计，不让首页在多张当日运单中自行重新选一张，
+    // 避免同日多次上传时出现“刚上传A，首页却显示B”的数据分叉。
     if(effectiveRouteId){
+      try{
+        const {res,data}=await fetchJson("/api/waybills/latest",20000);
+        if(res.ok&&data.success&&data.waybill&&data.waybill.routeId===cmpRouteId&&data.waybill.date===todayKey){
+          w=data.waybill;
+        }
+      }catch{}
+    }
+
+    // latest 异常时才回退到当天历史；回退仍按后端返回的 createdAt 顺序取最后一张。
+    if(!w&&effectiveRouteId){
       try{
         const {res,data}=await fetchJson("/api/history?date="+encodeURIComponent(todayKey),20000);
         const list=Array.isArray(data.waybills)?data.waybills:[];
@@ -443,14 +454,6 @@ async function loadHome(){
           usable.sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
           w=usable[usable.length-1]||null;
         }
-      }catch{}
-    }
-
-    // 第二层读取最新运单：仅作为当天历史异常时的独立兜底。
-    if(!w){
-      try{
-        const {res,data}=await fetchJson("/api/waybills/latest",20000);
-        if(res.ok&&data.success&&data.waybill&&data.waybill.routeId===cmpRouteId&&data.waybill.date===todayKey)w=data.waybill;
       }catch{}
     }
 
