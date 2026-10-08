@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import { formatCompareKey } from '../functions/api/waybills/_store-match.js';
+import { businessFingerprint, dailyWaybillKey } from '../functions/api/_waybill-identity.js';
 
 const source=fs.readFileSync(new URL('../functions/api/waybills/process.js',import.meta.url),'utf8');
 const start=source.indexOf('function baseIdentityNames');
@@ -59,3 +60,13 @@ if(dedupedRecovered.merged!==0)throw new Error('recovered distinct stores must n
 const plannedRecovered=plan(dedupedRecovered.items,true);
 if(plannedRecovered.length!==2||plannedRecovered[0].routeOrder!==1||plannedRecovered[1].routeOrder!==2)throw new Error('recovered stores were lost during route planning');
 console.log('downstream recovery pipeline regression passed');
+
+
+// Save-identity regression: recovered final stores must participate in both
+// fingerprints, so a 24-store intermediate result cannot dedupe a 25-store final result.
+const identityBase={routeId:'17',date:'2026-10-08',vehicle:'渝DK7692',totalWeight:1.64};
+const twentyFour={...identityBase,stores:Array.from({length:24},(_,i)=>({storeId:'S'+(i+1),name:'门店'+(i+1),routeOrder:i+1,pending:false}))};
+const twentyFive={...identityBase,stores:[...twentyFour.stores,{storeId:'S25',name:'门店25',routeOrder:25,pending:false}]};
+if(await businessFingerprint(twentyFour)===await businessFingerprint(twentyFive))throw new Error('business fingerprint ignored recovered store');
+if(await dailyWaybillKey(twentyFour)===await dailyWaybillKey(twentyFive))throw new Error('daily dedupe key ignored recovered store');
+console.log('save identity recovery regression passed');
