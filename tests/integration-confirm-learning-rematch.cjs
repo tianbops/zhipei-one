@@ -55,6 +55,7 @@ function check(name, cond, info = "") {
   const baseDir = pathToFileURL(__dirname + "/../functions/api/").href;
   const processMod = await import(baseDir + "waybills/process.js");
   const confirmMod = await import(baseDir + "waybills/confirm.js");
+  const identityMod = await import(baseDir + "_waybill-identity.js");
 
   const base = {
     routeId: ROUTE,
@@ -91,6 +92,10 @@ function check(name, cond, info = "") {
     summary: { total: 1, pending: 1 },
   });
 
+  const oldMergeDedupeKey = await identityMod.dailyWaybillKey({
+    routeId: ROUTE, date: "2026-10-08", vehicle: "渝DK7001", totalWeight: null,
+    stores: [{ name: "基准门店甲别名" }]
+  });
   const mergeResp = await confirmMod.onRequestPost({
     request: jsonReq("https://t.zp/api/waybills/confirm", TOKEN, {
       waybillId: mergeWaybillId,
@@ -103,6 +108,11 @@ function check(name, cond, info = "") {
   check("merge confirmation succeeds", merge.success === true, JSON.stringify(merge));
   check("merge assigns S001", merge.waybill?.stores?.[0]?.storeId === "S001");
   check("merge closes pending state", merge.waybill?.stage === "CONFIRMED" && merge.waybill?.summary?.pending === 0);
+  check("merge refreshes daily dedupe key", typeof merge.waybill?.dailyDedupeKey === "string" && merge.waybill.dailyDedupeKey.length > 0);
+  const newMergeDedupeKey = await identityMod.dailyWaybillKey(merge.waybill);
+  check("daily dedupe key matches confirmed identity", merge.waybill?.dailyDedupeKey === newMergeDedupeKey);
+  check("old pending-name dedupe key is retired", read("waybill:dedupe:" + oldMergeDedupeKey) === null);
+  check("new confirmed-name dedupe key points to merge waybill", red._get("zp:waybill:dedupe:" + newMergeDedupeKey) === mergeWaybillId);
   const baseAfterMerge = read("route:" + ROUTE + ":base");
   check("merge persists raw identity as alias", baseAfterMerge?.stores?.some(s =>
     s.storeId === "S001" && (s.aliases || []).includes("基准门店甲别名")
@@ -129,6 +139,24 @@ function check(name, cond, info = "") {
   check("next merge waybill saves", nextMergeJson.success === true, JSON.stringify(nextMergeJson));
   check("next merge waybill rematches S001", mergeItem?.storeId === "S001", JSON.stringify(mergeItem));
   check("next merge waybill is not pending", mergeItem?.pending === false);
+  const repeatMerge = await processMod.onRequestPost({
+    request: {
+      url: "https://t.zp/api/waybills/process",
+      headers: { get: (h) => String(h).toLowerCase() === "authorization" ? "Bearer " + TOKEN : null },
+      formData: async () => ({
+        get: (k) => ({
+          routeId: ROUTE,
+          processingRouteId: ROUTE,
+          rawText: "基准门店甲",
+          date: "2026-10-08",
+          vehicle: "渝DK7001",
+        }[k] ?? null),
+      }),
+    },
+    env,
+  });
+  const repeatMergeJson = await asJson(repeatMerge);
+  check("same confirmed business reuses original waybill", repeatMergeJson.success === true && repeatMergeJson.idempotent === true && repeatMergeJson.waybill?.id === mergeWaybillId, JSON.stringify(repeatMergeJson));
 
   console.log("【2】new：确认新增门店 → 固化 storeId → 下一张运单继续命中，不生成重复门店");
   const newWaybillId = "wb-confirm-new";
