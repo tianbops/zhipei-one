@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#05070A">
-<title>当前线路 · 智配One</title>
+<title>线路 · 智配One</title>
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
@@ -12,35 +12,80 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="智配One">
 <link rel="stylesheet" href="/css/app.css?v=dark1"><link rel="stylesheet" href="/css/ui-unified.css?v=dark1">
-<link rel="stylesheet" href="/css/mobile-ui.css?v=dark1">
-<link rel="stylesheet" href="/css/business-pages.css?v=dark1">
+<link rel="stylesheet" href="/css/mobile-ui.css?v=dark1"><link rel="stylesheet" href="/css/business-pages.css?v=dark1">
+<style>
+.dispatch-page{min-height:100dvh;padding-bottom:24px}
+.dispatch-page .topbar{position:sticky;top:0;z-index:10}
+.dispatch-intro{padding:18px 16px 8px}
+.dispatch-intro h2{margin:0;font-size:20px;line-height:1.35}
+.dispatch-intro p{margin:6px 0 0;color:#B8C2CC;font-size:13px}
+.dispatch-section{margin:10px 16px 0}
+.dispatch-section-title{margin:0 0 8px;font-size:14px;color:#B8C2CC;font-weight:600}
+.dispatch-card{background:#18212B;border:1px solid #2A3540;border-radius:14px;overflow:hidden}
+.dispatch-action{display:flex;align-items:center;gap:12px;width:100%;min-height:58px;padding:12px 14px;border:0;border-bottom:1px solid #2A3540;background:transparent;color:#fff;text-align:left;cursor:pointer}
+.dispatch-action:last-child{border-bottom:0}
+.dispatch-action:active{background:#11171D}
+.dispatch-action-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:#11171D;color:#B8C2CC;flex:none}
+.dispatch-action-icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.dispatch-action-main{min-width:0;flex:1}
+.dispatch-action-main strong{display:block;font-size:15px;font-weight:600}
+.dispatch-action-main small{display:block;margin-top:3px;color:#7F8A95;font-size:12px}
+.dispatch-action-arrow{color:#7F8A95;font-size:20px}
+.dispatch-list{display:grid;gap:8px}
+.dispatch-option{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:54px;padding:12px 14px;border:1px solid #2A3540;border-radius:12px;background:#18212B;color:#fff;text-align:left}
+.dispatch-option.selected{border-color:#7F8A95;background:#202A34}
+.dispatch-option:disabled{opacity:.55}
+.dispatch-option span:first-child{font-size:15px;font-weight:600}
+.dispatch-route-meta small{color:#7F8A95;font-size:12px}
+.dispatch-message,.dispatch-empty{padding:24px 12px;text-align:center;color:#7F8A95;font-size:13px}
+</style>
 </head>
 <body>
 <main class="dispatch-page">
-<header class="topbar"><a class="app-back" href="/home.html" aria-label="返回"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><h1>当前线路</h1><span></span></header>
+<header class="topbar"><a class="app-back" href="/home.html" aria-label="返回"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><h1>线路</h1><span></span></header>
+
+<section class="dispatch-intro">
+  <h2>线路工作区</h2>
+  <p>切换当前配送线路，或进入线路维护与资料管理。</p>
+</section>
+
 <section class="dispatch-section">
-  <h2 class="dispatch-section-title">已有线路</h2>
+  <h2 class="dispatch-section-title">线路功能</h2>
+  <div class="dispatch-card">
+    <a class="dispatch-action" href="/pages/route_apply.html?from=dispatch">
+      <span class="dispatch-action-icon"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/></svg></span>
+      <span class="dispatch-action-main"><strong>线路申请</strong><small>申请维护线路、查看审核状态、解除绑定</small></span>
+      <span class="dispatch-action-arrow">›</span>
+    </a>
+    <a class="dispatch-action" href="/pages/data.html?from=dispatch">
+      <span class="dispatch-action-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg></span>
+      <span class="dispatch-action-main"><strong>数据中心</strong><small>查看当前线路门店资料，具备权限时可维护</small></span>
+      <span class="dispatch-action-arrow">›</span>
+    </a>
+  </div>
+</section>
+
+<section class="dispatch-section">
+  <h2 class="dispatch-section-title">当前配送线路</h2>
   <div id="routeList" class="dispatch-list"><div class="dispatch-message">读取中…</div></div>
 </section>
 </main>
 <script>
 const $=id=>document.getElementById(id);
 async function api(url,opt={}){const r=await fetch(url,{credentials:"same-origin",cache:"no-store",...opt});const d=await r.json().catch(()=>({}));if(!r.ok||!d.success)throw new Error(d.error||"请求失败");return d}
-function mark(id){document.querySelectorAll(".dispatch-option").forEach(b=>b.classList.toggle("selected",b.dataset.routeId===id))}
-async function selectRoute(id,button){
+async function selectRoute(id){
   document.querySelectorAll(".dispatch-option").forEach(b=>b.disabled=true);
   try{await api("/api/dispatch",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({routeId:id})});location.replace("/home.html")}
-  catch(e){document.querySelectorAll(".dispatch-option").forEach(b=>b.disabled=false);zpToast(e.message||"线路切换失败","error")}
+  catch(e){document.querySelectorAll(".dispatch-option").forEach(b=>b.disabled=false);window.zpToast?.(e.message||"线路切换失败","error")}
 }
-document.querySelectorAll(".dispatch-option").forEach(b=>b.addEventListener("click",()=>selectRoute(b.dataset.routeId,b)));
+function esc(v){return String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 async function load(){
  try{
   const [routes,dispatch]=await Promise.all([api("/api/routes"),api("/api/dispatch")]);
   const current=dispatch.dispatchRoute?.id||"";
-  mark(current);
   const list=(routes.routes||[]).filter(r=>r.status==="active");
-  $("routeList").innerHTML=list.length?list.map(r=>'<button class="dispatch-option" type="button" data-route-id="'+String(r.id).replaceAll('"',"&quot;")+'"><span>'+String(r.name||r.id).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")+'</span><span class="dispatch-route-meta"><small>已匹配·'+(Number(r.storeCount)||0)+'家门店</small></span></button>').join(""):'<div class="dispatch-empty">暂无已有线路</div>';
-  document.querySelectorAll("#routeList .dispatch-option").forEach(b=>{b.classList.toggle("selected",b.dataset.routeId===current);b.addEventListener("click",()=>selectRoute(b.dataset.routeId,b))});
+  $("routeList").innerHTML=list.length?list.map(r=>'<button class="dispatch-option'+(r.id===current?" selected":"")+'" type="button" data-route-id="'+esc(r.id)+'"><span>'+esc(r.name||r.id)+'</span><span class="dispatch-route-meta"><small>'+(r.id===current?"当前线路 · ":"")+'已匹配 · '+(Number(r.storeCount)||0)+'家门店</small></span></button>').join(""):'<div class="dispatch-empty">暂无可用线路</div>';
+  document.querySelectorAll("#routeList .dispatch-option").forEach(b=>b.addEventListener("click",()=>selectRoute(b.dataset.routeId)));
  }catch(e){$("routeList").innerHTML='<div class="dispatch-message">线路读取失败，请重试</div>'}
 }
 load();
