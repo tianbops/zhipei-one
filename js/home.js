@@ -1,6 +1,6 @@
 const $=id=>document.getElementById(id);
 const overlay=$("uploadArea"),cancel=$("sourceCancel");
-const todayCount=$("todayCount"),todayWeight=$("todayWeight"),todayStoreList=$("todayStoreList"),todayMetrics=$("todayMetrics"),todayMetricTags=$("todayMetricTags"),dot=$("statusDot");
+const todayCount=$("todayCount"),todayWeight=$("todayWeight"),todayStoreList=$("todayStoreList"),todayMetrics=$("todayMetrics"),dot=$("statusDot");
 let dispatchRouteId="";
 let boundRouteId="";
 const TEMP_ROUTE_PREFIX="__temp__:";
@@ -19,7 +19,7 @@ const renderSubstituteBadge=()=>{
   const isSubstitute=!!dispatchRouteId&&!dispatchRouteId.startsWith(TEMP_ROUTE_PREFIX)&&dispatchRouteId!==boundRouteId;
   subBadge.hidden=!isSubstitute;
 };
-const setEmptyToday=()=>{todayCount.textContent="暂无运单";todayWeight.textContent="";if(todayStoreList)todayStoreList.innerHTML='<div class="today-store-empty">今日暂无配送门店</div>';if(todayMetricTags)todayMetricTags.innerHTML=""};
+const setEmptyToday=()=>{todayCount.textContent="暂无运单";todayWeight.textContent="";if(todayStoreList)todayStoreList.innerHTML='<div class="today-store-empty">今日暂无配送门店</div>';if(todayMetrics)todayMetrics.innerHTML=""};
 const setRouteBadge=(route)=>{if(!dot)return;const type=route?.type||"";const name=String(route?.name||"").trim();const badge=type==="temporary"||/临时/.test(name)?"临":(name.replace(/\s+/g,"").replace(/路$/,"" )||"—");dot.textContent=badge;dot.hidden=false};
 
 const processingPanel=$("uploadProcessing"),processingError=$("uploadProcessingError"),processingErrorMessage=$("processingErrorMessage"),processingRetry=$("processingRetry"),sourceMenu=$("uploadSourceMenu"),processingPercent=$("processingPercent"),processingProgress=$("processingProgressDot");
@@ -510,7 +510,7 @@ async function loadHome(){
         if(Number(s.newStores)>0)metrics.push("新增"+s.newStores+"家");
         if(stores.some(x=>x?.pending))metrics.push("待定"+stores.filter(x=>x?.pending).length+"家");
         if(w.quality?.level==="REVIEW")metrics.push("需复核");
-        todayMetricTags.innerHTML=metrics.map(x=>'<span>'+esc(x)+'</span>').join("");
+        todayMetrics.innerHTML=metrics.map(x=>'<span>'+esc(x)+'</span>').join("");
       }
     }else{
       setEmptyToday();
