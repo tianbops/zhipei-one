@@ -57,9 +57,9 @@
 .account-page .page2-danger-btn{width:100%;min-height:var(--zp-control-height);margin-top:12px;border:1px solid rgba(255,130,120,.5);border-radius:11px;background:rgba(255,130,120,.08);color:#FF8278;font-size:15px;font-weight:700}
 .account-page .account-dialog-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
 .account-page .account-dialog-actions button{margin-top:0}
-.account-page .account-logout-section{margin:0 0 8px;padding:0}
+.account-page .account-logout-section{margin:16px 0 0;padding:0}
 .account-page .account-logout{width:100%;min-height:var(--zp-control-height);margin:0;border:1px solid rgba(255,255,255,.14);border-radius:14px;background:rgba(38,49,60,.9);color:#fff;font-size:15px;font-weight:600}
-.account-page .account-logout-section .message{margin:7px 2px 0}
+.account-page .account-logout-section .message{margin:8px 2px 0}
 .account-page .account-install-card{padding:12px 14px}
 .account-page .account-install-main{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .account-page .account-install-main h2{margin:0 0 2px!important;font-size:15px!important;line-height:21px!important}
@@ -95,8 +95,8 @@
 .account-page .account-collapse-icon{font-size:0!important;line-height:0!important;color:var(--zp-muted);display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;flex:0 0 32px}
 .account-page .account-collapse-icon::before{content:"";display:block;width:7px;height:7px;border-right:1.7px solid currentColor;border-bottom:1.7px solid currentColor;transform:rotate(45deg) translate(-1px,-1px);transition:transform .18s ease,color .18s ease}
 .account-page .account-collapse-head[aria-expanded="true"] .account-collapse-icon::before{transform:rotate(225deg) translate(-1px,-1px)}
-.account-page .account-logout-section{margin:0 0 10px;padding:0}
-.account-page .account-logout-section .account-logout{width:100%;margin:0;background:var(--zp-surface);border:1px solid var(--zp-line);border-radius:14px}
+.account-page .account-logout-section{margin:16px 0 0;padding:0}
+.account-page .account-logout-section .account-logout{width:100%;min-height:var(--zp-control-height);margin:0;background:rgba(38,49,60,.9);border:1px solid rgba(255,255,255,.14);border-radius:14px;color:#fff;font-size:15px;font-weight:600}
 .account-page .account-logout-section .message{margin:8px 2px 0}
 .account-page .account-install-card{padding:12px 14px}
 .account-page .account-install-main{display:flex;align-items:center;justify-content:space-between;gap:12px}
