@@ -54,6 +54,11 @@
 .account-page .account-dialog-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}
 .account-page .account-dialog-actions button{margin-top:0}
 .account-page .account-info-card{margin-bottom:10px}
+/* 账号设置：色调对齐「线路页」玻璃卡 —— rgba(13,18,24,.82) 底 + 极淡描边 + 柔阴影（原旧卡 rgba(20,28,37,.80)/#2A3540 无阴影） */
+.account-page .page2-card{background:rgba(13,18,24,.82);border:1px solid rgba(255,255,255,.075);box-shadow:0 12px 30px rgba(0,0,0,.18)}
+.account-page .account-dialog{background:rgba(13,18,24,.82);border:1px solid rgba(255,255,255,.075);box-shadow:0 12px 30px rgba(0,0,0,.18)}
+/* 主按钮补极淡描边，使按钮框与玻璃卡同系、视觉更收敛（不再"飘"在卡片上） */
+.account-page .page2-primary{border:1px solid rgba(255,255,255,.10)}
 @media(max-width:380px){
  .account-page .account-danger-box{padding:0 15px 15px}
  .account-page .account-dialog{padding:16px}
