@@ -273,6 +273,8 @@ function chooseFile(source){
 document.querySelectorAll(".source-option").forEach(btn=>btn.addEventListener("click",()=>chooseFile(btn.dataset.source)));
 
 let processingFile=false;
+// 供统一业务导航判断：处理中的运单离开当前工作流前必须经过确认。
+window.zpIsProcessing=()=>!!processingFile||!!processingController;
 let lastProcessingFile=null;   // 最近一次处理的运单图片组/文件，供一键重试复用
 let lastFailureAction=null;    // 最近一次失败的处理动作（action）；null 表示不可重试，按钮作关闭用
 let lastFailureRequestId=null; // 最近一次失败的处理票据 requestId（RETRY_SAVE 仅重保存时回传后端 resume）
