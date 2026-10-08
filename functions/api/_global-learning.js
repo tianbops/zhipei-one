@@ -23,7 +23,43 @@ export async function findGlobalMatches(env,items){
  const idLists=await aliasesFor(env,keys);
  const ids=[...new Set(idLists.flatMap(list=>Array.isArray(list)?list:[]))];
  const recs=await recordsFor(env,ids);const byId=new Map(recs.filter(r=>r&&r.status==="VERIFIED").map(r=>[r.storeId,r]));
- return items.map((item,i)=>{const rawName=clean(item.rawName||item.name),list=Array.isArray(idLists[i])?idLists[i]:[];let target=null,method=null;if(item.storeId&&byId.has(item.storeId)){target=byId.get(item.storeId);method="global-identity"}else if(list.length===1&&byId.has(list[0])){target=byId.get(list[0]);method="global-alias"}return target?{...item,storeId:target.storeId,name:target.standardName||rawName,originalName:target.originalName||rawName,globalMatchStatus:"matched",globalMatchMethod:method,pending:false}:{...item,globalMatchStatus:"unresolved"}})
+ const occupied=new Map();
+ return items.map((item,i)=>{
+  const rawName=clean(item.rawName||item.name),rawKey=normalizeLearningName(rawName),list=Array.isArray(idLists[i])?idLists[i]:[];
+  let target=null,method=null;
+  if(item.storeId&&byId.has(item.storeId)){target=byId.get(item.storeId);method="global-identity"}
+  else if(list.length===1&&byId.has(list[0])){target=byId.get(list[0]);method="global-alias"}
+  if(!target)return {...item,globalMatchStatus:"unresolved"};
+  const prior=occupied.get(target.storeId);
+  if(prior&&prior.rawKey!==rawKey){
+   return {
+    ...item,
+    storeId:null,
+    name:rawName,
+    originalName:rawName,
+    globalMatchStatus:"unresolved",
+    globalMatchMethod:null,
+    pending:true,
+    matchConfidence:{
+      level:"PENDING",
+      reason:"STORE_ID_COLLISION",
+      score:null,
+      candidateCount:1,
+      topScore:null,
+      secondScore:null,
+      scoreGap:null,
+    },
+    matchDiagnostics:{
+      reason:"STORE_ID_COLLISION",
+      rawName,
+      previousRawName:prior.rawName,
+      storeId:target.storeId,
+    },
+  };
+  }
+  occupied.set(target.storeId,{rawKey,rawName});
+  return {...item,storeId:target.storeId,name:target.standardName||rawName,originalName:target.originalName||rawName,globalMatchStatus:"matched",globalMatchMethod:method,pending:false};
+ })
 }
 export async function learnGlobal(env,input){
  const storeId=clean(input.storeId),rawName=clean(input.rawName||input.name),standardName=clean(input.standardName||input.name||rawName),routeId=clean(input.routeId),waybillId=clean(input.waybillId),learningEventId=clean(input.learningEventId);

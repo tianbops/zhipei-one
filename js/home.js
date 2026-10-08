@@ -430,9 +430,20 @@ async function loadHome(){
     // /api/history 的响应体里回显了服务端实际使用的 routeId，用它比对可免疫漂移。
     let cmpRouteId=effectiveRouteId;
 
-    // 第一层直接读取“当天历史”：首页今日配送与月度统计使用同一历史数据源，
-    // 避免 latest 索引与首页日期上下文出现分叉。
+    // 首页“今日配送”以 latest 后端选择结果为唯一权威候选。
+    // 历史接口负责列表/统计，不让首页在多张当日运单中自行重新选一张，
+    // 避免同日多次上传时出现“刚上传A，首页却显示B”的数据分叉。
     if(effectiveRouteId){
+      try{
+        const {res,data}=await fetchJson("/api/waybills/latest",20000);
+        if(res.ok&&data.success&&data.waybill&&data.waybill.routeId===cmpRouteId&&data.waybill.date===todayKey){
+          w=data.waybill;
+        }
+      }catch{}
+    }
+
+    // latest 异常时才回退到当天历史；回退仍按后端返回的 createdAt 顺序取最后一张。
+    if(!w&&effectiveRouteId){
       try{
         const {res,data}=await fetchJson("/api/history?date="+encodeURIComponent(todayKey),20000);
         const list=Array.isArray(data.waybills)?data.waybills:[];
@@ -443,14 +454,6 @@ async function loadHome(){
           usable.sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
           w=usable[usable.length-1]||null;
         }
-      }catch{}
-    }
-
-    // 第二层读取最新运单：仅作为当天历史异常时的独立兜底。
-    if(!w){
-      try{
-        const {res,data}=await fetchJson("/api/waybills/latest",20000);
-        if(res.ok&&data.success&&data.waybill&&data.waybill.routeId===cmpRouteId&&data.waybill.date===todayKey)w=data.waybill;
       }catch{}
     }
 
@@ -475,12 +478,11 @@ async function loadHome(){
     // 摘要与门店明细分开渲染：stores 异常绝不允许把今日数量/重量卡在“加载中”。
     if(w&&w.routeId===cmpRouteId){
       const stores=Array.isArray(w.stores)?w.stores:[];
-      const total=Number(w.summary?.total)||stores.length||0;
+      const total=Number(w.summary?.finalCount)||Number(w.summary?.total)||stores.length||0;
       // 渲染辅助函数必须定义在两个渲染块的共享作用域：
       // 此前 esc 等定义在 if(todayStoreList) 块内，todayMetrics 块引用时
       // ReferenceError → 被外层 catch 静默吞掉 → 整卡「暂无运单」。
-      // 触发条件：summary.original !== total（如“原始24家/共25家”）——
-      // 合成测试数据 original===total 时该路径不执行，故此前测试未暴露。
+      // 数量语义已统一：只显示最终门店数及必要的自动恢复数。
       const navOf=x=>String(x?.navigation||x?.nav||"").trim();
       const safeUrl=v=>{try{const u=new URL(String(v||"").trim(),location.origin);return /^(https?:)$/.test(u.protocol)?u.href:""}catch{return""}};
       const esc=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -502,7 +504,7 @@ async function loadHome(){
 
       if(todayMetrics){
         const s=w.summary||{},metrics=[];
-        if(Number(s.original)&&Number(s.original)!==Number(s.total))metrics.push("原始"+s.original+"家");
+        if(Number(s.recoveredCount)>0)metrics.push("恢复"+s.recoveredCount+"家");
         if(Number(s.correction)>0)metrics.push("更正"+s.correction+"家");
         if(Number(s.merged)>0)metrics.push("合并"+s.merged+"家");
         if(Number(s.newStores)>0)metrics.push("新增"+s.newStores+"家");

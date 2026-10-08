@@ -135,19 +135,69 @@ function dedupe(items){
   const seen=new Map(),out=[],conflicts=[],removed=[];
   let merged=0;
   for(const s of items){
-    const identityKey=formatCompareKey(s.name||s.rawName);
+    // 门店身份判断必须优先使用“原始识别名”。
+    // matchStores / global learning 会把 name 标准化为基准库名称；
+    // 如果这里再用 name 判断，不同 OCR 门店被错误映射到同一 storeId 后
+    // 会被误认为“同名重复”并直接吞掉。
+    const identityKey=formatCompareKey(s.rawName||s.name);
+    const displayName=clean(s.name||s.rawName);
     let key=s.storeId?"id:"+s.storeId:"pending:"+identityKey;
     if(s.storeId&&seen.has(key)){
       const previous=seen.get(key);
-      const previousIdentity=formatCompareKey(previous.name||previous.rawName);
+      const previousIdentity=formatCompareKey(previous.rawName||previous.name);
       if(previousIdentity!==identityKey){
-        key="id-conflict:"+s.storeId+":"+identityKey;
-        conflicts.push({storeId:s.storeId,firstName:previous.name||previous.rawName,conflictName:s.name||s.rawName});
-      }else{
-        merged++;
-        removed.push({rawName:s.rawName,name:s.name,storeId:s.storeId||null,mergedInto:{rawName:previous.rawName,name:previous.name,storeId:previous.storeId||null}});
+        // 不再把冲突项留在 matched/storeId 状态；安全转待定，
+        // 让最终数量保留，并要求人工确认真实门店。
+        conflicts.push({
+          storeId:s.storeId,
+          firstName:previous.rawName||previous.name,
+          conflictName:s.rawName||s.name,
+        });
+        const pending={
+          ...s,
+          storeId:null,
+          name:clean(s.rawName||s.name),
+          originalName:clean(s.rawName||s.name),
+          pending:true,
+          matchStatus:"pending",
+          matchMethod:null,
+          correction:false,
+          candidates:[{
+            storeId:s.storeId,
+            name:displayName,
+            reason:"同一运单中不同识别项指向同一门店，存在身份冲突",
+          }],
+          matchConfidence:{
+            level:"PENDING",
+            reason:"STORE_ID_COLLISION",
+            score:null,
+            candidateCount:1,
+            topScore:null,
+            secondScore:null,
+            scoreGap:null,
+          },
+          matchDiagnostics:{
+            ...(s.matchDiagnostics||{}),
+            reason:"STORE_ID_COLLISION",
+            storeId:s.storeId,
+            previousRawName:previous.rawName||previous.name,
+          },
+        };
+        out.push(pending);
         continue;
       }
+      merged++;
+      removed.push({
+        rawName:s.rawName,
+        name:s.name,
+        storeId:s.storeId||null,
+        mergedInto:{
+          rawName:previous.rawName,
+          name:previous.name,
+          storeId:previous.storeId||null,
+        },
+      });
+      continue;
     }
     seen.set(key,s);
     out.push(s);
@@ -161,10 +211,10 @@ function plan(items,useRouteOrder=true){const list=useRouteOrder?[...items].sort
  * 仅用于运维追溯，失败不影响主保存流程。
  */
 async function recordWaybillLifecycle(env, order, ctx) {
-  const { requestId, rawExtractCount, matched, pending, d } = ctx;
+  const { requestId, rawExtractCount, extractCount, recoveredCount, matched, pending, d } = ctx;
   const events = [
     { event: "WAYBILL_CREATED", stage: "CREATED", requestId, routeId: order.routeId, userId: order.createdBy },
-    { event: "EXTRACT_COMPLETED", stage: "EXTRACT", requestId, rawExtractCount, extractCount: order.stores.length },
+    { event: "EXTRACT_COMPLETED", stage: "EXTRACT", requestId, rawExtractCount, extractCount: order.diagnostics?.extractCount ?? order.stores.length, recoveredCount: order.diagnostics?.recoveredCount ?? 0, finalCount: order.stores.length },
     { event: "MATCH_COMPLETED", stage: "MATCH", requestId, matched: matched.filter(x => !x.pending).length, pending: pending.length },
     { event: "DEDUPE_COMPLETED", stage: "DEDUPE", requestId, before: matched.length, after: d.items.length, merged: d.merged },
     { event: "PLAN_COMPLETED", stage: "PLAN", requestId, count: order.stores.length },
@@ -178,6 +228,9 @@ async function recordWaybillLifecycle(env, order, ctx) {
 async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:providedUser=null}){
   emit(3,"运单已接收");
   const requestId=newId();
+  // 上传先后必须记录在请求入口，而不是用 OCR/规划完成后的 createdAt 代替。
+  // 多张运单并行处理时，后上传的运单可能更快完成；createdAt 会因此反映“处理完成先后”，而不是“上传先后”。
+  const uploadedAt=new Date().toISOString();
   // 处理失败统一收口：写状态机票据（PROCESSING→FAILED/TIMEOUT/CANCELLED）+ 返回可恢复提示（P1 #18）。
   const failProcess=async(code,message,status,opts={})=>{
     const {stage="FAILED",recoverable=false,action=null,hint=null,detail=null,jobId=null,validation=null}=opts;
@@ -291,14 +344,14 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
   if(await stopIfClientCancelled("POST_OCR"))return json({success:false,code:"PROCESS_CANCELLED",error:"已取消处理",message:"已取消处理",requestId,recoverable:true,action:"REPROCESS",hint:"本次处理已取消，可重新上传运单"},499);
   const recognizedMs=Date.now()-started;const baseStarted=Date.now();let baseStores=[];let baseAvailable=false;if(!isTempRoute(routeId)){try{baseStores=await base(env,routeId);baseAvailable=Array.isArray(baseStores)&&baseStores.length>0}catch(e){if(e?.code!=="BASE_NOT_FOUND")return failProcess(e.code||"BASE_DATA_INVALID",e.message||"线路数据资料读取失败",409,{recoverable:false,hint:"线路数据资料读取失败，请联系管理员",detail:e.message||null});}}const baseMs=Date.now()-baseStarted;emit(56,baseAvailable?"已读取线路基准":"未建立线路基准，转入全局学习");
   if(await stopIfClientCancelled("EXTRACT"))return json({success:false,code:"PROCESS_CANCELLED",error:"已取消处理",message:"已取消处理",requestId,recoverable:true,action:"REPROCESS",hint:"本次处理已取消，可重新上传运单"},499);
-  const extractedStarted=Date.now();const extracted=extract(recognizedText);const rawExtractCount=extracted.stores.length;extracted.stores=splitByRouteBase(extracted.stores,baseStores);const splitExtractCount=extracted.stores.length;const extractMs=Date.now()-extractedStarted;emit(66,`已提取 ${extracted.stores.length} 家门店`);if(!extracted.stores.length)return failProcess("EXTRACT_EMPTY","未提取到门店，请检查运单内容",422,{recoverable:true,action:"RESUBMIT",hint:"未从运单中提取到门店，请检查运单图片清晰度后重新上传"});
+  const extractedStarted=Date.now();const extracted=extract(recognizedText);const rawExtractCount=extracted.stores.length;extracted.stores=splitByRouteBase(extracted.stores,baseStores);const splitExtractCount=extracted.stores.length;const recoveredCount=Math.max(0,splitExtractCount-rawExtractCount);const extractMs=Date.now()-extractedStarted;emit(66,`已提取 ${extracted.stores.length} 家门店`);if(!extracted.stores.length)return failProcess("EXTRACT_EMPTY","未提取到门店，请检查运单内容",422,{recoverable:true,action:"RESUBMIT",hint:"未从运单中提取到门店，请检查运单图片清晰度后重新上传"});
   if(await stopIfClientCancelled("MATCH"))return json({success:false,code:"PROCESS_CANCELLED",error:"已取消处理",message:"已取消处理",requestId,recoverable:true,action:"REPROCESS",hint:"本次处理已取消，可重新上传运单"},499);
   const rawExtractItems=extracted.stores.map((s,i)=>({index:i+1,rawName:s.rawName,name:s.name,storeId:s.storeId||null,sourceLine:s.sourceLine||null}));const matchStarted=Date.now();const locallyMatched=matchStores(extracted.stores,baseStores);const hasRouteBase=baseAvailable;const globalCandidates=hasRouteBase?[]:await findGlobalMatches(env,locallyMatched.filter(x=>x.pending));const globalMap=new Map(globalCandidates.map(x=>[x.rawName+"|"+(x.sourceLine||""),x]));const matched=locallyMatched.map(x=>{if(!x.pending)return x;const g=globalMap.get(x.rawName+"|"+(x.sourceLine||""));if(!g||g.globalMatchStatus!=="matched")return x;const standard=clean(g.name)||x.rawName;return {...x,...g,name:standard,correction:formatCompareKey(x.rawName)!==formatCompareKey(standard),pending:false,matchStatus:"matched",matchMethod:g.globalMatchMethod,routeOrder:100000};});const matchMs=Date.now()-matchStarted;emit(78,hasRouteBase?"已完成线路基准匹配":"已完成全局学习匹配");const dedupeStarted=Date.now();const d=dedupe(matched);const dedupeMs=Date.now()-dedupeStarted;emit(86,`已完成去重${d.merged?`，合并 ${d.merged} 家`:""}`);const planStarted=Date.now();const useRouteOrder=baseAvailable;const planned=plan(d.items,useRouteOrder);const planMs=Date.now()-planStarted;const pending=planned.filter(x=>x.pending);emit(92,`已完成线路规划，共 ${planned.length} 家`);
   if(await stopIfClientCancelled("PLAN"))return json({success:false,code:"PROCESS_CANCELLED",error:"已取消处理",message:"已取消处理",requestId,recoverable:true,action:"REPROCESS",hint:"本次处理已取消，可重新上传运单"},499);
   const quality=evaluateQualityGates({recognizedTextLen:recognizedText.length,lineCount:countLines(recognizedText),rawExtractCount,extractCount:extracted.stores.length,plannedCount:planned.length,pendingCount:pending.length,autoMatchedCount:matched.filter(x=>!x.pending).length,dedupeBefore:matched.length,dedupeAfter:d.items.length,merged:d.merged});
-  const formWeight=number(form.get("totalWeight"));const effectiveWeight=formWeight!=null&&formWeight>0?formWeight:extracted.totalWeight;const order={schemaVersion:"2",id:newId(),routeId,routeName:clean(route?.name)||"临时用户",date:clean(form.get("date"))||extracted.date||todayCN(),dateInferred:!(clean(form.get("date"))||extracted.date),vehicle:clean(form.get("vehicle"))||extracted.vehicle||null,totalWeight:effectiveWeight,stores:planned,rawText:recognizedText,stage:pending.length?"PLANNED":"CONFIRMED",pipeline:["RECOGNIZED","EXTRACTED","MATCHED","DEDUPED","PLANNED","VALIDATED",...(pending.length?[]:["CONFIRMED"])],summary:{original:rawExtractCount,total:planned.length,matched:planned.length-pending.length,pending:pending.length,correction:planned.filter(x=>x.correction).length,merged:d.merged,newStores:0},timing:{recognizedMs,ocrMs,baseMs,extractMs,matchMs,dedupeMs,planMs,totalMs:Date.now()-started},ocr:ocr?{provider:ocr.provider||"PaddleOCR",model:ocr.model,jobId:ocr.jobId,lineCount:ocr.lineCount,lowConfidence:ocr.lowConfidence||null,fallback:ocr.fallback||null,imageCount:ocr.imageCount||1}:null,createdBy:user.id,createdAt:new Date().toISOString(),requestId,quality,processingRouteId,routeIdAtProcessing:routeId};
+  const formWeight=number(form.get("totalWeight"));const effectiveWeight=formWeight!=null&&formWeight>0?formWeight:extracted.totalWeight;const order={schemaVersion:"2",id:newId(),uploadedAt,routeId,routeName:clean(route?.name)||"临时用户",date:clean(form.get("date"))||extracted.date||todayCN(),dateInferred:!(clean(form.get("date"))||extracted.date),vehicle:clean(form.get("vehicle"))||extracted.vehicle||null,totalWeight:effectiveWeight,stores:planned,rawText:recognizedText,stage:pending.length?"PLANNED":"CONFIRMED",pipeline:["RECOGNIZED","EXTRACTED","MATCHED","DEDUPED","PLANNED","VALIDATED",...(pending.length?[]:["CONFIRMED"])],summary:{original:rawExtractCount,extractCount:splitExtractCount,recoveredCount,finalCount:planned.length,total:planned.length,matched:planned.length-pending.length,pending:pending.length,correction:planned.filter(x=>x.correction).length,merged:d.merged,newStores:0},timing:{recognizedMs,ocrMs,baseMs,extractMs,matchMs,dedupeMs,planMs,totalMs:Date.now()-started},ocr:ocr?{provider:ocr.provider||"PaddleOCR",model:ocr.model,jobId:ocr.jobId,lineCount:ocr.lineCount,lowConfidence:ocr.lowConfidence||null,fallback:ocr.fallback||null,imageCount:ocr.imageCount||1}:null,createdBy:user.id,createdAt:new Date().toISOString(),requestId,quality,processingRouteId,routeIdAtProcessing:routeId};
   if(!pending.length){order.confirmedAt=order.createdAt;order.confirmedBy=user.id;}
-  const validation=validateResult(order);order.validation=validation;if(!validation.valid){const first=validation.errors?.[0]||"校验失败";const codeMap={"缺少运单日期":"WAYBILL_VALIDATION_DATE_MISSING","缺少车辆信息":"WAYBILL_VALIDATION_VEHICLE_MISSING","没有规划门店":"WAYBILL_VALIDATION_STORES_EMPTY","规划结果存在重复门店":"WAYBILL_VALIDATION_DUPLICATE_STORE","规划结果存在无效线路顺序":"WAYBILL_VALIDATION_ROUTE_ORDER_INVALID","规划结果存在重复线路顺序":"WAYBILL_VALIDATION_ROUTE_ORDER_DUPLICATE","线路顺序不连续":"WAYBILL_VALIDATION_ROUTE_ORDER_GAP"};return failProcess(codeMap[first]||"WAYBILL_VALIDATION_FAILED","运单规划结果校验失败："+first,422,{recoverable:true,action:"RESUBMIT",hint:"运单规划结果校验失败："+first,validation})}order.diagnostics={matchMode:hasRouteBase?"ROUTE_BASE":"GLOBAL_LEARNING",baseStoreCount:baseStores.length,rawExtractCount,extractCount:extracted.stores.length,splitExtractCount,rawExtractItems,extractItems:extracted.stores.map((s,i)=>({index:i+1,rawName:s.rawName,name:s.name,storeId:s.storeId||null})),localMatchedCount:locallyMatched.filter(x=>!x.pending).length,localPendingCount:locallyMatched.filter(x=>x.pending).length,localPendingItems:locallyMatched.filter(x=>x.pending).map(x=>({rawName:x.rawName,candidates:x.candidates||[]})),globalMatchedCount:matched.filter(x=>!x.pending&&(x.matchMethod==="global-alias"||x.matchMethod==="global-identity")).length,globalPendingCount:hasRouteBase?0:matched.filter(x=>x.pending).length,finalPendingCount:pending.length,dedupeBefore:matched.length,dedupeAfter:d.items.length,merged:d.merged,dedupeConflicts:d.conflicts,dedupeRemoved:d.removed,correctionItems:planned.filter(x=>x.correction).map((s,i)=>({rawName:s.rawName,name:s.name,storeId:s.storeId||null,matchMethod:s.matchMethod||null})),plannedCount:planned.length,finalCount:order.stores.length,finalItems:planned.map((s,i)=>({index:i+1,rawName:s.rawName,name:s.name,storeId:s.storeId||null,pending:!!s.pending,matchMethod:s.matchMethod||null,routeOrder:s.routeOrder,matchConfidence:s.matchConfidence||null})),requestId,quality};
+  const validation=validateResult(order);order.validation=validation;if(!validation.valid){const first=validation.errors?.[0]||"校验失败";const codeMap={"缺少运单日期":"WAYBILL_VALIDATION_DATE_MISSING","缺少车辆信息":"WAYBILL_VALIDATION_VEHICLE_MISSING","没有规划门店":"WAYBILL_VALIDATION_STORES_EMPTY","规划结果存在重复门店":"WAYBILL_VALIDATION_DUPLICATE_STORE","规划结果存在无效线路顺序":"WAYBILL_VALIDATION_ROUTE_ORDER_INVALID","规划结果存在重复线路顺序":"WAYBILL_VALIDATION_ROUTE_ORDER_DUPLICATE","线路顺序不连续":"WAYBILL_VALIDATION_ROUTE_ORDER_GAP"};return failProcess(codeMap[first]||"WAYBILL_VALIDATION_FAILED","运单规划结果校验失败："+first,422,{recoverable:true,action:"RESUBMIT",hint:"运单规划结果校验失败："+first,validation})}order.diagnostics={matchMode:hasRouteBase?"ROUTE_BASE":"GLOBAL_LEARNING",baseStoreCount:baseStores.length,rawExtractCount,extractCount:splitExtractCount,recoveredCount,rawExtractItems,extractItems:extracted.stores.map((s,i)=>({index:i+1,rawName:s.rawName,name:s.name,storeId:s.storeId||null})),localMatchedCount:locallyMatched.filter(x=>!x.pending).length,localPendingCount:locallyMatched.filter(x=>x.pending).length,localPendingItems:locallyMatched.filter(x=>x.pending).map(x=>({rawName:x.rawName,candidates:x.candidates||[]})),globalMatchedCount:matched.filter(x=>!x.pending&&(x.matchMethod==="global-alias"||x.matchMethod==="global-identity")).length,globalPendingCount:hasRouteBase?0:matched.filter(x=>x.pending).length,finalPendingCount:pending.length,dedupeBefore:matched.length,dedupeAfter:d.items.length,merged:d.merged,dedupeConflicts:d.conflicts,dedupeRemoved:d.removed,correctionItems:planned.filter(x=>x.correction).map((s,i)=>({rawName:s.rawName,name:s.name,storeId:s.storeId||null,matchMethod:s.matchMethod||null})),plannedCount:planned.length,finalCount:order.stores.length,finalItems:planned.map((s,i)=>({index:i+1,rawName:s.rawName,name:s.name,storeId:s.storeId||null,pending:!!s.pending,matchMethod:s.matchMethod||null,routeOrder:s.routeOrder,matchConfidence:s.matchConfidence||null})),requestId,quality};
   return await saveWaybill(order, requestId, false);
 async function saveWaybill(order, requestId, resumed){
   if(await stopIfClientCancelled("SAVE"))return json({success:false,code:"PROCESS_CANCELLED",error:"已取消处理",message:"已取消处理",requestId,recoverable:true,action:"REPROCESS",hint:"本次处理已取消，可重新上传运单"},499);
@@ -407,7 +460,7 @@ async function saveWaybill(order, requestId, resumed){
   if(reason==="NEW"){
     emit(100,"处理完成");
     if(resumed){ try { await appendWaybillEvent(env, order.id, {event:"WAYBILL_RESUMED_SAVE",stage:"SAVED",requestId,id:order.id,qualityLevel:order.quality?.level,qualityFlags:order.quality?.flags||[]}); } catch { /* best-effort */ } }
-    else { await recordWaybillLifecycle(env, order, {requestId, rawExtractCount, matched, pending, d}); }
+    else { await recordWaybillLifecycle(env, order, {requestId, rawExtractCount, extractCount:order.summary?.extractCount, recoveredCount:order.summary?.recoveredCount, matched, pending, d}); }
     await finishProc(env, requestId, order.id); return json({success:true,waybill:order,pipeline:order.pipeline,summary:order.summary,indexSync:"OK",quality,requestId});
   }
   const existingRaw=await command(env,["GET","zp:waybill:"+savedId]);

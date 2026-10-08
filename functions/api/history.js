@@ -19,19 +19,30 @@ const validWaybill=x=>!!x&&x.schemaVersion==="2"&&typeof x.id==="string"&&typeof
 const historyReadable=x=>validWaybill(x)&&["PLANNED","CONFIRMED"].includes(x.stage);
 const waybillIndexKey=(routeId,date)=>"zp:route:"+routeId+":waybills:"+date;
 
-async function readWaybills(env,ids,budget=null){
+async function readWaybills(env,ids,budget=null,strictIndex=false){
  const cleanIds=[...new Set((ids||[]).map(clean).filter(Boolean))];if(!cleanIds.length)return [];
  const decode=raw=>{if(!raw)return null;try{const x=typeof raw==="string"?JSON.parse(raw):raw;return historyReadable(x)?x:null}catch{return null}};
  try{
   if(budget&&!budget.take(1))throwBudgetExceeded(budget.max,"history-read-waybills");
   const rawList=await command(env,["MGET",...cleanIds.map(id=>"zp:waybill:"+id)]);
+  if(strictIndex && Array.isArray(rawList)){
+   const missing=cleanIds.filter((id,i)=>!rawList[i]);
+   if(missing.length)throw Object.assign(new Error("历史日期索引包含不存在的运单："+missing.slice(0,5).join(",")),{code:"WAYBILL_HISTORY_STALE_INDEX",missingCount:missing.length});
+  }
   return (Array.isArray(rawList)?rawList:[]).map(decode).filter(Boolean);
  }catch(error){
+  // 数据一致性错误不能被 MGET 降级吞掉；否则“索引有ID、主运单不存在”
+  // 会再次被伪装成“暂无运单”。
+  if(error?.code==="WAYBILL_HISTORY_STALE_INDEX")throw error;
   // MGET 失败（如单次 URL 过长被拒）时降级为**分批** MGET，而非无预算的逐条 GET 循环
   if(budget){
    if(error?.code===SUBREQUEST_BUDGET_EXCEEDED)throw error;
    const {map,complete}=await mgetBatchMap(env,cleanIds.map(id=>"zp:waybill:"+id),budget,{batch:100});
    if(!complete)throwBudgetExceeded(budget.max,"history-read-waybills-fallback");
+   if(strictIndex){
+    const missing=cleanIds.filter(id=>!map.get("zp:waybill:"+id));
+    if(missing.length)throw Object.assign(new Error("历史日期索引包含不存在的运单："+missing.slice(0,5).join(",")),{code:"WAYBILL_HISTORY_STALE_INDEX",missingCount:missing.length});
+   }
    const out=[];for(const id of cleanIds){const w=decode(map.get("zp:waybill:"+id));if(w)out.push(w)}
    return out;
   }
@@ -43,13 +54,14 @@ async function readWaybills(env,ids,budget=null){
 
 async function readIndexMembers(env,routeId,date,budget=null){
  if(budget&&!budget.take(1))throwBudgetExceeded(budget.max,"history-read-index");
- const raw=await command(env,["SMEMBERS",waybillIndexKey(routeId,date)]).catch(()=>[]);
- return Array.isArray(raw)?raw.map(clean).filter(Boolean):[];
+ const raw=await command(env,["SMEMBERS",waybillIndexKey(routeId,date)]);
+ if(!Array.isArray(raw))throw Object.assign(new Error("历史运单索引读取结果异常"),{code:"WAYBILL_HISTORY_INDEX_READ_FAILED"});
+ return raw.map(clean).filter(Boolean);
 }
 
 async function readDateWaybills(env,user,routeId,date,budget=null){
  const ids=await readIndexMembers(env,routeId,date,budget);
- const waybills=await readWaybills(env,ids,budget);
+ const waybills=await readWaybills(env,ids,budget,true);
  return waybills.filter(w=>w.routeId===routeId&&w.date===date&&canReadWaybill(user,w,env)).sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
 }
 
@@ -131,7 +143,14 @@ export async function onRequestGet({request,env}){
    if(!validDate(date))return json({success:false,code:"DATE_INVALID",error:"日期无效"},400);
    if(!inRange(date,range))return json({success:false,code:"DATE_OUT_OF_RANGE",error:"日期不在历史查询范围内"},400);
    const budget=new Budget();
-   const waybills=await readDateWaybills(env,user,routeId,date,budget),enriched=[];for(const w of waybills)enriched.push(await enrich(w));
+   let waybills;
+   try{waybills=await readDateWaybills(env,user,routeId,date,budget)}catch(e){
+    if(e?.code===SUBREQUEST_BUDGET_EXCEEDED)return json({success:false,code:"PARTIAL_FAILURE",error:"该日期运单查询资源不足，请稍后重试",date,budgetUsed:budget.used,budgetMax:budget.max},503);
+    if(e?.code==="WAYBILL_HISTORY_INDEX_READ_FAILED")return json({success:false,code:"WAYBILL_HISTORY_INDEX_READ_FAILED",error:"历史运单索引读取失败，请稍后重试",date},503);
+    if(e?.code==="WAYBILL_HISTORY_STALE_INDEX")return json({success:false,code:"WAYBILL_HISTORY_STALE_INDEX",error:"历史运单索引与运单数据不一致，请稍后重试",date,missingCount:e.missingCount},503);
+    throw e;
+   }
+   const enriched=[];for(const w of waybills)enriched.push(await enrich(w));
    return json({success:true,routeId,date,waybills:enriched,count:enriched.length,waybillIds:enriched.map(w=>w.id),hasMultiple:enriched.length>1});
   }
   // P1-06 收口：readDates / readDateWaybillsBatch 共享同一 Budget，
@@ -149,7 +168,7 @@ export async function onRequestGet({request,env}){
  const dates=[];
   for(const entry of entries){
    const list=batch.get(entry.date)||[];if(!list.length)continue;
-   const storeCount=list.reduce((sum,w)=>sum+(Number(w.summary?.total)||w.stores.length),0),totalWeight=list.reduce((sum,w)=>sum+(Number(w.totalWeight)||0),0);
+   const storeCount=list.reduce((sum,w)=>sum+(Number(w.summary?.finalCount)||Number(w.summary?.total)||w.stores.length),0),totalWeight=list.reduce((sum,w)=>sum+(Number(w.totalWeight)||0),0);
    dates.push({date:entry.date,count:list.length,waybillIds:list.map(w=>w.id),hasMultiple:list.length>1,storeCount,totalWeight});
   }
   const monthMap=new Map();
@@ -176,22 +195,62 @@ async function deleteWaybill(env,routeId,date,waybillId,budget){
  const refKeys=[];
  if(record?.businessFingerprint)refKeys.push("zp:waybill:fingerprint:"+record.businessFingerprint);
  if(record){try{const sig=await dailyWaybillKey(record);refKeys.push("zp:waybill:dedupe:"+sig)}catch{}}
- // 破坏性操作前预留完整预算：SREM + 主记录 DEL + 子键 DEL（如有）+
- // 每个反向引用最多 GET+DEL 两次。预算不足时不删除主记录，保证重试仍可找到原单。
- const required=2+(childKeys.length?1:0)+(refKeys.length*2);
+ // P1 生命周期收口：
+ // 1) 先清理可独立重试的子键；
+ // 2) 再用单次 EVAL 原子删除「主记录 + 日期索引 + 反向引用」；
+ // 3) EVAL 失败时主记录和索引都保留，下一次 DELETE 仍可找到原单继续清理。
+ // 这样不会出现“主记录已 DEL，但日期索引/指纹清理失败后无法再次定位原单”的不可恢复窗口。
+ // EVAL 内再次校验反向引用仍指向本运单，避免删除已被复用的 fingerprint/dedupe 键。
+ const required=2+(childKeys.length?1:0);
  if(!budget.canTake(required)){
   return {mainOk:false,indexOk:true,childrenOk:false,refOk:true,budgetExceeded:true,errors:[Object.assign(new Error("历史删除资源预算不足"),{code:SUBREQUEST_BUDGET_EXCEEDED})]};
  }
- try{budget.take(1);await command(env,["SREM",waybillIndexKey(routeId,date),waybillId]);indexOk=true}catch(e){errors.push(e)}
- try{budget.take(1);await command(env,["DEL","zp:waybill:"+waybillId]);mainOk=true}catch(e){errors.push(e)}
  if(childKeys.length){
   try{budget.take(1);await command(env,["DEL",...childKeys])}catch(e){errors.push(e);childrenOk=false}
+  if(!childrenOk)return {mainOk:false,indexOk:true,childrenOk:false,refOk:true,budgetExceeded:false,errors};
  }
- for(const k of refKeys){
-  try{
-   budget.take(1);const ref=await command(env,["GET",k]);
-   if(String(ref??"")===String(waybillId)){budget.take(1);await command(env,["DEL",k])}
-  }catch(e){refOk=false;errors.push(e)}
+ const indexKey=waybillIndexKey(routeId,date);
+ const mainKey="zp:waybill:"+waybillId;
+ const lua=`
+local mainKey=KEYS[1]
+local indexKey=KEYS[2]
+local waybillId=ARGV[1]
+if redis.call("EXISTS",mainKey)==0 then
+  return {0,0,0}
+end
+local removedRefs=0
+for i=3,#KEYS do
+  local key=KEYS[i]
+  local v=redis.call("GET",key)
+  if tostring(v or "")==tostring(waybillId) then
+    redis.call("DEL",key)
+    removedRefs=removedRefs+1
+  end
+end
+local mainRemoved=redis.call("DEL",mainKey)
+local indexRemoved=redis.call("SREM",indexKey,waybillId)
+return {mainRemoved,indexRemoved,removedRefs}
+`;
+ const keys=[mainKey,indexKey,...refKeys];
+ try{
+  budget.take(1);
+  const result=await command(env,["EVAL",lua,String(keys.length),...keys,waybillId]);
+  const values=Array.isArray(result)?result.map(Number):[];
+  if(values[0]===0){
+   mainOk=true;indexOk=true;
+   // 主记录已不存在时，日期索引仍可能是历史残留；单独清掉不会影响任何新运单。
+   if(!budget.canTake(1))return {mainOk,indexOk,childrenOk,refOk,budgetExceeded:true,errors:[Object.assign(new Error("历史删除尾部索引清理预算不足"),{code:SUBREQUEST_BUDGET_EXCEEDED})]};
+   budget.take(1);await command(env,["SREM",indexKey,waybillId]);
+  }else{
+   mainOk=values[0]>0;
+   indexOk=values[1]>0||values[1]===0;
+   const expectedRefs=refKeys.length;
+   const removedRefs=Number(values[2]||0);
+   refOk=removedRefs===expectedRefs;
+  }
+ }catch(e){
+  errors.push(e);
+  return {mainOk:false,indexOk:true,childrenOk,refOk:true,budgetExceeded:e?.code===SUBREQUEST_BUDGET_EXCEEDED,errors};
  }
  return {mainOk,indexOk,childrenOk,refOk,budgetExceeded:false,errors};
 }

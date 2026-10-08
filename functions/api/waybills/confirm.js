@@ -4,7 +4,7 @@ import {get,newId,command} from "../_redis.js";
 import {canMaintainRoute,requireBusinessUser} from "../_permissions.js";
 import {isTempRoute,TEMP_ROUTE_PREFIX} from "../dispatch.js";
 import {findGlobalMatches,learnGlobal} from "../_global-learning.js";
-import {businessFingerprint} from "../_waybill-identity.js";
+import {businessFingerprint,dailyWaybillKey} from "../_waybill-identity.js";
 import {appendWaybillEvent} from "./_waybill-events.js";
 
 const clean=v=>String(v??"").trim();
@@ -155,13 +155,14 @@ export async function onRequestPost({request,env}){
 
   const seen=new Set();const deduped=[];let merged=0;
   for(const item of stores){const key=item.storeId?"id:"+item.storeId:"pending:"+normalized(item.rawName);if(seen.has(key)){merged++;continue}seen.add(key);deduped.push(item)}
-  let ordered=deduped;
-  if(!isTempRoute(order.routeId)&&base.stores.length){
-    const routeOrderById=new Map(base.stores.filter(s=>s&&s.storeId).map(s=>[clean(s.storeId),Number(s.routeOrder)]));
-    const known=deduped.filter(s=>s.storeId&&Number.isFinite(routeOrderById.get(clean(s.storeId))));
-    const unknown=deduped.filter(s=>!known.includes(s));
-    known.forEach(s=>{s.routeOrder=routeOrderById.get(clean(s.storeId))});
-    ordered=[...known.sort((a,b)=>a.routeOrder-b.routeOrder),...unknown];
+  // 确认发生在“规划完成”之后：不能因为门店身份确认而重新套用基准库 routeOrder。
+  // 当前数组本身就是本次规划后的实际顺序：保留已有 routeOrder；
+  // 缺失顺序的新增/异常门店按其在当前运单中的原位置追加编号，绝不拿基准库顺序插队。
+  let ordered=[...deduped];
+  const maxExistingOrder=Math.max(0,...ordered.map(s=>Number(s.routeOrder)).filter(Number.isFinite));
+  let nextOrder=maxExistingOrder;
+  for(const item of ordered){
+    if(!Number.isFinite(Number(item.routeOrder)))item.routeOrder=++nextOrder;
   }
   const finalStores=ordered.map((s,i)=>({...s,routeOrder:i+1}));
   const pending=finalStores.filter(s=>s.pending).length;
@@ -172,14 +173,26 @@ export async function onRequestPost({request,env}){
   const confirmedNow=new Date().toISOString();if(pending===0){order.confirmedAt=confirmedNow;order.confirmedBy=user.id;}else{order.lastConfirmedAt=confirmedNow;order.lastConfirmedBy=user.id;}order.confirmRequestId=confirmRequestId||null;
   if(learned.length&&!isTempRoute(order.routeId)){base.version=(Number(base.version)||1)+1;base.updatedAt=new Date().toISOString();base.updatedBy=user.id}
   order.businessFingerprint=await businessFingerprint(order);
+  // 确认待定门店后，门店标准名可能发生变化，必须同步重算当日业务去重键。
+  // 否则原 PLANNED 运单的 dailyDedupeKey 仍携带 OCR 待定名称，
+  // 下一次上传同一张已确认运单时，新签名无法命中旧单，可能产生重复运单。
+  const prevDailyDedupeKey=clean(order.dailyDedupeKey);
+  const nextDailyDedupeKey=await dailyWaybillKey(order);
+  order.dailyDedupeKey=nextDailyDedupeKey;
   const learningEntries=learned.map(item=>({field:[clean(item.storeId),normalized(item.rawName||item.name)].join("|"),value:JSON.stringify(item)})).filter(x=>x.field);
   const basePayload=(learned.length&&!isTempRoute(order.routeId))?JSON.stringify(base):"";
   const indexKey=/^\d{4}-\d{2}-\d{2}$/.test(clean(order.date))?waybillIndexKey(order.routeId,clean(order.date)):"";
-  const commitScript='local okOrder,order=pcall(cjson.decode,ARGV[1]); if not okOrder or type(order)~="table" then return 2 end; local rawDone=redis.call("GET",KEYS[2]); if rawDone then return 3 end; local existingFingerprint=redis.call("GET",KEYS[6]); if existingFingerprint and existingFingerprint~=order.id then return 7 end; local okItems,items=pcall(cjson.decode,ARGV[2]); if not okItems or type(items)~="table" then return 4 end; for _,item in ipairs(items) do if type(item)~="table" or type(item.field)~="string" or item.field=="" or type(item.value)~="string" or item.value=="" then return 6 end end; if ARGV[3]~="" then local okBase,base=pcall(cjson.decode,ARGV[3]); if not okBase or type(base)~="table" then return 5 end end; if ARGV[3]~="" then redis.call("SET",KEYS[4],ARGV[3]) end; redis.call("SET",KEYS[1],ARGV[1]); redis.call("SET",KEYS[2],"1"); redis.call("SET",KEYS[6],order.id); for _,item in ipairs(items) do redis.call("HSET",KEYS[3],item.field,item.value) end; if ARGV[4]~="" then redis.call("SADD",KEYS[5],order.id) end; return 1';
-  const commitResult=await command(env,["EVAL",commitScript,"6","zp:waybill:"+order.id,"zp:"+doneKey,"zp:waybill:"+order.id+":learning-repair","zp:route:"+order.routeId+":base",indexKey||"zp:waybills:noop","zp:waybill:fingerprint:"+order.businessFingerprint,JSON.stringify(order),JSON.stringify(learningEntries),basePayload,indexKey?"1":"",confirmedNow,order.businessFingerprint]);
+  const commitScript='local okOrder,order=pcall(cjson.decode,ARGV[1]); if not okOrder or type(order)~="table" then return 2 end; local rawDone=redis.call("GET",KEYS[2]); if rawDone then return 3 end; local existingFingerprint=redis.call("GET",KEYS[6]); if existingFingerprint and existingFingerprint~=order.id then return 7 end; local existingDaily=redis.call("GET",KEYS[7]); if existingDaily and existingDaily~=order.id then return 8 end; local okItems,items=pcall(cjson.decode,ARGV[2]); if not okItems or type(items)~="table" then return 4 end; for _,item in ipairs(items) do if type(item)~="table" or type(item.field)~="string" or item.field=="" or type(item.value)~="string" or item.value=="" then return 6 end end; if ARGV[3]~="" then local okBase,base=pcall(cjson.decode,ARGV[3]); if not okBase or type(base)~="table" then return 5 end end; if ARGV[3]~="" then redis.call("SET",KEYS[4],ARGV[3]) end; redis.call("SET",KEYS[1],ARGV[1]); redis.call("SET",KEYS[2],"1"); redis.call("SET",KEYS[6],order.id); redis.call("SET",KEYS[7],order.id); for _,item in ipairs(items) do redis.call("HSET",KEYS[3],item.field,item.value) end; if ARGV[4]~="" then redis.call("SADD",KEYS[5],order.id) end; return 1';
+  const commitResult=await command(env,["EVAL",commitScript,"7","zp:waybill:"+order.id,"zp:"+doneKey,"zp:waybill:"+order.id+":learning-repair","zp:route:"+order.routeId+":base",indexKey||"zp:waybills:noop","zp:waybill:fingerprint:"+order.businessFingerprint,"zp:waybill:dedupe:"+nextDailyDedupeKey,JSON.stringify(order),JSON.stringify(learningEntries),basePayload,indexKey?"1":"",confirmedNow,order.businessFingerprint,nextDailyDedupeKey]);
   if(Number(commitResult)===3){const committed=await load(env,waybillId);if(!committed)throw Object.assign(new Error("运单不存在"),{code:"WAYBILL_NOT_FOUND"});order=committed;let learning=await retryLearningRepairs(env,waybillId,user.id);try{await appendWaybillEvent(env,waybillId,{event:"WAYBILL_ALREADY_CONFIRMED",stage:"CONFIRM",requestId:order.requestId||null,userId:user.id});}catch{}if(routeBaseLock){await releaseLock(env,routeBaseLock);routeBaseLock=null}await releaseLock(env,waybillLock);waybillLock=null;await releaseLock(env,requestLock);requestLock=null;return json({success:true,waybill:order,learning:learning==="RECORDED"?"ALREADY_CONFIRMED":"DEFERRED"});}if(Number(commitResult)!==1)throw new Error("WAYBILL_COMMIT_FAILED");
   // 指纹漂移回收：只在提交成功后执行——提交失败时保留原状，仍可安全重试。详见 retireStaleFingerprintKey 注释。
   const retiredFp=await retireStaleFingerprintKey(env,{prevFingerprint,nextFingerprint:order.businessFingerprint,ownerId:order.id});
+  // 旧 daily dedupe key 只允许 CAS 删除，避免旧键已经被其他运单复用时误删。
+  if(prevDailyDedupeKey && prevDailyDedupeKey!==nextDailyDedupeKey){
+    try{
+      await command(env,["EVAL",'if redis.call("GET",KEYS[1])==ARGV[1] then return redis.call("DEL",KEYS[1]) else return 0 end',"1","zp:waybill:dedupe:"+prevDailyDedupeKey,order.id]);
+    }catch{}
+  }
   if(retiredFp)try{await appendWaybillEvent(env, order.id, {event:"WAYBILL_IDENTITY_RETIRED",stage:"CONFIRM",requestId:confirmRequestId||null,userId:user.id,reason:"FINGERPRINT_DRIFT"});}catch{}
   let learningStatus=learned.length?await retryLearningRepairs(env,order.id,user.id):"NONE";
   try{await appendWaybillEvent(env, order.id, {event:"CONFIRM_COMPLETED",stage:"CONFIRM",requestId:order.requestId||null,userId:user.id,confirmedBy:user.id,pending:finalStores.filter(s=>s.pending).length,learned:learned.length});}catch{}

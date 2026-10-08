@@ -83,7 +83,11 @@ async function latestGet({request,env}){
   }
  }
  const list=rawList.map(decode).filter(w=>(confirmedOnly?effectiveWaybill(w):activeWaybill(w))&&w.routeId===routeId&&w.date===today&&canReadWaybill(user,w,env));
- list.sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
+ // “最新”按上传接收时间，而不是 OCR/规划完成时间排序。
+ // 新字段 uploadedAt 从 process 请求入口记录；历史旧运单没有该字段时回退 createdAt。
+ // 最后用 id 做稳定并列排序，避免 Redis Set 无序导致同时间戳下结果随机。
+ const timeOf=w=>String(w?.uploadedAt||w?.createdAt||"");
+ list.sort((a,b)=>{const ta=timeOf(a),tb=timeOf(b);const t=ta.localeCompare(tb);return t||String(a?.id||"").localeCompare(String(b?.id||""))});
  const waybill=list[list.length-1]||null;
  return json({success:true,waybill:await withRouteData(waybill)});
 }
