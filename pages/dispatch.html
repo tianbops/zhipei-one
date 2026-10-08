@@ -21,13 +21,13 @@
 .dispatch-intro p{margin:6px 0 0;color:#B8C2CC;font-size:13px}
 .dispatch-section{margin:14px 16px 0}
 .dispatch-section-title{margin:0 0 8px;font-size:13px;color:#7F8A95;font-weight:600}
-.dispatch-current{background:#18212B;border:1px solid #2A3540;border-radius:16px;padding:16px}
+.dispatch-current{background:#18212B;border:1px solid #2A3540;border-radius:16px;padding:14px 16px}
+.dispatch-current-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .dispatch-current-label{font-size:12px;color:#7F8A95}
-.dispatch-current-row{display:flex;align-items:center;gap:12px;margin-top:6px}
-.dispatch-current-info{min-width:0;flex:1}
-.dispatch-current-name{font-size:23px;font-weight:700;line-height:1.25;color:#fff}
-.dispatch-current-status{margin-top:5px;font-size:12px;color:#B8C2CC}
-.dispatch-current-count{font-size:14px;color:#fff;font-weight:600}
+.dispatch-current-row{display:flex;align-items:baseline;gap:10px;margin-top:4px}
+.dispatch-current-name{font-size:23px;font-weight:700;line-height:1.2;color:#fff}
+.dispatch-current-status{font-size:12px;color:#B8C2CC}
+.dispatch-current-count{margin-left:4px;font-size:12px;color:#B8C2CC;font-weight:600}
 .dispatch-switch{min-width:72px;height:40px;padding:0 14px;border:1px solid #2A3540;border-radius:10px;background:#26313C;color:#fff;font-size:13px;font-weight:600}
 .dispatch-switch:active{background:#11171D}
 .dispatch-action-card{background:#18212B;border:1px solid #2A3540;border-radius:14px;overflow:hidden}
@@ -40,15 +40,6 @@
 .dispatch-action-main strong{display:block;font-size:15px;font-weight:600}
 .dispatch-action-main small{display:block;margin-top:3px;color:#7F8A95;font-size:12px;line-height:1.35}
 .dispatch-action-arrow{color:#7F8A95;font-size:20px;line-height:1}
-.dispatch-more{display:flex;align-items:center;justify-content:space-between;width:100%;padding:0 2px;border:0;background:none;color:#B8C2CC;font-size:13px}
-.dispatch-more:active{opacity:.7}
-.dispatch-other-list{display:grid;gap:8px;margin-top:8px}
-.dispatch-option{display:flex;align-items:center;gap:12px;width:100%;min-height:54px;padding:12px 14px;border:1px solid #2A3540;border-radius:12px;background:#18212B;color:#fff;text-align:left}
-.dispatch-option:disabled{opacity:.55}
-.dispatch-option-main{min-width:0;flex:1}
-.dispatch-option-name{font-size:15px;font-weight:600}
-.dispatch-option-meta{margin-top:3px;color:#7F8A95;font-size:12px}
-.dispatch-option-arrow{color:#7F8A95;font-size:18px}
 .dispatch-message,.dispatch-empty{padding:24px 12px;text-align:center;color:#7F8A95;font-size:13px}
 .dispatch-sheet-backdrop{position:fixed;inset:0;z-index:50;display:none;place-items:end center;background:rgba(0,0,0,.62);padding:0}
 .dispatch-sheet-backdrop.open{display:grid}
@@ -150,13 +141,6 @@
   </div>
 </section>
 
-<section class="dispatch-section">
-  <button id="otherToggle" class="dispatch-more" type="button" aria-expanded="false">
-    <span>其他可配送线路</span><span id="otherArrow">›</span>
-  </button>
-  <div id="otherRoutes" class="dispatch-other-list" hidden></div>
-</section>
-
 <nav class="bottom-nav" aria-label="主要功能">
   <a class="bottom-nav-item" href="/home.html?openUpload=1">
     <span class="bottom-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg></span><span>上传</span>
@@ -207,7 +191,6 @@ let pendingRoute="";
 let pickerTimer=0;
 
 function routeName(r){return r?.name||r?.id||"未命名线路"}
-function routeMeta(r,current=false){return (current?"当前线路 · ":"")+"已匹配 · "+(Number(r?.storeCount)||0)+"家门店"}
 
 function openSheet(){
   pickerRoute=routeState.current;
@@ -236,15 +219,8 @@ function closeConfirm(){
 function renderCurrent(){
   const r=routeState.routes.find(x=>x.id===routeState.current);
   if(!r){$("currentRoute").innerHTML='<div class="dispatch-message">暂未选择配送线路</div>';return}
-  $("currentRoute").innerHTML='<div class="dispatch-current-label">当前配送线路</div><div class="dispatch-current-row"><div class="dispatch-current-info"><div class="dispatch-current-name">'+esc(routeName(r))+'</div><div class="dispatch-current-status">已匹配</div><div class="dispatch-current-count">'+(Number(r.storeCount)||0)+'家门店</div></div><button id="switchRouteBtn" class="dispatch-switch" type="button">切换</button></div>';
+  $("currentRoute").innerHTML='<div class="dispatch-current-top"><div class="dispatch-current-label">当前配送线路</div><button id="switchRouteBtn" class="dispatch-switch" type="button">切换</button></div><div class="dispatch-current-row"><div class="dispatch-current-name">'+esc(routeName(r))+'</div><div class="dispatch-current-status">已匹配<span class="dispatch-current-count">'+(Number(r.storeCount)||0)+'家门店</span></div></div>';
   $("switchRouteBtn").addEventListener("click",openSheet);
-}
-function renderOther(){
-  const others=routeState.routes.filter(r=>r.id!==routeState.current);
-  $("otherToggle").hidden=!others.length;
-  if(!others.length)return;
-  $("otherRoutes").innerHTML=others.slice(0,3).map(r=>'<button class="dispatch-option" type="button" data-route-id="'+esc(r.id)+'"><span class="dispatch-option-main"><span class="dispatch-option-name">'+esc(routeName(r))+'</span><span class="dispatch-option-meta">'+esc(routeMeta(r))+'</span></span><span class="dispatch-option-arrow">›</span></button>').join("");
-  $("otherRoutes").querySelectorAll("[data-route-id]").forEach(b=>b.addEventListener("click",()=>openConfirm(b.dataset.routeId)));
 }
 function renderPicker(){
   const list=$("routePickerList");
@@ -291,22 +267,15 @@ $("routeSheetBackdrop").addEventListener("click",e=>{if(e.target===$("routeSheet
 $("confirmCancel").addEventListener("click",closeConfirm);
 $("confirmBackdrop").addEventListener("click",e=>{if(e.target===$("confirmBackdrop"))closeConfirm()});
 $("confirmOk").addEventListener("click",async()=>{if(pendingRoute)await selectRoute(pendingRoute)});
-$("otherToggle").addEventListener("click",()=>{
-  const hidden=$("otherRoutes").hidden;
-  $("otherRoutes").hidden=!hidden;
-  $("otherToggle").setAttribute("aria-expanded",String(hidden));
-  $("otherArrow").textContent=hidden?"⌄":"›";
-});
 
 async function load(){
   try{
     const [routes,dispatch]=await Promise.all([api("/api/routes"),api("/api/dispatch")]);
     routeState.current=dispatch.dispatchRoute?.id||"";
     routeState.routes=(routes.routes||[]).filter(r=>r.status==="active");
-    renderCurrent();renderOther();
+    renderCurrent();
   }catch(e){
     $("currentRoute").innerHTML='<div class="dispatch-message">线路读取失败，请重试</div>';
-    $("otherToggle").hidden=true;
   }
 }
 load();
