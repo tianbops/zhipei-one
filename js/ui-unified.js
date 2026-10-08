@@ -382,6 +382,34 @@
     });
   }
 
+  /* ===== 工作区隔离：管理员端与业务端互不串线 =====
+     角色由登录页 / 管理端写入 sessionStorage（zpRole），业务页据此做门禁：
+       1) 正在执行「退出应用」流程（zpExitAdmin 置位）→ 放行并继续后退，绝不停留；
+       2) 管理员会话却落在业务页 → 立刻送回管理端，业务界面一帧都不露出。
+     退出登录一律先回到登录页，登录页进入即清空 zpRole，因此换账号登录司机后不会被误判。 */
+  window.zpSetRole=function(role){
+    try{sessionStorage.setItem("zpRole",(role==="admin"||role==="system_admin")?"admin":"user")}catch{}
+  };
+  window.zpClearRole=function(){try{sessionStorage.removeItem("zpRole")}catch{}};
+  function zpIsAdminSession(){
+    try{return sessionStorage.getItem("zpRole")==="admin"}catch{return false}
+  }
+  // 返回 true 表示本页已被隔离逻辑接管，调用方应停止后续初始化
+  function zpZoneGuard(){
+    if(zpZone!=="business")return false;
+    let exiting=false;
+    try{exiting=!!sessionStorage.getItem("zpExitAdmin")}catch{}
+    if(exiting){
+      // 正在退出：继续后退直到真正退出 PWA。此刻绝不能弹回管理端，
+      // 否则「两次返回退出」会变成回到管理端，永远退不出去。
+      try{sessionStorage.removeItem("zpExitAdmin")}catch{}
+      try{history.back()}catch{}
+      return true;
+    }
+    if(zpIsAdminSession()){try{location.replace("/admin")}catch{};return true}
+    return false;
+  }
+
   (function zpInstallBack(){
     // 管理员端与司机端同处一个 PWA 窗口。登录即栈底（location.replace 进入，背后无首页），
     // 故正常进入时 admin 就是历史首条记录；极少数「司机会话→退出→再登录管理员」路径下，
@@ -390,13 +418,11 @@
     // 直到真正退出 PWA，绝不停在司机首页。
     // 非根判定：admin.html 加载时历史长度 >1，说明它底下还压着别的文档（如司机首页）。
     zpAdminNonRoot=(zpZone==="admin")&&(function(){try{return history.length>1}catch{return false}})();
-    var _f=null;try{_f=sessionStorage.getItem("zpExitAdmin")}catch{}
-    if(zpZone!=="business"){
-      if(_f){try{sessionStorage.removeItem("zpExitAdmin")}catch{}} // 非业务页：清残留，防误触
-    }else if(_f){
-      try{sessionStorage.removeItem("zpExitAdmin")}catch{}
-      try{history.back()}catch{}
-      return;
+    if(zpZone==="business"){
+      // 业务区门禁：管理员会话不在此停留；正在退出则继续后退（内部已处理标记）
+      if(zpZoneGuard())return;
+    }else{
+      try{sessionStorage.removeItem("zpExitAdmin")}catch{} // 非业务页：清残留，防误触
     }
     // 管理员端「非根」进入（历史里残留业务端首页，如司机会话→退出→再登录管理员）：
     // 进入即置跨区退出标记，保证任何一次离开都能越过业务端首页，直接退到桌面。
@@ -404,7 +430,9 @@
       try{sessionStorage.setItem("zpExitAdmin","1")}catch{}
     }
     zpBindPageBack();
-    window.addEventListener("pageshow",zpBindPageBack);
+    // bfcache 恢复不会重跑本 IIFE，但系统返回完全可能把用户带回到一个缓存的业务页
+    // （管理员端最容易踩到），因此恢复时再过一次门禁。
+    window.addEventListener("pageshow",e=>{zpBindPageBack();if(e.persisted)zpZoneGuard()});
     if(!zpZone)return; // 登录/引导页只统一按钮行为，不安装系统返回守卫
     // 每次进入都要有 guard：没有它，「系统返回」会直接滑出本站（落在历史里
     // 的上一页，管理员端就会被甩到业务首页），而不是先交给下面这段处理。

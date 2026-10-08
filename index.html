@@ -22,6 +22,9 @@
    2) 自动直达保险丝：10 秒内自动跳转满 3 次就停手，留在登录页由用户手动操作。
      就算上游仍返回不一致的角色，也只多跳一次，绝不无限互跳。 */
 (function(){try{
+ // 进入登录页即清空工作区归属：退出登录都会先回到本页，
+ // 避免上一会话的角色残留把随后登录的司机误判成管理员。
+ try{sessionStorage.removeItem("zpRole")}catch(e){}
  var navEntry=(performance.getEntriesByType&&performance.getEntriesByType("navigation")[0])||null;
  if(navEntry&&navEntry.type==="back_forward")return;
  var now=Date.now(),hop=null;
@@ -35,8 +38,9 @@
    // 管理员端与司机端同处一个 PWA 窗口：直接 replace 进入，admin 即栈底；
    // 系统返回由 ui-unified.js 守卫接管（第一次左滑提示「再按一次退出」，第二次退出到桌面）。
    try{sessionStorage.setItem("zpAutoHop",JSON.stringify({t:now,n:((hop&&now-(hop.t||0)<10000)?(hop.n|0):0)+1}))}catch(e){}
+   try{sessionStorage.setItem("zpRole",_isAdmin?"admin":"user")}catch(e){}
    location.replace(_isAdmin?"/admin.html?v="+now:"/home.html?v="+now);
   }).catch(function(){});
 }catch(e){}})();
-</script><script src="/js/login.js?v=7481ed06"></script><script src="/js/pwa.js?v=864ce384"></script>
+</script><script src="/js/login.js?v=b5bf111b"></script><script src="/js/pwa.js?v=864ce384"></script>
 </body></html>

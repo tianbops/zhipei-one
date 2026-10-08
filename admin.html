@@ -468,10 +468,14 @@ async function load(){
     // 否则跳到 /home 后该标记会触发 history.back() 又弹回 /admin，重蹈循环覆辙
     // （在 PWA 历史栈 >1 的真实环境必现）。普通用户本就不需要跨区退出逻辑。
     try{sessionStorage.removeItem("zpExitAdmin")}catch(e){}
+    // 明确本会话属于业务区，避免业务页门禁把司机误判成管理员又弹回 /admin
+    try{sessionStorage.setItem("zpRole","user")}catch(e){}
     setTimeout(()=>location.replace("/home.html?v="+Date.now()),1200);
     return;
   }
   S.me=m.user;
+  // 兜底：确认是管理员则固化本会话归属管理区（登录页已写，此处覆盖异常残留）
+  try{sessionStorage.setItem("zpRole","admin")}catch(e){}
   $("who").innerHTML='<span class="role">管理员</span><span class="uname">'+esc(m.user.username)+'</span>';
   $("menuUsername").textContent=m.user.username;
   try{
@@ -600,5 +604,5 @@ async function learnRestore(storeId){
   {rank:40,probe:()=>document.querySelector(".row.open,.route.open"),close:()=>{closeSwipes();return true}}
 );
 })();
-</script><script id="ui-unified-admin" src="/js/ui-unified.js?v=be4abee1"></script><script src="/js/pwa.js?v=864ce384"></script>
+</script><script id="ui-unified-admin" src="/js/ui-unified.js?v=d14b62f4"></script><script src="/js/pwa.js?v=864ce384"></script>
 </body></html>

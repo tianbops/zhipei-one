@@ -18,6 +18,8 @@ form?.addEventListener("submit",async e=>{e.preventDefault();message.textContent
   const d=await r.json().catch(()=>({}));if(!r.ok){const code=d.code||("HTTP_"+r.status);throw new Error("["+code+"] "+(d.error||"登录失败"))}
   const _role=d.user&&d.user.role;
   const _isAdmin=_role==="system_admin"||_role==="admin";
+  // 记录本会话所属工作区：业务页据此拒绝管理员会话停留（两个板块互不串线）
+  try{window.zpSetRole?window.zpSetRole(_role):sessionStorage.setItem("zpRole",_isAdmin?"admin":"user")}catch(e){}
   // 管理员端与司机端同处一个 PWA 窗口：登录即栈底（location.replace 进入，背后无首页）。
   // 系统返回由 ui-unified.js 守卫接管——第一次左滑停留并提示「再按一次退出」，
   // 第二次左滑真正退出到手机桌面，绝不穿越到司机首页。
