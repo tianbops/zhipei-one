@@ -21,9 +21,10 @@ ROOT = sys.argv[1] if len(sys.argv) > 1 else os.path.dirname(os.path.dirname(os.
 HTML_DIRS = [ROOT] + [os.path.join(ROOT, d) for d in ("pages", "admin")]
 
 # 匹配 href="/xxx.css" 或 src="/xxx.js"（允许已带 ?v= 旧版本号，会原位替换；
+# ?v= 值不限十六进制——历史上存在 home2/dark1 等手工版本号，同样需要被替换；
 # 跳过 sw.js：注册 URL 必须固定）
-REF = re.compile(r'(href=")(/[A-Za-z0-9_./-]+\.css)(?:\?v=[0-9a-f]*)?(")')
-SRC = re.compile(r'(src=")(/[A-Za-z0-9_./-]+\.js)(?:\?v=[0-9a-f]*)?(")')
+REF = re.compile(r'(href=")(/[A-Za-z0-9_./-]+\.css)(?:\?v=[A-Za-z0-9_.-]*)?(")')
+SRC = re.compile(r'(src=")(/[A-Za-z0-9_./-]+\.js)(?:\?v=[A-Za-z0-9_.-]*)?(")')
 
 
 def stamp_of(path):
