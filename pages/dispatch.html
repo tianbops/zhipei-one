@@ -50,20 +50,26 @@
 .dispatch-option-meta{margin-top:3px;color:#7F8A95;font-size:12px}
 .dispatch-option-arrow{color:#7F8A95;font-size:18px}
 .dispatch-message,.dispatch-empty{padding:24px 12px;text-align:center;color:#7F8A95;font-size:13px}
-.dispatch-sheet-backdrop{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.58);display:none}
-.dispatch-sheet-backdrop.open{display:block}
-.dispatch-sheet{position:absolute;left:0;right:0;bottom:0;max-height:min(78dvh,620px);overflow:auto;padding:10px 16px calc(18px + env(safe-area-inset-bottom));background:#18212B;border-top:1px solid #2A3540;border-radius:18px 18px 0 0}
-.dispatch-sheet-handle{width:34px;height:4px;margin:2px auto 14px;border-radius:4px;background:#7F8A95}
+.dispatch-sheet-backdrop{position:fixed;inset:0;z-index:50;display:none;place-items:end center;background:rgba(0,0,0,.62);padding:0}
+.dispatch-sheet-backdrop.open{display:grid}
+.dispatch-sheet{width:100%;max-width:480px;padding:12px 16px calc(18px + env(safe-area-inset-bottom));background:#18212B;border-top:1px solid #2A3540;border-radius:20px 20px 0 0;box-shadow:0 -12px 36px rgba(0,0,0,.32)}
+.dispatch-sheet-handle{width:34px;height:4px;margin:1px auto 14px;border-radius:4px;background:#7F8A95}
+.dispatch-sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .dispatch-sheet h3{margin:0;font-size:18px}
-.dispatch-sheet-sub{margin:5px 0 12px;color:#7F8A95;font-size:12px}
-.dispatch-sheet-list{display:grid;gap:8px}
-.dispatch-sheet-option{display:flex;align-items:center;gap:12px;width:100%;min-height:58px;padding:12px 14px;border:1px solid #2A3540;border-radius:12px;background:#11171D;color:#fff;text-align:left}
-.dispatch-sheet-option.selected{background:#202A34;border-color:#7F8A95}
-.dispatch-sheet-option:disabled{opacity:.55}
-.dispatch-sheet-option-main{flex:1;min-width:0}
-.dispatch-sheet-option-name{font-size:15px;font-weight:600}
-.dispatch-sheet-option-meta{margin-top:3px;color:#7F8A95;font-size:12px}
-.dispatch-sheet-check{color:#fff;font-size:17px}
+.dispatch-sheet-confirm{height:36px;padding:0 14px;border:1px solid #2A3540;border-radius:9px;background:#26313C;color:#fff;font-size:13px;font-weight:600}
+.dispatch-sheet-confirm:disabled{opacity:.45}
+.dispatch-sheet-sub{margin:0 0 8px;color:#7F8A95;font-size:12px}
+.dispatch-picker{position:relative;height:246px;overflow:hidden;border-top:1px solid #2A3540;border-bottom:1px solid #2A3540;background:#11171D}
+.dispatch-picker::before,.dispatch-picker::after{content:"";position:absolute;left:0;right:0;height:78px;z-index:2;pointer-events:none}
+.dispatch-picker::before{top:0;background:linear-gradient(#11171D,rgba(17,23,29,0))}
+.dispatch-picker::after{bottom:0;background:linear-gradient(rgba(17,23,29,0),#11171D)}
+.dispatch-picker-selection{position:absolute;left:10px;right:10px;top:calc(50% - 27px);height:54px;border-top:1px solid #2A3540;border-bottom:1px solid #2A3540;border-radius:10px;pointer-events:none;z-index:1}
+.dispatch-picker-list{height:100%;overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior:contain;scrollbar-width:none;padding:96px 10px}
+.dispatch-picker-list::-webkit-scrollbar{display:none}
+.dispatch-picker-option{height:54px;scroll-snap-align:center;display:flex;align-items:center;justify-content:center;border:0;background:transparent;color:#7F8A95;width:100%;font-size:16px;font-weight:500}
+.dispatch-picker-option.is-selected{color:#fff;font-size:19px;font-weight:700}
+.dispatch-picker-option small{margin-left:8px;color:#7F8A95;font-size:12px;font-weight:400}
+.dispatch-picker-empty{display:grid;place-items:center;height:100%;color:#7F8A95;font-size:13px}
 .dispatch-sheet-cancel{width:100%;height:46px;margin-top:10px;border:1px solid #2A3540;border-radius:10px;background:#26313C;color:#fff;font-size:14px}
 .dispatch-confirm-backdrop{position:fixed;inset:0;z-index:60;display:none;place-items:center;padding:20px;background:rgba(0,0,0,.62)}
 .dispatch-confirm-backdrop.open{display:grid}
@@ -134,9 +140,12 @@
 <div id="routeSheetBackdrop" class="dispatch-sheet-backdrop" aria-hidden="true">
   <section class="dispatch-sheet" role="dialog" aria-modal="true" aria-labelledby="routeSheetTitle">
     <div class="dispatch-sheet-handle"></div>
-    <h3 id="routeSheetTitle">选择配送线路</h3>
-    <p class="dispatch-sheet-sub">选择后将成为本次配送使用的线路。</p>
-    <div id="routeSheetList" class="dispatch-sheet-list"></div>
+    <div class="dispatch-sheet-head"><h3 id="routeSheetTitle">选择配送线路</h3><button id="routeSheetConfirm" class="dispatch-sheet-confirm" type="button" disabled>确认</button></div>
+    <p class="dispatch-sheet-sub">上下滑动选择线路，选中后点击确认。</p>
+    <div class="dispatch-picker">
+      <div class="dispatch-picker-selection" aria-hidden="true"></div>
+      <div id="routePickerList" class="dispatch-picker-list"></div>
+    </div>
     <button id="routeSheetCancel" class="dispatch-sheet-cancel" type="button">取消</button>
   </section>
 </div>
@@ -157,32 +166,24 @@ const $=id=>document.getElementById(id);
 async function api(url,opt={}){const r=await fetch(url,{credentials:"same-origin",cache:"no-store",...opt});const d=await r.json().catch(()=>({}));if(!r.ok||!d.success)throw new Error(d.error||"请求失败");return d}
 function esc(v){return String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 let routeState={current:"",routes:[]};
-let pendingRoute="";
+let pickerRoute="";
+let pickerTimer=0;
 
 function routeName(r){return r?.name||r?.id||"未命名线路"}
 function routeMeta(r,current=false){return (current?"当前线路 · ":"")+"已匹配 · "+(Number(r?.storeCount)||0)+"家门店"}
 
 function openSheet(){
-  renderSheet();
+  pickerRoute=routeState.current;
+  renderPicker();
   $("routeSheetBackdrop").classList.add("open");
   $("routeSheetBackdrop").setAttribute("aria-hidden","false");
+  requestAnimationFrame(()=>scrollPickerTo(pickerRoute,false));
 }
 function closeSheet(){
   $("routeSheetBackdrop").classList.remove("open");
   $("routeSheetBackdrop").setAttribute("aria-hidden","true");
 }
-function openConfirm(id){
-  pendingRoute=id;
-  const r=routeState.routes.find(x=>x.id===id);
-  $("confirmText").textContent="确定切换至"+routeName(r)+"吗？切换后，本次配送将使用该线路。";
-  $("confirmBackdrop").classList.add("open");
-  $("confirmBackdrop").setAttribute("aria-hidden","false");
-}
-function closeConfirm(){
-  pendingRoute="";
-  $("confirmBackdrop").classList.remove("open");
-  $("confirmBackdrop").setAttribute("aria-hidden","true");
-}
+
 function renderCurrent(){
   const r=routeState.routes.find(x=>x.id===routeState.current);
   if(!r){$("currentRoute").innerHTML='<div class="dispatch-message">暂未选择配送线路</div>';return}
@@ -196,10 +197,34 @@ function renderOther(){
   $("otherRoutes").innerHTML=others.slice(0,3).map(r=>'<button class="dispatch-option" type="button" data-route-id="'+esc(r.id)+'"><span class="dispatch-option-main"><span class="dispatch-option-name">'+esc(routeName(r))+'</span><span class="dispatch-option-meta">'+esc(routeMeta(r))+'</span></span><span class="dispatch-option-arrow">›</span></button>').join("");
   $("otherRoutes").querySelectorAll("[data-route-id]").forEach(b=>b.addEventListener("click",()=>openConfirm(b.dataset.routeId)));
 }
-function renderSheet(){
-  $("routeSheetList").innerHTML=routeState.routes.map(r=>'<button class="dispatch-sheet-option'+(r.id===routeState.current?" selected":"")+'" type="button" data-route-id="'+esc(r.id)+'"><span class="dispatch-sheet-option-main"><span class="dispatch-sheet-option-name">'+esc(routeName(r))+'</span><span class="dispatch-sheet-option-meta">'+esc(routeMeta(r,r.id===routeState.current))+'</span></span>'+(r.id===routeState.current?'<span class="dispatch-sheet-check">✓</span>':'')+'</button>').join("");
-  $("routeSheetList").querySelectorAll("[data-route-id]").forEach(b=>b.addEventListener("click",()=>{const id=b.dataset.routeId;if(id===routeState.current){closeSheet();return}closeSheet();openConfirm(id)}));
+function renderPicker(){
+  const list=$("routePickerList");
+  if(!routeState.routes.length){list.innerHTML='<div class="dispatch-picker-empty">暂无可配送线路</div>';$("routeSheetConfirm").disabled=true;return}
+  list.innerHTML=routeState.routes.map(r=>'<button class="dispatch-picker-option" type="button" data-route-id="'+esc(r.id)+'"><span>'+esc(routeName(r))+'</span><small>'+(Number(r.storeCount)||0)+'家门店</small></button>').join("");
+  list.querySelectorAll("[data-route-id]").forEach(b=>b.addEventListener("click",()=>{pickerRoute=b.dataset.routeId;scrollPickerTo(pickerRoute,true)}));
+  updatePickerSelection();
 }
+function scrollPickerTo(id,smooth=true){
+  const el=$("routePickerList").querySelector('[data-route-id="'+CSS.escape(id)+'"]');
+  if(el)el.scrollIntoView({block:"center",behavior:smooth?"smooth":"auto"});
+  pickerRoute=id;
+  updatePickerSelection();
+}
+function updatePickerSelection(){
+  const list=$("routePickerList");
+  list.querySelectorAll(".dispatch-picker-option").forEach(b=>b.classList.toggle("is-selected",b.dataset.routeId===pickerRoute));
+  $("routeSheetConfirm").disabled=!pickerRoute||pickerRoute===routeState.current;
+}
+function settlePicker(){
+  const opts=[...$("routePickerList").querySelectorAll(".dispatch-picker-option")];
+  if(!opts.length)return;
+  const center=$("routePickerList").getBoundingClientRect().top+$("routePickerList").clientHeight/2;
+  let best=opts[0],dist=Infinity;
+  for(const el of opts){const d=Math.abs(el.getBoundingClientRect().top+el.offsetHeight/2-center);if(d<dist){dist=d;best=el}}
+  pickerRoute=best.dataset.routeId;
+  scrollPickerTo(pickerRoute,true);
+}
+
 async function selectRoute(id){
   $("confirmOk").disabled=true;
   try{
@@ -211,6 +236,8 @@ async function selectRoute(id){
   }
 }
 $("routeSheetCancel").addEventListener("click",closeSheet);
+$("routeSheetConfirm").addEventListener("click",()=>{if(pickerRoute&&pickerRoute!==routeState.current){closeSheet();openConfirm(pickerRoute)}});
+$("routePickerList").addEventListener("scroll",()=>{clearTimeout(pickerTimer);pickerTimer=setTimeout(settlePicker,90)},{passive:true});
 $("routeSheetBackdrop").addEventListener("click",e=>{if(e.target===$("routeSheetBackdrop"))closeSheet()});
 $("confirmCancel").addEventListener("click",closeConfirm);
 $("confirmBackdrop").addEventListener("click",e=>{if(e.target===$("confirmBackdrop"))closeConfirm()});
