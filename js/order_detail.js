@@ -29,7 +29,7 @@ function render(){
     const s=x.summary||{},confirmed=x.stage==='CONFIRMED';
     // 状态角标可见：此前 stage 只算不用，用户看不出哪张是「待确认」，删除失败时无从判断
     const status='<span class="history-choice-status '+(confirmed?'ok':'wait')+'">'+(confirmed?'已确认':'待确认')+'</span>';
-    return '<div class="order-history-swipe-row" data-history-index="'+i+'"><button type="button" class="order-history-choice"><span class="history-choice-index">'+(i+1)+'</span><span class="history-choice-vehicle">'+esc(cleanVehicle(x.vehicle))+'</span><span class="history-choice-main">'+Number(s.total||x.stores?.length||0)+'家 · '+fmtWeight(x.totalWeight)+'t</span>'+status+'</button><button type="button" class="history-choice-delete" aria-label="删除运单">删除</button></div>';
+    return '<div class="order-history-swipe-row" data-history-index="'+i+'"><button type="button" class="order-history-choice"><span class="history-choice-index">'+(i+1)+'</span><span class="history-choice-vehicle">'+esc(cleanVehicle(x.vehicle))+'</span><span class="history-choice-main">'+Number(s.finalCount)||Number(s.total)||x.stores?.length||0+'家 · '+fmtWeight(x.totalWeight)+'t</span>'+status+'</button><button type="button" class="history-choice-delete" aria-label="删除运单">删除</button></div>';
   }).join('');
   $('routeList').querySelectorAll('.order-history-swipe-row').forEach(row=>{
     const b=row.querySelector('.order-history-choice');
@@ -76,7 +76,7 @@ function render(){
  const s=order.summary||{}, stores=Array.isArray(order.stores)?order.stores:[], pending=stores.filter(x=>x?.pending);
  $('orderDate').textContent=order.date||'日期待确认';
  $('pageTitle')?.replaceChildren(document.createTextNode('运单详情'));
- $('storeCount').textContent=Number(s.total)||stores.length||0;
+ $('storeCount').textContent=Number(s.finalCount)||Number(s.total)||stores.length||0;
  $('totalWeight').textContent=fmtWeight(order.totalWeight);
  $('routeName').textContent=order.routeName||'—';
  $('menuRoute').textContent=order.routeName||'当前线路';
@@ -389,7 +389,7 @@ $('menuBtn').onclick=e=>{e.stopPropagation();setMenu(!menuOpen)};
 $('editRouteBtn').onclick=()=>location.href='/pages/data.html?from=order&id='+encodeURIComponent(order.id)+'&source=process';
 $('shareBtn').onclick=async()=>{
  setMenu(false);if(!order)return;
- const s=order.summary||{},text='智配One\n'+(order.date||'')+'\n'+(order.routeName||'当前线路')+'\n'+(s.total||order.stores?.length||0)+'家 · '+fmtWeight(order.totalWeight)+'t';
+ const s=order.summary||{},text='智配One\n'+(order.date||'')+'\n'+(order.routeName||'当前线路')+'\n'+(s.finalCount||s.total||order.stores?.length||0)+'家 · '+fmtWeight(order.totalWeight)+'t';
  try{if(navigator.share)await navigator.share({title:'当日运单',text});else{await navigator.clipboard?.writeText(text);zpToast('已复制运单摘要','success')}}catch{}
 };
 $('logoutBtn').onclick=async()=>{setMenu(false);if(!(await zpConfirm('退出登录','确定退出当前账号吗？')))return;try{await fetch('/api/logout',{method:'POST',credentials:'same-origin',cache:'no-store'})}finally{location.replace('/')}};
