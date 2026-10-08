@@ -224,3 +224,103 @@
   .trend-stat b{font-size:20px}
   .trend-summary{gap:18px}
 }
+
+/* ===== 首页新版信息架构：今日工作台 + 底部四入口 ===== */
+.home-app{padding-bottom:calc(78px + env(safe-area-inset-bottom))}
+.home-app .topbar{justify-content:flex-start}
+.task-card{padding-bottom:14px}
+.today-store-list{
+  margin-top:16px;
+  max-height:min(42vh,420px);
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  border-top:1px solid rgba(255,255,255,.06);
+  scrollbar-width:none;
+}
+.today-store-list::-webkit-scrollbar{display:none}
+.today-store-row{
+  min-height:48px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:0 4px;
+  border-bottom:1px solid rgba(255,255,255,.055);
+  color:#F2F5F7;
+  text-decoration:none;
+  -webkit-tap-highlight-color:transparent;
+}
+.today-store-row:active{background:rgba(255,255,255,.035)}
+.today-store-index{
+  width:24px;
+  min-width:24px;
+  color:#7F8A95;
+  font-size:14px;
+  line-height:20px;
+  font-variant-numeric:tabular-nums;
+  text-align:right;
+}
+.today-store-name{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#F2F5F7;
+  font-size:15px;
+  line-height:22px;
+  font-weight:550;
+}
+.today-store-empty{padding:18px 4px;color:#7F8A95;font-size:14px;text-align:center}
+.today-metrics{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px 14px;
+  margin-top:13px;
+  padding-top:12px;
+  border-top:1px solid rgba(255,255,255,.06);
+}
+.today-metrics span{color:#B8C2CC;font-size:13px;line-height:20px}
+.bottom-nav{
+  position:fixed;
+  left:50%;
+  bottom:0;
+  z-index:30;
+  width:min(100%,430px);
+  min-height:64px;
+  padding:6px 8px calc(6px + env(safe-area-inset-bottom));
+  transform:translateX(-50%);
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:4px;
+  background:rgba(5,7,10,.96);
+  border-top:1px solid #27323D;
+  backdrop-filter:blur(8px);
+}
+.bottom-nav-item{
+  min-width:0;
+  min-height:52px;
+  border:0;
+  border-radius:10px;
+  background:transparent;
+  color:#7F8A95;
+  text-decoration:none;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  font-size:12px;
+  line-height:17px;
+  font-weight:600;
+  -webkit-tap-highlight-color:transparent;
+}
+.bottom-nav-item:active{background:#18212B;color:#F2F5F7}
+.bottom-nav-icon{width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+.bottom-nav-icon svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.bottom-nav-item[aria-current="page"]{color:#F2F5F7}
+@media(max-width:380px){
+ .home-app{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+ .today-store-row{min-height:46px}
+ .today-store-name{font-size:14px}
+ .bottom-nav{padding-left:6px;padding-right:6px}
+}
