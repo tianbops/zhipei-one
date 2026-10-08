@@ -231,9 +231,9 @@
 .task-card{padding-bottom:14px}
 .today-store-list{
   margin-top:12px;
-  /* 固定展示约 4 家（行高 44px × 4 ≈ 180px）：用户要求「压缩为四家店铺展示」，
-     其余 21 家在窗内滚动（overscroll-behavior 防滚动穿透），月度统计稳定回到首屏。 */
-  max-height:180px;
+  /* 固定展示约 5 家（行高 44px × 5 = 220px）：统计版块压缩后腾出的高度用于多显示一排门店，
+     其余门店在窗内滚动（overscroll-behavior 防滚动穿透），月度统计稳定回到首屏。 */
+  max-height:220px;
   overflow-y:auto;
   overscroll-behavior:contain;
   -webkit-overflow-scrolling:touch;
@@ -245,8 +245,9 @@
   min-height:44px;
   display:flex;
   align-items:center;
-  gap:14px;
-  padding:0 4px;
+  gap:10px;
+  /* 整体左移：去掉左侧留白（原 4px），门店名起点更靠左，可多显示约半个字 */
+  padding:0 4px 0 0;
   border-bottom:1px solid rgba(255,255,255,.055);
   color:#F2F5F7;
   text-decoration:none;
@@ -254,8 +255,8 @@
 }
 .today-store-row:active{background:rgba(255,255,255,.035)}
 .today-store-index{
-  width:24px;
-  min-width:24px;
+  width:22px;
+  min-width:22px;
   color:#7F8A95;
   font-size:15px;
   line-height:20px;
@@ -281,15 +282,17 @@
 }
 .today-store-name::-webkit-scrollbar{display:none}
 .today-store-empty{padding:18px 4px;color:#7F8A95;font-size:14px;text-align:center}
+/* 统计版块精简：压缩垂直占用（小标签行高/间距收窄），无统计项时整块不占位。 */
 .today-metrics{
   display:flex;
   flex-wrap:wrap;
-  gap:6px 12px;
-  margin-top:9px;
-  padding-top:9px;
+  gap:4px 10px;
+  margin-top:6px;
+  padding-top:6px;
   border-top:1px solid rgba(255,255,255,.06);
 }
-.today-metrics span{color:#B8C2CC;font-size:13px;line-height:20px}
+.today-metrics:empty{display:none}
+.today-metrics span{color:#B8C2CC;font-size:12px;line-height:18px}
 .bottom-nav{
   position:fixed;
   left:50%;
@@ -330,7 +333,7 @@
 .bottom-nav-item[aria-current="page"]{color:#F2F5F7}
 @media(max-width:380px){
  .home-app{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
- .today-store-list{max-height:172px}   /* 行高 42px × 4 ≈ 172px，固定展示 4 家 */
+ .today-store-list{max-height:210px}   /* 行高 42px × 5 = 210px，固定展示 5 家 */
  .today-store-row{min-height:42px}
  .today-store-name{font-size:16px}
  .bottom-nav{padding-left:6px;padding-right:6px}
