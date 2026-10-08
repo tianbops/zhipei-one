@@ -182,7 +182,7 @@ function renderOther(){
   $("otherRoutes").querySelectorAll("[data-route-id]").forEach(b=>b.addEventListener("click",()=>openConfirm(b.dataset.routeId)));
 }
 function renderSheet(){
-  $("routeSheetList").innerHTML=routeState.routes.map(r=>'<button class="dispatch-sheet-option'+(r.id===routeState.current?" selected":"")+'" type="button" data-route-id="'+esc(r.id)+'"><span class="dispatch-sheet-option-main"><span class="dispatch-sheet-option-name">'+esc(routeName(r))+'</span><span class="dispatch-sheet-option-meta">'+esc(routeMeta(r,r.id===routeState.current))+'</span></span>'+(r.id===routeState.current?'<span class="dispatch-sheet-check">✓</span>':'').concat("</button>").replace(".concat","") : "");
+  $("routeSheetList").innerHTML=routeState.routes.map(r=>'<button class="dispatch-sheet-option'+(r.id===routeState.current?" selected":"")+'" type="button" data-route-id="'+esc(r.id)+'"><span class="dispatch-sheet-option-main"><span class="dispatch-sheet-option-name">'+esc(routeName(r))+'</span><span class="dispatch-sheet-option-meta">'+esc(routeMeta(r,r.id===routeState.current))+'</span></span>'+(r.id===routeState.current?'<span class="dispatch-sheet-check">✓</span>':'')+'</button>').join("");
   $("routeSheetList").querySelectorAll("[data-route-id]").forEach(b=>b.addEventListener("click",()=>{const id=b.dataset.routeId;if(id===routeState.current){closeSheet();return}closeSheet();openConfirm(id)}));
 }
 async function selectRoute(id){
