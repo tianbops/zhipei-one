@@ -29,188 +29,44 @@
 .route-apply-page .primary-btn,.route-apply-page .secondary-btn{min-height:var(--zp-control-height)}
 @media(max-width:380px){.route-apply-page .page2-card{padding:12px}.route-apply-page .maintain-card{padding:0}.route-apply-page .collapse-head{min-height:46px;padding:0 12px}.route-apply-page .collapse-body{padding:0 12px 12px}}
 
-/* 我的页视觉优化 3.0：与全局业务卡片统一为不透明深色实体层，强化文字层级与行距，减少“半透明漂浮感”。 */
-.account-page{
-  background:var(--zp-bg);
-  padding-top:max(10px,env(safe-area-inset-top));
-  padding-bottom:calc(92px + env(safe-area-inset-bottom));
-}
-.account-page .topbar{
-  min-height:54px;
-  margin-bottom:8px;
-}
-.account-page .topbar h1{
-  color:var(--zp-text);
-  letter-spacing:.01em;
-}
-.account-page .page2-card{
-  background:var(--zp-surface);
-  border:1px solid var(--zp-line);
-  border-radius:14px;
-  padding:14px 16px;
-  margin-bottom:10px;
-  box-shadow:none;
-}
-.account-page .page2-card h2{
-  margin:0 0 4px;
-  color:var(--zp-text);
-  font-size:17px!important;
-  line-height:23px!important;
-  font-weight:650;
-}
-.account-page .account-info-card{
-  padding-top:13px;
-  padding-bottom:6px;
-}
-.account-page .account-row{
-  min-height:50px;
-  color:var(--zp-muted);
-  font-size:15px;
-  line-height:22px;
-}
-.account-page .account-row strong{
-  max-width:62%;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-  color:var(--zp-text);
-  font-weight:600;
-  text-align:right;
-}
-.account-page .page2-soft{
-  color:var(--zp-soft);
-  font-size:13px;
-  line-height:19px;
-}
-.account-page .account-edit-card,
-.account-page .account-danger-card{
-  padding:0;
-  overflow:hidden;
-}
-.account-page .account-collapse-head{
-  min-height:52px;
-  padding:0 16px;
-  color:var(--zp-text);
-  font-size:15px;
-  line-height:22px;
-  font-weight:600;
-}
-.account-page .account-collapse-icon{
-  color:var(--zp-soft);
-  font-size:18px;
-}
-.account-page .account-collapse-body{
-  padding:0 16px 16px;
-  border-top:1px solid var(--zp-divider);
-}
-.account-page .page2-label{
-  margin-top:12px;
-  color:var(--zp-muted);
-  font-size:13px;
-  line-height:19px;
-}
-.account-page .page2-label input{
-  margin-top:6px;
-  min-height:48px;
-  background:var(--zp-surface-2);
-  border-color:var(--zp-line);
-  color:var(--zp-text);
-  font-size:16px;
-}
-.account-page .page2-primary{
-  min-height:48px;
-  margin-top:12px;
-  background:var(--zp-surface-3);
-  border:1px solid #2A3540;
-  border-radius:11px;
-  font-size:15px;
-  font-weight:600;
-}
-.account-page .account-danger-head{
-  color:var(--ui-danger);
-}
-.account-page .account-danger-box{
-  padding:14px 16px 16px;
-  border-top:1px solid var(--zp-divider);
-}
-.account-page .account-danger-box strong{
-  font-size:14px;
-  line-height:20px;
-}
-.account-page .account-danger-box p{
-  margin:5px 0 0;
-  color:var(--zp-soft);
-  font-size:13px;
-  line-height:19px;
-}
-.account-page .page2-danger-btn{
-  min-height:48px;
-  margin-top:12px;
-  border-radius:11px;
-  font-size:15px;
-}
-.account-page .account-logout{
-  margin-top:0;
-  background:var(--zp-surface);
-  border-color:var(--zp-line);
-}
-.account-page .account-logout:active,
-.account-page .page2-primary:active{
-  background:var(--zp-surface-3);
-}
-@media(max-width:380px){
-  .account-page{padding-left:12px;padding-right:12px}
-  .account-page .page2-card{padding-left:14px;padding-right:14px}
-  .account-page .account-collapse-head{padding-left:14px;padding-right:14px}
-  .account-page .account-collapse-body,
-  .account-page .account-danger-box{padding-left:14px;padding-right:14px}
-}
-
-/* 我的页折叠箭头：统一线性 Chevron，避免文字字符在不同字体下产生基线和粗细漂移。 */
-.account-page .account-collapse-head{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left}
-.account-page .account-collapse-icon{position:relative;flex:0 0 36px;width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;color:var(--zp-muted);font-size:0;line-height:0;border-radius:9px;transition:color .16s ease,background .16s ease}
-.account-page .account-collapse-icon::before{content:"";width:8px;height:8px;border-right:1.8px solid currentColor;border-bottom:1.8px solid currentColor;transform:rotate(45deg) translate(-1px,-1px);transition:transform .18s ease}
-.account-page .account-collapse-head[aria-expanded="true"] .account-collapse-icon{color:var(--zp-text)}
+/* 我的页：与线路申请页统一布局、颜色与密度。 */
+.account-page{background:#05070A;padding-top:16px;padding-bottom:calc(92px + env(safe-area-inset-bottom))}
+.account-page .topbar{margin-bottom:10px;min-height:54px}
+.account-page .topbar h1{margin:0;text-align:center;color:#fff;font-size:17px;line-height:23px;font-weight:700}
+.account-page .page2-card{background:rgba(20,28,37,.80);border:1px solid #2A3540;border-radius:16px;padding:14px;margin-bottom:8px;box-shadow:none}
+.account-page .page2-card h2{margin:0 0 6px;color:#fff;font-size:15px!important;line-height:21px!important;font-weight:700}
+.account-page .page2-soft{margin:4px 0 0;color:#7F8A95;font-size:13px;line-height:20px}
+.account-page .account-info-card{padding:14px}
+.account-page .account-row{min-height:46px;border-bottom:0;color:#B8C2CC;font-size:15px;line-height:22px}
+.account-page .account-row strong{color:#fff;font-size:15px;font-weight:600;text-align:right}
+.account-page .account-edit-card,.account-page .account-danger-card{padding:0;overflow:hidden}
+.account-page .account-collapse-head{width:100%;min-height:48px;padding:0 14px;border:0;background:transparent;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;font-size:15px;line-height:21px;font-weight:700}
+.account-page .account-collapse-icon{width:32px;height:32px;flex:0 0 32px;display:inline-flex;align-items:center;justify-content:center;color:#B8C2CC;font-size:0!important;line-height:0!important}
+.account-page .account-collapse-icon::before{content:"";display:block;width:7px;height:7px;border-right:1.7px solid currentColor;border-bottom:1.7px solid currentColor;transform:rotate(45deg) translate(-1px,-1px);transition:transform .18s ease}
 .account-page .account-collapse-head[aria-expanded="true"] .account-collapse-icon::before{transform:rotate(225deg) translate(-1px,-1px)}
-.account-page .account-collapse-head:active .account-collapse-icon{background:var(--zp-surface-2)}
-@media(prefers-reduced-motion:reduce){.account-page .account-collapse-icon,.account-page .account-collapse-icon::before{transition:none}}
-
-/* 账号设置：保持业务页风格，编辑项默认收起 */
-.account-page .account-edit-card{padding:0;overflow:hidden}
-.account-page .account-collapse-head{width:100%;min-height:48px;padding:0 16px;border:0;background:transparent;color:#fff;display:flex;align-items:center;justify-content:space-between;text-align:left;font-size:15px;font-weight:700}
-.account-page .account-collapse-icon{color:#B8C2CC;font-size:20px;line-height:1;transition:transform .18s ease}
-.account-page .account-collapse-body{padding:0 16px 16px}
+.account-page .account-collapse-body{padding:0 14px 14px;border-top:1px solid #2A3540}
 .account-page .account-collapse-body[hidden]{display:none}
-.account-page .page2-label{margin-top:11px}
-.account-page .page2-primary{min-height:46px}
-.account-page .message{margin:8px 0 0;font-size:13px;line-height:20px}
-@media(max-width:380px){.account-page .account-collapse-head{min-height:46px;padding:0 15px}.account-page .account-collapse-body{padding:0 15px 15px}}
-
-/* 账号设置：安全与危险操作分组 */
-.account-page .account-danger-card{padding:0;overflow:hidden}
+.account-page .page2-label{display:block;margin-top:10px;color:#B8C2CC;font-size:13px;line-height:20px}
+.account-page .page2-label input{display:block;width:100%;min-height:48px;margin-top:5px;padding:0 14px;border:1px solid #35414D;border-radius:11px;background:rgba(10,14,19,.88);color:#fff;font-size:15px}
+.account-page .page2-primary,.account-page .page2-secondary{min-height:var(--zp-control-height);margin-top:12px;border-radius:11px;font-size:15px;font-weight:600}
+.account-page .page2-primary{background:rgba(28,37,47,.82);border:1px solid #26313C;color:#fff}
 .account-page .account-danger-head{color:#FF8278}
-.account-page .account-danger-box{padding:0 16px 16px}
+.account-page .account-danger-box{padding:12px 14px 14px;border-top:1px solid #2A3540}
 .account-page .account-danger-box strong{display:block;color:#fff;font-size:14px;line-height:20px}
-.account-page .account-danger-box p{margin:6px 0 0;color:#7F8A95;font-size:12px;line-height:19px}
-.account-page .page2-danger-btn{width:100%;min-height:var(--zp-control-height);margin-top:13px;border:1px solid rgba(255,130,120,.5);border-radius:11px;background:rgba(255,130,120,.08);color:#FF8278;font-size:15px;font-weight:700}
-.account-page .page2-danger-btn:disabled{opacity:.45}
-.account-page .account-dialog{width:min(100%,398px);padding:18px;border:1px solid #2A3540;border-radius:16px;background:rgba(20,28,37,.80);box-shadow:0 18px 50px rgba(0,0,0,.45)}
-.account-page .account-dialog h2{margin:0;color:#fff;font-size:17px;line-height:23px}
-.account-page .account-dialog>p{margin:7px 0 0;color:#B8C2CC;font-size:13px;line-height:20px}
-.account-page .account-dialog-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}
+.account-page .account-danger-box p{margin:5px 0 0;color:#7F8A95;font-size:12px;line-height:19px}
+.account-page .page2-danger-btn{width:100%;min-height:var(--zp-control-height);margin-top:12px;border:1px solid rgba(255,130,120,.5);border-radius:11px;background:rgba(255,130,120,.08);color:#FF8278;font-size:15px;font-weight:700}
+.account-page .account-dialog-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
 .account-page .account-dialog-actions button{margin-top:0}
-.account-page .account-info-card{margin-bottom:10px}
-@media(max-width:380px){
- .account-page .account-danger-box{padding:0 15px 15px}
- .account-page .account-dialog{padding:16px}
-}
-/* Android typography readability adjustment: size/line-height only */
-.page2-card h2{font-size:18px;line-height:24px}
-.page2-label,.route-meta,.request-row{font-size:15px;line-height:22px}
-.route-meta strong{font-size:18px;line-height:24px}
-.data-help{font-size:14px;line-height:20px}
-.account-row{font-size:15px;line-height:22px}
-.empty{font-size:15px;line-height:22px}
+.account-page .account-logout-section{margin:0 0 8px;padding:0}
+.account-page .account-logout{width:100%;min-height:var(--zp-control-height);margin:0;border:1px solid #2A3540;border-radius:14px;background:rgba(20,28,37,.80);color:#fff;font-size:15px;font-weight:600}
+.account-page .account-logout-section .message{margin:7px 2px 0}
+.account-page .account-install-card{padding:12px 14px}
+.account-page .account-install-main{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.account-page .account-install-main h2{margin:0 0 2px!important;font-size:15px!important;line-height:21px!important}
+.account-page .account-install-main .page2-soft{margin:0;font-size:12px;line-height:18px}
+.account-page .account-install-btn{width:auto;min-width:58px;min-height:40px;margin:0;padding:0 13px;border-radius:10px;font-size:14px}
+@media(max-width:380px){.account-page{padding-left:12px;padding-right:12px}.account-page .page2-card{padding-left:12px;padding-right:12px}.account-page .account-collapse-head{padding-left:12px;padding-right:12px}.account-page .account-collapse-body,.account-page .account-danger-box{padding-left:12px;padding-right:12px}}
+@media(prefers-reduced-motion:reduce){.account-page .account-collapse-icon::before{transition:none}}
 
 /* Android 返回层 2.5：所有业务页统一为运单详情同款纯箭头；点击走浏览器历史栈。 */
 .page2 .app-back{color:#fff}
