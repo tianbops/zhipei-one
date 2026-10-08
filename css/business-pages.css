@@ -233,3 +233,18 @@
 .dispatch-option{font-size:17px;line-height:23px}
 .dispatch-option small,.dispatch-route-meta small{font-size:14px;line-height:20px}
 .dispatch-empty,.dispatch-message{font-size:15px;line-height:22px}
+
+
+/* 我的页最终统一：折叠箭头只保留 CSS Chevron，退出登录不再使用卡片容器，桌面安装入口轻量化。 */
+.account-page .account-collapse-icon{font-size:0!important;line-height:0!important;color:var(--zp-muted);display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;flex:0 0 32px}
+.account-page .account-collapse-icon::before{content:"";display:block;width:7px;height:7px;border-right:1.7px solid currentColor;border-bottom:1.7px solid currentColor;transform:rotate(45deg) translate(-1px,-1px);transition:transform .18s ease,color .18s ease}
+.account-page .account-collapse-head[aria-expanded="true"] .account-collapse-icon::before{transform:rotate(225deg) translate(-1px,-1px)}
+.account-page .account-logout-section{margin:0 0 10px;padding:0}
+.account-page .account-logout-section .account-logout{width:100%;margin:0;background:var(--zp-surface);border:1px solid var(--zp-line);border-radius:14px}
+.account-page .account-logout-section .message{margin:8px 2px 0}
+.account-page .account-install-card{padding:12px 14px}
+.account-page .account-install-main{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.account-page .account-install-main h2{margin:0 0 2px!important;font-size:15px!important;line-height:20px!important}
+.account-page .account-install-main .page2-soft{margin:0;font-size:12px;line-height:18px}
+.account-page .account-install-btn{width:auto;min-width:58px;min-height:40px;margin:0;padding:0 13px;border-radius:10px;font-size:14px}
+@media(prefers-reduced-motion:reduce){.account-page .account-collapse-icon::before{transition:none}}
