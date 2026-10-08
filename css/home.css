@@ -1,9 +1,9 @@
 /* 智配One · 首页移动端 UI */
-.home-app{width:min(100%,430px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:16px 16px calc(28px + env(safe-area-inset-bottom));background:#05070A}
+.home-app{width:min(100%,430px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:14px 14px calc(24px + env(safe-area-inset-bottom));background:#05070A}
 .home-app .topbar{display:flex;justify-content:space-between;align-items:center;position:relative;z-index:10}
 .home-brand{display:flex;flex-direction:column;line-height:1.2}
-.home-brand strong{font-size:22px;font-weight:700;letter-spacing:1px;color:#fff}
-.home-brand span{margin-top:2px;font-size:12px;color:#7F8B98;letter-spacing:2px}
+.home-brand strong{font-size:19px;font-weight:700;letter-spacing:.5px;color:#fff}
+.home-brand span{margin-top:2px;font-size:11px;color:#7F8B98;letter-spacing:1.5px}
 .home-menu-button{width:var(--zp-control-height);height:var(--zp-control-height);border:1px solid rgba(255,255,255,.025);border-radius:50%;background:rgba(20,28,37,.80);color:#fff;padding:0;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
 .home-menu-button svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round}
 .home-menu-button:active{background:#B8C1C8;color:#0B1015;transform:scale(.97)}
@@ -17,7 +17,7 @@
 .home-menu-panel button .menu-item-icon{color:#FF8278}
 .menu-divider{height:1px;margin:5px 7px;background:rgba(255,255,255,.07)}
 
-.task-card{position:relative;overflow:hidden;margin-top:18px;padding:18px;min-height:150px;background:rgba(13,18,24,.82);border:1px solid rgba(255,255,255,.075);border-radius:18px;box-shadow:0 12px 30px rgba(0,0,0,.18)}
+.task-card{position:relative;overflow:hidden;margin-top:14px;padding:14px;min-height:0;background:rgba(13,18,24,.82);border:1px solid rgba(255,255,255,.075);border-radius:16px;box-shadow:0 12px 30px rgba(0,0,0,.18)}
 .task-title{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:21px;line-height:28px;font-weight:700}
 .task-name{display:flex;align-items:center;gap:9px;min-width:0;white-space:nowrap}
 .task-date{margin:0;text-align:right;white-space:nowrap;color:#7F8A95;font-size:15px;line-height:23px;font-weight:500}
@@ -25,12 +25,12 @@
 .status-dot[hidden]{display:none}
 .today-summary .sub-badge{display:inline;color:#F2F5F7;font:600 14px/29px "Microsoft YaHei",sans-serif;white-space:nowrap}
 .today-summary .sub-badge[hidden]{display:none}
-.task-main{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:8px;margin-top:13px}
+.task-main{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:8px;margin-top:9px}
 .task-info{min-width:0;color:#9AA6B2;font-size:15px;line-height:27px}
 .today-summary{display:flex;align-items:baseline;gap:9px;white-space:nowrap;line-height:29px}
 .today-summary strong{color:#F2F5F7;font-size:20px;line-height:29px;font-weight:600}
 .today-summary span{font-size:16px;line-height:29px;color:#B8C2CC}
-.delivery-man{width:120px;height:88px;display:flex;align-items:flex-end;justify-content:flex-end;opacity:.5;transform:translateY(10px)}
+.delivery-man{width:84px;height:60px;display:flex;align-items:flex-end;justify-content:flex-end;opacity:.4;transform:translateY(8px)}
 .delivery-man img{width:100%;height:100%;object-fit:contain}
 .function-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
 /* radius 14→12（方案第十三章 10–12）。padding 0 48px 保持不动：
@@ -92,11 +92,11 @@
 .home-menu-button:focus-visible,.function-btn:focus-visible,.source-option:focus-visible,.upload-cancel-btn:focus-visible,.processing-retry-btn:focus-visible,.processing-cancel-btn:focus-visible{outline:2px solid rgba(255,255,255,.24);outline-offset:2px}
 @media(max-width:380px){
  .home-app{padding-left:12px;padding-right:12px}
- .task-card{margin-top:18px;padding:17px 16px 16px;border-radius:17px}
+ .task-card{margin-top:14px;padding:13px 14px 12px;border-radius:16px}
  .task-title{font-size:20px;line-height:26px}
  .task-date{font-size:16px;line-height:23px}
  .today-summary strong{font-size:19px}.today-summary span{font-size:15px}
- .delivery-man{width:80px;height:60px;opacity:.5;transform:translateY(10px)}
+ .delivery-man{width:64px;height:46px;opacity:.4;transform:translateY(8px)}
  .function-list{margin-top:12px;gap:8px}
  .function-btn{height:52px;min-height:52px;font-size:15px}
  .upload-sheet{width:min(90vw,340px);padding:20px 17px 18px}
@@ -117,8 +117,8 @@
 /* Final Android typography normalization: size/line-height only */
 .home-brand strong{font-size:20px;line-height:26px;letter-spacing:.5px}
 .home-brand span{font-size:12px;line-height:18px}
-.task-title{font-size:18px;line-height:24px}
-.task-date{font-size:16px;line-height:23px}
+.task-title{font-size:16.5px;line-height:22px}
+.task-date{font-size:15px;line-height:22px}
 .task-info{font-size:16px;line-height:23px}
 .today-summary strong{font-size:20px;line-height:27px}
 .today-summary span{font-size:16px;line-height:23px}
@@ -162,17 +162,17 @@
 
 /* ===== 配送趋势 · Smart Trend：工业物流终端风（无渐变/发光/玻璃拟态） ===== */
 .trend-card{
-  margin-top:12px;
+  margin-top:10px;
   touch-action:pan-y;   /* 纵向可滚动，横向手势留给 JS 切月 */
-  padding:15px 15px 13px;
-  border:1px solid #27323D;border-radius:16px;background:rgba(13,18,24,.82);overflow:hidden;
+  padding:12px 13px 11px;
+  border:1px solid #27323D;border-radius:14px;background:rgba(13,18,24,.82);overflow:hidden;
 }
 .trend-card.is-in{animation:trendIn .22s ease-out}
 @keyframes trendIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .trend-head{display:flex;flex-direction:column;gap:7px}
 .trend-title-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .trend-controls{display:flex;align-items:center;gap:8px;flex-shrink:0}
-.trend-title{margin:0;font-size:17px;line-height:24px;color:#F2F5F7;font-weight:650;letter-spacing:.5px}
+.trend-title{margin:0;font-size:15px;line-height:21px;color:#F2F5F7;font-weight:650;letter-spacing:.5px}
 .trend-year{
   appearance:none;margin:0;padding:4px 10px;border:1px solid #2C3742;border-radius:999px;
   background:rgba(16,24,32,.82);color:#9BA7B3;font-size:12px;line-height:16px;cursor:pointer;white-space:nowrap;
@@ -187,19 +187,19 @@
 }
 .trend-nav:active{background:rgba(28,37,47,.82);color:#fff}
 .trend-nav:disabled{opacity:.2;pointer-events:none}
-.trend-month{color:#C2CBD4;font-size:13px;line-height:20px;font-variant-numeric:tabular-nums;letter-spacing:.5px;will-change:transform}
+.trend-month{color:#C2CBD4;font-size:12px;line-height:18px;font-variant-numeric:tabular-nums;letter-spacing:.5px;will-change:transform}
 .trend-metric{display:flex;gap:6px}
 .trend-metric-btn{appearance:none;border:1px solid #2C3742;background:rgba(16,24,32,.82);color:#B8C2CC;font-size:12px;line-height:18px;padding:2px 11px;border-radius:999px;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
 .trend-metric-btn.is-active{background:#C7D0D9;color:#0E141A;border-color:#C7D0D9;font-weight:600}
 .trend-metric-btn:active{transform:translateY(.5px)}
-.trend-summary{display:flex;gap:22px;margin-top:9px;align-items:baseline}
-.trend-stat{display:flex;align-items:baseline;gap:3px;color:#B8C2CC;font-size:13px;line-height:20px}
-.trend-stat b{color:#F2F5F7;font-size:22px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:.5px}
-.trend-stat i{font-style:normal;color:#7F8A95;font-size:12px}
+.trend-summary{display:flex;gap:16px;margin-top:6px;align-items:baseline}
+.trend-stat{display:flex;align-items:baseline;gap:3px;color:#B8C2CC;font-size:12px;line-height:18px}
+.trend-stat b{color:#F2F5F7;font-size:19px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:.5px}
+.trend-stat i{font-style:normal;color:#7F8A95;font-size:11px}
 .trend-delta{margin-left:5px;font-size:11px;font-style:normal;font-variant-numeric:tabular-nums}
 .trend-delta.is-up{color:#7FB38A}
 .trend-delta.is-down{color:#C98C7F}
-.trend-chart-wrap{height:120px;margin:10px -2px 0;will-change:transform,opacity;touch-action:pan-y}
+.trend-chart-wrap{height:96px;margin:7px -2px 0;will-change:transform,opacity;touch-action:pan-y}
 .trend-chart{width:100%;height:100%;display:block;overflow:visible}
 .trend-grid{fill:none;stroke:#222C36;stroke-width:1;stroke-dasharray:2 5}
 .trend-area{fill:#C7D0D9;fill-opacity:.05;stroke:none}
@@ -210,19 +210,19 @@
 .trend-point:focus-visible{stroke:#fff;stroke-width:2.5}
 .trend-year-bar{fill:#3A4651}
 .trend-year-bar.is-peak{fill:#C7D0D9}
-.trend-axis{height:18px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 3px;color:#65717D;font-size:10px;line-height:14px;font-variant-numeric:tabular-nums}
-.trend-hint{min-height:17px;margin-top:4px;color:#7F8A95;font-size:11px;line-height:17px;text-align:right}
+.trend-axis{height:15px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 3px;color:#65717D;font-size:9px;line-height:13px;font-variant-numeric:tabular-nums}
+.trend-hint{min-height:14px;margin-top:3px;color:#7F8A95;font-size:10px;line-height:14px;text-align:right}
 .trend-hint b{color:#9BA7B3;font-weight:600;font-variant-numeric:tabular-nums}
 @media(prefers-reduced-motion:reduce){
   .trend-card.is-in{animation:none}
   .trend-chart-wrap{transition:none!important}
 }
 @media(max-width:380px){
-  .trend-card{padding:14px 13px 12px}
+  .trend-card{padding:12px 11px 10px}
   .trend-title{font-size:16px}
-  .trend-chart-wrap{height:112px}
-  .trend-stat b{font-size:20px}
-  .trend-summary{gap:18px}
+  .trend-chart-wrap{height:90px}
+  .trend-stat b{font-size:18px}
+  .trend-summary{gap:14px}
 }
 
 /* ===== 首页新版信息架构：今日工作台 + 底部四入口 ===== */
@@ -230,8 +230,10 @@
 .home-app .topbar{justify-content:flex-start}
 .task-card{padding-bottom:14px}
 .today-store-list{
-  margin-top:16px;
-  max-height:min(54vh,520px);
+  margin-top:12px;
+  /* 固定展示约 4 家（行高 44px × 4 ≈ 180px）：用户要求「压缩为四家店铺展示」，
+     其余 21 家在窗内滚动（overscroll-behavior 防滚动穿透），月度统计稳定回到首屏。 */
+  max-height:180px;
   overflow-y:auto;
   overscroll-behavior:contain;
   -webkit-overflow-scrolling:touch;
@@ -240,7 +242,7 @@
 }
 .today-store-list::-webkit-scrollbar{display:none}
 .today-store-row{
-  min-height:48px;
+  min-height:44px;
   display:flex;
   align-items:center;
   gap:14px;
@@ -274,9 +276,9 @@
 .today-metrics{
   display:flex;
   flex-wrap:wrap;
-  gap:8px 14px;
-  margin-top:13px;
-  padding-top:12px;
+  gap:6px 12px;
+  margin-top:9px;
+  padding-top:9px;
   border-top:1px solid rgba(255,255,255,.06);
 }
 .today-metrics span{color:#B8C2CC;font-size:13px;line-height:20px}
@@ -320,7 +322,13 @@
 .bottom-nav-item[aria-current="page"]{color:#F2F5F7}
 @media(max-width:380px){
  .home-app{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
- .today-store-row{min-height:46px}
+ .today-store-list{max-height:172px}   /* 行高 42px × 4 ≈ 172px，固定展示 4 家 */
+ .today-store-row{min-height:42px}
  .today-store-name{font-size:14px}
  .bottom-nav{padding-left:6px;padding-right:6px}
 }
+
+/* 上传弹窗开启（body.sheet-open）时，底部导航浮于遮罩(--ui-z-modal:1000)之上，
+   使「上传」按钮可再次点击将其关闭——实现首页上传按钮 toggle 回首页态。
+   子页面无 #uploadArea/openUpload，不会出现 sheet-open，故此规则仅作用于首页。 */
+body.sheet-open .bottom-nav{z-index:1001 !important}

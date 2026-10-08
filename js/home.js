@@ -221,7 +221,9 @@ function closeUpload(){
 function openUpload(){
   if(overlay){resetProcessingUI();overlay.hidden=false;overlay.setAttribute("aria-hidden","false");document.body.classList.add("sheet-open")}
 }
-$("uploadAction")?.addEventListener("click",openUpload);
+// 首页上传按钮 toggle（以首页为标准点）：第一次点击打开上传弹窗，
+// 弹窗已开时再点即关闭（回到首页标准态）。closeUpload 自带处理中保护。
+$("uploadAction")?.addEventListener("click",()=>{if(overlay&&!overlay.hidden)closeUpload();else openUpload()});
 if(new URLSearchParams(location.search).get("openUpload")==="1")setTimeout(openUpload,0);
 cancel?.addEventListener("click",closeUpload);
 // 处理中的唯一退出方式：处理期间取消按钮被隐藏，等待超过 8 秒后才给出出口，
@@ -474,14 +476,19 @@ async function loadHome(){
     if(w&&w.routeId===cmpRouteId){
       const stores=Array.isArray(w.stores)?w.stores:[];
       const total=Number(w.summary?.total)||stores.length||0;
+      // 渲染辅助函数必须定义在两个渲染块的共享作用域：
+      // 此前 esc 等定义在 if(todayStoreList) 块内，todayMetrics 块引用时
+      // ReferenceError → 被外层 catch 静默吞掉 → 整卡「暂无运单」。
+      // 触发条件：summary.original !== total（如“原始24家/共25家”）——
+      // 合成测试数据 original===total 时该路径不执行，故此前测试未暴露。
+      const navOf=x=>String(x?.navigation||x?.nav||"").trim();
+      const safeUrl=v=>{try{const u=new URL(String(v||"").trim(),location.origin);return /^(https?:)$/.test(u.protocol)?u.href:""}catch{return""}};
+      const esc=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+      const attr=v=>esc(v).replace(/'/g,"&#39;");
       todayCount.textContent=total+"家";
       todayWeight.textContent=(Math.round((Number(w.totalWeight)||0)*100)/100).toFixed(2)+"t";
 
       if(todayStoreList){
-        const navOf=x=>String(x?.navigation||x?.nav||"").trim();
-        const safeUrl=v=>{try{const u=new URL(String(v||"").trim(),location.origin);return /^(https?:)$/.test(u.protocol)?u.href:""}catch{return""}};
-        const esc=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-        const attr=v=>esc(v).replace(/'/g,"&#39;");
         try{
           todayStoreList.innerHTML=stores.length?stores.map((x,i)=>{
             const name=esc(x?.name||x?.rawName||"未识别门店"),nav=safeUrl(navOf(x));
@@ -508,6 +515,7 @@ async function loadHome(){
     }
   }catch(e){
     // 所有异常都必须结束 loading 状态，不能让首页永久停留在“加载中…”。
+    console.error("[loadHome] 异常:",e&&e.stack||e);
     setEmptyToday();
   }
 }

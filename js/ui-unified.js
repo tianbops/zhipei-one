@@ -119,6 +119,17 @@
     }
   },true);
 
+  // 一级导航 toggle（以首页为标准点）：点击当前所在页对应的 tab（is-active）时，
+  // 不再重载本页而是回到首页；点击非激活 tab 照常首次进入对应页面。
+  // 首页静态 nav 无 is-active 类，不受影响；首页上传弹窗的 toggle 由 home.js 处理。
+  document.addEventListener("click",e=>{
+    const active=e.target.closest?.(".bottom-nav a.is-active");
+    if(!active)return;
+    if(typeof window.zpIsProcessing==="function"&&window.zpIsProcessing())return; // 处理中交由上方守卫确认
+    e.preventDefault();
+    location.href="/home";
+  },true);
+
   window.zpConfirm=function(title,text,okText){
     return new Promise(resolve=>{
       const root=ensure(),box=root.querySelector(".zp-confirm"),ok=root.querySelector("[data-zp-ok]"),cancel=root.querySelector("[data-zp-cancel]");
