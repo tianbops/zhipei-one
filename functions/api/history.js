@@ -125,7 +125,8 @@ export async function onRequestGet({request,env}){
   if(date){
    if(!validDate(date))return json({success:false,code:"DATE_INVALID",error:"日期无效"},400);
    if(!inRange(date,range))return json({success:false,code:"DATE_OUT_OF_RANGE",error:"日期不在历史查询范围内"},400);
-   const waybills=await readDateWaybills(env,user,routeId,date),enriched=[];for(const w of waybills)enriched.push(await enrich(w));
+   const budget=new Budget();
+   const waybills=await readDateWaybills(env,user,routeId,date,budget),enriched=[];for(const w of waybills)enriched.push(await enrich(w));
    return json({success:true,routeId,date,waybills:enriched,count:enriched.length,waybillIds:enriched.map(w=>w.id),hasMultiple:enriched.length>1});
   }
   // P1-06 收口：readDates / readDateWaybillsBatch 共享同一 Budget，
@@ -209,7 +210,8 @@ export async function onRequestDelete({request,env}){
  if(!inRange(date,range))return json({success:false,code:"DATE_OUT_OF_RANGE",error:"日期不在历史查询范围内"},400);
  const waybillId=clean(url.searchParams.get("waybillId")||url.searchParams.get("id"));
  if(waybillId){
-  const orders=await readDateWaybills(env,user,routeId,date);
+  const budget=new Budget();
+  const orders=await readDateWaybills(env,user,routeId,date,budget);
   const target=orders.find(order=>order.id===waybillId);
   if(!target)return json({success:false,code:"WAYBILL_NOT_FOUND",error:"运单不存在或已删除"},404);
   if(!canWriteWaybill(user,target,env))return json({success:false,code:"WAYBILL_FORBIDDEN",error:"无权删除该运单"},403);
