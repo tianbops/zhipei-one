@@ -222,6 +222,7 @@ function openUpload(){
   if(overlay){resetProcessingUI();overlay.hidden=false;overlay.setAttribute("aria-hidden","false");document.body.classList.add("sheet-open")}
 }
 $("uploadAction")?.addEventListener("click",openUpload);
+if(new URLSearchParams(location.search).get("openUpload")==="1")setTimeout(openUpload,0);
 cancel?.addEventListener("click",closeUpload);
 // 处理中的唯一退出方式：处理期间取消按钮被隐藏，等待超过 8 秒后才给出出口，
 // 既保留处理锁（防重复提交、防误触关闭），又不把用户永久锁在弹窗里。
