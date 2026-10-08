@@ -502,7 +502,7 @@ async function loadHome(){
 
       if(todayMetrics){
         const s=w.summary||{},metrics=[];
-        if(Number(s.original)&&Number(s.original)!==Number(s.total))metrics.push("原始"+s.original+"家");
+        if(Number(s.recoveredCount)>0)metrics.push("恢复"+s.recoveredCount+"家");
         if(Number(s.correction)>0)metrics.push("更正"+s.correction+"家");
         if(Number(s.merged)>0)metrics.push("合并"+s.merged+"家");
         if(Number(s.newStores)>0)metrics.push("新增"+s.newStores+"家");
