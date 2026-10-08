@@ -7,8 +7,8 @@ const end=source.indexOf('\nfunction validateResult',start);
 if(start<0||end<0)throw new Error('extract segmentation helpers not found');
 const helperSource=source.slice(start,end);
 const clean=v=>String(v??'').trim();
-const factory=new Function('clean','formatCompareKey',helperSource+'\nreturn splitByRouteBase;');
-const splitByRouteBase=factory(clean,formatCompareKey);
+const factory=new Function('clean','formatCompareKey',helperSource+'\nreturn {splitByRouteBase,dedupe,plan};');
+const {splitByRouteBase,dedupe,plan}=factory(clean,formatCompareKey);
 
 const base=[
  {storeId:'S1',name:'重庆门店甲',originalName:'重庆门店甲',aliases:['甲店'],routeOrder:1},
@@ -38,3 +38,13 @@ if(overlapping.length!==1)throw new Error('overlapping same-store text was incor
 
 const unresolved=splitByRouteBase([{rawName:'完全未知门店甲完全未知门店乙',name:'完全未知门店甲完全未知门店乙'}],base);
 if(unresolved.length!==1||unresolved[0].storeId)throw new Error('unresolved merged text must remain unresolved');
+
+
+// Downstream regression: recovered distinct stores must survive match/dedupe/plan.
+const recoveredForPipeline=recovered.map((x,i)=>({...x,rawName:x.name,name:x.name,routeOrder:i+1,pending:false}));
+const dedupedRecovered=dedupe(recoveredForPipeline);
+if(dedupedRecovered.items.length!==2)throw new Error('recovered distinct stores were collapsed by dedupe');
+if(dedupedRecovered.merged!==0)throw new Error('recovered distinct stores must not be counted as merged');
+const plannedRecovered=plan(dedupedRecovered.items,true);
+if(plannedRecovered.length!==2||plannedRecovered[0].routeOrder!==1||plannedRecovered[1].routeOrder!==2)throw new Error('recovered stores were lost during route planning');
+console.log('downstream recovery pipeline regression passed');
