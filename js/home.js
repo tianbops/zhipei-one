@@ -421,6 +421,12 @@ async function loadHome(){
 
     const todayKey=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
     let w=null;
+    // 比对键：默认用 effectiveRouteId，但一旦拿到服务端回显的 routeId 就以它为准。
+    // 背景：dispatch.dispatchRoute.id 来自 route:<id> 存储体内部的 id 字段，若与
+    // Redis 键 id（即会话 dispatchRouteId、运单 routeId）发生数据漂移，前端用
+    // dispatchRoute.id 过滤会全部落空（表现为徽标/月度正常、今日配送恒为空）。
+    // /api/history 的响应体里回显了服务端实际使用的 routeId，用它比对可免疫漂移。
+    let cmpRouteId=effectiveRouteId;
 
     // 第一层直接读取“当天历史”：首页今日配送与月度统计使用同一历史数据源，
     // 避免 latest 索引与首页日期上下文出现分叉。
@@ -429,7 +435,9 @@ async function loadHome(){
         const {res,data}=await fetchJson("/api/history?date="+encodeURIComponent(todayKey));
         const list=Array.isArray(data.waybills)?data.waybills:[];
         if(res.ok&&data.success!==false){
-          const usable=list.filter(x=>x&&x.routeId===effectiveRouteId&&x.date===todayKey);
+          const serverRoute=String(data.routeId||"").trim();
+          if(serverRoute)cmpRouteId=serverRoute;
+          const usable=list.filter(x=>x&&x.routeId===cmpRouteId&&x.date===todayKey);
           usable.sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
           w=usable[usable.length-1]||null;
         }
@@ -440,7 +448,7 @@ async function loadHome(){
     if(!w){
       try{
         const {res,data}=await fetchJson("/api/waybills/latest");
-        if(res.ok&&data.success&&data.waybill&&data.waybill.routeId===effectiveRouteId&&data.waybill.date===todayKey)w=data.waybill;
+        if(res.ok&&data.success&&data.waybill&&data.waybill.routeId===cmpRouteId&&data.waybill.date===todayKey)w=data.waybill;
       }catch{}
     }
 
@@ -450,18 +458,20 @@ async function loadHome(){
       try{
         const {res,data}=await fetchJson("/api/history?months=25");
         if(res.ok&&data.success!==false){
+          const serverRoute=String(data.routeId||"").trim();
+          if(serverRoute)cmpRouteId=serverRoute;
           const todayEntry=(Array.isArray(data.history)?data.history:[]).find(x=>x?.date===todayKey&&Number(x?.count)>0);
           const id=Array.isArray(todayEntry?.waybillIds)?todayEntry.waybillIds[todayEntry.waybillIds.length-1]:"";
           if(id){
             const {res:detailRes,data:detail}=await fetchJson("/api/waybills/latest?id="+encodeURIComponent(id));
-            if(detailRes.ok&&detail.success&&detail.waybill&&detail.waybill.routeId===effectiveRouteId&&detail.waybill.date===todayKey)w=detail.waybill;
+            if(detailRes.ok&&detail.success&&detail.waybill&&detail.waybill.routeId===cmpRouteId&&detail.waybill.date===todayKey)w=detail.waybill;
           }
         }
       }catch{}
     }
 
     // 摘要与门店明细分开渲染：stores 异常绝不允许把今日数量/重量卡在“加载中”。
-    if(w&&w.routeId===effectiveRouteId){
+    if(w&&w.routeId===cmpRouteId){
       const stores=Array.isArray(w.stores)?w.stores:[];
       const total=Number(w.summary?.total)||stores.length||0;
       todayCount.textContent=total+"家";
