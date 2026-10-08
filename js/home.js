@@ -402,7 +402,7 @@ async function loadHome(){
     const route=dispatch.dispatchRoute||null;
     const routeName=route?.type==="temporary"?"临时用户":(route?.name||"未选择");
     setRouteBadge(route);
-    const wRes=await fetch("/api/waybills/latest?confirmed=1",{credentials:"same-origin",cache:"no-store"});
+    const wRes=await fetch("/api/waybills/latest",{credentials:"same-origin",cache:"no-store"});
     const wd=await wRes.json().catch(()=>({}));
     const w=wRes.ok&&wd.success?wd.waybill:null;
     if(w&&w.routeId===dispatchRouteId){
