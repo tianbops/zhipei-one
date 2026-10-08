@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="智配One">
 <link rel="stylesheet" href="/css/app.css?v=9577286f"><link rel="stylesheet" href="/css/ui-unified.css?v=70f23c41">
-<link rel="stylesheet" href="/css/home.css?v=c61c2fb8">
+<link rel="stylesheet" href="/css/home.css?v=6175354d">
 </head>
 <body>
 <main class="home-app">
@@ -31,14 +31,11 @@
       </div>
       <div id="todayDate" class="today-date task-date">今日</div>
     </div>
-    <div class="task-main">
-      <div class="task-info">
-        <div class="today-summary"><strong id="todayCount">加载中…</strong><span id="todayWeight"></span><span id="substituteBadge" class="sub-badge" hidden>代班</span></div>
-      </div>
-      <div class="delivery-man" aria-hidden="true"><img src="/assets/delivery-route.png" alt=""></div>
-    </div>
     <div class="today-store-list" id="todayStoreList" aria-label="今日门店"></div>
-    <div class="today-metrics" id="todayMetrics" aria-label="今日统计"></div>
+    <div class="today-metrics" id="todayMetrics" aria-label="今日统计">
+      <div class="today-summary"><strong id="todayCount">加载中…</strong><span id="todayWeight"></span><span id="substituteBadge" class="sub-badge" hidden>代班</span></div>
+      <div class="today-metric-tags" id="todayMetricTags"></div>
+    </div>
   </section>
 
   <nav class="bottom-nav" aria-label="主要功能">
@@ -129,7 +126,7 @@
   <input id="photoInput" type="file" accept="image/*" multiple hidden>
   <input id="documentInput" type="file" accept="application/pdf,.pdf" hidden>
 </main>
-<script src="/js/home.js?v=8294720a"></script>
+<script src="/js/home.js?v=c64c9061"></script>
 <script src="/js/home-monthly.js?v=2f70c56a"></script>
 <script>
 (()=>{const d=document.getElementById("todayDate");if(d){const f=new Intl.DateTimeFormat("zh-CN",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit",weekday:"short"});d.textContent=f.format(new Date()).replaceAll("/","-")}})();

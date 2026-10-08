@@ -23,15 +23,12 @@
 .task-date{margin:0;text-align:right;white-space:nowrap;color:#7F8A95;font-size:15px;line-height:23px;font-weight:500}
 .status-dot{width:26px;height:26px;min-width:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:#5B7188;color:#fff;border:1px solid rgba(255,255,255,.14);font:650 11px/26px Arial,"Microsoft YaHei",sans-serif}
 .status-dot[hidden]{display:none}
-.today-summary .sub-badge{display:inline;color:#F2F5F7;font:600 14px/29px "Microsoft YaHei",sans-serif;white-space:nowrap}
+.today-summary .sub-badge{display:inline;color:#F2F5F7;font:600 12px/18px "Microsoft YaHei",sans-serif;white-space:nowrap}
 .today-summary .sub-badge[hidden]{display:none}
-.task-main{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:8px;margin-top:9px}
-.task-info{min-width:0;color:#9AA6B2;font-size:15px;line-height:27px}
-.today-summary{display:flex;align-items:baseline;gap:9px;white-space:nowrap;line-height:29px}
-.today-summary strong{color:#F2F5F7;font-size:20px;line-height:29px;font-weight:600}
-.today-summary span{font-size:16px;line-height:29px;color:#B8C2CC}
-.delivery-man{width:84px;height:60px;display:flex;align-items:flex-end;justify-content:flex-end;opacity:.4;transform:translateY(8px)}
-.delivery-man img{width:100%;height:100%;object-fit:contain}
+/* 今日摘要已从顶部大数字区迁至底排统计行左侧（见文件末尾「底排统计」规则），
+   原 .task-main/.task-info/.delivery-man 容器一并移除，避免留下死规则。 */
+.today-summary{display:flex;align-items:baseline;gap:6px;white-space:nowrap}
+
 .function-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
 /* radius 14→12（方案第十三章 10–12）。padding 0 48px 保持不动：
    它是 width:100% + justify-content:center 的居中大按钮，48px 只用于限制内容最大宽度，
@@ -95,8 +92,6 @@
  .task-card{margin-top:14px;padding:13px 14px 12px;border-radius:16px}
  .task-title{font-size:20px;line-height:26px}
  .task-date{font-size:16px;line-height:23px}
- .today-summary strong{font-size:19px}.today-summary span{font-size:15px}
- .delivery-man{width:64px;height:46px;opacity:.4;transform:translateY(8px)}
  .function-list{margin-top:12px;gap:8px}
  .function-btn{height:52px;min-height:52px;font-size:15px}
  .upload-sheet{width:min(90vw,340px);padding:20px 17px 18px}
@@ -119,9 +114,10 @@
 .home-brand span{font-size:12px;line-height:18px}
 .task-title{font-size:16.5px;line-height:22px}
 .task-date{font-size:15px;line-height:22px}
-.task-info{font-size:16px;line-height:23px}
-.today-summary strong{font-size:20px;line-height:27px}
-.today-summary span{font-size:16px;line-height:23px}
+/* 今日摘要原为顶部大数字（20/16px），现按比例缩小至底排：15/12px（保持 5:4 层级关系） */
+.today-summary{display:flex;align-items:baseline;gap:6px;white-space:nowrap;line-height:18px}
+.today-summary strong{color:#F2F5F7;font-weight:600;font-size:15px;line-height:18px}
+.today-summary span{color:#B8C2CC;font-size:12px;line-height:18px}
 .function-btn{font-size:16px;line-height:22px}
 .source-menu-title{font-size:18px;line-height:24px}
 .processing-title{font-size:18px;line-height:26px}
@@ -283,8 +279,10 @@
 .today-store-name::-webkit-scrollbar{display:none}
 .today-store-empty{padding:18px 4px;color:#7F8A95;font-size:14px;text-align:center}
 /* 统计版块精简：压缩垂直占用（小标签行高/间距收窄），无统计项时整块不占位。 */
+/* 统计版块（底排）：今日摘要（9家 · 6.98t）居左，统计小标签紧随其后；单排显示。 */
 .today-metrics{
   display:flex;
+  align-items:baseline;
   flex-wrap:wrap;
   gap:4px 10px;
   margin-top:6px;
@@ -292,6 +290,8 @@
   border-top:1px solid rgba(255,255,255,.06);
 }
 .today-metrics:empty{display:none}
+.today-metric-tags{display:flex;flex-wrap:wrap;gap:4px 10px}
+.today-metric-tags:empty{display:none}
 .today-metrics span{color:#B8C2CC;font-size:12px;line-height:18px}
 .bottom-nav{
   position:fixed;
