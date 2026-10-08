@@ -76,7 +76,10 @@
 
   /* ===== 业务端常驻一级导航 ===== */
   function zpEnsureBusinessBottomNav(){
-    if(typeof zpZone==="undefined"||zpZone!=="business")return;
+    // 直接调 zpDetectZone() 而不读下面的 const zpZone：本文件在 readyState!=="loading"
+    // （defer / 动态注入）时，底部这两行会先于 zpZone 的声明执行，读 const 会触发
+    // TDZ ReferenceError，导致整个常驻导航静默消失。zpDetectZone 是函数声明，可安全提前调用。
+    if(zpDetectZone()!=="business")return;
     document.body.classList.add("zp-business-nav-page");
     if(document.querySelector(".bottom-nav"))return;
     const path=zpNormPath(location.pathname);
@@ -90,9 +93,9 @@
     else if(path==="/pages/today")active="upload";
     const items=[
       {id:"upload",label:"上传",href:"/home.html?openUpload=1",icon:'<path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/>'},
-      {id:"history",label:"历史",href:"/pages/history.html?from="+encodeURIComponent(path.replace(/^\//,"")||"business"),icon:'<path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3.5 5v4h4"/><path d="M12 7.5v5l3.2 1.9"/>'},
-      {id:"route",label:"线路",href:"/pages/dispatch.html?from="+encodeURIComponent(path.replace(/^\//,"")||"business"),icon:'<path d="M4 6h16v12H4z"/><path d="M8 10h8M8 14h5"/>'},
-      {id:"account",label:"我的",href:"/pages/account.html?from="+encodeURIComponent(path.replace(/^\//,"")||"business"),icon:'<circle cx="12" cy="8" r="3"/><path d="M5 20c.8-3.2 3.1-5 7-5s6.2 1.8 7 5"/>'}
+      {id:"history",label:"历史",href:"/pages/history.html?from=home",icon:'<path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3.5 5v4h4"/><path d="M12 7.5v5l3.2 1.9"/>'},
+      {id:"route",label:"线路",href:"/pages/dispatch.html?from=home",icon:'<path d="M4 6h16v12H4z"/><path d="M8 10h8M8 14h5"/>'},
+      {id:"account",label:"我的",href:"/pages/account.html?from=home",icon:'<circle cx="12" cy="8" r="3"/><path d="M5 20c.8-3.2 3.1-5 7-5s6.2 1.8 7 5"/>'}
     ];
     const nav=document.createElement("nav");
     nav.className="bottom-nav";
@@ -171,6 +174,9 @@
     data:"/pages/data",
     account:"/pages/account",
     route:"/pages/route_apply",
+    // 线路页是一级页，其四个出口（数据资料/历史/我的/线路申请）返回必须回到线路页，
+    // 此前缺这个键，全部掉回首页。
+    dispatch:"/pages/dispatch",
     home:"/home",
     // 运单详情 → 数据资料 → 必须回到「原来那一张」运单：只带 from 不够，必须带 id
     order:q=>"/pages/order_detail?id="+encodeURIComponent(q.get("id")||"")+"&source=process&from=process"
@@ -201,10 +207,21 @@
   const zpRoot=zpZone==="admin"?"/admin":"/home";
   const zpIsWorkspaceRoot=zpNormPath(location.pathname)===zpNormPath(zpRoot);
 
+  // 来源归一化：兜底历史链接 / 旧缓存页里形如 from=pages%2Fdispatch 的「路径碎片」写法，
+  // 剥成模块名后再查表，避免这类链接一律掉回首页。
+  function zpNormFrom(v){
+    if(!v)return "";
+    let s=String(v).replace(/^\/+/,"").replace(/\.html$/,"");
+    if(s.startsWith("pages/"))s=s.slice(6);
+    return s;
+  }
   // 来源驱动返回。跨区防火墙：管理员端任何解析结果（含 fallback）若不是管理页，一律作废回落到本区根
   window.zpResolveBack=function(fallback){
     const q=new URLSearchParams(location.search);
-    const v=BACK_MAP[q.get("from")];
+    // 用 hasOwnProperty 取值：归一化后的任意字符串都可能撞上 Object 原型键（如 constructor），
+    // 直接 BACK_MAP[key] 会取到原型上的函数并被当成「返回目标函数」执行。
+    const key=zpNormFrom(q.get("from"));
+    const v=Object.prototype.hasOwnProperty.call(BACK_MAP,key)?BACK_MAP[key]:undefined;
     let target=typeof v==="function"?v(q):v;
     let out=target||fallback||zpRoot;
     // 防火墙放在最后（判定用规整化路径，兼容 /admin 与 /admin.html 两种形态）：
