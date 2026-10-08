@@ -149,7 +149,7 @@ export async function onRequestGet({request,env}){
  const dates=[];
   for(const entry of entries){
    const list=batch.get(entry.date)||[];if(!list.length)continue;
-   const storeCount=list.reduce((sum,w)=>sum+(Number(w.summary?.total)||w.stores.length),0),totalWeight=list.reduce((sum,w)=>sum+(Number(w.totalWeight)||0),0);
+   const storeCount=list.reduce((sum,w)=>sum+(Number(w.summary?.finalCount)||Number(w.summary?.total)||w.stores.length),0),totalWeight=list.reduce((sum,w)=>sum+(Number(w.totalWeight)||0),0);
    dates.push({date:entry.date,count:list.length,waybillIds:list.map(w=>w.id),hasMultiple:list.length>1,storeCount,totalWeight});
   }
   const monthMap=new Map();
