@@ -106,6 +106,11 @@ async function enrichFactory(env,routeId){
    for(const bs of baseStores)for(const field of [bs?.name,bs?.originalName,...(Array.isArray(bs?.aliases)?bs.aliases:[])]){const key=baseKey(field);if(key&&!byName.has(key))byName.set(key,bs)}
    out.stores=out.stores.map(s=>{const baseStore=byId.get(clean(s?.storeId))||byName.get(baseKey(s?.name||s?.rawName));if(!baseStore)return s;const navigation=clean(baseStore.navigation)||clean(s?.navigation),note=clean(baseStore.note||baseStore.remark)||clean(s?.note||s?.remark);return navigation||note?{...s,...(navigation?{navigation}:{}),...(note?{note}:{})}:s});
   }catch{}
+  // 响应瘦身：sourceLine 是处理阶段的调试字段（整条原始线路文本，逐门店重复），
+  // 前端（home/order_detail/history）均不消费；25 家门店时它会把单日响应撑大数十 KB，
+  // 在弱网（VPN/移动网络）下直接拖垮首页 8s 超时 → 今日配送「暂无运单」。
+  // 仅剥离响应副本，不改动 KV 中的存储数据。
+  if(Array.isArray(out.stores))out.stores=out.stores.map(s=>{if(!s||typeof s!=="object")return s;const c={...s};delete c.sourceLine;return c});
   return out;
  };
 }

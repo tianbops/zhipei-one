@@ -41,6 +41,8 @@ async function latestGet({request,env}){
     return navigation||note?{...s,...(navigation?{navigation}:{}),...(note?{note}:{})}:s;
    });
   }catch{}
+  // 响应瘦身：与 history.js 同理，剥离前端不消费的调试字段 sourceLine，降低弱网传输体积。
+  if(Array.isArray(w.stores))w.stores=w.stores.map(s=>{if(!s||typeof s!=="object")return s;const c={...s};delete c.sourceLine;return c});
   return w;
  }
  if(id){
