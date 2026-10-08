@@ -72,9 +72,8 @@
 
 /* 线路选择页（原 dispatch.html 局部样式，原样迁移至统一层；声明与级联顺序保持不变） */
 .dispatch-page{width:min(100%,430px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:16px 16px calc(28px + env(safe-area-inset-bottom));background:#05070A}
-.dispatch-head{height:var(--zp-header-height);display:grid;grid-template-columns:var(--zp-control-height) 1fr var(--zp-control-height);align-items:center}
-.dispatch-back{width:var(--zp-control-height);height:var(--zp-control-height);display:flex;align-items:center;justify-content:center;color:#fff;text-decoration:none;font-size:0;border-radius:12px;box-sizing:border-box}.dispatch-back svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}.dispatch-back:active{background:rgba(20,28,37,.80)}
-.dispatch-head h1{margin:0;text-align:center;color:#fff;font-size:18px;font-weight:700}
+.dispatch-page .app-back{color:#fff}
+.dispatch-page .topbar h1{margin:0;text-align:center;color:#fff;font-weight:700}
 .dispatch-section{margin-top:18px}
 .dispatch-section-title{margin:0 0 9px 3px;color:#7F8A95;font-size:13px;font-weight:600}
 .dispatch-list{display:flex;flex-direction:column;gap:9px}
@@ -84,8 +83,6 @@
 .dispatch-option:active{transform:scale(.985);background:rgba(28,37,47,.82)}
 .dispatch-empty,.dispatch-message{padding:16px;color:#B8C2CC;text-align:center;font-size:14px}
 /* Android typography readability adjustment: size/line-height only */
-.dispatch-back{font-size:16px;line-height:22px}
-.dispatch-head h1{font-size:20px;line-height:26px}
 .dispatch-section-title{font-size:15px;line-height:20px}
 .dispatch-option{font-size:17px;line-height:23px}
 .dispatch-option small,.dispatch-route-meta small{font-size:14px;line-height:20px}
