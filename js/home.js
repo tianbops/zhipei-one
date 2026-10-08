@@ -466,5 +466,4 @@ loadHome();
      }
      closeUpload();return true;
    }},
-  {rank:20,probe:()=>$("menuPanel"),close:()=>{menuPanel.hidden=true;menuButton.setAttribute("aria-expanded","false");return true}}
 );
