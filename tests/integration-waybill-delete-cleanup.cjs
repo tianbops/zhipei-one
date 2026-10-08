@@ -164,6 +164,37 @@ function getReq(url, token) {
   }
 
   // ===================================================================
+  console.log("\n【4】删除事务失败可重试：EVAL 失败时主记录/索引/反向键全部保留");
+  const wC = buildRecord("wC", M);
+  wC.businessFingerprint = await businessFingerprint(wC);
+  const sigC = await dailyWaybillKey(wC);
+  const dedupeKeyC = "zp:waybill:dedupe:" + sigC;
+  const fpKeyC = "zp:waybill:fingerprint:" + wC.businessFingerprint;
+  seedJson("zp:waybill:" + wC.id, wC);
+  red.command(["SADD", indexKey, wC.id]);
+  red.command(["SET", dedupeKeyC, wC.id]);
+  red.command(["SET", fpKeyC, wC.id]);
+  red.command(["RPUSH", "zp:waybill:" + wC.id + ":events", JSON.stringify({ event: "WAYBILL_CREATED" })]);
+  const originalCommand = red.command.bind(red);
+  let failEval = true;
+  red.command = function(parts) {
+    if (failEval && String(parts?.[0]).toUpperCase() === "EVAL") throw new Error("SIMULATED_EVAL_FAILURE");
+    return originalCommand(parts);
+  };
+  const failed = await toJson(await delById(wC.id));
+  red.command = originalCommand;
+  check("事务失败返回非成功", failed.success === false, "code=" + failed.code);
+  check("EVAL 失败后主记录仍在", !!readJson("zp:waybill:" + wC.id));
+  check("EVAL 失败后日期索引仍在", existsMembers(indexKey).includes(wC.id));
+  check("EVAL 失败后日去重键仍在", getRaw(dedupeKeyC) === wC.id);
+  check("EVAL 失败后业务指纹键仍在", getRaw(fpKeyC) === wC.id);
+  const retry = await toJson(await delById(wC.id));
+  check("恢复后重试可以成功删除", retry.success === true && retry.deleted === 1, "code=" + retry.code);
+  check("重试后主记录清除", readJson("zp:waybill:" + wC.id) === null);
+  check("重试后日期索引清除", !existsMembers(indexKey).includes(wC.id));
+  check("重试后反向键清除", getRaw(dedupeKeyC) === null && getRaw(fpKeyC) === null);
+
+  // ===================================================================
   console.log("─".repeat(56));
   console.log("删除反向去重键清理回归：通过 " + pass + " / 失败 " + fail);
   process.exit(fail ? 1 : 0);
