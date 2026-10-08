@@ -2,7 +2,8 @@
 .page2{width:min(100%,430px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:max(14px,env(safe-area-inset-top)) 16px calc(30px + env(safe-area-inset-bottom))}
 .page2-head{height:var(--zp-header-height);display:grid;grid-template-columns:var(--zp-control-height) 1fr var(--zp-control-height);align-items:center;margin-bottom:10px}
 .page2-head h1{margin:0;text-align:center;font-size:18px;line-height:24px;font-weight:700}
-.page2-back{width:var(--zp-control-height);height:var(--zp-control-height);border:0;border-radius:12px;background:transparent;color:#B8C2CC;font-size:14px}
+.account-page .topbar,.route-apply-page .topbar{margin-bottom:10px}
+.account-page .topbar h1,.route-apply-page .topbar h1{margin:0;text-align:center;font-weight:700}
 .page2-card{background:rgba(20,28,37,.80);border:1px solid #2A3540;border-radius:16px;padding:16px;margin-bottom:10px}
 .page2-card h2{margin:0 0 8px;font-size:16px;line-height:22px}
 .page2-label{display:block;margin-top:13px;color:#B8C2CC;font-size:13px}
@@ -68,19 +69,8 @@
 .empty{font-size:15px;line-height:22px}
 
 /* Android 返回层 2.5：所有业务页统一为运单详情同款纯箭头；点击走浏览器历史栈。 */
-.page2-back{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:0;
-  border:0;
-  background:transparent;
-  color:#fff;
-  text-decoration:none;
-  box-sizing:border-box;
-}
-.page2-back svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.page2-back:active{background:rgba(20,28,37,.80);color:#fff}
+.page2 .app-back{color:#fff}
+.page2 .app-back:active{color:#fff}
 
 /* 线路选择页（原 dispatch.html 局部样式，原样迁移至统一层；声明与级联顺序保持不变） */
 .dispatch-page{width:min(100%,430px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:16px 16px calc(28px + env(safe-area-inset-bottom));background:#05070A}
