@@ -74,6 +74,34 @@
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",initPasswordToggles,{once:true});
   else initPasswordToggles();
 
+  /* ===== 业务端常驻一级导航 ===== */
+  function zpEnsureBusinessBottomNav(){
+    if(typeof zpZone==="undefined"||zpZone!=="business")return;
+    if(document.querySelector(".bottom-nav"))return;
+    const path=zpNormPath(location.pathname);
+    const q=new URLSearchParams(location.search);
+    let active="";
+    if(path==="/home")active="upload";
+    else if(path==="/pages/history")active="history";
+    else if(path==="/pages/dispatch"||path==="/pages/data"||path==="/pages/route_apply")active="route";
+    else if(path==="/pages/account")active="account";
+    else if(path==="/pages/order_detail")active=(q.get("source")==="history"||q.get("from")==="history")?"history":"upload";
+    else if(path==="/pages/today")active="upload";
+    const items=[
+      {id:"upload",label:"上传",href:"/home.html?openUpload=1",icon:'<path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/>'},
+      {id:"history",label:"历史",href:"/pages/history.html?from="+encodeURIComponent(path.replace(/^\//,"")||"business"),icon:'<path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3.5 5v4h4"/><path d="M12 7.5v5l3.2 1.9"/>'},
+      {id:"route",label:"线路",href:"/pages/dispatch.html?from="+encodeURIComponent(path.replace(/^\//,"")||"business"),icon:'<path d="M4 6h16v12H4z"/><path d="M8 10h8M8 14h5"/>'},
+      {id:"account",label:"我的",href:"/pages/account.html?from="+encodeURIComponent(path.replace(/^\//,"")||"business"),icon:'<circle cx="12" cy="8" r="3"/><path d="M5 20c.8-3.2 3.1-5 7-5s6.2 1.8 7 5"/>'}
+    ];
+    const nav=document.createElement("nav");
+    nav.className="bottom-nav";
+    nav.setAttribute("aria-label","主要功能");
+    nav.innerHTML=items.map(item=>'<a class="bottom-nav-item'+(active===item.id?" is-active":"")+'" href="'+item.href+'"'+(active===item.id?' aria-current="page"':"")+'><span class="bottom-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24">'+item.icon+'</svg></span><span>'+item.label+'</span></a>').join("");
+    document.body.appendChild(nav);
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",zpEnsureBusinessBottomNav,{once:true});
+  else zpEnsureBusinessBottomNav();
+
   window.zpConfirm=function(title,text,okText){
     return new Promise(resolve=>{
       const root=ensure(),box=root.querySelector(".zp-confirm"),ok=root.querySelector("[data-zp-ok]"),cancel=root.querySelector("[data-zp-cancel]");
