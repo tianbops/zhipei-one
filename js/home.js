@@ -475,12 +475,11 @@ async function loadHome(){
     // 摘要与门店明细分开渲染：stores 异常绝不允许把今日数量/重量卡在“加载中”。
     if(w&&w.routeId===cmpRouteId){
       const stores=Array.isArray(w.stores)?w.stores:[];
-      const total=Number(w.summary?.total)||stores.length||0;
+      const total=Number(w.summary?.finalCount)||Number(w.summary?.total)||stores.length||0;
       // 渲染辅助函数必须定义在两个渲染块的共享作用域：
       // 此前 esc 等定义在 if(todayStoreList) 块内，todayMetrics 块引用时
       // ReferenceError → 被外层 catch 静默吞掉 → 整卡「暂无运单」。
-      // 触发条件：summary.original !== total（如“原始24家/共25家”）——
-      // 合成测试数据 original===total 时该路径不执行，故此前测试未暴露。
+      // 数量语义已统一：只显示最终门店数及必要的自动恢复数。
       const navOf=x=>String(x?.navigation||x?.nav||"").trim();
       const safeUrl=v=>{try{const u=new URL(String(v||"").trim(),location.origin);return /^(https?:)$/.test(u.protocol)?u.href:""}catch{return""}};
       const esc=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
