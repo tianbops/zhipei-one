@@ -19,12 +19,16 @@ const validWaybill=x=>!!x&&x.schemaVersion==="2"&&typeof x.id==="string"&&typeof
 const historyReadable=x=>validWaybill(x)&&["PLANNED","CONFIRMED"].includes(x.stage);
 const waybillIndexKey=(routeId,date)=>"zp:route:"+routeId+":waybills:"+date;
 
-async function readWaybills(env,ids,budget=null){
+async function readWaybills(env,ids,budget=null,strictIndex=false){
  const cleanIds=[...new Set((ids||[]).map(clean).filter(Boolean))];if(!cleanIds.length)return [];
  const decode=raw=>{if(!raw)return null;try{const x=typeof raw==="string"?JSON.parse(raw):raw;return historyReadable(x)?x:null}catch{return null}};
  try{
   if(budget&&!budget.take(1))throwBudgetExceeded(budget.max,"history-read-waybills");
   const rawList=await command(env,["MGET",...cleanIds.map(id=>"zp:waybill:"+id)]);
+  if(strictIndex && Array.isArray(rawList)){
+   const missing=cleanIds.filter((id,i)=>!rawList[i]);
+   if(missing.length)throw Object.assign(new Error("历史日期索引包含不存在的运单："+missing.slice(0,5).join(",")),{code:"WAYBILL_HISTORY_STALE_INDEX",missingCount:missing.length});
+  }
   return (Array.isArray(rawList)?rawList:[]).map(decode).filter(Boolean);
  }catch(error){
   // MGET 失败（如单次 URL 过长被拒）时降级为**分批** MGET，而非无预算的逐条 GET 循环
@@ -50,7 +54,7 @@ async function readIndexMembers(env,routeId,date,budget=null){
 
 async function readDateWaybills(env,user,routeId,date,budget=null){
  const ids=await readIndexMembers(env,routeId,date,budget);
- const waybills=await readWaybills(env,ids,budget);
+ const waybills=await readWaybills(env,ids,budget,true);
  return waybills.filter(w=>w.routeId===routeId&&w.date===date&&canReadWaybill(user,w,env)).sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
 }
 
@@ -136,6 +140,7 @@ export async function onRequestGet({request,env}){
    try{waybills=await readDateWaybills(env,user,routeId,date,budget)}catch(e){
     if(e?.code===SUBREQUEST_BUDGET_EXCEEDED)return json({success:false,code:"PARTIAL_FAILURE",error:"该日期运单查询资源不足，请稍后重试",date,budgetUsed:budget.used,budgetMax:budget.max},503);
     if(e?.code==="WAYBILL_HISTORY_INDEX_READ_FAILED")return json({success:false,code:"WAYBILL_HISTORY_INDEX_READ_FAILED",error:"历史运单索引读取失败，请稍后重试",date},503);
+    if(e?.code==="WAYBILL_HISTORY_STALE_INDEX")return json({success:false,code:"WAYBILL_HISTORY_STALE_INDEX",error:"历史运单索引与运单数据不一致，请稍后重试",date,missingCount:e.missingCount},503);
     throw e;
    }
    const enriched=[];for(const w of waybills)enriched.push(await enrich(w));
