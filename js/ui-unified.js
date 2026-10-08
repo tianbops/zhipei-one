@@ -109,7 +109,7 @@
   */
   // 来源 → 返回目标。值可为字符串，也可为函数（携带上下文 id 精确回跳）
   const BACK_MAP={
-    history:"/pages/history",
+    history:q=>{const d=q.get("date");return d?"/pages/history?date="+encodeURIComponent(d):"/pages/history"},
     today:"/pages/today",
     process:"/home",
     data:"/pages/data",
