@@ -13,10 +13,10 @@
 location.replace 不可重写，故分支判定以「最终导航 URL 的查询参数」为准；
 toast 文案另用 page.route 拦截导航（保留首页）来捕获。
 """
-import sys, time, threading, http.server, socketserver, os, json
+import sys, os, time, threading, http.server, socketserver, os, json
 from playwright.sync_api import sync_playwright
 
-NEW_ROOT = "/tmp/ghrepo"
+NEW_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PORT = 8161
 CHROME = "/root/.cache/ms-playwright/chromium-1208/chrome-linux64/chrome"
 

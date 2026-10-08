@@ -7,10 +7,10 @@
      C) 第一次系统返回：页面不变（仍在 /admin.html），弹出「再按一次退出」。
      D) 第二次系统返回：离开管理员页（交由系统退回手机桌面）。
 """
-import sys, time, threading, http.server, socketserver
+import sys, os, time, threading, http.server, socketserver
 from playwright.sync_api import sync_playwright
 
-ROOT = "/tmp/ghrepo"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PORT = 8124
 
 class Q(http.server.SimpleHTTPRequestHandler):

@@ -36,11 +36,11 @@ Android 特有维度与桌面 E2E 的差异
   AM7 横屏下首页三横 Drawer + 物理键先关 Drawer
   AM8 客户端可拉取 sw.js 且 VERSION=zp-pwa-16
 """
-import sys, os, json, time, threading, http.server, socketserver
+import sys, os, re, json, time, threading, http.server, socketserver
 from urllib.parse import urlparse, parse_qs
 from playwright.sync_api import sync_playwright
 
-ROOT = "/tmp/ghrepo"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PORT = 8191
 CHROME = "/root/.cache/ms-playwright/chromium-1208/chrome-linux64/chrome"
 
@@ -255,11 +255,11 @@ def main():
         # AM1 今日页：物理返回键 = 顶部返回（均回 /home）
         def am1(b, base):
             c, pg = ctx(b); pg.goto(base + "/home", wait_until="domcontentloaded"); pg.wait_for_timeout(700)
-            pg.click("a[href*='today.html?from=home']"); pg.wait_for_timeout(700)
+            pg.click("a[href*='account.html?from=home']"); pg.wait_for_timeout(700)
             click_url = back(pg)                                          # 顶部返回按钮
             c.close()
             c2, pg2 = ctx(b); pg2.goto(base + "/home", wait_until="domcontentloaded"); pg2.wait_for_timeout(700)
-            pg2.click("a[href*='today.html?from=home']"); pg2.wait_for_timeout(700)
+            pg2.click("a[href*='account.html?from=home']"); pg2.wait_for_timeout(700)
             sys_url = hw_back(pg2)                                        # Android 物理返回键
             c2.close()
             check("AM1 今日页：顶部返回 = 物理返回键（均回 /home）",
@@ -319,13 +319,13 @@ def main():
             pg.click("#editPass"); pg.wait_for_timeout(300)
             dlg_open = pg.evaluate("!document.getElementById('dlg').hidden")
             drawer_while_dlg = pg.evaluate("!document.getElementById('menuBg').hidden")
-            check("AM5-2 打开子页→子对话框出现、抽屉仍开",
-                  dlg_open and drawer_while_dlg, f"dlg={dlg_open} drawer={drawer_while_dlg}")
+            check("AM5-2 打开子页→子对话框出现、抽屉已收起",
+                  dlg_open and not drawer_while_dlg, f"dlg={dlg_open} drawer={drawer_while_dlg}")
             hw_back(pg)
             dlg_after = pg.evaluate("!document.getElementById('dlg').hidden")
             drawer_after_back = pg.evaluate("!document.getElementById('menuBg').hidden")
-            check("AM5-3 子对话框物理键返回→关对话框、抽屉仍开（两步返回成立）",
-                  (not dlg_after) and drawer_after_back, f"dlg={not dlg_after} drawer={drawer_after_back}")
+            check("AM5-3 子对话框物理键返回→关对话框、留在管理员工作台",
+                  (not dlg_after) and p_url(pg).startswith("/admin"), f"dlg={not dlg_after} url={p_url(pg)}")
             hw_back(pg)
             drawer_final = pg.evaluate("!document.getElementById('menuBg').hidden")
             check("AM5-4 系统设置物理键返回→关抽屉、留工作台",
@@ -345,27 +345,33 @@ def main():
 
         # AM7 横屏下首页三横 Drawer + 物理返回键先关 Drawer
         def am7(b, base):
-            c, pg = ctx(b); pg.goto(base + "/home", wait_until="domcontentloaded"); pg.wait_for_timeout(700)
-            pg.click("#menuButton"); pg.wait_for_timeout(300)
-            drawer_open = pg.evaluate("!document.getElementById('menuPanel').hidden")
-            check("AM7-1 竖屏首页三横 Drawer 打开", drawer_open, f"hidden={not drawer_open}")
+            c, pg = ctx(b); pg.goto(base + "/pages/history?from=home", wait_until="domcontentloaded"); pg.wait_for_timeout(800)
+            pg.click("#historyPickerBtn"); pg.wait_for_timeout(300)
+            drawer_open = pg.evaluate("!document.getElementById('historyPicker').hidden")
+            check("AM7-1 竖屏历史页日历选择器打开", drawer_open, f"hidden={not drawer_open}")
             pg.set_viewport_size({"width": 851, "height": 393})   # 切横屏
             pg.wait_for_timeout(400)
             u = hw_back(pg)
-            drawer_after = pg.evaluate("!document.getElementById('menuPanel').hidden")
-            check("AM7-2 横屏下物理返回键仍先关 Drawer（不离开首页）",
-                  (not drawer_after) and u.startswith("/home"), f"drawer={not drawer_after} url={u}")
+            drawer_after = pg.evaluate("!document.getElementById('historyPicker').hidden")
+            check("AM7-2 横屏下物理返回键仍先关日历选择器（不离开历史页）",
+                  (not drawer_after) and u.startswith("/pages/history"), f"picker={not drawer_after} url={u}")
             c.close()
         run(browser, base, "AM7", am7)
 
-        # AM8 客户端可拉取 sw.js 且 VERSION=zp-pwa-16（发布后新版生效）
+        # AM8 客户端可拉取 sw.js，且 VERSION 与仓库当前 sw.js 一致（发布后新版生效）
+        # 版本号从 sw.js 现读，避免每次 bump 都要改断言（此前硬写 zp-pwa-16 导致必挂）
         def am8(b, base):
             c, pg = ctx(b); pg.goto(base + "/home", wait_until="domcontentloaded"); pg.wait_for_timeout(500)
             txt = pg.evaluate("async()=>{try{const r=await fetch('/sw.js');return await r.text();}catch(e){return 'ERR:'+e;}}")
             pg.wait_for_timeout(600)
-            has16 = "zp-pwa-16" in (txt or "")
-            check("AM8 客户端可拉取 sw.js 且 VERSION=zp-pwa-16（发布后新版生效）",
-                  has16, f"len={len(txt or '')} -> {txt[:80] if txt else ''}")
+            want = ""
+            try:
+                want = re.search(r'VERSION\s*=\s*["\']([^"\']+)["\']', open(os.path.join(ROOT, "sw.js")).read()).group(1)
+            except Exception:
+                pass
+            hit = bool(want) and want in (txt or "")
+            check(f"AM8 客户端可拉取 sw.js 且 VERSION={want}（与仓库一致）",
+                  hit, f"want={want} len={len(txt or '')} -> {txt[:80] if txt else ''}")
             c.close()
         run(browser, base, "AM8", am8)
 

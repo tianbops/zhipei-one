@@ -53,10 +53,21 @@ console.log("一、来源驱动返回（业务端 12 条）");
     ["/pages/dispatch?from=home", "", "/home", "首页→当前线路→首页"],
     ["/pages/route_apply?from=home", "", "/home", "首页→绑定线路→首页"],
     ["/pages/order_detail?id=W1&source=process&from=process", "", "/home", "识别/规划完成→运单详情→首页"],
-    ["/pages/order_detail?source=today&from=history&date=2026-10-02", "", "/pages/history", "历史→某日详情→回历史"],
+    // 口径：from=history 且带 date= 时必须带 date 回跳——保留「是哪一天」的上下文
+    // 优于回到列表首屏（1e511840 引入 date 携带后，本条断言同步为带 date 形态）
+    ["/pages/order_detail?source=today&from=history&date=2026-10-02", "", "/pages/history?date=2026-10-02", "历史→某日详情→回历史（保留日期）"],
     ["/pages/data?from=order&id=W9&source=process", "", "/pages/order_detail?id=W9&source=process&from=process", "详情→数据资料→必须回到原来那张运单"],
     ["/pages/data", "", "/home", "无来源→回落到工作区根"],
     ["/pages/order_detail?from=today", "", "/pages/today", "今日运单→详情→回今日运单"],
+    // 线路页是一级页，其四个出口返回必须回到线路页（此前缺 dispatch 键，全部掉首页）
+    ["/pages/data?from=dispatch", "", "/pages/dispatch", "线路页→数据资料→回线路页"],
+    ["/pages/route_apply?from=dispatch", "", "/pages/dispatch", "线路页→线路申请→回线路页"],
+    ["/pages/account?from=dispatch", "", "/pages/dispatch", "线路页→我的→回线路页"],
+    // 历史链接/旧缓存页里的「路径碎片」写法，归一化后命中映射；未收录的一律回落首页
+    ["/pages/account?from=pages%2Fdispatch", "", "/pages/dispatch", "路径碎片归一化命中 dispatch"],
+    ["/pages/account?from=pages%2Forder_detail", "", "/home", "未收录的路径碎片→回落首页"],
+    ["/pages/account?from=home", "", "/home", "底栏跳转来源=home→回首页"],
+    ["/pages/data?from=constructor", "", "/home", "原型键不得误命中映射"],
   ];
   for (const [url, fb, want, name] of cases) {
     const got = resolve(url, fb);
@@ -112,7 +123,29 @@ const fakeEl = (over) => Object.assign({
   classList: { contains: () => false },
 }, over || {});
 
-console.log("\n三、返回层级 ladder（7 条）");
+console.log("\n三、失效上下文 zpMarkStale（3 条）");
+{
+  /** 先置「已失效」标记再解析：删除类操作后不得再回跳到已删除的对象 */
+  function resolveStale(url, fallback) {
+    const u = new URL(url, "https://x.invalid");
+    const factory = new Function("window", "document", "location",
+      RESOLVE_BODY + "\nwindow.zpMarkStale();return window.zpResolveBack;");
+    return factory({}, { body: { dataset: {} } }, { pathname: u.pathname, search: u.search })(fallback);
+  }
+  const cases = [
+    ["/pages/order_detail?id=W1&source=today&from=history&date=2026-10-02", "", "/home",
+      "删空运单后返回→回首页，不回已删运单/已删日期"],
+    ["/pages/history?from=home&date=2026-10-02", "", "/home", "历史页失效后→回本区根"],
+    ["/admin?from=home", "", "/admin", "管理员端失效后仍回本区根（防火墙优先）"],
+  ];
+  for (const [url, fb, want, name] of cases) {
+    const got = resolveStale(url, fb);
+    console.log((got === want ? "✅ " : "❌ ") + name.padEnd(30, " ") + "→ " + got);
+    t(name, got === want, "得到 " + got + "，期望 " + want);
+  }
+}
+
+console.log("\n四、返回层级 ladder（7 条）");
 await (async () => {
   // ① 多个弹层同时存在，一次返回只关最上面那一层
   {

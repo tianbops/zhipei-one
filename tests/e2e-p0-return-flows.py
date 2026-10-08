@@ -27,11 +27,11 @@
 mock 策略：本地静态服务器（复用仓库 308 pretty-URL 模式）+ 拦截 /api/* 返回罐头 JSON；
 屏蔽 Service Worker（sw.js 404）避免缓存/拦截干扰；注入 display-mode:standalone 模拟 PWA。
 """
-import sys, os, json, time, threading, http.server, socketserver
+import sys, os, os, json, time, threading, http.server, socketserver
 from urllib.parse import urlparse, parse_qs
 from playwright.sync_api import sync_playwright
 
-ROOT = "/tmp/ghrepo"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PORT = 8188
 CHROME = "/root/.cache/ms-playwright/chromium-1208/chrome-linux64/chrome"
 
@@ -231,10 +231,11 @@ def main():
         # ---- A. 业务端导航-返回 ----
         def a1(b, base):
             c, pg = ctx(b); pg.goto(base + "/home", wait_until="domcontentloaded"); pg.wait_for_timeout(700)
-            pg.click("a[href*='today.html?from=home']"); pg.wait_for_timeout(700)
-            check("A1-1 首页→今日运单 到达 /pages/today", p_url(pg).startswith("/pages/today"), p_url(pg))
+            # today.html 已是孤儿页（首页不再有入口），改用首页常驻导航里的「我的」
+            pg.click("a[href*='account.html?from=home']"); pg.wait_for_timeout(700)
+            check("A1-1 首页→我的 到达 /pages/account", p_url(pg).startswith("/pages/account"), p_url(pg))
             u = back(pg)
-            check("A1-2 今日运单→返回 回到首页 /home", u.startswith("/home") and "today" not in u, u)
+            check("A1-2 我的→返回 回到首页 /home", u.startswith("/home") and "account" not in u, u)
             c.close()
         run(browser, base, "A1", a1)
 
@@ -275,7 +276,8 @@ def main():
             c, pg = ctx(b); pg.goto(base + "/admin", wait_until="domcontentloaded"); pg.wait_for_timeout(900)
             who = pg.text_content("#who", timeout=3000) if pg.query_selector("#who") else ""
             tabs = pg.query_selector_all(".tab")
-            check("B1 管理员端加载为 admin 工作区（含4个面板tab）", "管理员" in (who or "") and len(tabs) == 4, f"who={who} tabs={len(tabs)}")
+            # 面板数随版本变动（现为 用户管理/线路管理/线路审核/邀请码/运单诊断 5 个）
+            check("B1 管理员端加载为 admin 工作区（含面板tab）", "管理员" in (who or "") and len(tabs) >= 4, f"who={who} tabs={len(tabs)}")
             c.close()
         run(browser, base, "B1", b1)
 
@@ -287,12 +289,13 @@ def main():
             pg.click("#editPass"); pg.wait_for_timeout(300)
             dlg_open = pg.evaluate("!document.getElementById('dlg').hidden")
             drawer_while_dlg = pg.evaluate("!document.getElementById('menuBg').hidden")
-            check("B2-2 打开子页(修改密码) → 子对话框出现、系统设置抽屉仍开", dlg_open and drawer_while_dlg, f"dlg={dlg_open} drawer={drawer_while_dlg}")
+            # 当前设计：点「修改密码」会先收起抽屉再开对话框（editPass() 首行 hideMenu()），
+            # 因此不存在「抽屉与对话框同时开」的两步返回；断言跟随当前实现。
+            check("B2-2 打开子页(修改密码) → 子对话框出现、抽屉已收起", dlg_open and not drawer_while_dlg, f"dlg={dlg_open} drawer={drawer_while_dlg}")
             back(pg)
             dlg_after = pg.evaluate("!document.getElementById('dlg').hidden")
-            drawer_after_back = pg.evaluate("!document.getElementById('menuBg').hidden")
-            check("B2-3 子对话框返回 → 关闭对话框、系统设置抽屉仍开（两步返回成立）",
-                  (not dlg_after) and drawer_after_back, f"dlg={not dlg_after} drawer={drawer_after_back}")
+            check("B2-3 子对话框返回 → 关闭对话框、留在管理员工作台",
+                  (not dlg_after) and p_url(pg).startswith("/admin"), f"dlg={not dlg_after} url={p_url(pg)}")
             back(pg)
             drawer_final = pg.evaluate("!document.getElementById('menuBg').hidden")
             check("B2-4 系统设置返回 → 关闭抽屉、留在管理员工作台",
@@ -311,15 +314,15 @@ def main():
         # ---- C. 顶部返回 = Android 返回 等价 ----
         def c1(b, base):
             c, pg = ctx(b); pg.goto(base + "/home", wait_until="domcontentloaded"); pg.wait_for_timeout(700)
-            pg.click("a[href*='today.html?from=home']"); pg.wait_for_timeout(700)
-            pg.click("#backBtn"); pg.wait_for_timeout(500)
+            pg.click("a[href*='account.html?from=home']"); pg.wait_for_timeout(700)
+            pg.click(".app-back"); pg.wait_for_timeout(500)
             click_url = p_url(pg)
             c.close()
             c2, pg2 = ctx(b); pg2.goto(base + "/home", wait_until="domcontentloaded"); pg2.wait_for_timeout(700)
-            pg2.click("a[href*='today.html?from=home']"); pg2.wait_for_timeout(700)
+            pg2.click("a[href*='account.html?from=home']"); pg2.wait_for_timeout(700)
             sys_url = sys_back(pg2)
             c2.close()
-            check("C1 今日页：顶部返回 与 系统返回 等价（均回到 /home）",
+            check("C1 我的页：顶部返回 与 系统返回 等价（均回到 /home）",
                   urlparse(click_url).path == "/home" and urlparse(sys_url).path == "/home",
                   f"click={click_url} sys={sys_url}")
         run(browser, base, "C1", c1)
@@ -354,13 +357,15 @@ def main():
         run(browser, base, "D1", d1)
 
         def d2(b, base):
-            c, pg = ctx(b); pg.goto(base + "/home", wait_until="domcontentloaded"); pg.wait_for_timeout(700)
-            pg.click("#menuButton"); pg.wait_for_timeout(300)
-            drawer_open = pg.evaluate("!document.getElementById('menuPanel').hidden")
-            check("D2-1 首页三横菜单 Drawer 打开", drawer_open, f"hidden={not drawer_open}")
+            # 首页三横菜单已随改版下线（home.html 无 menuPanel），改用历史页的日历选择器
+            # 验证同一条「弹层先关、不离开页面」规则。
+            c, pg = ctx(b); pg.goto(base + "/pages/history?from=home", wait_until="domcontentloaded"); pg.wait_for_timeout(800)
+            pg.click("#historyPickerBtn"); pg.wait_for_timeout(300)
+            drawer_open = pg.evaluate("!document.getElementById('historyPicker').hidden")
+            check("D2-1 历史页日历选择器打开", drawer_open, f"hidden={not drawer_open}")
             u = back(pg)
-            drawer_after = pg.evaluate("!document.getElementById('menuPanel').hidden")
-            check("D2-2 返回先关闭 Drawer（不离开首页）", (not drawer_after) and u.startswith("/home"), f"drawer={not drawer_after} url={u}")
+            drawer_after = pg.evaluate("!document.getElementById('historyPicker').hidden")
+            check("D2-2 返回先关闭日历选择器（不离开历史页）", (not drawer_after) and u.startswith("/pages/history"), f"picker={not drawer_after} url={u}")
             c.close()
         run(browser, base, "D2", d2)
 

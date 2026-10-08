@@ -12,10 +12,10 @@
      D) 第二次系统返回：离开（交由系统退桌面）。
      E) 司机首页 /home 同样双段返回（第一次提示、第二次退出）。
 """
-import sys, time, threading, http.server, socketserver, os
+import sys, os, time, threading, http.server, socketserver, os
 from playwright.sync_api import sync_playwright
 
-ROOT = "/tmp/ghrepo"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PORT = 8131
 
 class Q(http.server.SimpleHTTPRequestHandler):

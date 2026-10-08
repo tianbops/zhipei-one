@@ -4,7 +4,7 @@
 import time, threading, http.server, socketserver, os, json
 from playwright.sync_api import sync_playwright
 
-ROOT = "/tmp/ghrepo"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PORT = 8137
 
 class Q(http.server.SimpleHTTPRequestHandler):

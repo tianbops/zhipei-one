@@ -37,10 +37,10 @@ pretty-URL 308（/admin.html→/admin、/home.html→/home）。
   F) 新代码，未登录：/admin 显示「身份验证失败」→ 回登录页并保持稳定。
   G) 保险丝：预置 zpAutoHop={n:3} 后，登录页自动直达被跳过（停在 /）。
 """
-import sys, time, threading, http.server, socketserver, os, json
+import sys, os, time, threading, http.server, socketserver, os, json
 from playwright.sync_api import sync_playwright
 
-NEW_ROOT = "/tmp/ghrepo"
+NEW_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OLD_ROOT = "/tmp/oldcode"
 PORT_NEW = 8151
 PORT_OLD = 8152
