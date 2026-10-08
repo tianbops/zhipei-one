@@ -43,8 +43,9 @@ async function readWaybills(env,ids,budget=null){
 
 async function readIndexMembers(env,routeId,date,budget=null){
  if(budget&&!budget.take(1))throwBudgetExceeded(budget.max,"history-read-index");
- const raw=await command(env,["SMEMBERS",waybillIndexKey(routeId,date)]).catch(()=>[]);
- return Array.isArray(raw)?raw.map(clean).filter(Boolean):[];
+ const raw=await command(env,["SMEMBERS",waybillIndexKey(routeId,date)]);
+ if(!Array.isArray(raw))throw Object.assign(new Error("历史运单索引读取结果异常"),{code:"WAYBILL_HISTORY_INDEX_READ_FAILED"});
+ return raw.map(clean).filter(Boolean);
 }
 
 async function readDateWaybills(env,user,routeId,date,budget=null){
@@ -131,7 +132,13 @@ export async function onRequestGet({request,env}){
    if(!validDate(date))return json({success:false,code:"DATE_INVALID",error:"日期无效"},400);
    if(!inRange(date,range))return json({success:false,code:"DATE_OUT_OF_RANGE",error:"日期不在历史查询范围内"},400);
    const budget=new Budget();
-   const waybills=await readDateWaybills(env,user,routeId,date,budget),enriched=[];for(const w of waybills)enriched.push(await enrich(w));
+   let waybills;
+   try{waybills=await readDateWaybills(env,user,routeId,date,budget)}catch(e){
+    if(e?.code===SUBREQUEST_BUDGET_EXCEEDED)return json({success:false,code:"PARTIAL_FAILURE",error:"该日期运单查询资源不足，请稍后重试",date,budgetUsed:budget.used,budgetMax:budget.max},503);
+    if(e?.code==="WAYBILL_HISTORY_INDEX_READ_FAILED")return json({success:false,code:"WAYBILL_HISTORY_INDEX_READ_FAILED",error:"历史运单索引读取失败，请稍后重试",date},503);
+    throw e;
+   }
+   const enriched=[];for(const w of waybills)enriched.push(await enrich(w));
    return json({success:true,routeId,date,waybills:enriched,count:enriched.length,waybillIds:enriched.map(w=>w.id),hasMultiple:enriched.length>1});
   }
   // P1-06 收口：readDates / readDateWaybillsBatch 共享同一 Budget，
