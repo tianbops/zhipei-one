@@ -16,8 +16,11 @@
 """
 import http.server, json, re, os, urllib.parse
 from http.server import BaseHTTPRequestHandler
+from datetime import datetime, timezone, timedelta
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+# 与服务端一致的 Asia/Shanghai 今日日期，避免 mock 返回写死日期导致首页「今日配送」按日期过滤落空。
+TODAY = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d")
 
 SAMPLE_STORES = [
     {"name": "朝阳大悦城店", "originalName": "朝阳大悦城店", "aliases": ["大悦城", "CY"], "note": "B1 扶梯旁", "navigation": "https://maps.example.com/c1", "routeOrder": 1},
@@ -29,9 +32,11 @@ SAMPLE_STORES = [
 
 def api_response(path, query):
     if path == "/api/me" or path.startswith("/api/me?"):
-        return {"username": "demo", "role": "user", "routeId": "R-001"}
+        # 实际契约：d.success + d.user{username, role, routeId, boundRouteId}
+        return {"success": True, "user": {"username": "demo", "role": "user", "routeId": "R-001", "boundRouteId": "R-001"}}
     if path == "/api/dispatch":
-        return {"dispatchRoute": {"id": "R-001", "name": "测试线路"}, "routeName": "测试线路"}
+        # 实际契约：d.success + d.dispatchRoute{id,name}
+        return {"success": True, "dispatchRoute": {"id": "R-001", "name": "测试线路"}, "routeName": "测试线路"}
     if path.startswith("/api/base"):
         # 实际契约：x.base.stores / x.base.version / x.canMaintain / x.route.name
         return {"routeId": "R-001",
@@ -58,10 +63,11 @@ def api_response(path, query):
             {"id": "acc-3", "name": "配送员 B", "role": "member", "username": "rider_b"},
         ], "notify": {"enabled": True}}
     if path.startswith("/api/waybills/latest"):
-        # 实际契约：d.success + d.waybill{summary, stores[{name,note,navigation,pending,matchMethod}]}
+        # 实际契约：d.success + d.waybill{id, routeId, date, summary, stores[{name,note,navigation,pending,matchMethod}], totalWeight}
         return {"success": True,
-                "waybill": {"id": "W-001", "vehicle": "京A12345", "confirmedAt": "2026-10-08 09:12",
-                            "summary": {"total": 4},
+                "waybill": {"id": "W-001", "routeId": "R-001", "date": TODAY, "vehicle": "京A12345",
+                            "totalWeight": 1.23,
+                            "summary": {"total": 4, "original": 4, "correction": 0, "merged": 0, "newStores": 0, "pending": 0},
                             "stores": [
                                 {"name": "朝阳大悦城店", "note": "B1 扶梯旁", "navigation": "https://maps.example.com/c1", "pending": False, "matchMethod": "auto"},
                                 {"name": "中关村鼎好店", "note": "", "navigation": "", "pending": False, "matchMethod": "auto"},
@@ -70,14 +76,26 @@ def api_response(path, query):
                                  "candidates": [{"name": "望京 SOHO 店", "score": 0.62}], "matchDiagnostics": {"reason": "below_threshold"}},
                             ]}}
     if path.startswith("/api/history"):
-        return {"months": [{"y": 2026, "m": 10, "has": True}, {"y": 2026, "m": 9, "has": True}],
-                "date": "2026-10-07",
-                "summary": {"count": 3, "stores": 14},
-                "items": [
-                    {"time": "09:12", "store": "朝阳大悦城店", "parcels": 12, "status": "done"},
-                    {"time": "10:31", "store": "中关村鼎好店", "parcels": 8, "status": "done"},
-                    {"time": "11:05", "store": "望京 SOHO 店", "parcels": 5, "status": "done"},
-                ]}
+        q = urllib.parse.parse_qs(query)
+        if "date" in q:
+            # 首页「今日配送」走的是带 date 的单日接口（d.success + d.waybills[]），与历史列表页不同
+            return {"success": True, "routeId": "R-001", "date": TODAY,
+                    "waybills": [{"id": "W-001", "routeId": "R-001", "date": TODAY, "stage": "CONFIRMED",
+                                  "historyStatus": "ACTIVE", "schemaVersion": "2", "vehicle": "京A12345",
+                                  "routeName": "测试线路", "createdAt": TODAY + "T09:12:00+08:00",
+                                  "totalWeight": 1.23,
+                                  "summary": {"total": 4, "original": 4, "correction": 0, "merged": 0, "newStores": 0, "pending": 0},
+                                  "stores": [
+                                      {"name": "朝阳大悦城店", "navigation": "https://maps.example.com/c1", "pending": False},
+                                      {"name": "中关村鼎好店", "navigation": "", "pending": False},
+                                      {"name": "西单大悦城店", "navigation": "", "pending": False},
+                                      {"name": "国贸三期店", "navigation": "https://maps.example.com/c4", "pending": False},
+                                  ]}],
+                    "count": 1, "waybillIds": ["W-001"], "hasMultiple": False}
+        # 历史列表页走的是无 date 的月度/日度聚合接口（d.history[] + d.range + d.months）
+        return {"success": True, "routeId": "R-001", "range": {"start": TODAY[:4] + "-01-01", "end": TODAY},
+                "months": [{"month": TODAY[:7], "days": 1, "waybills": 1, "totalStores": 14, "totalWeight": 5.2}],
+                "history": [{"date": TODAY, "count": 1, "waybillIds": ["W-001"], "hasMultiple": False, "storeCount": 14, "totalWeight": 5.2}]}
     # 默认：成功空对象
     return {"success": True}
 
