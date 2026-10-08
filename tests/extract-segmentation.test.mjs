@@ -36,6 +36,17 @@ if(aliasSingle.length!==1)throw new Error('single known store was split unexpect
 const overlapping=splitByRouteBase([{rawName:'重庆门店甲重庆门店甲',name:'重庆门店甲重庆门店甲'}],base);
 if(overlapping.length!==1)throw new Error('overlapping same-store text was incorrectly split');
 
+
+// Containment guard: a short identity embedded inside a longer identity must not
+// create a second store; the longest overlapping identity wins.
+const containmentBase=[
+ {storeId:'L1',name:'重庆门店甲乙',originalName:'重庆门店甲乙',aliases:[]},
+ {storeId:'L2',name:'门店甲乙',originalName:'门店甲乙',aliases:[]}
+];
+const containment=splitByRouteBase([{rawName:'重庆门店甲乙',name:'重庆门店甲乙'}],containmentBase);
+if(containment.length!==1)throw new Error('contained store identity was incorrectly split');
+if(containment[0].storeId)throw new Error('single contained identity must remain pre-match');
+
 const unresolved=splitByRouteBase([{rawName:'完全未知门店甲完全未知门店乙',name:'完全未知门店甲完全未知门店乙'}],base);
 if(unresolved.length!==1||unresolved[0].storeId)throw new Error('unresolved merged text must remain unresolved');
 
