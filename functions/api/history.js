@@ -31,11 +31,18 @@ async function readWaybills(env,ids,budget=null,strictIndex=false){
   }
   return (Array.isArray(rawList)?rawList:[]).map(decode).filter(Boolean);
  }catch(error){
+  // 数据一致性错误不能被 MGET 降级吞掉；否则“索引有ID、主运单不存在”
+  // 会再次被伪装成“暂无运单”。
+  if(error?.code==="WAYBILL_HISTORY_STALE_INDEX")throw error;
   // MGET 失败（如单次 URL 过长被拒）时降级为**分批** MGET，而非无预算的逐条 GET 循环
   if(budget){
    if(error?.code===SUBREQUEST_BUDGET_EXCEEDED)throw error;
    const {map,complete}=await mgetBatchMap(env,cleanIds.map(id=>"zp:waybill:"+id),budget,{batch:100});
    if(!complete)throwBudgetExceeded(budget.max,"history-read-waybills-fallback");
+   if(strictIndex){
+    const missing=cleanIds.filter(id=>!map.get("zp:waybill:"+id));
+    if(missing.length)throw Object.assign(new Error("历史日期索引包含不存在的运单："+missing.slice(0,5).join(",")),{code:"WAYBILL_HISTORY_STALE_INDEX",missingCount:missing.length});
+   }
    const out=[];for(const id of cleanIds){const w=decode(map.get("zp:waybill:"+id));if(w)out.push(w)}
    return out;
   }
