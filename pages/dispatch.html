@@ -14,30 +14,66 @@
 <link rel="stylesheet" href="/css/app.css?v=dark1"><link rel="stylesheet" href="/css/ui-unified.css?v=dark1">
 <link rel="stylesheet" href="/css/mobile-ui.css?v=dark1"><link rel="stylesheet" href="/css/business-pages.css?v=dark1">
 <style>
-.dispatch-page{min-height:100dvh;padding-bottom:24px}
+.dispatch-page{min-height:100dvh;padding-bottom:88px;background:#05070A}
 .dispatch-page .topbar{position:sticky;top:0;z-index:10}
-.dispatch-intro{padding:18px 16px 8px}
+.dispatch-intro{padding:18px 16px 10px}
 .dispatch-intro h2{margin:0;font-size:20px;line-height:1.35}
 .dispatch-intro p{margin:6px 0 0;color:#B8C2CC;font-size:13px}
-.dispatch-section{margin:10px 16px 0}
-.dispatch-section-title{margin:0 0 8px;font-size:14px;color:#B8C2CC;font-weight:600}
-.dispatch-card{background:#18212B;border:1px solid #2A3540;border-radius:14px;overflow:hidden}
-.dispatch-action{display:flex;align-items:center;gap:12px;width:100%;min-height:58px;padding:12px 14px;border:0;border-bottom:1px solid #2A3540;background:transparent;color:#fff;text-align:left;cursor:pointer}
+.dispatch-section{margin:14px 16px 0}
+.dispatch-section-title{margin:0 0 8px;font-size:13px;color:#7F8A95;font-weight:600}
+.dispatch-current{background:#18212B;border:1px solid #2A3540;border-radius:16px;padding:16px}
+.dispatch-current-label{font-size:12px;color:#7F8A95}
+.dispatch-current-row{display:flex;align-items:center;gap:12px;margin-top:6px}
+.dispatch-current-info{min-width:0;flex:1}
+.dispatch-current-name{font-size:23px;font-weight:700;line-height:1.25;color:#fff}
+.dispatch-current-status{margin-top:5px;font-size:12px;color:#B8C2CC}
+.dispatch-current-count{font-size:14px;color:#fff;font-weight:600}
+.dispatch-switch{min-width:72px;height:40px;padding:0 14px;border:1px solid #2A3540;border-radius:10px;background:#26313C;color:#fff;font-size:13px;font-weight:600}
+.dispatch-switch:active{background:#11171D}
+.dispatch-action-card{background:#18212B;border:1px solid #2A3540;border-radius:14px;overflow:hidden}
+.dispatch-action{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:12px 14px;border:0;border-bottom:1px solid #2A3540;background:transparent;color:#fff;text-align:left;cursor:pointer;text-decoration:none}
 .dispatch-action:last-child{border-bottom:0}
 .dispatch-action:active{background:#11171D}
 .dispatch-action-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:#11171D;color:#B8C2CC;flex:none}
-.dispatch-action-icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.dispatch-action-icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .dispatch-action-main{min-width:0;flex:1}
 .dispatch-action-main strong{display:block;font-size:15px;font-weight:600}
-.dispatch-action-main small{display:block;margin-top:3px;color:#7F8A95;font-size:12px}
-.dispatch-action-arrow{color:#7F8A95;font-size:20px}
-.dispatch-list{display:grid;gap:8px}
-.dispatch-option{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:54px;padding:12px 14px;border:1px solid #2A3540;border-radius:12px;background:#18212B;color:#fff;text-align:left}
-.dispatch-option.selected{border-color:#7F8A95;background:#202A34}
+.dispatch-action-main small{display:block;margin-top:3px;color:#7F8A95;font-size:12px;line-height:1.35}
+.dispatch-action-arrow{color:#7F8A95;font-size:20px;line-height:1}
+.dispatch-more{display:flex;align-items:center;justify-content:space-between;width:100%;padding:0 2px;border:0;background:none;color:#B8C2CC;font-size:13px}
+.dispatch-more:active{opacity:.7}
+.dispatch-other-list{display:grid;gap:8px;margin-top:8px}
+.dispatch-option{display:flex;align-items:center;gap:12px;width:100%;min-height:54px;padding:12px 14px;border:1px solid #2A3540;border-radius:12px;background:#18212B;color:#fff;text-align:left}
 .dispatch-option:disabled{opacity:.55}
-.dispatch-option span:first-child{font-size:15px;font-weight:600}
-.dispatch-route-meta small{color:#7F8A95;font-size:12px}
+.dispatch-option-main{min-width:0;flex:1}
+.dispatch-option-name{font-size:15px;font-weight:600}
+.dispatch-option-meta{margin-top:3px;color:#7F8A95;font-size:12px}
+.dispatch-option-arrow{color:#7F8A95;font-size:18px}
 .dispatch-message,.dispatch-empty{padding:24px 12px;text-align:center;color:#7F8A95;font-size:13px}
+.dispatch-sheet-backdrop{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.58);display:none}
+.dispatch-sheet-backdrop.open{display:block}
+.dispatch-sheet{position:absolute;left:0;right:0;bottom:0;max-height:min(78dvh,620px);overflow:auto;padding:10px 16px calc(18px + env(safe-area-inset-bottom));background:#18212B;border-top:1px solid #2A3540;border-radius:18px 18px 0 0}
+.dispatch-sheet-handle{width:34px;height:4px;margin:2px auto 14px;border-radius:4px;background:#7F8A95}
+.dispatch-sheet h3{margin:0;font-size:18px}
+.dispatch-sheet-sub{margin:5px 0 12px;color:#7F8A95;font-size:12px}
+.dispatch-sheet-list{display:grid;gap:8px}
+.dispatch-sheet-option{display:flex;align-items:center;gap:12px;width:100%;min-height:58px;padding:12px 14px;border:1px solid #2A3540;border-radius:12px;background:#11171D;color:#fff;text-align:left}
+.dispatch-sheet-option.selected{background:#202A34;border-color:#7F8A95}
+.dispatch-sheet-option:disabled{opacity:.55}
+.dispatch-sheet-option-main{flex:1;min-width:0}
+.dispatch-sheet-option-name{font-size:15px;font-weight:600}
+.dispatch-sheet-option-meta{margin-top:3px;color:#7F8A95;font-size:12px}
+.dispatch-sheet-check{color:#fff;font-size:17px}
+.dispatch-sheet-cancel{width:100%;height:46px;margin-top:10px;border:1px solid #2A3540;border-radius:10px;background:#26313C;color:#fff;font-size:14px}
+.dispatch-confirm-backdrop{position:fixed;inset:0;z-index:60;display:none;place-items:center;padding:20px;background:rgba(0,0,0,.62)}
+.dispatch-confirm-backdrop.open{display:grid}
+.dispatch-dialog{width:min(100%,360px);padding:20px;background:#18212B;border:1px solid #2A3540;border-radius:16px}
+.dispatch-dialog h3{margin:0;font-size:18px}
+.dispatch-dialog p{margin:8px 0 18px;color:#B8C2CC;font-size:13px;line-height:1.55}
+.dispatch-dialog-actions{display:flex;gap:10px}
+.dispatch-dialog-actions button{flex:1;height:46px;border:1px solid #2A3540;border-radius:10px;font-size:14px}
+.dispatch-dialog-cancel{background:#11171D;color:#B8C2CC}
+.dispatch-dialog-ok{background:#26313C;color:#fff}
 </style>
 </head>
 <body>
@@ -46,12 +82,19 @@
 
 <section class="dispatch-intro">
   <h2>线路工作区</h2>
-  <p>切换当前配送线路，或进入线路维护与资料管理。</p>
+  <p>管理当前配送线路与线路资料。</p>
+</section>
+
+<section class="dispatch-section">
+  <h2 class="dispatch-section-title">当前配送线路</h2>
+  <div id="currentRoute" class="dispatch-current">
+    <div class="dispatch-message">读取中…</div>
+  </div>
 </section>
 
 <section class="dispatch-section">
   <h2 class="dispatch-section-title">线路功能</h2>
-  <div class="dispatch-card">
+  <div class="dispatch-action-card">
     <a class="dispatch-action" href="/pages/route_apply.html?from=dispatch">
       <span class="dispatch-action-icon"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/></svg></span>
       <span class="dispatch-action-main"><strong>线路申请</strong><small>申请维护线路、查看审核状态、解除绑定</small></span>
@@ -66,27 +109,114 @@
 </section>
 
 <section class="dispatch-section">
-  <h2 class="dispatch-section-title">当前配送线路</h2>
-  <div id="routeList" class="dispatch-list"><div class="dispatch-message">读取中…</div></div>
+  <button id="otherToggle" class="dispatch-more" type="button" aria-expanded="false">
+    <span>其他可配送线路</span><span id="otherArrow">›</span>
+  </button>
+  <div id="otherRoutes" class="dispatch-other-list" hidden></div>
 </section>
 </main>
+
+<div id="routeSheetBackdrop" class="dispatch-sheet-backdrop" aria-hidden="true">
+  <section class="dispatch-sheet" role="dialog" aria-modal="true" aria-labelledby="routeSheetTitle">
+    <div class="dispatch-sheet-handle"></div>
+    <h3 id="routeSheetTitle">选择配送线路</h3>
+    <p class="dispatch-sheet-sub">选择后将成为本次配送使用的线路。</p>
+    <div id="routeSheetList" class="dispatch-sheet-list"></div>
+    <button id="routeSheetCancel" class="dispatch-sheet-cancel" type="button">取消</button>
+  </section>
+</div>
+
+<div id="confirmBackdrop" class="dispatch-confirm-backdrop" aria-hidden="true">
+  <section class="dispatch-dialog" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <h3 id="confirmTitle">切换配送线路</h3>
+    <p id="confirmText"></p>
+    <div class="dispatch-dialog-actions">
+      <button id="confirmCancel" class="dispatch-dialog-cancel" type="button">取消</button>
+      <button id="confirmOk" class="dispatch-dialog-ok" type="button">确定</button>
+    </div>
+  </section>
+</div>
+
 <script>
 const $=id=>document.getElementById(id);
 async function api(url,opt={}){const r=await fetch(url,{credentials:"same-origin",cache:"no-store",...opt});const d=await r.json().catch(()=>({}));if(!r.ok||!d.success)throw new Error(d.error||"请求失败");return d}
-async function selectRoute(id){
-  document.querySelectorAll(".dispatch-option").forEach(b=>b.disabled=true);
-  try{await api("/api/dispatch",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({routeId:id})});location.replace("/home.html")}
-  catch(e){document.querySelectorAll(".dispatch-option").forEach(b=>b.disabled=false);window.zpToast?.(e.message||"线路切换失败","error")}
-}
 function esc(v){return String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+let routeState={current:"",routes:[]};
+let pendingRoute="";
+
+function routeName(r){return r?.name||r?.id||"未命名线路"}
+function routeMeta(r,current=false){return (current?"当前线路 · ":"")+"已匹配 · "+(Number(r?.storeCount)||0)+"家门店"}
+
+function openSheet(){
+  renderSheet();
+  $("routeSheetBackdrop").classList.add("open");
+  $("routeSheetBackdrop").setAttribute("aria-hidden","false");
+}
+function closeSheet(){
+  $("routeSheetBackdrop").classList.remove("open");
+  $("routeSheetBackdrop").setAttribute("aria-hidden","true");
+}
+function openConfirm(id){
+  pendingRoute=id;
+  const r=routeState.routes.find(x=>x.id===id);
+  $("confirmText").textContent="确定切换至"+routeName(r)+"吗？切换后，本次配送将使用该线路。";
+  $("confirmBackdrop").classList.add("open");
+  $("confirmBackdrop").setAttribute("aria-hidden","false");
+}
+function closeConfirm(){
+  pendingRoute="";
+  $("confirmBackdrop").classList.remove("open");
+  $("confirmBackdrop").setAttribute("aria-hidden","true");
+}
+function renderCurrent(){
+  const r=routeState.routes.find(x=>x.id===routeState.current);
+  if(!r){$("currentRoute").innerHTML='<div class="dispatch-message">暂未选择配送线路</div>';return}
+  $("currentRoute").innerHTML='<div class="dispatch-current-label">当前配送线路</div><div class="dispatch-current-row"><div class="dispatch-current-info"><div class="dispatch-current-name">'+esc(routeName(r))+'</div><div class="dispatch-current-status">已匹配</div><div class="dispatch-current-count">'+(Number(r.storeCount)||0)+'家门店</div></div><button id="switchRouteBtn" class="dispatch-switch" type="button">切换</button></div>';
+  $("switchRouteBtn").addEventListener("click",openSheet);
+}
+function renderOther(){
+  const others=routeState.routes.filter(r=>r.id!==routeState.current);
+  $("otherToggle").hidden=!others.length;
+  if(!others.length)return;
+  $("otherRoutes").innerHTML=others.slice(0,3).map(r=>'<button class="dispatch-option" type="button" data-route-id="'+esc(r.id)+'"><span class="dispatch-option-main"><span class="dispatch-option-name">'+esc(routeName(r))+'</span><span class="dispatch-option-meta">'+esc(routeMeta(r))+'</span></span><span class="dispatch-option-arrow">›</span></button>').join("");
+  $("otherRoutes").querySelectorAll("[data-route-id]").forEach(b=>b.addEventListener("click",()=>openConfirm(b.dataset.routeId)));
+}
+function renderSheet(){
+  $("routeSheetList").innerHTML=routeState.routes.map(r=>'<button class="dispatch-sheet-option'+(r.id===routeState.current?" selected":"")+'" type="button" data-route-id="'+esc(r.id)+'"><span class="dispatch-sheet-option-main"><span class="dispatch-sheet-option-name">'+esc(routeName(r))+'</span><span class="dispatch-sheet-option-meta">'+esc(routeMeta(r,r.id===routeState.current))+'</span></span>'+(r.id===routeState.current?'<span class="dispatch-sheet-check">✓</span>':'').concat("</button>").replace(".concat","") : "");
+  $("routeSheetList").querySelectorAll("[data-route-id]").forEach(b=>b.addEventListener("click",()=>{const id=b.dataset.routeId;if(id===routeState.current){closeSheet();return}closeSheet();openConfirm(id)}));
+}
+async function selectRoute(id){
+  $("confirmOk").disabled=true;
+  try{
+    await api("/api/dispatch",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({routeId:id})});
+    location.replace("/home.html");
+  }catch(e){
+    $("confirmOk").disabled=false;
+    window.zpToast?.(e.message||"线路切换失败","error");
+  }
+}
+$("routeSheetCancel").addEventListener("click",closeSheet);
+$("routeSheetBackdrop").addEventListener("click",e=>{if(e.target===$("routeSheetBackdrop"))closeSheet()});
+$("confirmCancel").addEventListener("click",closeConfirm);
+$("confirmBackdrop").addEventListener("click",e=>{if(e.target===$("confirmBackdrop"))closeConfirm()});
+$("confirmOk").addEventListener("click",async()=>{if(pendingRoute)await selectRoute(pendingRoute)});
+$("otherToggle").addEventListener("click",()=>{
+  const hidden=$("otherRoutes").hidden;
+  $("otherRoutes").hidden=!hidden;
+  $("otherToggle").setAttribute("aria-expanded",String(hidden));
+  $("otherArrow").textContent=hidden?"⌄":"›";
+});
+
 async function load(){
- try{
-  const [routes,dispatch]=await Promise.all([api("/api/routes"),api("/api/dispatch")]);
-  const current=dispatch.dispatchRoute?.id||"";
-  const list=(routes.routes||[]).filter(r=>r.status==="active");
-  $("routeList").innerHTML=list.length?list.map(r=>'<button class="dispatch-option'+(r.id===current?" selected":"")+'" type="button" data-route-id="'+esc(r.id)+'"><span>'+esc(r.name||r.id)+'</span><span class="dispatch-route-meta"><small>'+(r.id===current?"当前线路 · ":"")+'已匹配 · '+(Number(r.storeCount)||0)+'家门店</small></span></button>').join(""):'<div class="dispatch-empty">暂无可用线路</div>';
-  document.querySelectorAll("#routeList .dispatch-option").forEach(b=>b.addEventListener("click",()=>selectRoute(b.dataset.routeId)));
- }catch(e){$("routeList").innerHTML='<div class="dispatch-message">线路读取失败，请重试</div>'}
+  try{
+    const [routes,dispatch]=await Promise.all([api("/api/routes"),api("/api/dispatch")]);
+    routeState.current=dispatch.dispatchRoute?.id||"";
+    routeState.routes=(routes.routes||[]).filter(r=>r.status==="active");
+    renderCurrent();renderOther();
+  }catch(e){
+    $("currentRoute").innerHTML='<div class="dispatch-message">线路读取失败，请重试</div>';
+    $("otherToggle").hidden=true;
+  }
 }
 load();
 </script>
