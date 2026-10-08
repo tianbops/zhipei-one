@@ -257,21 +257,29 @@
   width:24px;
   min-width:24px;
   color:#7F8A95;
-  font-size:14px;
+  font-size:15px;
   line-height:20px;
   font-variant-numeric:tabular-nums;
   text-align:right;
 }
+/* 门店名：文字调大（15→17px）；长名不再省略号截断，改为可左滑横向滚动
+   查看全部文字（原生 touch 滚动；隐藏滚动条；overscroll-behavior-x 防滑到头
+   触发页面滚动链/历史回扫；发生滚动的手势浏览器会自动取消该行的点击跳转）。 */
 .today-store-name{
   min-width:0;
-  overflow:hidden;
-  text-overflow:ellipsis;
+  display:block;
+  overflow-x:auto;
+  overflow-y:hidden;
   white-space:nowrap;
+  scrollbar-width:none;
+  overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;
   color:#F2F5F7;
-  font-size:15px;
-  line-height:22px;
+  font-size:17px;
+  line-height:24px;
   font-weight:550;
 }
+.today-store-name::-webkit-scrollbar{display:none}
 .today-store-empty{padding:18px 4px;color:#7F8A95;font-size:14px;text-align:center}
 .today-metrics{
   display:flex;
@@ -324,7 +332,7 @@
  .home-app{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
  .today-store-list{max-height:172px}   /* 行高 42px × 4 ≈ 172px，固定展示 4 家 */
  .today-store-row{min-height:42px}
- .today-store-name{font-size:14px}
+ .today-store-name{font-size:16px}
  .bottom-nav{padding-left:6px;padding-right:6px}
 }
 
