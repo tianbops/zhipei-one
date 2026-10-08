@@ -1,9 +1,7 @@
 /* 智配One · 历史查询 · Android 2.0 */
 .history-shell{padding-bottom:0}
-.history-topbar{height:var(--zp-header-height);display:grid;grid-template-columns:var(--zp-control-height) 1fr var(--zp-control-height);align-items:center;gap:8px;margin-bottom:10px}
-.history-topbar>strong{text-align:center;font-size:20px;line-height:26px;font-weight:700}
-.history-back{width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:0;border-radius:12px;background:transparent;color:#B8C2CC;text-decoration:none;font-size:16px;line-height:22px}
-.history-back:active{background:rgba(20,28,37,.80)}
+.history-shell .topbar{margin-bottom:10px}
+.history-shell .topbar>strong{text-align:center;font-size:20px;line-height:26px;font-weight:700}
 
 
 .history-card{
@@ -318,22 +316,7 @@
   padding-top:8px;
   padding-bottom:0;
 }
-.history-topbar{
-  height:var(--zp-header-height);
-  margin-bottom:14px;
-}
-.history-topbar>strong{
-  font-size:20px;
-  line-height:26px;
-  font-weight:700;
-}
-.history-back{
-  width:var(--zp-control-height);
-  height:var(--zp-control-height);
-  border-radius:12px;
-  font-size:16px;
-  line-height:22px;
-}
+.history-shell .topbar{margin-bottom:14px}
 .history-card{
   padding:0;
   background:transparent;
@@ -510,31 +493,8 @@
 
 /* UI 2.4：顶部返回键与运单详情统一
    历史查询不显示右侧三横，仅保留与运单详情一致的返回箭头。 */
-.history-topbar{
-  grid-template-columns:var(--zp-control-height) 1fr var(--zp-control-height);
-}
-.history-back{
-  width:var(--zp-control-height);
-  height:var(--zp-control-height);
-  border:0;
-  border-radius:12px;
-  background:transparent;
-  color:#fff;
-  padding:0;
-}
-.history-back svg{
-  width:21px;
-  height:21px;
-  fill:none;
-  stroke:currentColor;
-  stroke-width:1.9;
-  stroke-linecap:round;
-  stroke-linejoin:round;
-}
-.history-back:active{
-  background:rgba(20,28,37,.80);
-  transform:none;
-}
+.history-shell .app-back{color:#fff}
+.history-shell .app-back:active{background:rgba(20,28,37,.80);transform:none}
 .history-topbar-placeholder{
   width:44px;
   height:44px;
@@ -542,7 +502,7 @@
 }
 
 /* Android 返回层 2.5：历史查询返回按钮沿用运单详情纯箭头。 */
-.history-back{touch-action:manipulation}
+.history-shell .app-back{touch-action:manipulation}
 
 /* 日历月份滑动切换：左滑下月（内容自右滑入）、右滑上月（内容自左滑入） */
 @keyframes historyCalInLeft{
