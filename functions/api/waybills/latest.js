@@ -19,12 +19,13 @@ async function latestGet({request,env}){
  const url=new URL(request.url),id=clean(url.searchParams.get("id")),confirmedOnly=url.searchParams.get("confirmed")==="1",routeId=clean(user.dispatchRouteId||user.boundRouteId);
  if(!routeId)return json({success:true,waybill:null});
  const route=await getRoute(env,routeId);const routeName=clean(route?.name)||"临时";
- async function withRouteData(w){
+ async function withRouteData(w, rid){
   if(!w)return w;
+  const effRid=clean(rid)||routeId;
   w.routeName=clean(w.routeName)||routeName;
   if(!Array.isArray(w.stores)||!w.stores.length)return w;
   try{
-   const rawBase=await get(env,"route:"+routeId+":base");
+   const rawBase=await get(env,"route:"+effRid+":base");
    const parsed=typeof rawBase==="string"?JSON.parse(rawBase):rawBase;
    const baseStores=Array.isArray(parsed?.stores)?parsed.stores:[];
    const byId=new Map(baseStores.map(s=>[clean(s?.storeId),s]).filter(x=>x[0]));
@@ -49,8 +50,13 @@ async function latestGet({request,env}){
   const raw=await get(env,"zp:waybill:"+id);if(!raw)return json({success:true,waybill:null});
   try{
    const waybill=typeof raw==="string"?JSON.parse(raw):raw;
-   if((confirmedOnly?!effectiveWaybill(waybill):!activeWaybill(waybill))||waybill.routeId!==routeId||!canReadWaybill(user,waybill,env))return json({success:true,waybill:null});
-   return json({success:true,waybill:await withRouteData(waybill)});
+   // 显式 id 场景（上传后跳转 / 分享直链）：以运单自身 routeId 做权限校验，
+   // 去掉冗余的 "waybill.routeId!==routeId" 硬判断——该判断只比对 user.dispatchRouteId||boundRouteId
+   // 的单一取值，当用户「绑定线路」匹配但 dispatchRouteId 为空/不一致（带班、切线路后上传）时会误判为 null。
+   // 权限已由 canReadWaybill（覆盖 boundRouteId 与 dispatchRouteId 二者）统一把关，无需重复拦截（详见首页同类 routeId 漂移问题）。
+   if((confirmedOnly?!effectiveWaybill(waybill):!activeWaybill(waybill)))return json({success:true,waybill:null});
+   if(!canReadWaybill(user,waybill,env))return json({success:true,waybill:null});
+   return json({success:true,waybill:await withRouteData(waybill,clean(waybill.routeId))});
   }catch{return json({success:false,code:"WAYBILL_DATA_INVALID",error:"运单数据异常"},500)}
  }
  const today=todayCN(),indexKey=waybillIndexKey(routeId,today);
