@@ -44,7 +44,7 @@ async function latestGet({request,env}){
   return w;
  }
  if(id){
-  const raw=await get(env,"waybill:"+id);if(!raw)return json({success:true,waybill:null});
+  const raw=await get(env,"zp:waybill:"+id);if(!raw)return json({success:true,waybill:null});
   try{
    const waybill=typeof raw==="string"?JSON.parse(raw):raw;
    if((confirmedOnly?!effectiveWaybill(waybill):!activeWaybill(waybill))||waybill.routeId!==routeId||!canReadWaybill(user,waybill,env))return json({success:true,waybill:null});

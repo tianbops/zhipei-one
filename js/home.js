@@ -401,24 +401,35 @@ async function loadHome(){
     }finally{clearTimeout(timer);}
   };
   try{
-    // 首页只依赖当前调度线路，不读取整套线路列表，避免无关线路数据阻塞今日配送。
-    const {res:dispatchRes,data:dispatch}=await fetchJson("/api/dispatch");
+    // 首页依赖「有效线路」而非仅 dispatchRouteId：
+    // 已绑定但未选调度线路的业务用户，/api/dispatch 返回 dispatchRoute:null
+    // （临时线路仅在「既无 dispatchRouteId 也无 boundRouteId」时才会分配），
+    // 此时必须以 boundRouteId 兜底，否则今日配送永远读不到数据。
+    // 该问题在 8d4b9b6 重排 loadHome 后暴露：layer1 被 `if(dispatchRouteId)` 跳过，
+    // layer2/3 又用 waybill.routeId==="" 过滤，永不命中 → 显示「暂无运单」。
+    const [{res:dispatchRes,data:dispatch},{res:meRes,data:me}]=await Promise.all([
+      fetchJson("/api/dispatch"),
+      fetchJson("/api/me?homeMe="+Date.now())
+    ]);
     if(!dispatchRes.ok||!dispatch.success)throw Error(dispatch.error||"当前配送线路读取失败");
     dispatchRouteId=dispatch.dispatchRoute?.id||"";
+    boundRouteId=me&&me.user&&me.user.boundRouteId?String(me.user.boundRouteId):(boundRouteId||"");
     renderSubstituteBadge();
     setRouteBadge(dispatch.dispatchRoute||null);
+    // 有效线路 = 显式调度线路（含临时线路）优先，其次管理员绑定线路
+    const effectiveRouteId=dispatchRouteId||boundRouteId;
 
     const todayKey=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
     let w=null;
 
     // 第一层直接读取“当天历史”：首页今日配送与月度统计使用同一历史数据源，
     // 避免 latest 索引与首页日期上下文出现分叉。
-    if(dispatchRouteId){
+    if(effectiveRouteId){
       try{
         const {res,data}=await fetchJson("/api/history?date="+encodeURIComponent(todayKey));
         const list=Array.isArray(data.waybills)?data.waybills:[];
         if(res.ok&&data.success!==false){
-          const usable=list.filter(x=>x&&x.routeId===dispatchRouteId&&x.date===todayKey);
+          const usable=list.filter(x=>x&&x.routeId===effectiveRouteId&&x.date===todayKey);
           usable.sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
           w=usable[usable.length-1]||null;
         }
@@ -429,13 +440,13 @@ async function loadHome(){
     if(!w){
       try{
         const {res,data}=await fetchJson("/api/waybills/latest");
-        if(res.ok&&data.success&&data.waybill&&data.waybill.routeId===dispatchRouteId&&data.waybill.date===todayKey)w=data.waybill;
+        if(res.ok&&data.success&&data.waybill&&data.waybill.routeId===effectiveRouteId&&data.waybill.date===todayKey)w=data.waybill;
       }catch{}
     }
 
     // 第三层复用月度统计已经成功读取的数据索引。若单日接口异常，
     // 只要月度历史能看到今天，就根据当天运单 ID 再取完整运单，避免出现“月度有数据、今日却为空”。
-    if(!w&&dispatchRouteId){
+    if(!w&&effectiveRouteId){
       try{
         const {res,data}=await fetchJson("/api/history?months=25");
         if(res.ok&&data.success!==false){
@@ -443,14 +454,14 @@ async function loadHome(){
           const id=Array.isArray(todayEntry?.waybillIds)?todayEntry.waybillIds[todayEntry.waybillIds.length-1]:"";
           if(id){
             const {res:detailRes,data:detail}=await fetchJson("/api/waybills/latest?id="+encodeURIComponent(id));
-            if(detailRes.ok&&detail.success&&detail.waybill&&detail.waybill.routeId===dispatchRouteId&&detail.waybill.date===todayKey)w=detail.waybill;
+            if(detailRes.ok&&detail.success&&detail.waybill&&detail.waybill.routeId===effectiveRouteId&&detail.waybill.date===todayKey)w=detail.waybill;
           }
         }
       }catch{}
     }
 
     // 摘要与门店明细分开渲染：stores 异常绝不允许把今日数量/重量卡在“加载中”。
-    if(w&&w.routeId===dispatchRouteId){
+    if(w&&w.routeId===effectiveRouteId){
       const stores=Array.isArray(w.stores)?w.stores:[];
       const total=Number(w.summary?.total)||stores.length||0;
       todayCount.textContent=total+"家";
@@ -491,21 +502,6 @@ async function loadHome(){
   }
 }
 loadHome();
-
-/* 三横菜单「账号设置」右侧显示当前用户名：用户打开菜单即可直接确认登录身份。
-   静默失败不阻塞首页，读不到就保持骨架占位（样式与「当前线路」数值一致）。 */
-(async()=>{
-  try{
-    // 带时间戳参数：与登录页/管理端同一防缓存策略，任何按 URL 缓存的中间层
-    // 都无法用旧会话时代的 /api/me 响应冒充当前登录身份（2026-10-05 事故加固）。
-    const r=await fetch("/api/me?homeMe="+Date.now(),{credentials:"same-origin",cache:"no-store"});
-    const d=await r.json().catch(()=>({}));
-    const name=d&&d.user&&d.user.username?String(d.user.username):"";
-    boundRouteId=d&&d.user&&d.user.boundRouteId?String(d.user.boundRouteId):"";
-    renderSubstituteBadge();
-
-  }catch{}
-})();
 
 // 首页的「两次返回才退出」与系统返回已统一到 ui-unified.js 中央控制器。
 // 这里只注册本页返回层级：上传 Bottom Sheet → 下拉菜单。
