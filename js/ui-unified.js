@@ -314,7 +314,10 @@
         if(dirty&&!await zpConfirmDiscard())return true; // 留在编辑，不穿透
       }
       try{await h.close()}catch{}
-      return true; // 已消费一层（close 返回 false 表示拒绝关闭，同样不穿透）
+      // 已消费一层。注意：close 的返回值不参与判定——无论它返回什么，本次返回都算被页面内
+      // 消化、不再向下穿透。所谓"拒绝关闭"（如首页上传进行中）的语义就等价于"不穿透"，
+      // 具体提示由 close 内部自行 toast，不需要靠返回值表达。
+      return true;
     }
     return false;
   }
