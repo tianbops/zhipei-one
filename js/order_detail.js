@@ -389,8 +389,16 @@ $('menuBtn').onclick=e=>{e.stopPropagation();setMenu(!menuOpen)};
 $('editRouteBtn').onclick=()=>location.href='/pages/data.html?from=order&id='+encodeURIComponent(order.id)+'&source=process';
 $('shareBtn').onclick=async()=>{
  setMenu(false);if(!order)return;
- const s=order.summary||{},text='智配One\n'+(order.date||'')+'\n'+(order.routeName||'当前线路')+'\n'+(s.finalCount||s.total||order.stores?.length||0)+'家 · '+fmtWeight(order.totalWeight)+'t';
- try{if(navigator.share)await navigator.share({title:'当日运单',text});else{await navigator.clipboard?.writeText(text);zpToast('已复制运单摘要','success')}}catch{}
+ const s=order.summary||{},list=Array.isArray(order.stores)?order.stores:[];
+ // 分享必须带完整门店清单：只发「N家·Xt」汇总，接收方看不到当天到底配送哪些店。
+ // 门店没有单店重量字段（重量只有整单 totalWeight），故重量只出现在汇总行。
+ const lines=['智配One',order.date||'',order.routeName||'当前线路',(Number(s.finalCount)||Number(s.total)||list.length||0)+'家 · '+fmtWeight(order.totalWeight)+'t',''];
+ list.forEach((x,i)=>{
+  const name=String(x?.name||x?.rawName||'未识别门店').trim();
+  lines.push(String(i+1).padStart(2,'0')+'  '+name+(x?.pending?'（待确认）':''));
+ });
+ const text=lines.join('\n');
+ try{if(navigator.share)await navigator.share({title:'当日运单',text});else{await navigator.clipboard?.writeText(text);zpToast('已复制运单清单','success')}}catch{}
 };
 $('logoutBtn').onclick=async()=>{setMenu(false);if(!(await zpConfirm('退出登录','确定退出当前账号吗？')))return;try{await fetch('/api/logout',{method:'POST',credentials:'same-origin',cache:'no-store'})}finally{location.replace('/')}};
 $('closeConfirm').onclick=()=>$('confirmDialog').hidden=true;
