@@ -103,6 +103,22 @@
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",zpEnsureBusinessBottomNav,{once:true});
   else zpEnsureBusinessBottomNav();
 
+  // 业务处理进行中时，常驻导航不能无提示地把用户带离当前运单流程。
+  document.addEventListener("click",async e=>{
+    const link=e.target.closest?.(".bottom-nav a");
+    if(!link||typeof window.zpIsProcessing!=="function"||!window.zpIsProcessing())return;
+    const href=link.getAttribute("href")||"";
+    if(!href||link.dataset.zpNavGuarded==="1")return;
+    e.preventDefault();
+    e.stopPropagation();
+    if(typeof window.zpConfirm==="function"){
+      const ok=await window.zpConfirm("正在处理运单","当前运单仍在识别与规划中，离开将中断本次处理。确定离开吗？","离开");
+      if(ok)location.href=href;
+    }else if(confirm("当前运单仍在处理中，离开将中断本次处理。确定离开吗？")){
+      location.href=href;
+    }
+  },true);
+
   window.zpConfirm=function(title,text,okText){
     return new Promise(resolve=>{
       const root=ensure(),box=root.querySelector(".zp-confirm"),ok=root.querySelector("[data-zp-ok]"),cancel=root.querySelector("[data-zp-cancel]");
