@@ -61,4 +61,17 @@ console.log(ok2?"  ✓":"  ✗","重复门店已合并");
 console.log(ok3?"  ✓":"  ✗","1家待定");
 console.log(ok4?"  ✓":"  ✗","待定门店排在末尾");
 console.log(orderOk?"  ✓":"  ✗","按基准库routeOrder排序 (S2→S1→S3)");
-console.log([ok1,ok2,ok3,ok4,orderOk].every(Boolean)?"\n✅ 端到端链路验证通过":"\n❌ 存在问题");
+// P0 身份碰撞回归：两个不同 OCR 识别项若被错误指向同一 storeId，第二项必须进入待定，绝不能被去重吞掉。
+const collisionBase=[{storeId:"S9",name:"测试基准店",aliases:["甲店","乙店"],routeOrder:1}];
+const collisionInput=[{rawName:"甲店"},{rawName:"乙店"}];
+const collisionMatched=matchStores(collisionInput,collisionBase);
+const collisionSafe=
+  collisionMatched.length===2 &&
+  collisionMatched[0].pending===false &&
+  collisionMatched[0].storeId==="S9" &&
+  collisionMatched[1].pending===true &&
+  collisionMatched[1].storeId===null &&
+  collisionMatched[1].matchConfidence?.reason==="STORE_ID_COLLISION";
+console.log(collisionSafe?"  ✓":"  ✗","不同识别项争用同一storeId时转待定，不吞店");
+
+console.log([ok1,ok2,ok3,ok4,orderOk,collisionSafe].every(Boolean)?"\n✅ 端到端链路验证通过":"\n❌ 存在问题");
