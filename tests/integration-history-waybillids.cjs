@@ -60,6 +60,13 @@ const getReq = (url, token) => ({ url, headers: { get: (h) => (String(h).toLower
   check("单日不再返回隐含 waybill 单张字段", s && !("waybill" in s), "keys=" + (s ? Object.keys(s).join(",") : ""));
   check("单日仍返回 waybills 数组（前端可选渲染列表）", s && Array.isArray(s.waybills) && s.waybills.length === 3);
 
+  // 索引残留回归：日期桶里存在已不存在的主运单时，不能伪装成「暂无运单」。
+  const STALE_DATE = TODAY.slice(0,8) + "09";
+  red.command(["SADD", "zp:route:" + R + ":waybills:" + STALE_DATE, "STALE-MISSING-WAYBILL"]);
+  const stale = await (await histMod.onRequestGet({ request: getReq("https://app.local/api/history?routeId=" + R + "&date=" + STALE_DATE, tok), env })).json();
+  check("索引残留返回结构化一致性错误", stale.success === false && stale.code === "WAYBILL_HISTORY_STALE_INDEX", JSON.stringify(stale));
+  check("索引残留不伪装成空历史", !(stale.success === true && stale.count === 0));
+
   console.log("\nHISTORY_WAYBILLIDS 集成：通过 " + pass + " / 失败 " + fail);
   process.exit(fail ? 1 : 0);
 })();
