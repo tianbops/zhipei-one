@@ -155,14 +155,31 @@ export async function onRequestPost({request,env}){
 
   const seen=new Set();const deduped=[];let merged=0;
   for(const item of stores){const key=item.storeId?"id:"+item.storeId:"pending:"+normalized(item.rawName);if(seen.has(key)){merged++;continue}seen.add(key);deduped.push(item)}
-  let ordered=deduped;
-  if(!isTempRoute(order.routeId)&&base.stores.length){
-    const routeOrderById=new Map(base.stores.filter(s=>s&&s.storeId).map(s=>[clean(s.storeId),Number(s.routeOrder)]));
-    const known=deduped.filter(s=>s.storeId&&Number.isFinite(routeOrderById.get(clean(s.storeId))));
-    const unknown=deduped.filter(s=>!known.includes(s));
-    known.forEach(s=>{s.routeOrder=routeOrderById.get(clean(s.storeId))});
-    ordered=[...known.sort((a,b)=>a.routeOrder-b.routeOrder),...unknown];
+  // 确认发生在“规划完成”之后：不能因为门店身份确认而重新套用基准库 routeOrder，
+  // 否则人工确认一个待定门店会悄悄改变已经规划好的司机配送顺序。
+  // 保留原运单已有 routeOrder；只有缺失顺序的新增门店才参考基准库顺序。
+  let ordered=[...deduped];
+  const baseOrderById=new Map(base.stores.filter(s=>s&&s.storeId).map(s=>[clean(s.storeId),Number(s.routeOrder)]));
+  const maxExistingOrder=Math.max(0,...ordered.map(s=>Number(s.routeOrder)).filter(Number.isFinite));
+  ordered.sort((a,b)=>{
+    const ao=Number(a.routeOrder),bo=Number(b.routeOrder);
+    if(Number.isFinite(ao)&&Number.isFinite(bo))return ao-bo;
+    if(Number.isFinite(ao))return -1;
+    if(Number.isFinite(bo))return 1;
+    const ab=baseOrderById.get(clean(a.storeId)),bb=baseOrderById.get(clean(b.storeId));
+    if(Number.isFinite(ab)&&Number.isFinite(bb))return ab-bb;
+    if(Number.isFinite(ab))return -1;
+    if(Number.isFinite(bb))return 1;
+    return 0;
+  });
+  let nextOrder=maxExistingOrder;
+  for(const item of ordered){
+    if(!Number.isFinite(Number(item.routeOrder))){
+      const baseOrder=baseOrderById.get(clean(item.storeId));
+      item.routeOrder=Number.isFinite(baseOrder)?baseOrder:(++nextOrder);
+    }
   }
+  ordered.sort((a,b)=>Number(a.routeOrder)-Number(b.routeOrder));
   const finalStores=ordered.map((s,i)=>({...s,routeOrder:i+1}));
   const pending=finalStores.filter(s=>s.pending).length;
   // 指纹失漏回收：确认会把待定门店补齐，指纹必然漂移；旧键会在删除本单后变成悬空指纹键。
