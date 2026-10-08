@@ -135,19 +135,69 @@ function dedupe(items){
   const seen=new Map(),out=[],conflicts=[],removed=[];
   let merged=0;
   for(const s of items){
-    const identityKey=formatCompareKey(s.name||s.rawName);
+    // 门店身份判断必须优先使用“原始识别名”。
+    // matchStores / global learning 会把 name 标准化为基准库名称；
+    // 如果这里再用 name 判断，不同 OCR 门店被错误映射到同一 storeId 后
+    // 会被误认为“同名重复”并直接吞掉。
+    const identityKey=formatCompareKey(s.rawName||s.name);
+    const displayName=clean(s.name||s.rawName);
     let key=s.storeId?"id:"+s.storeId:"pending:"+identityKey;
     if(s.storeId&&seen.has(key)){
       const previous=seen.get(key);
-      const previousIdentity=formatCompareKey(previous.name||previous.rawName);
+      const previousIdentity=formatCompareKey(previous.rawName||previous.name);
       if(previousIdentity!==identityKey){
-        key="id-conflict:"+s.storeId+":"+identityKey;
-        conflicts.push({storeId:s.storeId,firstName:previous.name||previous.rawName,conflictName:s.name||s.rawName});
-      }else{
-        merged++;
-        removed.push({rawName:s.rawName,name:s.name,storeId:s.storeId||null,mergedInto:{rawName:previous.rawName,name:previous.name,storeId:previous.storeId||null}});
+        // 不再把冲突项留在 matched/storeId 状态；安全转待定，
+        // 让最终数量保留，并要求人工确认真实门店。
+        conflicts.push({
+          storeId:s.storeId,
+          firstName:previous.rawName||previous.name,
+          conflictName:s.rawName||s.name,
+        });
+        const pending={
+          ...s,
+          storeId:null,
+          name:clean(s.rawName||s.name),
+          originalName:clean(s.rawName||s.name),
+          pending:true,
+          matchStatus:"pending",
+          matchMethod:null,
+          correction:false,
+          candidates:[{
+            storeId:s.storeId,
+            name:displayName,
+            reason:"同一运单中不同识别项指向同一门店，存在身份冲突",
+          }],
+          matchConfidence:{
+            level:"PENDING",
+            reason:"STORE_ID_COLLISION",
+            score:null,
+            candidateCount:1,
+            topScore:null,
+            secondScore:null,
+            scoreGap:null,
+          },
+          matchDiagnostics:{
+            ...(s.matchDiagnostics||{}),
+            reason:"STORE_ID_COLLISION",
+            storeId:s.storeId,
+            previousRawName:previous.rawName||previous.name,
+          },
+        };
+        out.push(pending);
         continue;
       }
+      merged++;
+      removed.push({
+        rawName:s.rawName,
+        name:s.name,
+        storeId:s.storeId||null,
+        mergedInto:{
+          rawName:previous.rawName,
+          name:previous.name,
+          storeId:previous.storeId||null,
+        },
+      });
+      continue;
     }
     seen.set(key,s);
     out.push(s);
