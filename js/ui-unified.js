@@ -417,32 +417,6 @@
     window.zpToast._timer=setTimeout(()=>toast.classList.remove("show"),2200);
   };
 })();
-/* 业务端一级导航：所有业务页面统一常驻，避免页面各自维护不同版本。 */
-.zp-business-nav-page{padding-bottom:0!important;overflow-x:hidden}
-.zp-business-nav-page .bottom-nav{
-  position:fixed!important;left:50%!important;right:auto!important;bottom:0!important;z-index:40!important;
-  width:min(100%,430px)!important;min-height:64px!important;
-  padding:6px 8px calc(6px + env(safe-area-inset-bottom))!important;
-  transform:translateX(-50%)!important;
-  display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:4px!important;
-  background:#05070A!important;border-top:1px solid #27323D!important;
-  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
-}
-.zp-business-nav-page .bottom-nav-item{
-  min-width:0!important;min-height:52px!important;border:0!important;border-radius:10px!important;
-  background:transparent!important;color:#7F8A95!important;text-decoration:none!important;
-  display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;
-  gap:3px!important;font-size:12px!important;line-height:17px!important;font-weight:600!important;
-  -webkit-tap-highlight-color:transparent;
-}
-.zp-business-nav-page .bottom-nav-item:active{background:#18212B!important;color:#F2F5F7!important}
-.zp-business-nav-page .bottom-nav-icon{width:22px!important;height:22px!important;display:flex!important;align-items:center!important;justify-content:center!important}
-.zp-business-nav-page .bottom-nav-icon svg{width:21px!important;height:21px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important}
-.zp-business-nav-page .bottom-nav-item[aria-current="page"]{color:#F2F5F7!important}
-.zp-business-nav-page main{padding-bottom:calc(82px + env(safe-area-inset-bottom))!important}
-@media(max-width:430px){
-  .zp-business-nav-page .bottom-nav{width:100%!important}
-}
-@media(max-width:380px){
-  .zp-business-nav-page .bottom-nav{padding-left:6px!important;padding-right:6px!important}
-}
+/* 业务端一级导航样式见 css/ui-unified.css（.zp-business-nav-page 相关规则），
+   此处曾误将 CSS 直接粘贴进 JS，导致整文件语法错误、ui-unified 全部功能失效。
+   导航常驻逻辑见上方 IIFE（document.body.classList.add("zp-business-nav-page")）。 */
