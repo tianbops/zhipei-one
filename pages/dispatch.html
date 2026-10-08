@@ -21,14 +21,12 @@
 .dispatch-intro p{margin:6px 0 0;color:#B8C2CC;font-size:13px}
 .dispatch-section{margin:14px 16px 0}
 .dispatch-section-title{margin:0 0 8px;font-size:13px;color:#7F8A95;font-weight:600}
-.dispatch-current{background:#18212B;border:1px solid #2A3540;border-radius:16px;padding:14px 16px}
-.dispatch-current-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.dispatch-current-label{font-size:12px;color:#7F8A95}
-.dispatch-current-row{display:flex;align-items:baseline;gap:10px;margin-top:4px}
-.dispatch-current-name{font-size:23px;font-weight:700;line-height:1.2;color:#fff}
-.dispatch-current-status{font-size:12px;color:#B8C2CC}
+.dispatch-current{background:rgba(13,18,24,.82);border:1px solid rgba(255,255,255,.075);border-radius:16px;padding:14px 16px;box-shadow:0 12px 30px rgba(0,0,0,.18)}
+.dispatch-current-row{display:flex;align-items:center;gap:10px}
+.dispatch-current-name{font-size:23px;font-weight:700;line-height:1;color:#fff}
+.dispatch-current-status{font-size:12px;color:#B8C2CC;display:flex;align-items:baseline;gap:2px}
 .dispatch-current-count{margin-left:4px;font-size:12px;color:#B8C2CC;font-weight:600}
-.dispatch-switch{min-width:72px;height:40px;padding:0 14px;border:1px solid #2A3540;border-radius:10px;background:#26313C;color:#fff;font-size:13px;font-weight:600}
+.dispatch-switch{margin-left:auto;min-width:72px;height:40px;padding:0 14px;border:1px solid rgba(255,255,255,.14);border-radius:10px;background:rgba(38,49,60,.9);color:#fff;font-size:13px;font-weight:600}
 .dispatch-switch:active{background:#11171D}
 .dispatch-action-card{background:#18212B;border:1px solid #2A3540;border-radius:14px;overflow:hidden}
 .dispatch-action{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:12px 14px;border:0;border-bottom:1px solid #2A3540;background:transparent;color:#fff;text-align:left;cursor:pointer;text-decoration:none}
@@ -219,7 +217,7 @@ function closeConfirm(){
 function renderCurrent(){
   const r=routeState.routes.find(x=>x.id===routeState.current);
   if(!r){$("currentRoute").innerHTML='<div class="dispatch-message">暂未选择配送线路</div>';return}
-  $("currentRoute").innerHTML='<div class="dispatch-current-top"><div class="dispatch-current-label">当前配送线路</div><button id="switchRouteBtn" class="dispatch-switch" type="button">切换</button></div><div class="dispatch-current-row"><div class="dispatch-current-name">'+esc(routeName(r))+'</div><div class="dispatch-current-status">已匹配<span class="dispatch-current-count">'+(Number(r.storeCount)||0)+'家门店</span></div></div>';
+  $("currentRoute").innerHTML='<div class="dispatch-current-row"><div class="dispatch-current-name">'+esc(routeName(r))+'</div><div class="dispatch-current-status">已匹配<span class="dispatch-current-count">'+(Number(r.storeCount)||0)+'家门店</span></div><button id="switchRouteBtn" class="dispatch-switch" type="button">切换</button></div>';
   $("switchRouteBtn").addEventListener("click",openSheet);
 }
 function renderPicker(){
