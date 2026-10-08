@@ -402,9 +402,9 @@
   };
 })();
 /* 业务端一级导航：所有业务页面统一常驻，避免页面各自维护不同版本。 */
-.zp-business-nav-page{padding-bottom:0!important}
+.zp-business-nav-page{padding-bottom:0!important;overflow-x:hidden}
 .zp-business-nav-page .bottom-nav{
-  position:fixed!important;left:50%!important;right:auto!important;bottom:0!important;z-index:300!important;
+  position:fixed!important;left:50%!important;right:auto!important;bottom:0!important;z-index:40!important;
   width:min(100%,430px)!important;min-height:64px!important;
   padding:6px 8px calc(6px + env(safe-area-inset-bottom))!important;
   transform:translateX(-50%)!important;
