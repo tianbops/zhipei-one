@@ -215,7 +215,7 @@ export async function onRequestDelete({request,env}){
   const target=orders.find(order=>order.id===waybillId);
   if(!target)return json({success:false,code:"WAYBILL_NOT_FOUND",error:"运单不存在或已删除"},404);
   if(!canWriteWaybill(user,target,env))return json({success:false,code:"WAYBILL_FORBIDDEN",error:"无权删除该运单"},403);
-  const budget=new Budget();let r;try{r=await deleteWaybill(env,routeId,date,target.id,budget);if(r.budgetExceeded)return json({success:false,code:"PARTIAL_FAILURE",error:"删除已达到单次资源预算，请稍后重试",deleted:0,waybillId,budgetUsed:budget.used,budgetMax:budget.max},503)}catch(e){if(e?.code===SUBREQUEST_BUDGET_EXCEEDED)return json({success:false,code:"PARTIAL_FAILURE",error:"删除已达到单次资源预算，请稍后重试",deleted:0,waybillId,budgetUsed:budget.used,budgetMax:budget.max},503);throw e}
+  const deleteBudget=new Budget();let r;try{r=await deleteWaybill(env,routeId,date,target.id,deleteBudget);if(r.budgetExceeded)return json({success:false,code:"PARTIAL_FAILURE",error:"删除已达到单次资源预算，请稍后重试",deleted:0,waybillId,budgetUsed:deleteBudget.used,budgetMax:deleteBudget.max},503)}catch(e){if(e?.code===SUBREQUEST_BUDGET_EXCEEDED)return json({success:false,code:"PARTIAL_FAILURE",error:"删除已达到单次资源预算，请稍后重试",deleted:0,waybillId,budgetUsed:budget.used,budgetMax:budget.max},503);throw e}
   if(!r.mainOk)return json({success:false,code:"WAYBILL_DELETE_FAILED",error:"运单主记录删除失败,请重试",deleted:0,waybillId});
   return json({success:true,code:r.indexOk&&r.childrenOk&&r.refOk?undefined:"PARTIAL_FAILURE",message:r.indexOk&&r.childrenOk&&r.refOk?undefined:"部分索引或子键清理未完成,建议稍后执行修复",deleted:1,deletedWaybills:1,waybillId});
  }
