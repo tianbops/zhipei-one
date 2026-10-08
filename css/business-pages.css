@@ -1,7 +1,5 @@
 /* 智配One · 业务页面 2.0 */
 .page2{width:min(100%,430px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:max(14px,env(safe-area-inset-top)) 16px calc(30px + env(safe-area-inset-bottom))}
-.page2-head{height:var(--zp-header-height);display:grid;grid-template-columns:var(--zp-control-height) 1fr var(--zp-control-height);align-items:center;margin-bottom:10px}
-.page2-head h1{margin:0;text-align:center;font-size:18px;line-height:24px;font-weight:700}
 .account-page .topbar,.route-apply-page .topbar{margin-bottom:10px}
 .account-page .topbar h1,.route-apply-page .topbar h1{margin:0;text-align:center;font-weight:700}
 .page2-card{background:rgba(20,28,37,.80);border:1px solid #2A3540;border-radius:16px;padding:16px;margin-bottom:10px}
