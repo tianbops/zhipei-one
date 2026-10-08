@@ -176,22 +176,62 @@ async function deleteWaybill(env,routeId,date,waybillId,budget){
  const refKeys=[];
  if(record?.businessFingerprint)refKeys.push("zp:waybill:fingerprint:"+record.businessFingerprint);
  if(record){try{const sig=await dailyWaybillKey(record);refKeys.push("zp:waybill:dedupe:"+sig)}catch{}}
- // 破坏性操作前预留完整预算：SREM + 主记录 DEL + 子键 DEL（如有）+
- // 每个反向引用最多 GET+DEL 两次。预算不足时不删除主记录，保证重试仍可找到原单。
- const required=2+(childKeys.length?1:0)+(refKeys.length*2);
+ // P1 生命周期收口：
+ // 1) 先清理可独立重试的子键；
+ // 2) 再用单次 EVAL 原子删除「主记录 + 日期索引 + 反向引用」；
+ // 3) EVAL 失败时主记录和索引都保留，下一次 DELETE 仍可找到原单继续清理。
+ // 这样不会出现“主记录已 DEL，但日期索引/指纹清理失败后无法再次定位原单”的不可恢复窗口。
+ // EVAL 内再次校验反向引用仍指向本运单，避免删除已被复用的 fingerprint/dedupe 键。
+ const required=2+(childKeys.length?1:0);
  if(!budget.canTake(required)){
   return {mainOk:false,indexOk:true,childrenOk:false,refOk:true,budgetExceeded:true,errors:[Object.assign(new Error("历史删除资源预算不足"),{code:SUBREQUEST_BUDGET_EXCEEDED})]};
  }
- try{budget.take(1);await command(env,["SREM",waybillIndexKey(routeId,date),waybillId]);indexOk=true}catch(e){errors.push(e)}
- try{budget.take(1);await command(env,["DEL","zp:waybill:"+waybillId]);mainOk=true}catch(e){errors.push(e)}
  if(childKeys.length){
   try{budget.take(1);await command(env,["DEL",...childKeys])}catch(e){errors.push(e);childrenOk=false}
+  if(!childrenOk)return {mainOk:false,indexOk:true,childrenOk:false,refOk:true,budgetExceeded:false,errors};
  }
- for(const k of refKeys){
-  try{
-   budget.take(1);const ref=await command(env,["GET",k]);
-   if(String(ref??"")===String(waybillId)){budget.take(1);await command(env,["DEL",k])}
-  }catch(e){refOk=false;errors.push(e)}
+ const indexKey=waybillIndexKey(routeId,date);
+ const mainKey="zp:waybill:"+waybillId;
+ const lua=`
+local mainKey=KEYS[1]
+local indexKey=KEYS[2]
+local waybillId=ARGV[1]
+if redis.call("EXISTS",mainKey)==0 then
+  return {0,0,0}
+end
+local removedRefs=0
+for i=3,#KEYS do
+  local key=KEYS[i]
+  local v=redis.call("GET",key)
+  if tostring(v or "")==tostring(waybillId) then
+    redis.call("DEL",key)
+    removedRefs=removedRefs+1
+  end
+end
+local mainRemoved=redis.call("DEL",mainKey)
+local indexRemoved=redis.call("SREM",indexKey,waybillId)
+return {mainRemoved,indexRemoved,removedRefs}
+`;
+ const keys=[mainKey,indexKey,...refKeys];
+ try{
+  budget.take(1);
+  const result=await command(env,["EVAL",lua,String(keys.length),...keys,waybillId]);
+  const values=Array.isArray(result)?result.map(Number):[];
+  if(values[0]===0){
+   mainOk=true;indexOk=true;
+   // 主记录已不存在时，日期索引仍可能是历史残留；单独清掉不会影响任何新运单。
+   if(!budget.canTake(1))return {mainOk,indexOk,childrenOk,refOk,budgetExceeded:true,errors:[Object.assign(new Error("历史删除尾部索引清理预算不足"),{code:SUBREQUEST_BUDGET_EXCEEDED})]};
+   budget.take(1);await command(env,["SREM",indexKey,waybillId]);
+  }else{
+   mainOk=values[0]>0;
+   indexOk=values[1]>0||values[1]===0;
+   const expectedRefs=refKeys.length;
+   const removedRefs=Number(values[2]||0);
+   refOk=removedRefs===expectedRefs;
+  }
+ }catch(e){
+  errors.push(e);
+  return {mainOk:false,indexOk:true,childrenOk,refOk:true,budgetExceeded:e?.code===SUBREQUEST_BUDGET_EXCEEDED,errors};
  }
  return {mainOk,indexOk,childrenOk,refOk,budgetExceeded:false,errors};
 }
