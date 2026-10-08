@@ -164,7 +164,9 @@
      zpHandleBack 返回值：
        "handled"    页面内消费掉一层 UI（或拒绝关闭），调用方需补压 guard 历史项
        "exit-armed" 工作区根首次返回，已 toast 提示；不补压，下次返回交给系统退出
-       "leave"      已发起页面导航
+       "exit"       工作区根第二次返回，确认退出应用；调用方必须执行 zpDoExit()
+       "leave"      非根页面的普通返回，已 location.replace 发起页面导航；
+                    调用方不要再做任何历史动作，否则一次返回会变成退两层
   */
   // 来源 → 返回目标。值可为字符串，也可为函数（携带上下文 id 精确回跳）
   const BACK_MAP={
@@ -306,7 +308,7 @@
   window.zpHandleBack=async function(){
     if(await zpCloseTopLayer())return "handled";
     if(zpIsWorkspaceRoot){
-      if(zpExitArmed)return "leave"; // 第二次返回：放行，由系统退出 App
+      if(zpExitArmed)return "exit"; // 第二次返回：确认退出应用，调用方必须执行 zpDoExit()
       zpExitArmed=true;
       try{window.zpToast?window.zpToast("再按一次退出","info"):0}catch{}
       clearTimeout(zpExitTimer);
@@ -330,11 +332,36 @@
     return "leave";
   };
 
+  // 真正离开应用：越过首条历史记录，由系统退出 PWA（浏览器里退回上一站）。
+  // 顶部返回按钮 与 Android 物理/手势返回共用这一出口，保证两者行为完全一致。
+  // 安卓独立 PWA 下 window.close() 对「主页启动的顶层上下文」是空操作，唯一可靠的退出
+  // 方式是让浏览器越过首条记录去关掉 PWA；武装期间刻意不补占位，此刻当前页正停在首条
+  // 记录上，再 back() 一步即越过去。即便历史里残留业务端首页，这一步会一并越过。
+  function zpDoExit(){
+    zpLeaving=true;
+    // 置位一次性退出标记：若历史里残留业务端首页，下一页加载时会继续后退，绝不停在司机首页
+    try{sessionStorage.setItem("zpExitAdmin","1")}catch{}
+    try{history.back()}catch{}
+    try{
+      const standalone=(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||window.navigator.standalone===true;
+      if(standalone)window.close(); // 部分环境可真正收起；失败则上面的 back 已越界退出
+    }catch{}
+  }
+  // 顶部返回按钮专用出口：必须消费 zpHandleBack 的返回值。以前直接丢弃返回值，
+  // 根页第二次点返回拿到"退出"却什么都不做——顶部按钮永远退不出应用，只有物理键能退。
+  async function zpBackButton(){
+    const r=await zpHandleBack();
+    if(zpLeaving)return;
+    if(r==="handled"){zpPushGuard();return} // 关掉了一层 UI：补回占位，别让下一次返回滑出本页
+    if(r==="exit"){zpDoExit();return}
+    // "leave"：非根页面的普通返回，location.replace 已发起页面导航，此处不做任何额外动作
+  }
+
   function zpBindPageBack(){
     document.querySelectorAll(".app-back,#backBtn").forEach(el=>{
       if(el.dataset.zpBackBound==="1")return;
       el.dataset.zpBackBound="1";
-      el.addEventListener("click",e=>{e.preventDefault();zpHandleBack()});
+      el.addEventListener("click",e=>{e.preventDefault();zpBackButton()});
     });
   }
 
@@ -376,20 +403,10 @@
       if(zpLeaving)return;
       if(r==="handled"){zpPushGuard();return}   // 关掉了一层 UI：补回占位，别让下一次返回滑出本页
       if(r==="exit-armed")return;               // 处于「再按一次退出」窗口：窗口内再按即离开
-      // leave：用户确认离开（首页/管理端根 × 窗口内第二次返回）。
-      // 关键：安卓独立 PWA 下 window.close() 对「主页启动的顶层上下文」是空操作，
-      // 唯一可靠的退出方式是让浏览器越过「首条历史记录」去关掉 PWA。
-      // 武装态期间我们不再补占位，所以此刻当前页就停在首条记录上——
-      // 再 history.back() 一步即越过去，由系统退回手机桌面（浏览器里退回上一站）。
-      // 即便历史里残留着业务端首页，这一步会一并越过，不会"卡在/穿越到"司机首页。
-      zpLeaving=true;
-      // 置位一次性退出标记：若历史里残留业务端首页，下一页加载时会继续后退直到真正退出
-      try{sessionStorage.setItem("zpExitAdmin","1")}catch{}
-      try{history.back()}catch{}
-      try{
-        const standalone=(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||window.navigator.standalone===true;
-        if(standalone)window.close(); // 部分环境可真正收起；失败则上面的 back 已越界退出
-      }catch{}
+      // "leave" = 非根页面的普通返回。此时 location.replace 已把当前历史项换成目标页，
+      // 绝不能再置跨区退出标记、也不能再 back() 一步：那会把「一次返回」变成退两层，
+      // 甚至在详情页按返回时连带退出 PWA。只有工作区根确认退出（"exit"）才走 zpDoExit。
+      if(r==="exit")zpDoExit();
     });
   })();
 

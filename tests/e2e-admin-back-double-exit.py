@@ -3,7 +3,7 @@
 """端到端验证：独立 PWA 管理员页「两次返回退出」行为（干净流程：admin 即栈底）。
    断言：
      A) 进入管理员页即安装守卫（history.length>=2，背后无首页）。
-     B) 控制器状态机：第一次调用=exit-armed（并弹提示），第二次=leave（真正退出）。
+     B) 控制器状态机：第一次调用=exit-armed（并弹提示），第二次=exit（真正退出）。
      C) 第一次系统返回：页面不变（仍在 /admin.html），弹出「再按一次退出」。
      D) 第二次系统返回：离开管理员页（交由系统退回手机桌面）。
 """
@@ -57,8 +57,8 @@ def main():
         # B) 控制器状态机（在 armed=false 的干净状态下直接调用两次）
         seq = page.evaluate("(async()=>{const a=await window.zpHandleBack();const b=await window.zpHandleBack();return [a,b]})()")
         toast_txt = page.evaluate("(()=>{const t=document.getElementById('zpToast');return t?t.textContent:''})()")
-        check("状态机：第一次=exit-armed，第二次=leave",
-              isinstance(seq, list) and seq[0] == "exit-armed" and seq[1] == "leave", f"实际={seq}")
+        check("状态机：第一次=exit-armed，第二次=exit",
+              isinstance(seq, list) and seq[0] == "exit-armed" and seq[1] == "exit", f"实际={seq}")
         check("第一次调用即弹出提示词「再按一次退出」", toast_txt.strip() == "再按一次退出", f"实际='{toast_txt}'")
 
         # 复位 armed 标记，回到干净状态做真实手势测试
