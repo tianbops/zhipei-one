@@ -209,6 +209,19 @@
   const zpRoot=zpZone==="admin"?"/admin":"/home";
   const zpIsWorkspaceRoot=zpNormPath(location.pathname)===zpNormPath(zpRoot);
 
+  // 一次性「本页上下文已失效」标记。删除类操作（如删完当天最后一张运单）之后，
+  // 按来源回跳会落到已删除的对象上——详情页变成「运单读取失败」空态、历史页落在
+  // 已删日期。置位后 zpResolveBack 一律短路回本区根（跨区防火墙天然仍成立）。
+  let zpStale=false;
+  window.zpMarkStale=function(){
+    zpStale=true;
+    // 同时把当前历史项里的失效 id/date 摘掉，避免刷新或 bfcache 恢复时又回到死链
+    try{
+      const u=new URL(location.href);
+      u.searchParams.delete("id");u.searchParams.delete("date");
+      history.replaceState(history.state,"",u.pathname+u.search);
+    }catch{}
+  };
   // 来源归一化：兜底历史链接 / 旧缓存页里形如 from=pages%2Fdispatch 的「路径碎片」写法，
   // 剥成模块名后再查表，避免这类链接一律掉回首页。
   function zpNormFrom(v){
@@ -219,6 +232,7 @@
   }
   // 来源驱动返回。跨区防火墙：管理员端任何解析结果（含 fallback）若不是管理页，一律作废回落到本区根
   window.zpResolveBack=function(fallback){
+    if(zpStale)return zpRoot; // 上下文已失效：不再按来源回跳，直接回本区根
     const q=new URLSearchParams(location.search);
     // 用 hasOwnProperty 取值：归一化后的任意字符串都可能撞上 Object 原型键（如 constructor），
     // 直接 BACK_MAP[key] 会取到原型上的函数并被当成「返回目标函数」执行。

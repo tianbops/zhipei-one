@@ -63,6 +63,9 @@ function render(){
         if(historyChoices.length>1){render();return}
         if(historyChoices.length===1){order=historyChoices[0];historyChoices=null;render();return}
         historyChoices=null;order=null;
+        // 当天运单已删空：此刻按返回不能再回跳到 order_detail?id=<已删除> 或
+        // history?date=<已删日期>（只会落到空态/空列表），标记为失效直接回本区根。
+        window.zpMarkStale?.();
         $('orderDate').textContent=targetDate||'历史运单';
         $('storeCount').textContent='0';$('summaryUnit').textContent='张';$('totalWeight').textContent='0.00';$('metrics').innerHTML='';
         $('routeName').textContent='—';$('vehicle').textContent='—';$('routeList').innerHTML='<div class="order-empty">暂无配送数据</div>';
