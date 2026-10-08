@@ -167,6 +167,7 @@ async function api(url,opt={}){const r=await fetch(url,{credentials:"same-origin
 function esc(v){return String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 let routeState={current:"",routes:[]};
 let pickerRoute="";
+let pendingRoute="";
 let pickerTimer=0;
 
 function routeName(r){return r?.name||r?.id||"未命名线路"}
@@ -184,6 +185,18 @@ function closeSheet(){
   $("routeSheetBackdrop").setAttribute("aria-hidden","true");
 }
 
+function openConfirm(id){
+  pendingRoute=id;
+  const r=routeState.routes.find(x=>x.id===id);
+  $("confirmText").textContent="确定切换至"+routeName(r)+"吗？切换后，本次配送将使用该线路。";
+  $("confirmBackdrop").classList.add("open");
+  $("confirmBackdrop").setAttribute("aria-hidden","false");
+}
+function closeConfirm(){
+  pendingRoute="";
+  $("confirmBackdrop").classList.remove("open");
+  $("confirmBackdrop").setAttribute("aria-hidden","true");
+}
 function renderCurrent(){
   const r=routeState.routes.find(x=>x.id===routeState.current);
   if(!r){$("currentRoute").innerHTML='<div class="dispatch-message">暂未选择配送线路</div>';return}
