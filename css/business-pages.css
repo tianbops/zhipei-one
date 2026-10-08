@@ -166,6 +166,15 @@
   .account-page .account-danger-box{padding-left:14px;padding-right:14px}
 }
 
+/* 我的页折叠箭头：统一线性 Chevron，避免文字字符在不同字体下产生基线和粗细漂移。 */
+.account-page .account-collapse-head{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left}
+.account-page .account-collapse-icon{position:relative;flex:0 0 36px;width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;color:var(--zp-muted);font-size:0;line-height:0;border-radius:9px;transition:color .16s ease,background .16s ease}
+.account-page .account-collapse-icon::before{content:"";width:8px;height:8px;border-right:1.8px solid currentColor;border-bottom:1.8px solid currentColor;transform:rotate(45deg) translate(-1px,-1px);transition:transform .18s ease}
+.account-page .account-collapse-head[aria-expanded="true"] .account-collapse-icon{color:var(--zp-text)}
+.account-page .account-collapse-head[aria-expanded="true"] .account-collapse-icon::before{transform:rotate(225deg) translate(-1px,-1px)}
+.account-page .account-collapse-head:active .account-collapse-icon{background:var(--zp-surface-2)}
+@media(prefers-reduced-motion:reduce){.account-page .account-collapse-icon,.account-page .account-collapse-icon::before{transition:none}}
+
 /* 账号设置：保持业务页风格，编辑项默认收起 */
 .account-page .account-edit-card{padding:0;overflow:hidden}
 .account-page .account-collapse-head{width:100%;min-height:48px;padding:0 16px;border:0;background:transparent;color:#fff;display:flex;align-items:center;justify-content:space-between;text-align:left;font-size:15px;font-weight:700}
