@@ -1,10 +1,6 @@
 const $=id=>document.getElementById(id);
-const menuButton=$("menuButton"),menuPanel=$("menuPanel");
-menuButton?.addEventListener("click",e=>{e.stopPropagation();const open=menuPanel.hidden;menuPanel.hidden=!open;menuButton.setAttribute("aria-expanded",String(open))});
-document.addEventListener("click",e=>{if(menuPanel&&!menuPanel.hidden&&!menuPanel.contains(e.target)&&e.target!==menuButton){menuPanel.hidden=true;menuButton.setAttribute("aria-expanded","false")}});
-
 const overlay=$("uploadArea"),cancel=$("sourceCancel");
-const todayCount=$("todayCount"),todayWeight=$("todayWeight"),menuRouteValue=$("currentRouteMenuValue"),dot=$("statusDot");
+const todayCount=$("todayCount"),todayWeight=$("todayWeight"),todayStoreList=$("todayStoreList"),todayMetrics=$("todayMetrics"),dot=$("statusDot");
 let dispatchRouteId="";
 let boundRouteId="";
 const TEMP_ROUTE_PREFIX="__temp__:";
@@ -23,7 +19,7 @@ const renderSubstituteBadge=()=>{
   const isSubstitute=!!dispatchRouteId&&!dispatchRouteId.startsWith(TEMP_ROUTE_PREFIX)&&dispatchRouteId!==boundRouteId;
   subBadge.hidden=!isSubstitute;
 };
-const setEmptyToday=()=>{todayCount.textContent="暂无运单";todayWeight.textContent=""};
+const setEmptyToday=()=>{todayCount.textContent="暂无运单";todayWeight.textContent="";if(todayStoreList)todayStoreList.innerHTML='<div class="today-store-empty">今日暂无配送门店</div>';if(todayMetrics)todayMetrics.innerHTML=""};
 const setRouteBadge=(route)=>{if(!dot)return;const type=route?.type||"";const name=String(route?.name||"").trim();const badge=type==="temporary"||/临时/.test(name)?"临":(name.replace(/\s+/g,"").replace(/路$/,"" )||"—");dot.textContent=badge;dot.hidden=false};
 
 const processingPanel=$("uploadProcessing"),processingError=$("uploadProcessingError"),processingErrorMessage=$("processingErrorMessage"),processingRetry=$("processingRetry"),sourceMenu=$("uploadSourceMenu"),processingPercent=$("processingPercent"),processingProgress=$("processingProgressDot");
@@ -406,14 +402,35 @@ async function loadHome(){
     const route=dispatch.dispatchRoute||null;
     const routeName=route?.type==="temporary"?"临时用户":(route?.name||"未选择");
     setRouteBadge(route);
-    if(menuRouteValue)menuRouteValue.textContent=routeName;
     const wRes=await fetch("/api/waybills/latest?confirmed=1",{credentials:"same-origin",cache:"no-store"});
     const wd=await wRes.json().catch(()=>({}));
     const w=wRes.ok&&wd.success?wd.waybill:null;
     if(w&&w.routeId===dispatchRouteId){
-      const total=Number(w.summary?.total)||Number(w.stores?.length)||0;
+      const stores=Array.isArray(w.stores)?w.stores:[];
+      const total=Number(w.summary?.total)||stores.length||0;
       todayCount.textContent=total+"家";
       todayWeight.textContent=(Math.round((Number(w.totalWeight)||0)*100)/100).toFixed(2)+"t";
+      if(todayStoreList){
+        const navOf=x=>String(x?.navigation||x?.nav||"").trim();
+        const safeUrl=v=>{try{const u=new URL(String(v||"").trim(),location.origin);return /^(https?:)$/.test(u.protocol)?u.href:""}catch{return""}};
+        const esc=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+        const attr=v=>esc(v).replace(/'/g,"&#39;");
+        todayStoreList.innerHTML=stores.length?stores.map((x,i)=>{
+          const name=esc(x?.name||x?.rawName||"未识别门店"),nav=safeUrl(navOf(x));
+          const body='<span class="today-store-index">'+(i+1)+'</span><span class="today-store-name">'+name+'</span>';
+          return nav?'<a class="today-store-row" href="'+attr(nav)+'" target="_self">'+body+'</a>':'<div class="today-store-row">'+body+'</div>';
+        }).join(""):'<div class="today-store-empty">今日暂无配送门店</div>';
+      }
+      if(todayMetrics){
+        const s=w.summary||{},metrics=[];
+        if(Number(s.original)&&Number(s.original)!==Number(s.total))metrics.push("原始"+s.original+"家");
+        if(Number(s.correction)>0)metrics.push("更正"+s.correction+"家");
+        if(Number(s.merged)>0)metrics.push("合并"+s.merged+"家");
+        if(Number(s.newStores)>0)metrics.push("新增"+s.newStores+"家");
+        if(Array.isArray(w.stores)&&w.stores.some(x=>x?.pending))metrics.push("待定"+w.stores.filter(x=>x?.pending).length+"家");
+        if(w.quality?.level==="REVIEW")metrics.push("需复核");
+        todayMetrics.innerHTML=metrics.map(x=>'<span>'+esc(x)+'</span>').join("");
+      }
     }else{
       setEmptyToday();
     }
@@ -434,8 +451,7 @@ loadHome();
     const name=d&&d.user&&d.user.username?String(d.user.username):"";
     boundRouteId=d&&d.user&&d.user.boundRouteId?String(d.user.boundRouteId):"";
     renderSubstituteBadge();
-    const el=$("menuUsername");
-    if(el&&name)el.textContent=name;
+
   }catch{}
 })();
 
