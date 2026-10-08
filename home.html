@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="智配One">
 <link rel="stylesheet" href="/css/app.css?v=9577286f"><link rel="stylesheet" href="/css/ui-unified.css?v=70f23c41">
-<link rel="stylesheet" href="/css/home.css?v=c61c2fb8">
+<link rel="stylesheet" href="/css/home.css?v=cce2e11c">
 </head>
 <body>
 <main class="home-app">
@@ -79,10 +79,6 @@
         <button id="trendNext" class="trend-nav" type="button" aria-label="下一个月">›</button>
       </div>
     </div>
-    <div class="trend-summary" aria-label="配送汇总">
-      <div class="trend-stat"><b id="trendWaybills">0</b><i>单</i><em id="trendWaybillsDelta" class="trend-delta"></em></div>
-      <div class="trend-stat"><b id="trendWeight">0.00</b><i>t</i><em id="trendWeightDelta" class="trend-delta"></em></div>
-    </div>
     <div class="trend-chart-wrap" id="trendChartWrap">
       <svg id="trendChart" class="trend-chart" viewBox="0 0 360 120" preserveAspectRatio="none" role="img" aria-label="配送趋势">
         <path id="trendGrid" class="trend-grid" d=""></path>
@@ -92,7 +88,13 @@
       </svg>
     </div>
     <div id="trendAxis" class="trend-axis" aria-hidden="true"></div>
-    <div id="trendHint" class="trend-hint" aria-live="polite"></div>
+    <div class="trend-bottom-row">
+      <div class="trend-summary" aria-label="配送汇总">
+        <div class="trend-stat"><b id="trendWaybills">0</b><i>单</i><em id="trendWaybillsDelta" class="trend-delta"></em></div>
+        <div class="trend-stat"><b id="trendWeight">0.00</b><i>t</i><em id="trendWeightDelta" class="trend-delta"></em></div>
+      </div>
+      <div id="trendHint" class="trend-hint" aria-live="polite"></div>
+    </div>
   </section>
 
 

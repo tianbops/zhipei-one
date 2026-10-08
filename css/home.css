@@ -192,14 +192,16 @@
 .trend-metric-btn{appearance:none;border:1px solid #2C3742;background:rgba(16,24,32,.82);color:#B8C2CC;font-size:12px;line-height:18px;padding:2px 11px;border-radius:999px;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
 .trend-metric-btn.is-active{background:#C7D0D9;color:#0E141A;border-color:#C7D0D9;font-weight:600}
 .trend-metric-btn:active{transform:translateY(.5px)}
-.trend-summary{display:flex;gap:16px;margin-top:6px;align-items:baseline}
-.trend-stat{display:flex;align-items:baseline;gap:3px;color:#B8C2CC;font-size:12px;line-height:18px}
-.trend-stat b{color:#F2F5F7;font-size:19px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:.5px}
-.trend-stat i{font-style:normal;color:#7F8A95;font-size:11px}
-.trend-delta{margin-left:5px;font-size:11px;font-style:normal;font-variant-numeric:tabular-nums}
+/* 底排：配送汇总（9 单 / 6.98 t）居左，环比提示居右，同排显示省一行高度 */
+.trend-bottom-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:1px}
+.trend-summary{display:flex;gap:12px;align-items:baseline;min-width:0}
+.trend-stat{display:flex;align-items:baseline;gap:2px;color:#B8C2CC;font-size:10px;line-height:15px}
+.trend-stat b{color:#F2F5F7;font-size:15px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:.5px}
+.trend-stat i{font-style:normal;color:#7F8A95;font-size:9px}
+.trend-delta{margin-left:4px;font-size:9px;font-style:normal;font-variant-numeric:tabular-nums}
 .trend-delta.is-up{color:#7FB38A}
 .trend-delta.is-down{color:#C98C7F}
-.trend-chart-wrap{height:96px;margin:7px -2px 0;will-change:transform,opacity;touch-action:pan-y}
+.trend-chart-wrap{height:80px;margin:7px -2px 0;will-change:transform,opacity;touch-action:pan-y}
 .trend-chart{width:100%;height:100%;display:block;overflow:visible}
 .trend-grid{fill:none;stroke:#222C36;stroke-width:1;stroke-dasharray:2 5}
 .trend-area{fill:#C7D0D9;fill-opacity:.05;stroke:none}
@@ -211,7 +213,7 @@
 .trend-year-bar{fill:#3A4651}
 .trend-year-bar.is-peak{fill:#C7D0D9}
 .trend-axis{height:15px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 3px;color:#65717D;font-size:9px;line-height:13px;font-variant-numeric:tabular-nums}
-.trend-hint{min-height:14px;margin-top:3px;color:#7F8A95;font-size:10px;line-height:14px;text-align:right}
+.trend-hint{min-height:0;margin-top:0;flex:none;color:#7F8A95;font-size:9px;line-height:14px;text-align:right}
 .trend-hint b{color:#9BA7B3;font-weight:600;font-variant-numeric:tabular-nums}
 @media(prefers-reduced-motion:reduce){
   .trend-card.is-in{animation:none}
@@ -220,9 +222,9 @@
 @media(max-width:380px){
   .trend-card{padding:12px 11px 10px}
   .trend-title{font-size:16px}
-  .trend-chart-wrap{height:90px}
-  .trend-stat b{font-size:18px}
-  .trend-summary{gap:14px}
+  .trend-chart-wrap{height:76px}
+  .trend-stat b{font-size:14px}
+  .trend-summary{gap:10px}
 }
 
 /* ===== 首页新版信息架构：今日工作台 + 底部四入口 ===== */
