@@ -422,3 +422,10 @@
   #storeCount:empty::before,
   #totalWeight:empty::before{animation:none}
 }
+
+
+/* 浅色外观适配：运单详情状态和路线选择 */
+:root[data-zp-theme="light"] .order-menu-route{background:#F0F2F4!important;color:#17202A!important}
+:root[data-zp-theme="light"] .order-store-status{background:#E8EDF1!important;color:#46515D!important}
+:root[data-zp-theme="light"] .order-dialog-panel,
+:root[data-zp-theme="light"] .order-dialog-head{color:#17202A}
