@@ -726,6 +726,8 @@ textarea:disabled,
   --muted:#46515D;
   --soft:#66717D;
   --text:#17202A;
+  --ui-danger:#B4232F;
+  --ui-danger-soft:rgba(180,35,47,.08);
 }
 :root[data-zp-theme="light"] body,
 :root[data-zp-theme="light"] .page2,
@@ -949,3 +951,10 @@ textarea:disabled,
 :root[data-zp-theme="light"] .dialog-actions .ok{background:#263746!important;border-color:#263746!important;color:#FFFFFF!important}
 :root[data-zp-theme="light"] .invite-actions .small-action.danger{background:#FCEBEC!important;border-color:#E8BFC3!important;color:#8A2630!important}
 :root[data-zp-theme="light"] .toast{background:#FFFFFF!important;border-color:#D7DDE3!important;color:#17202A!important}
+
+/* 浅色模式中的危险与错误状态采用深色语义色，确保浅底上可读 */
+:root[data-zp-theme="light"] .page2-danger-btn,
+:root[data-zp-theme="light"] .data-swipe-delete{color:#B4232F!important}
+:root[data-zp-theme="light"] .message.error,
+:root[data-zp-theme="light"] .login-message[role="alert"],
+:root[data-zp-theme="light"] [role="alert"]{color:#B4232F}
