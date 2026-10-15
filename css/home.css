@@ -345,3 +345,11 @@
    使「上传」按钮可再次点击将其关闭——实现首页上传按钮 toggle 回首页态。
    子页面无 #uploadArea/openUpload，不会出现 sheet-open，故此规则仅作用于首页。 */
 body.sheet-open .bottom-nav{z-index:1001 !important}
+
+
+/* 浅色外观适配：首页固定导航与菜单交互 */
+:root[data-zp-theme="light"] .bottom-nav{background:rgba(255,255,255,.96)!important;border-color:#D7DDE3!important;box-shadow:0 -4px 18px rgba(20,30,40,.06)}
+:root[data-zp-theme="light"] .bottom-nav-item{color:#596674}
+:root[data-zp-theme="light"] .bottom-nav-item[aria-current="page"],
+:root[data-zp-theme="light"] .bottom-nav-item.active{color:#17202A!important}
+:root[data-zp-theme="light"] .bottom-nav-item:active{background:#E8EDF1!important;color:#17202A!important}
