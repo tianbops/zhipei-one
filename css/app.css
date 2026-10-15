@@ -755,3 +755,11 @@ body {
 :root[data-zp-theme="light"] .data-textarea{background:#FFFFFF!important;color:#17202A!important;border-color:#C9D1D9!important}
 :root[data-zp-theme="light"] .login-field input:focus{background:#FFFFFF!important;border-color:#7D8A98!important}
 :root[data-zp-theme="light"] .password-toggle{color:#536170}
+
+/* ---- 登录系页面浅色补充（index/register/setup 不加载 ui-unified.js，
+     data-zp-theme 由页内引导脚本设置，token 驱动的样式自动翻转；
+     此处只补硬编码残留） ---- */
+:root[data-zp-theme="light"] .login-message{color:#C2453A}
+:root[data-zp-theme="light"] .login-field span{color:#596674}
+:root[data-zp-theme="light"] .password-toggle{color:#596674}
+:root[data-zp-theme="light"] .password-toggle:hover{color:#17202A}

@@ -928,3 +928,14 @@ textarea:disabled,
 :root[data-zp-theme="light"] .message.error,
 :root[data-zp-theme="light"] .login-message[role="alert"],
 :root[data-zp-theme="light"] [role="alert"]{color:#B4232F}
+
+/* ---- 浅色补充（全站审计）：body 底色兜底 + 注入底栏浅色 ---- */
+/* 登录/注册等无 .page 容器的页面，body 硬编码 color:#fff 需在浅色下翻转 */
+:root[data-zp-theme="light"] body{color:var(--zp-text)}
+/* 注入底栏的深色定义在本文件（.zp-business-nav-page .bottom-nav），
+   浅色覆盖必须同样全站可用——此前只写在 business-pages.css，
+   history/order_detail 等不加载该文件的页面底栏一直是黑条 */
+:root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav{background:#FFFFFF!important;border-top-color:#D7DDE3!important;box-shadow:0 -4px 18px rgba(20,30,40,.06)}
+:root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-item{color:#596674!important}
+:root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-item:active{background:#E8EDF1!important;color:#17202A!important}
+:root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-item[aria-current="page"]{color:#17202A!important}
