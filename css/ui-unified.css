@@ -905,3 +905,47 @@ textarea:disabled,
   box-shadow:0 5px 16px rgba(20,30,40,.12);
 }
 :root[data-zp-theme="light"] .zp-float-scroll:active{background:#E8EDF1}
+
+
+/* 管理员工作区浅色适配：覆盖 admin.html 内联样式中的固定深色值 */
+:root[data-zp-theme="light"] .head .who .role,
+:root[data-zp-theme="light"] .menu-btn,
+:root[data-zp-theme="light"] .tab.active,
+:root[data-zp-theme="light"] .add,
+:root[data-zp-theme="light"] .search input,
+:root[data-zp-theme="light"] .small-action,
+:root[data-zp-theme="light"] .copy,
+:root[data-zp-theme="light"] .invite-actions .small-action{
+  color:#17202A;
+}
+:root[data-zp-theme="light"] .head .who .role{color:#263746!important}
+:root[data-zp-theme="light"] .menu-btn,
+:root[data-zp-theme="light"] .add,
+:root[data-zp-theme="light"] .small-action,
+:root[data-zp-theme="light"] .copy{
+  background:#F0F2F4!important;border-color:#D7DDE3!important;color:#26323D!important;
+}
+:root[data-zp-theme="light"] .tab.active{background:#FFFFFF!important;color:#17202A!important}
+:root[data-zp-theme="light"] .tabs{background:#F0F2F4!important;border-color:#D7DDE3!important}
+:root[data-zp-theme="light"] .row,
+:root[data-zp-theme="light"] .route,
+:root[data-zp-theme="light"] .card,
+:root[data-zp-theme="light"] .invite,
+:root[data-zp-theme="light"] .row .content,
+:root[data-zp-theme="light"] .invite-content,
+:root[data-zp-theme="light"] .route-content{background:#FFFFFF!important;border-color:#D7DDE3!important;color:#17202A}
+:root[data-zp-theme="light"] .person,
+:root[data-zp-theme="light"] .row .meta,
+:root[data-zp-theme="light"] .meta,
+:root[data-zp-theme="light"] .route-count,
+:root[data-zp-theme="light"] .head .who .uname{color:#596674!important}
+:root[data-zp-theme="light"] .dialog-bg,
+:root[data-zp-theme="light"] .menu-bg{background:rgba(24,36,48,.32)!important}
+:root[data-zp-theme="light"] .dialog{background:#FFFFFF!important;border-color:#D7DDE3!important;color:#17202A}
+:root[data-zp-theme="light"] .dialog h2,
+:root[data-zp-theme="light"] .dialog p,
+:root[data-zp-theme="light"] .field label{color:#17202A}
+:root[data-zp-theme="light"] .dialog-actions .cancel{background:#F0F2F4!important;border-color:#D7DDE3!important;color:#26323D!important}
+:root[data-zp-theme="light"] .dialog-actions .ok{background:#263746!important;border-color:#263746!important;color:#FFFFFF!important}
+:root[data-zp-theme="light"] .invite-actions .small-action.danger{background:#FCEBEC!important;border-color:#E8BFC3!important;color:#8A2630!important}
+:root[data-zp-theme="light"] .toast{background:#FFFFFF!important;border-color:#D7DDE3!important;color:#17202A!important}
