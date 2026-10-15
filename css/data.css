@@ -80,17 +80,11 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-store-nav{color:#fff;text-decoration:none;cursor:pointer}
 .data-store-hidden{display:none}
 .data-store-meta-label{color:#687584}
-.data-float-scroll{position:fixed;right:16px;top:50%;z-index:90;width:40px;height:40px;border:1px solid #35404C;border-radius:50%;background:rgba(20,28,37,.80);color:#E8EDF2;box-shadow:0 8px 24px rgba(0,0,0,.35);font-size:19px;line-height:38px;text-align:center;opacity:0;visibility:hidden;transform:translateY(8px);transition:opacity .18s ease,transform .18s ease,visibility .18s ease}
-.data-float-scroll.show{opacity:1;visibility:visible;transform:translateY(0)}
-/* 弹窗/面板打开时隐藏快速滚动箭头：浮动箭头属于页面层，不应出现在模态层之上 */
-body.data-panel-open .data-float-scroll{opacity:0!important;visibility:hidden!important;pointer-events:none!important}
-.data-float-scroll:active{background:rgba(28,37,47,.82)}
 .data-float-up{top:calc(50% - 48px);transform:translateY(8px)}
 .data-float-down{top:calc(50% + 8px);transform:translateY(8px)}
 .data-float-up.show,.data-float-down.show{transform:translateY(0)}
 @media(min-width:600px){
  .data-tools-card{padding:14px 16px}
- .data-float-scroll{right:24px}
 }
 
 .data-swipe-actions{position:absolute;right:0;top:50%;display:flex;gap:6px;align-items:center;opacity:0;visibility:hidden;transform:translate(12px,-50%);transition:opacity .16s ease,transform .16s ease,visibility .16s ease}
@@ -106,7 +100,7 @@ body.data-panel-open .data-float-scroll{opacity:0!important;visibility:hidden!im
    font 14 时「编辑/删除」两字约 28px + 18 padding = 46px < min-width 48px，
    实际宽度仍是 48px，预留不动也不会溢出。 */
 .data-swipe-actions button{min-width:48px;height:var(--zp-control-height);padding:0 9px;border:1px solid #35404C;border-radius:10px;background:rgba(10,14,19,.88);color:#E8EDF2;font-size:14px}
-.data-swipe-actions .data-swipe-delete{color:#D4B6B6}
+.data-swipe-actions .data-swipe-delete{color:#FF8278}
 @media(min-width:600px){
  .data-swipe-actions{right:0}
  .data-store-row.data-swipe-open .data-store-main{padding-right:124px}
@@ -220,3 +214,8 @@ body.data-panel-open .data-float-scroll{opacity:0!important;visibility:hidden!im
 :root[data-zp-theme="light"] .data-import-actions{background:#FFFFFF;border-top-color:rgba(20,30,40,.12)}
 :root[data-zp-theme="light"] .data-import-actions button{background:#FFFFFF;border-color:#D7DDE3;color:var(--zp-text)}
 :root[data-zp-theme="light"] .data-import-actions #importSave{background:#E8EDF1;border-color:#D1D8DF;color:var(--zp-text)}
+
+/* ---- 浅色补充：左滑编辑/删除按钮（此前沿用深色硬编码，深底深字不可读） ---- */
+:root[data-zp-theme="light"] .data-swipe-actions button{background:#FFFFFF;border-color:#D7DDE3;color:#17202A}
+:root[data-zp-theme="light"] .data-swipe-actions button:active{background:#E8EDF1}
+:root[data-zp-theme="light"] .data-swipe-actions .data-swipe-delete{background:#FCEBEC;border-color:#E8BFC3;color:#C2453A}

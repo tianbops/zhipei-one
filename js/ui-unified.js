@@ -511,49 +511,8 @@
     });
   })();
 
-  function setupGlobalScrollButtons(){
-    if(document.querySelector(".data-float-scroll,.zp-float-scroll"))return;
-    const candidates=[document.scrollingElement,...document.querySelectorAll("main,.page2,.history-shell,.order-store-list,.dispatch-list,.data-store-list")].filter(Boolean);
-    const target=candidates.reduce((best,el)=>{
-      const can=el===document.scrollingElement ? el.scrollHeight-el.clientHeight>240 :
-        getComputedStyle(el).overflowY!=="visible" && el.scrollHeight-el.clientHeight>240;
-      if(!can)return best;
-      const score=el.scrollHeight-el.clientHeight;
-      return !best||score>best.score?{el,score}:best;
-    },null);
-    if(!target){
-      // 运单详情/今日运单/历史等页面的列表由 API 异步渲染，首次判定时还是空的。
-      // 轮询等待内容出现（最多 ~16s），避免箭头永不出现。
-      if((setupGlobalScrollButtons._tries=(setupGlobalScrollButtons._tries||0)+1)<=40)
-        setTimeout(setupGlobalScrollButtons,400);
-      return;
-    }
-    const el=target.el,root=document.createElement("div");
-    root.className="zp-float-scroll-wrap";
-    root.innerHTML='<button class="zp-float-scroll zp-float-up" type="button" aria-label="快速回到顶部">↑</button><button class="zp-float-scroll zp-float-down" type="button" aria-label="快速到底部">↓</button>';
-    document.body.appendChild(root);
-    const up=root.querySelector(".zp-float-up"),down=root.querySelector(".zp-float-down");
-    const getY=()=>el===document.scrollingElement?window.scrollY:el.scrollTop;
-    const getMax=()=>Math.max(0,(el===document.scrollingElement?document.documentElement.scrollHeight:el.scrollHeight)-(el===document.scrollingElement?window.innerHeight:el.clientHeight));
-    const update=()=>{
-      const y=getY(),max=getMax();
-      up.classList.toggle("show",y>180);
-      down.classList.toggle("show",y<max-180);
-    };
-    const move=(top)=>el===document.scrollingElement?window.scrollTo({top,behavior:"smooth"}):el.scrollTo({top,behavior:"smooth"});
-    up.onclick=()=>move(0);
-    down.onclick=()=>move(getMax());
-    const eventTarget=el===document.scrollingElement?window:el;
-    eventTarget.addEventListener("scroll",update,{passive:true});
-    window.addEventListener("resize",update);
-    // 列表内容后续重渲染/增减时重测是否继续显示箭头（内容长高不改变盒子尺寸，须监听子节点变化）
-    // 收敛（阶段 8 P3）：保存 observer 引用（消除「实例未保存无法 disconnect」代码异味）；
-    // 监听目标统一为 el（整页滚动时 el 即 scrollingElement，范围与原 observe body 一致；列表容器滚动时本就小）。
-    if(window.MutationObserver){const mo=new MutationObserver(update);mo.observe(el,{childList:true,subtree:true});}
-    setTimeout(update,80);
-  }
-  window.addEventListener("load",setupGlobalScrollButtons,{once:true});
-  setTimeout(setupGlobalScrollButtons,120);
+  /* 全局快速滚动箭头（↑/↓ 悬浮按钮）已按产品决策整体下线：
+     页面滚动交给原生手势，屏幕中部不再有遮挡列表内容的浮动控件。 */
 
   window.zpToast=function(message,type="success"){
     const root=ensure(),toast=root.querySelector("#zpToast");

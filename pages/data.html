@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="智配One"><link rel="stylesheet" href="/css/app.css?v=22c7c4e5"><link rel="stylesheet" href="/css/ui-unified.css?v=bd9e996d"><link rel="stylesheet" href="/css/mobile-ui.css?v=285d41d0"><link rel="stylesheet" href="/css/business-pages.css?v=6a65c5ef"><link rel="stylesheet" href="/css/data.css?v=807561c3"></head>
+<meta name="apple-mobile-web-app-title" content="智配One"><link rel="stylesheet" href="/css/app.css?v=22c7c4e5"><link rel="stylesheet" href="/css/ui-unified.css?v=1682f8b2"><link rel="stylesheet" href="/css/mobile-ui.css?v=285d41d0"><link rel="stylesheet" href="/css/business-pages.css?v=6a65c5ef"><link rel="stylesheet" href="/css/data.css?v=ae1e7938"></head>
 <body><main class="page2 data-page">
 <header class="topbar"><a class="app-back" href="/home.html" aria-label="返回"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><h1>数据资料</h1><button id="pageMenuBtn" class="data-page-menu-btn" type="button" aria-label="打开菜单">☰</button></header>
 <section class="page2-card data-route-card"><div class="data-route-kicker">当前调度线路</div><div class="data-route-title"><h2 id="title">加载中…</h2><div id="summary" class="data-summary"><strong></strong></div></div><p id="hint" class="data-route-hint">正在读取线路资料</p></section>
@@ -324,15 +324,7 @@ $("stores").addEventListener("click",e=>{
  if(row.classList.contains("data-swipe-open"))row.classList.remove("data-swipe-open");
 });
 bindTouch();
-function setupScrollButtons(){
- const up=document.createElement("button"),down=document.createElement("button");
- up.className="data-float-scroll data-float-up";up.type="button";up.setAttribute("aria-label","快速回到顶部");up.textContent="↑";
- down.className="data-float-scroll data-float-down";down.type="button";down.setAttribute("aria-label","快速向下");down.textContent="↓";
- document.body.append(up,down);
- const update=()=>{const y=window.scrollY,max=Math.max(0,document.documentElement.scrollHeight-window.innerHeight);up.classList.toggle("show",y>180);down.classList.toggle("show",y<max-180)};
- up.onclick=()=>window.scrollTo({top:0,behavior:"smooth"});down.onclick=()=>window.scrollTo({top:document.documentElement.scrollHeight,behavior:"smooth"});
- window.addEventListener("scroll",update,{passive:true});window.addEventListener("resize",update);update()
-}
+/* 快速滚动箭头已按产品决策下线（与全局保持一致），滚动交给原生手势。 */
 async function load(){
  try{
   const d=await api("/api/dispatch");routeId=d.dispatchRoute?.id||"";
@@ -345,7 +337,7 @@ async function load(){
   $("title").textContent=(x.route?.name?((/号线$/.test(x.route.name)?x.route.name:x.route.name+"号线")):"当前线路");
   $("hint").textContent=canMaintain?"你目前拥有该线路维护权限":"你目前仅拥有该线路使用权限";
   $("summary").innerHTML="<strong>"+stores.length+"家</strong>";
-  render();setupScrollButtons()
+  render()
  }catch(e){$("hint").textContent=err(e);$("stores").textContent="数据资料加载失败";$("summary").innerHTML="<strong>—</strong>";$("storeCount").textContent="—"}
 }
 load();
@@ -363,6 +355,6 @@ load();
   (window.zpDirtyProbes=window.zpDirtyProbes||[]).push(()=>
     filled(openPanel())||!!(dataBaseline&&dataBaseline!==JSON.stringify(stores)));
 })();
-</script><script src="/js/ui-unified.js?v=53c87a1b"></script>
+</script><script src="/js/ui-unified.js?v=33d5807d"></script>
 <script src="/js/pwa.js?v=864ce384"></script>
 </body></html>
