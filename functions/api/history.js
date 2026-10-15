@@ -137,7 +137,8 @@ export async function onRequestGet({request,env}){
   const monthsParam=clean(url.searchParams.get("months"));
   // 前端可经 ?months= 放宽查询窗口（仅 GET 生效，受 1–120 钳制）；默认沿用 env WAYBILL_HISTORY_MONTHS。
   // DELETE 路径不使用此参数，维持 env 默认窗口，避免客户端扩大可删除范围。
-  const monthsN=monthsParam?Math.max(1,Math.min(120,Math.floor(Number(monthsParam)||13))):env?.WAYBILL_HISTORY_MONTHS;
+  const searchQuery=clean(url.searchParams.get("q")).normalize("NFKC").toLocaleLowerCase("zh-CN");
+  const monthsN=monthsParam?Math.max(1,Math.min(13,Math.floor(Number(monthsParam)||3))):(searchQuery?3:env?.WAYBILL_HISTORY_MONTHS);
   const range=historyRange(todayCN(),monthsN),enrich=await enrichFactory(env,routeId);
   if(date){
    if(!validDate(date))return json({success:false,code:"DATE_INVALID",error:"日期无效"},400);
@@ -152,6 +153,35 @@ export async function onRequestGet({request,env}){
    }
    const enriched=[];for(const w of waybills)enriched.push(await enrich(w));
    return json({success:true,routeId,date,waybills:enriched,count:enriched.length,waybillIds:enriched.map(w=>w.id),hasMultiple:enriched.length>1});
+  }
+  if(searchQuery){
+   if(searchQuery.length>80)return json({success:false,code:"SEARCH_QUERY_TOO_LONG",error:"搜索内容最多 80 个字符"},400);
+   const budget=new Budget();
+   let entries,batch;
+   try{
+    entries=await readDates(env,routeId,range,budget);
+    batch=await readDateWaybillsBatch(env,user,entries,budget);
+   }catch(e){
+    if(e?.code===SUBREQUEST_BUDGET_EXCEEDED)return json({success:false,code:"PARTIAL_FAILURE",error:"当前历史范围较大，请缩小月份范围后重试",range,budgetUsed:budget.used,budgetMax:budget.max},503);
+    throw e;
+   }
+   const normalize=v=>String(v??"").normalize("NFKC").toLocaleLowerCase("zh-CN").replace(/[\\s\\p{P}\\p{S}]+/gu,"");
+   const needle=normalize(searchQuery),results=[];
+   for(const entry of entries){
+    for(const w of (batch.get(entry.date)||[])){
+     const stores=Array.isArray(w.stores)?w.stores:[];
+     const fields=[w.id,w.date,w.routeName,w.vehicle,w.vehicleNo,w.plateNumber,w.licensePlate,w.driverName,w.customerName,w.contactName,w.phone,w.mobile,w.address,w.rawText,w.ocrText];
+     for(const store of stores){
+      if(!store||typeof store!=="object")continue;
+      fields.push(store.name,store.rawName,store.originalName,store.storeName,store.storeId,store.phone,store.mobile,store.contact,store.contactName,store.address,store.navigation,store.note,store.remark);
+     }
+     if(!fields.some(v=>normalize(v).includes(needle)))continue;
+     results.push({id:w.id,date:w.date,routeName:w.routeName||"",vehicle:w.vehicle||w.vehicleNo||w.licensePlate||"",storeCount:Number(w.summary?.finalCount)||Number(w.summary?.total)||stores.length,totalWeight:Number(w.totalWeight)||0,storeNames:stores.map(s=>clean(s?.name||s?.rawName)).filter(Boolean).slice(0,5)});
+     if(results.length>=100)break;
+    }
+    if(results.length>=100)break;
+   }
+   return json({success:true,routeId,query:searchQuery,range,results,count:results.length,limited:results.length>=100});
   }
   // P1-06 收口：readDates / readDateWaybillsBatch 共享同一 Budget，
  // 预算不足即抛 SUBREQUEST_BUDGET_EXCEEDED → 转结构化 503「请缩小查询范围」，
