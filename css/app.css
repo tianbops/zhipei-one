@@ -742,3 +742,16 @@ body {
     max-height: 164px;
   }
 }
+
+
+/* 浅色外观适配：登录页及通用文本输入 */
+:root[data-zp-theme="light"] .login-shell{background:var(--zp-bg)!important;color:var(--zp-text)}
+:root[data-zp-theme="light"] .login-card{background:#FFFFFF!important;border-color:var(--zp-line)!important;box-shadow:0 12px 32px rgba(20,30,40,.08)}
+:root[data-zp-theme="light"] .login-field,
+:root[data-zp-theme="light"] .login-field span,
+:root[data-zp-theme="light"] .login-links,
+:root[data-zp-theme="light"] .register-hint{color:var(--zp-text)}
+:root[data-zp-theme="light"] .login-field input,
+:root[data-zp-theme="light"] .data-textarea{background:#FFFFFF!important;color:#17202A!important;border-color:#C9D1D9!important}
+:root[data-zp-theme="light"] .login-field input:focus{background:#FFFFFF!important;border-color:#7D8A98!important}
+:root[data-zp-theme="light"] .password-toggle{color:#536170}
