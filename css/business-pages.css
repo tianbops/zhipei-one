@@ -122,3 +122,18 @@
 .appearance-font-control output{font-size:12px;text-align:right;color:var(--zp-muted)}
 :root[data-zp-theme="light"] .appearance-theme-option{background:#F0F2F4;color:#46515D;border-color:#D7DDE3}
 :root[data-zp-theme="light"] .appearance-theme-option.is-selected{background:#E1E7EC;color:#17202A;border-color:#8793A0}
+
+
+/* 浅色外观适配：账号页、线路申请页与业务页面导航 */
+:root[data-zp-theme="light"] .appearance-card,
+:root[data-zp-theme="light"] .account-info-card,
+:root[data-zp-theme="light"] .account-edit-card{background:#FFFFFF!important;border-color:#D7DDE3!important;color:#17202A!important}
+:root[data-zp-theme="light"] .appearance-setting+.appearance-setting{border-top-color:rgba(20,30,40,.12)}
+:root[data-zp-theme="light"] .appearance-theme-option{background:#F0F2F4;color:#46515D;border-color:#D7DDE3}
+:root[data-zp-theme="light"] .appearance-theme-option.is-selected{background:#DCE5EC;color:#17202A;border-color:#778796}
+:root[data-zp-theme="light"] .appearance-font-control output,
+:root[data-zp-theme="light"] .appearance-font-small{color:#596674}
+:root[data-zp-theme="light"] .appearance-font-large{color:#17202A}
+:root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav{background:#FFFFFF!important;border-color:#D7DDE3!important}
+:root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-item{color:#596674!important}
+:root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-item[aria-current="page"]{color:#17202A!important}
