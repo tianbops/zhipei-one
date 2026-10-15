@@ -88,6 +88,26 @@ html,body{background:var(--ui-bg);color:var(--ui-text)}
 button,a,input,select,textarea{font-family:inherit}
 button,a{-webkit-tap-highlight-color:transparent}
 button:active{transform:translateY(0)}
+/* 细节微调（不改全局设计语言）：
+   1) 移除所有可点元素的原生点击高亮，统一触控反馈（含 div 型行/卡片，此前只对 button/a 生效）；
+   2) 首帧后开启颜色/背景/边框/阴影/不透明度的短过渡，让主题切换与状态变化更顺滑；
+   3) 关键按钮按压时轻微缩放，点按手感一致。
+   用 :where() 把覆盖特异性降到 0，确保各组件自带 transition（悬浮滚动、入场动画等）不被覆盖；
+   首帧开关由 js/ui-unified.js 的 zp-ui-ready 类控制，初始渲染不闪。 */
+*{ -webkit-tap-highlight-color:transparent; -webkit-touch-callout:none }
+.zp-ui-ready :where(*):not(:where(svg,svg *)){
+  transition:background-color .22s ease,border-color .22s ease,color .22s ease,box-shadow .2s ease,opacity .2s ease;
+}
+.zp-ui-ready :where(button,a,[role="button"],.function-btn,.data-action-btn,.account-logout,.login-submit,.history-toolbar button,.trend-year,.trend-metric-btn,.source-option,.choice-btn){
+  transition:background-color .22s ease,border-color .22s ease,color .22s ease,box-shadow .2s ease,opacity .2s ease,transform .1s ease;
+}
+.zp-ui-ready :where(.function-btn,.data-action-btn,.account-logout,.login-submit,.history-toolbar button,.trend-year,.trend-metric-btn,.source-option,.choice-btn):active{
+  transform:scale(.98);
+}
+@media (prefers-reduced-motion:reduce){
+  .zp-ui-ready :where(*){transition:none!important}
+  .zp-ui-ready :where(.function-btn,.data-action-btn,.account-logout,.login-submit,.history-toolbar button,.trend-year,.trend-metric-btn,.source-option,.choice-btn):active{transform:none}
+}
 /* hidden 属性必须始终生效，且优先级高于所有遮罩层 display 规则。
    用 !important + 属性选择器双写，确保任何后出现的 !important 规则都无法覆盖它。
    背景：弹窗遮罩统一使用 display:flex!important 后，与 [hidden] 权重相同，

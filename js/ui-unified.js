@@ -48,6 +48,9 @@
     window.zpGetFontScale=()=>Math.max(.85,Math.min(1.3,Number(read(SCALE_KEY,"1"))||1));
     applyTheme(window.zpGetAppearanceTheme());
     applyScale(window.zpGetFontScale());
+    // 首帧后再开启过渡：避免初始渲染从浏览器默认色「闪」到主题色；
+    // 此后主题切换与 :active 状态变化的颜色/背景才平滑过渡。
+    try{requestAnimationFrame(()=>requestAnimationFrame(()=>root.classList.add("zp-ui-ready")))}catch(e){root.classList.add("zp-ui-ready")}
     if(window.matchMedia){
       const media=window.matchMedia("(prefers-color-scheme: light)");
       const onChange=()=>{if(window.zpGetAppearanceTheme()==="system")applyTheme("system")};
