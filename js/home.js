@@ -185,11 +185,7 @@ const PROCESS_ERROR_TEXT={
   PROCESS_STREAM_INTERRUPTED:"处理连接中断，请重试",
   EXTRACT_EMPTY:"未从运单中提取到门店，请检查运单内容",
   DISPATCH_ROUTE_MISSING:"请先在首页选择调度线路",
-  WAYBILL_FILE_MISSING:"请选择运单文件",
-  LOCAL_OCR_LIBRARY_UNAVAILABLE:"本地识别组件未加载，请检查网络连接后刷新页面重试",
-  LOCAL_OCR_INIT_FAILED:"中文识别组件初始化失败，请检查网络后重试；图片未上传到服务器",
-  LOCAL_OCR_FAILED:"本地识别未完成，请尝试重新选择图片或截取更清晰的运单区域",
-  LOCAL_OCR_EMPTY:"未从图片中识别到文字，请更换清晰图片后重试"
+  WAYBILL_FILE_MISSING:"请选择运单文件"
 };
 function showProcessingError(message, hint, action, recoverable, requestId){
   stopProcessingClock();
@@ -284,37 +280,6 @@ window.zpIsProcessing=()=>!!processingFile||!!processingController;
 let lastProcessingFile=null;   // 最近一次处理的运单图片组/文件，供一键重试复用
 let lastFailureAction=null;    // 最近一次失败的处理动作（action）；null 表示不可重试，按钮作关闭用
 let lastFailureRequestId=null; // 最近一次失败的处理票据 requestId（RETRY_SAVE 仅重保存时回传后端 resume）
-let localOcrWorkerPromise=null;
-async function recognizeFilesLocally(files,signal){
-  if(!window.Tesseract||typeof window.Tesseract.createWorker!=="function")throw Object.assign(new Error("免费本地识别组件加载失败，请检查网络后重试"),{code:"LOCAL_OCR_LIBRARY_UNAVAILABLE"});
-  if(!localOcrWorkerPromise){
-    localOcrWorkerPromise=window.Tesseract.createWorker("chi_sim+eng",1,{logger:info=>{
-      if(!processingFile)return;
-      if(info?.status==="loading language traineddata")setProcessingStage("正在准备中文识别语言包…");
-      else if(info?.status==="recognizing text")setProcessingStage("正在本地识别图片文字…");
-    }}).catch(error=>{
-      localOcrWorkerPromise=null;
-      throw Object.assign(new Error("中文识别组件初始化失败，请检查网络后重试；图片未上传到服务器"),{code:"LOCAL_OCR_INIT_FAILED",cause:error});
-    });
-  }
-  let worker;
-  try{worker=await localOcrWorkerPromise}catch(error){throw error}
-  const texts=[];
-  for(let i=0;i<files.length;i++){
-    if(signal?.aborted)throw Object.assign(new Error("已取消本地识别"),{name:"AbortError",code:"LOCAL_OCR_CANCELLED"});
-    setProcessingStage(files.length>1?"正在本地识别第 "+(i+1)+"/"+files.length+" 张图片…":"正在本地识别图片文字…");
-    renderProcessingProgress(Math.min(4.5,3+(i/files.length)*1.5));
-    let result;
-    try{result=await worker.recognize(files[i])}catch(error){
-      if(signal?.aborted)throw Object.assign(new Error("已取消本地识别"),{name:"AbortError",code:"LOCAL_OCR_CANCELLED"});
-      throw Object.assign(new Error("本地识别未完成，请尝试重新选择图片或截取更清晰的运单区域"),{code:"LOCAL_OCR_FAILED",cause:error});
-    }
-    const text=String(result?.data?.text||"").trim();
-    if(!text)throw Object.assign(new Error("第 "+(i+1)+" 张图片未识别到文字，请更换清晰图片后重试"),{code:"LOCAL_OCR_EMPTY"});
-    texts.push("【第"+(i+1)+"张截图】\n"+text);
-  }
-  return texts.join("\n");
-}
 async function processSelectedFiles(files, resumeRequestId){
   if(!Array.isArray(files))files=files?[files]:[];
   files=files.filter(Boolean);
@@ -335,18 +300,12 @@ async function processSelectedFiles(files, resumeRequestId){
     showProcessingUI();
     document.querySelectorAll(".source-option").forEach(b=>b.disabled=true);
     const fd=new FormData();
+    files.forEach(file=>fd.append("file",file));
     fd.append("fileCount",String(files.length));
     fd.append("routeId",processingRouteIdLocal);
     fd.append("processingRouteId",processingRouteIdLocal);
-    if(resumeRequestId){
-      fd.append("resumeRequestId",resumeRequestId);
-    }else{
-      // 免费本地 OCR：图片只在当前浏览器识别，服务端只接收识别出的文字，不上传图片文件。
-      setProcessingStage("准备免费本地识别…");
-      renderProcessingProgress(3);
-      const rawText=await recognizeFilesLocally(files,controller.signal);
-      fd.append("rawText",rawText);
-    }
+    if(resumeRequestId)fd.append("resumeRequestId",resumeRequestId);
+    renderProcessingProgress(3);
     let r;
     try{
       r=await fetch("/api/waybills/process?stream=1",{method:"POST",body:fd,credentials:"same-origin",signal:controller.signal});
