@@ -1,7 +1,7 @@
 {
   "name": "智配One",
   "short_name": "智配One",
-  "description": "物流运单智能识别与配送线路匹配",
+  "description": "面向个人配送员与小团队的轻量运单处理、历史查询和路线经验工具",
   "lang": "zh-CN",
   "dir": "ltr",
   "start_url": "/index.html",
@@ -21,15 +21,15 @@
     {
       "name": "上传运单",
       "short_name": "上传运单",
-      "description": "拍照上传运单并开始识别",
+      "description": "拍照或上传运单并开始处理",
       "url": "/home.html",
       "icons": [{ "src": "/assets/icons/icon-192.png", "sizes": "192x192" }]
     },
     {
-      "name": "今日路线",
-      "short_name": "今日路线",
-      "description": "查看今日配送线路与门店",
-      "url": "/pages/today.html",
+      "name": "历史记录",
+      "short_name": "历史记录",
+      "description": "查询历史运单",
+      "url": "/pages/history.html?from=home",
       "icons": [{ "src": "/assets/icons/icon-192.png", "sizes": "192x192" }]
     }
   ]
