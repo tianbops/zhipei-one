@@ -774,3 +774,12 @@ textarea:disabled,
 }
 :root[data-zp-theme="light"] .topbar,
 :root[data-zp-theme="light"] .app-back{color:var(--zp-text)}
+
+:root[data-zp-theme="light"] a{color:var(--zp-text)}
+:root[data-zp-theme="light"] button:not(.page2-danger-btn):not(.ui-toast button){
+  background-color:#E8EDF1;
+  border-color:#D1D8DF;
+  color:#17202A;
+}
+:root[data-zp-theme="light"] button:disabled{opacity:.55}
+
