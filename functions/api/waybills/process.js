@@ -272,7 +272,7 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
   const rawText=clean(form.get("rawText"));
   const files=typeof form.getAll==="function"?form.getAll("file").filter(x=>x instanceof File):[];
   const file=files[0]||null;
-  if(!rawText&&!files.length){emit(6,"未找到运单");return failProcess("WAYBILL_FILE_MISSING","请选择运单",400,{recoverable:true,action:"RESUBMIT",hint:"请选择运单文件后重试"});}
+  if(!rawText&&!files.length&&!clean(form.get("resumeRequestId"))){emit(6,"未找到运单");return failProcess("WAYBILL_FILE_MISSING","请选择运单",400,{recoverable:true,action:"RESUBMIT",hint:"请选择运单文件后重试"});}
   emit(6,files.length>1?`已读取运单，共 ${files.length} 张截图`:"已读取运单");
   // 仅重保存（RETRY_SAVE）：复用已落 proc 票据的 order，跳过 OCR/提取/匹配/去重/规划/校验，直接重跑保存脚本（不重 OCR）。
   const resumeRequestId=clean(form.get("resumeRequestId"));
