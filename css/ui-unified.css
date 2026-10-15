@@ -695,7 +695,7 @@ textarea:disabled,
 }
 
 
-/* ===== 用户外观偏好：主题与全局字号 ===== */
+/* ===== 用户外观偏好：主题与全局字号 · 浅色完整覆盖 ===== */
 :root[data-zp-theme="light"]{
   color-scheme:light;
   --zp-bg:#F4F6F8;
@@ -718,42 +718,84 @@ textarea:disabled,
   --ui-text:var(--zp-text);
   --ui-muted:var(--zp-muted);
   --ui-soft:var(--zp-soft);
+  /* 兼容旧页面和管理员内联样式使用的无前缀变量 */
+  --bg:#F4F6F8;
+  --card:#FFFFFF;
+  --card2:#F0F2F4;
+  --line:#D7DDE3;
+  --muted:#46515D;
+  --soft:#66717D;
+  --text:#17202A;
 }
-:root[data-zp-theme="light"] html,
+:root[data-zp-theme="light"] html{color-scheme:light}
 :root[data-zp-theme="light"] body,
 :root[data-zp-theme="light"] .page2,
 :root[data-zp-theme="light"] .shell,
-:root[data-zp-theme="light"] .page2-card,
-:root[data-zp-theme="light"] .card,
-:root[data-zp-theme="light"] .data-list-card,
-:root[data-zp-theme="light"] .data-route-card,
-:root[data-zp-theme="light"] .task-card{
+:root[data-zp-theme="light"] .page,
+:root[data-zp-theme="light"] .viewport{
   background-color:var(--zp-bg);
   color:var(--zp-text);
 }
 :root[data-zp-theme="light"] .page2-card,
 :root[data-zp-theme="light"] .card,
+:root[data-zp-theme="light"] .page2-panel,
 :root[data-zp-theme="light"] .data-list-card,
 :root[data-zp-theme="light"] .data-route-card,
 :root[data-zp-theme="light"] .task-card,
 :root[data-zp-theme="light"] .confirm-panel,
-:root[data-zp-theme="light"] .pending-box{
+:root[data-zp-theme="light"] .pending-box,
+:root[data-zp-theme="light"] .account-dialog,
+:root[data-zp-theme="light"] .order-dialog-panel,
+:root[data-zp-theme="light"] .history-dialog-panel,
+:root[data-zp-theme="light"] .history-picker-panel,
+:root[data-zp-theme="light"] .data-import-panel,
+:root[data-zp-theme="light"] .upload-sheet,
+:root[data-zp-theme="light"] .zp-confirm-panel{
   background-color:var(--zp-surface);
   border-color:var(--zp-line);
   color:var(--zp-text);
+  box-shadow:0 8px 24px rgba(20,30,40,.08);
+}
+:root[data-zp-theme="light"] .topbar,
+:root[data-zp-theme="light"] .app-back,
+:root[data-zp-theme="light"] .account-collapse-head,
+:root[data-zp-theme="light"] .page2-secondary,
+:root[data-zp-theme="light"] .page2-label,
+:root[data-zp-theme="light"] .account-row,
+:root[data-zp-theme="light"] .page2-row,
+:root[data-zp-theme="light"] .section-title,
+:root[data-zp-theme="light"] .order-title{
+  color:var(--zp-text);
 }
 :root[data-zp-theme="light"] p,
-:root[data-zp-theme="light"] span,
 :root[data-zp-theme="light"] label,
 :root[data-zp-theme="light"] strong,
 :root[data-zp-theme="light"] h1,
 :root[data-zp-theme="light"] h2,
 :root[data-zp-theme="light"] h3,
+:root[data-zp-theme="light"] h4,
+:root[data-zp-theme="light"] legend,
+:root[data-zp-theme="light"] summary,
 :root[data-zp-theme="light"] .page2-soft,
 :root[data-zp-theme="light"] .summary,
-:root[data-zp-theme="light"] .account-row,
-:root[data-zp-theme="light"] .page2-row{
+:root[data-zp-theme="light"] .empty,
+:root[data-zp-theme="light"] .dispatch-empty,
+:root[data-zp-theme="light"] .dispatch-message,
+:root[data-zp-theme="light"] .history-state{
   color:var(--zp-text);
+}
+/* span 不做全局强制改色：状态徽标、重量标签、成功/警告文字需保留语义颜色。 */
+:root[data-zp-theme="light"] .page2-soft,
+:root[data-zp-theme="light"] .field-hint,
+:root[data-zp-theme="light"] .meta,
+:root[data-zp-theme="light"] .hint,
+:root[data-zp-theme="light"] .muted,
+:root[data-zp-theme="light"] .empty,
+:root[data-zp-theme="light"] .dispatch-empty,
+:root[data-zp-theme="light"] .dispatch-message,
+:root[data-zp-theme="light"] .history-state,
+:root[data-zp-theme="light"] .account-row>span:first-child{
+  color:var(--zp-muted);
 }
 :root[data-zp-theme="light"] input,
 :root[data-zp-theme="light"] select,
@@ -761,25 +803,106 @@ textarea:disabled,
   background:#FFFFFF!important;
   color:#17202A!important;
   border-color:#C9D1D9!important;
+  caret-color:#17202A;
 }
-:root[data-zp-theme="light"] button,
+:root[data-zp-theme="light"] input::placeholder,
+:root[data-zp-theme="light"] textarea::placeholder{
+  color:#687582!important;
+  opacity:1;
+}
+:root[data-zp-theme="light"] input:focus,
+:root[data-zp-theme="light"] select:focus,
+:root[data-zp-theme="light"] textarea:focus{
+  border-color:#7D8A98!important;
+  box-shadow:0 0 0 3px rgba(65,85,105,.12)!important;
+}
+:root[data-zp-theme="light"] a{color:#34495E}
+:root[data-zp-theme="light"] button{color:var(--zp-text)}
+:root[data-zp-theme="light"] button:disabled{opacity:.55}
+:root[data-zp-theme="light"] .page2-primary,
+:root[data-zp-theme="light"] .login-submit,
+:root[data-zp-theme="light"] .data-action-primary,
+:root[data-zp-theme="light"] .primary,
+:root[data-zp-theme="light"] button.primary{
+  background:#263746!important;
+  border-color:#263746!important;
+  color:#FFFFFF!important;
+}
 :root[data-zp-theme="light"] .page2-secondary,
-:root[data-zp-theme="light"] .account-collapse-head{
-  color:var(--zp-text);
+:root[data-zp-theme="light"] .account-collapse-head,
+:root[data-zp-theme="light"] .appearance-theme-option,
+:root[data-zp-theme="light"] .menu-button,
+:root[data-zp-theme="light"] .history-toolbar button{
+  background:#E8EDF1;
+  border-color:#D1D8DF;
+  color:#17202A;
+}
+:root[data-zp-theme="light"] .appearance-theme-option.is-selected,
+:root[data-zp-theme="light"] [aria-pressed="true"].appearance-theme-option{
+  background:#DCE5EC;
+  border-color:#778796;
+  color:#17202A;
+  box-shadow:inset 0 0 0 1px #778796;
 }
 :root[data-zp-theme="light"] .account-page .account-logout-section .account-logout{
   background:#E8EDF1;
   border-color:#D1D8DF;
   color:#17202A;
 }
-:root[data-zp-theme="light"] .topbar,
-:root[data-zp-theme="light"] .app-back{color:var(--zp-text)}
-
-:root[data-zp-theme="light"] a{color:var(--zp-text)}
-:root[data-zp-theme="light"] button:not(.page2-danger-btn):not(.ui-toast button){
-  background-color:#E8EDF1;
-  border-color:#D1D8DF;
-  color:#17202A;
+:root[data-zp-theme="light"] .order-dialog,
+:root[data-zp-theme="light"] .history-dialog,
+:root[data-zp-theme="light"] .history-picker,
+:root[data-zp-theme="light"] .data-import,
+:root[data-zp-theme="light"] .upload-overlay,
+:root[data-zp-theme="light"] .zp-confirm{
+  background:rgba(24,36,48,.32)!important;
 }
-:root[data-zp-theme="light"] button:disabled{opacity:.55}
-
+:root[data-zp-theme="light"] .ui-toast{
+  background:#FFFFFF!important;
+  border-color:#D7DDE3!important;
+  color:#17202A!important;
+  box-shadow:0 8px 24px rgba(20,30,40,.16);
+}
+:root[data-zp-theme="light"] .ui-toast.success{
+  background:#E8F5EC!important;
+  border-color:#B8DCC3!important;
+  color:#205C35!important;
+}
+:root[data-zp-theme="light"] .ui-toast.error{
+  background:#FCEBEC!important;
+  border-color:#E8BFC3!important;
+  color:#8A2630!important;
+}
+:root[data-zp-theme="light"] .zp-confirm-panel h3{color:var(--zp-text)}
+:root[data-zp-theme="light"] .zp-confirm-actions button:first-child{
+  background:#F0F2F4;border-color:#D7DDE3;color:#26323D;
+}
+:root[data-zp-theme="light"] .zp-confirm-actions button:last-child{
+  background:#263746;border-color:#263746;color:#FFFFFF;
+}
+:root[data-zp-theme="light"] .zp-password-control{
+  background:#FFFFFF;border-color:#C9D1D9;
+}
+:root[data-zp-theme="light"] .zp-password-control input[type="password"],
+:root[data-zp-theme="light"] .zp-password-control input[type="text"]{
+  background:transparent!important;color:#17202A!important;
+}
+:root[data-zp-theme="light"] .zp-password-control input::placeholder{color:#687582!important}
+:root[data-zp-theme="light"] .zp-password-eye{color:#536170}
+:root[data-zp-theme="light"] .zp-password-eye:active{background:#E8EDF1;color:#17202A}
+:root[data-zp-theme="light"] .menu-panel,
+:root[data-zp-theme="light"] .home-menu-panel,
+:root[data-zp-theme="light"] .data-page-menu,
+:root[data-zp-theme="light"] .order-menu{
+  background:#FFFFFF;border-color:#D7DDE3;color:#17202A;
+  box-shadow:0 12px 28px rgba(20,30,40,.14);
+}
+:root[data-zp-theme="light"] .menu-divider{background:rgba(20,30,40,.12)}
+:root[data-zp-theme="light"] .store-row,
+:root[data-zp-theme="light"] .account-row,
+:root[data-zp-theme="light"] .request-row{border-bottom-color:rgba(20,30,40,.12)}
+:root[data-zp-theme="light"] .zp-float-scroll{
+  background:rgba(255,255,255,.94);border-color:#D7DDE3;color:#34495E;
+  box-shadow:0 5px 16px rgba(20,30,40,.12);
+}
+:root[data-zp-theme="light"] .zp-float-scroll:active{background:#E8EDF1}
