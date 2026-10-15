@@ -165,8 +165,10 @@ export async function onRequestGet({request,env}){
     if(e?.code===SUBREQUEST_BUDGET_EXCEEDED)return json({success:false,code:"PARTIAL_FAILURE",error:"当前历史范围较大，请缩小月份范围后重试",range,budgetUsed:budget.used,budgetMax:budget.max},503);
     throw e;
    }
-   const normalize=v=>String(v??"").normalize("NFKC").toLocaleLowerCase("zh-CN").replace(/[\\s\\p{P}\\p{S}]+/gu,"");
-   const needle=normalize(searchQuery),results=[];
+   const normalize=v=>String(v??"").normalize("NFKC").toLocaleLowerCase("zh-CN").replace(/[\s\p{P}\p{S}]+/gu,"");
+   const needle=normalize(searchQuery);
+   if(!needle)return json({success:false,code:"SEARCH_QUERY_INVALID",error:"请输入有效的搜索关键词"},400);
+   const results=[];
    for(const entry of entries){
     for(const w of (batch.get(entry.date)||[])){
      const stores=Array.isArray(w.stores)?w.stores:[];
