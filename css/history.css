@@ -538,3 +538,14 @@
 .history-search-result span,.history-search-result small{color:#9AA5AF;font-size:12px;line-height:18px}
 .history-search-note{margin:0;padding:6px;color:#9AA5AF;font-size:12px}
 @media(max-width:380px){.history-search{grid-template-columns:minmax(0,1fr) auto;}.history-search input{grid-column:1/-1}.history-search select{max-width:none}.history-search button{min-width:72px}}
+
+
+/* 浅色外观适配：历史搜索、筛选器和结果卡 */
+:root[data-zp-theme="light"] .history-search input,
+:root[data-zp-theme="light"] .history-search select,
+:root[data-zp-theme="light"] .history-search button{background:#FFFFFF!important;color:#17202A!important;border-color:#C9D1D9!important}
+:root[data-zp-theme="light"] .history-search button{background:#E8EDF1!important;border-color:#D1D8DF!important}
+:root[data-zp-theme="light"] .history-search-result{background:#FFFFFF!important;color:#17202A!important;border-color:#D7DDE3!important}
+:root[data-zp-theme="light"] .history-search-result:active{background:#F0F2F4!important}
+:root[data-zp-theme="light"] .history-search-result .meta,
+:root[data-zp-theme="light"] .history-search-result small{color:#596674!important}
