@@ -25,7 +25,7 @@
         if(!Number.isFinite(size)||size<=0)return;
         el.dataset.zpFontBase=String(size);
       }
-      el.style.setProperty("font-size","calc("+el.dataset.zpFontBase+"px * var(--zp-font-scale))","important");
+      el.style.setProperty("font-size",(Number(el.dataset.zpFontBase)*Math.max(0.85,Math.min(1.3,Number(root.style.getPropertyValue("--zp-font-scale"))||1)))+"px","important");
     };
     const scanText=(rootNode=document)=>{
       if(rootNode instanceof Element)scaleTextElement(rootNode);
