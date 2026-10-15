@@ -208,3 +208,15 @@ body.data-panel-open .data-float-scroll{opacity:0!important;visibility:hidden!im
 :root[data-zp-theme="light"] .data-page-menu{background:#FFFFFF;border-color:#D7DDE3;box-shadow:0 14px 34px rgba(20,30,40,.16)}
 :root[data-zp-theme="light"] .data-page-menu button{color:var(--zp-text)}
 :root[data-zp-theme="light"] .data-page-menu button:active{background:#E8EDF1}
+
+/* ---- 浅色补充：工具按钮组与导入/编辑弹窗 ---- */
+:root[data-zp-theme="light"] .data-action-btn{background:#FFFFFF;border-color:#D7DDE3;color:var(--zp-text)}
+:root[data-zp-theme="light"] .data-action-btn:active{background:#E8EDF1}
+:root[data-zp-theme="light"] .data-import-panel{background:#FFFFFF;border-color:#D7DDE3;box-shadow:0 -10px 40px rgba(20,30,40,.18)}
+:root[data-zp-theme="light"] .data-import-head h3,
+:root[data-zp-theme="light"] .data-field>span{color:var(--zp-text)}
+:root[data-zp-theme="light"] .data-import-close{background:#F0F2F4;border-color:#D7DDE3;color:#46515D}
+:root[data-zp-theme="light"] .data-file{color:var(--zp-muted)}
+:root[data-zp-theme="light"] .data-import-actions{background:#FFFFFF;border-top-color:rgba(20,30,40,.12)}
+:root[data-zp-theme="light"] .data-import-actions button{background:#FFFFFF;border-color:#D7DDE3;color:var(--zp-text)}
+:root[data-zp-theme="light"] .data-import-actions #importSave{background:#E8EDF1;border-color:#D1D8DF;color:var(--zp-text)}
