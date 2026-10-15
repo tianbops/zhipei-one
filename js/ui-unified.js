@@ -1,6 +1,39 @@
 /* 智配One · 全局 UI 反馈 2.1
    只处理弹窗/Toast，不包含业务逻辑。 */
 (function(){
+  // 用户偏好只保存在当前浏览器，不写入业务账号或服务端数据。
+  (function initAppearancePreferences(){
+    const root=document.documentElement;
+    const THEME_KEY="zp_appearance_theme";
+    const SCALE_KEY="zp_appearance_font_scale";
+    const validThemes=["system","dark","light"];
+    const read=(key,fallback)=>{try{return localStorage.getItem(key)||fallback}catch{return fallback}};
+    const applyTheme=theme=>{
+      const chosen=validThemes.includes(theme)?theme:"system";
+      const resolved=chosen==="system"?(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):chosen;
+      root.dataset.zpTheme=resolved;
+      root.dataset.zpThemeChoice=chosen;
+      const meta=document.querySelector('meta[name="theme-color"]');
+      if(meta)meta.setAttribute("content",resolved==="light"?"#F4F6F8":"#05070A");
+      document.dispatchEvent(new CustomEvent("zp:appearancechange",{detail:{theme:chosen,resolved}}));
+    };
+    const applyScale=value=>{
+      const n=Math.max(0.85,Math.min(1.3,Number(value)||1));
+      root.style.setProperty("--zp-font-scale",String(n));
+      document.dispatchEvent(new CustomEvent("zp:fontscalechange",{detail:{scale:n}}));
+    };
+    window.zpSetAppearanceTheme=theme=>{const v=validThemes.includes(theme)?theme:"system";try{localStorage.setItem(THEME_KEY,v)}catch{}applyTheme(v)};
+    window.zpGetAppearanceTheme=()=>read(THEME_KEY,"system");
+    window.zpSetFontScale=value=>{const n=Math.max(.85,Math.min(1.3,Number(value)||1));try{localStorage.setItem(SCALE_KEY,String(n))}catch{}applyScale(n)};
+    window.zpGetFontScale=()=>Math.max(.85,Math.min(1.3,Number(read(SCALE_KEY,"1"))||1));
+    applyTheme(window.zpGetAppearanceTheme());
+    applyScale(window.zpGetFontScale());
+    if(window.matchMedia){
+      const media=window.matchMedia("(prefers-color-scheme: light)");
+      const onChange=()=>{if(window.zpGetAppearanceTheme()==="system")applyTheme("system")};
+      media.addEventListener?media.addEventListener("change",onChange):media.addListener?.(onChange);
+    }
+  })();
   if(window.zpConfirm)return;
   function esc(v){return String(v??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]))}
   function ensure(){
