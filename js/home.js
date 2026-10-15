@@ -288,7 +288,7 @@ async function recognizeFilesLocally(files,signal){
       if(!processingFile)return;
       if(info?.status==="loading language traineddata")setProcessingStage("正在准备中文识别语言包…");
       else if(info?.status==="recognizing text")setProcessingStage("正在本地识别图片文字…");
-    }});
+    }}).catch(error=>{localOcrWorkerPromise=null;throw error});
   }
   const worker=await localOcrWorkerPromise;
   const texts=[];
