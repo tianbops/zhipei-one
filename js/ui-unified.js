@@ -17,9 +17,29 @@
       if(meta)meta.setAttribute("content",resolved==="light"?"#F4F6F8":"#05070A");
       document.dispatchEvent(new CustomEvent("zp:appearancechange",{detail:{theme:chosen,resolved}}));
     };
+    const textSelector="p,span,a,button,label,input,select,textarea,li,td,th,strong,small,h1,h2,h3,h4,legend,summary,output,.summary,.message,.page2-soft,.store-row,.account-row,.page2-row,.page2-label,.topbar,.order-title";
+    const scaleTextElement=el=>{
+      if(!(el instanceof Element)||!el.matches(textSelector)||el.closest("svg,script,style"))return;
+      if(!el.dataset.zpFontBase){
+        const size=parseFloat(getComputedStyle(el).fontSize);
+        if(!Number.isFinite(size)||size<=0)return;
+        el.dataset.zpFontBase=String(size);
+      }
+      el.style.setProperty("font-size","calc("+el.dataset.zpFontBase+"px * var(--zp-font-scale))","important");
+    };
+    const scanText=(rootNode=document)=>{
+      if(rootNode instanceof Element)scaleTextElement(rootNode);
+      rootNode.querySelectorAll?.(textSelector).forEach(scaleTextElement);
+    };
+    let textObserver=null;
     const applyScale=value=>{
       const n=Math.max(0.85,Math.min(1.3,Number(value)||1));
       root.style.setProperty("--zp-font-scale",String(n));
+      scanText();
+      if(!textObserver&&document.body&&window.MutationObserver){
+        textObserver=new MutationObserver(records=>records.forEach(record=>record.addedNodes.forEach(node=>{if(node.nodeType===1)scanText(node)})));
+        textObserver.observe(document.body,{childList:true,subtree:true});
+      }
       document.dispatchEvent(new CustomEvent("zp:fontscalechange",{detail:{scale:n}}));
     };
     window.zpSetAppearanceTheme=theme=>{const v=validThemes.includes(theme)?theme:"system";try{localStorage.setItem(THEME_KEY,v)}catch{}applyTheme(v)};
