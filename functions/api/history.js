@@ -135,7 +135,7 @@ export async function onRequestGet({request,env}){
   if(!routeId)return json({success:true,routeId:null,months:[],history:[]});
   const currentRoute=clean(user.dispatchRouteId)||clean(user.boundRouteId);if(routeId!==currentRoute)return json({success:false,error:"无权查看该线路历史"},403);
   const monthsParam=clean(url.searchParams.get("months"));
-  // 前端可经 ?months= 放宽查询窗口（仅 GET 生效，受 1–120 钳制）；默认沿用 env WAYBILL_HISTORY_MONTHS。
+  // 前端可经 ?months= 放宽查询窗口（仅 GET 生效，受 1–13 钳制）；默认沿用 env WAYBILL_HISTORY_MONTHS。
   // DELETE 路径不使用此参数，维持 env 默认窗口，避免客户端扩大可删除范围。
   const searchQuery=clean(url.searchParams.get("q")).normalize("NFKC").toLocaleLowerCase("zh-CN");
   const monthsN=monthsParam?Math.max(1,Math.min(13,Math.floor(Number(monthsParam)||3))):(searchQuery?3:env?.WAYBILL_HISTORY_MONTHS);

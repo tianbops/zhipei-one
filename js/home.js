@@ -461,7 +461,7 @@ async function loadHome(){
     // 只要月度历史能看到今天，就根据当天运单 ID 再取完整运单，避免出现“月度有数据、今日却为空”。
     if(!w&&effectiveRouteId){
       try{
-        const {res,data}=await fetchJson("/api/history?months=25",20000);
+        const {res,data}=await fetchJson("/api/history?months=13",20000);
         if(res.ok&&data.success!==false){
           const serverRoute=String(data.routeId||"").trim();
           if(serverRoute)cmpRouteId=serverRoute;
