@@ -429,3 +429,37 @@
 :root[data-zp-theme="light"] .order-store-status{background:#E8EDF1!important;color:#46515D!important}
 :root[data-zp-theme="light"] .order-dialog-panel,
 :root[data-zp-theme="light"] .order-dialog-head{color:#17202A}
+
+/* 浅色外观适配补全：顶部汇总卡、门店清单、图标按钮、历史回填选择与
+   悬浮按钮（此前汇总卡在浅色下仍是深色块、正文白字不可读） */
+:root[data-zp-theme="light"] .order-summary-card,
+:root[data-zp-theme="light"] .order-route-card{background:#FFFFFF;border-color:#D7DDE3;box-shadow:0 8px 24px rgba(20,30,40,.08)}
+:root[data-zp-theme="light"] .order-shell.history-multi .order-route-card{border-color:#D7DDE3}
+:root[data-zp-theme="light"] .order-date,
+:root[data-zp-theme="light"] .order-route-name,
+:root[data-zp-theme="light"] .order-vehicle,
+:root[data-zp-theme="light"] .order-store-name,
+:root[data-zp-theme="light"] .history-choice-vehicle,
+:root[data-zp-theme="light"] .order-shell.history-multi .history-choice-main{color:var(--zp-text)!important}
+:root[data-zp-theme="light"] .order-store-name.nav,
+:root[data-zp-theme="light"] .order-store-name.nav:visited{color:var(--zp-text)!important}
+:root[data-zp-theme="light"] .order-summary-main span:nth-child(2),
+:root[data-zp-theme="light"] .order-summary-main span:nth-child(5){color:var(--zp-muted)}
+:root[data-zp-theme="light"] .order-summary-main b{color:var(--zp-soft)}
+:root[data-zp-theme="light"] .order-icon-btn{background:#FFFFFF;border-color:#D7DDE3;color:var(--zp-text)}
+:root[data-zp-theme="light"] .order-icon-btn:active{background:#E8EDF1}
+:root[data-zp-theme="light"] .order-menu{background:#FFFFFF;border-color:#D7DDE3;box-shadow:0 10px 24px rgba(20,30,40,.16)}
+:root[data-zp-theme="light"] .order-menu button{color:var(--zp-text);border-bottom-color:rgba(20,30,40,.08)}
+:root[data-zp-theme="light"] .order-menu button:active{background:#E8EDF1}
+:root[data-zp-theme="light"] .order-menu .logout{color:#C2453A}
+:root[data-zp-theme="light"] .order-history-choice{background:#FFFFFF;border-color:#D7DDE3;color:var(--zp-text)}
+:root[data-zp-theme="light"] .order-history-choice:active{background:#F0F3F6}
+:root[data-zp-theme="light"] .history-choice-index{color:var(--zp-soft)}
+:root[data-zp-theme="light"] .history-choice-status{background:#EDF1F5;color:var(--zp-muted)}
+:root[data-zp-theme="light"] .choice-btn{background:#F0F2F4;border-color:rgba(20,30,40,.12);color:var(--zp-text)}
+:root[data-zp-theme="light"] .choice-btn.selected{border-color:#778796;background:#DCE5EC}
+:root[data-zp-theme="light"] .choice-btn:active{background:#E1E7EC}
+:root[data-zp-theme="light"] .order-dialog-actions .secondary-btn{background:#E8EDF1;color:var(--zp-text);border-color:#D1D8DF}
+:root[data-zp-theme="light"] .order-dialog-actions .primary-btn{background:#263746;color:#FFFFFF;border-color:#263746}
+:root[data-zp-theme="light"] .order-pending-fab{background:#263746;color:#FFFFFF;border-color:#263746;box-shadow:0 10px 30px rgba(20,30,40,.30)}
+:root[data-zp-theme="light"] .order-pending-fab:active{background:#1D2A36}

@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="智配One">
 <link rel="stylesheet" href="/css/app.css?v=22c7c4e5"><link rel="stylesheet" href="/css/ui-unified.css?v=b39ead8d">
-<link rel="stylesheet" href="/css/mobile-ui.css?v=285d41d0"><link rel="stylesheet" href="/css/business-pages.css?v=4c86a8ec">
+<link rel="stylesheet" href="/css/mobile-ui.css?v=285d41d0"><link rel="stylesheet" href="/css/business-pages.css?v=6a65c5ef">
 <style>
 .dispatch-page{min-height:100dvh;padding-bottom:88px;background:#05070A}
 .dispatch-page .topbar{position:sticky;top:0;z-index:10}
@@ -105,6 +105,44 @@
 .dispatch-page .bottom-nav-icon svg *{
   font-size:0!important;
 }
+
+/* 浅色外观适配：页面背景、当前线路卡、功能入口、切换弹层与确认弹窗
+   （此前整页只有深色一套，浅色模式下与其它业务页不一致） */
+:root[data-zp-theme="light"] .dispatch-page{background:#F4F6F8}
+:root[data-zp-theme="light"] .dispatch-intro p{color:#46515D}
+:root[data-zp-theme="light"] .dispatch-section-title{color:#66717D}
+:root[data-zp-theme="light"] .dispatch-current{background:#FFFFFF;border-color:#D7DDE3;box-shadow:0 8px 24px rgba(20,30,40,.08)}
+:root[data-zp-theme="light"] .dispatch-current-name{color:#17202A}
+:root[data-zp-theme="light"] .dispatch-current-status,
+:root[data-zp-theme="light"] .dispatch-current-count{color:#46515D}
+:root[data-zp-theme="light"] .dispatch-switch{background:#263746;border-color:#263746;color:#FFFFFF}
+:root[data-zp-theme="light"] .dispatch-switch:active{background:#1D2A36}
+:root[data-zp-theme="light"] .dispatch-action-card{background:#FFFFFF;border-color:#D7DDE3;box-shadow:0 8px 24px rgba(20,30,40,.08)}
+:root[data-zp-theme="light"] .dispatch-action{color:#17202A;border-bottom-color:rgba(20,30,40,.08)}
+:root[data-zp-theme="light"] .dispatch-action:active{background:#EDF1F5}
+:root[data-zp-theme="light"] .dispatch-action-icon{background:#F0F2F4;color:#46515D}
+:root[data-zp-theme="light"] .dispatch-action-main small{color:#66717D}
+:root[data-zp-theme="light"] .dispatch-action-arrow{color:#8793A0}
+:root[data-zp-theme="light"] .dispatch-message,
+:root[data-zp-theme="light"] .dispatch-empty{color:#66717D}
+:root[data-zp-theme="light"] .dispatch-sheet{background:#FFFFFF;border-top-color:#D7DDE3;box-shadow:0 -12px 36px rgba(20,30,40,.18)}
+:root[data-zp-theme="light"] .dispatch-sheet-confirm{background:#263746;border-color:#263746;color:#FFFFFF}
+:root[data-zp-theme="light"] .dispatch-sheet-sub,
+:root[data-zp-theme="light"] .dispatch-picker-option,
+:root[data-zp-theme="light"] .dispatch-picker-option small,
+:root[data-zp-theme="light"] .dispatch-picker-empty{color:#66717D}
+:root[data-zp-theme="light"] .dispatch-picker{background:#F0F2F4;border-top-color:#D7DDE3;border-bottom-color:#D7DDE3}
+:root[data-zp-theme="light"] .dispatch-picker::before{background:linear-gradient(#F0F2F4,rgba(240,242,244,0))}
+:root[data-zp-theme="light"] .dispatch-picker::after{background:linear-gradient(rgba(240,242,244,0),#F0F2F4)}
+:root[data-zp-theme="light"] .dispatch-picker-selection{border-top-color:#C9D1D9;border-bottom-color:#C9D1D9}
+:root[data-zp-theme="light"] .dispatch-picker-option.is-selected{color:#17202A}
+:root[data-zp-theme="light"] .dispatch-sheet-cancel{background:#E8EDF1;border-color:#D1D8DF;color:#17202A}
+:root[data-zp-theme="light"] .dispatch-confirm-backdrop{background:rgba(20,30,40,.45)}
+:root[data-zp-theme="light"] .dispatch-dialog{background:#FFFFFF;border-color:#D7DDE3}
+:root[data-zp-theme="light"] .dispatch-dialog p{color:#46515D}
+:root[data-zp-theme="light"] .dispatch-dialog-cancel{background:#E8EDF1;border-color:#D1D8DF;color:#46515D}
+:root[data-zp-theme="light"] .dispatch-dialog-ok{background:#263746;border-color:#263746;color:#FFFFFF}
+:root[data-zp-theme="light"] .dispatch-dialog-actions button{border-color:#D7DDE3}
 </style>
 </head>
 <body>

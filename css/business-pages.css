@@ -137,3 +137,39 @@
 :root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav{background:#FFFFFF!important;border-color:#D7DDE3!important}
 :root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-item{color:#596674!important}
 :root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-item[aria-current="page"]{color:#17202A!important}
+
+/* 浅色外观适配补全：线路页/账号页页面背景与标题、线路申请折叠面板、
+   通用卡片文本（此前标题白字落在浅背景上不可读） */
+:root[data-zp-theme="light"] .dispatch-page,
+:root[data-zp-theme="light"] .account-page{background:var(--zp-bg)}
+:root[data-zp-theme="light"] .dispatch-page .topbar h1,
+:root[data-zp-theme="light"] .account-page .topbar h1,
+:root[data-zp-theme="light"] .route-apply-page .topbar h1{color:var(--zp-text)}
+:root[data-zp-theme="light"] .dispatch-section-title{color:var(--zp-soft)}
+:root[data-zp-theme="light"] .dispatch-option{background:#FFFFFF;border-color:#D7DDE3;color:var(--zp-text)}
+:root[data-zp-theme="light"] .dispatch-option small,
+:root[data-zp-theme="light"] .dispatch-route-meta small{color:var(--zp-muted)}
+:root[data-zp-theme="light"] .dispatch-option.selected{border-color:#8793A0;background:#EDF1F5}
+:root[data-zp-theme="light"] .dispatch-option:active{background:#E8EDF1}
+:root[data-zp-theme="light"] .route-apply-page .collapse-head{color:var(--zp-text)}
+:root[data-zp-theme="light"] .route-apply-page .collapse-icon{color:var(--zp-muted)}
+:root[data-zp-theme="light"] .route-meta,
+:root[data-zp-theme="light"] .request-row{color:var(--zp-muted)}
+:root[data-zp-theme="light"] .route-meta strong,
+:root[data-zp-theme="light"] .request-row strong,
+:root[data-zp-theme="light"] .account-row strong{color:var(--zp-text)}
+:root[data-zp-theme="light"] .page2-card{background:#FFFFFF;border-color:#D7DDE3;color:var(--zp-text);box-shadow:0 8px 24px rgba(20,30,40,.08)}
+:root[data-zp-theme="light"] .page2-label{color:var(--zp-muted)}
+:root[data-zp-theme="light"] .page2-soft{color:var(--zp-soft)}
+:root[data-zp-theme="light"] .account-page .page2-card{background:#FFFFFF;border-color:#D7DDE3;box-shadow:0 8px 24px rgba(20,30,40,.08)}
+:root[data-zp-theme="light"] .account-page .page2-card h2{color:var(--zp-text)}
+:root[data-zp-theme="light"] .account-page .page2-label,
+:root[data-zp-theme="light"] .account-page .account-row{color:var(--zp-muted)}
+:root[data-zp-theme="light"] .account-page .account-collapse-body,
+:root[data-zp-theme="light"] .account-page .account-danger-box{border-top-color:rgba(20,30,40,.12)}
+:root[data-zp-theme="light"] .account-page .account-danger-box strong{color:var(--zp-text)}
+:root[data-zp-theme="light"] .account-page .account-danger-box p{color:var(--zp-soft)}
+:root[data-zp-theme="light"] .account-page .page2-danger-btn{background:#FCEBEC;border-color:#E8BFC3;color:#8A2630}
+:root[data-zp-theme="light"] .account-page .account-danger-head{color:#C2453A}
+:root[data-zp-theme="light"] .page2-danger{color:#C2453A!important}
+:root[data-zp-theme="light"] .empty{color:var(--zp-soft)}

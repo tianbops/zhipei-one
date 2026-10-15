@@ -199,3 +199,12 @@ body.data-panel-open .data-float-scroll{opacity:0!important;visibility:hidden!im
 :root[data-zp-theme="light"] .data-feedback{background:#F0F2F4!important;border-color:#D7DDE3!important;color:#26323D!important}
 :root[data-zp-theme="light"] .data-feedback.success{background:#E8F5EC!important;border-color:#B8DCC3!important;color:#205C35!important}
 :root[data-zp-theme="light"] .data-feedback.error{background:#FCEBEC!important;border-color:#E8BFC3!important;color:#8A2630!important}
+
+/* 浅色外观适配补全：顶部方形菜单按钮与下拉菜单（此前仍是深色块） */
+:root[data-zp-theme="light"] .data-page-menu-btn{background:#FFFFFF;border-color:#D7DDE3;color:var(--zp-text)}
+:root[data-zp-theme="light"] .data-page-menu-btn:active{background:#E8EDF1}
+:root[data-zp-theme="light"] .data-page .app-back{background:#FFFFFF;border-color:#D7DDE3;color:var(--zp-text)}
+:root[data-zp-theme="light"] .data-page .app-back:active{background:#E8EDF1}
+:root[data-zp-theme="light"] .data-page-menu{background:#FFFFFF;border-color:#D7DDE3;box-shadow:0 14px 34px rgba(20,30,40,.16)}
+:root[data-zp-theme="light"] .data-page-menu button{color:var(--zp-text)}
+:root[data-zp-theme="light"] .data-page-menu button:active{background:#E8EDF1}
