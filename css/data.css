@@ -188,3 +188,14 @@ body.data-panel-open .data-float-scroll{opacity:0!important;visibility:hidden!im
   .data-summary strong:empty::before,
   .data-list-count:empty::before{animation:none}
 }
+
+
+/* 浅色外观适配：数据中心输入、结果和反馈状态 */
+:root[data-zp-theme="light"] .data-textarea,
+:root[data-zp-theme="light"] .data-input{background:#FFFFFF!important;color:#17202A!important;border-color:#C9D1D9!important}
+:root[data-zp-theme="light"] .data-textarea::placeholder,
+:root[data-zp-theme="light"] .data-input::placeholder{color:#687582!important}
+:root[data-zp-theme="light"] .data-action-primary{background:#263746!important;border-color:#263746!important;color:#FFFFFF!important}
+:root[data-zp-theme="light"] .data-feedback{background:#F0F2F4!important;border-color:#D7DDE3!important;color:#26323D!important}
+:root[data-zp-theme="light"] .data-feedback.success{background:#E8F5EC!important;border-color:#B8DCC3!important;color:#205C35!important}
+:root[data-zp-theme="light"] .data-feedback.error{background:#FCEBEC!important;border-color:#E8BFC3!important;color:#8A2630!important}
