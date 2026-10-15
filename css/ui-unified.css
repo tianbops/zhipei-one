@@ -727,7 +727,6 @@ textarea:disabled,
   --soft:#66717D;
   --text:#17202A;
 }
-:root[data-zp-theme="light"] html{color-scheme:light}
 :root[data-zp-theme="light"] body,
 :root[data-zp-theme="light"] .page2,
 :root[data-zp-theme="light"] .shell,
