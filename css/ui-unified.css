@@ -693,3 +693,84 @@ textarea:disabled,
 @media(max-width:380px){
   .zp-business-nav-page .bottom-nav{padding-left:6px!important;padding-right:6px!important}
 }
+
+
+/* ===== 用户外观偏好：主题与全局字号 ===== */
+:root[data-zp-theme="light"]{
+  color-scheme:light;
+  --zp-bg:#F4F6F8;
+  --zp-surface:#FFFFFF;
+  --zp-surface-2:#F0F2F4;
+  --zp-surface-3:#E6EAEE;
+  --zp-line:#D7DDE3;
+  --zp-text:#17202A;
+  --zp-muted:#46515D;
+  --zp-soft:#66717D;
+  --zp-card:#FFFFFF;
+  --zp-card-translucent:#FFFFFF;
+  --zp-card-translucent-2:#F0F2F4;
+  --zp-divider:rgba(20,30,40,.12);
+  --ui-bg:var(--zp-bg);
+  --ui-surface:var(--zp-surface);
+  --ui-surface-2:var(--zp-surface-2);
+  --ui-surface-3:var(--zp-surface-3);
+  --ui-line:var(--zp-line);
+  --ui-text:var(--zp-text);
+  --ui-muted:var(--zp-muted);
+  --ui-soft:var(--zp-soft);
+}
+:root[data-zp-theme="light"] html,
+:root[data-zp-theme="light"] body,
+:root[data-zp-theme="light"] .page2,
+:root[data-zp-theme="light"] .shell,
+:root[data-zp-theme="light"] .page2-card,
+:root[data-zp-theme="light"] .card,
+:root[data-zp-theme="light"] .data-list-card,
+:root[data-zp-theme="light"] .data-route-card,
+:root[data-zp-theme="light"] .task-card{
+  background-color:var(--zp-bg);
+  color:var(--zp-text);
+}
+:root[data-zp-theme="light"] .page2-card,
+:root[data-zp-theme="light"] .card,
+:root[data-zp-theme="light"] .data-list-card,
+:root[data-zp-theme="light"] .data-route-card,
+:root[data-zp-theme="light"] .task-card,
+:root[data-zp-theme="light"] .confirm-panel,
+:root[data-zp-theme="light"] .pending-box{
+  background-color:var(--zp-surface);
+  border-color:var(--zp-line);
+  color:var(--zp-text);
+}
+:root[data-zp-theme="light"] p,
+:root[data-zp-theme="light"] span,
+:root[data-zp-theme="light"] label,
+:root[data-zp-theme="light"] strong,
+:root[data-zp-theme="light"] h1,
+:root[data-zp-theme="light"] h2,
+:root[data-zp-theme="light"] h3,
+:root[data-zp-theme="light"] .page2-soft,
+:root[data-zp-theme="light"] .summary,
+:root[data-zp-theme="light"] .account-row,
+:root[data-zp-theme="light"] .page2-row{
+  color:var(--zp-text);
+}
+:root[data-zp-theme="light"] input,
+:root[data-zp-theme="light"] select,
+:root[data-zp-theme="light"] textarea{
+  background:#FFFFFF!important;
+  color:#17202A!important;
+  border-color:#C9D1D9!important;
+}
+:root[data-zp-theme="light"] button,
+:root[data-zp-theme="light"] .page2-secondary,
+:root[data-zp-theme="light"] .account-collapse-head{
+  color:var(--zp-text);
+}
+:root[data-zp-theme="light"] .account-page .account-logout-section .account-logout{
+  background:#E8EDF1;
+  border-color:#D1D8DF;
+  color:#17202A;
+}
+:root[data-zp-theme="light"] .topbar,
+:root[data-zp-theme="light"] .app-back{color:var(--zp-text)}
