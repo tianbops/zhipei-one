@@ -16,6 +16,27 @@
   <div class="account-row"><span>用户名</span><strong id="username">读取中…</strong></div>
 </section>
 
+<section class="page2-card appearance-card" aria-labelledby="appearanceTitle">
+  <h2 id="appearanceTitle">外观与显示</h2>
+  <div class="appearance-setting">
+    <div class="appearance-setting-copy"><strong>外观模式</strong><p class="page2-soft">跟随手机或系统的外观设置，也可手动切换。</p></div>
+    <div class="appearance-theme-options" role="group" aria-label="外观模式">
+      <button type="button" class="appearance-theme-option" data-theme-choice="system" aria-pressed="false">跟随系统</button>
+      <button type="button" class="appearance-theme-option" data-theme-choice="dark" aria-pressed="false">深色</button>
+      <button type="button" class="appearance-theme-option" data-theme-choice="light" aria-pressed="false">浅色</button>
+    </div>
+  </div>
+  <div class="appearance-setting appearance-font-setting">
+    <div class="appearance-setting-copy"><strong>全局文字大小</strong><p class="page2-soft">调整全站文字显示，设置会自动保存。</p></div>
+    <div class="appearance-font-control">
+      <span aria-hidden="true" class="appearance-font-small">A</span>
+      <input id="appearanceFontScale" type="range" min="0.85" max="1.3" step="0.05" value="1" aria-label="全局文字大小">
+      <span aria-hidden="true" class="appearance-font-large">A</span>
+      <output id="appearanceFontValue" for="appearanceFontScale">标准</output>
+    </div>
+  </div>
+</section>
+
 <section id="installCard" class="page2-card" hidden>
   <h2>添加到手机桌面</h2>
   <p id="installHint" class="page2-soft">从桌面像 App 一样打开，省去每次输网址。</p>
@@ -87,6 +108,31 @@ function toggle(toggle,body){
 toggle($("usernameToggle"),$("usernameBody"));
 toggle($("passwordToggle"),$("passwordBody"));
 toggle($("dangerToggle"),$("dangerBody"));
+
+const themeOptions=[...document.querySelectorAll("[data-theme-choice]")];
+function renderAppearance(){
+ const selected=window.zpGetAppearanceTheme?window.zpGetAppearanceTheme():"system";
+ themeOptions.forEach(button=>{
+  const active=button.dataset.themeChoice===selected;
+  button.setAttribute("aria-pressed",String(active));
+  button.classList.toggle("is-selected",active);
+ });
+ const scale=window.zpGetFontScale?window.zpGetFontScale():1;
+ const slider=$("appearanceFontScale"),output=$("appearanceFontValue");
+ if(slider)slider.value=String(scale);
+ if(output)output.textContent=scale<.99?"较小":scale>1.01?"较大":"标准";
+}
+themeOptions.forEach(button=>button.addEventListener("click",()=>{
+ window.zpSetAppearanceTheme?.(button.dataset.themeChoice);
+ renderAppearance();
+}));
+$("appearanceFontScale")?.addEventListener("input",event=>{
+ window.zpSetFontScale?.(Number(event.target.value));
+ renderAppearance();
+});
+document.addEventListener("zp:appearancechange",renderAppearance);
+document.addEventListener("zp:fontscalechange",renderAppearance);
+
 
 async function api(u,o={}){const r=await fetch(u,{credentials:"same-origin",cache:"no-store",...o});const d=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(d.error||d.message||"请求失败");e.code=d.code||"HTTP_"+r.status;throw e}return d}
 function show(id,e){$(id).textContent=(e.code?"["+e.code+"] ":"")+(e.message||"请求失败")}
