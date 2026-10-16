@@ -35,13 +35,14 @@ function render(){
   }).join('');
   $('routeList').querySelectorAll('.order-history-swipe-row').forEach(row=>{
     const b=row.querySelector('.order-history-choice');
-    b.onclick=()=>{
+    if(b)b.onclick=()=>{
       // 行处于展开（露出删除）状态时，点击卡片只收起，避免误进入详情
       if(row.classList.contains('open')){row.classList.remove('open');return}
       const x=historyChoices[Number(row.dataset.historyIndex)];
       historyChoices=null;order=x;render();
     };
-    row.querySelector('.history-choice-delete').onclick=async e=>{
+    const deleteButton=row.querySelector('.history-choice-delete');
+    if(deleteButton)deleteButton.onclick=async e=>{
       e.stopPropagation();
       const index=Number(row.dataset.historyIndex),x=historyChoices[index];
       // ⚠ 按钮引用必须在 await 之前取：事件派发结束后 e.currentTarget 会被置空，
@@ -392,9 +393,9 @@ function openConfirm(){
   {rank:10,probe:()=>$('confirmDialog'),dirty:()=>!!document.querySelector('#confirmDialog .choice-btn.selected'),close:()=>{$('confirmDialog').hidden=true;return true}},
   {rank:20,probe:()=>$('menuPanel'),close:()=>{setMenu(false);return true}}
 );
-$('menuBtn').onclick=e=>{e.stopPropagation();setMenu(!menuOpen)};
-$('editRouteBtn').onclick=()=>location.href='/pages/data.html?from=order&id='+encodeURIComponent(order.id)+'&source=process';
-$('shareBtn').onclick=async()=>{
+if($('menuBtn'))$('menuBtn').onclick=e=>{e.stopPropagation();setMenu(!menuOpen)};
+if($('editRouteBtn'))$('editRouteBtn').onclick=()=>location.href='/pages/data.html?from=order&id='+encodeURIComponent(order.id)+'&source=process';
+if($('shareBtn'))$('shareBtn').onclick=async()=>{
  setMenu(false);if(!order)return;
  const s=order.summary||{},list=Array.isArray(order.stores)?order.stores:[];
  // 分享必须带完整门店清单：只发「N家·Xt」汇总，接收方看不到当天到底配送哪些店。
@@ -407,10 +408,10 @@ $('shareBtn').onclick=async()=>{
  const text=lines.join('\n');
  try{if(navigator.share)await navigator.share({title:'当日运单',text});else{await navigator.clipboard?.writeText(text);zpToast('已复制运单清单','success')}}catch{}
 };
-$('logoutBtn').onclick=async()=>{setMenu(false);if(!(await zpConfirm('退出登录','确定退出当前账号吗？')))return;try{await fetch('/api/logout',{method:'POST',credentials:'same-origin',cache:'no-store'})}finally{location.replace('/')}};
-$('closeConfirm').onclick=()=>$('confirmDialog').hidden=true;
-$('cancelConfirm').onclick=()=>$('confirmDialog').hidden=true;
-$('confirmDialog').addEventListener('click',e=>{if(e.target===$('confirmDialog'))$('confirmDialog').hidden=true});
+if($('logoutBtn'))$('logoutBtn').onclick=async()=>{setMenu(false);if(!(await zpConfirm('退出登录','确定退出当前账号吗？')))return;try{await fetch('/api/logout',{method:'POST',credentials:'same-origin',cache:'no-store'})}finally{location.replace('/')}};
+if($('closeConfirm'))$('closeConfirm').onclick=()=>$('confirmDialog').hidden=true;
+if($('cancelConfirm'))$('cancelConfirm').onclick=()=>$('confirmDialog').hidden=true;
+$('confirmDialog')?.addEventListener('click',e=>{if(e.target===$('confirmDialog'))$('confirmDialog').hidden=true});
 document.addEventListener('click',e=>{if(menuOpen&&!$('menuPanel').contains(e.target)&&e.target!==$('menuBtn'))setMenu(false)});
 (async()=>{
   try{
