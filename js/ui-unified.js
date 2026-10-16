@@ -44,27 +44,70 @@
     // .dispatch-message 这类「div 直接包文字」的提示在调字号时完全不变化，
     // 表现为同一页面有的字变大有的不变。新增文字级标签时优先补到这里。
     const textSelector="p,span,a,button,label,input,select,textarea,li,td,th,strong,small,em,i,b,u,s,cite,code,kbd,var,mark,time,figcaption,option,optgroup,dt,dd,blockquote,caption,address,h1,h2,h3,h4,h5,h6,legend,summary,output,div,.summary,.message,.page2-soft,.store-row,.account-row,.page2-row,.page2-label,.topbar,.order-title";
-    const scaleTextElement=el=>{
-      if(!(el instanceof Element)||!el.matches(textSelector)||el.closest("svg,script,style"))return;
-      if(!el.dataset.zpFontBase){
-        const size=parseFloat(getComputedStyle(el).fontSize);
-        if(!Number.isFinite(size)||size<=0)return;
-        el.dataset.zpFontBase=String(size);
+    const collectTextTargets=(rootNode=document)=>{
+      const targets=[];
+      if(rootNode instanceof Element&&rootNode.matches(textSelector))targets.push(rootNode);
+      rootNode.querySelectorAll?.(textSelector).forEach(el=>targets.push(el));
+      return targets.filter(el=>!el.closest("svg,script,style"));
+    };
+    const cacheTextBase=el=>{
+      if(el.dataset.zpFontBase)return;
+      // 记录原始 inline 字号，恢复到 100% 时不破坏页面自己的行内样式。
+      el.dataset.zpFontInline=el.style.getPropertyValue("font-size");
+      el.dataset.zpFontInlinePriority=el.style.getPropertyPriority("font-size");
+      let size=parseFloat(getComputedStyle(el).fontSize);
+      // 动态插入的文本可能继承了已缩放父级的字号；若当前字号就是父级字号，
+      // 继承父级的未缩放基准，避免再次乘比例造成层级越深文字越大。
+      let parent=el.parentElement;
+      while(parent&&parent!==document.documentElement){
+        if(parent.dataset?.zpFontBase){
+          const parentSize=parseFloat(getComputedStyle(parent).fontSize);
+          if(Number.isFinite(parentSize)&&Math.abs(size-parentSize)<0.1){
+            size=Number(parent.dataset.zpFontBase);
+          }
+          break;
+        }
+        parent=parent.parentElement;
       }
-      el.style.setProperty("font-size",(Number(el.dataset.zpFontBase)*Math.max(0.85,Math.min(1.3,Number(root.style.getPropertyValue("--zp-font-scale"))||1)))+"px","important");
+      if(Number.isFinite(size)&&size>0)el.dataset.zpFontBase=String(size);
     };
     const scanText=(rootNode=document)=>{
-      if(rootNode instanceof Element)scaleTextElement(rootNode);
-      rootNode.querySelectorAll?.(textSelector).forEach(scaleTextElement);
+      const targets=collectTextTargets(rootNode);
+      // 两阶段处理：先缓存整个子树的原始计算字号，再统一应用缩放；
+      // 不能一边改父元素一边读取子元素，否则首次载入非 100% 字号时会层层叠乘。
+      targets.forEach(cacheTextBase);
+      const scale=Math.max(0.85,Math.min(1.3,Number(root.style.getPropertyValue("--zp-font-scale"))||1));
+      targets.forEach(el=>{
+        const base=Number(el.dataset.zpFontBase);
+        if(Number.isFinite(base)&&base>0)el.style.setProperty("font-size",(base*scale)+"px","important");
+      });
+    };
+    const resetTextScale=()=>{
+      collectTextTargets(document).forEach(el=>{
+        if(!el.dataset.zpFontBase)return;
+        el.style.removeProperty("font-size");
+        const inlineSize=el.dataset.zpFontInline||"";
+        const inlinePriority=el.dataset.zpFontInlinePriority||"";
+        if(inlineSize)el.style.setProperty("font-size",inlineSize,inlinePriority);
+        delete el.dataset.zpFontBase;
+        delete el.dataset.zpFontInline;
+        delete el.dataset.zpFontInlinePriority;
+      });
     };
     let textObserver=null;
     const applyScale=value=>{
       const n=Math.max(0.85,Math.min(1.3,Number(value)||1));
       root.style.setProperty("--zp-font-scale",String(n));
-      scanText();
-      if(!textObserver&&document.body&&window.MutationObserver){
-        textObserver=new MutationObserver(records=>records.forEach(record=>record.addedNodes.forEach(node=>{if(node.nodeType===1)scanText(node)})));
-        textObserver.observe(document.body,{childList:true,subtree:true});
+      if(Math.abs(n-1)<0.001){
+        if(textObserver){textObserver.disconnect();textObserver=null;}
+        // 默认字号不需要逐元素写入同值 !important，也不需要常驻 MutationObserver。
+        resetTextScale();
+      }else{
+        scanText();
+        if(!textObserver&&document.body&&window.MutationObserver){
+          textObserver=new MutationObserver(records=>records.forEach(record=>record.addedNodes.forEach(node=>{if(node.nodeType===1)scanText(node)})));
+          textObserver.observe(document.body,{childList:true,subtree:true});
+        }
       }
       document.dispatchEvent(new CustomEvent("zp:fontscalechange",{detail:{scale:n}}));
     };
