@@ -3,8 +3,6 @@ const stateEl=document.getElementById("historyState"),listEl=document.getElement
 const picker=document.getElementById("historyPicker"),pickerPanel=document.querySelector(".history-picker-panel"),pickerClose=document.getElementById("historyPickerClose"),pickerTitle=document.getElementById("historyPickerTitle"),pickerGrid=document.getElementById("historyPickerGrid"),pickerPrev=document.getElementById("historyPickerPrev"),pickerNext=document.getElementById("historyPickerNext"),pickerBtn=document.getElementById("historyPickerBtn");
 let model={history:[],range:null},openRow=null,pendingDelete=null,pickerMonth="";
 const focusDate=new URLSearchParams(location.search).get("date")||"";
-const searchForm=document.getElementById("historySearchForm"),searchInput=document.getElementById("historySearchInput"),searchMonths=document.getElementById("historySearchMonths"),searchState=document.getElementById("historySearchState"),searchResults=document.getElementById("historySearchResults");
-let searchController=null;
 
 const todayCN=()=>{const p=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());const v=Object.fromEntries(p.filter(x=>x.type!=="literal").map(x=>[x.type,x.value]));return `${v.year}-${v.month}-${v.day}`;};
 const monthKey=d=>String(d).slice(0,7),monthLabel=m=>{const [y,mo]=m.split("-");return y+"年"+Number(mo)+"月"},dateLabel=d=>{const [y,m,day]=d.split("-");return Number(m)+"月"+Number(day)+"日"},fmtWeight=v=>(Math.round((Number(v)||0)*100)/100).toFixed(2)+"t",esc=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -18,40 +16,6 @@ function render(){closeOpen();listEl.innerHTML="";const groups=new Map();for(con
 ordered.forEach(([month,items])=>{items.sort((a,b)=>b.date.localeCompare(a.date));const totalWeight=items.reduce((n,x)=>n+(Number(x.totalWeight)||0),0),section=document.createElement("section");section.className="history-month";section.dataset.month=month;const h=shell("month",month),main=document.createElement("button");main.type="button";main.className="history-month-main";main.innerHTML="<span>"+esc(monthLabel(month))+"</span><small>"+items.length+"天 · "+fmtWeight(totalWeight)+"</small>";h.surface.appendChild(main);h.action.onclick=()=>askDelete("month",month,"确定删除"+monthLabel(month)+"全部历史记录吗？删除后可在回收站恢复（7天内）。");const body=document.createElement("div");body.className="history-month-body";section.classList.toggle("expanded",month===currentMonth);
 main.onclick=()=>{if(h.row.classList.contains("swiped")){closeOpen();return}section.classList.toggle("expanded")};
 items.forEach(item=>{const r=shell("date",item.date),dm=document.createElement("button");dm.type="button";dm.className="history-date-main";dm.innerHTML="<span>"+esc(dateLabel(item.date))+"</span><small>"+(Number(item.count||0)>1?"<b class=\"history-count-highlight\">"+Number(item.count)+"次</b> · ":"")+Number(item.storeCount||0)+"家 · "+fmtWeight(item.totalWeight)+"</small>";r.surface.appendChild(dm);dm.onclick=()=>{if(r.row.classList.contains("swiped")){closeOpen();return}location.href="/pages/order_detail.html?source=today&from=history&date="+encodeURIComponent(item.date)};r.action.onclick=()=>askDelete("date",item.date,"确定删除"+dateLabel(item.date)+"历史记录吗？删除后可在回收站恢复（7天内）。");body.appendChild(r.row)});section.append(h.row,body);listEl.appendChild(section)})}
-function renderSearchResults(items,limited){
- searchResults.innerHTML="";
- searchResults.hidden=false;
- if(!items.length){searchResults.textContent="没有找到匹配的历史运单";return}
- const frag=document.createDocumentFragment();
- for(const item of items){
-  const b=document.createElement("button");b.type="button";b.className="history-search-result";
-  const title=document.createElement("strong");title.textContent=(item.date||"")+((item.routeName?" · "+(window.zpRouteName?window.zpRouteName(item.routeName):item.routeName):""));/* 全局标准：文本位置统一「X号线」 */
-  const meta=document.createElement("span");meta.textContent=(Number(item.storeCount)||0)+" 家 · "+fmtWeight(item.totalWeight)+(item.vehicle?" · "+item.vehicle:"");
-  const names=document.createElement("small");names.textContent=(item.storeNames||[]).join("、");
-  b.append(title,meta,names);b.addEventListener("click",()=>{location.href="/pages/order_detail.html?source=today&from=history&date="+encodeURIComponent(item.date)});
-  frag.appendChild(b);
- }
- searchResults.appendChild(frag);
- if(limited){const note=document.createElement("p");note.className="history-search-note";note.textContent="结果最多显示 100 条，请缩小关键词或时间范围。";searchResults.appendChild(note)}
-}
-async function runHistorySearch(event){
- if(event)event.preventDefault();
- const q=String(searchInput?.value||"").trim();
- if(!q){searchState.textContent="请输入姓名、电话、地址、运单号或门店关键词";searchResults.hidden=true;searchInput?.focus();return}
- if(searchController)searchController.abort();
- searchController=new AbortController();
- searchState.textContent="正在搜索…";searchResults.hidden=true;
- try{
-  const params=new URLSearchParams({q,months:String(searchMonths?.value||"3")});
-  const r=await fetch("/api/history?"+params.toString(),{credentials:"same-origin",cache:"no-store",signal:searchController.signal});
-  const d=await r.json().catch(()=>null);
-  if(!r.ok||!d?.success)throw new Error(d?.error||"历史搜索失败，请缩小时间范围后重试");
-  renderSearchResults(Array.isArray(d.results)?d.results:[],!!d.limited);
-  searchState.textContent="找到 "+Number(d.count||0)+" 条匹配记录 · "+(d.range?.start||"")+" 至 "+(d.range?.end||"");
- }catch(e){if(e?.name==="AbortError")return;searchState.textContent=e.message||"搜索失败，请稍后重试";searchResults.hidden=true}
-}
-searchForm?.addEventListener("submit",runHistorySearch);
-searchInput?.addEventListener("input",()=>{if(!searchInput.value.trim()){if(searchController){searchController.abort();searchController=null}searchState.textContent="";searchResults.innerHTML="";searchResults.hidden=true}});
 async function load(){
  try{
   const r=await fetch("/api/history",{credentials:"same-origin",cache:"no-store"});
