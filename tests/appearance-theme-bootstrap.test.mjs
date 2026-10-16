@@ -51,6 +51,12 @@ assert.ok(
 for (const selector of [".history-choice-delete", ".history-delete", ".data-swipe-actions .data-swipe-delete", ".page2-danger-btn"]) {
   assert.ok(unified.includes(selector), "全局危险操作按钮样式缺少覆盖: " + selector);
 }
-assert.ok(unified.includes('button[class*="delete"]:active'), "危险操作按钮缺少按压状态");
-assert.ok(unified.includes('button[class*="delete"]:disabled'), "危险操作按钮缺少禁用状态");
+assert.ok(unified.includes('button[class*="delete"]:not(.account-collapse-head):active'), "危险操作按钮缺少按压状态");
+assert.ok(unified.includes('button[class*="delete"]:not(.account-collapse-head):disabled'), "危险操作按钮缺少禁用状态");
+// 折叠行组件（我的页「危险操作」展开头）不是动作按钮，必须被排除在实底红样式之外，保持与其它折叠行形状统一。
+assert.ok(
+  unified.includes('button[class*="danger"]:not(.account-collapse-head)') &&
+  !/\bbutton\[class\*="danger"\](?!:not)/.test(unified.split("/* 全站删除/危险动作唯一标准")[1] || ""),
+  "折叠行组件不得套用危险动作按钮实底样式"
+);
 console.log("主题首屏初始化与浅色基础对比度规则检查通过（" + themedPages.length + " 个页面）");

@@ -961,8 +961,8 @@ textarea:disabled,
 :root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-plus .bottom-nav-icon{box-shadow:0 8px 20px rgba(20,30,40,.22)!important}
 :root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-plus:active{background:transparent!important}
 
-:root[data-zp-theme="light"] button[class*="delete"]:disabled,
-:root[data-zp-theme="light"] button[class*="danger"]:disabled,
+:root[data-zp-theme="light"] button[class*="delete"]:not(.account-collapse-head):disabled,
+:root[data-zp-theme="light"] button[class*="danger"]:not(.account-collapse-head):disabled,
 :root[data-zp-theme="light"] .history-choice-delete:disabled {
   opacity:.55;
   cursor:not-allowed;
@@ -972,10 +972,11 @@ textarea:disabled,
 /* 全站删除/危险动作唯一标准（双主题，醒目危险语义红，与页面背景明确区分）：
    深色 = --ui-danger-soft 红晕底 + 红边 + var(--ui-danger)=#FF8278 字；
    浅色 = #FCEBEC 浅红底 + #E8BFC3 边 + var(--ui-danger)=#B4232F 字；
-   按压态各加深一档。仅统一视觉颜色，保留原按钮尺寸、位置、文案与确认逻辑。 */
-button[class*="delete"],
+   按压态各加深一档。仅统一视觉颜色，保留原按钮尺寸、位置、文案与确认逻辑。
+   排除 .account-collapse-head（我的页折叠行组件，非动作按钮，保持透明行样式与圆角卡片形状统一）。 */
+button[class*="delete"]:not(.account-collapse-head),
 a[class*="delete"],
-button[class*="danger"],
+button[class*="danger"]:not(.account-collapse-head),
 a[class*="danger"],
 .history-choice-delete,
 .history-delete,
@@ -991,9 +992,9 @@ a[class*="danger"],
   color:var(--ui-danger)!important;
   box-shadow:none!important;
 }
-button[class*="delete"]:active,
+button[class*="delete"]:not(.account-collapse-head):active,
 a[class*="delete"]:active,
-button[class*="danger"]:active,
+button[class*="danger"]:not(.account-collapse-head):active,
 a[class*="danger"]:active,
 .history-choice-delete:active,
 .history-delete:active,
@@ -1008,9 +1009,9 @@ a[class*="danger"]:active,
   border-color:rgba(255,130,120,.7)!important;
   color:var(--ui-danger)!important;
 }
-:root[data-zp-theme="light"] button[class*="delete"],
+:root[data-zp-theme="light"] button[class*="delete"]:not(.account-collapse-head),
 :root[data-zp-theme="light"] a[class*="delete"],
-:root[data-zp-theme="light"] button[class*="danger"],
+:root[data-zp-theme="light"] button[class*="danger"]:not(.account-collapse-head),
 :root[data-zp-theme="light"] a[class*="danger"],
 :root[data-zp-theme="light"] .history-choice-delete,
 :root[data-zp-theme="light"] .history-delete,
@@ -1026,9 +1027,9 @@ a[class*="danger"]:active,
   color:var(--ui-danger)!important;
   box-shadow:none!important;
 }
-:root[data-zp-theme="light"] button[class*="delete"]:active,
+:root[data-zp-theme="light"] button[class*="delete"]:not(.account-collapse-head):active,
 :root[data-zp-theme="light"] a[class*="delete"]:active,
-:root[data-zp-theme="light"] button[class*="danger"]:active,
+:root[data-zp-theme="light"] button[class*="danger"]:not(.account-collapse-head):active,
 :root[data-zp-theme="light"] a[class*="danger"]:active,
 :root[data-zp-theme="light"] .history-choice-delete:active,
 :root[data-zp-theme="light"] .history-delete:active,
