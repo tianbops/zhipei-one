@@ -147,7 +147,7 @@ function resetProcessingUI(){
   stopProcessingClock();
   processingStartedAt=0;
   processingCancelled=false;
-  if(processingCancelBtn)processingCancelBtn.hidden=true;
+  if(processingCancelBtn){processingCancelBtn.hidden=true;processingCancelBtn.disabled=false;}
   setProcessingStage(STAGE_DEFAULT);
   if(processingElapsedEl)processingElapsedEl.textContent="已用时 0s";
   if(!processingPanel||!sourceMenu)return;
@@ -195,7 +195,7 @@ const PROCESS_ERROR_TEXT={
 };
 function showProcessingError(message, hint, action, recoverable, requestId){
   stopProcessingClock();
-  if(processingCancelBtn)processingCancelBtn.hidden=true;
+  if(processingCancelBtn){processingCancelBtn.hidden=true;processingCancelBtn.disabled=false;}
   if(processingPanel)processingPanel.hidden=true;
   if(sourceMenu)sourceMenu.hidden=true;
   if(overlay)overlay.classList.add("processing-error-state");
@@ -213,7 +213,7 @@ function showProcessingUI(){
   if(processingError)processingError.hidden=true;
   sourceMenu.hidden=true;processingPanel.hidden=false;
   processingCancelled=false;
-  if(processingCancelBtn)processingCancelBtn.hidden=true;
+  if(processingCancelBtn){processingCancelBtn.hidden=true;processingCancelBtn.disabled=false;}
   setProcessingStage(STAGE_DEFAULT);
   if(processingElapsedEl)processingElapsedEl.textContent="已用时 0s";
   resetProcessingProgress();
