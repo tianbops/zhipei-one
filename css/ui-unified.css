@@ -716,6 +716,7 @@ textarea:disabled,
   --zp-text:#17202A;
   --zp-muted:#46515D;
   --zp-soft:#66717D;
+  --zp-danger:#C2453A; /* 浅色主题的错误/危险提示文字，避免沿用深色浅红造成低对比度 */
   --zp-card:#FFFFFF;
   --zp-card-translucent:#FFFFFF;
   --zp-card-translucent-2:#F0F2F4;
