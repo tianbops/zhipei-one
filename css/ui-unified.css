@@ -1030,3 +1030,65 @@ textarea:disabled,
   opacity:.55;
   cursor:not-allowed;
 }
+
+
+/* 危险操作按钮颜色标准化：与全站次按钮使用同一中性色体系，不再出现红色底/边与局部白边。
+   仅统一视觉颜色，保留原按钮尺寸、位置、文案与确认逻辑。 */
+button[class*="delete"],
+a[class*="delete"],
+button[class*="danger"],
+a[class*="danger"],
+.history-choice-delete,
+.history-delete,
+.history-dialog-actions .delete,
+.data-swipe-actions .data-swipe-delete,
+.page2-danger-btn,
+.invite-actions .small-action.danger {
+  background:#11171D!important;
+  border:1px solid #35404C!important;
+  color:#E8EDF2!important;
+  box-shadow:none!important;
+}
+button[class*="delete"]:active,
+a[class*="delete"]:active,
+button[class*="danger"]:active,
+a[class*="danger"]:active,
+.history-choice-delete:active,
+.history-delete:active,
+.history-dialog-actions .delete:active,
+.data-swipe-actions .data-swipe-delete:active,
+.page2-danger-btn:active,
+.invite-actions .small-action.danger:active {
+  background:#202B36!important;
+  border-color:#3A4652!important;
+  color:#FFFFFF!important;
+}
+:root[data-zp-theme="light"] button[class*="delete"],
+:root[data-zp-theme="light"] a[class*="delete"],
+:root[data-zp-theme="light"] button[class*="danger"],
+:root[data-zp-theme="light"] a[class*="danger"],
+:root[data-zp-theme="light"] .history-choice-delete,
+:root[data-zp-theme="light"] .history-delete,
+:root[data-zp-theme="light"] .history-dialog-actions .delete,
+:root[data-zp-theme="light"] .data-swipe-actions .data-swipe-delete,
+:root[data-zp-theme="light"] .page2-danger-btn,
+:root[data-zp-theme="light"] .invite-actions .small-action.danger {
+  background:#F0F2F4!important;
+  border:1px solid #D7DDE3!important;
+  color:#17202A!important;
+  box-shadow:none!important;
+}
+:root[data-zp-theme="light"] button[class*="delete"]:active,
+:root[data-zp-theme="light"] a[class*="delete"]:active,
+:root[data-zp-theme="light"] button[class*="danger"]:active,
+:root[data-zp-theme="light"] a[class*="danger"]:active,
+:root[data-zp-theme="light"] .history-choice-delete:active,
+:root[data-zp-theme="light"] .history-delete:active,
+:root[data-zp-theme="light"] .history-dialog-actions .delete:active,
+:root[data-zp-theme="light"] .data-swipe-actions .data-swipe-delete:active,
+:root[data-zp-theme="light"] .page2-danger-btn:active,
+:root[data-zp-theme="light"] .invite-actions .small-action.danger:active {
+  background:#E1E7EC!important;
+  border-color:#C9D1D9!important;
+  color:#17202A!important;
+}
