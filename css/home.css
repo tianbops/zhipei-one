@@ -4,17 +4,8 @@
 .home-brand{display:flex;flex-direction:column;line-height:1.2}
 .home-brand strong{font-size:19px;font-weight:700;letter-spacing:.5px;color:#fff}
 .home-brand span{margin-top:2px;font-size:11px;color:#7F8B98;letter-spacing:1.5px}
-.home-menu-button{width:var(--zp-control-height);height:var(--zp-control-height);border:1px solid rgba(255,255,255,.025);border-radius:50%;background:rgba(20,28,37,.80);color:#fff;padding:0;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
-.home-menu-button svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round}
-.home-menu-button:active{background:#B8C1C8;color:#0B1015;transform:scale(.97)}
-.home-menu-panel{position:absolute;right:0;top:56px;width:208px;overflow:hidden;padding:6px;border:1px solid #2A3540;border-radius:12px;background:rgba(20,28,37,.80);box-shadow:0 10px 24px rgba(0,0,0,.3);animation:zpMenuIn .14s ease-out}
-.home-menu-panel[hidden]{display:none}
-.home-menu-panel a,.home-menu-panel button{width:100%;height:48px;min-height:48px;padding:0 16px;gap:11px;border:0;border-radius:11px;background:transparent;color:#D5DCE2;text-align:left;text-decoration:none;font-size:14px;font-weight:600;display:flex;align-items:center;-webkit-tap-highlight-color:transparent}
-.home-menu-panel a:active,.home-menu-panel button:active{background:rgba(28,37,47,.82);transform:scale(.985)}
-.home-menu-panel button{color:#FF8278}
 .menu-item-icon{width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;color:#B8C2CC}
 .menu-item-icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.home-menu-panel button .menu-item-icon{color:#FF8278}
 .menu-divider{height:1px;margin:5px 7px;background:rgba(255,255,255,.07)}
 
 .task-card{position:relative;overflow:hidden;margin-top:14px;padding:14px;min-height:0;background:rgba(13,18,24,.82);border:1px solid rgba(255,255,255,.075);border-radius:16px;box-shadow:0 12px 30px rgba(0,0,0,.18)}
@@ -32,18 +23,10 @@
 .today-summary span{font-size:16px;line-height:29px;color:#B8C2CC}
 .delivery-man{width:84px;height:60px;display:flex;align-items:flex-end;justify-content:flex-end;opacity:.4;transform:translateY(8px)}
 .delivery-man img{width:100%;height:100%;object-fit:contain}
-.function-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
 /* radius 14→12（方案第十三章 10–12）。padding 0 48px 保持不动：
    它是 width:100% + justify-content:center 的居中大按钮，48px 只用于限制内容最大宽度，
    实际内容远不满宽，改成 16 不会带来任何视觉差异，纯粹是无收益的改动。
    padX 48 本身也满足「≥16」，并不违规。 */
-.function-btn{position:relative;width:100%;height:58px;min-height:58px;padding:0 48px;border:1px solid rgba(255,255,255,.075);border-radius:12px;background:rgba(13,18,24,.82);color:#F2F5F7;text-decoration:none;font-size:16px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:0;box-shadow:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.function-btn:active{background:rgba(24,38,46,.82);transform:scale(.985)}
-.function-icon{width:24px;height:24px;flex:0 0 24px;margin-right:12px;display:flex;align-items:center;justify-content:center;color:#D5DCE2}
-.function-icon svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.function-btn::after{display:none}
-.function-btn:active::after{color:#0B1015}
-
 
 .upload-overlay:not([hidden]){display:flex;animation:zpModalFade .16s ease-out}
 .upload-sheet{width:min(100%,390px);max-width:390px;margin:0 auto;padding:20px 18px calc(18px + env(safe-area-inset-bottom));border-radius:20px 20px 16px 16px;background:rgba(13,18,24,.82);border:1px solid #2A3540;box-shadow:0 18px 46px rgba(0,0,0,.5);animation:zpModalIn .16s ease-out}
@@ -88,8 +71,8 @@
 @media(prefers-reduced-motion:reduce){
   .processing-progress.is-stalled .processing-progress-line:before{animation:none}
 }
-.home-menu-button:focus,.function-btn:focus,.source-option:focus,.upload-cancel-btn:focus,.processing-retry-btn:focus,.processing-cancel-btn:focus{outline:none;box-shadow:none}
-.home-menu-button:focus-visible,.function-btn:focus-visible,.source-option:focus-visible,.upload-cancel-btn:focus-visible,.processing-retry-btn:focus-visible,.processing-cancel-btn:focus-visible{outline:2px solid rgba(255,255,255,.24);outline-offset:2px}
+.source-option:focus, .upload-cancel-btn:focus, .processing-retry-btn:focus, .processing-cancel-btn:focus{outline:none;box-shadow:none}
+.source-option:focus-visible, .upload-cancel-btn:focus-visible, .processing-retry-btn:focus-visible, .processing-cancel-btn:focus-visible{outline:2px solid rgba(255,255,255,.24);outline-offset:2px}
 @media(max-width:380px){
  .home-app{padding-left:12px;padding-right:12px}
  .task-card{margin-top:14px;padding:13px 14px 12px;border-radius:16px}
@@ -97,8 +80,6 @@
  .task-date{font-size:16px;line-height:23px}
  .today-summary strong{font-size:19px}.today-summary span{font-size:15px}
  .delivery-man{width:64px;height:46px;opacity:.4;transform:translateY(8px)}
- .function-list{margin-top:12px;gap:8px}
- .function-btn{height:52px;min-height:52px;font-size:15px}
  .upload-sheet{width:min(90vw,340px);padding:20px 17px 18px}
  .source-menu-title{font-size:19px;margin-bottom:18px}
  .source-menu-options{gap:7px}
@@ -108,11 +89,8 @@
 }
 
 /* 当前线路显示 */
-.home-menu-panel a#currentRouteMenu{justify-content:flex-start}
-.home-menu-panel .menu-route-value{margin-left:auto;max-width:82px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#B8C2CC;font-size:13px;font-weight:600}
 /* 菜单项直接以用户名作主标题：左对齐、与菜单文字同色，撑满剩余宽度，
    超长省略号截断，不换行 */
-.home-menu-panel .menu-username{margin-left:0;color:inherit;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1 1 auto;min-width:0;max-width:none}
 
 /* Final Android typography normalization: size/line-height only */
 .home-brand strong{font-size:20px;line-height:26px;letter-spacing:.5px}
@@ -122,7 +100,6 @@
 .task-info{font-size:16px;line-height:23px}
 .today-summary strong{font-size:20px;line-height:27px}
 .today-summary span{font-size:16px;line-height:23px}
-.function-btn{font-size:16px;line-height:22px}
 .source-menu-title{font-size:18px;line-height:24px}
 .processing-title{font-size:18px;line-height:26px}
 .processing-error-title{font-size:18px;line-height:24px}
@@ -130,35 +107,12 @@
 .processing-retry-btn{font-size:16px;line-height:22px}
 
 /* 加载占位优化：菜单「当前线路」空值期间显示骨架微光条，替代「—」横线闪现 */
-@keyframes zpSkeleton{
-  from{background-position:200% 0}
-  to{background-position:-200% 0}
-}
-.menu-user-header{display:flex;flex-direction:column;gap:2px;padding:9px 12px 11px;margin:0 0 4px;border-bottom:1px solid rgba(255,255,255,.07)}
-.menu-user-label{font-size:12px;color:#8A95A0;font-weight:600}
-.menu-user-header .menu-username{margin-left:0;color:#EAF0F5;font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.menu-route-value:empty::before{
-  content:"";
-  display:inline-block;
-  width:52px;
-  height:12px;
-  border-radius:6px;
-  vertical-align:middle;
-  background:linear-gradient(90deg,var(--zp-sk-a) 25%,var(--zp-sk-b) 50%,var(--zp-sk-a) 75%);
-  background-size:200% 100%;
-  animation:zpSkeleton 1.4s ease-in-out infinite;
-}
-@media(prefers-reduced-motion:reduce){
-  .menu-route-value:empty::before{animation:none}
-}
 
 /* 上传入口「文件」按钮副标题：明确此入口用于 PDF 运单，
    避免与「拍摄/相册」的图片入口混淆 */
 .source-option small{font-size:10px;line-height:14px;color:#7F8A95;font-weight:500}
 
 /* 首页菜单轻入场：opacity + 轻微上移，弱化「Web Dropdown」观感 */
-@keyframes zpMenuIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
-
 
 /* ===== 配送趋势 · Smart Trend：工业物流终端风（无渐变/发光/玻璃拟态） ===== */
 .trend-card{
@@ -356,7 +310,6 @@
    子页面无 #uploadArea/openUpload，不会出现 sheet-open，故此规则仅作用于首页。 */
 body.sheet-open .bottom-nav{z-index:1001 !important}
 
-
 /* 浅色外观适配：首页固定导航与菜单交互 */
 :root[data-zp-theme="light"] .bottom-nav{background:rgba(255,255,255,.96)!important;border-color:#D7DDE3!important;box-shadow:0 -4px 18px rgba(20,30,40,.06)}
 /* 人物推车插画（assets/delivery-route.png）为深色主题绘制：白描线 + 蓝定位点。
@@ -376,21 +329,8 @@ body.sheet-open .bottom-nav{z-index:1001 !important}
 :root[data-zp-theme="light"] .home-app{background:var(--zp-bg)}
 :root[data-zp-theme="light"] .home-brand strong{color:var(--zp-text)}
 :root[data-zp-theme="light"] .home-brand span{color:var(--zp-soft)}
-:root[data-zp-theme="light"] .home-menu-button{background:#FFFFFF;border-color:#D7DDE3;color:var(--zp-text)}
-:root[data-zp-theme="light"] .home-menu-panel{background:#FFFFFF;border-color:#D7DDE3;box-shadow:0 10px 24px rgba(20,30,40,.14)}
-:root[data-zp-theme="light"] .home-menu-panel a,
-:root[data-zp-theme="light"] .home-menu-panel button{color:var(--zp-text)}
-:root[data-zp-theme="light"] .home-menu-panel a:active,
-:root[data-zp-theme="light"] .home-menu-panel button:active{background:#E8EDF1}
-:root[data-zp-theme="light"] .home-menu-panel button,
-:root[data-zp-theme="light"] .home-menu-panel button .menu-item-icon{color:#C2453A}
 :root[data-zp-theme="light"] .menu-item-icon{color:var(--zp-muted)}
 :root[data-zp-theme="light"] .menu-divider{background:rgba(20,30,40,.10)}
-:root[data-zp-theme="light"] .menu-user-header{border-bottom-color:rgba(20,30,40,.10)}
-:root[data-zp-theme="light"] .menu-user-label{color:var(--zp-soft)}
-:root[data-zp-theme="light"] .menu-user-header .menu-username{color:var(--zp-text)}
-:root[data-zp-theme="light"] .menu-route-value{color:var(--zp-muted)}
-:root[data-zp-theme="light"] .menu-route-value:empty::before{background:linear-gradient(90deg,#E8EDF1 25%,#F0F3F6 50%,#E8EDF1 75%);background-size:200% 100%}
 :root[data-zp-theme="light"] .task-card{box-shadow:0 8px 24px rgba(20,30,40,.08)}
 :root[data-zp-theme="light"] .task-date,
 :root[data-zp-theme="light"] .task-info,
@@ -405,15 +345,7 @@ body.sheet-open .bottom-nav{z-index:1001 !important}
 :root[data-zp-theme="light"] .today-store-row{color:var(--zp-text);border-bottom-color:rgba(20,30,40,.08)}
 :root[data-zp-theme="light"] .today-store-row:active{background:#EDF1F5}
 :root[data-zp-theme="light"] .today-store-name{color:var(--zp-text)}
-:root[data-zp-theme="light"] .function-btn{background:#FFFFFF;border-color:#D7DDE3;color:var(--zp-text)}
-:root[data-zp-theme="light"] .function-btn:active{background:#E8EDF1}
-:root[data-zp-theme="light"] .function-icon{color:var(--zp-muted)}
-:root[data-zp-theme="light"] .home-menu-button:focus-visible,
-:root[data-zp-theme="light"] .function-btn:focus-visible,
-:root[data-zp-theme="light"] .source-option:focus-visible,
-:root[data-zp-theme="light"] .upload-cancel-btn:focus-visible,
-:root[data-zp-theme="light"] .processing-retry-btn:focus-visible,
-:root[data-zp-theme="light"] .processing-cancel-btn:focus-visible{outline-color:rgba(23,32,42,.35)}
+:root[data-zp-theme="light"] .source-option:focus-visible, :root[data-zp-theme="light"] .upload-cancel-btn:focus-visible, :root[data-zp-theme="light"] .processing-retry-btn:focus-visible, :root[data-zp-theme="light"] .processing-cancel-btn:focus-visible{outline-color:rgba(23,32,42,.35)}
 
 /* 浅色：月度统计卡（Smart Trend）——曲线与坐标在白卡上需换深色墨水 */
 :root[data-zp-theme="light"] .trend-card{background:#FFFFFF;border-color:#D7DDE3}

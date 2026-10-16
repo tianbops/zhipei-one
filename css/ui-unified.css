@@ -72,11 +72,7 @@
          全部低于该标准，故本轮是「只放大不缩小」的单向收敛（见 css-touch-audit.cjs）。 */
   --zp-header-height:54px;
   --zp-control-height:48px;
-  --zp-space-1:4px;
-  --zp-space-2:8px;
-  --zp-space-3:12px;
   --zp-space-4:16px;
-  --zp-space-5:20px;
 
   --ui-bg:var(--zp-bg);
   --ui-surface:var(--zp-surface);
@@ -97,7 +93,6 @@
      目的：任何"后打开的弹窗都在上层"，Toast 永远可见，确认框永远盖不住。
      约定：同一层级内的元素不得互相覆盖；跨层级严格递进。
      规则：页面内所有 position:fixed / absolute + z-index 一律引用下列变量，禁止硬编码。 */
-  --ui-z-content:1;        /* 内容层：普通卡片内的绝对定位元素 */
   --ui-z-topbar:10;        /* 顶栏：页面顶部固定栏 */
   --ui-z-float:90;         /* 悬浮操作：快速滚动、悬浮按钮（不遮挡弹窗） */
   --ui-z-menu:200;         /* 菜单浮层：下拉菜单、页面菜单、选择器（非模态） */
@@ -120,15 +115,15 @@ button:active{transform:translateY(0)}
 .zp-ui-ready :where(*):not(:where(svg,svg *)){
   transition:background-color .22s ease,border-color .22s ease,color .22s ease,box-shadow .2s ease,opacity .2s ease;
 }
-.zp-ui-ready :where(button,a,[role="button"],.function-btn,.data-action-btn,.account-logout,.login-submit,.history-toolbar button,.trend-year,.trend-metric-btn,.source-option,.choice-btn){
+.zp-ui-ready :where(button,a,[role="button"],.data-action-btn,.account-logout,.login-submit,.trend-year,.trend-metric-btn,.source-option,.choice-btn){
   transition:background-color .22s ease,border-color .22s ease,color .22s ease,box-shadow .2s ease,opacity .2s ease,transform .1s ease;
 }
-.zp-ui-ready :where(.function-btn,.data-action-btn,.account-logout,.login-submit,.history-toolbar button,.trend-year,.trend-metric-btn,.source-option,.choice-btn):active{
+.zp-ui-ready :where(.data-action-btn,.account-logout,.login-submit,.trend-year,.trend-metric-btn,.source-option,.choice-btn):active{
   transform:scale(.98);
 }
 @media (prefers-reduced-motion:reduce){
   .zp-ui-ready :where(*){transition:none!important}
-  .zp-ui-ready :where(.function-btn,.data-action-btn,.account-logout,.login-submit,.history-toolbar button,.trend-year,.trend-metric-btn,.source-option,.choice-btn):active{transform:none}
+  .zp-ui-ready :where(.data-action-btn,.account-logout,.login-submit,.trend-year,.trend-metric-btn,.source-option,.choice-btn):active{transform:none}
 }
 /* hidden 属性必须始终生效，且优先级高于所有遮罩层 display 规则。
    用 !important + 属性选择器双写，确保任何后出现的 !important 规则都无法覆盖它。
@@ -178,7 +173,7 @@ button:active{transform:translateY(0)}
 .app-back:active{background:rgba(20,28,37,.80);color:#fff}
 
 /* 菜单统一为单层浮层 */
-.menu-panel,.home-menu-panel,.data-page-menu,.order-menu{
+.data-page-menu, .order-menu{
   border:1px solid var(--ui-line);
   border-radius:12px;
   background:var(--ui-surface);
@@ -188,7 +183,7 @@ button:active{transform:translateY(0)}
 /* 菜单面板内的条目本身就是点击目标，不是「列表里的文字」，按第十三章必须 ≥48。
    注意：本条是跨页面的兜底值，data.css / order_detail.css 里还有同选择器的后续定义，
    后者会覆盖这里 —— 已一并收敛，改动是否真的生效以 css-button-resolve.cjs 的页面级结果为准。 */
-.menu-panel a,.menu-panel button,.home-menu-panel a,.home-menu-panel button,.data-page-menu button,.order-menu button{
+.data-page-menu button, .order-menu button{
   min-height:var(--zp-control-height);
 }
 .menu-divider{background:rgba(255,255,255,.07)}
@@ -313,8 +308,7 @@ input,select,textarea{
    仅调整文字尺寸与行高，不改变业务规则、数据结构、交互逻辑或页面布局。
    目标层级：页面标题 20px / 区块标题 18px / 正文 16px / 辅助 15px / 元信息 14px。 */
 .topbar strong,.account-page .topbar h1,.route-apply-page .topbar h1,.data-page .topbar h1,.dispatch-page .topbar h1,.order-title{font-size:20px!important;line-height:26px!important}
-.card h2,.page2-card h2,.section-title,.data-route-title h2,.history-toolbar strong{font-size:18px!important;line-height:24px!important}
-.history-toolbar button{font-size:16px!important;line-height:22px!important}
+.card h2, .page2-card h2, .section-title, .data-route-title h2{font-size:18px!important;line-height:24px!important}
 .data-import-actions button,.history-dialog-actions button,.order-dialog-actions button,.account-dialog-actions button,.zp-confirm-actions button{font-size:16px!important;line-height:22px!important}
 .order-dialog-head strong,.data-import-head h3,.history-dialog-panel>strong,.account-dialog h2,.zp-confirm-panel h3{font-size:18px!important;line-height:24px!important}
 .order-dialog-panel>p,.history-dialog-panel>p,.account-dialog>p,.zp-confirm-panel p{font-size:15px!important;line-height:22px!important}
@@ -436,10 +430,7 @@ input,select,textarea{
 }
 
 /* --- 菜单浮层：非模态，低于一切弹窗 --- */
-.menu-panel,
-.home-menu-panel,
-.data-page-menu,
-.order-menu{
+.data-page-menu, .order-menu{
   z-index:var(--ui-z-menu)!important;
 }
 
@@ -550,7 +541,7 @@ input,select,textarea{
  *   2) 主按钮三处三种圆角：11px(app) / 11px(同) / 12px(部分页面)；
  *   3) 空状态三套内边距：28px 12px / 28px 10px / 30px 10px / 22px 16px；
  *   4) 焦点可见环只有部分页面有（业务页有，登录页无）；
- *   5) 状态类 .dispatch-* 在 ui-unified 中声明但页面用局部 <style> 重复实现。
+ *   5) 状态类 .dispatch-* 在 ui-unified 中声明但页面用局部 \3c style> 重复实现。
  *
  * 角色色约定（核对此前渲染结果后确认保持不变）：
  *   错误文字 = #FFB4AB（浅红，正文可读优先）；危险操作 = #FF8278（深红，警示优先）。
@@ -658,7 +649,6 @@ textarea:disabled,
 .order-dialog-panel,.history-dialog-panel,.history-picker-panel,.zp-confirm-panel{animation:zpModalIn .16s ease-out}
 
 /* 菜单轻入场：opacity + 轻微上移，弱化 Web Dropdown 观感（全站通用） */
-@keyframes zpMenuIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 
 /* 业务端一级导航：所有业务页面统一常驻，避免页面各自维护不同版本。
    该类由 js/ui-unified.js 在业务页 body 上添加（原误置于 JS 文件内导致整文件语法错误，
@@ -739,7 +729,6 @@ textarea:disabled,
   --line:#D7DDE3;
   --muted:#46515D;
   --soft:#66717D;
-  --text:#17202A;
   --ui-danger:#B4232F;
   --ui-danger-soft:rgba(180,35,47,.08);
 }
@@ -751,21 +740,7 @@ textarea:disabled,
   background-color:var(--zp-bg);
   color:var(--zp-text);
 }
-:root[data-zp-theme="light"] .page2-card,
-:root[data-zp-theme="light"] .card,
-:root[data-zp-theme="light"] .page2-panel,
-:root[data-zp-theme="light"] .data-list-card,
-:root[data-zp-theme="light"] .data-route-card,
-:root[data-zp-theme="light"] .task-card,
-:root[data-zp-theme="light"] .confirm-panel,
-:root[data-zp-theme="light"] .pending-box,
-:root[data-zp-theme="light"] .account-dialog,
-:root[data-zp-theme="light"] .order-dialog-panel,
-:root[data-zp-theme="light"] .history-dialog-panel,
-:root[data-zp-theme="light"] .history-picker-panel,
-:root[data-zp-theme="light"] .data-import-panel,
-:root[data-zp-theme="light"] .upload-sheet,
-:root[data-zp-theme="light"] .zp-confirm-panel{
+:root[data-zp-theme="light"] .page2-card, :root[data-zp-theme="light"] .card, :root[data-zp-theme="light"] .data-list-card, :root[data-zp-theme="light"] .data-route-card, :root[data-zp-theme="light"] .task-card, :root[data-zp-theme="light"] .confirm-panel, :root[data-zp-theme="light"] .pending-box, :root[data-zp-theme="light"] .account-dialog, :root[data-zp-theme="light"] .order-dialog-panel, :root[data-zp-theme="light"] .history-dialog-panel, :root[data-zp-theme="light"] .history-picker-panel, :root[data-zp-theme="light"] .data-import-panel, :root[data-zp-theme="light"] .upload-sheet, :root[data-zp-theme="light"] .zp-confirm-panel{
   background-color:var(--zp-surface);
   border-color:var(--zp-line);
   color:var(--zp-text);
@@ -853,9 +828,7 @@ textarea:disabled,
   border-color:#D1D8DF;
   color:var(--zp-text);
 }
-:root[data-zp-theme="light"] .page2-secondary,
-:root[data-zp-theme="light"] .menu-button,
-:root[data-zp-theme="light"] .history-toolbar button{
+:root[data-zp-theme="light"] .page2-secondary{
   background:#F0F2F4;
   border-color:#D7DDE3;
   color:#17202A;
@@ -917,10 +890,7 @@ textarea:disabled,
 :root[data-zp-theme="light"] .zp-password-control input::placeholder{color:#687582!important}
 :root[data-zp-theme="light"] .zp-password-eye{color:#536170}
 :root[data-zp-theme="light"] .zp-password-eye:active{background:#E8EDF1;color:#17202A}
-:root[data-zp-theme="light"] .menu-panel,
-:root[data-zp-theme="light"] .home-menu-panel,
-:root[data-zp-theme="light"] .data-page-menu,
-:root[data-zp-theme="light"] .order-menu{
+:root[data-zp-theme="light"] .data-page-menu, :root[data-zp-theme="light"] .order-menu{
   background:#FFFFFF;border-color:#D7DDE3;color:#17202A;
   box-shadow:0 12px 28px rgba(20,30,40,.14);
 }

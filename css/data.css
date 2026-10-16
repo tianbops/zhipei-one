@@ -80,9 +80,6 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-store-nav{color:#fff;text-decoration:none;cursor:pointer}
 .data-store-hidden{display:none}
 .data-store-meta-label{color:#687584}
-.data-float-up{top:calc(50% - 48px);transform:translateY(8px)}
-.data-float-down{top:calc(50% + 8px);transform:translateY(8px)}
-.data-float-up.show,.data-float-down.show{transform:translateY(0)}
 @media(min-width:600px){
  .data-tools-card{padding:14px 16px}
 }

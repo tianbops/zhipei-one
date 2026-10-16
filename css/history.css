@@ -3,7 +3,6 @@
 .history-shell .topbar{margin-bottom:10px}
 .history-shell .topbar>strong{text-align:center;font-size:20px;line-height:26px;font-weight:700}
 
-
 .history-card{
   padding:0;
   overflow:hidden;
@@ -11,11 +10,6 @@
   border-color:rgba(255,255,255,.075);
   border-radius:18px;
 }
-.history-page-head{
-  display:flex;align-items:center;justify-content:space-between;
-  min-height:54px;padding:16px 16px 12px;
-}
-.history-page-head strong{font-size:17px;line-height:24px;font-weight:650;color:var(--zp-text)}
 
 .history-state{
   min-height:20px;
@@ -307,23 +301,11 @@
   border-radius:0;
   overflow:visible;
 }
-.history-page-head{
-  min-height:46px;
-  padding:14px 8px 10px;
-}
-.history-page-head strong{
-  font-size:17px;
-  line-height:24px;
-  font-weight:650;
-  color:var(--zp-text);
-}
 /* 工具栏语义按钮 · 浅色覆盖（P0-3） */
 /* 浅色主题 .card 通配规则（白底+阴影）会盖过 .history-card 的透明背景，
    导致历史查询页顶部出现一块带阴影的白色方块。此处显式压回无卡片样式。 */
 :root[data-zp-theme="light"] .history-card{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important}
 :root[data-zp-theme="light"] .zp-btn--secondary{background:rgba(0,0,0,.04);color:var(--zp-text);border-color:var(--zp-line)}
-:root[data-zp-theme="light"] .zp-btn--ghost{color:var(--zp-muted)}
-:root[data-zp-theme="light"] .zp-btn--primary{background:var(--zp-primary);color:#fff;border-color:var(--zp-primary)}
 :root[data-zp-theme="light"] .history-divider{border-top-color:var(--zp-divider)}
 :root[data-zp-theme="light"] .history-actions,
 :root[data-zp-theme="light"] .history-secondary-row{padding-left:8px;padding-right:8px}
@@ -502,8 +484,6 @@
   .history-calendar-grid.cal-anim-right{animation:none}
 }
 
-
-
 /* ---- 浅色补充：月份分组列表（此前整块沿用深色硬编码） ---- */
 :root[data-zp-theme="light"] .history-list{background:#FFFFFF;border-color:rgba(20,30,40,.12)}
 :root[data-zp-theme="light"] .history-month{background:#FFFFFF;border-bottom-color:rgba(20,30,40,.10)}
@@ -544,26 +524,16 @@
   transition:background .15s,color .15s,border-color .15s;
   -webkit-tap-highlight-color:transparent;
 }
-.zp-btn--primary{background:var(--zp-primary);color:#fff;border-color:var(--zp-primary)}
 .zp-btn--secondary{background:rgba(255,255,255,.06);color:var(--zp-text);border-color:var(--zp-line)}
-.zp-btn--ghost{background:transparent;color:var(--zp-muted);border-color:transparent}
-.zp-btn--danger{background:transparent;color:var(--ui-danger);border-color:var(--ui-danger)}
 .zp-btn:active{filter:brightness(.94)}
 .zp-btn:disabled{opacity:.5;cursor:default}
 
 /* 信息架构分组（P0-1） */
 .history-divider{border:0;border-top:1px solid var(--zp-divider);margin:14px 16px}
 .history-actions{padding:0 16px}
-.history-actions-label{margin:0 0 8px;color:var(--zp-muted);font-size:13px;line-height:18px}
 .history-actions-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 /* 选择日期：quiet 操作行（与线路功能入口同语言：图标+文字+箭头），
    替代原孤立幽灵文字按钮，使其融进卡片列表节奏 */
-.history-quick-action{display:flex;align-items:center;gap:10px;width:100%;min-height:46px;padding:0 8px;border:0;border-radius:10px;background:transparent;color:var(--zp-text);font-size:14px;font-weight:600;cursor:pointer;text-align:left}
-.history-quick-action>svg{width:18px;height:18px;flex:none;color:var(--zp-muted)}
-.history-quick-chevron{margin-left:auto}
-.history-quick-action:active{background:rgba(255,255,255,.05)}
-:root[data-zp-theme="light"] .history-quick-action{color:var(--zp-text)}
-:root[data-zp-theme="light"] .history-quick-action:active{background:rgba(0,0,0,.04)}
 .history-secondary-row{padding:0 16px 4px}
 
 /* 浮层通用提示与空态 */
@@ -661,56 +631,8 @@
 :root[data-zp-theme="light"] .history-dialog-actions button:last-child{background:#F0F2F4!important;color:#17202A!important}
 :root[data-zp-theme="light"] .history-dialog-actions button:active{background:#E8EDF1!important}
 
-
 /* 日期入口强化：从弱提示行升级为清晰、可识别的主要操作区 */
 .history-secondary-row{padding:2px 8px 10px}
-.history-quick-action{
-  display:flex;align-items:center;gap:12px;
-  width:100%;min-height:76px;padding:12px;
-  border:1px solid rgba(132,164,187,.34);
-  border-radius:15px;
-  background:linear-gradient(135deg,rgba(32,46,58,.96),rgba(20,29,38,.96));
-  color:var(--zp-text);text-align:left;
-  box-shadow:0 5px 16px rgba(0,0,0,.12);
-  transition:background .15s,border-color .15s,transform .15s;
-}
-.history-date-icon{
-  display:flex;align-items:center;justify-content:center;
-  flex:0 0 44px;width:44px;height:44px;
-  border-radius:12px;background:rgba(124,163,190,.16);
-  color:#B8D6E8;
-}
-.history-date-icon svg{width:23px;height:23px}
-.history-date-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}
-.history-date-copy strong{font-size:15px;line-height:21px;font-weight:700;color:#F4F7FA}
-.history-date-copy small{font-size:12px;line-height:17px;font-weight:450;color:#AEBBC6}
-.history-date-cta{
-  display:inline-flex;align-items:center;justify-content:center;gap:3px;
-  flex:none;min-height:34px;padding:0 9px;
-  border:1px solid rgba(184,214,232,.3);border-radius:10px;
-  background:rgba(184,214,232,.10);color:#D8EAF5;
-  font-size:12px;line-height:16px;font-weight:650;white-space:nowrap;
-}
-.history-date-cta svg{width:15px;height:15px}
-.history-quick-action>svg,.history-quick-chevron{display:none}
-.history-quick-action:active{background:#263744;border-color:#91B4CC;transform:scale(.995)}
-:root[data-zp-theme="light"] .history-quick-action{
-  background:linear-gradient(135deg,#FFFFFF,#F1F5F8);
-  border-color:#B8C8D4;box-shadow:0 4px 12px rgba(30,48,64,.08);
-}
-:root[data-zp-theme="light"] .history-date-icon{background:#E4EDF3;color:#36566D}
-:root[data-zp-theme="light"] .history-date-copy strong{color:#17202A}
-:root[data-zp-theme="light"] .history-date-copy small{color:#596674}
-:root[data-zp-theme="light"] .history-date-cta{background:#E4EDF3;border-color:#C5D4DE;color:#294B62}
-:root[data-zp-theme="light"] .history-quick-action:active{background:#E8EDF1;border-color:#8DA6B7}
-@media(max-width:360px){
-  .history-quick-action{gap:9px;padding:10px;min-height:72px}
-  .history-date-icon{flex-basis:40px;width:40px;height:40px}
-  .history-date-copy strong{font-size:14px}
-  .history-date-copy small{font-size:11px}
-  .history-date-cta{padding:0 7px;font-size:11px}
-}
-
 
 /* 日期选择：沿用全站次级按钮风格，仅调整为独立的长方形入口 */
 .history-secondary-row{padding:2px 8px 10px}
