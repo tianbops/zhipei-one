@@ -7,7 +7,13 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="智配One"><link rel="stylesheet" href="/css/app.css?v=2212af30"><link rel="stylesheet" href="/css/ui-unified.css?v=5faf6a46"><link rel="stylesheet" href="/css/mobile-ui.css?v=285d41d0"><link rel="stylesheet" href="/css/business-pages.css?v=6a65c5ef"></head>
+<meta name="apple-mobile-web-app-title" content="智配One"><link rel="stylesheet" href="/css/app.css?v=2212af30"><link rel="stylesheet" href="/css/ui-unified.css?v=5faf6a46"><link rel="stylesheet" href="/css/mobile-ui.css?v=285d41d0"><link rel="stylesheet" href="/css/business-pages.css?v=6a65c5ef">
+<style>
+.install-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.install-actions .page2-primary,.install-actions .page2-secondary{margin-top:0}
+.install-guide{margin-top:14px}
+.install-guide ol{margin:0;padding-left:20px;color:var(--zp-muted,#8B98A5);font-size:13px;line-height:22px}
+</style></head>
 <body><main class="page2 account-page">
 <header class="topbar"><a class="app-back" href="/home.html" aria-label="返回"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><h1>账号设置</h1><span></span></header>
 
@@ -38,9 +44,15 @@
 </section>
 
 <section id="installCard" class="page2-card" hidden>
-  <h2>添加到手机桌面</h2>
-  <p id="installHint" class="page2-soft">从桌面像 App 一样打开，省去每次输网址。</p>
-  <button id="installBtn" class="page2-primary" type="button" hidden>添加到桌面</button>
+  <h2>下载应用</h2>
+  <p id="installHint" class="page2-soft">安装到手机桌面，像 App 一样直接打开，无需每次输网址。</p>
+  <div id="installActions" class="install-actions">
+    <button id="installBtn" class="page2-primary" type="button" hidden>立即安装</button>
+    <button id="installCopyBtn" class="page2-secondary" type="button" hidden>复制网址</button>
+  </div>
+  <div id="installGuide" class="install-guide" hidden>
+    <ol id="installGuideSteps"></ol>
+  </div>
 </section>
 
 <section class="page2-card account-edit-card">
@@ -189,20 +201,55 @@ $("deleteConfirm").onclick=async()=>{
  }catch(e){show("deleteMessage",e);$("deleteConfirm").disabled=false}
 };
 
-/* 添加到手机桌面：已安装时整块隐藏，未安装时按平台给出对应引导。
-   iOS Safari 不支持 beforeinstallprompt，只能给手动步骤。 */
+/* 下载应用入口：全浏览器适配。
+   - 已安装（standalone）→ 隐藏
+   - 微信内置浏览器 → 引导「在浏览器中打开」+ 复制网址
+   - iOS Safari → 分享→添加到主屏幕 手动引导
+   - Android/桌面 Chromium（含 UC/QQ/360/夸克/华为/小米等国产浏览器）
+     → beforeinstallprompt 一键安装；未触发则给菜单引导 + 复制网址兜底 */
 (function(){
- const card=$("installCard"),btn=$("installBtn"),hint=$("installHint");
+ const card=$("installCard"),btn=$("installBtn"),copyBtn=$("installCopyBtn"),
+   hint=$("installHint"),guide=$("installGuide"),steps=$("installGuideSteps");
  if(!card)return;
  const installed=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
  if(installed)return;
  const ua=navigator.userAgent||"";
+ const isWeChat=/MicroMessenger/i.test(ua);
  const isIOS=/iPad|iPhone|iPod/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
  card.hidden=false;
- if(isIOS){hint.textContent="在 Safari 中点击底部「分享」→「添加到主屏幕」，即可像 App 一样从桌面打开。";return}
+ function showSteps(list){
+  steps.innerHTML="";
+  list.forEach(t=>{const li=document.createElement("li");li.textContent=t;steps.appendChild(li)});
+  guide.hidden=false;
+ }
+ async function copyUrl(){
+  const url=location.href;
+  try{await navigator.clipboard.writeText(url)}
+  catch(e){
+   const ta=document.createElement("textarea");ta.value=url;ta.style.position="fixed";ta.style.opacity="0";
+   document.body.appendChild(ta);ta.select();document.execCommand("copy");ta.remove();
+  }
+  if(window.zpToast)window.zpToast("网址已复制，请粘贴到浏览器打开","success");
+  else hint.textContent="网址已复制："+url;
+ }
+ if(isWeChat){
+  hint.textContent="微信内无法安装应用，请按以下步骤在浏览器中打开：";
+  showSteps(["点击右上角「···」","选择「在浏览器中打开」","在浏览器中打开后即可安装到桌面"]);
+  copyBtn.hidden=false;copyBtn.onclick=copyUrl;
+  return;
+ }
+ if(isIOS){
+  hint.textContent="在 Safari 中按以下步骤添加到主屏幕：";
+  showSteps(["点击底部「分享」按钮","选择「添加到主屏幕」","点击「添加」即可从桌面打开"]);
+  return;
+ }
  let deferred=null;
  window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferred=e;btn.hidden=false});
- setTimeout(()=>{if(!deferred&&btn.hidden)hint.textContent="请在浏览器菜单中选择「添加到主屏幕」或「安装应用」。"},2000);
+ copyBtn.hidden=false;copyBtn.onclick=copyUrl;
+ setTimeout(()=>{
+  if(deferred)return;
+  hint.textContent="当前浏览器未自动弹出安装，请在浏览器菜单（或工具箱）中选择「添加到主屏幕 / 安装应用」；也可复制网址换浏览器打开。";
+ },1500);
  btn.onclick=async()=>{
   if(!deferred)return;
   btn.disabled=true;
