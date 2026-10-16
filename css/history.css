@@ -328,9 +328,6 @@
 :root[data-zp-theme="light"] .history-actions,
 :root[data-zp-theme="light"] .history-secondary-row{padding-left:8px;padding-right:8px}
 :root[data-zp-theme="light"] .history-divider{margin-left:8px;margin-right:8px}
-:root[data-zp-theme="light"] .history-search{padding-left:8px;padding-right:8px}
-:root[data-zp-theme="light"] .history-search-state{padding-left:8px;padding-right:8px}
-:root[data-zp-theme="light"] .history-search-results{padding-left:8px;padding-right:8px}
 .history-state{
   min-height:20px;
   padding:18px 8px;
