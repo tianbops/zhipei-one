@@ -318,6 +318,9 @@
   color:var(--zp-text);
 }
 /* 工具栏语义按钮 · 浅色覆盖（P0-3） */
+/* 浅色主题 .card 通配规则（白底+阴影）会盖过 .history-card 的透明背景，
+   导致历史查询页顶部出现一块带阴影的白色方块。此处显式压回无卡片样式。 */
+:root[data-zp-theme="light"] .history-card{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important}
 :root[data-zp-theme="light"] .zp-btn--secondary{background:rgba(0,0,0,.04);color:var(--zp-text);border-color:var(--zp-line)}
 :root[data-zp-theme="light"] .zp-btn--ghost{color:var(--zp-muted)}
 :root[data-zp-theme="light"] .zp-btn--primary{background:var(--zp-primary);color:#fff;border-color:var(--zp-primary)}
