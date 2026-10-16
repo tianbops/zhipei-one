@@ -109,14 +109,32 @@ async function navigateStrategy(req) {
   }
 }
 
-/* 在线时后台静默把当前页面存进离线缓存，供日后离线打开；不接管响应。 */
+/* 在线时后台静默把当前页面存进离线缓存，供日后离线打开；不接管响应。
+ * 同一路径 30 秒内最多刷新一次，并合并并发刷新：避免快速往返导航反复发起相同 HTML GET。
+ * 在线导航仍交给浏览器处理，保留 BFCache；离线缓存仍会定期刷新。 */
+const pageCacheRefreshAt = new Map();
+const pageCacheRefreshInFlight = new Map();
+const PAGE_CACHE_REFRESH_MS = 30_000;
+
 async function updatePageCache(req) {
   const key = cacheKeyOf(req.url);
-  const cache = await caches.open(PAGES_CACHE);
-  try {
-    const res = await fetch(req, { cache: "no-cache" });
-    if (res && res.ok) cache.put(key, res.clone());
-  } catch { /* 离线或失败：忽略，下次再说 */ }
+  const inFlight = pageCacheRefreshInFlight.get(key);
+  if (inFlight) return inFlight;
+  if (Date.now() - (pageCacheRefreshAt.get(key) || 0) < PAGE_CACHE_REFRESH_MS) return;
+
+  const task = (async () => {
+    try {
+      const cache = await caches.open(PAGES_CACHE);
+      const res = await fetch(req, { cache: "no-cache" });
+      if (res && res.ok) {
+        await cache.put(key, res.clone());
+        pageCacheRefreshAt.set(key, Date.now());
+      }
+    } catch { /* 离线或失败：忽略，下次再说 */ }
+    finally { pageCacheRefreshInFlight.delete(key); }
+  })();
+  pageCacheRefreshInFlight.set(key, task);
+  return task;
 }
 
 /* 静态资源（图片/字体）：先给缓存，后台更新 */
