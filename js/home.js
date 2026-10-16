@@ -117,10 +117,13 @@ function animateProcessingProgress(now){
 
 function renderProcessingProgress(value){
   const next=Math.max(0,Math.min(100,Number(value)||0));
-  processingLastProgressAt=performance.now();
-  processingLastSignalAt=processingLastProgressAt;
+  const now=performance.now();
+  // 即使收到乱序的旧事件，也记录连接仍有活动；但不能把它当成新进度，
+  // 否则停滞指示会被旧百分比反复重置，掩盖真正的处理停顿。
+  processingLastSignalAt=now;
   // 后端进度只允许向前推进，避免网络事件乱序造成百分比倒退。
   if(next<processingProgressTarget)return;
+  processingLastProgressAt=now;
   if(processingProgressFrame)cancelAnimationFrame(processingProgressFrame);
   processingProgressTarget=next;
   processingProgressFrom=processingProgressValue;
