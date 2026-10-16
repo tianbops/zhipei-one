@@ -213,6 +213,25 @@ await (async () => {
   }
 })();
 
+
+/* ---------- 切片三：线路页原始弹层返回钩子 ---------- */
+const DISPATCH_SRC = readFileSync(fileURLToPath(new URL("../pages/dispatch.html", import.meta.url)), "utf8");
+{
+  const hookStart = DISPATCH_SRC.indexOf("// 手机端系统返回：先关闭最上层确认，再关闭线路选择层");
+  const hookEnd = DISPATCH_SRC.indexOf("async function load()", hookStart);
+  const hooks = hookStart >= 0 && hookEnd > hookStart ? DISPATCH_SRC.slice(hookStart, hookEnd) : "";
+  const confirmProbe = /rank\s*:\s*10\s*,\s*probe\s*:\s*\(\)\s*=>\s*\$\("confirmBackdrop"\).*?close\s*:\s*\(\)\s*=>\s*\{\s*closeConfirm\(\)/s.test(hooks);
+  const sheetProbe = /rank\s*:\s*20\s*,\s*probe\s*:\s*\(\)\s*=>\s*\$\("routeSheetBackdrop"\).*?close\s*:\s*\(\)\s*=>\s*\{\s*closeSheet\(\)/s.test(hooks);
+  const order = hooks.indexOf('$("confirmBackdrop")') >= 0 &&
+    hooks.indexOf('$("routeSheetBackdrop")') > hooks.indexOf('$("confirmBackdrop")');
+  t("线路页：真实源码注册确认框返回钩子", confirmProbe);
+  t("线路页：真实源码注册线路选择层返回钩子", sheetProbe);
+  t("线路页：确认框优先于线路选择层", order);
+  console.log((confirmProbe ? "✅ " : "❌ ") + "线路页：确认框钩子存在且关闭确认框");
+  console.log((sheetProbe ? "✅ " : "❌ ") + "线路页：线路选择层钩子存在且关闭选择层");
+  console.log((order ? "✅ " : "❌ ") + "线路页：返回优先级为确认框→选择层");
+}
+
 console.log("\n" + "-".repeat(56));
 console.log(`结果：${pass}/${pass + fail} 通过`);
 if (fail) {
