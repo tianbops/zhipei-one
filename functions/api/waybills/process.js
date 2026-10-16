@@ -23,7 +23,7 @@ const number=v=>{const n=Number(v);return Number.isFinite(n)?n:null};
 async function base(env,id){const raw=await get(env,"route:"+id+":base");if(!raw)throw Object.assign(new Error("线路数据资料尚未建立"),{code:"BASE_NOT_FOUND"});let x;try{x=typeof raw==="string"?JSON.parse(raw):raw}catch{throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"})}if(!x||!Array.isArray(x.stores))throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"});return x.stores}
 
 function extract(rawText){
-  const stores=[]; let date=null,vehicle=null,totalWeight=null;
+  const stores=[]; let date=null,vehicle=null,totalWeight=null,driver=null,deliveryPerson=null;
   // 多截图属于同一张运单。截图来源标记只用于诊断，不得进入门店提取文本。
   const normalizedInput=String(rawText||"").replace(/【第\d+张截图】/g,"\n");
   const lines=clean(normalizedInput).split(/\r?\n+/).map(x=>x.trim()).filter(Boolean).slice(0,5000);
@@ -39,6 +39,22 @@ function extract(rawText){
     const groups=vm.length===4?vm.slice(2):vm.slice(1);
     vehicle=(groups[0]+groups[1]+groups[2]).toUpperCase();
   }
+  // 司机/送货员属于运单抬头字段，单独提取并保存；兼容标签和值分行、多个字段同行。
+  const personLabels=["主司机","司机姓名","驾驶员","司机","送货员","送货人","配送员"];
+  const extractPerson=labels=>{
+    const pattern=/(主司机|司机姓名|驾驶员|司机|送货员|送货人|配送员)\s*[:：]?\s*([^\s,，;；|]+)/g;
+    let match;
+    while((match=pattern.exec(full))){
+      if(!labels.includes(match[1]))continue;
+      const value=String(match[2]||"").replace(/^[：:，,;；|]+|[：:，,;；|]+$/g,"").trim();
+      if(!value||personLabels.includes(value)||/^(?:姓名|名称|无|暂无|未知|—|-)$/.test(value))continue;
+      if(value.length>20||/^(?:运单列表|订单列表|车牌号?|车辆|车号|送货员|送货人|配送员|主司机|司机|驾驶员)$/.test(value))continue;
+      return value;
+    }
+    return null;
+  };
+  driver=extractPerson(["主司机","司机姓名","驾驶员","司机"]);
+  deliveryPerson=extractPerson(["送货员","送货人","配送员"]);
   const wm=full.match(/(?:总重量|重量)\s*[:：]?\s*([\d.]+)\s*(?:吨|t|T)?/);
   if(wm)totalWeight=number(wm[1]);
 
@@ -81,7 +97,7 @@ function extract(rawText){
       if(cleaned) addRouteText(cleaned);
     }
   }
-  return {date,vehicle,totalWeight,stores};
+  return {date,vehicle,totalWeight,driver,deliveryPerson,stores};
 }
 
 function baseIdentityNames(store){
@@ -349,7 +365,7 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
   const rawExtractItems=extracted.stores.map((s,i)=>({index:i+1,rawName:s.rawName,name:s.name,storeId:s.storeId||null,sourceLine:s.sourceLine||null}));const matchStarted=Date.now();const locallyMatched=matchStores(extracted.stores,baseStores);const hasRouteBase=baseAvailable;const globalCandidates=hasRouteBase?[]:await findGlobalMatches(env,locallyMatched.filter(x=>x.pending));const globalMap=new Map(globalCandidates.map(x=>[x.rawName+"|"+(x.sourceLine||""),x]));const matched=locallyMatched.map(x=>{if(!x.pending)return x;const g=globalMap.get(x.rawName+"|"+(x.sourceLine||""));if(!g||g.globalMatchStatus!=="matched")return x;const standard=clean(g.name)||x.rawName;return {...x,...g,name:standard,correction:formatCompareKey(x.rawName)!==formatCompareKey(standard),pending:false,matchStatus:"matched",matchMethod:g.globalMatchMethod,routeOrder:100000};});const matchMs=Date.now()-matchStarted;emit(78,hasRouteBase?"已完成线路基准匹配":"已完成全局学习匹配");const dedupeStarted=Date.now();const d=dedupe(matched);const dedupeMs=Date.now()-dedupeStarted;emit(86,`已完成去重${d.merged?`，合并 ${d.merged} 家`:""}`);const planStarted=Date.now();const useRouteOrder=baseAvailable;const planned=plan(d.items,useRouteOrder);const planMs=Date.now()-planStarted;const pending=planned.filter(x=>x.pending);emit(92,`已完成线路规划，共 ${planned.length} 家`);
   if(await stopIfClientCancelled("PLAN"))return json({success:false,code:"PROCESS_CANCELLED",error:"已取消处理",message:"已取消处理",requestId,recoverable:true,action:"REPROCESS",hint:"本次处理已取消，可重新上传运单"},499);
   const quality=evaluateQualityGates({recognizedTextLen:recognizedText.length,lineCount:countLines(recognizedText),rawExtractCount,extractCount:extracted.stores.length,plannedCount:planned.length,pendingCount:pending.length,autoMatchedCount:matched.filter(x=>!x.pending).length,dedupeBefore:matched.length,dedupeAfter:d.items.length,merged:d.merged});
-  const formWeight=number(form.get("totalWeight"));const effectiveWeight=formWeight!=null&&formWeight>0?formWeight:extracted.totalWeight;const order={schemaVersion:"2",id:newId(),uploadedAt,routeId,routeName:clean(route?.name)||"临时用户",date:clean(form.get("date"))||extracted.date||todayCN(),dateInferred:!(clean(form.get("date"))||extracted.date),vehicle:clean(form.get("vehicle"))||extracted.vehicle||null,totalWeight:effectiveWeight,stores:planned,rawText:recognizedText,stage:pending.length?"PLANNED":"CONFIRMED",pipeline:["RECOGNIZED","EXTRACTED","MATCHED","DEDUPED","PLANNED","VALIDATED",...(pending.length?[]:["CONFIRMED"])],summary:{original:rawExtractCount,extractCount:splitExtractCount,recoveredCount,finalCount:planned.length,total:planned.length,matched:planned.length-pending.length,pending:pending.length,correction:planned.filter(x=>x.correction).length,merged:d.merged,newStores:0},timing:{recognizedMs,ocrMs,baseMs,extractMs,matchMs,dedupeMs,planMs,totalMs:Date.now()-started},ocr:ocr?{provider:ocr.provider||"PaddleOCR",model:ocr.model,jobId:ocr.jobId,lineCount:ocr.lineCount,lowConfidence:ocr.lowConfidence||null,fallback:ocr.fallback||null,imageCount:ocr.imageCount||1}:null,createdBy:user.id,createdAt:new Date().toISOString(),requestId,quality,processingRouteId,routeIdAtProcessing:routeId};
+  const formWeight=number(form.get("totalWeight"));const effectiveWeight=formWeight!=null&&formWeight>0?formWeight:extracted.totalWeight;const order={schemaVersion:"2",id:newId(),uploadedAt,routeId,routeName:clean(route?.name)||"临时用户",date:clean(form.get("date"))||extracted.date||todayCN(),dateInferred:!(clean(form.get("date"))||extracted.date),vehicle:clean(form.get("vehicle"))||extracted.vehicle||null,driver:clean(form.get("driver"))||extracted.driver||null,deliveryPerson:clean(form.get("deliveryPerson"))||extracted.deliveryPerson||null,totalWeight:effectiveWeight,stores:planned,rawText:recognizedText,stage:pending.length?"PLANNED":"CONFIRMED",pipeline:["RECOGNIZED","EXTRACTED","MATCHED","DEDUPED","PLANNED","VALIDATED",...(pending.length?[]:["CONFIRMED"])],summary:{original:rawExtractCount,extractCount:splitExtractCount,recoveredCount,finalCount:planned.length,total:planned.length,matched:planned.length-pending.length,pending:pending.length,correction:planned.filter(x=>x.correction).length,merged:d.merged,newStores:0},timing:{recognizedMs,ocrMs,baseMs,extractMs,matchMs,dedupeMs,planMs,totalMs:Date.now()-started},ocr:ocr?{provider:ocr.provider||"PaddleOCR",model:ocr.model,jobId:ocr.jobId,lineCount:ocr.lineCount,lowConfidence:ocr.lowConfidence||null,fallback:ocr.fallback||null,imageCount:ocr.imageCount||1}:null,createdBy:user.id,createdAt:new Date().toISOString(),requestId,quality,processingRouteId,routeIdAtProcessing:routeId};
   if(!pending.length){order.confirmedAt=order.createdAt;order.confirmedBy=user.id;}
   const validation=validateResult(order);order.validation=validation;if(!validation.valid){const first=validation.errors?.[0]||"校验失败";const codeMap={"缺少运单日期":"WAYBILL_VALIDATION_DATE_MISSING","缺少车辆信息":"WAYBILL_VALIDATION_VEHICLE_MISSING","没有规划门店":"WAYBILL_VALIDATION_STORES_EMPTY","规划结果存在重复门店":"WAYBILL_VALIDATION_DUPLICATE_STORE","规划结果存在无效线路顺序":"WAYBILL_VALIDATION_ROUTE_ORDER_INVALID","规划结果存在重复线路顺序":"WAYBILL_VALIDATION_ROUTE_ORDER_DUPLICATE","线路顺序不连续":"WAYBILL_VALIDATION_ROUTE_ORDER_GAP"};return failProcess(codeMap[first]||"WAYBILL_VALIDATION_FAILED","运单规划结果校验失败："+first,422,{recoverable:true,action:"RESUBMIT",hint:"运单规划结果校验失败："+first,validation})}order.diagnostics={matchMode:hasRouteBase?"ROUTE_BASE":"GLOBAL_LEARNING",baseStoreCount:baseStores.length,rawExtractCount,extractCount:splitExtractCount,recoveredCount,rawExtractItems,extractItems:extracted.stores.map((s,i)=>({index:i+1,rawName:s.rawName,name:s.name,storeId:s.storeId||null})),localMatchedCount:locallyMatched.filter(x=>!x.pending).length,localPendingCount:locallyMatched.filter(x=>x.pending).length,localPendingItems:locallyMatched.filter(x=>x.pending).map(x=>({rawName:x.rawName,candidates:x.candidates||[]})),globalMatchedCount:matched.filter(x=>!x.pending&&(x.matchMethod==="global-alias"||x.matchMethod==="global-identity")).length,globalPendingCount:hasRouteBase?0:matched.filter(x=>x.pending).length,finalPendingCount:pending.length,dedupeBefore:matched.length,dedupeAfter:d.items.length,merged:d.merged,dedupeConflicts:d.conflicts,dedupeRemoved:d.removed,correctionItems:planned.filter(x=>x.correction).map((s,i)=>({rawName:s.rawName,name:s.name,storeId:s.storeId||null,matchMethod:s.matchMethod||null})),plannedCount:planned.length,finalCount:order.stores.length,finalItems:planned.map((s,i)=>({index:i+1,rawName:s.rawName,name:s.name,storeId:s.storeId||null,pending:!!s.pending,matchMethod:s.matchMethod||null,routeOrder:s.routeOrder,matchConfidence:s.matchConfidence||null})),requestId,quality};
   return await saveWaybill(order, requestId, false);
