@@ -307,9 +307,8 @@
   display:grid;
   grid-template-columns:repeat(5,1fr);
   gap:4px;
-  background:rgba(5,7,10,.96);
+  background:#05070A;
   border-top:1px solid #27323D;
-  backdrop-filter:blur(8px);
 }
 .bottom-nav-item{
   min-width:0;
