@@ -4,12 +4,12 @@ import { businessFingerprint, dailyWaybillKey } from '../functions/api/_waybill-
 
 const source=fs.readFileSync(new URL('../functions/api/waybills/process.js',import.meta.url),'utf8');
 const start=source.indexOf('function baseIdentityNames');
-const end=source.indexOf('\nfunction validateResult',start);
+const end=source.indexOf('\n/**\n * 记录运单生命周期',start);
 if(start<0||end<0)throw new Error('extract segmentation helpers not found');
 const helperSource=source.slice(start,end);
 const clean=v=>String(v??'').trim();
 const factory=new Function('clean','formatCompareKey',helperSource+'\nreturn {splitByRouteBase,dedupe,plan};');
-const {splitByRouteBase,dedupe,plan}=factory(clean,formatCompareKey);
+const number=v=>{const n=Number(v);return Number.isFinite(n)?n:null;};\nconst {splitByRouteBase,dedupe,plan}=factory(clean,formatCompareKey,number);
 
 const base=[
  {storeId:'S1',name:'重庆门店甲',originalName:'重庆门店甲',aliases:['甲店'],routeOrder:1},
