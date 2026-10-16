@@ -608,7 +608,7 @@ body {
 
 .login-logo {
   display: block;
-  width: 32px;
+  width: 38px;
   height: auto;
   object-fit: contain;
 }
@@ -769,7 +769,7 @@ body {
   }
 
   .login-logo {
-    width: 29px;
+    width: 34px;
   }
 
   .login-headline {
