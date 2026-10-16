@@ -1,3 +1,7 @@
 name = "zhipei-one"
 compatibility_date = "2026-09-26"
 pages_build_output_dir = "."
+
+[[r2_buckets]]
+binding = "WAYBILL_FILES"
+bucket_name = "zhipei-one-files"
