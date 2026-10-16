@@ -567,34 +567,82 @@ body {
   min-height: 100dvh;
   box-sizing: border-box;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
+  padding: clamp(48px, 9vh, 96px) 24px calc(20px + env(safe-area-inset-bottom));
   background: transparent;
 }
 
 .login-card {
   width: min(100%,380px);
   box-sizing: border-box;
-  padding: 20px 22px 22px;
+  padding: 0;
   background: transparent;
   border: 0;
   border-radius: 0;
 }
 
 .login-brand {
-  text-align: center;
-  margin: 0 0 26px;
+  text-align: left;
+  margin: 0 0 30px;
+}
+
+.login-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-bottom: 38px;
+}
+
+.login-brand-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 15px;
+  background: rgba(255,255,255,.04);
 }
 
 .login-logo {
   display: block;
-  width: min(100%,540px);
-  max-width: 540px;
+  width: 32px;
   height: auto;
-  max-height: 216px;
-  margin: 0 auto;
   object-fit: contain;
+}
+
+.login-brand-name {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: .01em;
+  color: #fff;
+}
+
+.login-eyebrow {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+}
+
+.login-headline {
+  margin: 0 0 12px;
+  color: #fff;
+  font-size: 31px;
+  line-height: 1.32;
+  font-weight: 700;
+  letter-spacing: .01em;
+}
+
+.login-sub {
+  margin: 0 0 32px;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.6;
 }
 
 .login-form {
@@ -616,18 +664,18 @@ body {
 .login-field input {
   display: block;
   width: 100%;
-  height: 48px;
+  height: 54px;
   box-sizing: border-box;
   margin: 0;
   padding: 0 16px;
   border: 1px solid #35404C;
-  border-radius: 11px;
+  border-radius: 13px;
   outline: none;
   background: rgba(10,14,19,.88);
   color: #fff;
   font: inherit;
   font-size: 16px;
-  line-height: 48px;
+  line-height: 54px;
   appearance: none;
 }
 
@@ -653,19 +701,19 @@ body {
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 48px;
+  height: 54px;
   margin: 0;
   border: 0;
-  border-radius: 11px;
-  background: rgba(28,37,47,.82);
+  border-radius: 14px;
+  background: #263746;
   color: #fff;
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
 }
 
 .login-submit:active {
-  background: #303C48;
+  background: #31455A;
 }
 
 .login-submit:disabled {
@@ -706,47 +754,58 @@ body {
 
 @media (max-width:380px) {
   .login-shell {
-    padding-left: 12px;
-    padding-right: 12px;
+    padding-left: 18px;
+    padding-right: 18px;
   }
 
-  .login-card {
-    padding: 16px 18px 20px;
+  .login-brand-row {
+    margin-bottom: 30px;
   }
 
-  .login-brand {
-    margin-bottom: 22px;
+  .login-brand-badge {
+    width: 48px;
+    height: 48px;
+    border-radius: 13px;
   }
 
-    .login-logo {
-      width: min(100%,500px);
-      max-height: 192px;
-    }
+  .login-logo {
+    width: 29px;
   }
+
+  .login-headline {
+    font-size: 28px;
+  }
+}
 
 @media (max-height:620px) {
   .login-shell {
     align-items: flex-start;
-    padding-top: 12px;
+    padding-top: 16px;
   }
 
-  .login-card {
-    padding-top: 12px;
+  .login-brand-row {
+    margin-bottom: 20px;
   }
 
   .login-brand {
-    margin-bottom: 16px;
+    margin-bottom: 18px;
   }
 
-  .login-logo {
-    max-height: 164px;
+  .login-sub {
+    margin-bottom: 20px;
   }
 }
 
 
 /* 浅色外观适配：登录页及通用文本输入 */
 :root[data-zp-theme="light"] .login-shell{background:var(--zp-bg)!important;color:var(--zp-text)}
-:root[data-zp-theme="light"] .login-card{background:#FFFFFF!important;border-color:var(--zp-line)!important;box-shadow:0 12px 32px rgba(20,30,40,.08)}
+:root[data-zp-theme="light"] .login-card{background:transparent!important;border:0!important;box-shadow:none!important}
+:root[data-zp-theme="light"] .login-brand-row{margin-bottom:38px}
+:root[data-zp-theme="light"] .login-brand-badge{border-color:#DDE3E8!important;background:#FFFFFF!important;box-shadow:0 1px 2px rgba(20,30,40,.05)}
+:root[data-zp-theme="light"] .login-brand-name{color:var(--zp-text)!important}
+:root[data-zp-theme="light"] .login-eyebrow{color:#69747F!important}
+:root[data-zp-theme="light"] .login-headline{color:var(--zp-text)!important}
+:root[data-zp-theme="light"] .login-sub{color:#596674!important}
 :root[data-zp-theme="light"] .login-field,
 :root[data-zp-theme="light"] .login-field span,
 :root[data-zp-theme="light"] .login-links,
@@ -755,6 +814,8 @@ body {
 :root[data-zp-theme="light"] .data-textarea{background:#FFFFFF!important;color:#17202A!important;border-color:#C9D1D9!important}
 :root[data-zp-theme="light"] .login-field input:focus{background:#FFFFFF!important;border-color:#7D8A98!important}
 :root[data-zp-theme="light"] .password-toggle{color:#536170}
+:root[data-zp-theme="light"] .login-submit{background:#263746!important;color:#FFFFFF!important}
+:root[data-zp-theme="light"] .login-links a{color:var(--zp-text)!important}
 
 /* ---- 登录系页面浅色补充（index/register/setup 不加载 ui-unified.js，
      data-zp-theme 由页内引导脚本设置，token 驱动的样式自动翻转；
