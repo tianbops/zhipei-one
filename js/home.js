@@ -240,12 +240,12 @@ processingCancelBtn?.addEventListener("click",()=>{
 processingRetry?.addEventListener("click",()=>{
   if(processingFile)return;   // 处理中禁止重复触发
   const info=retryActionInfo(lastFailureAction);
-  if(lastFailureAction==="RETRY_SAVE"&&lastProcessingFile&&lastFailureRequestId){
-    // RETRY_SAVE：仅重保存（后端按 resumeRequestId 复用已构建 order，跳过 OCR/提取/匹配/规划），不重 OCR
-    processSelectedFiles(lastProcessingFile, lastFailureRequestId);
-  }else if(info&&info.autoRetry&&lastProcessingFile){
-    // RETRY_OCR / REPROCESS：复用同一文件重跑完整链路（含 OCR）
-    processSelectedFiles(lastProcessingFile);
+  if(lastFailureAction==="RETRY_SAVE"&&lastFailureRequestId){
+    // 仅重保存：复用已构建的运单数据，不保留或重新上传原图。
+    processSelectedFiles([], lastFailureRequestId);
+  }else if(info&&info.autoRetry){
+    // 重新识别必须重新选择图片；不在失败状态长期保留原图引用。
+    openUpload();
   }else if(info&&lastFailureAction==="RESUBMIT"){
     // 需重新选文件：回到来源菜单
     openUpload();
@@ -280,15 +280,15 @@ document.querySelectorAll(".source-option").forEach(btn=>btn.addEventListener("c
 let processingFile=false;
 // 供统一业务导航判断：处理中的运单离开当前工作流前必须经过确认。
 window.zpIsProcessing=()=>!!processingFile||!!processingController;
-let lastProcessingFile=null;   // 最近一次处理的运单图片组/文件，供一键重试复用
+let lastProcessingFile=null;   // 兼容旧状态；处理结束后立即清空，不用于图片重试
 let lastFailureAction=null;    // 最近一次失败的处理动作（action）；null 表示不可重试，按钮作关闭用
 let lastFailureRequestId=null; // 最近一次失败的处理票据 requestId（RETRY_SAVE 仅重保存时回传后端 resume）
 async function processSelectedFiles(files, resumeRequestId){
   if(!Array.isArray(files))files=files?[files]:[];
   files=files.filter(Boolean);
-  if(!files.length||processingFile)return;
+  if((!files.length&&!resumeRequestId)||processingFile)return;
   processingFile=true;
-  lastProcessingFile=files.slice();
+  lastProcessingFile=null;
   const controller=new AbortController();
   processingController=controller;
   if(processingCancelBtn){processingCancelBtn.hidden=true;processingCancelBtn.disabled=false}
@@ -387,13 +387,23 @@ async function processSelectedFiles(files, resumeRequestId){
     processingFile=false;
     const wasCancelled=processingCancelled;
     processingController=null;
+    // 释放前端对原图 File 对象的引用；历史记录只保留业务结果，不保留图片。
+    files.length=0;
+    lastProcessingFile=null;
+    ["cameraInput","photoInput","documentInput"].forEach(id=>{const input=$(id);if(input)input.value="";});
     if(wasCancelled){
       closeUpload();
       try{window.zpToast?.("已取消处理","success")}catch{}
     }
   }
 }
-["cameraInput","photoInput","documentInput"].forEach(id=>$(id)?.addEventListener("change",e=>processSelectedFiles(Array.from(e.target.files||[]))));
+["cameraInput","photoInput","documentInput"].forEach(id=>$(id)?.addEventListener("change",e=>{
+  const input=e.target;
+  const files=Array.from(input.files||[]);
+  // 立刻清空文件控件的持有状态；当前处理只使用内存中的临时引用。
+  input.value="";
+  processSelectedFiles(files);
+}));
 
 async function loadHome(){
   const fetchJson=async(url,timeoutMs=8000)=>{
