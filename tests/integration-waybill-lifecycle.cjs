@@ -84,7 +84,7 @@ async function toJson(resp) {
   check("处理成功", A.success === true);
   check("提取门店数=3", A.waybill && A.waybill.stores.length === 3, "stores=" + (A.waybill?.stores.length));
   check("stage=CONFIRMED（无待定）", A.waybill?.stage === "CONFIRMED", A.waybill?.stage);
-  check("匹配方式含 data-exact/identity", A.waybill?.stores.every(s => s.matchStatus === "matched"), JSON.stringify(A.waybill?.stores.map(s => s.matchMethod)));
+  check("匹配方式含 data-exact/identity", A.waybill?.stores.every(s => s.matchStatus === "matched"), JSON.stringify(A.waybill?.stores.map(s => ({rawName:s.rawName,name:s.name,storeId:s.storeId,pending:s.pending,matchMethod:s.matchMethod,reason:s.matchDiagnostics?.reason,confidence:s.matchConfidence?.reason}))));
   const idA = A.waybill?.id;
   check("落库 waybill:<id>", read("waybill:" + idA)?.id === idA);
   check("指纹键已写", red._get("zp:waybill:fingerprint:" + A.waybill?.businessFingerprint) === idA, "fp=" + A.waybill?.businessFingerprint);
