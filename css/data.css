@@ -97,7 +97,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
    font 14 时「编辑/删除」两字约 28px + 18 padding = 46px < min-width 48px，
    实际宽度仍是 48px，预留不动也不会溢出。 */
 .data-swipe-actions button{min-width:48px;height:var(--zp-control-height);padding:0 9px;border:1px solid #35404C;border-radius:10px;background:rgba(10,14,19,.88);color:#E8EDF2;font-size:14px}
-.data-swipe-actions .data-swipe-delete{color:var(--ui-danger)}
+.data-swipe-actions .data-swipe-delete{color:#FF8278}
 @media(min-width:600px){
  .data-swipe-actions{right:0}
  .data-store-row.data-swipe-open .data-store-main{padding-right:124px}
@@ -189,7 +189,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 :root[data-zp-theme="light"] .data-action-primary{background:#263746!important;border-color:#263746!important;color:#FFFFFF!important}
 :root[data-zp-theme="light"] .data-feedback{background:#F0F2F4!important;border-color:#D7DDE3!important;color:#26323D!important}
 :root[data-zp-theme="light"] .data-feedback.success{background:#E8F5EC!important;border-color:#B8DCC3!important;color:#205C35!important}
-:root[data-zp-theme="light"] .data-feedback.error{background:#FCEBEC!important;border-color:#E8BFC3!important;color:var(--zp-danger)!important}
+:root[data-zp-theme="light"] .data-feedback.error{background:#FCEBEC!important;border-color:#E8BFC3!important;color:#8A2630!important}
 
 /* 浅色外观适配补全：顶部方形菜单按钮与下拉菜单（此前仍是深色块） */
 :root[data-zp-theme="light"] .data-page-menu-btn{background:#FFFFFF;border-color:#D7DDE3;color:var(--zp-text)}
@@ -215,4 +215,4 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 /* ---- 浅色补充：左滑编辑/删除按钮（此前沿用深色硬编码，深底深字不可读） ---- */
 :root[data-zp-theme="light"] .data-swipe-actions button{background:#FFFFFF;border-color:#D7DDE3;color:#17202A}
 :root[data-zp-theme="light"] .data-swipe-actions button:active{background:#E8EDF1}
-:root[data-zp-theme="light"] .data-swipe-actions .data-swipe-delete{background:#FCEBEC;border-color:#E8BFC3;color:var(--ui-danger)}
+:root[data-zp-theme="light"] .data-swipe-actions .data-swipe-delete{background:#FCEBEC;border-color:#E8BFC3;color:#C2453A}
