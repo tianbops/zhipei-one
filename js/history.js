@@ -90,7 +90,23 @@ overlay.addEventListener("click",e=>{if(e.target===overlay)closeOverlay()});
 // 删除成功后提示已入回收站
 confirmBtn.onclick=async()=>{if(!pendingDelete)return;const job=pendingDelete;confirmBtn.disabled=true;confirmBtn.textContent="删除中…";try{if(job.type==="date")await deleteDate(job.key);else await deleteMonth(job.key);closeDialog();toast("已移入回收站，7天内可在回收站恢复");await load()}catch(e){confirmBtn.disabled=false;confirmBtn.textContent="确定";dialogText.textContent=e.message||"删除失败，请稍后重试"}};
 // 回收站
-async function renderTrash(){const r=await fetch("/api/history-trash",{credentials:"same-origin",cache:"no-store"});const d=await r.json().catch(()=>null);if(!r.ok||!d?.success)throw new Error(d?.error||"回收站读取失败");const items=Array.isArray(d.items)?d.items:[];let html="<strong>回收站</strong><p class='history-overlay-hint'>已删除的历史运单在此保留 7 天，到期自动清除。</p>";if(!items.length){html+="<p class='history-overlay-empty'>回收站为空</p>"}else{for(const it of items){const left=it.ttl>0?Math.max(1,Math.ceil(it.ttl/86400)):0;html+="<div class='history-trash-item'><div class='history-trash-meta'><strong>"+esc(it.date||"")+"</strong><span>"+esc(it.routeName||"")+" · "+Number(it.storeCount||0)+"家</span><small>剩余约 "+left+" 天</small></div><div class='history-dialog-actions'><button type='button' class='history-trash-restore' data-id='"+esc(it.id)+"'>恢复</button><button type='button' class='history-trash-purge' data-id='"+esc(it.id)+"'>彻底删除</button></div></div>"}html+="<div class='history-dialog-actions'><button type='button' id='historyOverlayClose'>关闭</button></div>";overlayPanel.innerHTML=html;overlay.hidden=false}
+async function renderTrash(){
+  const r=await fetch("/api/history-trash",{credentials:"same-origin",cache:"no-store"});
+  const d=await r.json().catch(()=>null);
+  if(!r.ok||!d?.success)throw new Error(d?.error||"回收站读取失败");
+  const items=Array.isArray(d.items)?d.items:[];
+  let html="<strong>回收站</strong><p class='history-overlay-hint'>已删除的历史运单在此保留 7 天，到期自动清除。</p>";
+  if(!items.length){
+    html+="<p class='history-overlay-empty'>回收站为空</p>";
+  }else{
+    for(const it of items){
+      const left=it.ttl>0?Math.max(1,Math.ceil(it.ttl/86400)):0;
+      html+="<div class='history-trash-item'><div class='history-trash-meta'><strong>"+esc(it.date||"")+"</strong><span>"+esc(it.routeName||"")+" · "+Number(it.storeCount||0)+"家</span><small>剩余约 "+left+" 天</small></div><div class='history-dialog-actions'><button type='button' class='history-trash-restore' data-id='"+esc(it.id)+"'>恢复</button><button type='button' class='history-trash-purge' data-id='"+esc(it.id)+"'>彻底删除</button></div></div>";
+    }
+    html+="<div class='history-dialog-actions'><button type='button' id='historyOverlayClose'>关闭</button></div>";
+  }
+  overlayPanel.innerHTML=html;overlay.hidden=false;
+}
 async function doTrashAction(t){const id=t.dataset.id,restore=t.classList.contains("history-trash-restore");if(!restore&&!await confirmPurge())return;t.disabled=true;try{const r=await fetch("/api/history-trash?id="+encodeURIComponent(id),{method:restore?"POST":"DELETE",credentials:"same-origin"});const d=await r.json().catch(()=>null);if(!r.ok||!d?.success)throw new Error(d?.error||"操作失败");toast(restore?"已恢复":"已彻底删除");await renderTrash();await load()}catch(e){t.disabled=false;toast(e.message||"操作失败")}}
 const confirmPurge=async()=>window.zpConfirm?await window.zpConfirm("彻底删除","彻底删除后将无法找回，确定吗？","彻底删除"):confirm("彻底删除后无法找回，确定吗？");
 // 导出
