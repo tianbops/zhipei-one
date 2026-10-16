@@ -10,7 +10,7 @@
  * 缓存 key 一律用 pathname 规整化：页面 URL 常带 ?v=时间戳（防缓存），
  * 若按完整 URL 存，每次跳转都会产生一份新副本。
  */
-const VERSION = "zp-pwa-44";
+const VERSION = "zp-pwa-45";
 const STATIC_CACHE = VERSION + "-static";
 const PAGES_CACHE = VERSION + "-pages";
 const OFFLINE_URL = "/offline.html";

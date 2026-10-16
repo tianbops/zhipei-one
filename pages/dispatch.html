@@ -11,22 +11,23 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="智配One">
-<link rel="stylesheet" href="/css/app.css?v=2212af30"><link rel="stylesheet" href="/css/ui-unified.css?v=5faf6a46">
-<link rel="stylesheet" href="/css/mobile-ui.css?v=285d41d0"><link rel="stylesheet" href="/css/business-pages.css?v=6a65c5ef">
+<link rel="stylesheet" href="/css/app.css?v=2212af30"><link rel="stylesheet" href="/css/ui-unified.css?v=2dfa0350">
+<link rel="stylesheet" href="/css/mobile-ui.css?v=285d41d0"><link rel="stylesheet" href="/css/business-pages.css?v=2e7753e2">
 <style>
-.dispatch-page{min-height:100dvh;padding-bottom:88px;background:#05070A}
+.dispatch-page{min-height:100dvh;padding:0 16px 88px;background:#05070A}
 .dispatch-page .topbar{position:sticky;top:0;z-index:10}
-.dispatch-intro{padding:18px 16px 10px}
+@media(max-width:380px){.dispatch-page{padding-left:12px;padding-right:12px}}
+.dispatch-intro{padding:18px 0 10px}
 .dispatch-intro h2{margin:0;font-size:20px;line-height:1.35}
 .dispatch-intro p{margin:6px 0 0;color:#B8C2CC;font-size:13px}
-.dispatch-section{margin:14px 16px 0}
+.dispatch-section{margin:14px 0 0}
 .dispatch-section-title{margin:0 0 8px;font-size:13px;color:#7F8A95;font-weight:600}
 .dispatch-current{background:rgba(13,18,24,.82);border:1px solid rgba(255,255,255,.075);border-radius:16px;padding:14px 16px;box-shadow:0 12px 30px rgba(0,0,0,.18)}
-.dispatch-current-row{display:flex;align-items:center;gap:10px}
+.dispatch-current-row{display:flex;align-items:center;gap:var(--zp-seg-btn-gap,8px)}.dispatch-current-name{flex:none}.dispatch-current-status{flex:0 1 auto;min-width:0}
 .dispatch-current-name{font-size:23px;font-weight:700;line-height:1;color:#fff}
 .dispatch-current-status{font-size:12px;color:#B8C2CC;display:flex;align-items:baseline;gap:2px}
 .dispatch-current-count{margin-left:4px;font-size:12px;color:#B8C2CC;font-weight:600}
-.dispatch-switch{margin-left:auto;min-width:72px;height:40px;padding:0 14px;border:1px solid rgba(255,255,255,.14);border-radius:10px;background:rgba(38,49,60,.9);color:#fff;font-size:13px;font-weight:600}
+.dispatch-switch{margin-left:auto;flex:none;width:calc((100% - 2*var(--zp-seg-btn-gap,8px))/3);min-width:72px;min-height:var(--zp-seg-btn-h,42px);padding:var(--zp-seg-btn-pad,0 8px);border:1px solid rgba(255,255,255,.14);border-radius:var(--zp-seg-btn-radius,12px);background:rgba(38,49,60,.9);color:#fff;font-size:var(--zp-seg-btn-font,13px);font-weight:600}
 .dispatch-switch:active{background:#11171D}
 .dispatch-action-card{background:rgba(13,18,24,.82);border:1px solid rgba(255,255,255,.075);border-radius:14px;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,.18)}
 .dispatch-action{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:12px 14px;border:0;border-bottom:1px solid rgba(255,255,255,.08);background:transparent;color:#fff;text-align:left;cursor:pointer;text-decoration:none}
