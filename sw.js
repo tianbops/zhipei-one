@@ -122,15 +122,14 @@ async function updatePageCache(req) {
   if (inFlight) return inFlight;
   if (Date.now() - (pageCacheRefreshAt.get(key) || 0) < PAGE_CACHE_REFRESH_MS) return;
 
+  // 记录尝试时间而不只是成功时间：弱网下失败也要短暂退避，避免每次导航都重试同一 HTML。
+  pageCacheRefreshAt.set(key, Date.now());
   const task = (async () => {
     try {
       const cache = await caches.open(PAGES_CACHE);
       const res = await fetch(req, { cache: "no-cache" });
-      if (res && res.ok) {
-        await cache.put(key, res.clone());
-        pageCacheRefreshAt.set(key, Date.now());
-      }
-    } catch { /* 离线或失败：忽略，下次再说 */ }
+      if (res && res.ok) await cache.put(key, res.clone());
+    } catch { /* 离线或失败：30 秒后再试，避免快速往返持续打网络 */ }
     finally { pageCacheRefreshInFlight.delete(key); }
   })();
   pageCacheRefreshInFlight.set(key, task);
