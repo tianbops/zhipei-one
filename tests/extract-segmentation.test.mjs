@@ -9,7 +9,8 @@ if(start<0||end<0)throw new Error('extract segmentation helpers not found');
 const helperSource=source.slice(start,end);
 const clean=v=>String(v??'').trim();
 const factory=new Function('clean','formatCompareKey','number',helperSource+'\nreturn {splitByRouteBase,dedupe,plan};');
-const number=v=>{const n=Number(v);return Number.isFinite(n)?n:null;};\nconst {splitByRouteBase,dedupe,plan}=factory(clean,formatCompareKey,number);
+const number=v=>{const n=Number(v);return Number.isFinite(n)?n:null;};
+const {splitByRouteBase,dedupe,plan}=factory(clean,formatCompareKey,number);
 
 const base=[
  {storeId:'S1',name:'重庆门店甲',originalName:'重庆门店甲',aliases:['甲店'],routeOrder:1},
