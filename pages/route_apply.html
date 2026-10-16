@@ -50,17 +50,19 @@ async function load(){
  try{
   const [rs,me]=await Promise.all([api("/api/routes"),api("/api/me")]);
   const routeMap=Object.fromEntries((rs.routes||[]).map(r=>[r.id,r.name]));
+  const rName=v=>(window.zpRouteName?window.zpRouteName(v):v)||v;/* 全局标准：文本位置统一「X号线」 */
+  const esc2=s=>String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
   const bound=me.user?.boundRouteId,duty=me.user?.routeDuty;
-  $("binding").textContent=bound&&duty?"已绑定："+(routeMap[bound]||bound)+" · "+(duty==="driver"?"司机":"配送"):"当前未绑定线路";
+  $("binding").textContent=bound&&duty?"已绑定："+rName(routeMap[bound]||bound)+" · "+(duty==="driver"?"司机":"配送"):"当前未绑定线路";
   $("unbind").hidden=!(bound&&duty);
-  $("route").innerHTML='<option value="">请选择线路</option>'+(rs.routes||[]).filter(r=>r.status==="active").map(r=>'<option value="'+String(r.id).replaceAll('"',"&quot;")+'">'+String(r.name||r.id).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")+"</option>").join("");
+  $("route").innerHTML='<option value="">请选择线路</option>'+(rs.routes||[]).filter(r=>r.status==="active").map(r=>'<option value="'+String(r.id).replaceAll('"',"&quot;")+'">'+esc2(rName(String(r.name||r.id)))+"</option>").join("");
   const disabled=!!(bound&&duty);
   $("route").disabled=disabled;$("duty").disabled=disabled;$("submit").disabled=disabled;
   $("message").textContent=disabled?"当前已绑定线路，无需重复申请":"";
   try{
    const qs=await api("/api/route-requests");
    const statusText={pending:"待审核",approved:"已批准",rejected:"已驳回"};
-   $("requests").innerHTML=qs.requests?.length?qs.requests.slice().reverse().map(x=>'<div class="request-row"><strong>'+String(routeMap[x.routeId]||x.routeId)+'</strong> · '+(x.duty==="driver"?"司机":"配送")+' · '+(statusText[x.status]||x.status)+(x.reviewedAt?" · "+new Date(x.reviewedAt).toLocaleString():"")+"</div>").join(""):'<div class="empty">暂无线路申请记录</div>';
+   $("requests").innerHTML=qs.requests?.length?qs.requests.slice().reverse().map(x=>'<div class="request-row"><strong>'+esc2(rName(routeMap[x.routeId]||x.routeId))+'</strong> · '+(x.duty==="driver"?"司机":"配送")+' · '+(statusText[x.status]||x.status)+(x.reviewedAt?" · "+new Date(x.reviewedAt).toLocaleString():"")+"</div>").join(""):'<div class="empty">暂无线路申请记录</div>';
   }catch(e){$("requests").textContent="申请记录加载失败："+msg(e)}
  }catch(e){$("route").innerHTML='<option value="">线路加载失败</option>';$("requests").textContent="线路加载失败："+msg(e);$("message").textContent=msg(e)}
 }
@@ -78,7 +80,7 @@ $("submit").onclick=async()=>{
 };
 load();
 </script>
-<script src="/js/ui-unified.js?v=51683d26"></script>
+<script src="/js/ui-unified.js?v=82274d26"></script>
 <script src="/js/pwa.js?v=864ce384"></script>
 </body>
 </html>

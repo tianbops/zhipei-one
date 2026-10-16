@@ -360,6 +360,11 @@ body.sheet-open .bottom-nav{z-index:1001 !important}
 
 /* 浅色外观适配：首页固定导航与菜单交互 */
 :root[data-zp-theme="light"] .bottom-nav{background:rgba(255,255,255,.96)!important;border-color:#D7DDE3!important;box-shadow:0 -4px 18px rgba(20,30,40,.06)}
+/* 人物推车插画（assets/delivery-route.png）为深色主题绘制：白描线 + 蓝定位点。
+   浅色主题下白线在浅灰背景上几乎不可见——反相使线条变深，
+   hue-rotate(180deg) 把反相后的补色色相转回，蓝点保持蓝色。 */
+:root[data-zp-theme="light"] .delivery-man{opacity:.55}
+:root[data-zp-theme="light"] .delivery-man img{filter:invert(1) hue-rotate(180deg) brightness(.92)}
 :root[data-zp-theme="light"] .bottom-nav-plus .bottom-nav-icon{box-shadow:0 8px 20px rgba(20,30,40,.22)}
 :root[data-zp-theme="light"] .bottom-nav-plus:active{background:transparent}
 :root[data-zp-theme="light"] .bottom-nav-item{color:#596674}

@@ -1,6 +1,28 @@
 /* 智配One · 全局 UI 反馈 2.1
    只处理弹窗/Toast，不包含业务逻辑。 */
 (function(){
+  /* ===== 线路名全局显示标准 =====
+     圆点/徽章内（zpRouteShort）→ 只显示线路数字（26px 圆点放不下「6号线」），
+     临时线路显示「临」；其它文字位置（zpRouteName）→ 统一「X号线」格式；
+     无法归一为「数字+单位」结构的名字原样保留（如「机场线」）。 */
+  const routeDigitsOf=value=>{const m=String(value??"").match(/\d+/);return m?m[0]:""};
+  window.zpRouteShort=value=>{
+    const raw=String(value??"").trim();
+    if(!raw)return "—";
+    if(/临时/.test(raw))return "临";
+    const digits=routeDigitsOf(raw);
+    if(digits)return digits;
+    return raw.length<=2?raw:raw.slice(0,2);
+  };
+  window.zpRouteName=value=>{
+    const raw=String(value??"").trim();
+    if(!raw)return "";
+    if(/号线$/.test(raw))return raw;
+    const m=raw.match(/^(\d+)\s*(号线路|号线|号|路)$/);
+    if(m)return m[1]+"号线";
+    if(/^\d+$/.test(raw))return raw+"号线";
+    return raw;
+  };
   // 用户偏好只保存在当前浏览器，不写入业务账号或服务端数据。
   (function initAppearancePreferences(){
     const root=document.documentElement;

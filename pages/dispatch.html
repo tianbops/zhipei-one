@@ -244,7 +244,7 @@ let pickerRoute="";
 let pendingRoute="";
 let pickerTimer=0;
 
-function routeName(r){return r?.name||r?.id||"未命名线路"}
+function routeName(r){const raw=r?.name||r?.id||"未命名线路";return (window.zpRouteName?window.zpRouteName(raw):raw)||raw/* 全局标准：文本位置统一「X号线」 */}
 
 function openSheet(){
   pickerRoute=routeState.current;
@@ -334,7 +334,7 @@ async function load(){
 }
 load();
 </script>
-<script src="/js/ui-unified.js?v=51683d26"></script>
+<script src="/js/ui-unified.js?v=82274d26"></script>
 <script src="/js/pwa.js?v=864ce384"></script>
 </body>
 </html>

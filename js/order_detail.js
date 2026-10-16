@@ -121,7 +121,7 @@ function render(){
 }
 
 function setMenu(open){menuOpen=open;$('menuPanel').hidden=!open;$('menuBtn').setAttribute('aria-expanded',String(open))}
-function routeText(v){const s=String(v??'').trim();if(!s)return'—';return /号线$/.test(s)?s:(/^\d+$/.test(s)?s+'号线':s)}
+function routeText(v){const s=String(v??'').trim();if(!s)return'—';/* 全局标准：文本位置统一「X号线」 */if(window.zpRouteName)return window.zpRouteName(s)||'—';return /号线$/.test(s)?s:(/^\d+$/.test(s)?s+'号线':s)}
 function bindHistoryGestures(){
  const list=$('routeList');if(!list||list._historyGestureBound)return;
  list._historyGestureBound=true;
