@@ -76,11 +76,13 @@ t("businessStoreCode 提取编码", businessStoreCode("门店 JM123456") === "JM
 t("businessStoreCode 无编码返回 null", businessStoreCode("华润万家") === null);
 
 /* ============ 2. 应自动匹配的用例 ============ */
-const matchOut = matchStores(MATCH_CASES.map(([rawName]) => ({ rawName })), base);
+const matchOut = MATCH_CASES.map(([rawName]) => matchStores([{ rawName }], base)[0]);
 MATCH_CASES.forEach(([raw, expect, note], i) => {
   const r = matchOut[i];
   t("自动匹配：" + raw + "（" + note + "）", !r.pending && r.storeId === expect, "实际 " + (r.pending ? "待定" : r.storeId));
 });
+const sameWaybillAliases = matchStores([{ rawName: "华润万家（龙华店）" }, { rawName: "龙华华润万家" }], base);
+t("同一运单不同识别文本不被静默合并", sameWaybillAliases[1].pending && sameWaybillAliases[1].matchDiagnostics?.reason === "STORE_ID_COLLISION");
 
 /* ============ 3. 格式差异不应计为"更正" ============ */
 MATCH_CASES.forEach(([raw, , note], i) => {
@@ -90,7 +92,7 @@ MATCH_CASES.forEach(([raw, , note], i) => {
 });
 
 /* ============ 4. 应进入待定的用例（假阳性防线） ============ */
-const pendOut = matchStores(PENDING_CASES.map(([rawName]) => ({ rawName })), base);
+const pendOut = PENDING_CASES.map(([rawName]) => matchStores([{ rawName }], base)[0]);
 PENDING_CASES.forEach(([raw, note], i) => {
   const r = pendOut[i];
   t("应待定：" + raw + "（" + note + "）", r.pending === true && r.storeId === null, "实际匹配到 " + r.storeId);
