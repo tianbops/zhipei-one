@@ -12,7 +12,10 @@ assert.doesNotMatch(css, /\.history-search(?:\b|-)/);
 
 // 非搜索历史功能必须保留。
 assert.match(html, /id="historyList"/);
-assert.match(html, /id="historyPickerBtn" class="zp-btn zp-btn--secondary history-date-button"/);\nassert.match(html, /href="\\/css\\/history\\.css\\?v=[^"]+"/);\nassert.match(css, /\\.history-date-button\\s*\\{[^}]*min-height:\\s*48px/s);\nassert.doesNotMatch(css.slice(css.lastIndexOf("/* 日期选择：沿用全站次级按钮风格")), /background:|border:|border-radius:|color:/);
+assert.match(html, /id="historyPickerBtn" class="zp-btn zp-btn--secondary history-date-button"/);
+assert.match(html, /href="\\/css\\/history\\.css\\?v=[^"]+"/);
+assert.match(css, /\\.history-date-button\\s*\\{[^}]*min-height:\\s*48px/s);
+assert.doesNotMatch(css.slice(css.lastIndexOf("/* 日期选择：沿用全站次级按钮风格")), /background:|border:|border-radius:|color:/);
 assert.match(html, /id="historyLookupBtn"/);
 assert.match(html, /id="historyExportBtn"/);
 assert.match(html, /id="historyTrashBtn"/);
