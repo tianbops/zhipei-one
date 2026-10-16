@@ -33,7 +33,7 @@ for (const token of ["--zp-bg:#F4F6F8", "--zp-surface:#FFFFFF", "--zp-text:#1720
   assert.ok(unified.includes(token), "浅色主题缺少基础 token: " + token);
 }
 for (const selector of [
-  '.history-list', '.dispatch-page', '.data-import-panel', '.account-page',
+  '.history-dialog-panel', '.dispatch-page', '.data-import-panel', '.account-page',
   '.bottom-nav', '.row', '.dialog', 'input'
 ]) {
   assert.ok(unified.includes(selector), "全局浅色适配未覆盖关键组件: " + selector);
