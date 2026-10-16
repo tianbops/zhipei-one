@@ -108,7 +108,7 @@ function check(name, cond, info = "") {
   check("merge confirmation succeeds", merge.success === true, JSON.stringify(merge));
   check("merge assigns S001", merge.waybill?.stores?.[0]?.storeId === "S001");
   check("merge closes pending state", merge.waybill?.stage === "CONFIRMED" && merge.waybill?.summary?.pending === 0);
-  check("merge preserves planned route order", JSON.stringify((merge.waybill?.stores||[]).map(s=>[s.storeId,s.routeOrder])) === JSON.stringify([["sA",1],["sB",2]]), JSON.stringify(merge.waybill?.stores));
+  check("merge preserves planned route order", JSON.stringify((merge.waybill?.stores||[]).map(s=>[s.storeId,s.routeOrder])) === JSON.stringify([["S001",1]]), JSON.stringify(merge.waybill?.stores));
   check("merge refreshes daily dedupe key", typeof merge.waybill?.dailyDedupeKey === "string" && merge.waybill.dailyDedupeKey.length > 0);
   const newMergeDedupeKey = await identityMod.dailyWaybillKey(merge.waybill);
   check("daily dedupe key matches confirmed identity", merge.waybill?.dailyDedupeKey === newMergeDedupeKey);
