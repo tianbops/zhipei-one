@@ -151,7 +151,7 @@ function resetProcessingUI(){
   if(overlay)overlay.classList.remove("processing-error-state");
   if(processingError)processingError.hidden=true;
   sourceMenu.hidden=false;processingPanel.hidden=true;
-  renderProcessingProgress(0);
+  resetProcessingProgress();
 }
 /* ===== 处理失败 → 重试动作映射（纯函数，tests/unit-retry-action.test.mjs 切片验证） =====
    与后端 process.js 的 failProcess 信封对齐：recoverable && action 才允许前端重试。
@@ -213,7 +213,7 @@ function showProcessingUI(){
   if(processingCancelBtn)processingCancelBtn.hidden=true;
   setProcessingStage(STAGE_DEFAULT);
   if(processingElapsedEl)processingElapsedEl.textContent="已用时 0s";
-  renderProcessingProgress(0);
+  resetProcessingProgress();
   startProcessingClock();
   refreshProcessingClock();
 }
