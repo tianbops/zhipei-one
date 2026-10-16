@@ -10,7 +10,7 @@ const extract=new Function("clean","number",source.slice(start,end)+"\nreturn ex
 const multiline=extract("运输日期：2026-10-16\n主司机：张三\n送货员：李四\n车牌号：渝 DK 7692\n重庆门店甲");
 assert.equal(multiline.driver,"张三","司机姓名应支持标签和值同一行");
 assert.equal(multiline.deliveryPerson,"李四","送货员姓名应支持标签和值同一行");
-assert.equal(multiline.vehicle,"渝DK7692","人员字段提取不得影响车牌提取");
+assert.equal(multiline.vehicle,"渝DK7692","司机/送货员提取不应影响车牌，且应兼容 OCR 将车牌拆开");
 const sameLine=extract("主司机 王师傅 送货员 赵师傅 车辆 渝DK7692");
 assert.equal(sameLine.driver,"王师傅","同一行多个字段时应提取司机");
 assert.equal(sameLine.deliveryPerson,"赵师傅","同一行多个字段时应提取送货员");
