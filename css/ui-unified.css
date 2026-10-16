@@ -816,10 +816,20 @@ textarea:disabled,
 :root[data-zp-theme="light"] .login-submit,
 :root[data-zp-theme="light"] .data-action-primary,
 :root[data-zp-theme="light"] .primary,
-:root[data-zp-theme="light"] button.primary{
+:root[data-zp-theme="light"] button.primary,
+:root[data-zp-theme="light"] .primary-btn,
+:root[data-zp-theme="light"] .confirm-submit{
   background:#263746!important;
   border-color:#263746!important;
   color:#FFFFFF!important;
+}
+/* 浅色主题次按钮：app.css 的 .secondary-btn 为深底白字，而上面的 button
+   通配浅色文字规则只改文字色不改底色，会出现「深底深字」不可读
+   （route_apply 解除线路绑定）。按 order_detail 弹窗既有浅色值补齐。 */
+:root[data-zp-theme="light"] .secondary-btn{
+  background:#E8EDF1;
+  border-color:#D1D8DF;
+  color:var(--zp-text);
 }
 :root[data-zp-theme="light"] .page2-secondary,
 :root[data-zp-theme="light"] .menu-button,
