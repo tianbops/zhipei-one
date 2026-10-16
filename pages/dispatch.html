@@ -87,6 +87,10 @@
   word-break:keep-all!important;
   word-wrap:normal!important;
   text-rendering:auto!important;
+  /* 与首页静态导航对齐：标签基准 12px（home.css 不在此页加载，此处补回，
+     避免标签回退到 body 默认 16px 造成跨页字号不一致） */
+  font-size:12px!important;
+  line-height:17px!important;
 }
 .dispatch-page .bottom-nav-item > span:last-child:not(.bottom-nav-icon){
   display:block!important;
@@ -104,6 +108,14 @@
   flex:none!important;
   display:block!important;
   font-size:0!important;
+}
+/* 上面的守卫把图标容器改成 block 是为防字体污染；但加号的 52px 圆形容器
+   必须保持 flex 居中，否则 24px 的 + 会贴在圆形左上角（每边偏 14px）。
+   特异性更高（3 类 > 2 类）且同为 !important，稳定覆盖。 */
+.dispatch-page .bottom-nav-plus .bottom-nav-icon{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
 }
 .dispatch-page .bottom-nav-icon svg *{
   font-size:0!important;
@@ -322,7 +334,7 @@ async function load(){
 }
 load();
 </script>
-<script src="/js/ui-unified.js?v=d0787d9c"></script>
+<script src="/js/ui-unified.js?v=51683d26"></script>
 <script src="/js/pwa.js?v=864ce384"></script>
 </body>
 </html>
