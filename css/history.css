@@ -505,30 +505,7 @@
   .history-calendar-grid.cal-anim-right{animation:none}
 }
 
-/* 历史关键词搜索：复用深色工具界面，不增加第三方依赖 */
-.history-search{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;margin:0 0 4px;padding:0 16px}
-.history-search input,.history-search select{min-width:0;height:44px;border:1px solid #35404C;border-radius:11px;background:#141C25;color:#F4F6F8;font-size:14px}
-.history-search input{padding:0 12px}
-.history-search input::placeholder{color:#7F8A95}
-.history-search select{max-width:105px;padding:0 6px}
-.history-search button{min-width:0;height:44px}
-.history-search-state{min-height:18px;padding:6px 16px 10px;color:#9AA5AF;font-size:12px;line-height:18px}
-.history-search-results{display:grid;gap:6px;margin:0 0 14px;padding:0 16px}
-.history-search-result{display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;padding:12px 14px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:#141C25;color:#E8EDF2;text-align:left}
-.history-search-result strong{font-size:14px;font-weight:600}
-.history-search-result span,.history-search-result small{color:#9AA5AF;font-size:12px;line-height:18px}
-.history-search-note{margin:0;padding:6px;color:#9AA5AF;font-size:12px}
-@media(max-width:380px){.history-search{grid-template-columns:minmax(0,1fr) auto;}.history-search input{grid-column:1/-1}.history-search select{max-width:none}.history-search button{min-width:72px}}
 
-
-/* 浅色外观适配：历史搜索、筛选器和结果卡 */
-:root[data-zp-theme="light"] .history-search input,
-:root[data-zp-theme="light"] .history-search select{background:#FFFFFF!important;color:#17202A!important;border-color:#C9D1D9!important}
-:root[data-zp-theme="light"] .history-search button.zp-btn--primary{background:var(--zp-primary)!important;color:#fff!important;border-color:var(--zp-primary)!important}
-:root[data-zp-theme="light"] .history-search-result{background:#FFFFFF!important;color:#17202A!important;border-color:#D7DDE3!important}
-:root[data-zp-theme="light"] .history-search-result:active{background:#F0F2F4!important}
-:root[data-zp-theme="light"] .history-search-result .meta,
-:root[data-zp-theme="light"] .history-search-result small{color:#596674!important}
 
 /* ---- 浅色补充：月份分组列表（此前整块沿用深色硬编码） ---- */
 :root[data-zp-theme="light"] .history-list{background:#FFFFFF;border-color:rgba(20,30,40,.12)}
