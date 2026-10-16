@@ -172,7 +172,12 @@ export function scoreNames(raw, target) {
   //   "渝北JM03050谊品生鲜温馨家园南门店" ⊃ "谊品生鲜温馨家园南门店"）
   // 短串 >= 4 字时视为同一门店的强信号，直接给到自动匹配档；
   // 空格 / 断行已在归一层剥离，不参与差异。
-  if (A.length >= B.length && B.length >= 4 && A.includes(B)) {
+  const containedAt = A.indexOf(B);
+  const containedPrefix = containedAt >= 0 ? A.slice(0, containedAt) : "";
+  const safeContainmentPrefix = Boolean(businessStoreCode(raw)) ||
+    (Boolean(containedPrefix) && stripRegionPrefix(containedPrefix) === "");
+  if (A.length >= B.length && B.length >= 4 && containedAt >= 0 &&
+      A.endsWith(B) && safeContainmentPrefix) {
     return { score: 0.92, signals: { containment: 1 } };
   }
 
@@ -232,7 +237,7 @@ function divergentNumberKind(A, B) {
     .replace(/号(?=(?:分店|门店|专卖店|便利店|营业点|店)?$)/g, "");
   const sa = stripNumberMarker(A);
   const sb = stripNumberMarker(B);
-  if (sa !== sb) return null; // 差异不止来自数字，交由常规评分处理
+  if (sa !== sb && stripGenericSuffix(sa) !== stripGenericSuffix(sb)) return null; // 仅通用门店后缀差异可忽略；主体差异仍交由常规评分处理
 
   // 仅当编号数字本身位于名称末尾时才视为可容忍的尾随编号；
   // “二店 / 2号店”中的编号仍在“店”前，必须按可能的不同门店处理。
