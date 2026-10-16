@@ -175,7 +175,8 @@ export function scoreNames(raw, target) {
   const containedAt = A.indexOf(B);
   const containedPrefix = containedAt >= 0 ? A.slice(0, containedAt) : "";
   const safeContainmentPrefix = Boolean(businessStoreCode(raw)) ||
-    (Boolean(containedPrefix) && stripRegionPrefix(containedPrefix) === "");
+    (Boolean(containedPrefix) && stripRegionPrefix(containedPrefix) === "") ||
+    /(?:运输日期|运单日期|配送日期|日期|车牌号|车牌|总重量|重量|司机|配送员|驾驶员|送货员)/.test(containedPrefix);
   if (A.length >= B.length && B.length >= 4 && containedAt >= 0 &&
       A.endsWith(B) && safeContainmentPrefix) {
     return { score: 0.92, signals: { containment: 1 } };
