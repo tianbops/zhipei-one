@@ -983,10 +983,7 @@ a[class*="danger"],
 .history-dialog-actions .delete,
 .data-swipe-actions .data-swipe-delete,
 .page2-danger-btn,
-.invite-actions .small-action.danger,
-.order-menu .logout,
-.account-page .account-logout,
-.menu-bg #logout {
+.invite-actions .small-action.danger {
   background:var(--ui-danger-soft)!important;
   border:1px solid rgba(255,130,120,.5)!important;
   color:var(--ui-danger)!important;
@@ -1001,10 +998,7 @@ a[class*="danger"]:active,
 .history-dialog-actions .delete:active,
 .data-swipe-actions .data-swipe-delete:active,
 .page2-danger-btn:active,
-.invite-actions .small-action.danger:active,
-.order-menu .logout:active,
-.account-page .account-logout:active,
-.menu-bg #logout:active {
+.invite-actions .small-action.danger:active {
   background:rgba(255,130,120,.16)!important;
   border-color:rgba(255,130,120,.7)!important;
   color:var(--ui-danger)!important;
@@ -1018,10 +1012,7 @@ a[class*="danger"]:active,
 :root[data-zp-theme="light"] .history-dialog-actions .delete,
 :root[data-zp-theme="light"] .data-swipe-actions .data-swipe-delete,
 :root[data-zp-theme="light"] .page2-danger-btn,
-:root[data-zp-theme="light"] .invite-actions .small-action.danger,
-:root[data-zp-theme="light"] .order-menu .logout,
-:root[data-zp-theme="light"] .account-page .account-logout,
-:root[data-zp-theme="light"] .menu-bg #logout {
+:root[data-zp-theme="light"] .invite-actions .small-action.danger {
   background:#FCEBEC!important;
   border:1px solid #E8BFC3!important;
   color:var(--ui-danger)!important;
@@ -1036,10 +1027,7 @@ a[class*="danger"]:active,
 :root[data-zp-theme="light"] .history-dialog-actions .delete:active,
 :root[data-zp-theme="light"] .data-swipe-actions .data-swipe-delete:active,
 :root[data-zp-theme="light"] .page2-danger-btn:active,
-:root[data-zp-theme="light"] .invite-actions .small-action.danger:active,
-:root[data-zp-theme="light"] .order-menu .logout:active,
-:root[data-zp-theme="light"] .account-page .account-logout:active,
-:root[data-zp-theme="light"] .menu-bg #logout:active {
+:root[data-zp-theme="light"] .invite-actions .small-action.danger:active {
   background:#F5DCDD!important;
   border-color:#DCA6AC!important;
   color:#741E27!important;
