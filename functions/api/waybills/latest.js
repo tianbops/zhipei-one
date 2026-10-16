@@ -47,7 +47,7 @@ async function latestGet({request,env}){
   return w;
  }
  if(id){
-  const raw=await get(env,"zp:waybill:"+id);if(!raw)return json({success:true,waybill:null});
+  const raw=await get(env,"waybill:"+id);if(!raw)return json({success:true,waybill:null});
   try{
    const waybill=typeof raw==="string"?JSON.parse(raw):raw;
    // 显式 id 场景（上传后跳转 / 分享直链）：以运单自身 routeId 做权限校验，
