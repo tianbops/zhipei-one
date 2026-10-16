@@ -13,8 +13,8 @@ assert.doesNotMatch(css, /\.history-search(?:\b|-)/);
 // 非搜索历史功能必须保留。
 assert.match(html, /id="historyList"/);
 assert.match(html, /id="historyPickerBtn" class="zp-btn zp-btn--secondary history-date-button"/);
-assert.match(html, /href="\\/css\\/history\\.css\\?v=[^"]+"/);
-assert.match(css, /\\.history-date-button\\s*\\{[^}]*min-height:\\s*48px/s);
+assert.ok(html.includes('href="/css/history.css?v='), "历史页样式表必须有版本参数");
+assert.match(css, /\.history-date-button\s*\{[^}]*min-height:\s*48px/s);
 assert.doesNotMatch(css.slice(css.lastIndexOf("/* 日期选择：沿用全站次级按钮风格")), /background:|border:|border-radius:|color:/);
 assert.match(html, /id="historyLookupBtn"/);
 assert.match(html, /id="historyExportBtn"/);
