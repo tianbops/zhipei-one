@@ -25,6 +25,10 @@
   --zp-muted:#B8C2CC;
   --zp-soft:#7F8A95;
   --zp-radius:14px;
+  /* 主按钮语义色（P0-3 工具栏统一）：中性深石板色，与现有浅色主按钮 #263746（ui-unified.js:860）、
+     业务主按钮 #2E3B47 同源；消除「主按钮三处三种底色」的不一致（ui-unified.css:527 自承）。
+     P1-4 将据此补齐语义映射并写入 docs/外观与主题.md。 */
+  --zp-primary:#263746;
   /* app.css 独有的两种半透明卡片底色（不同于不透明的 surface 系列，需独立保留） */
   --zp-card-translucent:rgba(20,28,37,.80);
   --zp-card-translucent-2:rgba(10,14,19,.88);

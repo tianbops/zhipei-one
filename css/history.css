@@ -11,27 +11,11 @@
   border-color:rgba(255,255,255,.075);
   border-radius:18px;
 }
-.history-toolbar{
-  min-height:54px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  padding:0 16px;
-  border-bottom:1px solid rgba(255,255,255,.07);
+.history-page-head{
+  display:flex;align-items:center;justify-content:space-between;
+  min-height:54px;padding:16px 16px 12px;
 }
-.history-toolbar strong{font-size:15px;line-height:22px;font-weight:650}
-.history-toolbar button{
-  height:var(--zp-control-height);
-  padding:0 16px;
-  border:1px solid #35404C;
-  border-radius:10px;
-  background:rgba(10,14,19,.88);
-  color:#E8EDF2;
-  font-size:13px;
-  font-weight:500;
-}
-.history-toolbar button:active{background:rgba(28,37,47,.82)}
+.history-page-head strong{font-size:17px;line-height:24px;font-weight:650;color:var(--zp-text)}
 
 .history-state{
   min-height:20px;
@@ -296,7 +280,6 @@
 .history-dialog-actions button:disabled{opacity:.5}
 
 @media(max-width:380px){
-  .history-toolbar{padding:0 14px}
   .history-month-main,.history-date-main{padding-right:14px}
   .history-date-main{padding-left:27px}
   .history-month-main span{font-size:15px}
@@ -324,31 +307,27 @@
   border-radius:0;
   overflow:visible;
 }
-.history-toolbar{
+.history-page-head{
   min-height:46px;
-  margin:0 2px 12px;
-  padding:0;
-  border:0;
+  padding:14px 8px 10px;
 }
-.history-toolbar strong{
+.history-page-head strong{
   font-size:17px;
   line-height:24px;
   font-weight:650;
+  color:var(--zp-text);
 }
-.history-toolbar button{
-  height:var(--zp-control-height);
-  padding:0 16px;
-  border:1px solid #35404C;
-  border-radius:11px;
-  background:rgba(20,28,37,.80);
-  color:#F4F6F8;
-  font-size:16px;
-  line-height:22px;
-  font-weight:550;
-}
-.history-toolbar button:active{
-  background:rgba(28,37,47,.82);
-}
+/* 工具栏语义按钮 · 浅色覆盖（P0-3） */
+:root[data-zp-theme="light"] .zp-btn--secondary{background:rgba(0,0,0,.04);color:var(--zp-text);border-color:var(--zp-line)}
+:root[data-zp-theme="light"] .zp-btn--ghost{color:var(--zp-muted)}
+:root[data-zp-theme="light"] .zp-btn--primary{background:var(--zp-primary);color:#fff;border-color:var(--zp-primary)}
+:root[data-zp-theme="light"] .history-divider{border-top-color:var(--zp-divider)}
+:root[data-zp-theme="light"] .history-actions,
+:root[data-zp-theme="light"] .history-secondary-row{padding-left:8px;padding-right:8px}
+:root[data-zp-theme="light"] .history-divider{margin-left:8px;margin-right:8px}
+:root[data-zp-theme="light"] .history-search{padding-left:8px;padding-right:8px}
+:root[data-zp-theme="light"] .history-search-state{padding-left:8px;padding-right:8px}
+:root[data-zp-theme="light"] .history-search-results{padding-left:8px;padding-right:8px}
 .history-state{
   min-height:20px;
   padding:18px 8px;
@@ -479,7 +458,6 @@
 }
 
 @media(max-width:380px){
-  .history-toolbar{margin-left:0;margin-right:0}
   .history-month-main{padding-left:14px;padding-right:14px}
   .history-date-main{padding-left:28px;padding-right:14px}
   .history-month-main span{font-size:16px}
@@ -525,14 +503,14 @@
 }
 
 /* 历史关键词搜索：复用深色工具界面，不增加第三方依赖 */
-.history-search{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;margin:0 0 4px;padding:0 2px}
-.history-search input,.history-search select,.history-search button{min-width:0;height:44px;border:1px solid #35404C;border-radius:11px;background:#141C25;color:#F4F6F8;font-size:14px}
+.history-search{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;margin:0 0 4px;padding:0 16px}
+.history-search input,.history-search select{min-width:0;height:44px;border:1px solid #35404C;border-radius:11px;background:#141C25;color:#F4F6F8;font-size:14px}
 .history-search input{padding:0 12px}
 .history-search input::placeholder{color:#7F8A95}
 .history-search select{max-width:105px;padding:0 6px}
-.history-search button{padding:0 14px;font-weight:600}
-.history-search-state{min-height:18px;padding:6px 4px 10px;color:#9AA5AF;font-size:12px;line-height:18px}
-.history-search-results{display:grid;gap:6px;margin:0 0 14px}
+.history-search button{min-width:0;height:44px}
+.history-search-state{min-height:18px;padding:6px 16px 10px;color:#9AA5AF;font-size:12px;line-height:18px}
+.history-search-results{display:grid;gap:6px;margin:0 0 14px;padding:0 16px}
 .history-search-result{display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;padding:12px 14px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:#141C25;color:#E8EDF2;text-align:left}
 .history-search-result strong{font-size:14px;font-weight:600}
 .history-search-result span,.history-search-result small{color:#9AA5AF;font-size:12px;line-height:18px}
@@ -542,9 +520,8 @@
 
 /* 浅色外观适配：历史搜索、筛选器和结果卡 */
 :root[data-zp-theme="light"] .history-search input,
-:root[data-zp-theme="light"] .history-search select,
-:root[data-zp-theme="light"] .history-search button{background:#FFFFFF!important;color:#17202A!important;border-color:#C9D1D9!important}
-:root[data-zp-theme="light"] .history-search button{background:#F0F2F4!important;border-color:#D7DDE3!important}
+:root[data-zp-theme="light"] .history-search select{background:#FFFFFF!important;color:#17202A!important;border-color:#C9D1D9!important}
+:root[data-zp-theme="light"] .history-search button.zp-btn--primary{background:var(--zp-primary)!important;color:#fff!important;border-color:var(--zp-primary)!important}
 :root[data-zp-theme="light"] .history-search-result{background:#FFFFFF!important;color:#17202A!important;border-color:#D7DDE3!important}
 :root[data-zp-theme="light"] .history-search-result:active{background:#F0F2F4!important}
 :root[data-zp-theme="light"] .history-search-result .meta,
@@ -578,19 +555,31 @@
 :root[data-zp-theme="light"] .history-picker-close{background:#F0F2F4;border-color:#D7DDE3;color:#17202A}
 :root[data-zp-theme="light"] .history-picker-close:active{background:#E8EDF1}
 
-/* 新浮层（查客户 / 导出 / 回收站）与工具栏按钮样式 */
-.history-toolbar-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-.history-toolbar-actions button{
+/* 工具栏 / 操作按钮统一语义体系（P0-3）：基于 --zp-* token；P1 提升为全局 .zp-btn 组件 */
+.zp-btn{
+  display:inline-flex;align-items:center;justify-content:center;
   height:var(--zp-control-height);
-  padding:0 14px;
-  border:1px solid #35404C;
-  border-radius:10px;
-  background:rgba(10,14,19,.88);
-  color:#E8EDF2;
-  font-size:13px;
-  font-weight:500;
+  padding:0 var(--zp-space-4);
+  border:1px solid transparent;
+  border-radius:var(--zp-radius);
+  font-size:15px;font-weight:550;line-height:1;
+  cursor:pointer;
+  transition:background .15s,color .15s,border-color .15s;
+  -webkit-tap-highlight-color:transparent;
 }
-.history-toolbar-actions button:active{background:rgba(28,37,47,.82)}
+.zp-btn--primary{background:var(--zp-primary);color:#fff;border-color:var(--zp-primary)}
+.zp-btn--secondary{background:rgba(255,255,255,.06);color:var(--zp-text);border-color:var(--zp-line)}
+.zp-btn--ghost{background:transparent;color:var(--zp-muted);border-color:transparent}
+.zp-btn--danger{background:transparent;color:var(--ui-danger);border-color:var(--ui-danger)}
+.zp-btn:active{filter:brightness(.94)}
+.zp-btn:disabled{opacity:.5;cursor:default}
+
+/* 信息架构分组（P0-1） */
+.history-divider{border:0;border-top:1px solid var(--zp-divider);margin:14px 16px}
+.history-actions{padding:0 16px}
+.history-actions-label{margin:0 0 8px;color:var(--zp-muted);font-size:13px;line-height:18px}
+.history-actions-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.history-secondary-row{padding:0 16px 4px}
 
 /* 浮层通用提示与空态 */
 .history-overlay-hint{margin:10px 0 16px;color:#B8C2CC;font-size:13px;line-height:20px}
@@ -656,9 +645,7 @@
 .history-lookup-store span{font-size:14px;font-weight:600;color:#E8EDF2}
 .history-lookup-store small{font-size:12px;color:#9AA5AF;line-height:18px}
 
-/* 浅色补充：新浮层、工具栏按钮及对话框（此前整块沿用深色硬编码） */
-:root[data-zp-theme="light"] .history-toolbar-actions button{background:#FFFFFF!important;color:#17202A!important;border-color:#C9D1D9!important}
-:root[data-zp-theme="light"] .history-toolbar-actions button:active{background:#F0F2F4!important}
+/* 浅色补充：新浮层与对话框（此前整块沿用深色硬编码） */
 :root[data-zp-theme="light"] .history-overlay-hint{color:#596674!important}
 :root[data-zp-theme="light"] .history-overlay-empty{background:#F0F2F4!important;color:#596674!important;border-color:#D7DDE3!important}
 :root[data-zp-theme="light"] .history-trash-item{border-bottom-color:rgba(20,30,40,.10)!important}
