@@ -323,6 +323,12 @@ $("confirmCancel").addEventListener("click",closeConfirm);
 $("confirmBackdrop").addEventListener("click",e=>{if(e.target===$("confirmBackdrop"))closeConfirm()});
 $("confirmOk").addEventListener("click",async()=>{if(pendingRoute)await selectRoute(pendingRoute)});
 
+// 手机端系统返回：先关闭最上层确认，再关闭线路选择层，避免直接离开线路页。
+(window.zpBackHooks=window.zpBackHooks||[]).push(
+  {rank:10,probe:()=>$("confirmBackdrop")?.classList.contains("open")?$("confirmBackdrop"):null,close:()=>{closeConfirm();return true}},
+  {rank:20,probe:()=>$("routeSheetBackdrop")?.classList.contains("open")?$("routeSheetBackdrop"):null,close:()=>{closeSheet();return true}}
+);
+
 async function load(){
   try{
     const [routes,dispatch]=await Promise.all([api("/api/routes"),api("/api/dispatch")]);
