@@ -107,7 +107,8 @@ export async function onRequestPost({ request, env }) {
     const scanned = await scanKeysBudgeted(env, trashChildPrefix(id) + "*", budget, { count: 500, cap: 5000 });
     if (!scanned.complete) return json({ success: false, code: "PARTIAL_FAILURE", error: "恢复子键读取未完成，请重试" }, 503);
     for (const ck of scanned.keys) {
-      if (!budget.take(2)) throwBudget(budget);
+      // 每次 RENAME 只发起一个 Redis REST 请求；不再预扣不存在的“后续删除”预算。
+      if (!budget.take(1)) throwBudget(budget);
       const tail = ck.slice(trashChildPrefix(id).length);
       await command(env, ["RENAME", ck, waybillChildPrefix(id) + tail]);
     }
@@ -125,10 +126,10 @@ export async function onRequestPost({ request, env }) {
       if (!v || String(v) === String(id)) { await command(env, ["SET", rk, id]); }
       else warnings.push(rk);
     }
-    // 5) 删除 trash 主记录与子键（已还原）
+    // 5) 清理回收站主记录。子键已通过 RENAME 移回正式前缀，旧 trash 子键名已不存在，
+    // 因此不再逐个 DEL 这些旧名称，避免无效请求耗尽预算并拖慢恢复。
     if (!budget.take(1)) throwBudget(budget);
     await command(env, ["DEL", trashMainKey(id)]);
-    for (const ck of scanned.keys) { if (!budget.take(1)) break; await command(env, ["DEL", ck]); }
   } catch (e) {
     if (e?.code === SUBREQUEST_BUDGET_EXCEEDED) return json({ success: false, code: "PARTIAL_FAILURE", error: "恢复资源预算不足，请重试", budgetUsed: budget.used, budgetMax: budget.max }, 503);
     return json({ success: false, code: "TRASH_RESTORE_FAILED", error: "恢复失败：" + (e?.message || "未知错误") }, 500);
