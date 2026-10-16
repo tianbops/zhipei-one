@@ -1,7 +1,7 @@
 import { json } from "./_json.js";
 import { currentUser } from "./_auth.js";
 import { canUseRoute } from "./_permissions.js";
-import { command, get } from "./_redis.js";
+import { command, get, pipeline } from "./_redis.js";
 import { dailyWaybillKey } from "./_waybill-identity.js";
 import { Budget, scanKeysBudgeted, mgetBatchMap, SUBREQUEST_BUDGET_EXCEEDED } from "./_redis-budget.js";
 
@@ -48,14 +48,27 @@ export async function onRequestGet({ request, env }) {
     if (e?.code === SUBREQUEST_BUDGET_EXCEEDED) return json({ success: false, code: "PARTIAL_FAILURE", error: "回收站列表读取资源不足，请重试" }, 503);
     throw e;
   }
-  const now = Date.now();
-  const items = [];
+  // TTL 必须分批 pipeline：逐条 TTL 会随回收站条目数线性消耗 Worker 子请求预算。
+  // 只为当前线路且主记录有效的条目读取 TTL，且每批 50 条占用 1 个子请求预算。
+  const eligible = [];
   for (const id of uniqueIds) {
     const raw = rawMap.get(trashMainKey(id));
     if (!raw) continue;
     let w; try { w = typeof raw === "string" ? JSON.parse(raw) : raw; } catch { continue; }
     if (clean(w?.routeId) !== routeId) continue; // 仅本线路
-    const ttl = await command(env, ["TTL", trashMainKey(id)]);
+    eligible.push({ id, w });
+  }
+  const ttlMap = new Map();
+  for (let i = 0; i < eligible.length; i += 50) {
+    const batch = eligible.slice(i, i + 50);
+    if (!budget.take(1)) return json({ success: false, code: "PARTIAL_FAILURE", error: "回收站列表读取资源不足，请重试", budgetUsed: budget.used, budgetMax: budget.max }, 503);
+    const results = await pipeline(env, batch.map(({ id }) => ["TTL", trashMainKey(id)]));
+    for (let j = 0; j < batch.length; j++) ttlMap.set(batch[j].id, Number(results?.[j]) || 0);
+  }
+  const now = Date.now();
+  const items = [];
+  for (const { id, w } of eligible) {
+    const ttl = ttlMap.get(id) || 0;
     const stores = Array.isArray(w.stores) ? w.stores : [];
     items.push({
       id,
@@ -63,8 +76,8 @@ export async function onRequestGet({ request, env }) {
       routeName: clean(w.routeName) || "",
       storeCount: Number(w.summary?.finalCount || w.summary?.total || stores.length) || 0,
       totalWeight: Number(w.totalWeight) || 0,
-      ttl: Number(ttl) > 0 ? Number(ttl) : 0,
-      expiresAt: Number(ttl) > 0 ? now + Number(ttl) * 1000 : 0,
+      ttl: ttl > 0 ? ttl : 0,
+      expiresAt: ttl > 0 ? now + ttl * 1000 : 0,
     });
   }
   items.sort((a, b) => String(b.date).localeCompare(String(a.date)));
