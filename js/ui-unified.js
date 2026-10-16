@@ -141,22 +141,29 @@
     const path=zpNormPath(location.pathname);
     const q=new URLSearchParams(location.search);
     let active="";
-    if(path==="/home")active="upload";
+    if(path==="/home")active="home";
     else if(path==="/pages/history")active="history";
     else if(path==="/pages/dispatch"||path==="/pages/data"||path==="/pages/route_apply")active="route";
     else if(path==="/pages/account")active="account";
-    else if(path==="/pages/order_detail")active=(q.get("source")==="history"||q.get("from")==="history")?"history":"upload";
-    else if(path==="/pages/today")active="upload";
+    else if(path==="/pages/order_detail")active=(q.get("source")==="history"||q.get("from")==="history")?"history":"home";
+    else if(path==="/pages/today")active="home";
+    // 5 位结构：首页 / 历史 / 中间上传加号 / 线路 / 我的。
+    // 「上传」由普通 tab 改为中心凸起圆形加号（plus:true 无文字标签，仅图标）。
     const items=[
-      {id:"upload",label:"上传",href:"/home.html?openUpload=1",icon:'<path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/>'},
+      {id:"home",label:"首页",href:"/home",cls:"bottom-nav-home",icon:'<path d="M3.5 9.8 12 3.5l8.5 6.3V19a1.5 1.5 0 0 1-1.5 1.5h-3.2v-6H9.2v6H5A1.5 1.5 0 0 1 3.5 19z"/>'},
       {id:"history",label:"历史",href:"/pages/history.html?from=home",icon:'<path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3.5 5v4h4"/><path d="M12 7.5v5l3.2 1.9"/>'},
+      {id:"upload",label:"上传",href:"/home.html?openUpload=1",plus:true,icon:'<path d="M12 5v14"/><path d="M5 12h14"/>'},
       {id:"route",label:"线路",href:"/pages/dispatch.html?from=home",icon:'<path d="M4 6h16v12H4z"/><path d="M8 10h8M8 14h5"/>'},
       {id:"account",label:"我的",href:"/pages/account.html?from=home",icon:'<circle cx="12" cy="8" r="3"/><path d="M5 20c.8-3.2 3.1-5 7-5s6.2 1.8 7 5"/>'}
     ];
     const nav=document.createElement("nav");
     nav.className="bottom-nav";
     nav.setAttribute("aria-label","主要功能");
-    nav.innerHTML=items.map(item=>'<a class="bottom-nav-item'+(active===item.id?" is-active":"")+'" href="'+item.href+'"'+(active===item.id?' aria-current="page"':"")+'><span class="bottom-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24">'+item.icon+'</svg></span><span>'+item.label+'</span></a>').join("");
+    nav.innerHTML=items.map(item=>{
+      const cls="bottom-nav-item"+(item.cls?" "+item.cls:"")+(item.plus?" bottom-nav-plus":"")+(active===item.id?" is-active":"");
+      const label=item.plus?"":'<span>'+item.label+'</span>';
+      return '<a class="'+cls+'" href="'+item.href+'"'+(active===item.id?' aria-current="page"':"")+(item.plus?' aria-label="'+item.label+'"':'')+'><span class="bottom-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24">'+item.icon+'</svg></span>'+label+'</a>';
+    }).join("");
     document.body.appendChild(nav);
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",zpEnsureBusinessBottomNav,{once:true});
@@ -180,12 +187,14 @@
 
   // 一级导航 toggle（以首页为标准点）：点击当前所在页对应的 tab（is-active）时，
   // 不再重载本页而是回到首页；点击非激活 tab 照常首次进入对应页面。
-  // 首页静态 nav 无 is-active 类，不受影响；首页上传弹窗的 toggle 由 home.js 处理。
+  // 例外：首页 tab（bottom-nav-home）在首页再次点击时不重载本页。
+  // 首页上传弹窗的 toggle 由 home.js 处理（#uploadAction，非 a 标签，不走本规则）。
   document.addEventListener("click",e=>{
     const active=e.target.closest?.(".bottom-nav a.is-active");
     if(!active)return;
     if(typeof window.zpIsProcessing==="function"&&window.zpIsProcessing())return; // 处理中交由上方守卫确认
     e.preventDefault();
+    if(active.classList.contains("bottom-nav-home")&&zpNormPath(location.pathname)==="/home")return;
     location.href="/home";
   },true);
 

@@ -305,7 +305,7 @@
   padding:6px 8px calc(6px + env(safe-area-inset-bottom));
   transform:translateX(-50%);
   display:grid;
-  grid-template-columns:repeat(4,1fr);
+  grid-template-columns:repeat(5,1fr);
   gap:4px;
   background:rgba(5,7,10,.96);
   border-top:1px solid #27323D;
@@ -333,6 +333,17 @@
 .bottom-nav-icon{width:22px;height:22px;display:flex;align-items:center;justify-content:center}
 .bottom-nav-icon svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .bottom-nav-item[aria-current="page"]{color:#F2F5F7}
+/* 中间上传加号：无文字标签的凸起圆形按钮（首页静态导航版；
+   业务页生效值由 ui-unified.css 的 !important 规则统一，此处保持一致） */
+.bottom-nav-plus .bottom-nav-icon{
+  width:52px;height:52px;border-radius:50%;
+  background:var(--zp-primary);color:#fff;
+  transform:translateY(-16px);
+  box-shadow:0 8px 20px rgba(5,7,10,.45);
+}
+.bottom-nav-plus .bottom-nav-icon svg{width:24px;height:24px;stroke-width:2.2}
+.bottom-nav-plus:active{background:transparent}
+.bottom-nav-plus:active .bottom-nav-icon{filter:brightness(1.15)}
 @media(max-width:380px){
  .home-app{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
  .today-store-list{max-height:210px}   /* 行高 42px × 5 = 210px，固定展示 5 家 */
@@ -349,6 +360,8 @@ body.sheet-open .bottom-nav{z-index:1001 !important}
 
 /* 浅色外观适配：首页固定导航与菜单交互 */
 :root[data-zp-theme="light"] .bottom-nav{background:rgba(255,255,255,.96)!important;border-color:#D7DDE3!important;box-shadow:0 -4px 18px rgba(20,30,40,.06)}
+:root[data-zp-theme="light"] .bottom-nav-plus .bottom-nav-icon{box-shadow:0 8px 20px rgba(20,30,40,.22)}
+:root[data-zp-theme="light"] .bottom-nav-plus:active{background:transparent}
 :root[data-zp-theme="light"] .bottom-nav-item{color:#596674}
 :root[data-zp-theme="light"] .bottom-nav-item[aria-current="page"],
 :root[data-zp-theme="light"] .bottom-nav-item.active{color:#17202A!important}
