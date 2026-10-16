@@ -232,6 +232,36 @@ const DISPATCH_SRC = readFileSync(fileURLToPath(new URL("../pages/dispatch.html"
   console.log((order ? "✅ " : "❌ ") + "线路页：返回优先级为确认框→选择层");
 }
 
+
+/* ---------- 切片四：首页上传与历史页返回层级 ---------- */
+const HOME_SRC = readFileSync(fileURLToPath(new URL("../js/home.js", import.meta.url)), "utf8");
+const HISTORY_SRC = readFileSync(fileURLToPath(new URL("../js/history.js", import.meta.url)), "utf8");
+{
+  const homeStart = HOME_SRC.indexOf("// 这里只注册本页返回层级：上传 Bottom Sheet");
+  const homeEnd = HOME_SRC.indexOf(");", homeStart);
+  const homeHooks = homeStart >= 0 && homeEnd > homeStart ? HOME_SRC.slice(homeStart, homeEnd + 2) : "";
+  const uploadHook = /rank\s*:\s*10\s*,\s*probe\s*:\s*\(\)\s*=>\s*\$\("uploadArea"\)/s.test(homeHooks);
+  const uploadGuard = /processingFile[\s\S]*?return false[\s\S]*?closeUpload\(\)/.test(homeHooks);
+  t("首页：上传面板注册系统返回钩子", uploadHook);
+  t("首页：处理中阻止返回穿透并关闭面板", uploadHook && uploadGuard);
+  console.log((uploadHook ? "✅ " : "❌ ") + "首页：上传面板返回钩子已注册");
+  console.log((uploadHook && uploadGuard ? "✅ " : "❌ ") + "首页：处理中拦截返回，空闲时关闭面板");
+
+  const historyHookStart = HISTORY_SRC.indexOf("/* 返回层级：删除确认弹窗");
+  const historyHookEnd = HISTORY_SRC.indexOf("/* ===== 回收站", historyHookStart);
+  const historyHooks = historyHookStart >= 0 && historyHookEnd > historyHookStart
+    ? HISTORY_SRC.slice(historyHookStart, historyHookEnd) : "";
+  const picker = /rank\s*:\s*10\s*,\s*probe\s*:\s*\(\)\s*=>\s*picker/.test(historyHooks);
+  const dialog = /rank\s*:\s*10\s*,\s*probe\s*:\s*\(\)\s*=>\s*dialog/.test(historyHooks);
+  const swipe = /rank\s*:\s*40\s*,\s*probe\s*:\s*\(\)\s*=>\s*document\.querySelector\("\.history-swipe-row\.swiped"\)/.test(historyHooks);
+  const overlayHook = /rank\s*:\s*5\s*,\s*probe\s*:\s*\(\)\s*=>\s*overlay/.test(HISTORY_SRC);
+  t("历史页：日历选择器注册返回钩子", picker);
+  t("历史页：删除确认框注册返回钩子", dialog);
+  t("历史页：左滑展开行最后关闭", swipe);
+  t("历史页：回收站等浮层优先关闭", overlayHook);
+  console.log((picker && dialog && swipe && overlayHook ? "✅ " : "❌ ") + "历史页：日历/确认框/左滑/功能浮层返回层级已覆盖");
+}
+
 console.log("\n" + "-".repeat(56));
 console.log(`结果：${pass}/${pass + fail} 通过`);
 if (fail) {
