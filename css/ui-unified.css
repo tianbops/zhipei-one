@@ -992,3 +992,40 @@ textarea:disabled,
 /* 浅色下中间加号：圆形仍为主色底白图标，仅按压态与阴影适配（不加新强调色） */
 :root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-plus .bottom-nav-icon{box-shadow:0 8px 20px rgba(20,30,40,.22)!important}
 :root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-plus:active{background:transparent!important}
+
+/* 全站删除/危险动作：浅色主题统一采用低饱和浅红底 + 深红文字。
+   覆盖滑动删除、历史多运单删除、管理员危险操作及后续新增的 delete/danger 类按钮；
+   只作用于按钮/链接，不影响带 delete 字样的布局容器。 */
+:root[data-zp-theme="light"] button[class*="delete"],
+:root[data-zp-theme="light"] a[class*="delete"],
+:root[data-zp-theme="light"] button[class*="danger"],
+:root[data-zp-theme="light"] a[class*="danger"],
+:root[data-zp-theme="light"] .history-choice-delete,
+:root[data-zp-theme="light"] .history-delete,
+:root[data-zp-theme="light"] .history-dialog-actions .delete,
+:root[data-zp-theme="light"] .data-swipe-actions .data-swipe-delete,
+:root[data-zp-theme="light"] .page2-danger-btn,
+:root[data-zp-theme="light"] .invite-actions .small-action.danger {
+  background:#FCEBEC!important;
+  border-color:#E8BFC3!important;
+  color:#8A2630!important;
+  box-shadow:none;
+}
+:root[data-zp-theme="light"] button[class*="delete"]:active,
+:root[data-zp-theme="light"] a[class*="delete"]:active,
+:root[data-zp-theme="light"] button[class*="danger"]:active,
+:root[data-zp-theme="light"] a[class*="danger"]:active,
+:root[data-zp-theme="light"] .history-choice-delete:active,
+:root[data-zp-theme="light"] .history-delete:active,
+:root[data-zp-theme="light"] .data-swipe-actions .data-swipe-delete:active,
+:root[data-zp-theme="light"] .page2-danger-btn:active {
+  background:#F5DCDD!important;
+  border-color:#DCA6AC!important;
+  color:#741E27!important;
+}
+:root[data-zp-theme="light"] button[class*="delete"]:disabled,
+:root[data-zp-theme="light"] button[class*="danger"]:disabled,
+:root[data-zp-theme="light"] .history-choice-delete:disabled {
+  opacity:.55;
+  cursor:not-allowed;
+}
