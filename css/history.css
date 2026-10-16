@@ -712,20 +712,12 @@
 }
 
 
-/* 日期选择：简洁、明确的独立按钮 */
+/* 日期选择：沿用全站次级按钮风格，仅调整为独立的长方形入口 */
 .history-secondary-row{padding:2px 8px 10px}
 .history-date-button{
   display:flex;align-items:center;justify-content:center;gap:9px;
   width:100%;min-height:48px;padding:0 16px;
-  border:1px solid #536A7A;border-radius:12px;
-  background:#263744;color:#F4F7FA;
   font-size:15px;line-height:20px;font-weight:650;
   cursor:pointer;-webkit-tap-highlight-color:transparent;
-  transition:background .15s,border-color .15s,transform .15s;
 }
 .history-date-button svg{width:20px;height:20px;flex:none}
-.history-date-button:active{background:#344B5B;border-color:#8AA8BC;transform:scale(.99)}
-:root[data-zp-theme="light"] .history-date-button{
-  background:#E5EDF3;border-color:#B7C8D5;color:#20394B;
-}
-:root[data-zp-theme="light"] .history-date-button:active{background:#D7E3EC;border-color:#8DA8BA}
