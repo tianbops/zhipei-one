@@ -8,7 +8,7 @@ const end=source.indexOf('\n/**\n * 记录运单生命周期',start);
 if(start<0||end<0)throw new Error('extract segmentation helpers not found');
 const helperSource=source.slice(start,end);
 const clean=v=>String(v??'').trim();
-const factory=new Function('clean','formatCompareKey',helperSource+'\nreturn {splitByRouteBase,dedupe,plan};');
+const factory=new Function('clean','formatCompareKey','number',helperSource+'\nreturn {splitByRouteBase,dedupe,plan};');
 const number=v=>{const n=Number(v);return Number.isFinite(n)?n:null;};\nconst {splitByRouteBase,dedupe,plan}=factory(clean,formatCompareKey,number);
 
 const base=[
