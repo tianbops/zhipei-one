@@ -187,9 +187,9 @@
 .task-card{padding-bottom:14px}
 .today-store-list{
   margin-top:12px;
-  /* 固定展示约 5 家（行高 44px × 5 = 220px）：统计版块压缩后腾出的高度用于多显示一排门店，
-     其余门店在窗内滚动（overscroll-behavior 防滚动穿透），月度统计稳定回到首屏。 */
-  max-height:220px;
+  /* 固定展示约 6 家（行高 44px × 6 = 264px）：其余门店在窗内滚动
+     （overscroll-behavior 防滚动穿透），月度统计稳定回到首屏。 */
+  max-height:264px;
   overflow-y:auto;
   overscroll-behavior:contain;
   -webkit-overflow-scrolling:touch;
@@ -299,7 +299,7 @@
 .bottom-nav-plus:active .bottom-nav-icon{filter:brightness(1.15)}
 @media(max-width:380px){
  .home-app{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
- .today-store-list{max-height:210px}   /* 行高 42px × 5 = 210px，固定展示 5 家 */
+ .today-store-list{max-height:252px}   /* 行高 42px × 6 = 252px，固定展示 6 家 */
  .today-store-row{min-height:42px}
  .today-store-name{font-size:16px}
  .bottom-nav{padding-left:6px;padding-right:6px}
