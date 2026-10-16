@@ -25,6 +25,12 @@
   --zp-muted:#B8C2CC;
   --zp-soft:#7F8A95;
   --zp-radius:14px;
+  /* 骨架微光条（加载占位）双外观 token：order_detail / home / data 三处
+     页面级骨架共用同一取值。深色外观为暗灰微光；浅色外观在下方
+     [data-zp-theme="light"] 覆盖为浅灰微光——修复浅色背景下骨架条
+     仍是硬编码深色「大黑条」的问题（2026-10-16）。 */
+  --zp-sk-a:#1A222C;
+  --zp-sk-b:#202A31;
   /* ===== 全局按钮标准 · 分段式动作按钮（单一真相源）=====
      基准度量取自「外观模式」选项组（跟随系统/深色/浅色）与「线路切换」等
      行内动作按钮，两类按钮历史上各自起值（高 40/42、圆角 10/12、宽度
@@ -713,6 +719,9 @@ textarea:disabled,
   --zp-card:#FFFFFF;
   --zp-card-translucent:#FFFFFF;
   --zp-card-translucent-2:#F0F2F4;
+  /* 骨架微光条浅色化：白卡上改为浅灰微光，与表面色系同族 */
+  --zp-sk-a:#E4E9EE;
+  --zp-sk-b:#EDF1F5;
   --zp-divider:rgba(20,30,40,.12);
   --ui-bg:var(--zp-bg);
   --ui-surface:var(--zp-surface);

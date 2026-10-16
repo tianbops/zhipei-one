@@ -163,7 +163,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
   height:16px;
   border-radius:8px;
   vertical-align:middle;
-  background:linear-gradient(90deg,#1A222C 25%,#202A31 50%,#1A222C 75%);
+  background:linear-gradient(90deg,var(--zp-sk-a) 25%,var(--zp-sk-b) 50%,var(--zp-sk-a) 75%);
   background-size:200% 100%;
   animation:zpSkeleton 1.4s ease-in-out infinite;
 }
@@ -174,7 +174,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
   height:12px;
   border-radius:6px;
   vertical-align:middle;
-  background:linear-gradient(90deg,#1A222C 25%,#202A31 50%,#1A222C 75%);
+  background:linear-gradient(90deg,var(--zp-sk-a) 25%,var(--zp-sk-b) 50%,var(--zp-sk-a) 75%);
   background-size:200% 100%;
   animation:zpSkeleton 1.4s ease-in-out infinite;
 }
