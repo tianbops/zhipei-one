@@ -32,29 +32,14 @@ function extract(rawText){
   if(dm){const p=dm[1].replace(/[年月/.]/g,"-").replace(/日$/,"").split("-").map(x=>x.padStart(2,"0"));if(p.length===3)date=p.join("-")}
   // OCR 常会把车牌省份简称、字母和数字之间拆成空格，因此车辆提取不能要求字符连续。
   // 先按车辆字段提取，再对整段文本做通用车牌兜底；只做格式兼容，不做具体车辆硬编码。
-  const vehiclePattern=/(?:车牌号?|车牌|车辆|车号)\s*[:：]?\s*([\u4e00-\u9fa5])\s*([A-Z])\s*([A-Z0-9]{5,8})/i;
+  const vehiclePattern=/(?:车牌号?|车牌|车辆|车号)\\s*[:：]?\\s*([\\u4e00-\\u9fa5])\\s*([A-Z])\\s*([A-Z0-9](?:\\s*[A-Z0-9]){4,7})/i;
   let vm=full.match(vehiclePattern);
-  if(!vm)vm=full.match(/(^|[^\u4e00-\u9fa5A-Z0-9])([\u4e00-\u9fa5])\s*([A-Z])\s*([A-Z0-9]{5,8})(?=$|[^A-Z0-9])/i);
   if(vm){
-    const groups=vm.length===4?vm.slice(2):vm.slice(1);
-    vehicle=(groups[0]+groups[1]+groups[2]).toUpperCase();
+    vehicle=(vm[1]+vm[2]+vm[3]).replace(/\\s+/g,"").toUpperCase();
+  }else{
+    const fallback=full.match(/(^|[^\\u4e00-\\u9fa5A-Z0-9])([\\u4e00-\\u9fa5])\\s*([A-Z])\\s*([A-Z0-9](?:\\s*[A-Z0-9]){4,7})(?=$|[^A-Z0-9])/i);
+    if(fallback)vehicle=(fallback[2]+fallback[3]+fallback[4]).replace(/\\s+/g,"").toUpperCase();
   }
-  // 司机/送货员属于运单抬头字段，单独提取并保存；兼容标签和值分行、多个字段同行。
-  const personLabels=["主司机","司机姓名","驾驶员","司机","送货员","送货人","配送员"];
-  const extractPerson=labels=>{
-    const pattern=/(主司机|司机姓名|驾驶员|司机|送货员|送货人|配送员)\s*[:：]?\s*([^\s,，;；|]+)/g;
-    let match;
-    while((match=pattern.exec(full))){
-      if(!labels.includes(match[1]))continue;
-      const value=String(match[2]||"").replace(/^[：:，,;；|]+|[：:，,;；|]+$/g,"").trim();
-      if(!value||personLabels.includes(value)||/^(?:姓名|名称|无|暂无|未知|—|-)$/.test(value))continue;
-      if(value.length>20||/^(?:运单列表|订单列表|车牌号?|车辆|车号|送货员|送货人|配送员|主司机|司机|驾驶员)$/.test(value))continue;
-      return value;
-    }
-    return null;
-  };
-  driver=extractPerson(["主司机","司机姓名","驾驶员","司机"]);
-  deliveryPerson=extractPerson(["送货员","送货人","配送员"]);
   const wm=full.match(/(?:总重量|重量)\s*[:：]?\s*([\d.]+)\s*(?:吨|t|T)?/);
   if(wm)totalWeight=number(wm[1]);
 
