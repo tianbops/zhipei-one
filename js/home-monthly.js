@@ -320,9 +320,9 @@
       // 同比需要去年同月数据：默认历史窗口仅 13 个月（起于 11 个月前），不含去年同月，
       // 故首页主动请求 25 个月窗口，保证当前及近 13 个月均可算同比（最早月份无去年同期时自然留空）。
       const r=await fetch("/api/history?months=25",{credentials:"same-origin",cache:"no-store"});
-      if(!r.ok)return;
+      if(!r.ok)return null;
       const d=await r.json().catch(()=>null);
-      if(!d?.success||!Array.isArray(d.history))return;
+      if(!d?.success||!Array.isArray(d.history))return null;
       daily=d.history.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(String(x?.date||"")));
       byMonth=new Map((Array.isArray(d.months)?d.months:[]).map(x=>[String(x.month),x]));
       buildSeqs();   // 构建可滑动序列（有数据年/月 + 当前年/月）并定位到当前
@@ -330,7 +330,9 @@
       card.classList.add("is-in");
       renderMonth();
       syncYearBtn();
-    }catch{}
+      return d;
+    }catch{return null}
   }
-  load();
+  // 首页今日配送的最后一级兜底可复用这次历史响应，避免再请求一遍历史窗口。
+  window.zpHomeMonthlyDataPromise=load();
 })();
