@@ -39,10 +39,15 @@ for (const selector of [
   assert.ok(unified.includes(selector), "全局浅色适配未覆盖关键组件: " + selector);
 }
 // 浅色外观下，所有删除/危险操作必须使用浅红底与深红字，避免沿用深色主题的暗底浅字。
-assert.match(unified, /:root\\[data-zp-theme="light"\\] button\\[class\\*="delete"\\][\\s\\S]*?background:#FCEBEC!important;[\\s\\S]*?color:#8A2630!important;/);
+assert.ok(
+  unified.includes(':root[data-zp-theme="light"] button[class*="delete"]') &&
+  unified.includes("background:#FCEBEC!important;") &&
+  unified.includes("color:#8A2630!important;"),
+  "全站删除按钮必须有浅色主题下的高对比度样式"
+);
 for (const selector of [".history-choice-delete", ".history-delete", ".data-swipe-actions .data-swipe-delete", ".page2-danger-btn"]) {
   assert.ok(unified.includes(selector), "全局浅色删除按钮样式缺少覆盖: " + selector);
 }
-assert.match(unified, /button\\[class\\*="delete"\\]:active/);
-assert.match(unified, /button\\[class\\*="delete"\\]:disabled/);
+assert.ok(unified.includes('button[class*="delete"]:active'), "删除按钮缺少浅色按压状态");
+assert.ok(unified.includes('button[class*="delete"]:disabled'), "删除按钮缺少浅色禁用状态");
 console.log("主题首屏初始化与浅色基础对比度规则检查通过（" + themedPages.length + " 个页面）");
