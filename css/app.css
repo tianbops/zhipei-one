@@ -306,14 +306,6 @@ body {
   box-shadow: none;
 }
 
-.auth-card .logo {
-  display: block;
-  width: 32px;
-  height: 32px;
-  margin: 0 auto 8px;
-  object-fit: contain;
-}
-
 .auth-card h1 {
   text-align: center;
   margin: 0;
@@ -396,12 +388,6 @@ body {
 
   .auth-card {
     padding-top: 22px;
-  }
-
-  .auth-card .logo {
-    width: 32px;
-    height: 32px;
-    margin-bottom: 8px;
   }
 
   .auth-card>p {
@@ -603,7 +589,9 @@ body {
   flex: 0 0 auto;
   border: 1px solid rgba(255,255,255,.16);
   border-radius: 15px;
-  background: rgba(255,255,255,.04);
+  /* 徽章底色始终为 logo 原图底色 #05070A：logo 含白色描边，
+     白底（浅色外观）下描边会消失，故不随外观翻转 */
+  background: #05070A;
 }
 
 .login-logo {
@@ -801,7 +789,6 @@ body {
 :root[data-zp-theme="light"] .login-shell{background:var(--zp-bg)!important;color:var(--zp-text)}
 :root[data-zp-theme="light"] .login-card{background:transparent!important;border:0!important;box-shadow:none!important}
 :root[data-zp-theme="light"] .login-brand-row{margin-bottom:38px}
-:root[data-zp-theme="light"] .login-brand-badge{border-color:#DDE3E8!important;background:#FFFFFF!important;box-shadow:0 1px 2px rgba(20,30,40,.05)}
 :root[data-zp-theme="light"] .login-brand-name{color:var(--zp-text)!important}
 :root[data-zp-theme="light"] .login-eyebrow{color:#69747F!important}
 :root[data-zp-theme="light"] .login-headline{color:var(--zp-text)!important}
