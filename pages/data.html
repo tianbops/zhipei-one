@@ -94,6 +94,8 @@ function parseImport(text){
  return out.filter(x=>{const k=x.name.replace(/[\s　]+/g,"").toLowerCase();if(!k||seen.has(k))return false;seen.add(k);return true}).map((x,i)=>({storeId:"",originalName:x.name,name:x.name,aliases:[],businessStoreCode:"",navigation:/^https?:\/\//i.test(x.nav)?x.nav:"",routeOrder:i+1,note:x.note||""}))
 }
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+/* 全局标准：文本位置统一「X号线」（与 ui-unified.js 的 zpRouteName 同规则，ui-unified 未加载时兜底） */
+function rn(v){const s=String(v??"").trim();if(!s)return"";if(window.zpRouteName)return window.zpRouteName(s)||s;if(/号线$/.test(s))return s;if(/^(\d+)号$/.test(s))return s.replace("号","")+"号线";if(/^\d+路$/.test(s))return s.replace("路","")+"号线";if(/^\d+$/.test(s))return s+"号线";return s}
 function navUrl(v){const u=String(v||"").trim();return /^https?:\/\//i.test(u)?u:""}
 function showDataFeedback(type,message,actionLabel="",action=null){
  const el=$("dataFeedback");if(!el)return;
@@ -250,7 +252,7 @@ async function shareSavedBase(){
  try{
   const d=await api("/api/base?routeId="+encodeURIComponent(routeId));
   const saved=Array.isArray(d.base?.stores)?d.base.stores:[];
-  const routeName=d.route?.name||$("title").textContent||"当前线路";
+  const routeName=rn(d.route?.name)||$("title").textContent||"当前线路";/* 全局标准：文本位置统一「X号线」 */
   const lines=["智配One · "+routeName,"已保存线路资料 · "+saved.length+"家",""];
   saved.slice().sort((a,b)=>(a.routeOrder||0)-(b.routeOrder||0)).forEach((s,i)=>{
    const name=s.name||s.originalName||"未命名门店";
@@ -334,7 +336,7 @@ async function load(){
   canMaintain=!!x.canMaintain;
   $("tools").style.display=canMaintain?"block":"none";
   stores=Array.isArray(x.base?.stores)?x.base.stores:[];baseVersion=Number(x.base?.version)||1;dataBaseline=JSON.stringify(stores);
-  $("title").textContent=(x.route?.name?((/号线$/.test(x.route.name)?x.route.name:x.route.name+"号线")):"当前线路");
+  $("title").textContent=(x.route?.name?(rn(x.route.name)||"当前线路"):"当前线路");/* 全局标准：文本位置统一「X号线」 */
   $("hint").textContent=canMaintain?"你目前拥有该线路维护权限":"你目前仅拥有该线路使用权限";
   $("summary").innerHTML="<strong>"+stores.length+"家</strong>";
   render()
