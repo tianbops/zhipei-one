@@ -90,7 +90,7 @@ async function toJson(resp) { return await resp.json(); }
 
   const goodOrder = goodItems.map(s => [s.storeId, s.routeOrder]);
   check("规划顺序与线路基准顺序一致", JSON.stringify(goodOrder) === JSON.stringify(BASE.map(s => [s.storeId, s.routeOrder])), JSON.stringify(goodOrder));
-  const savedGood = read(good.waybill?.id);
+  const savedGood = read("waybill:" + good.waybill?.id);
   check("Redis 主运单保存后保持规划顺序", JSON.stringify((savedGood?.stores || []).map(s => [s.storeId, s.routeOrder])) === JSON.stringify(goodOrder), JSON.stringify(savedGood?.stores));
   console.log("【2】异常运单（待定占比高）：质量门应报警但不阻断");
   const badResp = await processMod.onRequestPost({ request: formReq("https://t.zp/api/waybills/process", tokA, { routeId: ROUTE, rawText: RAW_BAD, date: "2026-10-06", vehicle: "粤B99999" }), env });
