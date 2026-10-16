@@ -172,7 +172,7 @@ export function scoreNames(raw, target) {
   //   "渝北JM03050谊品生鲜温馨家园南门店" ⊃ "谊品生鲜温馨家园南门店"）
   // 短串 >= 4 字时视为同一门店的强信号，直接给到自动匹配档；
   // 空格 / 断行已在归一层剥离，不参与差异。
-  if (Math.min(A.length, B.length) >= 4 && (A.includes(B) || B.includes(A))) {
+  if (A.length >= B.length && B.length >= 4 && A.includes(B)) {
     return { score: 0.92, signals: { containment: 1 } };
   }
 
@@ -225,10 +225,17 @@ function divergentNumberKind(A, B) {
   const nb = (B.match(DIGIT_SEQ) || []).join("");
   if (na === nb) return null;
 
-  const sa = A.replace(DIGIT_SEQ, "");
-  const sb = B.replace(DIGIT_SEQ, "");
+  // “2号店”与“店”在删除数字后仍会差一个“号”；先去掉紧邻门店后缀的“号”，
+  // 才能识别这是门店编号差异，不能让它绕过不同门店编号的人工确认守门。
+  const stripNumberMarker = value => value
+    .replace(DIGIT_SEQ, "")
+    .replace(/号(?=(?:分店|门店|专卖店|便利店|营业点|店)?$)/g, "");
+  const sa = stripNumberMarker(A);
+  const sb = stripNumberMarker(B);
   if (sa !== sb) return null; // 差异不止来自数字，交由常规评分处理
 
+  // 仅当编号数字本身位于名称末尾时才视为可容忍的尾随编号；
+  // “二店 / 2号店”中的编号仍在“店”前，必须按可能的不同门店处理。
   const tail = /[0-9０-９一二三四五六七八九十百]+$/;
   const tailOnly = Boolean(tail.test(A) || tail.test(B)) && Math.min(sa.length, sb.length) >= 3;
   return tailOnly ? "suffix" : "core";
