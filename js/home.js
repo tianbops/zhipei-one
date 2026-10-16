@@ -477,11 +477,27 @@ async function loadHome(){
     // 只要月度历史能看到今天，就根据当天运单 ID 再取完整运单，避免出现“月度有数据、今日却为空”。
     if(!w&&effectiveRouteId){
       try{
-        const {res,data}=await fetchJson("/api/history?months=13",20000);
-        if(res.ok&&data.success!==false){
-          const serverRoute=String(data.routeId||"").trim();
+        // 月度统计脚本通常已在首页并行读取 25 个月历史；优先复用同一响应，
+        // 只有共享请求失败/超时才发起原有 13 个月兜底请求。
+        let historyData=null;
+        const sharedPromise=window.zpHomeMonthlyDataPromise;
+        if(sharedPromise){
+          let timer;
+          try{
+            historyData=await Promise.race([
+              sharedPromise,
+              new Promise(resolve=>{timer=setTimeout(()=>resolve(null),20000)})
+            ]);
+          }finally{clearTimeout(timer)}
+        }
+        if(!historyData?.success||!Array.isArray(historyData.history)){
+          const {res,data}=await fetchJson("/api/history?months=13",20000);
+          if(res.ok&&data.success!==false)historyData=data;
+        }
+        if(historyData?.success!==false&&Array.isArray(historyData?.history)){
+          const serverRoute=String(historyData.routeId||"").trim();
           if(serverRoute)cmpRouteId=serverRoute;
-          const todayEntry=(Array.isArray(data.history)?data.history:[]).find(x=>x?.date===todayKey&&Number(x?.count)>0);
+          const todayEntry=historyData.history.find(x=>x?.date===todayKey&&Number(x?.count)>0);
           const id=Array.isArray(todayEntry?.waybillIds)?todayEntry.waybillIds[todayEntry.waybillIds.length-1]:"";
           if(id){
             const {res:detailRes,data:detail}=await fetchJson("/api/waybills/latest?id="+encodeURIComponent(id),20000);
