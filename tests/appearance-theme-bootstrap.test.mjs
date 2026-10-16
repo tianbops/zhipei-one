@@ -38,14 +38,15 @@ for (const selector of [
 ]) {
   assert.ok(unified.includes(selector), "全局浅色适配未覆盖关键组件: " + selector);
 }
-// 危险操作按钮统一使用全站次按钮的中性色，深浅主题仅切换对应标准配色。
+// 危险操作按钮统一使用醒目的危险语义红（与页面背景明确区分），深浅主题仅切换对应标准配色。
+// 深色 = --ui-danger-soft 红晕底 + var(--ui-danger)=#FF8278 字；浅色 = #FCEBEC 浅红底 + #B4232F 字。
 assert.ok(
   unified.includes('button[class*="delete"]') &&
-  unified.includes('background:#11171D!important;') &&
-  unified.includes('color:#E8EDF2!important;') &&
-  unified.includes('background:#F0F2F4!important;') &&
-  unified.includes('color:#17202A!important;'),
-  "全站危险操作按钮必须使用与标准次按钮一致的深浅主题颜色"
+  unified.includes('background:var(--ui-danger-soft)!important;') &&
+  unified.includes('color:var(--ui-danger)!important;') &&
+  unified.includes('background:#FCEBEC!important;') &&
+  unified.includes('border:1px solid #E8BFC3!important;'),
+  "全站危险操作按钮必须使用统一的危险语义红，且与页面背景明确区分"
 );
 for (const selector of [".history-choice-delete", ".history-delete", ".data-swipe-actions .data-swipe-delete", ".page2-danger-btn"]) {
   assert.ok(unified.includes(selector), "全局危险操作按钮样式缺少覆盖: " + selector);

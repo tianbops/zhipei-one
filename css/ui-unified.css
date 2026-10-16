@@ -969,8 +969,10 @@ textarea:disabled,
 }
 
 
-/* 危险操作按钮颜色标准化：与全站次按钮使用同一中性色体系，不再出现红色底/边与局部白边。
-   仅统一视觉颜色，保留原按钮尺寸、位置、文案与确认逻辑。 */
+/* 全站删除/危险动作唯一标准（双主题，醒目危险语义红，与页面背景明确区分）：
+   深色 = --ui-danger-soft 红晕底 + 红边 + var(--ui-danger)=#FF8278 字；
+   浅色 = #FCEBEC 浅红底 + #E8BFC3 边 + var(--ui-danger)=#B4232F 字；
+   按压态各加深一档。仅统一视觉颜色，保留原按钮尺寸、位置、文案与确认逻辑。 */
 button[class*="delete"],
 a[class*="delete"],
 button[class*="danger"],
@@ -984,9 +986,9 @@ a[class*="danger"],
 .order-menu .logout,
 .account-page .account-logout,
 .menu-bg #logout {
-  background:#11171D!important;
-  border:1px solid #35404C!important;
-  color:#E8EDF2!important;
+  background:var(--ui-danger-soft)!important;
+  border:1px solid rgba(255,130,120,.5)!important;
+  color:var(--ui-danger)!important;
   box-shadow:none!important;
 }
 button[class*="delete"]:active,
@@ -1002,9 +1004,9 @@ a[class*="danger"]:active,
 .order-menu .logout:active,
 .account-page .account-logout:active,
 .menu-bg #logout:active {
-  background:#202B36!important;
-  border-color:#3A4652!important;
-  color:#FFFFFF!important;
+  background:rgba(255,130,120,.16)!important;
+  border-color:rgba(255,130,120,.7)!important;
+  color:var(--ui-danger)!important;
 }
 :root[data-zp-theme="light"] button[class*="delete"],
 :root[data-zp-theme="light"] a[class*="delete"],
@@ -1019,9 +1021,9 @@ a[class*="danger"]:active,
 :root[data-zp-theme="light"] .order-menu .logout,
 :root[data-zp-theme="light"] .account-page .account-logout,
 :root[data-zp-theme="light"] .menu-bg #logout {
-  background:#F0F2F4!important;
-  border:1px solid #D7DDE3!important;
-  color:#17202A!important;
+  background:#FCEBEC!important;
+  border:1px solid #E8BFC3!important;
+  color:var(--ui-danger)!important;
   box-shadow:none!important;
 }
 :root[data-zp-theme="light"] button[class*="delete"]:active,
@@ -1037,7 +1039,7 @@ a[class*="danger"]:active,
 :root[data-zp-theme="light"] .order-menu .logout:active,
 :root[data-zp-theme="light"] .account-page .account-logout:active,
 :root[data-zp-theme="light"] .menu-bg #logout:active {
-  background:#E1E7EC!important;
-  border-color:#C9D1D9!important;
-  color:#17202A!important;
+  background:#F5DCDD!important;
+  border-color:#DCA6AC!important;
+  color:#741E27!important;
 }
