@@ -23,4 +23,4 @@ form?.addEventListener("submit",async e=>{e.preventDefault();message.textContent
   // 管理员端与司机端同处一个 PWA 窗口：登录即栈底（location.replace 进入，背后无首页）。
   // 系统返回由 ui-unified.js 守卫接管——第一次左滑停留并提示「再按一次退出」，
   // 第二次左滑真正退出到手机桌面，绝不穿越到司机首页。
-  location.replace(_isAdmin?"/admin.html?v="+Date.now():"/home.html?v="+Date.now())}catch(err){message.textContent=err.message||"登录失败";button.disabled=false;button.textContent="登录"}});
+  location.replace(_isAdmin?"/admin?v="+Date.now():"/home?v="+Date.now())}catch(err){message.textContent=err.message||"登录失败";button.disabled=false;button.textContent="登录"}});

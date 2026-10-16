@@ -471,7 +471,7 @@ async function load(){
     try{sessionStorage.removeItem("zpExitAdmin")}catch(e){}
     // 明确本会话属于业务区，避免业务页门禁把司机误判成管理员又弹回 /admin
     try{sessionStorage.setItem("zpRole","user")}catch(e){}
-    setTimeout(()=>location.replace("/home.html?v="+Date.now()),1200);
+    setTimeout(()=>location.replace("/home?v="+Date.now()),1200);
     return;
   }
   S.me=m.user;
@@ -605,5 +605,5 @@ async function learnRestore(storeId){
   {rank:40,probe:()=>document.querySelector(".row.open,.route.open"),close:()=>{closeSwipes();return true}}
 );
 })();
-</script><script id="ui-unified-admin" src="/js/ui-unified.js?v=7dab55fc"></script><script src="/js/pwa.js?v=864ce384"></script>
+</script><script id="ui-unified-admin" src="/js/ui-unified.js?v=de3a1442"></script><script src="/js/pwa.js?v=864ce384"></script>
 </body></html>

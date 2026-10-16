@@ -223,10 +223,10 @@
     // 「上传」由普通 tab 改为中心凸起圆形加号（plus:true 无文字标签，仅图标）。
     const items=[
       {id:"home",label:"首页",href:"/home",cls:"bottom-nav-home",icon:'<path d="M3.5 9.8 12 3.5l8.5 6.3V19a1.5 1.5 0 0 1-1.5 1.5h-3.2v-6H9.2v6H5A1.5 1.5 0 0 1 3.5 19z"/>'},
-      {id:"history",label:"历史",href:"/pages/history.html?from=home",icon:'<path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3.5 5v4h4"/><path d="M12 7.5v5l3.2 1.9"/>'},
-      {id:"upload",label:"上传",href:"/home.html?openUpload=1",plus:true,icon:'<path d="M12 5v14"/><path d="M5 12h14"/>'},
-      {id:"route",label:"线路",href:"/pages/dispatch.html?from=home",icon:'<path d="M4 6h16v12H4z"/><path d="M8 10h8M8 14h5"/>'},
-      {id:"account",label:"我的",href:"/pages/account.html?from=home",icon:'<circle cx="12" cy="8" r="3"/><path d="M5 20c.8-3.2 3.1-5 7-5s6.2 1.8 7 5"/>'}
+      {id:"history",label:"历史",href:"/pages/history?from=home",icon:'<path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3.5 5v4h4"/><path d="M12 7.5v5l3.2 1.9"/>'},
+      {id:"upload",label:"上传",href:"/home?openUpload=1",plus:true,icon:'<path d="M12 5v14"/><path d="M5 12h14"/>'},
+      {id:"route",label:"线路",href:"/pages/dispatch?from=home",icon:'<path d="M4 6h16v12H4z"/><path d="M8 10h8M8 14h5"/>'},
+      {id:"account",label:"我的",href:"/pages/account?from=home",icon:'<circle cx="12" cy="8" r="3"/><path d="M5 20c.8-3.2 3.1-5 7-5s6.2 1.8 7 5"/>'}
     ];
     const nav=document.createElement("nav");
     nav.className="bottom-nav";
@@ -321,10 +321,10 @@
     order:q=>"/pages/order_detail?id="+encodeURIComponent(q.get("id")||"")+"&source=process&from=process"
   };
 
-  // 工作区识别：业务端根 /home.html，管理员端根 /admin.html（独立工作区，互不串线）。
-  // ⚠ Cloudflare Pages 会把 /admin.html 308 重定向到 /admin（pretty URL），
+  // 工作区识别：业务端根 /home，管理员端根 /admin（独立工作区，互不串线）。
+  // ⚠ Cloudflare Pages 会把 /admin 308 重定向到 /admin（pretty URL），
   // 因此线上 location.pathname 是「无扩展名」形态。所有判定必须先做规整化，
-  // 否则管理员页会被误判为业务页：第一次左滑直接 location.replace("/home.html")
+  // 否则管理员页会被误判为业务页：第一次左滑直接 location.replace("/home")
   // 穿越到司机首页（2026-10-05 生产事故根因）。
   function zpNormPath(p){
     let s=String(p||"").split("?")[0];
@@ -377,7 +377,7 @@
     const v=Object.prototype.hasOwnProperty.call(BACK_MAP,key)?BACK_MAP[key]:undefined;
     let target=typeof v==="function"?v(q):v;
     let out=target||fallback||zpRoot;
-    // 防火墙放在最后（判定用规整化路径，兼容 /admin 与 /admin.html 两种形态）：
+    // 防火墙放在最后（判定用规整化路径，兼容 /admin 与 /admin 两种形态）：
     // 管理员端永远不回落到业务端，业务端也永不进入管理端
     if(zpZone==="admin"&&zpNormPath(out)!=="/admin")out=zpRoot;
     if(zpZone!=="admin"&&zpNormPath(out)==="/admin")out=zpRoot;
@@ -482,7 +482,7 @@
       let dirty=false;try{dirty=!!fn()}catch{}
       if(dirty&&!await zpConfirmDiscard())return "handled";
     }
-    location.replace(zpResolveBack("/home.html"));
+    location.replace(zpResolveBack("/home"));
     return "leave";
   };
 

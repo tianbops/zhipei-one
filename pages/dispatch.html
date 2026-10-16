@@ -164,7 +164,7 @@
 </head>
 <body>
 <main class="dispatch-page">
-<header class="topbar"><a class="app-back" href="/home.html" aria-label="返回"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><h1>线路</h1><span></span></header>
+<header class="topbar"><a class="app-back" href="/home" aria-label="返回"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><h1>线路</h1><span></span></header>
 
 <section class="dispatch-intro">
   <h2>线路工作区</h2>
@@ -181,12 +181,12 @@
 <section class="dispatch-section">
   <h2 class="dispatch-section-title">线路功能</h2>
   <div class="dispatch-action-card">
-    <a class="dispatch-action" href="/pages/route_apply.html?from=dispatch">
+    <a class="dispatch-action" href="/pages/route_apply?from=dispatch">
       <span class="dispatch-action-icon"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/></svg></span>
       <span class="dispatch-action-main"><strong>线路申请</strong><small>申请维护线路、查看审核状态、解除绑定</small></span>
       <span class="dispatch-action-arrow">›</span>
     </a>
-    <a class="dispatch-action" href="/pages/data.html?from=dispatch">
+    <a class="dispatch-action" href="/pages/data?from=dispatch">
       <span class="dispatch-action-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg></span>
       <span class="dispatch-action-main"><strong>数据中心</strong><small>查看当前线路门店资料，具备权限时可维护</small></span>
       <span class="dispatch-action-arrow">›</span>
@@ -198,16 +198,16 @@
   <a class="bottom-nav-item bottom-nav-home" href="/home">
     <span class="bottom-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 9.8 12 3.5l8.5 6.3V19a1.5 1.5 0 0 1-1.5 1.5h-3.2v-6H9.2v6H5A1.5 1.5 0 0 1 3.5 19z"/></svg></span><span>首页</span>
   </a>
-  <a class="bottom-nav-item" href="/pages/history.html?from=dispatch">
+  <a class="bottom-nav-item" href="/pages/history?from=dispatch">
     <span class="bottom-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3.5 5v4h4"/><path d="M12 7.5v5l3.2 1.9"/></svg></span><span>历史</span>
   </a>
-  <a class="bottom-nav-item bottom-nav-plus" href="/home.html?openUpload=1" aria-label="上传">
+  <a class="bottom-nav-item bottom-nav-plus" href="/home?openUpload=1" aria-label="上传">
     <span class="bottom-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg></span>
   </a>
-  <a class="bottom-nav-item is-active" href="/pages/dispatch.html?from=home" aria-current="page">
+  <a class="bottom-nav-item is-active" href="/pages/dispatch?from=home" aria-current="page">
     <span class="bottom-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z"/><path d="M8 10h8M8 14h5"/></svg></span><span>线路</span>
   </a>
-  <a class="bottom-nav-item" href="/pages/account.html?from=dispatch">
+  <a class="bottom-nav-item" href="/pages/account?from=dispatch">
     <span class="bottom-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M5 20c.8-3.2 3.1-5 7-5s6.2 1.8 7 5"/></svg></span><span>我的</span>
   </a>
 </nav>
@@ -310,7 +310,7 @@ async function selectRoute(id){
   $("confirmOk").disabled=true;
   try{
     await api("/api/dispatch",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({routeId:id})});
-    location.replace("/home.html");
+    location.replace("/home");
   }catch(e){
     $("confirmOk").disabled=false;
     window.zpToast?.(e.message||"线路切换失败","error");
@@ -342,7 +342,7 @@ async function load(){
 }
 load();
 </script>
-<script src="/js/ui-unified.js?v=7dab55fc"></script>
+<script src="/js/ui-unified.js?v=de3a1442"></script>
 <script src="/js/pwa.js?v=864ce384"></script>
 </body>
 </html>

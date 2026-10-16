@@ -394,7 +394,7 @@ function openConfirm(){
   {rank:20,probe:()=>$('menuPanel'),close:()=>{setMenu(false);return true}}
 );
 if($('menuBtn'))$('menuBtn').onclick=e=>{e.stopPropagation();setMenu(!menuOpen)};
-if($('editRouteBtn'))$('editRouteBtn').onclick=()=>location.href='/pages/data.html?from=order&id='+encodeURIComponent(order.id)+'&source=process';
+if($('editRouteBtn'))$('editRouteBtn').onclick=()=>location.href='/pages/data?from=order&id='+encodeURIComponent(order.id)+'&source=process';
 if($('shareBtn'))$('shareBtn').onclick=async()=>{
  setMenu(false);if(!order)return;
  const s=order.summary||{},list=Array.isArray(order.stores)?order.stores:[];

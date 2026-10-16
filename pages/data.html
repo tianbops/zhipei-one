@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="智配One"><script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F4F6F8":"#05070A")}catch(e){}</script>
 <link rel="stylesheet" href="/css/app.css?v=9a61438e"><link rel="stylesheet" href="/css/ui-unified.css?v=f38f0b0d"><link rel="stylesheet" href="/css/mobile-ui.css?v=285d41d0"><link rel="stylesheet" href="/css/business-pages.css?v=c0fbe910"><link rel="stylesheet" href="/css/data.css?v=5de4e551"></head>
 <body><main class="page2 data-page">
-<header class="topbar"><a class="app-back" href="/home.html" aria-label="返回"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><h1>数据资料</h1><button id="pageMenuBtn" class="data-page-menu-btn" type="button" aria-label="打开菜单">☰</button></header>
+<header class="topbar"><a class="app-back" href="/home" aria-label="返回"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><h1>数据资料</h1><button id="pageMenuBtn" class="data-page-menu-btn" type="button" aria-label="打开菜单">☰</button></header>
 <section class="page2-card data-route-card"><div class="data-route-kicker">当前调度线路</div><div class="data-route-title"><h2 id="title">加载中…</h2><div id="summary" class="data-summary"><strong></strong></div></div><p id="hint" class="data-route-hint">正在读取线路资料</p></section>
 <div id="pageMenu" class="data-page-menu" hidden><button id="dataShareBtn" type="button">分享</button><button id="dataLogoutBtn" type="button">退出</button></div>
 <section class="card data-tools-card" id="tools" style="display:none">
@@ -64,7 +64,7 @@ var dataBaseline="";// 门店资料基线：用于判断是否存在「暂存但
   const p=new URLSearchParams(location.search);
   if(p.get("from")==="order"){
     const oid=p.get("id");
-    if(oid){const a=document.querySelector(".app-back");if(a)a.href="/pages/order_detail.html?id="+encodeURIComponent(oid)+"&source=process&from=process"}
+    if(oid){const a=document.querySelector(".app-back");if(a)a.href="/pages/order_detail?id="+encodeURIComponent(oid)+"&source=process&from=process"}
   }
 })();
 async function api(u,o={}){const r=await fetch(u,{credentials:"same-origin",...o});const d=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(d.error||d.message||"请求失败");e.code=d.code||"HTTP_"+r.status;e.detail=d.detail||"";throw e}return d}
@@ -358,6 +358,6 @@ load();
   (window.zpDirtyProbes=window.zpDirtyProbes||[]).push(()=>
     filled(openPanel())||!!(dataBaseline&&dataBaseline!==JSON.stringify(stores)));
 })();
-</script><script src="/js/ui-unified.js?v=7dab55fc"></script>
+</script><script src="/js/ui-unified.js?v=de3a1442"></script>
 <script src="/js/pwa.js?v=864ce384"></script>
 </body></html>
