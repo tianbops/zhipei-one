@@ -8,7 +8,7 @@ const css = readFileSync(new URL("../css/history.css", import.meta.url), "utf8")
 // 历史页不再提供关键词搜索、搜索时间范围或搜索提交入口。
 assert.doesNotMatch(html, /historySearchForm|historySearchInput|historySearchMonths|historySearchState|historySearchResults|搜索姓名、电话、地址、运单号或门店|近3个月/);
 assert.doesNotMatch(source, /searchController|runHistorySearch|renderSearchResults|historySearchForm|historySearchInput|historySearchMonths/);
-assert.doesNotMatch(css, /\.history-search(?:\\b|-)/);
+assert.doesNotMatch(css, /\.history-search(?:\b|-)/);
 
 // 非搜索历史功能必须保留。
 assert.match(html, /id="historyList"/);
