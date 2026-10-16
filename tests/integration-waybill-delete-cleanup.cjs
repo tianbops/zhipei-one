@@ -4,8 +4,9 @@
 // 漏清两个「反向去重键」：zp:waybill:dedupe:<日签名> 与 zp:waybill:fingerprint:<业务指纹>，
 // 二者仍指向已删 id → 成为孤儿，重传同签名可能落入 WAYBILL_DEDUPE_LOOKUP_FAILED / 被 P1.5 扫为 ORPHAN_DEDUPE_KEY。
 //
-// 修复（history.js deleteWaybill）：删除主记录前先读记录恢复反向键，删除后仅当
-// 键仍指向本单才清掉；已被覆盖/再上传改派给新单的键不动（条件删除，保护幂等/覆盖链）。
+// 修复（history.js deleteWaybill）：软删除——主记录与子键迁入回收站（TTL 7 天），
+// 删除前先读记录恢复反向键，删除后仅当键仍指向本单才清掉；已被覆盖/再上传改派给新单的键不动
+// （条件删除，保护幂等/覆盖链）。本用例断言软删后原主记录不可见、回收站落地 + 反向键清理。
 //
 // 本测试用 _mini-redis 真实加载 history.js，断言：
 //   (1) 删除最新运单 → 主记录/索引/事件链/日去重键/业务指纹键 全部归零；
@@ -105,9 +106,11 @@ function getReq(url, token) {
 
   const r1 = await toJson(await delById(wA.id));
   check("删除返回成功 deleted=1", r1.success === true && r1.deleted === 1, "code=" + (r1.code) + " deleted=" + (r1.deleted));
-  check("主记录已删", readJson("zp:waybill:" + wA.id) === null);
+  check("软删：原主记录已不可见(迁回收站)", readJson("zp:waybill:" + wA.id) === null);
+  check("软删：回收站主记录已落地", !!readJson("zp:waybill:trash:" + wA.id));
+  check("软删：回收站主记录 TTL>0", Number(await red.command(["TTL", "zp:waybill:trash:" + wA.id])) > 0);
   check("索引条目已移除", !existsMembers(indexKey).includes(wA.id));
-  check("事件链子键已删(SCAN 无残留)", (await scanKeys("zp:waybill:" + wA.id + ":*")).length === 0);
+  check("事件链子键已迁入回收站(原前缀无残留)", (await scanKeys("zp:waybill:" + wA.id + ":*")).length === 0 && (await scanKeys("zp:waybill:trash:" + wA.id + ":*")).length === 1);
   check("日去重键已清(不再指向已删 wA)", getRaw(dedupeKeyA) === null, "val=" + getRaw(dedupeKeyA));
   check("业务指纹键已清(不再指向已删 wA)", getRaw(fpKeyA) === null, "val=" + getRaw(fpKeyA));
 
@@ -134,7 +137,7 @@ function getReq(url, token) {
 
   const r2 = await toJson(await delById("wA2")); // 删除旧单 wA2
   check("删除旧单 wA2 成功", r2.success === true && r2.deleted === 1, "code=" + (r2.code));
-  check("旧单 wA2 主记录已删", readJson("zp:waybill:wA2") === null);
+  check("旧单 wA2 原主记录已不可见(迁回收站)", readJson("zp:waybill:wA2") === null && !!readJson("zp:waybill:trash:wA2"));
   check("条件删除：指纹键仍指向 wB（未被误删）", getRaw(fpKeyShared) === "wB", "val=" + getRaw(fpKeyShared));
   check("条件删除：日去重键仍指向 wB（未被误删）", getRaw(dedupeKeyShared) === "wB", "val=" + getRaw(dedupeKeyShared));
   check("新单 wB 主记录仍在（覆盖链完整）", !!readJson("zp:waybill:wB"));
@@ -164,7 +167,7 @@ function getReq(url, token) {
   }
 
   // ===================================================================
-  console.log("\n【4】删除事务失败可重试：EVAL 失败时主记录/索引/反向键全部保留");
+  console.log("\n【4】软删可重试：写回收站主记录失败时，原主记录/索引/反向键全部保留");
   const wC = buildRecord("wC", M);
   wC.businessFingerprint = await businessFingerprint(wC);
   const sigC = await dailyWaybillKey(wC);
@@ -175,22 +178,26 @@ function getReq(url, token) {
   red.command(["SET", dedupeKeyC, wC.id]);
   red.command(["SET", fpKeyC, wC.id]);
   red.command(["RPUSH", "zp:waybill:" + wC.id + ":events", JSON.stringify({ event: "WAYBILL_CREATED" })]);
+  const trashMainC = "zp:waybill:trash:" + wC.id;
   const originalCommand = red.command.bind(red);
-  let failEval = true;
+  let failTrashWrite = true;
   red.command = function(parts) {
-    if (failEval && String(parts?.[0]).toUpperCase() === "EVAL") throw new Error("SIMULATED_EVAL_FAILURE");
+    const cmd = String(parts?.[0]).toUpperCase();
+    const key = String(parts?.[1] ?? "");
+    if (failTrashWrite && cmd === "SET" && key === trashMainC) throw new Error("SIMULATED_TRASH_WRITE_FAILURE");
     return originalCommand(parts);
   };
   const failed = await toJson(await delById(wC.id));
+  check("写回收站失败返回非成功", failed.success === false, "code=" + failed.code);
+  check("失败后原主记录仍在", !!readJson("zp:waybill:" + wC.id));
+  check("失败后回收站未写入", readJson(trashMainC) === null);
+  check("失败后日期索引仍在", existsMembers(indexKey).includes(wC.id));
+  check("失败后日去重键仍在", getRaw(dedupeKeyC) === wC.id);
+  check("失败后业务指纹键仍在", getRaw(fpKeyC) === wC.id);
   red.command = originalCommand;
-  check("事务失败返回非成功", failed.success === false, "code=" + failed.code);
-  check("EVAL 失败后主记录仍在", !!readJson("zp:waybill:" + wC.id));
-  check("EVAL 失败后日期索引仍在", existsMembers(indexKey).includes(wC.id));
-  check("EVAL 失败后日去重键仍在", getRaw(dedupeKeyC) === wC.id);
-  check("EVAL 失败后业务指纹键仍在", getRaw(fpKeyC) === wC.id);
   const retry = await toJson(await delById(wC.id));
-  check("恢复后重试可以成功删除", retry.success === true && retry.deleted === 1, "code=" + retry.code);
-  check("重试后主记录清除", readJson("zp:waybill:" + wC.id) === null);
+  check("恢复后重试可以成功软删", retry.success === true && retry.deleted === 1, "code=" + retry.code);
+  check("重试后原主记录不可见(迁回收站)", readJson("zp:waybill:" + wC.id) === null && !!readJson(trashMainC));
   check("重试后日期索引清除", !existsMembers(indexKey).includes(wC.id));
   check("重试后反向键清除", getRaw(dedupeKeyC) === null && getRaw(fpKeyC) === null);
 

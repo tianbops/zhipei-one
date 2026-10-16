@@ -172,6 +172,19 @@ class MiniRedis {
       case "EXPIRE": { if (!this._alive(a[0])) return 0; this.expiries.set(a[0], this.now() + Number(a[1]) * 1000); return 1; }
       case "PERSIST": { if (!this._alive(a[0])) return 0; if (!this.expiries.has(a[0])) return 0; this.expiries.delete(a[0]); return 1; }
       case "DEL": { let n = 0; for (const k of a) { if (this.strings.delete(k)) n++; if (this.sets.delete(k)) n++; if (this.hashes.delete(k)) n++; if (this.lists.delete(k)) n++; this.expiries.delete(k); } return n; }
+      case "RENAME": {
+        const src = a[0], dst = a[1];
+        this._expireIfDue(src);
+        if (!this._alive(src)) return 0;
+        const ex = this.expiries.get(src);
+        if (this.strings.has(src)) { this.strings.set(dst, this.strings.get(src)); this.strings.delete(src); }
+        else if (this.sets.has(src)) { this.sets.set(dst, new Set(this.sets.get(src))); this.sets.delete(src); }
+        else if (this.hashes.has(src)) { this.hashes.set(dst, new Map(this.hashes.get(src))); this.hashes.delete(src); }
+        else if (this.lists.has(src)) { this.lists.set(dst, [...this.lists.get(src)]); this.lists.delete(src); }
+        if (ex !== undefined) this.expiries.set(dst, ex);
+        this.expiries.delete(src);
+        return 1;
+      }
       case "SADD": {
         const key = a[0]; this._expireIfDue(key); let s = this.sets.get(key); if (!s) { s = new Set(); this.sets.set(key, s); }
         let n = 0; for (let i = 1; i < a.length; i++) { if (!s.has(a[i])) { s.add(a[i]); n++; } } return n;

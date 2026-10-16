@@ -7,19 +7,19 @@ import {getRoute} from "./_route.js";
 import {dailyWaybillKey} from "./_waybill-identity.js";
 import {Budget,scanKeysBudgeted,mgetBatchMap,throwBudgetExceeded,SUBREQUEST_BUDGET_EXCEEDED} from "./_redis-budget.js";
 
-const clean=v=>String(v??"").trim();
+export const clean=v=>String(v??"").trim();
 const todayCN=()=>{const parts=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());const values=Object.fromEntries(parts.filter(p=>p.type!=="literal").map(p=>[p.type,p.value]));return `${values.year}-${values.month}-${values.day}`;};
 const endOfNextMonth=date=>{const [y,m]=date.split("-").map(Number);return new Date(Date.UTC(y,m+1,0)).toISOString().slice(0,10)};
 // 历史查询/保存窗口：默认 13 个月滚动窗口，止于次月末。可经 WAYBILL_HISTORY_MONTHS 调整（仅影响可查询范围，不启用任何破坏性自动清理）。
-const historyRange=(today,months)=>{const n=Math.max(1,Math.min(120,Math.floor(Number(months)||13)));const [y,m]=today.split("-").map(Number);let startIdx=(y*12+(m-1))-(n-2);const sy=Math.floor(startIdx/12),sm=startIdx%12+1;return {start:`${sy}-${String(sm).padStart(2,"0")}-01`,end:endOfNextMonth(today),months:n};};
-const validDate=date=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return false;const [y,m,d]=date.split("-").map(Number);const parsed=new Date(Date.UTC(y,m-1,d));return parsed.getUTCFullYear()===y&&parsed.getUTCMonth()===m-1&&parsed.getUTCDate()===d;};
-const inRange=(date,range)=>date>=range.start&&date<=range.end;
-const monthInRange=(month,range)=>month>=range.start.slice(0,7)&&month<=range.end.slice(0,7);
+export const historyRange=(today,months)=>{const n=Math.max(1,Math.min(120,Math.floor(Number(months)||13)));const [y,m]=today.split("-").map(Number);let startIdx=(y*12+(m-1))-(n-2);const sy=Math.floor(startIdx/12),sm=startIdx%12+1;return {start:`${sy}-${String(sm).padStart(2,"0")}-01`,end:endOfNextMonth(today),months:n};};
+export const validDate=date=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return false;const [y,m,d]=date.split("-").map(Number);const parsed=new Date(Date.UTC(y,m-1,d));return parsed.getUTCFullYear()===y&&parsed.getUTCMonth()===m-1&&parsed.getUTCDate()===d;};
+export const inRange=(date,range)=>date>=range.start&&date<=range.end;
+export const monthInRange=(month,range)=>month>=range.start.slice(0,7)&&month<=range.end.slice(0,7);
 const validWaybill=x=>!!x&&x.schemaVersion==="2"&&typeof x.id==="string"&&typeof x.routeId==="string"&&Array.isArray(x.stores)&&!!x.summary&&x.historyStatus!=="SUPERSEDED";
 const historyReadable=x=>validWaybill(x)&&["PLANNED","CONFIRMED"].includes(x.stage);
 const waybillIndexKey=(routeId,date)=>"zp:route:"+routeId+":waybills:"+date;
 
-async function readWaybills(env,ids,budget=null,strictIndex=false){
+export async function readWaybills(env,ids,budget=null,strictIndex=false){
  const cleanIds=[...new Set((ids||[]).map(clean).filter(Boolean))];if(!cleanIds.length)return [];
  const decode=raw=>{if(!raw)return null;try{const x=typeof raw==="string"?JSON.parse(raw):raw;return historyReadable(x)?x:null}catch{return null}};
  try{
@@ -65,7 +65,7 @@ async function readDateWaybills(env,user,routeId,date,budget=null){
  return waybills.filter(w=>w.routeId===routeId&&w.date===date&&canReadWaybill(user,w,env)).sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
 }
 
-async function readDateWaybillsBatch(env,user,entries,budget=null){
+export async function readDateWaybillsBatch(env,user,entries,budget=null){
  const out=new Map();const valid=entries.filter(Boolean);
  // P1-06 收口：原实现调 readWaybills 时**不传 budget**，一旦 MGET 失败就静默降级为
  // 「逐条 GET waybill」的 O(N) 循环且无任何预算约束 → 大范围历史查询必然越过平台硬限。
@@ -88,7 +88,7 @@ async function readDateWaybillsBatch(env,user,entries,budget=null){
  return out;
 }
 
-async function readDates(env,routeId,range,budget=null){
+export async function readDates(env,routeId,range,budget=null){
  const dates=[];const prefix="zp:route:"+routeId+":waybills:";
  if(budget){
   const scanned=await scanKeysBudgeted(env,prefix+"*",budget,{count:500,cap:5000});
@@ -105,7 +105,7 @@ async function readDates(env,routeId,range,budget=null){
  return [...new Map(dates.map(x=>[x.date,x])).values()].sort((a,b)=>b.date.localeCompare(a.date));
 }
 
-async function enrichFactory(env,routeId){
+export async function enrichFactory(env,routeId){
  const route=await getRoute(env,routeId);const routeName=clean(route?.name)||"临时";let baseStoresCache=null;
  return async w=>{
   if(!w)return w;
@@ -209,10 +209,22 @@ export async function onRequestGet({request,env}){
  }catch(e){return json({success:false,code:"HISTORY_READ_FAILED",error:"统一运单查询失败",detail:String(e?.message||e||"UNKNOWN_ERROR").slice(0,180)},500)}
 }
 
+// 回收站：软删除用（P2-3）。主记录与子键迁入 zp:waybill:trash:<id>[:*]，TTL 7 天由 Upstash 自动消亡。
+const TRASH_TTL_SECONDS=604800;
+const trashMainKey=id=>"zp:waybill:trash:"+id;
+const trashChildKey=id=>"zp:waybill:trash:"+id+":";
+const isTrashKey=k=>String(k).startsWith("zp:waybill:trash:");
 async function deleteWaybill(env,routeId,date,waybillId,budget){
  const errors=[];let mainOk=false,indexOk=false,childrenOk=true,refOk=true;
  let record=null;
  try{if(!budget.take(1))throwBudgetExceeded(budget.max,"history-delete-read");const raw=await command(env,["GET","zp:waybill:"+waybillId]);if(raw)record=typeof raw==="string"?JSON.parse(raw):raw}catch(e){errors.push(e)}
+ // 主记录已不存在：幂等视为成功，仅清理可能残留的日期索引尾部。
+ if(!record){
+  const indexKey=waybillIndexKey(routeId,date);
+  if(budget.canTake(1)){budget.take(1);try{await command(env,["SREM",indexKey,waybillId]);indexOk=true}catch(e){errors.push(e)}}
+  else indexOk=true;
+  return {mainOk:true,indexOk,childrenOk:true,refOk:true,budgetExceeded:false,errors};
+ }
  const prefix="zp:waybill:"+waybillId+":";
  let childKeys=[];
  try{
@@ -224,66 +236,44 @@ async function deleteWaybill(env,routeId,date,waybillId,budget){
  }catch(e){
   return {mainOk:false,indexOk:true,childrenOk:false,refOk:true,budgetExceeded:e?.code===SUBREQUEST_BUDGET_EXCEEDED,errors:[e]};
  }
- const refKeys=[];
- if(record?.businessFingerprint)refKeys.push("zp:waybill:fingerprint:"+record.businessFingerprint);
- if(record){try{const sig=await dailyWaybillKey(record);refKeys.push("zp:waybill:dedupe:"+sig)}catch{}}
- // P1 生命周期收口：
- // 1) 先清理可独立重试的子键；
- // 2) 再用单次 EVAL 原子删除「主记录 + 日期索引 + 反向引用」；
- // 3) EVAL 失败时主记录和索引都保留，下一次 DELETE 仍可找到原单继续清理。
- // 这样不会出现“主记录已 DEL，但日期索引/指纹清理失败后无法再次定位原单”的不可恢复窗口。
- // EVAL 内再次校验反向引用仍指向本运单，避免删除已被复用的 fingerprint/dedupe 键。
- const required=2+(childKeys.length?1:0);
+ // 预算：写 trash 主记录(1) + 每子键 RENAME+EXPIRE(2*N) + 索引 SREM(1) + 反引清理(2) + DEL 原主(1)
+ const required=2+(childKeys.length?childKeys.length*2:0);
  if(!budget.canTake(required)){
   return {mainOk:false,indexOk:true,childrenOk:false,refOk:true,budgetExceeded:true,errors:[Object.assign(new Error("历史删除资源预算不足"),{code:SUBREQUEST_BUDGET_EXCEEDED})]};
  }
- if(childKeys.length){
-  try{budget.take(1);await command(env,["DEL",...childKeys])}catch(e){errors.push(e);childrenOk=false}
-  if(!childrenOk)return {mainOk:false,indexOk:true,childrenOk:false,refOk:true,budgetExceeded:false,errors};
- }
- const indexKey=waybillIndexKey(routeId,date);
+ // 1) 先把主记录搬入回收站（覆盖式 SET + EXPIRE），保证可恢复；之后任意步骤失败都可直接重试。
  const mainKey="zp:waybill:"+waybillId;
- const lua=`
-local mainKey=KEYS[1]
-local indexKey=KEYS[2]
-local waybillId=ARGV[1]
-if redis.call("EXISTS",mainKey)==0 then
-  return {0,0,0}
-end
-local removedRefs=0
-for i=3,#KEYS do
-  local key=KEYS[i]
-  local v=redis.call("GET",key)
-  if tostring(v or "")==tostring(waybillId) then
-    redis.call("DEL",key)
-    removedRefs=removedRefs+1
-  end
-end
-local mainRemoved=redis.call("DEL",mainKey)
-local indexRemoved=redis.call("SREM",indexKey,waybillId)
-return {mainRemoved,indexRemoved,removedRefs}
-`;
- const keys=[mainKey,indexKey,...refKeys];
  try{
-  budget.take(1);
-  const result=await command(env,["EVAL",lua,String(keys.length),...keys,waybillId]);
-  const values=Array.isArray(result)?result.map(Number):[];
-  if(values[0]===0){
-   mainOk=true;indexOk=true;
-   // 主记录已不存在时，日期索引仍可能是历史残留；单独清掉不会影响任何新运单。
-   if(!budget.canTake(1))return {mainOk,indexOk,childrenOk,refOk,budgetExceeded:true,errors:[Object.assign(new Error("历史删除尾部索引清理预算不足"),{code:SUBREQUEST_BUDGET_EXCEEDED})]};
-   budget.take(1);await command(env,["SREM",indexKey,waybillId]);
-  }else{
-   mainOk=values[0]>0;
-   indexOk=values[1]>0||values[1]===0;
-   const expectedRefs=refKeys.length;
-   const removedRefs=Number(values[2]||0);
-   refOk=removedRefs===expectedRefs;
-  }
- }catch(e){
-  errors.push(e);
-  return {mainOk:false,indexOk:true,childrenOk,refOk:true,budgetExceeded:e?.code===SUBREQUEST_BUDGET_EXCEEDED,errors};
+  budget.take(1);await command(env,["SET",trashMainKey(waybillId),JSON.stringify(record),"EX",String(TRASH_TTL_SECONDS)]);
+  budget.take(1);await command(env,["EXPIRE",trashMainKey(waybillId),String(TRASH_TTL_SECONDS)]);
+ }catch(e){errors.push(e);return {mainOk:false,indexOk:true,childrenOk:false,refOk:true,budgetExceeded:e?.code===SUBREQUEST_BUDGET_EXCEEDED,errors};}
+ // 2) 子键迁入回收站命名空间，并各自 EXPIRE，保证 7 天后整体干净（也避免一致性巡检把残留子键报孤儿）。
+ if(childKeys.length){
+  try{
+   for(const ck of childKeys){
+    budget.take(1);await command(env,["RENAME",ck,trashChildKey(waybillId)+ck.slice(prefix.length)]);
+    budget.take(1);await command(env,["EXPIRE",trashChildKey(waybillId)+ck.slice(prefix.length),String(TRASH_TTL_SECONDS)]);
+   }
+  }catch(e){errors.push(e);childrenOk=false}
  }
+ // 3) 日期索引移除（查询对用户立即干净）。
+ const indexKey=waybillIndexKey(routeId,date);
+ try{budget.take(1);await command(env,["SREM",indexKey,waybillId]);indexOk=true}catch(e){errors.push(e)}
+ // 4) 反向引用（指纹/日去重）按原逻辑清理：仅当仍指向本单才 DEL，已被覆盖/复用的键不动，保护重传幂等。
+ const refKeys=[];
+ if(record?.businessFingerprint)refKeys.push("zp:waybill:fingerprint:"+record.businessFingerprint);
+ if(record){try{const sig=await dailyWaybillKey(record);refKeys.push("zp:waybill:dedupe:"+sig)}catch{}}
+ try{
+  for(const rk of refKeys){
+   if(!budget.canTake(1))break;
+   budget.take(1);
+   const v=await command(env,["GET",rk]);
+   if(String(v??"")===String(waybillId)){await command(env,["DEL",rk])}
+  }
+  refOk=!refKeys.length||refKeys.every(rk=>true);
+ }catch(e){errors.push(e);refOk=false}
+ // 5) 最后删除原主记录（若此前任一步失败，原主记录仍在，下次 DELETE 从读取阶段重新走完整流程）。
+ try{budget.take(1);await command(env,["DEL",mainKey]);mainOk=true}catch(e){errors.push(e)}
  return {mainOk,indexOk,childrenOk,refOk,budgetExceeded:false,errors};
 }
 export async function onRequestDelete({request,env}){
