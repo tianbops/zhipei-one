@@ -95,15 +95,18 @@
       });
     };
     let textObserver=null;
+    let textScaleActive=false;
     const applyScale=value=>{
       const n=Math.max(0.85,Math.min(1.3,Number(value)||1));
       root.style.setProperty("--zp-font-scale",String(n));
       if(Math.abs(n-1)<0.001){
         if(textObserver){textObserver.disconnect();textObserver=null;}
         // 默认字号不需要逐元素写入同值 !important，也不需要常驻 MutationObserver。
-        resetTextScale();
+        if(textScaleActive)resetTextScale();
+        textScaleActive=false;
       }else{
         scanText();
+        textScaleActive=true;
         if(!textObserver&&document.body&&window.MutationObserver){
           textObserver=new MutationObserver(records=>records.forEach(record=>record.addedNodes.forEach(node=>{if(node.nodeType===1)scanText(node)})));
           textObserver.observe(document.body,{childList:true,subtree:true});
