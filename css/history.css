@@ -582,6 +582,14 @@
 .history-actions{padding:0 16px}
 .history-actions-label{margin:0 0 8px;color:var(--zp-muted);font-size:13px;line-height:18px}
 .history-actions-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+/* 选择日期：quiet 操作行（与线路功能入口同语言：图标+文字+箭头），
+   替代原孤立幽灵文字按钮，使其融进卡片列表节奏 */
+.history-quick-action{display:flex;align-items:center;gap:10px;width:100%;min-height:46px;padding:0 8px;border:0;border-radius:10px;background:transparent;color:var(--zp-text);font-size:14px;font-weight:600;cursor:pointer;text-align:left}
+.history-quick-action>svg{width:18px;height:18px;flex:none;color:var(--zp-muted)}
+.history-quick-chevron{margin-left:auto}
+.history-quick-action:active{background:rgba(255,255,255,.05)}
+:root[data-zp-theme="light"] .history-quick-action{color:var(--zp-text)}
+:root[data-zp-theme="light"] .history-quick-action:active{background:rgba(0,0,0,.04)}
 .history-secondary-row{padding:0 16px 4px}
 
 /* 浮层通用提示与空态 */
