@@ -44,6 +44,11 @@
 .install-guide ol{margin:0;padding-left:20px;color:var(--zp-muted,#8B98A5);font-size:13px;line-height:22px}
 .account-page .account-danger-row-label{color:#FF8278}
 :root[data-zp-theme="light"] .account-page .account-danger-row-label{color:#C2453A}
+.about-row-install{cursor:default}
+.about-row-install-label{cursor:pointer}
+.about-row-install-label:active{opacity:.55}
+.about-row-actions{display:flex;align-items:center;gap:16px;flex:none;margin-left:auto}
+.about-row-actions .about-link{padding:0;border:0;background:none;color:var(--zp-text,#fff);font-size:13px;text-decoration:underline;cursor:pointer}
 </style></head>
 <body><main class="page2 account-page zp-shell">
 <header class="topbar"><a class="app-back" href="/home" aria-label="返回"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><h1>账号设置</h1><span></span></header>
@@ -128,13 +133,14 @@
       <span class="about-row-value" id="updateState">检查最新版本</span>
       <svg class="about-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
     </button>
-    <button id="installRow" class="about-row" type="button" hidden>
-      <span class="about-row-label">下载应用</span>
-      <span class="about-row-value">安装到桌面</span>
-      <svg class="about-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
-    </button>
+    <div id="installRow" class="about-row about-row-install" hidden>
+      <span id="installLabelBtn" class="about-row-label about-row-install-label" role="button" tabindex="0">下载应用</span>
+      <span class="about-row-actions">
+        <a id="installDlLink" class="about-link" target="_blank" rel="noopener" hidden>GitHub 下载</a>
+        <button id="installCopyBtn" class="about-link" type="button">复制网址</button>
+      </span>
+    </div>
   </div>
-  <p id="installHint" class="about-hint" hidden><span id="installHintText"></span> <a id="installDlLink" class="about-link" target="_blank" rel="noopener" hidden></a> <button id="installCopyBtn" class="about-link" type="button" hidden>复制网址</button></p>
   <div id="installGuide" class="install-guide" hidden>
     <ol id="installGuideSteps"></ol>
   </div>
@@ -242,12 +248,12 @@ $("deleteConfirm").onclick=async()=>{
 /* 关于：版本号 + 检查更新 + 下载应用（PWA 安装），全浏览器适配。
    - 版本号读 /version.json（部署时更新）
    - 检查更新：触发 Service Worker 检查，有等待中的新版本就刷新
-   - 下载应用：已安装隐藏；微信/iOS 给步骤引导；Android/桌面 Chromium
-     用 beforeinstallprompt 一键安装，未触发则精简兜底提示 + 复制网址 */
+   - 下载应用：单行展示，左「下载应用」点击触发安装/引导，右「GitHub 下载」APK 直链 +「复制网址」；
+     已安装隐藏；微信/iOS 给步骤引导；Android/桌面 Chromium 用 beforeinstallprompt 一键安装 */
 (function(){
  const card=$("aboutCard"),row=$("installRow"),copyBtn=$("installCopyBtn"),
-   hint=$("installHint"),hintText=$("installHintText"),installDlLink=$("installDlLink"),guide=$("installGuide"),steps=$("installGuideSteps"),
-   checkBtn=$("checkUpdateBtn"),state=$("updateState"),verEl=$("aboutVersion");
+  installDlLink=$("installDlLink"),guide=$("installGuide"),steps=$("installGuideSteps"),
+  checkBtn=$("checkUpdateBtn"),state=$("updateState"),verEl=$("aboutVersion");
  if(!card)return;
  const installed=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
 
@@ -284,14 +290,7 @@ $("deleteConfirm").onclick=async()=>{
   setTimeout(()=>{state.textContent="检查最新版本";checkBtn.disabled=false},2600);
  };
 
- /* 下载应用 */
- function showHint(text,withCopy,dl){
-  hintText.textContent=text;
-  if(dl){installDlLink.textContent=dl.t;installDlLink.href=dl.u;installDlLink.hidden=false;}
-  else{installDlLink.hidden=true;}
-  copyBtn.hidden=!withCopy;
-  hint.hidden=false;
- }
+ /* 下载应用：单行展示 —— 左「下载应用」点击触发安装/引导，右「GitHub 下载」「复制网址」 */
  function showSteps(list){
   steps.innerHTML="";
   list.forEach(t=>{const li=document.createElement("li");li.textContent=t;steps.appendChild(li)});
@@ -312,45 +311,44 @@ $("deleteConfirm").onclick=async()=>{
  const isWeChat=/MicroMessenger/i.test(ua);
  const isIOS=/iPad|iPhone|iPod/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
 
+ /* 右侧下载直链：默认 Releases 页，异步替换为手机端工程（tianbops/zhipei）最新 APK（优先 release 包） */
+ installDlLink.href="https://github.com/tianbops/zhipei/releases";
+ if(isIOS)installDlLink.hidden=true;else installDlLink.hidden=false;
+ fetch("https://api.github.com/repos/tianbops/zhipei/releases/latest",{cache:"no-store"})
+  .then(r=>r.ok?r.json():null).then(j=>{
+   const apks=(j&&j.assets||[]).filter(x=>/\.apk$/i.test(x.name));
+   const rel=apks.find(x=>/release/i.test(x.name))||apks[0];
+   if(rel&&rel.browser_download_url)installDlLink.href=rel.browser_download_url;
+  }).catch(()=>{});
+
  if(!installed){
-  if(isWeChat){
-   row.hidden=false;
-   row.onclick=()=>{guide.hidden=true;showHint("微信内无法直接安装，步骤：",true);
-    showSteps(["点右上角「···」","选「在浏览器中打开」","在浏览器中打开后再安装到桌面"])};
-  }else if(isIOS){
-   row.hidden=false;
-   row.onclick=()=>{guide.hidden=true;showHint("在 Safari 中添加到主屏幕：",false);
-    showSteps(["点底部「分享」按钮","选「添加到主屏幕」","点「添加」，之后从桌面打开"])};
-  }else{
-   let deferred=null;
-   window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferred=e});
-   row.hidden=false;
-   row.onclick=async()=>{
-    guide.hidden=true;
-    if(deferred){
-     const ev=deferred;deferred=null;
-     try{
-      ev.prompt();
-      const r=await ev.userChoice;
-      if(r&&r.outcome==="accepted"){row.hidden=true;hint.hidden=true;if(window.zpToast)window.zpToast("已添加到桌面","success")}
-      else showHint("已取消，稍后可再点「下载应用」。",false);
-     }catch(e){}
-    }else{
-     // 未触发系统安装提示：提供 GitHub 手机端工程（tianbops/zhipei）的安装包下载地址
-     (async()=>{
-      let u="https://github.com/tianbops/zhipei/releases";
-      try{
-       const r=await fetch("https://api.github.com/repos/tianbops/zhipei/releases/latest",{cache:"no-store"});
-       if(r.ok){const j=await r.json();const apks=(j.assets||[]).filter(x=>/\.apk$/i.test(x.name));const rel=apks.find(x=>/release/i.test(x.name))||apks[0];if(rel&&rel.browser_download_url)u=rel.browser_download_url;}
-      }catch(e){}
-      showHint("下载安装包：",true,{t:"GitHub 下载",u:u});
-     })();
-    }
-   };
-  }
+  row.hidden=false;
+  let deferred=null;
+  window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferred=e});
+  const label=$("installLabelBtn");
+  const labelClick=()=>{
+   guide.hidden=true;
+   if(isWeChat){
+    showSteps(["点右上角「···」","选「在浏览器中打开」","在浏览器中打开后再安装到桌面"]);
+   }else if(isIOS){
+    showSteps(["点底部「分享」按钮","选「添加到主屏幕」","点「添加」，之后从桌面打开"]);
+   }else if(deferred){
+    const ev=deferred;deferred=null;
+    try{
+     ev.prompt();
+     Promise.resolve(ev.userChoice).then(r=>{
+      if(r&&r.outcome==="accepted"){row.hidden=true;guide.hidden=true;if(window.zpToast)window.zpToast("已添加到桌面","success")}
+     }).catch(()=>{});
+    }catch(e){}
+   }else{
+    if(window.zpToast)window.zpToast("如未自动安装，请点右侧「GitHub 下载」","info");
+   }
+  };
+  label.addEventListener("click",labelClick);
+  label.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();labelClick()}});
  }
  window.addEventListener("appinstalled",()=>{
-  row.hidden=true;hint.hidden=true;guide.hidden=true;
+  row.hidden=true;guide.hidden=true;
   if(window.zpToast)window.zpToast("已添加到桌面","success");
 });
 })();
