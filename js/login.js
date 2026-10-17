@@ -20,7 +20,12 @@ form?.addEventListener("submit",async e=>{e.preventDefault();message.textContent
   const _isAdmin=_role==="system_admin"||_role==="admin";
   // 记录本会话所属工作区：业务页据此拒绝管理员会话停留（两个板块互不串线）
   try{window.zpSetRole?window.zpSetRole(_role):sessionStorage.setItem("zpRole",_isAdmin?"admin":"user")}catch(e){}
+  // 同步写入登录态标记：各业务页头部守卫据此即时放行，未登录则直接跳登录页（无需先渲染再跳转）
+  try{sessionStorage.setItem("zpAuth","1")}catch(e){}
+  // 登录后回到意图页（深链/被守卫拦截的页面）；无则按角色进入首页
+  var _rd=null;try{_rd=new URLSearchParams(location.search).get("redirect")}catch(e){}
+  var _safe=function(u){return u&&u.charAt(0)==="/"&&u.indexOf("://")<0&&!/^\/(index|register|setup|admin-bootstrap|offline)/.test(u)};
   // 管理员端与司机端同处一个 PWA 窗口：登录即栈底（location.replace 进入，背后无首页）。
   // 系统返回由 ui-unified.js 守卫接管——第一次左滑停留并提示「再按一次退出」，
   // 第二次左滑真正退出到手机桌面，绝不穿越到司机首页。
-  location.replace(_isAdmin?"/admin?v="+Date.now():"/home?v="+Date.now())}catch(err){message.textContent=err.message||"登录失败";button.disabled=false;button.textContent="登录"}});
+  location.replace(_rd&&_safe(_rd)?_rd:(_isAdmin?"/admin?v="+Date.now():"/home?v="+Date.now()))}catch(err){message.textContent=err.message||"登录失败";button.disabled=false;button.textContent="登录"}});
