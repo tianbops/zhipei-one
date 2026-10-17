@@ -761,7 +761,11 @@ textarea:disabled,
 .zp-business-nav-page .bottom-nav-plus .bottom-nav-icon svg{width:24px!important;height:24px!important;stroke-width:2.2!important}
 .zp-business-nav-page .bottom-nav-plus:active{background:transparent!important}
 .zp-business-nav-page .bottom-nav-plus:active .bottom-nav-icon{filter:brightness(1.15)!important}
-.zp-business-nav-page main{padding-bottom:calc(82px + env(safe-area-inset-bottom))!important}
+/* 底部让位已废弃（2026-10-18）：zp-shell / order-shell 均为 overflow:hidden 的 flex 外壳，
+   main 不再滚动，旧 82px 让位只会把滚动容器底边抬到导航横线上方 ~18px，
+   形成常驻黑色死区（任何滚动位置下内容都被悬空裁切）。
+   让位职责由各滚动容器自身 padding-bottom（72px + 安全区 = 导航 64px + 8px 呼吸位）接管。 */
+.zp-business-nav-page main{padding-bottom:0!important}
 @media(max-width:430px){
   .zp-business-nav-page .bottom-nav{width:100%!important}
 }
@@ -1177,8 +1181,9 @@ main.zp-shell > .topbar{
   overflow-y:auto;
   -webkit-overflow-scrolling:touch;
   overscroll-behavior-y:contain;
-  /* 顶部留 14px 与顶栏间距；底部 84px 让出常驻导航（min-height:64px + 安全区） */
-  padding:14px 0 calc(84px + env(safe-area-inset-bottom));
+  /* 顶部留 14px 与顶栏间距；底部 72px 让出常驻导航（64px 高 + 8px 呼吸位）。
+     旧值 84px 会在滚动到底时于横线上方多留 20px 空档。 */
+  padding:14px 0 calc(72px + env(safe-area-inset-bottom));
 }
 .zp-scroll::-webkit-scrollbar{width:4px}
 .zp-scroll::-webkit-scrollbar-thumb{background:#3A4654;border-radius:8px}
