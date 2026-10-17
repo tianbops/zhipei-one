@@ -16,14 +16,17 @@
        ◆ app.css 的 --soft=#202B36 其实是表面色（等同 surface-3），并非弱文字色，属历史命名错误。
          全仓核查确认它是死定义：admin.html 不加载 app.css 而用内联 --soft:#7F8A95，普通页面不引用 --soft，
          故已于 Commit 4B 直接删除，零视觉影响（无页面级 var(--soft) 解析值变化）。 */
-  --zp-bg:#05070A;
-  --zp-surface:#18212B;
-  --zp-surface-2:#11171D;
-  --zp-surface-3:#202B36;
-  --zp-line:#2A3540;
+  /* ===== 页面 / 表面 / 文字（Uber 风格中性灰阶 · 深色）=====
+     对标 Uber Base Web：近黑底 + 纯白文字 + 中性灰梯度，
+     主按钮深色模式反白（白底黑字）、浅色模式反黑（黑底白字）。 */
+  --zp-bg:#0A0A0A;
+  --zp-surface:#1A1A1A;
+  --zp-surface-2:#262626;
+  --zp-surface-3:#333333;
+  --zp-line:#2E2E2E;
   --zp-text:#FFFFFF;
-  --zp-muted:#B8C2CC;
-  --zp-soft:#7F8A95;
+  --zp-muted:#A8A8A8;
+  --zp-soft:#767676;
   --zp-radius:14px;
   /* 骨架微光条（加载占位）双外观 token：order_detail / home / data 三处
      页面级骨架共用同一取值。深色外观为暗灰微光；浅色外观在下方
@@ -43,26 +46,45 @@
   --zp-seg-btn-pad:0 8px;
   --zp-seg-btn-font:13px;
   --zp-seg-btn-gap:8px;
-  /* 主按钮语义色（P0-3 工具栏统一）：中性深石板色，与现有浅色主按钮 var(--zp-primary)（ui-unified.js:860）、
-     业务主按钮 #2E3B47 同源；消除「主按钮三处三种底色」的不一致（ui-unified.css:527 自承）。
-     P1-4 将据此补齐语义映射并写入 docs/外观与主题.md。 */
-  --zp-primary:#263746;
-  /* app.css 独有的两种半透明卡片底色（不同于不透明的 surface 系列，需独立保留） */
-  --zp-card-translucent:rgba(20,28,37,.80);
-  --zp-card-translucent-2:rgba(10,14,19,.88);
-  /* 不透明卡片底色（solid），管理员端 admin.html 的 .route/.dialog/.tab.active/.add 在用。
-     取值 #1C2530 介于 --zp-surface(#18212B) 与 --zp-surface-2(#11171D) 之间，是独立的实体卡片色，
-     与「半透明」的 --zp-card-translucent 取值不同、用途不同，切勿合并。
-     此前 admin.html 在内联 :root 写死 --card:#1C2530（游离于 --zp-* 体系外，主题改动传不到管理端）；
-     现提升为全局单一定义（Commit 4D），admin.html 改为 --card:var(--zp-card) 订阅本真相源。 */
-  --zp-card:#1C2530;
-
-  /* 列表分隔线（方案第十五章 Row）。
-     取值不是拍的：现有代码里 .account-row / .request-row / .page2-row 用
-     rgba(255,255,255,.06)，.data-store-row 用 .07，.order-store-item 用 .055 ——
-     三种并存，差异小到肉眼几乎看不出，但确实是三个不同的值、没有单一来源。
-     统一取 .06（占多数的那个），把三处都指向这里。 */
-  --zp-divider:rgba(255,255,255,.06);
+  /* ===== 主按钮（Uber 风格：深色反白 / 浅色反黑）=====
+     --zp-primary 是按钮「底色」：深色模式=白，浅色模式=近黑；
+     --zp-on-primary 是按钮上的「文字/图标色」，与底色反相。 */
+  --zp-primary:#FFFFFF;
+  --zp-on-primary:#0A0A0A;
+  /* 次按钮（描边 / 幽灵按钮） */
+  --zp-secondary-bg:#1F1F1F;
+  --zp-secondary-border:#404040;
+  --zp-secondary-text:#FFFFFF;
+  /* 禁用态 */
+  --zp-disabled-bg:#2A2A2A;
+  --zp-disabled-text:#6B6B6B;
+  /* 浮层遮罩（弹窗 / 底部面板上方的半透明黑幕） */
+  --zp-scrim:rgba(0,0,0,.72);
+  /* 键盘 / 焦点可见环 */
+  --zp-focus:#FFFFFF;
+  /* 交互态：hover（悬停）、active（按压） */
+  --zp-primary-hover:#EAEAEA;
+  --zp-primary-active:#D4D4D4;
+  --zp-secondary-hover:#2A2A2A;
+  --zp-secondary-active:#333333;
+  /* 半透明 / 不透明卡片底色（保留两种用途，取值随主题翻转） */
+  --zp-card-translucent:rgba(26,26,26,.82);
+  --zp-card-translucent-2:rgba(10,10,10,.88);
+  --zp-card:var(--zp-surface);
+  /* 列表分隔线（方案第十五章 Row，统一为 .10 单一来源） */
+  --zp-divider:rgba(255,255,255,.10);
+  /* ===== 功能状态色（成功 / 警告 / 错误 / 提示）=====
+     -strong 用于边框 / 图标 / 危险操作；-soft 用于底色微染；
+     --zp-danger 专用于「错误正文」（浅红，可读性优先），随主题翻转。 */
+  --zp-success:#2ECC71;
+  --zp-success-soft:rgba(46,204,113,.14);
+  --zp-warning:#F5A623;
+  --zp-warning-soft:rgba(245,166,35,.14);
+  --zp-error:#FF6B5E;
+  --zp-error-soft:rgba(255,107,94,.14);
+  --zp-danger:#FFB4AB;
+  --zp-info:#4DA3FF;
+  --zp-info-soft:rgba(77,163,255,.14);
 
   /* ===== 间距与控件尺寸（方案第九 / 十一 / 十二章） =====
      取值取自当前代码的实际分布，不是凭空定的理想值，避免引入尺寸跳变：
@@ -379,7 +401,7 @@ input,select,textarea{
   cursor:pointer;-webkit-tap-highlight-color:transparent;
 }
 .zp-password-eye svg{display:block;width:19px;height:19px;pointer-events:none}
-.zp-password-eye:active{background:var(--zp-primary);color:#E8EDF2}
+.zp-password-eye:active{background:var(--zp-primary);color:var(--zp-on-primary)}
 .zp-password-eye[hidden]{display:none!important}
 .field .zp-password-control{margin-top:0}
 .page2-label>.zp-password-control{margin-top:6px}
@@ -551,38 +573,77 @@ input,select,textarea{
  * 以便页面级"确有需要"的差异化仍可通过更高优先级表达。
  * ================================================================ */
 
-/* --- 5.1 主按钮：同色、同圆角、同字重 --- */
+/* --- 5.1 主按钮：Uber 招牌反色（深色白底黑字 / 浅色黑底白字） --- */
 .primary-btn,
 .login-submit,
 .page2-primary,
 .confirm-submit{
   background:var(--zp-primary);
+  border:1px solid var(--zp-primary);
   border-radius:var(--ui-control-radius);
-  color:#fff;
+  color:var(--zp-on-primary);
+  font-weight:650;
+  transition:background .15s ease,transform .12s ease;
+}
+.primary-btn:hover:not(:disabled),
+.login-submit:hover:not(:disabled),
+.page2-primary:hover:not(:disabled),
+.confirm-submit:hover:not(:disabled){
+  background:var(--zp-primary-hover);
+  border-color:var(--zp-primary-hover);
+}
+.primary-btn:active:not(:disabled),
+.login-submit:active:not(:disabled),
+.page2-primary:active:not(:disabled),
+.confirm-submit:active:not(:disabled){
+  background:var(--zp-primary-active);
+  border-color:var(--zp-primary-active);
+  transform:scale(.985);
 }
 
-/* --- 5.2 次按钮：同边框色、同圆角 --- */
+/* --- 5.2 次按钮：描边 / 幽灵（与背景分离，靠边框与文字色区分层级） --- */
 .secondary-btn,
 .page2-secondary{
+  background:var(--zp-secondary-bg);
+  border:1px solid var(--zp-secondary-border);
   border-radius:var(--ui-control-radius);
+  color:var(--zp-secondary-text);
+  font-weight:600;
+  transition:background .15s ease,transform .12s ease;
+}
+.secondary-btn:hover:not(:disabled),
+.page2-secondary:hover:not(:disabled){
+  background:var(--zp-secondary-hover);
+}
+.secondary-btn:active:not(:disabled),
+.page2-secondary:active:not(:disabled){
+  background:var(--zp-secondary-active);
+  transform:scale(.985);
 }
 
-/* --- 5.3 危险按钮：统一危险色（浅红/深红角色区分见区块头注释） --- */
+/* --- 5.3 危险按钮：统一危险色（错误正文用 --zp-error，随主题翻转保证对比度） --- */
 .page2-danger-btn,
 .page2-danger{
-  color:var(--ui-danger);
+  color:var(--zp-error);
 }
 .page2-danger-btn{
-  border-color:rgba(255,130,120,.5);
-  background:var(--ui-danger-soft);
+  border-color:var(--zp-error);
+  background:var(--zp-error-soft);
+}
+.page2-danger-btn:hover:not(:disabled){
+  background:color-mix(in srgb,var(--zp-error) 18%,transparent);
+}
+.page2-danger-btn:active:not(:disabled){
+  background:color-mix(in srgb,var(--zp-error) 28%,transparent);
+  transform:scale(.985);
 }
 
-/* --- 5.4 错误文案：统一为可读性更好的浅红 --- */
+/* --- 5.4 错误文案：统一为可读性更好的语义红（深色更亮 / 浅色更深） --- */
 .message.error,
 .login-message,
 .login-message[role=alert],
 .processing-error-message{
-  color:#FFB4AB;
+  color:var(--zp-error);
 }
 
 /* --- 5.5 空状态 / 状态文字：统一内边距与居中节奏 ---
@@ -605,11 +666,11 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 [tabindex]:focus-visible{
-  outline:2px solid #8793A0;
+  outline:2px solid var(--zp-focus);
   outline-offset:2px;
 }
 
-/* --- 5.7 禁用态：统一透明度与光标 --- */
+/* --- 5.7 禁用态：统一配色与光标 --- */
 button:disabled,
 input:disabled,
 select:disabled,
@@ -623,7 +684,21 @@ textarea:disabled,
 .page2-secondary:disabled,
 .secondary-btn:disabled,
 .confirm-submit:disabled{
-  opacity:.45;
+  background:var(--zp-disabled-bg);
+  border-color:var(--zp-disabled-bg);
+  color:var(--zp-disabled-text);
+  opacity:1;
+}
+
+/* --- 5.8 加载态：全站 spinner / 进度条统一用主色与中性灰 --- */
+.spinner,
+.zp-spinner{
+  border:2px solid var(--zp-line);
+  border-top-color:var(--zp-primary);
+}
+.loading,
+.is-loading{
+  color:var(--zp-muted);
 }
 
 /* --- 5.8 小标签 / 状态胶囊：同圆角、同行高 --- */
@@ -679,7 +754,7 @@ textarea:disabled,
    白 + 图标，按压提亮——不引入新的强调色。 */
 .zp-business-nav-page .bottom-nav-plus .bottom-nav-icon{
   width:52px!important;height:52px!important;border-radius:50%!important;
-  background:var(--zp-primary)!important;color:#FFFFFF!important;
+  background:var(--zp-primary)!important;color:var(--zp-on-primary)!important;
   transform:translateY(-16px)!important;
   box-shadow:0 8px 20px rgba(5,7,10,.45)!important;
 }
@@ -698,22 +773,46 @@ textarea:disabled,
 /* ===== 用户外观偏好：主题与全局字号 · 浅色完整覆盖 ===== */
 :root[data-zp-theme="light"]{
   color-scheme:light;
-  --zp-bg:#F4F6F8;
+  /* ===== 页面 / 表面 / 文字（Uber 风格中性灰阶 · 浅色）===== */
+  --zp-bg:#F2F2F2;
   --zp-surface:#FFFFFF;
-  --zp-surface-2:#F0F2F4;
-  --zp-surface-3:#E6EAEE;
-  --zp-line:#D7DDE3;
-  --zp-text:#17202A;
-  --zp-muted:#46515D;
-  --zp-soft:#66717D;
+  --zp-surface-2:#F5F5F5;
+  --zp-surface-3:#EAEAEA;
+  --zp-line:#E0E0E0;
+  --zp-text:#141414;
+  --zp-muted:#5A5A5A;
+  --zp-soft:#767676;
   --zp-danger:#C2453A; /* 浅色主题的错误/危险提示文字，避免沿用深色浅红造成低对比度 */
   --zp-card:#FFFFFF;
-  --zp-card-translucent:#FFFFFF;
-  --zp-card-translucent-2:#F0F2F4;
+  --zp-card-translucent:rgba(255,255,255,.82);
+  --zp-card-translucent-2:#F5F5F5;
   /* 骨架微光条浅色化：白卡上改为浅灰微光，与表面色系同族 */
   --zp-sk-a:#E4E9EE;
   --zp-sk-b:#EDF1F5;
-  --zp-divider:rgba(20,30,40,.12);
+  --zp-divider:rgba(0,0,0,.08);
+  /* ===== 主按钮反黑：黑底白字（Uber 浅色招牌）===== */
+  --zp-primary:#0A0A0A;
+  --zp-on-primary:#FFFFFF;
+  --zp-secondary-bg:#FFFFFF;
+  --zp-secondary-border:#D4D4D4;
+  --zp-secondary-text:#0A0A0A;
+  --zp-disabled-bg:#EAEAEA;
+  --zp-disabled-text:#A0A0A0;
+  --zp-scrim:rgba(0,0,0,.45);
+  --zp-focus:#0A0A0A;
+  --zp-primary-hover:#262626;
+  --zp-primary-active:#404040;
+  --zp-secondary-hover:#F0F0F0;
+  --zp-secondary-active:#E6E6E6;
+  /* 功能状态色（浅色：文字更深以保证对比度） */
+  --zp-success:#157A45;
+  --zp-success-soft:rgba(21,122,69,.12);
+  --zp-warning:#9A5B00;
+  --zp-warning-soft:rgba(154,91,0,.12);
+  --zp-error:#C2453A;
+  --zp-error-soft:rgba(194,69,58,.12);
+  --zp-info:#1E6FD0;
+  --zp-info-soft:rgba(30,111,208,.12);
   --ui-bg:var(--zp-bg);
   --ui-surface:var(--zp-surface);
   --ui-surface-2:var(--zp-surface-2);
@@ -723,12 +822,12 @@ textarea:disabled,
   --ui-muted:var(--zp-muted);
   --ui-soft:var(--zp-soft);
   /* 兼容旧页面和管理员内联样式使用的无前缀变量 */
-  --bg:#F4F6F8;
+  --bg:#F2F2F2;
   --card:#FFFFFF;
-  --card2:#F0F2F4;
-  --line:#D7DDE3;
-  --muted:#46515D;
-  --soft:#66717D;
+  --card2:#F5F5F5;
+  --line:#E0E0E0;
+  --muted:#5A5A5A;
+  --soft:#767676;
   --ui-danger:#B4232F;
   --ui-danger-soft:rgba(180,35,47,.08);
 }
