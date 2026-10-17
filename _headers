@@ -1,18 +1,30 @@
 # Cloudflare Pages 缓存头
-# Service Worker 绝不能被 CDN 缓存：否则新版本 SW 无法下发，客户端会一直用旧缓存。
+#
+# 背景：App/浏览器在大陆访问 pages.dev 属于跨境链路，单次往返 200~400ms，
+# 而 no-cache 会让每个 JS/CSS 都先回源做一次 304 校验，累积起来就是几秒到十几秒。
+#
+# 安全性依据：deploy.sh 里的 tools/stamp_assets.py 会给所有静态资源引用打上
+# ?v=<内容哈希>，内容一变 URL 就跟着变，所以对它们设 immutable 不会让用户拿到旧版。
+# （已核对：全部 71 处 JS/CSS 引用均带版本号）
+
+# Service Worker 绝不能被缓存：否则新版本 SW 无法下发，客户端会一直用旧缓存。
 /sw.js
   Cache-Control: no-store, no-cache, must-revalidate
 
-# HTML 保持回源校验，保证 SW 更新后页面引用到最新脚本
+# HTML 保持回源校验，保证 SW 与页面引用始终能拿到最新版本
 /*.html
   Cache-Control: no-cache
 
-# JS/CSS 每次回源校验（带 ETag，未变更时只回 304，几乎零开销）。
-# 此前 CF Pages 默认 max-age=14400：发布后用户浏览器最长 4 小时看不到新版本。
+# 带 ?v=<hash> 的静态资源：内容变更即换 URL，可放心长期缓存
 /js/*
-  Cache-Control: no-cache
+  Cache-Control: public, max-age=31536000, immutable
 /css/*
-  Cache-Control: no-cache
+  Cache-Control: public, max-age=31536000, immutable
+
+# 图片里 logo 带版本号，但 apple-touch-icon / delivery-route 不带，
+# 这里折中用 7 天，既省掉绝大部分往返，又不会把图标变更卡死太久
+/assets/*
+  Cache-Control: public, max-age=604800
 
 /manifest.json
   Cache-Control: public, max-age=3600
