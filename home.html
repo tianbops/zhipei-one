@@ -12,8 +12,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="智配One">
 <script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F4F6F8":"#05070A")}catch(e){}</script>
-<link rel="stylesheet" href="/css/app.css?v=9a61438e"><link rel="stylesheet" href="/css/ui-unified.css?v=f38f0b0d">
-<link rel="stylesheet" href="/css/home.css?v=0b9879ba">
+<link rel="stylesheet" href="/css/app.css?v=b7e727c7"><link rel="stylesheet" href="/css/ui-unified.css?v=ac1064bf">
+<link rel="stylesheet" href="/css/home.css?v=c624b75a">
 </head>
 <body>
 <main class="home-app">
@@ -135,13 +135,13 @@
   <input id="photoInput" type="file" accept="image/*" multiple hidden>
   <input id="documentInput" type="file" accept="application/pdf,.pdf" hidden>
 </main>
-<script src="/js/home.js?v=607f9a26"></script>
-<script src="/js/home-monthly.js?v=f1fe2451"></script>
+<script src="/js/home.js?v=6a7afcbd"></script>
+<script src="/js/home-monthly.js?v=bcfdba45"></script>
 <script>
 (()=>{const d=document.getElementById("todayDate");if(d){const f=new Intl.DateTimeFormat("zh-CN",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit",weekday:"short"});d.textContent=f.format(new Date()).replaceAll("/","-")}})();
 document.getElementById("logout")?.addEventListener("click",async()=>{const ok=window.zpConfirm?await window.zpConfirm("退出登录","确定要退出当前账号吗？","退出"):true;if(!ok)return;try{await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"})}finally{location.replace("/")}})
 </script>
-<script src="/js/ui-unified.js?v=de3a1442"></script>
-<script src="/js/pwa.js?v=864ce384"></script>
+<script src="/js/ui-unified.js?v=1f1d2fcf"></script>
+<script src="/js/pwa.js?v=a4a2dd07"></script>
 </body>
 </html>
