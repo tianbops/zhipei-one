@@ -42,6 +42,8 @@
 .about-hint .about-link{border:0;background:none;padding:0;color:var(--zp-text,#fff);font-size:13px;text-decoration:underline;cursor:pointer}
 .install-guide{margin-top:10px}
 .install-guide ol{margin:0;padding-left:20px;color:var(--zp-muted,#8B98A5);font-size:13px;line-height:22px}
+.account-page .account-danger-row-label{color:#FF8278}
+:root[data-zp-theme="light"] .account-page .account-danger-row-label{color:#C2453A}
 </style></head>
 <body><main class="page2 account-page zp-shell">
 <header class="topbar"><a class="app-back" href="/home" aria-label="返回"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><h1>账号设置</h1><span></span></header>
@@ -80,6 +82,10 @@
       <span class="about-row-label">修改密码</span>
       <svg class="about-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
     </button>
+    <button class="about-row" id="dangerToggle" type="button" aria-expanded="false" aria-controls="dangerBody">
+      <span class="about-row-label account-danger-row-label">注销账号</span>
+      <svg class="about-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
+    </button>
   </div>
   <div id="usernameBody" class="account-collapse-body" hidden>
     <label class="page2-label">新用户名<input id="newUsername" type="text" autocomplete="username" maxlength="32" placeholder="字母、数字、_-.，3-32位"></label>
@@ -94,6 +100,23 @@
     <p class="page2-soft">修改后需重新登录。</p>
     <button id="passwordBtn" class="page2-primary" type="button">保存新密码</button>
     <p id="passwordMessage" class="message" aria-live="polite"></p>
+  </div>
+  <div id="dangerBody" class="account-collapse-body" hidden>
+    <div id="deletePrompt" class="account-danger-box">
+      <strong>注销账号</strong>
+      <p>注销将永久删除本账号、线路绑定与待处理申请；线路与业务数据不受影响。</p>
+      <button id="deleteAccountBtn" class="page2-danger-btn" type="button">注销账号</button>
+    </div>
+    <div id="deleteConfirmPanel" class="account-delete-confirm" hidden>
+      <strong>确认注销账号</strong>
+      <p>此操作无法撤销，输入密码确认注销。</p>
+      <label class="page2-label">当前密码<input id="deletePassword" type="password" autocomplete="current-password" placeholder="请输入当前密码"></label>
+      <p id="deleteMessage" class="message" aria-live="polite"></p>
+      <div class="account-dialog-actions">
+        <button id="deleteCancel" class="page2-secondary" type="button">取消</button>
+        <button id="deleteConfirm" class="page2-danger-btn" type="button">确认注销</button>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -117,28 +140,6 @@
   </div>
 </section>
 
-<section id="dangerCard" class="page2-card account-danger-card">
-  <button id="dangerToggle" class="account-collapse-head account-danger-head" type="button" aria-expanded="false" aria-controls="dangerBody">
-    <span>危险操作</span><span class="account-collapse-icon" aria-hidden="true"></span>
-  </button>
-  <div id="dangerBody" class="account-collapse-body" hidden>
-    <div id="deletePrompt" class="account-danger-box">
-      <strong>注销账号</strong>
-      <p>注销将永久删除本账号、线路绑定与待处理申请；线路与业务数据不受影响。</p>
-      <button id="deleteAccountBtn" class="page2-danger-btn" type="button">注销账号</button>
-    </div>
-    <div id="deleteConfirmPanel" class="account-delete-confirm" hidden>
-      <strong>确认注销账号</strong>
-      <p>此操作无法撤销，输入密码确认注销。</p>
-      <label class="page2-label">当前密码<input id="deletePassword" type="password" autocomplete="current-password" placeholder="请输入当前密码"></label>
-      <p id="deleteMessage" class="message" aria-live="polite"></p>
-      <div class="account-dialog-actions">
-        <button id="deleteCancel" class="page2-secondary" type="button">取消</button>
-        <button id="deleteConfirm" class="page2-danger-btn" type="button">确认注销</button>
-      </div>
-    </div>
-  </div>
-</section>
 <section class="account-logout-section">
   <button id="logout" class="account-logout" type="button">退出登录</button>
   <p id="message" class="message"></p>
@@ -191,7 +192,7 @@ async function load(){
   const x=await api("/api/me"),me=x.user||{};
   $("username").textContent=me.username||"—";
   $("newUsername").placeholder="当前："+(me.username||"—");
-  if(me.role==="system_admin"||me.role==="admin")$("dangerCard").hidden=true;
+  if(me.role==="system_admin"||me.role==="admin")$("dangerToggle").hidden=true;
  }catch(e){if(e&&e.code==="HTTP_401"&&window.zpAuthFail){window.zpAuthFail("expired");return}show("message",e)}
 }
 
