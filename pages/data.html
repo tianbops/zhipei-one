@@ -8,9 +8,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="智配One"><script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F4F6F8":"#05070A")}catch(e){}</script>
-<link rel="stylesheet" href="/css/app.css?v=b7e727c7"><link rel="stylesheet" href="/css/ui-unified.css?v=ac1064bf"><link rel="stylesheet" href="/css/mobile-ui.css?v=6f7cf047"><link rel="stylesheet" href="/css/business-pages.css?v=793c6d62"><link rel="stylesheet" href="/css/data.css?v=ae05d5fa"></head>
-<body><main class="page2 data-page">
+<link rel="stylesheet" href="/css/app.css?v=b7e727c7"><link rel="stylesheet" href="/css/ui-unified.css?v=94e70e1a"><link rel="stylesheet" href="/css/mobile-ui.css?v=6f7cf047"><link rel="stylesheet" href="/css/business-pages.css?v=f9d81f48"><link rel="stylesheet" href="/css/data.css?v=9d40d41b"></head>
+<body><main class="page2 data-page zp-shell">
 <header class="topbar"><a class="app-back" href="/home" aria-label="返回"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><h1>数据资料</h1><button id="pageMenuBtn" class="data-page-menu-btn" type="button" aria-label="打开菜单">☰</button></header>
+<div class="zp-scroll">
 <section class="page2-card data-route-card"><div class="data-route-kicker">当前调度线路</div><div class="data-route-title"><h2 id="title">加载中…</h2><div id="summary" class="data-summary"><strong></strong></div></div><p id="hint" class="data-route-hint">正在读取线路资料</p></section>
 <div id="pageMenu" class="data-page-menu" hidden><button id="dataShareBtn" type="button">分享</button><button id="dataLogoutBtn" type="button">退出</button></div>
 <section class="card data-tools-card" id="tools" style="display:none">
@@ -55,6 +56,7 @@
 <div id="restorePreview" class="data-help data-preview">等待选择数据文件</div>
 <div class="data-import-actions"><button id="restoreCancel" type="button">取消</button><button id="restoreChoose" type="button">选择文件</button></div>
 </div></div>
+</div>
 </main>
 <script>
 const $=id=>document.getElementById(id);
