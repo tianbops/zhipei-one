@@ -1,6 +1,25 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
+<script>
+(function(){
+  function goLogin(){
+    try{document.documentElement.style.display="none"}catch(e){}
+    var p=location.pathname+location.search;
+    location.replace("/?redirect="+encodeURIComponent(p)+"&reason=auth");
+  }
+  try{
+    if(sessionStorage.getItem("zpAuth")!=="1"){goLogin();return;}
+  }catch(e){}
+  try{
+    window.addEventListener("pageshow",function(ev){
+      if(ev.persisted){try{if(sessionStorage.getItem("zpAuth")!=="1")location.replace("/?reason=auth");}catch(e){}}
+    });
+  }catch(e){}
+})();
+</script>
+
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#05070A">
@@ -344,7 +363,7 @@ async function load(){
 }
 load();
 </script>
-<script src="/js/ui-unified.js?v=1f1d2fcf"></script>
+<script src="/js/ui-unified.js?v=e18ccbd8"></script>
 <script src="/js/pwa.js?v=a4a2dd07"></script>
 </body>
 </html>
