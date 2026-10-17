@@ -10,11 +10,9 @@
 <meta name="apple-mobile-web-app-title" content="智配One"><script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F4F6F8":"#05070A")}catch(e){}</script>
 <link rel="stylesheet" href="/css/app.css?v=b7e727c7"><link rel="stylesheet" href="/css/ui-unified.css?v=94e70e1a"><link rel="stylesheet" href="/css/mobile-ui.css?v=6f7cf047"><link rel="stylesheet" href="/css/business-pages.css?v=f9d81f48">
 <style>
-.about-app{display:flex;align-items:center;gap:12px;margin:4px 0 14px}
-.about-logo{width:44px;height:44px;border-radius:10px;object-fit:contain}
-.about-app-copy{display:flex;flex-direction:column;gap:2px}
-.about-app-copy strong{font-size:16px}
-.about-app-copy span{font-size:12px;color:var(--zp-muted,#8B98A5)}
+.about-head{display:flex;align-items:baseline;justify-content:space-between;margin:0 0 4px}
+.about-head h2{margin:0}
+.about-version{font-size:12px;color:var(--zp-muted,#8B98A5)}
 .about-list{border-top:1px solid var(--zp-line,#2A3540)}
 .about-row{display:flex;align-items:center;width:100%;min-height:52px;padding:0;border:0;border-bottom:1px solid var(--zp-line,#2A3540);background:none;color:var(--zp-text,#fff);font-size:15px;text-align:left;cursor:pointer}
 .about-row:last-child{border-bottom:0}
@@ -30,15 +28,10 @@
 <header class="topbar"><a class="app-back" href="/home" aria-label="返回"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><h1>账号设置</h1><span></span></header>
 
 <div class="zp-scroll">
-<section class="page2-card account-info-card">
-  <h2>账号信息</h2>
-  <div class="account-row"><span>用户名</span><strong id="username">读取中…</strong></div>
-</section>
-
 <section class="page2-card appearance-card" aria-labelledby="appearanceTitle">
   <h2 id="appearanceTitle">外观与显示</h2>
   <div class="appearance-setting">
-    <div class="appearance-setting-copy"><strong>外观模式</strong><p class="page2-soft">跟随手机或系统的外观设置，也可手动切换。</p></div>
+    <div class="appearance-setting-copy"><strong>外观模式</strong></div>
     <div class="appearance-theme-options" role="group" aria-label="外观模式">
       <button type="button" class="appearance-theme-option" data-theme-choice="system" aria-pressed="false">跟随系统</button>
       <button type="button" class="appearance-theme-option" data-theme-choice="dark" aria-pressed="false">深色</button>
@@ -46,7 +39,7 @@
     </div>
   </div>
   <div class="appearance-setting appearance-font-setting">
-    <div class="appearance-setting-copy"><strong>全局文字大小</strong><p class="page2-soft">调整全站文字显示，设置会自动保存。</p></div>
+    <div class="appearance-setting-copy"><strong>全局文字大小</strong></div>
     <div class="appearance-font-control">
       <span aria-hidden="true" class="appearance-font-small">A</span>
       <input id="appearanceFontScale" type="range" min="0.85" max="1.3" step="0.05" value="1" aria-label="全局文字大小">
@@ -57,11 +50,7 @@
 </section>
 
 <section id="aboutCard" class="page2-card about-card">
-  <h2>关于</h2>
-  <div class="about-app">
-    <img class="about-logo" src="/assets/logo.webp?v=bd681172" alt="智配One">
-    <div class="about-app-copy"><strong>智配One</strong><span id="aboutVersion">网页版</span></div>
-  </div>
+  <div class="about-head"><h2>关于</h2><span id="aboutVersion" class="about-version">网页版</span></div>
   <div class="about-list">
     <button id="checkUpdateBtn" class="about-row" type="button">
       <span class="about-row-label">检查更新</span>
@@ -80,22 +69,25 @@
   </div>
 </section>
 
-<section class="page2-card account-edit-card">
-  <button class="account-collapse-head" id="usernameToggle" type="button" aria-expanded="false" aria-controls="usernameBody">
-    <span>用户名</span><span class="account-collapse-icon" aria-hidden="true"></span>
-  </button>
+<section class="page2-card account-sec-card">
+  <h2>账号与安全</h2>
+  <div class="about-list">
+    <div class="about-row"><span class="about-row-label">用户名</span><span class="about-row-value" id="username">读取中…</span></div>
+    <button class="about-row" id="usernameToggle" type="button" aria-expanded="false" aria-controls="usernameBody">
+      <span class="about-row-label">修改用户名</span>
+      <svg class="about-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
+    </button>
+    <button class="about-row" id="passwordToggle" type="button" aria-expanded="false" aria-controls="passwordBody">
+      <span class="about-row-label">修改密码</span>
+      <svg class="about-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
+    </button>
+  </div>
   <div id="usernameBody" class="account-collapse-body" hidden>
     <label class="page2-label">新用户名<input id="newUsername" type="text" autocomplete="username" maxlength="32" placeholder="字母、数字、_-.，3-32位"></label>
     <p class="page2-soft">修改后需重新登录。</p>
     <button id="renameBtn" class="page2-primary" type="button">保存用户名</button>
     <p id="renameMessage" class="message" aria-live="polite"></p>
   </div>
-</section>
-
-<section class="page2-card account-edit-card">
-  <button class="account-collapse-head" id="passwordToggle" type="button" aria-expanded="false" aria-controls="passwordBody">
-    <span>密码与安全</span><span class="account-collapse-icon" aria-hidden="true"></span>
-  </button>
   <div id="passwordBody" class="account-collapse-body" hidden>
     <label class="page2-label">当前密码<input id="currentPassword" type="password" autocomplete="current-password" placeholder="请输入当前密码"></label>
     <label class="page2-label">新密码<input id="newPassword" type="password" autocomplete="new-password" minlength="6" maxlength="128" placeholder="至少6位"></label>
