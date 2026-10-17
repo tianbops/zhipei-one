@@ -34,7 +34,7 @@ const PRECACHE = [
   "/js/history.js",
   "/js/order_detail.js",
   "/js/register.js",
-  "/assets/logo.png",
+  "/assets/logo.webp",
   "/assets/icons/icon-192.png",
   "/assets/icons/icon-512.png"
 ];
