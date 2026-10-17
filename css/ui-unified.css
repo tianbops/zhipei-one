@@ -1166,11 +1166,14 @@ main.zp-shell{
 }
 /* 顶栏：不再 sticky/fixed，作为不滚动的 flex 子项，绝无抖动；
    左右缩进由外壳的 padding 提供，这里只补顶部安全区与底色。 */
-main.zp-shell > .topbar{
+/* 顶栏统一规范（单一来源）：安全区只在此声明一次，覆盖全部外壳
+   （zp-shell 与 order-shell 等）。各页旧类仅保留布局差异，不再重复声明安全区。 */
+main > .topbar{
   flex:0 0 auto;
   position:static;
   z-index:100;
   padding-top:env(safe-area-inset-top);
+  min-height:var(--zp-header-height);
   background:var(--zp-bg);
 }
 /* 内部唯一滚动容器：flex:1 撑满剩余高度，min-height:0 是 flex 列中
