@@ -104,7 +104,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 }
 
 /* 数据资料 2.0 顶部导航与菜单 */
-.data-page .topbar{position:sticky;top:0;z-index:100;padding:env(safe-area-inset-top) 0 8px;height:auto;min-height:var(--zp-header-height);background:var(--zp-bg);margin-bottom:8px}
+.data-page .topbar{z-index:100;padding:env(safe-area-inset-top) 0 8px;height:auto;min-height:var(--zp-header-height);background:var(--zp-bg);margin-bottom:8px}
 .data-page .topbar h1{margin:0;text-align:center;font-weight:650}
 .data-page .app-back{width:var(--zp-control-height);height:var(--zp-control-height);display:flex;align-items:center;justify-content:center;border:1px solid #2A3540;border-radius:11px;background:rgba(10,14,19,.88);color:#fff;text-decoration:none;box-sizing:border-box}
 .data-page-menu-btn{width:var(--zp-control-height);height:var(--zp-control-height);display:flex;align-items:center;justify-content:center;border:1px solid #2A3540;border-radius:11px;background:rgba(10,14,19,.88);color:#fff;text-decoration:none;box-sizing:border-box}
