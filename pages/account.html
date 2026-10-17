@@ -10,9 +10,20 @@
 <meta name="apple-mobile-web-app-title" content="智配One"><script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F4F6F8":"#05070A")}catch(e){}</script>
 <link rel="stylesheet" href="/css/app.css?v=b7e727c7"><link rel="stylesheet" href="/css/ui-unified.css?v=94e70e1a"><link rel="stylesheet" href="/css/mobile-ui.css?v=6f7cf047"><link rel="stylesheet" href="/css/business-pages.css?v=f9d81f48">
 <style>
-.install-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
-.install-actions .page2-primary,.install-actions .page2-secondary{margin-top:0}
-.install-guide{margin-top:14px}
+.about-app{display:flex;align-items:center;gap:12px;margin:4px 0 14px}
+.about-logo{width:44px;height:44px;border-radius:10px;object-fit:contain}
+.about-app-copy{display:flex;flex-direction:column;gap:2px}
+.about-app-copy strong{font-size:16px}
+.about-app-copy span{font-size:12px;color:var(--zp-muted,#8B98A5)}
+.about-list{border-top:1px solid var(--zp-line,#2A3540)}
+.about-row{display:flex;align-items:center;width:100%;min-height:52px;padding:0;border:0;border-bottom:1px solid var(--zp-line,#2A3540);background:none;color:var(--zp-text,#fff);font-size:15px;text-align:left;cursor:pointer}
+.about-row:last-child{border-bottom:0}
+.about-row-label{flex:1}
+.about-row-value{color:var(--zp-muted,#8B98A5);font-size:13px;margin-right:8px}
+.about-arrow{width:16px;height:16px;flex:none;fill:none;stroke:var(--zp-muted,#8B98A5);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.about-hint{margin:10px 0 0;color:var(--zp-muted,#8B98A5);font-size:13px;line-height:20px}
+.about-hint .about-link{border:0;background:none;padding:0;color:var(--zp-text,#fff);font-size:13px;text-decoration:underline;cursor:pointer}
+.install-guide{margin-top:10px}
 .install-guide ol{margin:0;padding-left:20px;color:var(--zp-muted,#8B98A5);font-size:13px;line-height:22px}
 </style></head>
 <body><main class="page2 account-page zp-shell">
@@ -45,13 +56,25 @@
   </div>
 </section>
 
-<section id="installCard" class="page2-card" hidden>
-  <h2>下载应用</h2>
-  <p id="installHint" class="page2-soft">安装到手机桌面，像 App 一样直接打开，无需每次输网址。</p>
-  <div id="installActions" class="install-actions">
-    <button id="installBtn" class="page2-primary" type="button" hidden>立即安装</button>
-    <button id="installCopyBtn" class="page2-secondary" type="button" hidden>复制网址</button>
+<section id="aboutCard" class="page2-card about-card">
+  <h2>关于</h2>
+  <div class="about-app">
+    <img class="about-logo" src="/assets/logo.webp?v=bd681172" alt="智配One">
+    <div class="about-app-copy"><strong>智配One</strong><span id="aboutVersion">网页版</span></div>
   </div>
+  <div class="about-list">
+    <button id="checkUpdateBtn" class="about-row" type="button">
+      <span class="about-row-label">检查更新</span>
+      <span class="about-row-value" id="updateState">检查最新版本</span>
+      <svg class="about-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
+    </button>
+    <button id="installRow" class="about-row" type="button" hidden>
+      <span class="about-row-label">下载应用</span>
+      <span class="about-row-value">安装到桌面</span>
+      <svg class="about-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
+    </button>
+  </div>
+  <p id="installHint" class="about-hint" hidden><span id="installHintText"></span> <button id="installCopyBtn" class="about-link" type="button" hidden>复制网址</button></p>
   <div id="installGuide" class="install-guide" hidden>
     <ol id="installGuideSteps"></ol>
   </div>
@@ -204,22 +227,57 @@ $("deleteConfirm").onclick=async()=>{
  }catch(e){show("deleteMessage",e);$("deleteConfirm").disabled=false}
 };
 
-/* 下载应用入口：全浏览器适配。
-   - 已安装（standalone）→ 隐藏
-   - 微信内置浏览器 → 引导「在浏览器中打开」+ 复制网址
-   - iOS Safari → 分享→添加到主屏幕 手动引导
-   - Android/桌面 Chromium（含 UC/QQ/360/夸克/华为/小米等国产浏览器）
-     → beforeinstallprompt 一键安装；未触发则给菜单引导 + 复制网址兜底 */
+/* 关于：版本号 + 检查更新 + 下载应用（PWA 安装），全浏览器适配。
+   - 版本号读 /version.json（部署时更新）
+   - 检查更新：触发 Service Worker 检查，有等待中的新版本就刷新
+   - 下载应用：已安装隐藏；微信/iOS 给步骤引导；Android/桌面 Chromium
+     用 beforeinstallprompt 一键安装，未触发则精简兜底提示 + 复制网址 */
 (function(){
- const card=$("installCard"),btn=$("installBtn"),copyBtn=$("installCopyBtn"),
-   hint=$("installHint"),guide=$("installGuide"),steps=$("installGuideSteps");
+ const card=$("aboutCard"),row=$("installRow"),copyBtn=$("installCopyBtn"),
+   hint=$("installHint"),hintText=$("installHintText"),guide=$("installGuide"),steps=$("installGuideSteps"),
+   checkBtn=$("checkUpdateBtn"),state=$("updateState"),verEl=$("aboutVersion");
  if(!card)return;
  const installed=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
- if(installed)return;
- const ua=navigator.userAgent||"";
- const isWeChat=/MicroMessenger/i.test(ua);
- const isIOS=/iPad|iPhone|iPod/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
- card.hidden=false;
+
+ /* 版本号 */
+ fetch("/version.json?ts="+Date.now(),{cache:"no-store"}).then(r=>r.json()).then(v=>{
+  if(v&&v.version)verEl.textContent="版本 v"+v.version;
+ }).catch(()=>{});
+
+ /* 检查更新 */
+ let wantReload=false;
+ if("serviceWorker" in navigator){
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{
+   if(wantReload){wantReload=false;location.reload()}
+  });
+ }
+ checkBtn.onclick=async()=>{
+  state.textContent="检查中…";checkBtn.disabled=true;
+  try{
+   if("serviceWorker" in navigator){
+    const reg=await navigator.serviceWorker.getRegistration();
+    if(reg){
+     await reg.update();
+     if(reg.waiting){
+      state.textContent="发现新版本，正在刷新…";wantReload=true;
+      try{reg.waiting.postMessage("SKIP_WAITING")}catch(e){}
+      setTimeout(()=>location.reload(),1200);
+      return;
+     }
+    }
+   }
+   await fetch("/version.json?ts="+Date.now(),{cache:"no-store"});
+   state.textContent="已是最新 ✓";
+  }catch(e){state.textContent="网络异常，稍后再试"}
+  setTimeout(()=>{state.textContent="检查最新版本";checkBtn.disabled=false},2600);
+ };
+
+ /* 下载应用 */
+ function showHint(text,withCopy){
+  hintText.textContent=text;
+  copyBtn.hidden=!withCopy;
+  hint.hidden=false;
+ }
  function showSteps(list){
   steps.innerHTML="";
   list.forEach(t=>{const li=document.createElement("li");li.textContent=t;steps.appendChild(li)});
@@ -233,37 +291,46 @@ $("deleteConfirm").onclick=async()=>{
    document.body.appendChild(ta);ta.select();document.execCommand("copy");ta.remove();
   }
   if(window.zpToast)window.zpToast("网址已复制，请粘贴到浏览器打开","success");
-  else hint.textContent="网址已复制："+url;
  }
- if(isWeChat){
-  hint.textContent="微信内无法安装应用，请按以下步骤在浏览器中打开：";
-  showSteps(["点击右上角「···」","选择「在浏览器中打开」","在浏览器中打开后即可安装到桌面"]);
-  copyBtn.hidden=false;copyBtn.onclick=copyUrl;
-  return;
+ copyBtn.onclick=copyUrl;
+
+ const ua=navigator.userAgent||"";
+ const isWeChat=/MicroMessenger/i.test(ua);
+ const isIOS=/iPad|iPhone|iPod/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+
+ if(!installed){
+  if(isWeChat){
+   row.hidden=false;
+   row.onclick=()=>{guide.hidden=true;showHint("微信内无法直接安装，步骤：",true);
+    showSteps(["点右上角「···」","选「在浏览器中打开」","在浏览器中打开后再安装到桌面"])};
+  }else if(isIOS){
+   row.hidden=false;
+   row.onclick=()=>{guide.hidden=true;showHint("在 Safari 中添加到主屏幕：",false);
+    showSteps(["点底部「分享」按钮","选「添加到主屏幕」","点「添加」，之后从桌面打开"])};
+  }else{
+   let deferred=null;
+   window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferred=e});
+   row.hidden=false;
+   row.onclick=async()=>{
+    guide.hidden=true;
+    if(deferred){
+     const ev=deferred;deferred=null;
+     try{
+      ev.prompt();
+      const r=await ev.userChoice;
+      if(r&&r.outcome==="accepted"){row.hidden=true;hint.hidden=true;if(window.zpToast)window.zpToast("已添加到桌面","success")}
+      else showHint("已取消，稍后可再点「下载应用」。",false);
+     }catch(e){}
+    }else{
+     showHint("未自动弹出安装？在浏览器菜单（或工具箱）中选「添加到主屏幕 / 安装应用」，也可复制网址换浏览器打开。",true);
+    }
+   };
+  }
  }
- if(isIOS){
-  hint.textContent="在 Safari 中按以下步骤添加到主屏幕：";
-  showSteps(["点击底部「分享」按钮","选择「添加到主屏幕」","点击「添加」即可从桌面打开"]);
-  return;
- }
- let deferred=null;
- window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferred=e;btn.hidden=false});
- copyBtn.hidden=false;copyBtn.onclick=copyUrl;
- setTimeout(()=>{
-  if(deferred)return;
-  hint.textContent="当前浏览器未自动弹出安装，请在浏览器菜单（或工具箱）中选择「添加到主屏幕 / 安装应用」；也可复制网址换浏览器打开。";
- },1500);
- btn.onclick=async()=>{
-  if(!deferred)return;
-  btn.disabled=true;
-  const ev=deferred;deferred=null;
-  try{ev.prompt();const r=await ev.userChoice;
-   hint.textContent=r&&r.outcome==="accepted"?"已添加到桌面，可从桌面图标直接打开。":"已取消，稍后可在浏览器菜单中再次添加。";
-   btn.hidden=true;
-   try{if(window.zpToast)window.zpToast(r&&r.outcome==="accepted"?"已添加到桌面":"已取消","success")}catch{}
-  }finally{btn.disabled=false}
- };
- window.addEventListener("appinstalled",()=>{card.hidden=true;btn.hidden=true});
+ window.addEventListener("appinstalled",()=>{
+  row.hidden=true;hint.hidden=true;guide.hidden=true;
+  if(window.zpToast)window.zpToast("已添加到桌面","success");
+});
 })();
 
 load();
