@@ -12,11 +12,11 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="智配One">
 <script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F4F6F8":"#05070A")}catch(e){}</script>
-<link rel="stylesheet" href="/css/app.css?v=b7e727c7"><link rel="stylesheet" href="/css/ui-unified.css?v=ac1064bf">
-<link rel="stylesheet" href="/css/mobile-ui.css?v=6f7cf047"><link rel="stylesheet" href="/css/business-pages.css?v=793c6d62">
+<link rel="stylesheet" href="/css/app.css?v=b7e727c7"><link rel="stylesheet" href="/css/ui-unified.css?v=94e70e1a">
+<link rel="stylesheet" href="/css/mobile-ui.css?v=6f7cf047"><link rel="stylesheet" href="/css/business-pages.css?v=f9d81f48">
 <style>
 .dispatch-page{min-height:100dvh;padding:0 16px 88px;background:#05070A}
-.dispatch-page .topbar{position:sticky;top:0;z-index:10}
+.dispatch-page .topbar{z-index:10}
 @media(max-width:380px){.dispatch-page{padding-left:12px;padding-right:12px}}
 .dispatch-intro{padding:18px 0 10px}
 .dispatch-intro h2{margin:0;font-size:20px;line-height:1.35}
@@ -163,9 +163,10 @@
 </style>
 </head>
 <body>
-<main class="dispatch-page">
+<main class="dispatch-page zp-shell">
 <header class="topbar"><a class="app-back" href="/home" aria-label="返回"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><h1>线路</h1><span></span></header>
 
+<div class="zp-scroll">
 <section class="dispatch-intro">
   <h2>线路工作区</h2>
   <p>管理当前配送线路与线路资料。</p>
@@ -211,6 +212,7 @@
     <span class="bottom-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M5 20c.8-3.2 3.1-5 7-5s6.2 1.8 7 5"/></svg></span><span>我的</span>
   </a>
 </nav>
+</div>
 </main>
 
 <div id="routeSheetBackdrop" class="dispatch-sheet-backdrop" aria-hidden="true">
