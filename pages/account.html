@@ -82,7 +82,7 @@
       <svg class="about-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
     </button>
   </div>
-  <p id="installHint" class="about-hint" hidden><span id="installHintText"></span> <button id="installCopyBtn" class="about-link" type="button" hidden>复制网址</button></p>
+  <p id="installHint" class="about-hint" hidden><span id="installHintText"></span> <a id="installDlLink" class="about-link" target="_blank" rel="noopener" hidden></a> <button id="installCopyBtn" class="about-link" type="button" hidden>复制网址</button></p>
   <div id="installGuide" class="install-guide" hidden>
     <ol id="installGuideSteps"></ol>
   </div>
@@ -245,7 +245,7 @@ $("deleteConfirm").onclick=async()=>{
      用 beforeinstallprompt 一键安装，未触发则精简兜底提示 + 复制网址 */
 (function(){
  const card=$("aboutCard"),row=$("installRow"),copyBtn=$("installCopyBtn"),
-   hint=$("installHint"),hintText=$("installHintText"),guide=$("installGuide"),steps=$("installGuideSteps"),
+   hint=$("installHint"),hintText=$("installHintText"),installDlLink=$("installDlLink"),guide=$("installGuide"),steps=$("installGuideSteps"),
    checkBtn=$("checkUpdateBtn"),state=$("updateState"),verEl=$("aboutVersion");
  if(!card)return;
  const installed=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
@@ -284,8 +284,10 @@ $("deleteConfirm").onclick=async()=>{
  };
 
  /* 下载应用 */
- function showHint(text,withCopy){
+ function showHint(text,withCopy,dl){
   hintText.textContent=text;
+  if(dl){installDlLink.textContent=dl.t;installDlLink.href=dl.u;installDlLink.hidden=false;}
+  else{installDlLink.hidden=true;}
   copyBtn.hidden=!withCopy;
   hint.hidden=false;
  }
@@ -333,7 +335,15 @@ $("deleteConfirm").onclick=async()=>{
       else showHint("已取消，稍后可再点「下载应用」。",false);
      }catch(e){}
     }else{
-     showHint("未自动弹出安装？在浏览器菜单（或工具箱）中选「添加到主屏幕 / 安装应用」，也可复制网址换浏览器打开。",true);
+     // 未触发系统安装提示：提供 GitHub 手机端工程（tianbops/zhipei）的安装包下载地址
+     (async()=>{
+      let u="https://github.com/tianbops/zhipei/releases";
+      try{
+       const r=await fetch("https://api.github.com/repos/tianbops/zhipei/releases/latest",{cache:"no-store"});
+       if(r.ok){const j=await r.json();const apks=(j.assets||[]).filter(x=>/\.apk$/i.test(x.name));const rel=apks.find(x=>/release/i.test(x.name))||apks[0];if(rel&&rel.browser_download_url)u=rel.browser_download_url;}
+      }catch(e){}
+      showHint("下载安装包：",true,{t:"GitHub 下载",u:u});
+     })();
     }
    };
   }
