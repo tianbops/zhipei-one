@@ -1185,8 +1185,10 @@ main.zp-shell > .topbar{
      旧值 84px 会在滚动到底时于横线上方多留 20px 空档。 */
   padding:14px 0 calc(72px + env(safe-area-inset-bottom));
 }
-.zp-scroll::-webkit-scrollbar{width:4px}
-.zp-scroll::-webkit-scrollbar-thumb{background:#3A4654;border-radius:8px}
-.zp-scroll::-webkit-scrollbar-track{background:transparent}
+/* 全局隐藏滚动条（移动端成熟做法，对标 iOS 原生应用）：
+   滚动与惯性完全不变，位置反馈由手势/边缘效应承担；常驻滚动条属桌面
+   习惯，在 WebView 下会沿内容右缘形成一条深色竖线，影响视觉。 */
+*{scrollbar-width:none}
+*::-webkit-scrollbar{display:none;width:0;height:0}
 /* 线路页：首项 dispatch-intro 自带 18px 上间距，避免与 .zp-scroll 的 14px 叠加 */
 main.zp-shell.dispatch-page .zp-scroll{padding-top:0}
