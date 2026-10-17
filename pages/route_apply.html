@@ -1,6 +1,25 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
+<script>
+(function(){
+  function goLogin(){
+    try{document.documentElement.style.display="none"}catch(e){}
+    var p=location.pathname+location.search;
+    location.replace("/?redirect="+encodeURIComponent(p)+"&reason=auth");
+  }
+  try{
+    if(sessionStorage.getItem("zpAuth")!=="1"){goLogin();return;}
+  }catch(e){}
+  try{
+    window.addEventListener("pageshow",function(ev){
+      if(ev.persisted){try{if(sessionStorage.getItem("zpAuth")!=="1")location.replace("/?reason=auth");}catch(e){}}
+    });
+  }catch(e){}
+})();
+</script>
+
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>线路申请 · 智配One</title>
@@ -67,7 +86,7 @@ async function load(){
    const statusText={pending:"待审核",approved:"已批准",rejected:"已驳回"};
    $("requests").innerHTML=qs.requests?.length?qs.requests.slice().reverse().map(x=>'<div class="request-row"><strong>'+esc2(rName(routeMap[x.routeId]||x.routeId))+'</strong> · '+(x.duty==="driver"?"司机":"配送")+' · '+(statusText[x.status]||x.status)+(x.reviewedAt?" · "+new Date(x.reviewedAt).toLocaleString():"")+"</div>").join(""):'<div class="empty">暂无线路申请记录</div>';
   }catch(e){$("requests").textContent="申请记录加载失败："+msg(e)}
- }catch(e){$("route").innerHTML='<option value="">线路加载失败</option>';$("requests").textContent="线路加载失败："+msg(e);$("message").textContent=msg(e)}
+ }catch(e){if(e&&e.code==="HTTP_401"&&window.zpAuthFail){window.zpAuthFail("expired");return}$("route").innerHTML='<option value="">线路加载失败</option>';$("requests").textContent="线路加载失败："+msg(e);$("message").textContent=msg(e)}
 }
 $("unbind").onclick=async()=>{
  if(!(await zpConfirm("解除线路绑定","确定解除当前线路绑定吗？解除后需要重新申请并经管理员审核。","解除")))return;
@@ -83,7 +102,7 @@ $("submit").onclick=async()=>{
 };
 load();
 </script>
-<script src="/js/ui-unified.js?v=1f1d2fcf"></script>
+<script src="/js/ui-unified.js?v=e18ccbd8"></script>
 <script src="/js/pwa.js?v=a4a2dd07"></script>
 </body>
 </html>
