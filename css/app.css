@@ -78,7 +78,7 @@ body {
   padding: 0 16px;
   border: 0;
   border-radius: 11px;
-  background: rgba(28,37,47,.82);
+  background: var(--zp-primary);
   color: #fff;
   text-align: center;
   font-size: 15px;
@@ -447,7 +447,7 @@ body {
 }
 
 .data-import-actions #importSave {
-  background: rgba(28,37,47,.82);
+  background: var(--zp-primary);
 }
 
 .request-row {
@@ -626,7 +626,7 @@ body {
   margin: 0;
   border: 0;
   border-radius: 14px;
-  background: #263746;
+  background: var(--zp-primary);
   color: #fff;
   font-size: 16px;
   font-weight: 600;
@@ -734,7 +734,7 @@ body {
 :root[data-zp-theme="light"] .data-textarea{background:#FFFFFF!important;color:#17202A!important;border-color:#C9D1D9!important}
 :root[data-zp-theme="light"] .login-field input:focus{background:#FFFFFF!important;border-color:#7D8A98!important}
 :root[data-zp-theme="light"] .password-toggle{color:#536170}
-:root[data-zp-theme="light"] .login-submit{background:#263746!important;color:#FFFFFF!important}
+:root[data-zp-theme="light"] .login-submit{background:var(--zp-primary)!important;color:#FFFFFF!important}
 :root[data-zp-theme="light"] .login-links a{color:var(--zp-text)!important}
 
 /* ---- 登录系页面浅色补充（index/register/setup 不加载 ui-unified.js，
