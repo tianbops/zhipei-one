@@ -136,7 +136,7 @@
     <div id="installRow" class="about-row about-row-install" hidden>
       <span id="installLabelBtn" class="about-row-label about-row-install-label" role="button" tabindex="0">下载应用</span>
       <span class="about-row-actions">
-        <a id="installDlLink" class="about-link" target="_blank" rel="noopener" hidden>GitHub 下载</a>
+        <a id="installDlLink" class="about-link" href="/downloads/zhipei-one-1.0.7-release.apk" download="zhipei-one-1.0.7-release.apk" hidden>安卓安装包</a>
         <button id="installCopyBtn" class="about-link" type="button">复制网址</button>
       </span>
     </div>
@@ -248,7 +248,7 @@ $("deleteConfirm").onclick=async()=>{
 /* 关于：版本号 + 检查更新 + 下载应用（PWA 安装），全浏览器适配。
    - 版本号读 /version.json（部署时更新）
    - 检查更新：触发 Service Worker 检查，有等待中的新版本就刷新
-   - 下载应用：单行展示，左「下载应用」点击触发安装/引导，右「GitHub 下载」APK 直链 +「复制网址」；
+   - 下载应用：单行展示，左「下载应用」点击触发安装/引导，右「安卓安装包」同域直链 +「复制网址」；
      已安装隐藏；微信/iOS 给步骤引导；Android/桌面 Chromium 用 beforeinstallprompt 一键安装 */
 (function(){
  const card=$("aboutCard"),row=$("installRow"),copyBtn=$("installCopyBtn"),
@@ -311,15 +311,8 @@ $("deleteConfirm").onclick=async()=>{
  const isWeChat=/MicroMessenger/i.test(ua);
  const isIOS=/iPad|iPhone|iPod/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
 
- /* 右侧下载直链：默认 Releases 页，异步替换为手机端工程（tianbops/zhipei）最新 APK（优先 release 包） */
- installDlLink.href="https://github.com/tianbops/zhipei/releases";
+ /* 右侧下载直链：站点同域托管的 Android 安装包（/downloads/，国内下载更稳，不依赖 GitHub） */
  if(isIOS)installDlLink.hidden=true;else installDlLink.hidden=false;
- fetch("https://api.github.com/repos/tianbops/zhipei/releases/latest",{cache:"no-store"})
-  .then(r=>r.ok?r.json():null).then(j=>{
-   const apks=(j&&j.assets||[]).filter(x=>/\.apk$/i.test(x.name));
-   const rel=apks.find(x=>/release/i.test(x.name))||apks[0];
-   if(rel&&rel.browser_download_url)installDlLink.href=rel.browser_download_url;
-  }).catch(()=>{});
 
  if(!installed){
   row.hidden=false;
@@ -341,7 +334,7 @@ $("deleteConfirm").onclick=async()=>{
      }).catch(()=>{});
     }catch(e){}
    }else{
-    if(window.zpToast)window.zpToast("如未自动安装，请点右侧「GitHub 下载」","info");
+    if(window.zpToast)window.zpToast("如未自动安装，请点右侧「安卓安装包」","info");
    }
   };
   label.addEventListener("click",labelClick);
