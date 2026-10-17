@@ -12,11 +12,11 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="智配One">
 <script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F4F6F8":"#05070A")}catch(e){}</script>
-<link rel="stylesheet" href="/css/app.css?v=b7e727c7"><link rel="stylesheet" href="/css/ui-unified.css?v=ac1064bf">
-<link rel="stylesheet" href="/css/home.css?v=c624b75a">
+<link rel="stylesheet" href="/css/app.css?v=b7e727c7"><link rel="stylesheet" href="/css/ui-unified.css?v=94e70e1a">
+<link rel="stylesheet" href="/css/home.css?v=20bba277">
 </head>
 <body>
-<main class="home-app">
+<main class="home-app zp-shell">
   <header class="topbar">
     <div class="home-brand">
       <strong>智配One</strong>
@@ -24,7 +24,8 @@
     </div>
   </header>
 
-  <section class="task-card" aria-labelledby="todayTitle">
+  <div class="zp-scroll">
+<section class="task-card" aria-labelledby="todayTitle">
     <div class="task-title">
       <div class="task-name">
         <span id="todayTitle">今日配送</span>
@@ -134,6 +135,7 @@
   <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden>
   <input id="photoInput" type="file" accept="image/*" multiple hidden>
   <input id="documentInput" type="file" accept="application/pdf,.pdf" hidden>
+</div>
 </main>
 <script src="/js/home.js?v=6a7afcbd"></script>
 <script src="/js/home-monthly.js?v=bcfdba45"></script>
