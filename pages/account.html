@@ -136,7 +136,7 @@
     <div id="installRow" class="about-row about-row-install" hidden>
       <span id="installLabelBtn" class="about-row-label about-row-install-label" role="button" tabindex="0">下载应用</span>
       <span class="about-row-actions">
-        <a id="installDlLink" class="about-link" href="/downloads/zhipei-one-1.0.7-release.apk" download="zhipei-one-1.0.7-release.apk" hidden>安卓安装包</a>
+        <a id="installDlLink" class="about-link" hidden>安卓安装包</a>
         <button id="installCopyBtn" class="about-link" type="button">复制网址</button>
       </span>
     </div>
@@ -248,7 +248,7 @@ $("deleteConfirm").onclick=async()=>{
 /* 关于：版本号 + 检查更新 + 下载应用（PWA 安装），全浏览器适配。
    - 版本号读 /version.json（部署时更新）
    - 检查更新：触发 Service Worker 检查，有等待中的新版本就刷新
-   - 下载应用：单行展示，左「下载应用」点击触发安装/引导，右「安卓安装包」同域直链 +「复制网址」；
+   - 下载应用：单行展示，左「下载应用」点击触发安装/引导，右「安卓安装包」同域直链（读 /downloads/manifest.json）+「复制网址」；
      已安装隐藏；微信/iOS 给步骤引导；Android/桌面 Chromium 用 beforeinstallprompt 一键安装 */
 (function(){
  const card=$("aboutCard"),row=$("installRow"),copyBtn=$("installCopyBtn"),
@@ -311,8 +311,22 @@ $("deleteConfirm").onclick=async()=>{
  const isWeChat=/MicroMessenger/i.test(ua);
  const isIOS=/iPad|iPhone|iPod/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
 
- /* 右侧下载直链：站点同域托管的 Android 安装包（/downloads/，国内下载更稳，不依赖 GitHub） */
- if(isIOS)installDlLink.hidden=true;else installDlLink.hidden=false;
+ /* 右侧下载直链：读 /downloads/manifest.json 动态生成（发新版只需替换 APK + 更新清单，页面零改动）。
+    manifest: {version, file}；file 为 /downloads/ 下的稳定文件名。iOS 不显示（APK 仅 Android 适用）。 */
+ function setApk(file,ver){
+  installDlLink.href="/downloads/"+file;
+  installDlLink.setAttribute("download","zhipei-one-v"+(ver||"latest")+".apk");
+  installDlLink.textContent="安卓安装包"+(ver?" v"+ver:"");
+  installDlLink.hidden=false;
+ }
+ if(isIOS){
+  installDlLink.hidden=true;
+ }else{
+  fetch("/downloads/manifest.json?ts="+Date.now(),{cache:"no-store"})
+   .then(r=>r.ok?r.json():null)
+   .then(m=>{setApk((m&&m.file)||"zhipei-one-latest-release.apk",m&&m.version)})
+   .catch(()=>{setApk("zhipei-one-latest-release.apk")});
+ }
 
  if(!installed){
   row.hidden=false;
