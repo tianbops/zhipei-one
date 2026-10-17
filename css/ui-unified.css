@@ -1032,3 +1032,57 @@ a[class*="danger"]:active,
   border-color:#DCA6AC!important;
   color:#741E27!important;
 }
+
+/* ============================================================
+   统一应用外壳 zp-shell（阶段 7 · 抖动修复 / 全局统一 UI）
+   ------------------------------------------------------------
+   问题：各页原用 position:sticky;top:0 固定顶栏，在 Android WebView
+   惯性滚动时会随滚动上下抖动（sticky 重绘 jank）。order-shell 早已采用
+   flex 列 + 内部滚动容器的方案（顶栏作为不参与滚动的 flex 子项），零抖动。
+   本段把该方案提升为「全局统一外壳」，所有业务页 <main> 加 .zp-shell，
+   内容包进 .zp-scroll，顶栏彻底静止。
+
+   main.zp-shell 用 (元素+类)=0,1,1 的特异性，压过 .home-app / .shell /
+   .page2 / .dispatch-page 等容器类（均 0,1,0），因此 padding/width/height
+   等冲突项一律以本规则为准，无需逐个页面覆盖。
+   ============================================================ */
+main.zp-shell{
+  width:100%;
+  max-width:var(--zp-shell-max,520px);
+  height:100vh;            /* 旧内核回退 */
+  height:100dvh;
+  margin:0 auto;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  position:relative;
+  background:var(--zp-bg);
+  padding-top:0;           /* 抵消 .shell/.page2/.home-app 的上下 padding，
+                             左右 padding 保留（仍来自各容器类），保证内容/顶栏对齐 */
+  padding-bottom:0;
+}
+/* 顶栏：不再 sticky/fixed，作为不滚动的 flex 子项，绝无抖动；
+   左右缩进由外壳的 padding 提供，这里只补顶部安全区与底色。 */
+main.zp-shell > .topbar{
+  flex:0 0 auto;
+  position:static;
+  z-index:100;
+  padding-top:env(safe-area-inset-top);
+  background:var(--zp-bg);
+}
+/* 内部唯一滚动容器：flex:1 撑满剩余高度，min-height:0 是 flex 列中
+   能正确收缩并出现滚动条的关键。 */
+.zp-scroll{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-y:contain;
+  /* 顶部留 14px 与顶栏间距；底部 84px 让出常驻导航（min-height:64px + 安全区） */
+  padding:14px 0 calc(84px + env(safe-area-inset-bottom));
+}
+.zp-scroll::-webkit-scrollbar{width:4px}
+.zp-scroll::-webkit-scrollbar-thumb{background:#3A4654;border-radius:8px}
+.zp-scroll::-webkit-scrollbar-track{background:transparent}
+/* 线路页：首项 dispatch-intro 自带 18px 上间距，避免与 .zp-scroll 的 14px 叠加 */
+main.zp-shell.dispatch-page .zp-scroll{padding-top:0}
