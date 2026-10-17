@@ -528,6 +528,11 @@
     try{sessionStorage.setItem("zpRole",(role==="admin"||role==="system_admin")?"admin":"user")}catch{}
   };
   window.zpClearRole=function(){try{sessionStorage.removeItem("zpRole")}catch{}};
+  // 登录态同步标记：业务页头部守卫据此在「渲染前」即时判定放行/拦截，避免未登录先渲染再跳转（可被返回绕过）。
+  window.zpAuthOK=function(){try{sessionStorage.setItem("zpAuth","1")}catch(e){}};
+  window.zpAuthClear=function(){try{sessionStorage.removeItem("zpAuth")}catch(e){}};
+  // 会话失效（401）兜底：清标记并回登录页。供各页 /api/me 失败时调用。
+  window.zpAuthFail=function(reason){try{sessionStorage.removeItem("zpAuth")}catch(e){}try{location.replace("/?reason="+(reason||"expired"))}catch(e){}};
   function zpIsAdminSession(){
     try{return sessionStorage.getItem("zpRole")==="admin"}catch{return false}
   }
