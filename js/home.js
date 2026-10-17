@@ -429,6 +429,9 @@ async function loadHome(){
       fetchJson("/api/dispatch"),
       fetchJson("/api/me?homeMe="+Date.now())
     ]);
+    // 会话失效：头部守卫之外的兜底（如登录态残留但服务端会话已过期）。清标记并回登录页。
+    if(meRes.status===401){if(window.zpAuthFail)window.zpAuthFail("expired");return;}
+    if(meRes.ok)try{sessionStorage.setItem("zpAuth","1")}catch(e){}
     if(!dispatchRes.ok||!dispatch.success)throw Error(dispatch.error||"当前配送线路读取失败");
     dispatchRouteId=dispatch.dispatchRoute?.id||"";
     boundRouteId=me&&me.user&&me.user.boundRouteId?String(me.user.boundRouteId):(boundRouteId||"");
