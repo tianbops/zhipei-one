@@ -43,7 +43,7 @@
   --zp-seg-btn-pad:0 8px;
   --zp-seg-btn-font:13px;
   --zp-seg-btn-gap:8px;
-  /* 主按钮语义色（P0-3 工具栏统一）：中性深石板色，与现有浅色主按钮 #263746（ui-unified.js:860）、
+  /* 主按钮语义色（P0-3 工具栏统一）：中性深石板色，与现有浅色主按钮 var(--zp-primary)（ui-unified.js:860）、
      业务主按钮 #2E3B47 同源；消除「主按钮三处三种底色」的不一致（ui-unified.css:527 自承）。
      P1-4 将据此补齐语义映射并写入 docs/外观与主题.md。 */
   --zp-primary:#263746;
@@ -379,7 +379,7 @@ input,select,textarea{
   cursor:pointer;-webkit-tap-highlight-color:transparent;
 }
 .zp-password-eye svg{display:block;width:19px;height:19px;pointer-events:none}
-.zp-password-eye:active{background:rgba(28,37,47,.82);color:#E8EDF2}
+.zp-password-eye:active{background:var(--zp-primary);color:#E8EDF2}
 .zp-password-eye[hidden]{display:none!important}
 .field .zp-password-control{margin-top:0}
 .page2-label>.zp-password-control{margin-top:6px}
@@ -556,7 +556,7 @@ input,select,textarea{
 .login-submit,
 .page2-primary,
 .confirm-submit{
-  background:rgba(28,37,47,.82);
+  background:var(--zp-primary);
   border-radius:var(--ui-control-radius);
   color:#fff;
 }
@@ -816,8 +816,8 @@ textarea:disabled,
 :root[data-zp-theme="light"] button.primary,
 :root[data-zp-theme="light"] .primary-btn,
 :root[data-zp-theme="light"] .confirm-submit{
-  background:#263746!important;
-  border-color:#263746!important;
+  background:var(--zp-primary)!important;
+  border-color:var(--zp-primary)!important;
   color:#FFFFFF!important;
 }
 /* 浅色主题次按钮：app.css 的 .secondary-btn 为深底白字，而上面的 button
@@ -878,7 +878,7 @@ textarea:disabled,
   background:#F0F2F4;border-color:#D7DDE3;color:#26323D;
 }
 :root[data-zp-theme="light"] .zp-confirm-actions button:last-child{
-  background:#263746;border-color:#263746;color:#FFFFFF;
+  background:var(--zp-primary);border-color:var(--zp-primary);color:#FFFFFF;
 }
 :root[data-zp-theme="light"] .zp-password-control{
   background:#FFFFFF;border-color:#C9D1D9;
@@ -911,7 +911,7 @@ textarea:disabled,
 :root[data-zp-theme="light"] .invite-actions .small-action{
   color:#17202A;
 }
-:root[data-zp-theme="light"] .head .who .role{color:#263746!important}
+:root[data-zp-theme="light"] .head .who .role{color:var(--zp-primary)!important}
 :root[data-zp-theme="light"] .menu-btn,
 :root[data-zp-theme="light"] .add,
 :root[data-zp-theme="light"] .small-action,
@@ -939,7 +939,7 @@ textarea:disabled,
 :root[data-zp-theme="light"] .dialog p,
 :root[data-zp-theme="light"] .field label{color:#17202A}
 :root[data-zp-theme="light"] .dialog-actions .cancel{background:#F0F2F4!important;border-color:#D7DDE3!important;color:#26323D!important}
-:root[data-zp-theme="light"] .dialog-actions .ok{background:#263746!important;border-color:#263746!important;color:#FFFFFF!important}
+:root[data-zp-theme="light"] .dialog-actions .ok{background:var(--zp-primary)!important;border-color:var(--zp-primary)!important;color:#FFFFFF!important}
 :root[data-zp-theme="light"] .toast{background:#FFFFFF!important;border-color:#D7DDE3!important;color:#17202A!important}
 
 /* 浅色模式中的危险与错误状态采用深色语义色，确保浅底上可读 */
