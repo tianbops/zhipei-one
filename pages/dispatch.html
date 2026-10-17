@@ -12,8 +12,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="智配One">
 <script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F4F6F8":"#05070A")}catch(e){}</script>
-<link rel="stylesheet" href="/css/app.css?v=b7e727c7"><link rel="stylesheet" href="/css/ui-unified.css?v=94e70e1a">
-<link rel="stylesheet" href="/css/mobile-ui.css?v=6f7cf047"><link rel="stylesheet" href="/css/business-pages.css?v=f9d81f48">
+<link rel="stylesheet" href="/css/app.css?v=fc3c9fab"><link rel="stylesheet" href="/css/ui-unified.css?v=da594992">
+<link rel="stylesheet" href="/css/mobile-ui.css?v=6f7cf047"><link rel="stylesheet" href="/css/business-pages.css?v=0005481a">
 <style>
 .dispatch-page{min-height:100dvh;padding:0 16px 88px;background:#05070A}
 .dispatch-page .topbar{z-index:10}
@@ -28,7 +28,7 @@
 .dispatch-current-name{font-size:23px;font-weight:700;line-height:1;color:#fff}
 .dispatch-current-status{font-size:12px;color:#B8C2CC;display:flex;align-items:baseline;gap:2px}
 .dispatch-current-count{margin-left:4px;font-size:12px;color:#B8C2CC;font-weight:600}
-.dispatch-switch{margin-left:auto;flex:none;width:calc((100% - 2*var(--zp-seg-btn-gap,8px))/3);min-width:72px;min-height:var(--zp-seg-btn-h,42px);padding:var(--zp-seg-btn-pad,0 8px);border:1px solid rgba(255,255,255,.14);border-radius:var(--zp-seg-btn-radius,12px);background:rgba(38,49,60,.9);color:#fff;font-size:var(--zp-seg-btn-font,13px);font-weight:600}
+.dispatch-switch{margin-left:auto;flex:none;width:calc((100% - 2*var(--zp-seg-btn-gap,8px))/3);min-width:72px;min-height:var(--zp-seg-btn-h,42px);padding:var(--zp-seg-btn-pad,0 8px);border:1px solid rgba(255,255,255,.14);border-radius:var(--zp-seg-btn-radius,12px);background:var(--zp-primary);color:#fff;font-size:var(--zp-seg-btn-font,13px);font-weight:600}
 .dispatch-switch:active{background:#11171D}
 .dispatch-action-card{background:rgba(13,18,24,.82);border:1px solid rgba(255,255,255,.075);border-radius:14px;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,.18)}
 .dispatch-action{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:12px 14px;border:0;border-bottom:1px solid rgba(255,255,255,.08);background:transparent;color:#fff;text-align:left;cursor:pointer;text-decoration:none}
@@ -132,7 +132,7 @@
 :root[data-zp-theme="light"] .dispatch-current-name{color:#17202A}
 :root[data-zp-theme="light"] .dispatch-current-status,
 :root[data-zp-theme="light"] .dispatch-current-count{color:#46515D}
-:root[data-zp-theme="light"] .dispatch-switch{background:#263746;border-color:#263746;color:#FFFFFF}
+:root[data-zp-theme="light"] .dispatch-switch{background:var(--zp-primary);border-color:var(--zp-primary);color:#FFFFFF}
 :root[data-zp-theme="light"] .dispatch-switch:active{background:#1D2A36}
 :root[data-zp-theme="light"] .dispatch-action-card{background:#FFFFFF;border-color:#D7DDE3;box-shadow:0 8px 24px rgba(20,30,40,.08)}
 :root[data-zp-theme="light"] .dispatch-action{color:#17202A;border-bottom-color:rgba(20,30,40,.08)}
@@ -143,7 +143,7 @@
 :root[data-zp-theme="light"] .dispatch-message,
 :root[data-zp-theme="light"] .dispatch-empty{color:#66717D}
 :root[data-zp-theme="light"] .dispatch-sheet{background:#FFFFFF;border-top-color:#D7DDE3;box-shadow:0 -12px 36px rgba(20,30,40,.18)}
-:root[data-zp-theme="light"] .dispatch-sheet-confirm{background:#263746;border-color:#263746;color:#FFFFFF}
+:root[data-zp-theme="light"] .dispatch-sheet-confirm{background:var(--zp-primary);border-color:var(--zp-primary);color:#FFFFFF}
 :root[data-zp-theme="light"] .dispatch-sheet-sub,
 :root[data-zp-theme="light"] .dispatch-picker-option,
 :root[data-zp-theme="light"] .dispatch-picker-option small,
@@ -158,7 +158,7 @@
 :root[data-zp-theme="light"] .dispatch-dialog{background:#FFFFFF;border-color:#D7DDE3}
 :root[data-zp-theme="light"] .dispatch-dialog p{color:#46515D}
 :root[data-zp-theme="light"] .dispatch-dialog-cancel{background:#E8EDF1;border-color:#D1D8DF;color:#46515D}
-:root[data-zp-theme="light"] .dispatch-dialog-ok{background:#263746;border-color:#263746;color:#FFFFFF}
+:root[data-zp-theme="light"] .dispatch-dialog-ok{background:var(--zp-primary);border-color:var(--zp-primary);color:#FFFFFF}
 :root[data-zp-theme="light"] .dispatch-dialog-actions button{border-color:#D7DDE3}
 </style>
 </head>
