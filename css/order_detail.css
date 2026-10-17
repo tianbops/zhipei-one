@@ -3,13 +3,13 @@
 .order-title{text-align:center;font-size:18px;line-height:24px;font-weight:700}
 .order-icon-btn{width:var(--zp-control-height);height:var(--zp-control-height);border:1px solid #2A3540;border-radius:13px;background:rgba(20,28,37,.80);color:#fff;display:flex;align-items:center;justify-content:center}
 .order-icon-btn svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.order-icon-btn:active{background:var(--zp-primary);transform:scale(.97)}
+.order-icon-btn:active{background:var(--zp-primary);color:var(--zp-on-primary);transform:scale(.97)}
 .order-menu{position:absolute;right:0;top:48px;width:190px;background:rgba(20,28,37,.80);border:1px solid #2A3540;border-radius:12px;box-shadow:0 10px 24px rgba(0,0,0,.3);overflow:hidden;animation:zpMenuIn .14s ease-out}
 .order-menu[hidden],.order-dialog[hidden]{display:none}
 .order-menu button,.order-menu-route{width:100%;min-height:var(--zp-control-height);border:0;border-bottom:1px solid rgba(255,255,255,.045);background:transparent;color:#fff;text-align:left;padding:0 16px;font-size:14px}
 .order-menu-route{display:flex;align-items:center;background:#1C2530;font-weight:650}
 .order-menu button{display:flex;align-items:center}
-.order-menu button:active{background:var(--zp-primary)}.order-menu .logout{color:#FF8278;border-bottom:0}
+.order-menu button:active{background:var(--zp-primary);color:var(--zp-on-primary)}.order-menu .logout{color:#FF8278;border-bottom:0}
 .order-summary-card,.order-route-card{background:rgba(20,28,37,.80);border:1px solid #2A3540;border-radius:16px;box-shadow:none}
 .order-summary-card{padding:14px 15px 13px;flex:0 0 auto;margin-bottom:10px}
 .order-date{text-align:center;font-size:14px;line-height:22px;color:#fff;font-weight:650}
@@ -75,7 +75,7 @@
 .pending-list{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.14) transparent}
 .order-dialog-actions{display:flex;flex:0 0 auto;gap:8px;padding:12px 14px;border-top:1px solid rgba(255,255,255,.06)}
 .order-dialog-actions button{flex:1;height:var(--zp-control-height);border-radius:11px;border:0;font-size:14px;font-weight:650}
-.order-dialog-actions .secondary-btn{background:rgba(10,14,19,.88);color:#E3E8ED;border:1px solid #35404C}.order-dialog-actions .primary-btn{background:var(--zp-primary);color:#fff;border:0}.order-dialog-actions .primary-btn:disabled{opacity:.45}
+.order-dialog-actions .secondary-btn{background:rgba(10,14,19,.88);color:#E3E8ED;border:1px solid #35404C}.order-dialog-actions .primary-btn{background:var(--zp-primary);color:var(--zp-on-primary);border:0}.order-dialog-actions .primary-btn:disabled{opacity:.45}
 @media(max-width:430px){.order-shell{padding-left:10px;padding-right:10px}.order-summary-main{font-size:22px}.order-route-card{padding-left:10px;padding-right:10px}}
 @media(max-height:700px){.order-shell{padding-top:6px}.order-shell .topbar{min-height:48px;flex-basis:auto;margin-bottom:6px}.order-icon-btn{width:48px;height:48px}.order-summary-card{padding:10px 12px;margin-bottom:8px}.order-summary-main{margin-top:2px}.order-metrics{margin-top:5px}.order-route-card{padding-top:10px}.order-store-item{padding-top:8px;padding-bottom:8px;min-height:52px}}
 
@@ -83,11 +83,11 @@
 /* 2.0：同日多运单选择与待确认操作统一为成熟移动端卡片 */
 .order-history-choice{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"head status" "main status";gap:3px 10px;padding:12px 10px;margin:0 0 8px;border:1px solid #2A3540;border-radius:13px;background:rgba(10,14,19,.88);color:#fff;text-align:left;min-height:68px;cursor:pointer}
 .order-history-choice:last-child{margin-bottom:0}
-.order-history-choice:active{background:var(--zp-primary);transform:scale(.995)}
+.order-history-choice:active{background:var(--zp-primary);color:var(--zp-on-primary);transform:scale(.995)}
 .history-choice-main{grid-area:main;color:#fff;font-size:13px;line-height:19px;font-weight:600}
-.history-choice-status{grid-area:status;align-self:center;justify-self:end;padding:4px 7px;border-radius:7px;background:var(--zp-primary);color:#B8C2CC;font-size:10px;line-height:16px;font-weight:650;white-space:nowrap}
+.history-choice-status{grid-area:status;align-self:center;justify-self:end;padding:4px 7px;border-radius:7px;background:var(--zp-primary);color:var(--zp-on-primary);font-size:10px;line-height:16px;font-weight:650;white-space:nowrap}
 .order-pending-fab{height:46px;padding:0 20px;border-radius:13px;background:rgba(20,28,37,.80);color:#fff;border:1px solid #53606D;box-shadow:0 10px 30px rgba(0,0,0,.42);font-size:14px}
-.order-pending-fab:active{background:var(--zp-primary)}
+.order-pending-fab:active{background:var(--zp-primary);color:var(--zp-on-primary)}
 
 /* 统一手势：左滑删除、右滑返回 */
 .order-history-swipe-row{position:relative;display:flex;overflow:hidden;border-radius:13px;margin:0 0 8px}
