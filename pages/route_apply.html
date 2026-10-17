@@ -12,13 +12,14 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="智配One">
 <script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F4F6F8":"#05070A")}catch(e){}</script>
-<link rel="stylesheet" href="/css/app.css?v=b7e727c7"><link rel="stylesheet" href="/css/ui-unified.css?v=ac1064bf">
+<link rel="stylesheet" href="/css/app.css?v=b7e727c7"><link rel="stylesheet" href="/css/ui-unified.css?v=94e70e1a">
 <link rel="stylesheet" href="/css/mobile-ui.css?v=6f7cf047">
-<link rel="stylesheet" href="/css/business-pages.css?v=793c6d62">
+<link rel="stylesheet" href="/css/business-pages.css?v=f9d81f48">
 </head>
 <body>
-<main class="page2 route-apply-page">
+<main class="page2 route-apply-page zp-shell">
 <header class="topbar"><a class="app-back" href="/home" aria-label="返回"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><h1>线路申请</h1><span></span></header>
+<div class="zp-scroll">
 <section class="page2-card">
   <h2>当前线路绑定</h2>
   <p id="binding" class="message">读取中…</p>
@@ -40,6 +41,7 @@
   <h2>我的申请记录</h2>
   <div id="requests"><div class="empty">读取中…</div></div>
 </section>
+</div>
 </main>
 <script>
 const $=id=>document.getElementById(id);
