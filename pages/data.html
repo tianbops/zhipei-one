@@ -1,6 +1,25 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>智配One · 数据资料</title>
+<head>
+<script>
+(function(){
+  function goLogin(){
+    try{document.documentElement.style.display="none"}catch(e){}
+    var p=location.pathname+location.search;
+    location.replace("/?redirect="+encodeURIComponent(p)+"&reason=auth");
+  }
+  try{
+    if(sessionStorage.getItem("zpAuth")!=="1"){goLogin();return;}
+  }catch(e){}
+  try{
+    window.addEventListener("pageshow",function(ev){
+      if(ev.persisted){try{if(sessionStorage.getItem("zpAuth")!=="1")location.replace("/?reason=auth");}catch(e){}}
+    });
+  }catch(e){}
+})();
+</script>
+
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>智配One · 数据资料</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#05070A">
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
@@ -360,6 +379,6 @@ load();
   (window.zpDirtyProbes=window.zpDirtyProbes||[]).push(()=>
     filled(openPanel())||!!(dataBaseline&&dataBaseline!==JSON.stringify(stores)));
 })();
-</script><script src="/js/ui-unified.js?v=1f1d2fcf"></script>
+</script><script src="/js/ui-unified.js?v=e18ccbd8"></script>
 <script src="/js/pwa.js?v=a4a2dd07"></script>
 </body></html>
