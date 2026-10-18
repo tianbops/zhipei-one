@@ -259,7 +259,7 @@ $("deleteConfirm").onclick=async()=>{
 
  /* 版本号 */
  fetch("/version.json?ts="+Date.now(),{cache:"no-store"}).then(r=>r.json()).then(v=>{
-  if(v&&v.version)verEl.textContent="版本 v"+v.version;
+  if(v&&v.version)verEl.textContent="版本 V"+v.version;
  }).catch(()=>{});
 
  /* 检查更新 */
@@ -316,7 +316,7 @@ $("deleteConfirm").onclick=async()=>{
  function setApk(file,ver){
   installDlLink.href="/downloads/"+file;
   installDlLink.setAttribute("download","zhipei-one-v"+(ver||"latest")+".apk");
-  installDlLink.textContent="安卓安装包"+(ver?" v"+ver:"");
+  installDlLink.textContent="安卓安装包"+(ver?" V"+ver:"");
   installDlLink.hidden=false;
  }
  if(isIOS){
