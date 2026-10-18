@@ -7,8 +7,8 @@
 //
 // 安全：不返回任何键名与键值，只返回聚合统计；无正确 k 参数直接 404 且不消耗 Redis。
 import {json} from "./_json.js";
-import {command} from "./_redis.js";
-import {envAdminCredentials} from "./_env-admin.js";
+import {command, get} from "./_redis.js";
+import {envAdminCredentials, envAdminId} from "./_env-admin.js";
 
 // 只是门槛，不是密钥：猜不到就当作接口不存在。不保护任何敏感数据（返回值本就只有统计）。
 const DIAG_KEY = "zpdiag-8f3a2c";
@@ -65,9 +65,52 @@ function envCheck(env){
   };
 }
 
+// 登录探针（?u=<登录时输入的用户名>）：不回传任何密码/哈希/用户名原文，只回传布尔与长度，
+// 用来区分"账号或密码错误"到底是哪一类：
+//   - env_admin_usable=false  → 线上 ADMIN_USERNAME/哈希非法（多半是新用户名含非法字符或没部署）
+//   - typed_matches_env_admin=false → 你输的用户名和线上环境变量管理员对不上（没部署/打错）
+//   - admin_seeded_in_db=false 且 env_admin_usable=true → 播种逻辑没生效（真 bug）
+//   - seeded_hash_matches_env=false → 库里哈希和 env 哈希不一致（清库后第一次登录才会发生，正常会重写）
+async function loginProbe(env, uParam){
+  const cred = envAdminCredentials(env);
+  const typed = String(uParam ?? "");
+  const typedTrim = typed.trim();
+  const redisReady = !!(env?.UPSTASH_REDIS_REST_URL && env?.UPSTASH_REDIS_REST_TOKEN);
+  const probe = {
+    env_admin_usable: !!cred,
+    env_username_valid: !!cred,
+    typed_len: typed.length,
+    typed_has_surrounding_ws: typed !== typedTrim,
+    typed_matches_env_admin: cred ? (typedTrim.toLowerCase() === cred.username.toLowerCase()) : false,
+    admin_seeded_in_db: null,
+    seeded_hash_matches_env: null,
+  };
+  if (redisReady && cred){
+    try {
+      const raw = await get(env, "user:" + envAdminId());
+      if (raw){
+        let cur = null; try { cur = typeof raw === "string" ? JSON.parse(raw) : raw; } catch {}
+        if (cur && cur.role === "admin"){
+          probe.admin_seeded_in_db = true;
+          probe.seeded_hash_matches_env = String(cur.passwordHash ?? "") === cred.passwordHash;
+        } else {
+          probe.admin_seeded_in_db = false;
+        }
+      } else {
+        probe.admin_seeded_in_db = false;
+      }
+    } catch {
+      probe.admin_seeded_in_db = null;
+    }
+  }
+  return probe;
+}
+
 export async function onRequestGet(context){
   const {request, env} = context;
   const url = new URL(request.url);
+  const uParam = url.searchParams.get("u");
+  const loginProbeResult = (uParam !== null) ? await loginProbe(env, uParam) : undefined;
   if (url.searchParams.get("k") !== DIAG_KEY) {
     return json({success:false, error:"页面不存在"}, 404);
   }
@@ -76,7 +119,8 @@ export async function onRequestGet(context){
     return json({success:false, error:"REDIS_NOT_CONFIGURED", configured:false,
                  env_check: envCheck(env),
                  adminSetupKeyConfigured: !!env.ADMIN_SETUP_KEY,
-                 adminEnvConfigured: !!envAdminCredentials(env)}, 200);
+                 adminEnvConfigured: !!envAdminCredentials(env),
+                 login_probe: loginProbeResult}, 200);
   }
 
   const out = {
@@ -97,6 +141,7 @@ export async function onRequestGet(context){
     // 它决定了"数据库被清空后系统还能不能进得去"。
     adminEnvConfigured: !!envAdminCredentials(env),
     env_check: envCheck(env),
+    login_probe: loginProbeResult,
     cf: {
       colo: request.cf?.colo ?? null,
       country: request.cf?.country ?? null,
