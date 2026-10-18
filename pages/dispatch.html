@@ -312,7 +312,14 @@ function closeConfirm(){
 }
 function renderCurrent(){
   const r=routeState.routes.find(x=>x.id===routeState.current);
-  if(!r){$("currentRoute").innerHTML='<div class="dispatch-message">暂未选择配送线路</div>';return}
+  if(!r){/* 未选调度线路：只要有可配送线路就渲染「选择线路」入口。
+      此前该状态只渲染一行文字、没有任何按钮——选择弹层只有已选线路后的
+      「切换」按钮能打开，被管理员绑定过线路（boundRouteId 有值、
+      dispatchRouteId 为空、服务端不自动派临时线路）的新用户永远无法选线。 */
+    const canPick=routeState.routes.length>0;
+    $("currentRoute").innerHTML='<div class="dispatch-message">'+(canPick?"暂未选择配送线路":"暂无可配送线路，可在线路申请中提交申请")+'</div>'+(canPick?'<button id="chooseRouteBtn" class="dispatch-switch" type="button" style="display:block;margin:10px auto 0">选择线路</button>':"");
+    if(canPick)$("chooseRouteBtn").addEventListener("click",openSheet);
+    return}
   $("currentRoute").innerHTML='<div class="dispatch-current-row"><div class="dispatch-current-name">'+esc(routeName(r))+'</div><div class="dispatch-current-status">已匹配<span class="dispatch-current-count">'+(Number(r.storeCount)||0)+'家门店</span></div><button id="switchRouteBtn" class="dispatch-switch" type="button">切换</button></div>';
   $("switchRouteBtn").addEventListener("click",openSheet);
 }
