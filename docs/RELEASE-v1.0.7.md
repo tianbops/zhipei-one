@@ -10,10 +10,10 @@
 |---|---|
 | 归档版本号 | **v1.0.7** |
 | 归档日期 | 2026-10-18 |
-| 基线 commit | `69603584`（含本说明的提交见归档 tag） |
+| 基线 commit | `50795c80`（归档 tag v1.0.7 指向本提交） |
 | SW 运行时版本 | `zp-pwa-58` |
 | 线上地址 | https://tianyou-zhipei.pages.dev |
-| 提交规模 | v1.0.0 → 本版共 183 次提交，34 个文件 |
+| 提交规模 | v1.0.0 → 本版共 186 次提交，41 个文件 |
 | 版本对齐 | web / APK manifest / Android gradle / app package 四端均为 1.0.7（versionCode 7） |
 
 ## 版本号约定
@@ -41,7 +41,7 @@ PWA 配送应用（MPA + Service Worker 离线优先）：
 - **安装下载**：安装包站点同域托管（`/downloads/`），稳定文件名 + manifest 版本清单
 - **离线**：SW 预缓存 App 壳，离线回退 `/offline`
 
-## 本版关键里程碑（按主题归组，共 183 提交）
+## 本版关键里程碑（按主题归组，共 186 提交）
 
 | 主题 | 内容 |
 |---|---|
@@ -85,7 +85,7 @@ PWA 配送应用（MPA + Service Worker 离线优先）：
 ## 归档方式
 
 ```bash
-git tag -a v1.0.7 -m "智配One v1.0.7 定版：对应 SW zp-pwa-58，基线 69603584"
+git tag -a v1.0.7 -m "智配One v1.0.7 定版：对应 SW zp-pwa-58，基线 50795c80"
 git push origin v1.0.7
 ```
 
