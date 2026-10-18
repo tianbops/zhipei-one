@@ -2,6 +2,7 @@ import {json,body} from "./_json.js";
 import {get,command,newId} from "./_redis.js";
 import {hash} from "./login.js";
 import {TEMP_ROUTE_PREFIX} from "./dispatch.js";
+import {envAdminCredentials} from "./_env-admin.js";
 
 function normalize(v){return String(v??"").trim()}
 
@@ -30,6 +31,10 @@ export async function onRequestPost({request,env}){
   if(password.length<6)return json({success:false,error:"密码至少6位"},400);
   const existing=await get(env,"user:index:"+username.toLowerCase());
   if(existing)return json({success:false,error:"账号已存在"},409);
+  // 环境变量管理员的账号名是保留名：不能被普通注册抢占，否则管理员会被挤掉。
+  const envAdmin=envAdminCredentials(env);
+  if(envAdmin&&username.toLowerCase()===envAdmin.username.toLowerCase())
+    return json({success:false,error:"该账号为系统保留账号，无法注册"},409);
   const id=newId();
   const passwordHash=await hash(password);
   const result=Number(await registerAtomically(env,{id,username,name,passwordHash,inviteCode}));

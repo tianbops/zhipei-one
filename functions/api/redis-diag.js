@@ -8,6 +8,7 @@
 // 安全：不返回任何键名与键值，只返回聚合统计；无正确 k 参数直接 404 且不消耗 Redis。
 import {json} from "./_json.js";
 import {command} from "./_redis.js";
+import {envAdminCredentials} from "./_env-admin.js";
 
 // 只是门槛，不是密钥：猜不到就当作接口不存在。不保护任何敏感数据（返回值本就只有统计）。
 const DIAG_KEY = "zpdiag-8f3a2c";
@@ -24,7 +25,9 @@ export async function onRequestGet(context){
     return json({success:false, error:"页面不存在"}, 404);
   }
   if (!env?.UPSTASH_REDIS_REST_URL || !env?.UPSTASH_REDIS_REST_TOKEN) {
-    return json({success:false, error:"REDIS_NOT_CONFIGURED", configured:false}, 200);
+    // 这个分支也要报：空库死锁的判定（管理员能否初始化）不依赖 Redis 是否配好
+    return json({success:false, error:"REDIS_NOT_CONFIGURED", configured:false,
+                 adminSetupKeyConfigured: !!env.ADMIN_SETUP_KEY}, 200);
   }
 
   const out = {
@@ -41,6 +44,9 @@ export async function onRequestGet(context){
     // 于是"没有管理员 → 不能建邀请码 → 不能注册"死锁，数据清空后系统永远进不去。
     // 只回传"配没配"，绝不回传值。
     adminSetupKeyConfigured: !!env.ADMIN_SETUP_KEY,
+    // 环境变量管理员是否可用（账号名 + 合法 sha256 hex 哈希都在才算）。
+    // 它决定了"数据库被清空后系统还能不能进得去"。
+    adminEnvConfigured: !!envAdminCredentials(env),
     cf: {
       colo: request.cf?.colo ?? null,
       country: request.cf?.country ?? null,

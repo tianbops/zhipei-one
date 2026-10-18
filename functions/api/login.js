@@ -1,12 +1,16 @@
 import {json,body} from "./_json.js";
 import {get,setEx,newId,sessionCookie,SESSION_TTL_SECONDS} from "./_redis.js";
 import {Budget,mgetBatchMap,SUBREQUEST_LIMIT} from "./_redis-budget.js";
+import {ensureEnvAdmin} from "./_env-admin.js";
 async function hash(value){const data=new TextEncoder().encode(value);const digest=await crypto.subtle.digest("SHA-256",data);return [...new Uint8Array(digest)].map(x=>x.toString(16).padStart(2,"0")).join("")}
 export async function onRequestPost({request,env}){
  const input=await body(request);
  const username=String(input.username||"").trim();
  const password=String(input.password||"");
  if(!username||!password)return json({success:false,error:"请输入账号和密码",code:"LOGIN_CREDENTIALS_REQUIRED"},400);
+ // 环境变量管理员（ADMIN_USERNAME/ADMIN_PASSWORD_HASH）：库里没有就先补回库里。
+ // 这样数据库被清空后管理员仍能登录 —— 2026-10-18 迁库清空后系统彻底进不去的教训。
+ await ensureEnvAdmin(env,username);
  const index=await get(env,"user:index:"+username.toLowerCase());
  if(!index)return json({success:false,error:"账号或密码错误",code:"LOGIN_INVALID_CREDENTIALS"},401);
  let raw=await get(env,"user:"+index);
