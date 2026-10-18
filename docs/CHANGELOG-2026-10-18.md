@@ -205,3 +205,32 @@
 **验证**：双主题像素采样——四角全为背景色（圆角成立）、右侧 6px 呼吸位为背景、按钮右内缘为红；透视 Δ=[0,0,0] 未回退；45 项测试 736 ✅ 绿；SW zp-pwa-66。
 
 **教训**：形态类反馈不要凭 cz ffmpeg 描述猜，用**多点像素采样**（四角/边缘/中心/留白区）把「圆角/直角/边框残留」量化成可判定的布尔结论；同时浅色主题最容易漏——通用 button 深字规则等横向规则会悄悄覆盖专用组件样式。
+
+---
+
+## 历史页板块宽度对齐全局（2026-10-18 夜间，commit 见 main）
+
+**用户反馈**：「历史查询页面，几个板块的宽度要和全局统一宽度」。
+
+**量化复核（`scripts/probe_section_width.py` 跨页测量，视口 500px）**：
+
+| 页面 | 板块左/右内缩 | 板块宽 |
+|---|---|---|
+| 历史页（修复前） | **0 / 0（满宽贴边）** | 500 |
+| 线路页 `.dispatch-page` | 16 / 16 | 468 |
+| 首页 `.home-app` | 14 / 14 | 472 |
+
+全局间距 token 为 `--zp-space-4: 16px`（ui-unified.css），线路页即按此值；历史页此前完全无内缩，与各页明显不一致。
+
+**修复**：历史页容器 `main.history-shell` 左右内缩统一到 `var(--zp-space-4,16px)`；同时**归零板块自身的重复缩进**，否则会叠加成 32px——
+- `.history-actions` `0 16px` → `0`
+- `.history-secondary-row` `0 16px 4px` → `0 0 4px`（以及两处 `2px 8px 10px` → `2px 0 10px`）
+- `.history-divider` `margin:14px 16px` → `14px 0`
+- `.history-state` `18px 8px` → `18px 0`
+- 删除浅色下 `.history-actions/.history-secondary-row` 的 8px 与 `.history-divider` 的 8px 覆盖（会与全局错位）
+
+保留行内文字缩进（`.history-month-main`/`.history-date-main` 的 14/27px），那是内容层级不是板块宽度。
+
+**验证**：历史页四个板块（card/actions/secondary-row/list）双主题均为内缩 16px、宽 468，与线路页逐像素一致；45 项测试 736 ✅；左滑链路（跟手 tx=-60 / 双指无残留 / 单指吸附 -84）无回归；SW zp-pwa-67。
+
+**备注**：首页 `.home-app` 是 14px（比全局 token 少 2px，历史遗留）。本次只按用户要求对齐历史页；首页是否一并统一到 16px 待确认。

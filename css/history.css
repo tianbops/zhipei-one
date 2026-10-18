@@ -319,6 +319,15 @@
 /* UI 2.3：历史查询成熟 Android 列表布局
    目标：减少“卡片套卡片”，强化月份层级，日期使用轻量列表行。
    仅调整视觉与触控区域，不改变历史查询业务逻辑。 */
+/* 板块宽度对齐全局：全局间距 token 为 --zp-space-4（16px），线路页 .dispatch-page
+   即用 16px。历史页此前是满宽贴边（内缩 0），与各页不一致；此处统一到 16px。
+   用 main.history-shell（0,1,1）与 main.zp-shell 同特异性，靠后加载胜出，
+   且不受 ui-unified 中 main.zp-shell 的 padding-top/bottom:0 影响。
+   注意：板块自身不再重复缩进（见下方 .history-actions 等归零），否则会变成 16+16。 */
+main.history-shell{
+  padding-left:var(--zp-space-4,16px);
+  padding-right:var(--zp-space-4,16px);
+}
 .history-shell{
   padding-top:8px;
   padding-bottom:0;
@@ -336,13 +345,11 @@
    导致历史查询页顶部出现一块带阴影的白色方块。此处显式压回无卡片样式。 */
 :root[data-zp-theme="light"] .history-card{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important}
 :root[data-zp-theme="light"] .zp-btn--secondary{background:rgba(0,0,0,.04);color:var(--zp-text);border-color:var(--zp-line)}
+/* 左右缩进统一交给 main.history-shell，浅色不再另加 8px（会与全局错位） */
 :root[data-zp-theme="light"] .history-divider{border-top-color:var(--zp-divider)}
-:root[data-zp-theme="light"] .history-actions,
-:root[data-zp-theme="light"] .history-secondary-row{padding-left:8px;padding-right:8px}
-:root[data-zp-theme="light"] .history-divider{margin-left:8px;margin-right:8px}
 .history-state{
   min-height:20px;
-  padding:18px 8px;
+  padding:18px 0;
   color:#7F8A95;
   font-size:14px;
   line-height:20px;
@@ -567,12 +574,13 @@
 .zp-btn:disabled{opacity:.5;cursor:default}
 
 /* 信息架构分组（P0-1） */
-.history-divider{border:0;border-top:1px solid var(--zp-divider);margin:14px 16px}
-.history-actions{padding:0 16px}
+.history-divider{border:0;border-top:1px solid var(--zp-divider);margin:14px 0}
+/* 左右缩进已由 main.history-shell 统一，板块内不再重复留白 */
+.history-actions{padding:0}
 .history-actions-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 /* 选择日期：quiet 操作行（与线路功能入口同语言：图标+文字+箭头），
    替代原孤立幽灵文字按钮，使其融进卡片列表节奏 */
-.history-secondary-row{padding:0 16px 4px}
+.history-secondary-row{padding:0 0 4px}
 
 /* 浮层通用提示与空态 */
 .history-overlay-hint{margin:10px 0 16px;color:#B8C2CC;font-size:13px;line-height:20px}
@@ -670,10 +678,10 @@
 :root[data-zp-theme="light"] .history-dialog-actions button:active{background:#E8EDF1!important}
 
 /* 日期入口强化：从弱提示行升级为清晰、可识别的主要操作区 */
-.history-secondary-row{padding:2px 8px 10px}
+.history-secondary-row{padding:2px 0 10px}
 
 /* 日期选择：沿用全站次级按钮风格，仅调整为独立的长方形入口 */
-.history-secondary-row{padding:2px 8px 10px}
+.history-secondary-row{padding:2px 0 10px}
 .history-date-button{
   display:flex;align-items:center;justify-content:center;gap:9px;
   width:100%;min-height:48px;padding:0 16px;
