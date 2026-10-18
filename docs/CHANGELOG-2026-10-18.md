@@ -132,3 +132,19 @@
 - 新增 `tests/integration-bootstrap-aggregate.cjs`（CI 第 45 项，15 断言）：聚合响应与 /api/routes、/api/me 逐字段一致；401/403/409 契约；**命令数实证**（≤8、必须用 MGET、逐条 GET ≤1）
 - 踩坑记录（两个都已被测试实锤后修复）：① `mgetBatchMap` 收**全限定键**（含 `zp:`），与 `get()` 内部加前缀的约定不同——首版漏前缀导致全员 409；② 重构时漏写「从 routeMap 灌入 routeById」的循环，同样 409。教训：批量 helper 的键约定 + 重构后必须有集成测试兜底
 - 全量 45 项 node 测试绿（721 ✅）
+
+---
+
+## 历史页左滑删除交互重做（2026-10-18 夜间，commit 见 main）
+
+**用户反馈**：历史查询页「右侧 UI 修正优化，左滑删除按钮露出」。CDP 探针实测旧实现：**拖动过程中 tx 恒为 0——完全不跟手**，界面零反馈，只有松手瞬间才突然滑出；且露出的按钮是无图标的纯文字 76px 浅色块。
+
+| 文件 | 变更 |
+|------|------|
+| `js/history.js` | `bindSwipe` 重写为跟手式：touchmove 实时 `translate3d` 跟手平移（删除按钮随手指逐渐露出），左滑超出 84px 后 0.45 阻尼、右滑 0.35 阻尼限 24px 橡皮筋；松手按「位移 >42px 或速度 < -0.35px/ms」速度感知吸附；已展开行再次触摸从 -84px 基准跟手（右滑可直接收回）；`suppress` 由伴随式布尔改为**一次性时间窗**（拖拽后 400ms 内抑制 Chrome 合成 click，避免拖完立即点删除被吞——探针实测抓出的真 bug）；删除按钮 icon 化（垃圾桶 SVG + 文字） |
+| `css/history.css` | `.history-swipe-row` 加 `touch-action:pan-y`（横向手势交 JS，纵向滚动归浏览器，从根上消除抢占）；删除按钮 76→**84px**（小屏 80px），红渐变 + 白字 + 左侧圆角 + 内描边，flex 纵向居中；展开态 surface 加投影强化浮起层级；右侧统计数字 `tabular-nums` 等宽对齐（「15家 · 0.96t」多行整齐） |
+| `pages/history.html` | `?v=` 随哈希刷新（history.css 4def5789 / history.js 3f52667b）；SW VERSION → zp-pwa-62 |
+
+**验证**：CDP 四阶段探针（`scripts/probe_history_swipe.py`）：①跟手 tx=-60（修复前 0）②松手吸附 -84px ③点击删除 → 确认弹窗（日期行动态文案「确定删除10月18日历史记录吗？删除后可在回收站恢复（7天内）。」）④行外点击收起。全量 45 项 node 测试绿（736 ✅）。
+
+**踩坑**：① 探针阶段3 连挫两次——`touchEnd(0,0)` 使 click 合成到页面外；坐标 `surfRight-42` 又落到行表面误触「收起」，正确中心 = `surfRight + delW/2`；manual `.click()` 验证 onclick 链路本身完好。② suppress 布尔标志拖尾吞点击——改时间窗。

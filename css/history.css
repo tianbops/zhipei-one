@@ -30,6 +30,7 @@
   overflow:hidden;
   background:rgba(10,14,19,.88);
   isolation:isolate;
+  touch-action:pan-y;
 }
 .history-row-surface{
   position:relative;
@@ -40,23 +41,38 @@
   will-change:transform;
 }
 .history-swipe-row.swiped .history-row-surface{
-  transform:translate3d(-76px,0,0);
+  transform:translate3d(-84px,0,0);
+  box-shadow:8px 0 16px rgba(0,0,0,.28);
 }
+/* 左滑露出的删除按钮：图标+文字纵向居中，红渐变明确危险语义。
+   宽度与 JS 的 SWIPE_W 保持同步（小屏 80px，见文末媒体查询）。 */
 .history-delete{
   position:absolute;
   z-index:1;
   top:0;right:0;bottom:0;left:auto;inset:0 0 0 auto;
-  width:76px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  width:84px;
   margin:0;
   padding:0;
   border:0;
-  background:var(--ui-danger-soft);
-  color:var(--ui-danger);
-  font-size:14px;
-  font-weight:550;
-  letter-spacing:.2px;
+  border-radius:12px 0 0 12px;
+  background:linear-gradient(180deg,#D9534B,#B93B32);
+  color:#fff;
+  font-size:12px;
+  font-weight:600;
+  letter-spacing:1px;
+  box-shadow:inset 1px 0 0 rgba(255,255,255,.10);
 }
-.history-delete:active{background:rgba(255,130,120,.18)}
+.history-delete svg{
+  width:17px;
+  height:17px;
+  flex:none;
+}
+.history-delete:active{background:#A0372E}
 
 .history-month-main,
 .history-date-main{
@@ -85,6 +101,8 @@
   color:#8F9AA5;
   font-size:12px;
   line-height:20px;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:.3px;
   white-space:nowrap;
 }
 .history-month.expanded .history-month-main{
@@ -278,8 +296,8 @@
   .history-date-main{padding-left:27px}
   .history-month-main span{font-size:15px}
   .history-month-main small,.history-date-main small{font-size:11px}
-  .history-delete{width:72px}
-  .history-swipe-row.swiped .history-row-surface{transform:translate3d(-72px,0,0)}
+  .history-delete{width:80px}
+  .history-swipe-row.swiped .history-row-surface{transform:translate3d(-80px,0,0)}
   .history-calendar-grid{min-height:232px}
 }
 
@@ -412,15 +430,16 @@
   font-weight:750;
 }
 .history-delete{
-  width:76px;
-  background:var(--ui-danger-soft);
-  color:var(--ui-danger);
-  font-size:15px;
-  line-height:20px;
-  font-weight:550;
+  width:84px;
+  background:linear-gradient(180deg,#D9534B,#B93B32);
+  color:#fff;
+  font-size:12px;
+  line-height:16px;
+  font-weight:600;
+  letter-spacing:1px;
 }
 .history-swipe-row.swiped .history-row-surface{
-  transform:translate3d(-76px,0,0);
+  transform:translate3d(-84px,0,0);
 }
 
 /* 月份之间增加清晰但克制的呼吸感 */
@@ -445,9 +464,9 @@
   .history-month-main span{font-size:16px}
   .history-month-main small,
   .history-date-main small{font-size:13px}
-  .history-delete{width:72px}
+  .history-delete{width:80px}
   .history-swipe-row.swiped .history-row-surface{
-    transform:translate3d(-72px,0,0);
+    transform:translate3d(-80px,0,0);
   }
 }
 
