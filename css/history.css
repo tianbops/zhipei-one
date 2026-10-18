@@ -53,10 +53,14 @@
    那是为独立按钮设计的（半透明红晕底 + 1px 红边框 + 红字），
    套在整行高的滑动动作条上会与左侧圆角混绘出「圆角 + 直角框」。
    本按钮改为实心 + 无边框 + 白字，左右形状与行严格贴合。 */
+/* 形态：四角同圆的动作条，右侧与屏幕右缘留 6px 呼吸位——
+   此前「左侧圆角 + 右侧直角贴屏」虽是常见做法，但左右不对称，
+   在浅色卡片背景上尤其突兀（体现为「圆角和直角并存」的观感）。 */
 .history-delete{
   position:absolute;
   z-index:1;
-  top:0;right:0;bottom:0;left:auto;inset:0 0 0 auto;
+  inset:0 6px 0 auto;
+  top:0;right:6px;bottom:0;left:auto;
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -66,7 +70,7 @@
   margin:0;
   padding:0;
   border:0;
-  border-radius:12px 0 0 12px;
+  border-radius:12px;
   background:linear-gradient(180deg,#D9534B,#B93B32);
   color:#fff;
   font-size:12px;
@@ -528,9 +532,13 @@
 :root[data-zp-theme="light"] .history-month-main:active{background:#E8EDF1}
 :root[data-zp-theme="light"] .history-count-highlight{color:#17202A}
 :root[data-zp-theme="light"] .history-month + .history-month{border-top-color:#F4F6F8}
-/* 浅色下删除按钮保持白字：ui-unified 的「浅色下所有 button 用深字」通用规则
-   （:root[data-zp-theme="light"] button）优先级低于本规则，显式压回。 */
-:root[data-zp-theme="light"] .history-delete{color:#fff}
+/* 浅色下删除按钮保持白字并对齐浅色 danger token：
+   ui-unified 的「浅色下所有 button 用深字」通用规则优先级低于本规则，显式压回。
+   同时把红渐变收敛到与 --zp-danger 同色系，避免在浅灰 (#F2F2F2) 页面上过跳。 */
+:root[data-zp-theme="light"] .history-delete{
+  color:#fff;
+  background:linear-gradient(180deg,#C2453A,#A0362D);
+}
 
 /* ---- 浅色补充（全站审计）：日期选择器此前整块沿用深色硬编码 ---- */
 :root[data-zp-theme="light"] .history-picker{background:rgba(24,36,48,.32)}
