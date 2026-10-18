@@ -86,6 +86,27 @@ export async function onRequestGet(context){
     out.keys = {error: String(e && e.message || e).slice(0, 200)};
   }
 
+  // 2.5) 写探针（?w=1）：证明"keys.total=0"是真的空库，而不是 SCAN 在这库上不工作。
+  // 写一个 60 秒 TTL 的临时键 → 读回 → 用 SCAN 找它 → 删除。
+  // 若 wrote=true 而 seen_by_scan=false，说明 SCAN 有问题，上面的键数统计不可信。
+  if (url.searchParams.get("w") === "1") {
+    const probe = "zp:__diag__" + Date.now();
+    try {
+      await command(env, ["SET", probe, "1", "EX", "60"]);
+      const got = await command(env, ["GET", probe]);
+      const scan = await command(env, ["SCAN", "0", "MATCH", "zp:__diag__*", "COUNT", "100"]);
+      const list = Array.isArray(scan) && Array.isArray(scan[1]) ? scan[1] : [];
+      out.writeprobe = {
+        wrote: String(got) === "1",
+        seen_by_scan: list.indexOf(probe) >= 0,
+        scan_hits: list.length,
+      };
+      await command(env, ["DEL", probe]);
+    } catch (e) {
+      out.writeprobe = {error: String(e && e.message || e).slice(0, 200)};
+    }
+  }
+
   // 3) 类型抽样：只对前若干个键做 TYPE，够判断数据结构是否完整
   try {
     const res = await command(env, ["SCAN", "0", "COUNT", "50"]);

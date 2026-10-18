@@ -42,6 +42,13 @@ test("redis-diag: 只输出聚合统计，不回显键名与键值", () => {
   assert.ok(src.includes("by_prefix"), "应当只按前缀聚合");
 });
 
+test("redis-diag: 支持 ?w=1 写探针（区分真空库与 SCAN 失效）", () => {
+  assert.ok(src.includes('searchParams.get("w")'), "必须支持写探针开关");
+  assert.ok(src.includes("seen_by_scan"), "写探针必须回传 SCAN 是否能看到刚写的键");
+  assert.ok(src.includes('"EX", "60"'), "临时键必须带 TTL，不能留下垃圾");
+  assert.ok(src.includes('["DEL", probe]'), "写完必须清理");
+});
+
 test("redis-diag: 暴露 Worker 所在 PoP 与 RTT 采样（迁移效果要靠它量化）", () => {
   assert.ok(src.includes('request.cf?.colo'), "必须回传 CF PoP，用于确认 Worker 落点");
   assert.ok(src.includes('["PING"]'), "必须做 PING 往返采样");
