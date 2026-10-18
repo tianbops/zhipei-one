@@ -53,22 +53,22 @@ PWA 配送应用（MPA + Service Worker 离线优先）：
 | style(theme) | Uber 风格双主题色系整改：统一设计 Token、主按钮反相（深白/浅黑）、26 处按钮文字色修复，两主题 14 项对比度全过 AA |
 | security(auth) | 全面登录态路由守卫：9 受保护页 head 同步守卫（渲染前拦截）、pageshow bfcache 兜底、登录深链 redirect（白名单校验）、401 兜底回登录、zpAuth 登录态标记 |
 | feat(install) | 安装下载链路三期演进：单行化（下载应用 \| 安卓安装包 · 复制网址）→ 站点同域托管（国内下载可达，摆脱 GitHub 跨境不稳定）→ 稳定文件名 + manifest 清单（发新版页面零改动，行上显示版本号） |
-| release | 定版整改：4 个运维工具页加登录守卫、SW 升至 zp-pwa-58、四端版本号对齐、仓库行尾规范化、定版审计脚本与归档文档 |
+| release | 定版整改：4 个运维工具页加登录守卫、SW 升至 zp-pwa-58、四端版本号对齐、全仓库行尾统一 LF、修复 CI 主题 token 断言、定版审计脚本与归档文档 |
 
 ## 验证基线
 
-- **定版审计**（`scripts/audit_release.py`）：守卫覆盖 14/14（9 受保护 + 5 公共无误配 + 4 运维工具已注入）；
+- **定版审计**（工作区脚本 `audit_release.py`）：守卫覆盖 14/14（9 受保护 + 5 公共无误配 + 4 运维工具已注入）；
   外部 JS 8 个 + 全部内联 JS 语法 0 失败；静态重复 ID 0；`?v=` 版本戳 0 处待更新；
   版本矩阵四端对齐 1.0.7 —— **全部通过**
-- **本地 ↔ 线上 parity**（`scripts/check_parity.py`）：201 个文件内容逐一哈希比对一致
-  （历史 API 推送遗留的 CRLF 行尾差已由本版提交规范化为 LF）
+- **本地 ↔ 线上 parity**（工作区脚本 `check_parity.py`）：203 个文件双边 LF 规范化后逐一哈希比对一致
+- **测试**：本地 43 项 node 测试全绿；CI（GitHub Actions `npm run test:node`）通过
 - **线上实测**（匿名视角）：`/downloads/zhipei-one-latest-release.apk` 200 +
   MIME `application/vnd.android.package-archive` + 文件头校验；manifest.json 正常；
   账号页下载链接动态渲染「安卓安装包 v1.0.7」并指向稳定文件
 - **无头 Chrome 布局实测**：下载应用单行（左标签 / 右侧两操作右对齐至行尾）；
   未登录访问受保护页正确跳登录页带深链
 - **业务回归**：v1.0.0 基线 node 测试 63 项通过；本版未改业务规则与接口，无回归面
-- **CI**：push 后 GitHub Actions 自动执行 `npm run test:node`
+- **CI**：GitHub Actions `npm run test:node` 随推送自动执行，本版修复后通过
 
 ## 已知事项与后续建议
 

@@ -52,13 +52,15 @@
 | 1 | 4 个运维工具页（consistency-repair / verify-checklist / e2e-helper / e2e-launcher）无守卫匿名暴露，其中 2 个可调用数据 API（含删线路） | 高 | ✅ 已注入同步守卫 |
 | 2 | Android 工程版本落后：gradle versionName 1.0 / versionCode 1、package.json 1.0.0，与实际发行 1.0.7 不符 | 中 | ✅ 已对齐 1.0.7 / versionCode 7 |
 | 3 | SW 运行时版本自 v1.0.0 起未随大批静态变更 bump（zp-pwa-57） | 中 | ✅ 已升至 zp-pwa-58 |
-| 4 | 仓库行尾混乱：API 推送保留 CRLF，git 历史为 LF，25 个文件哈希不一致 | 低 | ✅ 归档提交统一规范化为 LF |
+| 4 | 仓库行尾混乱：API 推送保留 CRLF，git 历史为 LF，25 个文件哈希不一致 | 低 | ✅ 全仓库统一规范化为 LF（一次原子提交） |
 | 5 | version.json 与 manifest 日期不一致 | 低 | ✅ 已对齐 2026-10-18 |
+| 6 | CI 自 Uber 主题整改起持续红：主题测试仍断言旧浅色 token（#F4F6F8/#17202A/#D7DDE3），新 token 为 #F2F2F2/#141414/#E0E0E0 | 中 | ✅ 测试更新至现行 Uber 浅色 token，其余断言逐项核验仍成立 |
 
 ### 审计结论（修复后全绿）
 
 - 守卫覆盖 14/14；JS 语法 0 失败；静态重复 ID 0；`?v=` 戳 0 处待更新；四端版本对齐；
-- 本地 ↔ 线上 201 文件 parity 一致；
+- 本地 ↔ 线上全量文件 parity 一致（双边 LF 规范化后逐一哈希比对）；
+- 本地 43 项 node 测试全绿（含修复后的主题 token 断言），CI 转绿；
 - 线上匿名实测：APK 200 + MIME 正确 + 文件头校验；manifest 正常；账号页显示「安卓安装包 v1.0.7」。
 
 ### 有意保留的决策
@@ -66,10 +68,10 @@
 - `tests/tools/visual/fixtures/observer_probe.html`（无害静态空列表夹具）不设守卫——
   加了会破坏开发期视觉检查工具；建议下版将 dev 产物从生产构建剔除。
 
-### 新增工具脚本
+### 新增工具脚本（工作区侧，未随仓库分发）
 
 - `scripts/audit_release.py`：定版审计（守卫/语法/ID/戳/版本矩阵）
-- `scripts/check_parity.py`：本地 ↔ GitHub 全量文件哈希比对（LF 规范化）
+- `scripts/check_parity.py`：本地 ↔ GitHub 全量文件比对（双边 LF 规范化后哈希）
 - `scripts/push_release_v107.py`：定版推送（含行尾规范化）
 - `scripts/push_download_apk.py`：安装包 + manifest 推送（发新版用）
 

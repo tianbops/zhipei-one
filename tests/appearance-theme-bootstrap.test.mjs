@@ -29,7 +29,8 @@ for (const file of themedPages) {
 
 const unified = fs.readFileSync(path.join(root, "css/ui-unified.css"), "utf8");
 assert.match(unified, /:root\[data-zp-theme="light"\]\s*\{[\s\S]*?color-scheme:\s*light/);
-for (const token of ["--zp-bg:#F4F6F8", "--zp-surface:#FFFFFF", "--zp-text:#17202A", "--zp-line:#D7DDE3", "--zp-danger:#C2453A"]) {
+// Uber 风格中性灰阶（浅色）：底色/文字/分割线均去蓝，仅 surface/danger 保留语义色。
+for (const token of ["--zp-bg:#F2F2F2", "--zp-surface:#FFFFFF", "--zp-text:#141414", "--zp-line:#E0E0E0", "--zp-danger:#C2453A"]) {
   assert.ok(unified.includes(token), "浅色主题缺少基础 token: " + token);
 }
 for (const selector of [
