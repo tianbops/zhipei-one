@@ -425,25 +425,24 @@ async function loadHome(){
     // 此时必须以 boundRouteId 兜底，否则今日配送永远读不到数据。
     // 该问题在 8d4b9b6 重排 loadHome 后暴露：layer1 被 `if(dispatchRouteId)` 跳过，
     // layer2/3 又用 waybill.routeId==="" 过滤，永不命中 → 显示「暂无运单」。
-    const [{res:dispatchRes,data:dispatch},{res:meRes,data:me}]=await Promise.all([
-      fetchJson("/api/dispatch"),
-      fetchJson("/api/me?homeMe="+Date.now())
-    ]);
+    // 聚合接口：一次往返同时拿「调度线路 + 当前用户」（历史为 /api/dispatch 与
+    // /api/me 两次并行请求，两次 currentUser 各 2 次 Redis 往返；合并后鉴权只做一次）
+    const {res,data}=await fetchJson("/api/home-bootstrap");
     // 会话失效：头部守卫之外的兜底（如登录态残留但服务端会话已过期）。清标记并回登录页。
-    if(meRes.status===401){if(window.zpAuthFail)window.zpAuthFail("expired");return;}
-    if(meRes.ok)try{sessionStorage.setItem("zpAuth","1")}catch(e){}
-    if(!dispatchRes.ok||!dispatch.success)throw Error(dispatch.error||"当前配送线路读取失败");
-    dispatchRouteId=dispatch.dispatchRoute?.id||"";
-    boundRouteId=me&&me.user&&me.user.boundRouteId?String(me.user.boundRouteId):(boundRouteId||"");
+    if(res.status===401){if(window.zpAuthFail)window.zpAuthFail("expired");return;}
+    if(res.ok)try{sessionStorage.setItem("zpAuth","1")}catch(e){}
+    if(!res.ok||!data.success)throw Error(data.error||"当前配送线路读取失败");
+    dispatchRouteId=data.dispatchRoute?.id||"";
+    boundRouteId=data.user&&data.user.boundRouteId?String(data.user.boundRouteId):(boundRouteId||"");
     renderSubstituteBadge();
-    setRouteBadge(dispatch.dispatchRoute||null);
+    setRouteBadge(data.dispatchRoute||null);
     // 有效线路 = 显式调度线路（含临时线路）优先，其次管理员绑定线路
     const effectiveRouteId=dispatchRouteId||boundRouteId;
 
     const todayKey=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
     let w=null;
     // 比对键：默认用 effectiveRouteId，但一旦拿到服务端回显的 routeId 就以它为准。
-    // 背景：dispatch.dispatchRoute.id 来自 route:<id> 存储体内部的 id 字段，若与
+    // 背景：data.dispatchRoute.id 来自 route:<id> 存储体内部的 id 字段，若与
     // Redis 键 id（即会话 dispatchRouteId、运单 routeId）发生数据漂移，前端用
     // dispatchRoute.id 过滤会全部落空（表现为徽标/月度正常、今日配送恒为空）。
     // /api/history 的响应体里回显了服务端实际使用的 routeId，用它比对可免疫漂移。

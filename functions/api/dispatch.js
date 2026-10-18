@@ -11,10 +11,10 @@ import {canUseRoute} from "./_permissions.js";
 export const TEMP_ROUTE_PREFIX="__temp__:";
 export function isTempRoute(routeId){return !!routeId&&typeof routeId==="string"&&routeId.startsWith(TEMP_ROUTE_PREFIX)}
 
-export async function onRequestGet({request,env}){
- const user=await currentUser(request,env);
- if(!user)return json({success:false,error:"未登录"},401);
- if(!canUseRoute(user))return json({success:false,error:"管理员不参与业务调度"},403);
+/* 调度线路解析（GET /api/dispatch 与聚合接口共用）：
+ * 显式调度线路（含临时线路）优先；既无调度线路也无业务绑定的用户
+ * （含新注册用户）自动分配独立临时线路，保证人人有可用调度线路。 */
+export async function resolveDispatchRoute(env,user){
  const routeId=user.dispatchRouteId||null;
  let routeInfo=null;
  if(routeId){
@@ -29,6 +29,14 @@ export async function onRequestGet({request,env}){
   const result=await command(env,["EVAL",script,"1","zp:user:"+user.id,user.id,tempId]);
   if(Number(result)===1)routeInfo={id:tempId,name:"临时用户",type:"temporary"};
  }
+ return routeInfo;
+}
+
+export async function onRequestGet({request,env}){
+ const user=await currentUser(request,env);
+ if(!user)return json({success:false,error:"未登录"},401);
+ if(!canUseRoute(user))return json({success:false,error:"管理员不参与业务调度"},403);
+ const routeInfo=await resolveDispatchRoute(env,user);
  return json({success:true,dispatchRoute:routeInfo});
 }
 

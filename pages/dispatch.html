@@ -377,9 +377,11 @@ function renderLoadError(){
 }
 async function load(){
   try{
-    const [routes,dispatch]=await Promise.all([api("/api/routes"),api("/api/dispatch")]);
-    routeState.current=dispatch.dispatchRoute?.id||"";
-    routeState.routes=(routes.routes||[]).filter(r=>r.status==="active");
+    // 聚合接口：一次往返同时拿「调度线路 + 可选线路列表」（历史为 /api/routes 与
+    // /api/dispatch 两次并行请求；服务端批量 MGET 后全程仅 6 条 Redis 命令）
+    const d=await api("/api/dispatch-bootstrap");
+    routeState.current=d.dispatchRoute?.id||"";
+    routeState.routes=(d.routes||[]).filter(r=>r.status==="active");
     renderCurrent();
   }catch(e){
     renderLoadError();

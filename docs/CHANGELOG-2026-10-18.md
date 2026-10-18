@@ -108,3 +108,27 @@
 - 预缓存页面集：/、/home、/pages/today、/pages/dispatch、/pages/history、/pages/route_apply、/pages/account、/register、/offline（admin/setup 属办公侧低频，不入预缓存）。
 - CDP 三阶段实测（本地干净 profile）：①SW activated，PRECACHE **32/32 命中**；②清空 HTTP 缓存后二次访问，版本化 CSS/JS **网络请求 0**；③模拟离线打开线路页——页面完整渲染（导航 fixed、图标 21px），接口区显示「线路读取失败 + 重试按钮」。
 - 本地 44 项 node 测试全绿（新增 sw-precache 94 断言）。
+
+---
+
+## 接口合并/提速（2026-10-18 深夜，commit 见 main）
+
+**服务端**
+
+| 文件 | 变更 |
+|------|------|
+| `functions/api/routes.js` | 抽出 `readRoutes(env,user)`；校验循环与构建循环合并，逐条 `getRoute`/base GET 改为**两次批量 MGET**（走既有 `mgetBatchMap` + Budget）。3 条线路的读从 **13 条 Redis 命令降至 6 条**，且与线路数无关（历史 4M+2 线性增长）。管理员巡检修复逻辑原样保留，修复后重读保证返回值一致 |
+| `functions/api/dispatch.js` | 抽出 `resolveDispatchRoute(env,user)` 供聚合接口复用，GET 行为不变 |
+| `functions/api/dispatch-bootstrap.js`（新） | 线路页聚合：一次往返返回「调度线路 + 可选线路列表」。错误契约逐字保留：401 未登录 / 403 管理员 / 409 数据异常（消息与 /api/routes 一致） |
+| `functions/api/home-bootstrap.js`（新） | 首页聚合：一次往返返回「调度线路 + 当前用户」，user 字段与 /api/me 逐字段一致；鉴权只做一次 |
+
+**客户端**
+
+- `pages/dispatch.html`：`Promise.all([/api/routes, /api/dispatch])` → 单请求 `/api/dispatch-bootstrap`
+- `js/home.js` loadHome：`Promise.all([/api/dispatch, /api/me])` → 单请求 `/api/home-bootstrap`（401 兜底、sessionStorage 标记、错误消息语义不变）
+
+**测试与治理**
+
+- 新增 `tests/integration-bootstrap-aggregate.cjs`（CI 第 45 项，15 断言）：聚合响应与 /api/routes、/api/me 逐字段一致；401/403/409 契约；**命令数实证**（≤8、必须用 MGET、逐条 GET ≤1）
+- 踩坑记录（两个都已被测试实锤后修复）：① `mgetBatchMap` 收**全限定键**（含 `zp:`），与 `get()` 内部加前缀的约定不同——首版漏前缀导致全员 409；② 重构时漏写「从 routeMap 灌入 routeById」的循环，同样 409。教训：批量 helper 的键约定 + 重构后必须有集成测试兜底
+- 全量 45 项 node 测试绿（721 ✅）
