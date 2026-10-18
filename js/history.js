@@ -11,15 +11,23 @@ function openSwipe(row){if(openRow&&openRow!==row){openRow.classList.remove("swi
 const SWIPE_W=84;
 function bindSwipe(row,onLeft){
  const surf=row.querySelector(".history-row-surface");
- let sx=0,sy=0,dx=0,dy=0,vx=0,base=0,moving=false,decided=false,dragged=false,suppressUntil=0,t0=0;
+ let sx=0,sy=0,dx=0,dy=0,vx=0,base=0,moving=false,decided=false,dragged=false,painted=false,suppressUntil=0,t0=0;
  const clamp=v=>v>0?Math.min(24,v*.35):(v<-SWIPE_W?-SWIPE_W+(v+SWIPE_W)*.45:v);
- const paint=v=>{surf.style.transition="none";surf.style.transform="translate3d("+v+"px,0,0)"};
- row.addEventListener("touchstart",e=>{const t=e.touches[0];if(!t)return;sx=t.clientX;sy=t.clientY;dx=dy=vx=0;base=row.classList.contains("swiped")?-SWIPE_W:0;moving=true;decided=false;dragged=false;t0=Date.now()},{passive:true});
+ const paint=v=>{painted=true;surf.style.transition="none";surf.style.transform="translate3d("+v+"px,0,0)"};
+ const clear=()=>{if(!painted)return;painted=false;surf.style.transition="";surf.style.transform=""};
+ row.addEventListener("touchstart",e=>{
+  if(e.touches.length>1){moving=false;dragged=false;clear();return}
+  const t=e.touches[0];if(!t)return;
+  sx=t.clientX;sy=t.clientY;dx=dy=vx=0;base=row.classList.contains("swiped")?-SWIPE_W:0;
+  moving=true;decided=false;dragged=false;t0=Date.now();
+ },{passive:true});
  row.addEventListener("touchmove",e=>{
-  if(!moving)return;const t=e.touches[0];if(!t)return;
+  if(!moving)return;
+  if(e.touches.length>1){moving=false;dragged=false;clear();return}
+  const t=e.touches[0];if(!t)return;
   dx=t.clientX-sx;dy=t.clientY-sy;
   if(!decided){
-   if(Math.abs(dy)>Math.abs(dx)&&Math.abs(dy)>8){moving=false;return}
+   if(Math.abs(dy)>Math.abs(dx)&&Math.abs(dy)>8){moving=false;clear();return}
    if(Math.abs(dx)<10)return;
    decided=true;dragged=true;suppressUntil=Date.now()+400;
   }
@@ -27,21 +35,23 @@ function bindSwipe(row,onLeft){
   vx=dx/Math.max(1,Date.now()-t0);
   paint(clamp(base+dx));
  },{passive:false});
- const finish=()=>{
-  if(!moving)return;moving=false;
-  if(!dragged)return;dragged=false;
-  const far=dx<-SWIPE_W*.5||(dx<-14&&vx<-.35);
-  surf.style.transition="";surf.style.transform="";
+ const finish=e=>{
+  if(!moving)return;
+  if(e&&e.touches&&e.touches.length>0){moving=false;dragged=false;clear();return}
+  moving=false;dragged=false;
+  const far=decided&&(dx<-SWIPE_W*.5||(dx<-14&&vx<-.35));
+  clear();
   if(far)onLeft();else{row.classList.remove("swiped");if(openRow===row)openRow=null}
  };
  row.addEventListener("touchend",finish);
- row.addEventListener("touchcancel",()=>{if(!moving)return;moving=false;dragged=false;surf.style.transition="";surf.style.transform=""});
+ row.addEventListener("touchcancel",()=>{moving=false;dragged=false;clear()});
  row.addEventListener("click",e=>{
   if(e.target.closest(".history-delete"))return;
   if(Date.now()<suppressUntil){e.preventDefault();e.stopPropagation();closeOpen();return}
   if(row.classList.contains("swiped")){e.preventDefault();e.stopPropagation();closeOpen()}
  },true)
 }
+
 function shell(kind,key){const row=document.createElement("div");row.className="history-swipe-row";row.dataset.kind=kind;row.dataset.key=key;const action=document.createElement("button");action.type="button";action.className="history-delete";action.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M6.5 7l.8 12.1A1.5 1.5 0 0 0 8.8 20.5h6.4a1.5 1.5 0 0 0 1.5-1.4L17.5 7M10 11v5.5M14 11v5.5"/></svg><span>删除</span>';const surface=document.createElement("div");surface.className="history-row-surface";row.append(action,surface);bindSwipe(row,()=>openSwipe(row));return{row,surface,action}}
 function renderPicker(dir){if(!model.range)return;const start=model.range.start,end=model.range.end,firstMonth=start.slice(0,7),lastMonth=end.slice(0,7);if(pickerMonth<firstMonth)pickerMonth=firstMonth;if(pickerMonth>lastMonth)pickerMonth=lastMonth;pickerTitle.textContent=monthLabel(pickerMonth);pickerPrev.disabled=pickerMonth<=firstMonth;pickerNext.disabled=pickerMonth>=lastMonth;pickerGrid.innerHTML="";const [y,m]=pickerMonth.split("-").map(Number),first=new Date(Date.UTC(y,m-1,1)),offset=first.getUTCDay(),days=new Date(Date.UTC(y,m,0)).getUTCDate(),data=new Map(model.history.map(x=>[x.date,true]));for(let i=0;i<offset;i++){const e=document.createElement("span");e.className="history-calendar-empty";pickerGrid.appendChild(e)}for(let day=1;day<=days;day++){const date=pickerMonth+"-"+String(day).padStart(2,"0"),b=document.createElement("button");b.type="button";b.textContent=day;const inRange=date>=start&&date<=end,has=data.has(date);b.disabled=!inRange||!has;b.className="history-calendar-day"+(has?" has-data":"");if(has)b.onclick=()=>{picker.hidden=true;location.href="/pages/order_detail?source=today&from=history&date="+encodeURIComponent(date)};pickerGrid.appendChild(b)}if(dir){const cls=dir<0?"cal-anim-left":"cal-anim-right";for(const el of [pickerTitle,pickerGrid]){el.classList.remove("cal-anim-left","cal-anim-right");void el.offsetWidth;el.classList.add(cls)}}}
 function openPicker(){const today=todayCN();if(!model.range){const y=today.slice(0,4);model.range={start:y+"-01-01",end:today}}pickerMonth=focusDate.slice(0,7)||model.history[0]?.date?.slice(0,7)||today.slice(0,7);renderPicker();picker.hidden=false}

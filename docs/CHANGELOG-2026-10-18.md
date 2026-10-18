@@ -148,3 +148,26 @@
 **验证**：CDP 四阶段探针（`scripts/probe_history_swipe.py`）：①跟手 tx=-60（修复前 0）②松手吸附 -84px ③点击删除 → 确认弹窗（日期行动态文案「确定删除10月18日历史记录吗？删除后可在回收站恢复（7天内）。」）④行外点击收起。全量 45 项 node 测试绿（736 ✅）。
 
 **踩坑**：① 探针阶段3 连挫两次——`touchEnd(0,0)` 使 click 合成到页面外；坐标 `surfRight-42` 又落到行表面误触「收起」，正确中心 = `surfRight + delW/2`；manual `.click()` 验证 onclick 链路本身完好。② suppress 布尔标志拖尾吞点击——改时间窗。
+
+---
+
+## 紧急修复：未左滑却露出删除按钮（2026-10-18 夜间，commit 见 main）
+
+**用户反馈（带截图）**：「删除按钮没有滑动的情况下，依然能看见，没滑动的情况下，按钮不应该能看见」。截图显示**多个行无规律地同时露出**删除按钮（10月18日/10日/9日/8日/6日/5日……）。
+
+**根因（上一轮跟手重写引入，探针双指场景实锤）**：双指触摸（如两拇指滚动页面）时——
+1. 指1 在某行横向拖动 → `decided=true`、`paint()` 写入 inline transform；
+2. 指2 落在同一行 → 第二个 `touchstart` 把 `dragged` 重置为 `false`（若指2 落点在行外，行的 touchstart 守卫根本看不到 `touches.length=2`——触摸事件从 target 向上冒泡，不会向下传到其他行）；
+3. 指1 抬起 → `finish` 因 `!dragged` **提前 return，inline transform 永久残留** → 行表面永远左移、删除按钮常露，且 `swiped` 类不在，`closeOpen`/`openSwipe` 均清不到它。
+
+指2 落行外的场景更隐蔽：行内 `moving/decided` 保持，指1 抬起时 `finish` 正常走 far 判定，dx≈-35px + 速度快即**误判为展开**。
+
+**修复（三层多指守卫 + 无条件清理）**：
+- `touchstart`：`e.touches.length>1` → 放弃并清理（两指同时落本行）；
+- `touchmove`：`e.touches.length>1` → 立即放弃并清理（第二指中途加入，覆盖落点在本行外的场景）；
+- `touchend`（finish）：`e.touches.length>0`（屏幕上还有其他手指）→ 放弃并清理（双指中一指先抬）；
+- `painted` 标志跟踪 inline 写入，`clear()` 幂等清理；`finish` 不再因 `!dragged` 提前 return，`far` 判定增加 `decided` 前提。
+
+**验证**：探针新增阶段5/6 回归——① 双指污染序列（指1 拖动 painted → 指2 落行外 → 指1 抬）连施 3 行，全部 tx=0 无残留（修复前第 4 行误展开至 -84px）；② 单指左滑链路无回归（跟手 tx=-60 → 吸附 -84 → 删除弹窗 → 行外收起）。全量 45 项测试 736 ✅ 绿（sw-precache 抓到此轮改码忘刷哈希的时序倒置，刷后复绿）。
+
+**教训**：跟手式 swipe 的 inline transform 必须配「无条件清理 + 多指放弃」；双指守卫必须三层齐全——只守 touchstart 守不住「第二指落在行外」（事件不向下传播）。
