@@ -368,3 +368,24 @@ id 自动全局会静默被遮蔽，运行时才炸。
 `:active` 由硬编码深底（会把反相文字再次藏掉）改为 `opacity:.82` 按压反馈。
 浅色主题覆盖块无需改动（本就正确）。全局排查其余页面无同类写法
 （offline.html 那处是浅色覆盖，正确）。
+
+---
+
+## #17 下载应用仍显示 v1.0.7（APK 未随发版同步）
+
+**现象**：关于页顶部版本 v1.0.8，但「下载应用 → 安卓安装包」仍显示 v1.0.7。
+
+**根因**：版本不同步。web `version.json` 因环境变量管理员 + 线路修复已升 1.0.8，
+但托管下载的 APK 仍是 `tianbops/zhipei` 私有仓库 v1.0.7 release 的包
+（md5 `215ca983…`，size 3846862）。APK 实际来源是 `tianbops/zhipei` 的
+GitHub Releases，本仓库 `downloads/` 只镜像最新包——发版时没同步。
+
+**修复**：从 `tianbops/zhipei` Releases v1.0.8 拉取
+`zhipei-one-1.0.8-release.apk`（size 3848038，md5 `8053daa7…`，
+已校验 ≠ 旧包），覆盖 `downloads/zhipei-one-latest-release.apk`；
+`manifest.json` 同步 version→1.0.8 / size→3848038 / updated→2026-10-19。
+页面 `account.html` 已动态读 manifest，无需改代码。
+
+**教训**：发版流程须「打 tag vX.Y.Z 出 APK（zhipei 仓库 Releases）
++ 同步本仓库 downloads/ 的 APK 与 manifest + 改 version.json」三者一致，
+否则下载页会滞后。安卓工程 `gradle` 的 versionName 此前也漏升，本次一并补到 1.0.8。
