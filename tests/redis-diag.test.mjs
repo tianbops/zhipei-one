@@ -65,3 +65,35 @@ test("redis-diag: 报告管理员初始化密钥是否已配置（空库死锁�
   const res2 = await mod.onRequestGet(ctx("?k=zpdiag-8f3a2c", {}));
   assert.equal((await res2.json()).adminSetupKeyConfigured, false);
 });
+
+test("redis-diag: 环境变量自检表覆盖全部必填项，且绝不回传变量值", async () => {
+  for (const name of ["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN",
+                      "PADDLEOCR_ACCESS_TOKEN", "ADMIN_USERNAME", "ADMIN_PASSWORD_HASH"]) {
+    assert.ok(src.includes('name:"' + name + '"'), "自检表缺少必填变量: " + name);
+  }
+  // 僵尸变量要能被识别出来，否则用户会一直以为"配了就生效"
+  for (const name of ["ADMIN_BOOTSTRAP_KEY", "DATA_RESET_KEY"]) {
+    assert.ok(src.includes('name:"' + name + '"') && src.includes("deprecated:true"),
+      "应把 " + name + " 标为已废弃（代码从不读取）");
+  }
+  // 只回传 set 布尔，任何变量值都不许出现在输出里
+  assert.ok(!/value\s*:\s*env\./.test(src), "自检表绝不能回传变量值");
+
+  const bare = await (await mod.onRequestGet(ctx("?k=zpdiag-8f3a2c", {
+    UPSTASH_REDIS_REST_URL: "http://127.0.0.1:1", UPSTASH_REDIS_REST_TOKEN: "t",
+  }))).json();
+  const chk = bare.env_check;
+  assert.ok(chk, "必须输出环境变量自检表");
+  assert.equal(chk.ok, false, "缺管理员变量时 ok 必须为 false");
+  assert.deepEqual(chk.missing_required.sort(),
+    ["ADMIN_PASSWORD_HASH", "ADMIN_USERNAME", "PADDLEOCR_ACCESS_TOKEN"],
+    "缺失项必须逐条列出");
+
+  // 只配账号不配哈希 = 不可用（envAdminCredentials 要求成对且格式合法）
+  const half = await (await mod.onRequestGet(ctx("?k=zpdiag-8f3a2c", {
+    UPSTASH_REDIS_REST_URL: "http://127.0.0.1:1", UPSTASH_REDIS_REST_TOKEN: "t",
+    PADDLEOCR_ACCESS_TOKEN: "x", ADMIN_USERNAME: "root",
+  }))).json();
+  assert.equal(half.env_check.env_admin_usable, false, "管理员变量必须成对配置");
+  assert.equal(half.env_check.ok, false);
+});

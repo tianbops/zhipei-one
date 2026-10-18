@@ -18,6 +18,53 @@ function endpointOf(env){
   try { return new URL(env.UPSTASH_REDIS_REST_URL).host; } catch { return null; }
 }
 
+// 环境变量自检表：这次事故的教训是"控制台配了什么"和"代码实际读什么"根本不是一回事
+// （ADMIN_BOOTSTRAP_KEY 配了但代码从不读；ADMIN_SETUP_KEY 缺失导致空库死锁）。
+// 与其每次 grep 代码对表，不如让线上自己报：必填项缺哪个、哪些是配了也没用的僵尸变量。
+// 只回传"配没配"与"是否合法"，绝不回传任何值。
+const ENV_SPEC = [
+  {name:"UPSTASH_REDIS_REST_URL",      required:true,  note:"Redis REST 地址（现为亚太新库）"},
+  {name:"UPSTASH_REDIS_REST_TOKEN",    required:true,  note:"Redis REST 令牌"},
+  {name:"PADDLEOCR_ACCESS_TOKEN",      required:true,  note:"运单 OCR 识别"},
+  {name:"ADMIN_USERNAME",              required:true,  note:"环境变量管理员账号（清库后可重建管理员）"},
+  {name:"ADMIN_PASSWORD_HASH",         required:true,  note:"SHA-256(密码) 64 位 hex"},
+  {name:"ADMIN_SETUP_KEY",             required:false, note:"备选：/api/admin/bootstrap 一次性初始化"},
+  {name:"PADDLEOCR_BASE_URL",          required:false, note:"可选，不配则用官方默认地址"},
+  {name:"WAYBILL_STRICT_OWNER",        required:false, note:'可选，"1" 时运单回退为仅本人可见（止血开关）'},
+  {name:"WAYBILL_HISTORY_MONTHS",      required:false, note:"可选，默认 13 个月查询窗口"},
+  {name:"ADMIN_BOOTSTRAP_KEY",         deprecated:true, note:"代码从不读取，可删"},
+  {name:"DATA_RESET_KEY",              deprecated:true, note:"admin/reset.js 已硬编码 410，可删"},
+];
+
+function envCheck(env){
+  const cred = envAdminCredentials(env);
+  const set = (n) => {
+    const v = env?.[n];
+    return v !== undefined && v !== null && String(v).trim() !== "";
+  };
+  const items = ENV_SPEC.map((s) => {
+    const present = set(s.name);
+    let status;
+    if (s.deprecated) status = present ? "DEPRECATED" : "ABSENT";
+    else if (!present) status = s.required ? "MISSING_REQUIRED" : "OPTIONAL_UNSET";
+    else status = "OK";
+    return {name:s.name, required:!!s.required && !s.deprecated, deprecated:!!s.deprecated,
+            set:present, status, note:s.note};
+  });
+  // 两个管理员变量必须"成对且合法"才算可用：账号格式对 + 哈希是 64 位 hex，
+  // 只配一个等于没配（envAdminCredentials 会返回 null）。
+  const missing = items.filter((x) => x.status === "MISSING_REQUIRED").map((x) => x.name);
+  const deprecatedSet = items.filter((x) => x.status === "DEPRECATED").map((x) => x.name);
+  return {
+    ok: missing.length === 0 && !!cred,
+    missing_required: missing,
+    // 管理员能不能在空库上自助重建，是这套配置里唯一"缺了就进不去系统"的项
+    env_admin_usable: !!cred,
+    deprecated_but_set: deprecatedSet,
+    items,
+  };
+}
+
 export async function onRequestGet(context){
   const {request, env} = context;
   const url = new URL(request.url);
@@ -27,7 +74,9 @@ export async function onRequestGet(context){
   if (!env?.UPSTASH_REDIS_REST_URL || !env?.UPSTASH_REDIS_REST_TOKEN) {
     // 这个分支也要报：空库死锁的判定（管理员能否初始化）不依赖 Redis 是否配好
     return json({success:false, error:"REDIS_NOT_CONFIGURED", configured:false,
-                 adminSetupKeyConfigured: !!env.ADMIN_SETUP_KEY}, 200);
+                 env_check: envCheck(env),
+                 adminSetupKeyConfigured: !!env.ADMIN_SETUP_KEY,
+                 adminEnvConfigured: !!envAdminCredentials(env)}, 200);
   }
 
   const out = {
@@ -47,6 +96,7 @@ export async function onRequestGet(context){
     // 环境变量管理员是否可用（账号名 + 合法 sha256 hex 哈希都在才算）。
     // 它决定了"数据库被清空后系统还能不能进得去"。
     adminEnvConfigured: !!envAdminCredentials(env),
+    env_check: envCheck(env),
     cf: {
       colo: request.cf?.colo ?? null,
       country: request.cf?.country ?? null,

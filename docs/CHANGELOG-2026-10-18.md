@@ -274,3 +274,36 @@
 **守护**：`tests/appearance-theme-bootstrap.test.mjs` 新增断言——`ui-unified.js` 必须回传且底色常量与主题一致；所有含 theme-color 的主题页，首屏内联脚本必须同步壳（防止有人把状态栏改回透明/跟随系统）。
 
 **验证**：45 项 node 测试全绿（含 sw-precache 94 项）；SW zp-pwa-68。
+
+---
+
+## #13 管理员改为环境常量：数据库清空后仍能进系统（P0）
+
+**背景（事故）**：Redis 迁库时旧库被删、新库为空，而管理员账号只存在数据库里。
+结果形成死锁链：**没有管理员 → 不能创建邀请码 → 不能注册任何用户 → 永远进不去**。
+管理员初始化接口 `/api/admin/bootstrap` 又依赖 `ADMIN_SETUP_KEY`，实测该变量未配置（503）。
+
+**修复**：把管理员钉成"环境常量"。
+
+- 新增 `functions/api/_env-admin.js`：
+  读 `ADMIN_USERNAME` + `ADMIN_PASSWORD_HASH`（= `SHA-256(密码)` 的 64 位小写 hex，
+  与 `login.js` 的 `hash()` 同格式）。登录时**播种**——库里没有就把管理员原子补回库里，
+  哈希不一致则以环境变量为准（**改环境变量 = 改管理员密码**）。
+  - 已就绪时不写库，不浪费额外往返；
+  - 哈希格式非法（非 64 位 hex）视为未配置，绝不写半成品管理员；
+  - Lua 只负责原子落库，user JSON 在 JS 侧构造（MiniRedis 的 cjson 没有 `cjson.null`）。
+- `login.js`：密码校验前先 `ensureEnvAdmin()`。
+- `register.js`：管理员账号名列为系统保留名，禁止普通注册抢占（409）。
+- 新增 `tools/gen-admin-hash.mjs`：本地生成哈希，**密码不出本机**。
+- 诊断端点增补 `adminEnvConfigured` / `adminSetupKeyConfigured`（只报布尔，不回传值）。
+
+**配套环境变量**（Cloudflare Pages，配完**必须重新部署**）：
+
+```
+ADMIN_USERNAME        = <管理员账号，3-32 位字母/数字/下划线>
+ADMIN_PASSWORD_HASH   = <node tools/gen-admin-hash.mjs '密码' 的输出>
+```
+
+**验证**：新增 `tests/env-admin.test.cjs`（15 项，已并入 `npm run test:node`）：
+空库登录成功且 role=admin、幂等不重复写库、改哈希后旧密码失效、非法哈希不写库、
+用户名不匹配不播种、保留名注册被拒。全量测试通过。
