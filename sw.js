@@ -9,35 +9,51 @@
  *   - 图片/字体       ：stale-while-revalidate（内容基本不变，秒开优先）
  * 资产缓存键用完整 URL（含 ?v=）精确匹配；页面缓存键用 pathname 规整（忽略 ?from 等查询）。
  */
-const VERSION = "zp-pwa-58";
+const VERSION = "zp-pwa-59";
 const STATIC_CACHE = VERSION + "-static";
 const PAGES_CACHE = VERSION + "-pages";
 const OFFLINE_URL = "/offline";
 
-/* 安装即预缓存：App 壳 + 司机高频页面（统一用 clean URL，避免 308） */
+/* PRECACHE-BEGIN */
+/* 安装即预缓存：App 壳 + 司机高频页面 + 全部版本化静态资源。
+ * 本块由 scripts/bump_asset_versions.py 依据 HTML 真实引用生成，勿手改。
+ * 版本化资源必须带 ?v= 完整 URL——SWR 以完整 URL 为缓存键，
+ * 预缓存不带 ?v= 的条目永远命中不了页面请求（2026-10-18 修复的历史坑）。 */
 const PRECACHE = [
   "/",
-  OFFLINE_URL,
   "/home",
   "/pages/today",
-  "/css/app.css",
-  "/css/ui-unified.css",
-  "/css/mobile-ui.css",
-  "/css/business-pages.css",
-  "/css/home.css",
-  "/css/history.css",
-  "/css/data.css",
-  "/css/order_detail.css",
-  "/js/ui-unified.js",
-  "/js/login.js",
-  "/js/home.js",
-  "/js/history.js",
-  "/js/order_detail.js",
-  "/js/register.js",
-  "/assets/logo.webp",
+  "/pages/dispatch",
+  "/pages/history",
+  "/pages/route_apply",
+  "/pages/account",
+  "/register",
+  "/offline",
+  "/assets/delivery-route.webp?v=32331a42",
+  "/assets/icons/icon-192.png?v=e16a8e10",
+  "/assets/logo.webp?v=bd681172",
+  "/css/app.css?v=fc3c9fab",
+  "/css/business-pages.css?v=4ffa4ab7",
+  "/css/data.css?v=6225b669",
+  "/css/history.css?v=01371cb6",
+  "/css/home.css?v=b8c817e3",
+  "/css/mobile-ui.css?v=285d41d0",
+  "/css/order_detail.css?v=beecbd66",
+  "/css/ui-unified.css?v=a6382104",
+  "/js/history.js?v=ce2c6c13",
+  "/js/home-monthly.js?v=f1fe2451",
+  "/js/home.js?v=d8699af8",
+  "/js/login.js?v=2f574a8a",
+  "/js/order_detail.js?v=a4660bc5",
+  "/js/pwa.js?v=864ce384",
+  "/js/register.js?v=eafb4977",
+  "/js/ui-unified.js?v=ba869ff1",
+  "/assets/icons/apple-touch-icon.png",
   "/assets/icons/icon-192.png",
-  "/assets/icons/icon-512.png"
+  "/assets/icons/icon-512.png",
+  "/assets/icons/icon-maskable-512.png",
 ];
+/* PRECACHE-END */
 
 const cacheKeyOf = url => new URL(url).pathname;
 

@@ -93,3 +93,18 @@
 
 - 根因备注：用户截图中顶栏返回箭头正常、仅导航爆炸 → 设备上 ui-unified.css 实为不含业务导航规则的历史旧版（SW/边缘缓存陈化、间歇 Serve），或 body 类未加上；三条触发路径产物相同，已由内联呈现属性一次性免疫。
 - 验证：本地 43 项 node 测试全绿；CDP 三场景（基线/屏蔽 CSS/屏蔽 JS）homeIcon 恒 21×21；`?v=` 9 个引用页同步刷新。
+
+---
+
+## PWA/SW 缓存治理（2026-10-18 夜间，commit 见 main）
+
+| # | 项目 | 内容 |
+|---|------|------|
+| 9 | SW 预缓存死条目 | 历史 PRECACHE 中 19 个 CSS/JS 条目**不带 ?v=**，而 SWR 缓存键是完整 URL——预缓存与页面请求永远匹配不上，首屏壳资源仍全额回源。现由脚本按 HTML 真实引用重建：32 条预缓存全部带正确 ?v=，install 即全覆盖 |
+| 10 | ?v= 哈希漂移 | 历史哈希按 CRLF 内容计算，LF 规范化后 15 个引用全部失真（改文件不换 URL → 设备永久命中旧资产）。现统一约定为**入库内容 md5[:8]**，脚本一键重算刷新（本次 14 个 HTML / 51 处） |
+| 11 | 版本号治理缺测试 | 新增 `tests/sw-precache.test.mjs`（CI 第 44 项）：①HTML 每个版本化引用必须原样进 PRECACHE；②?v= 必须等于文件 md5[:8]；③PRECACHE 无死条目、文件均存在。配套 `scripts/bump_asset_versions.py`（幂等，无变化不 bump 版本） |
+
+- SW VERSION：zp-pwa-58 → **zp-pwa-59**（activate 清理旧缓存，设备全量刷新预缓存——顺带根治「旧版 ui-unified.css 无导航规则」的缓存陈化路径）。
+- 预缓存页面集：/、/home、/pages/today、/pages/dispatch、/pages/history、/pages/route_apply、/pages/account、/register、/offline（admin/setup 属办公侧低频，不入预缓存）。
+- CDP 三阶段实测（本地干净 profile）：①SW activated，PRECACHE **32/32 命中**；②清空 HTTP 缓存后二次访问，版本化 CSS/JS **网络请求 0**；③模拟离线打开线路页——页面完整渲染（导航 fixed、图标 21px），接口区显示「线路读取失败 + 重试按钮」。
+- 本地 44 项 node 测试全绿（新增 sw-precache 94 断言）。
