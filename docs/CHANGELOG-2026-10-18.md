@@ -389,3 +389,24 @@ GitHub Releases，本仓库 `downloads/` 只镜像最新包——发版时没同
 **教训**：发版流程须「打 tag vX.Y.Z 出 APK（zhipei 仓库 Releases）
 + 同步本仓库 downloads/ 的 APK 与 manifest + 改 version.json」三者一致，
 否则下载页会滞后。安卓工程 `gradle` 的 versionName 此前也漏升，本次一并补到 1.0.8。
+
+---
+
+## V1.0.9 总控核查：版本号统一升 V1.0.9 + 全局大写 V
+
+**范围**：项目总控级全方位核查——web 版本（`version.json` / 下载 `manifest.json` / 关于页显示）与 app 版本（APK `versionName` / `gradle` / 发行版标题）全面对齐，整体升到 **V1.0.9**，并落实「版本号前缀全局统一为大写 V」。
+
+**核查发现与优化**：
+- 关于页版本前缀原为小写 `v`（「版本 v」/「安卓安装包 v」），与全局大写 V 约定不符 → 改为大写 `V`（`account.html` 第 262、319 行）。
+- 发行版命名原为小写 `智配One vX.Y.Z`（源仓库 `tianbops/zhipei` 与下载页 `zhipei-one` 两处）→ 统一为 `智配One VX.Y.Z`：
+  - 源仓库 `android.yml` 构建发布步骤新增 `name: 智配One V${{ steps.ver.outputs.name }}`；
+  - 下载页同步 job（`sync-download` → `ensure_release`）发行版名由 `"智配One " + tag` 改为 `"智配One V" + VER`。
+
+**版本真值源（不变）**：git tag 仍是 web 与 APK 唯一真值源。打 `v1.0.9` tag → CI 构建 APK（`versionName` 由 tag 经 `sed` 注入为 `1.0.9`）→ 发布 Release → `sync-download` 自动镜像 APK + `manifest.json` + `version.json` 到 `zhipei-one`，并在 `zhipei-one` 建同 tag 发行版 `智配One V1.0.9` → Cloudflare Pages 部署。
+
+**结果（已验证）**：
+- web `version.json` = 1.0.9；下载 `manifest.json` version = 1.0.9（size 3848038，与 1.0.9 真包一致）。
+- 关于页显示「版本 V1.0.9」「安卓安装包 V1.0.9」。
+- `tianbops/zhipei` 发行版 `v1.0.9`（标题 `智配One V1.0.9`）、`zhipei-one` 发行版 `智配One V1.0.9` 均已创建。
+- APK 为 1.0.9 真构建（资产名 `zhipei-one-1.0.9-release.apk`，内部 `versionName` 1.0.9）；其字节大小与 1.0.8 相同属正常（仅版本字符串一字符之差，压缩后总大小不变）。
+- app `gradle` `versionName` 1.0.9 / `versionCode` 9（源码基线同步；CI 构建时按 tag 覆盖）。
