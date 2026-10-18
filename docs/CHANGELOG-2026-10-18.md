@@ -307,3 +307,26 @@ ADMIN_PASSWORD_HASH   = <node tools/gen-admin-hash.mjs '密码' 的输出>
 **验证**：新增 `tests/env-admin.test.cjs`（15 项，已并入 `npm run test:node`）：
 空库登录成功且 role=admin、幂等不重复写库、改哈希后旧密码失效、非法哈希不写库、
 用户名不匹配不播种、保留名注册被拒。全量测试通过。
+
+---
+
+## #14 新增线路保存必报错：输入框 id 被 `rn` 格式化函数遮蔽（P1）
+
+**现象**：管理端「线路管理 → 新增线路」无论输入什么名字，点保存都 toast
+`Cannot read properties of undefined (reading 'trim')`，线路建不出来。
+
+**根因（作用域遮蔽）**：#12 之前的「线路名统一显示 X 号线」改动在 admin.html
+脚本顶层加了 `const rn = v => {...}`（route name 格式化函数）；而「新增线路」
+弹窗的输入框 id 恰好也叫 `rn`，保存处理函数依赖浏览器 id 自动全局
+（`rn.value.trim()`）。IIFE 作用域里 `const rn` 把 `window.rn` 遮蔽，
+`rn.value` 为 `undefined` → `.trim()` 抛错，被弹窗错误处理 toast 出来。
+任何名字都存不了，与用户输入无关。
+
+**修复**：输入框 id 改为 `nr`，处理函数显式 `$("nr").value` 读取
+（不再依赖 id 自动全局），并加注释说明 id 不能叫 `rn`。
+
+**排查**：同文件其余弹窗输入框 id（nu/op/np/cp/rp/br/bd/iu/id/ic）均无同名
+顶层声明，无同类隐患；内联脚本 node 编译全过。
+
+**教训**：给页面顶层加短名常量/函数前，先全文搜一遍同名 id——
+id 自动全局会静默被遮蔽，运行时才炸。

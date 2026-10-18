@@ -437,7 +437,7 @@ function swInvite(el){
   el.addEventListener("touchcancel",()=>{active=false},{passive:true})
 }
 
-function addRoute(){open("新增线路","建立一条新的线路",'<div class="field"><label>线路名称</label><input id="rn" maxlength="40" placeholder="请输入线路名称"></div>',"保存",false,async()=>{if(!rn.value.trim())return toast("请输入线路名称");await api("/api/routes",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:rn.value.trim()})});close();toast("线路创建成功");load()})}
+function addRoute(){/* 输入框 id 不能叫 rn：顶层 const rn（线路名格式化函数）会遮蔽 id 自动全局，rn.value 即 undefined → trim 报错。改用 id="nr" 并显式 $("nr") 读取。 */open("新增线路","建立一条新的线路",'<div class="field"><label>线路名称</label><input id="nr" maxlength="40" placeholder="请输入线路名称"></div>',"保存",false,async()=>{const name=($("nr").value||"").trim();if(!name)return toast("请输入线路名称");await api("/api/routes",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name})});close();toast("线路创建成功");load()})}
 async function inviteAct(id,action){
   const c=(S.invites||[]).find(x=>x.id===id);if(!c)return;
   if(action==="remove"){
