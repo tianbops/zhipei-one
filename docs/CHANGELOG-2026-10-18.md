@@ -81,3 +81,15 @@
 2. 更新 `repo-web/downloads/manifest.json` 的 `version` / `updated`；
 3. 跑 `scripts/push_download_apk.py`；
 4. （如需）更新 `version.json` 与 `docs/` 归档说明，bump `sw.js` 的 `VERSION`。
+
+---
+
+## 定版后热修复（v1.0.7 线上问题，2026-10-18）
+
+| # | 问题 | 严重度 | 修复 |
+|---|------|--------|------|
+| 7 | 线路页底部导航**间歇性**渲染成巨型纯黑房子图标：导航 5 个 SVG 无内联宽高/填充，唯一尺寸规则（21px + fill/stroke）在外部 ui-unified.css 且以 body 的 `zp-business-nav-page` 类为作用域；CSS 未生效/旧缓存/类缺失时按 SVG 默认 100% 宽度渲染成约 400px 纯黑图标，5 个导航项纵向堆叠、仅首项「首页」露出并被屏幕底边截断（用户手机截图实锤；本地 CDP 三场景复现：屏蔽 CSS → 398×398、屏蔽 JS → 468×468） | 高 | ✅ dispatch/home 静态导航 5 个 SVG 与顶栏返回箭头、ui-unified.js 注入导航模板全部补内联 width/height/fill/stroke 呈现属性——任何 CSS 缺失/陈化态下图标恒为 21px 描边；修复后三场景探针实测 21×21；ui-unified.js `?v=` 击穿至 ba869ff1（9 个引用页同步） |
+| 8 | 线路页「读取中…」永久卡死：`api()` 的 fetch 无超时，移动网络挂起时 `Promise.all` 永不 settle，catch 永不触发，界面连失败态都不渲染 | 高 | ✅ `api()` 增加 10s AbortController 超时；失败态由无按钮的死文案「请重试」改为可点击的重试按钮（点击回读取态并重新 load） |
+
+- 根因备注：用户截图中顶栏返回箭头正常、仅导航爆炸 → 设备上 ui-unified.css 实为不含业务导航规则的历史旧版（SW/边缘缓存陈化、间歇 Serve），或 body 类未加上；三条触发路径产物相同，已由内联呈现属性一次性免疫。
+- 验证：本地 43 项 node 测试全绿；CDP 三场景（基线/屏蔽 CSS/屏蔽 JS）homeIcon 恒 21×21；`?v=` 9 个引用页同步刷新。

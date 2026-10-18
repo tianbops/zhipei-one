@@ -234,7 +234,8 @@
     nav.innerHTML=items.map(item=>{
       const cls="bottom-nav-item"+(item.cls?" "+item.cls:"")+(item.plus?" bottom-nav-plus":"")+(active===item.id?" is-active":"");
       const label=item.plus?"":'<span>'+item.label+'</span>';
-      return '<a class="'+cls+'" href="'+item.href+'"'+(active===item.id?' aria-current="page"':"")+(item.plus?' aria-label="'+item.label+'"':'')+'><span class="bottom-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24">'+item.icon+'</svg></span>'+label+'</a>';
+      const dim=item.plus?'width="24" height="24" stroke-width="2.2"':'width="21" height="21" stroke-width="1.8"';
+      return '<a class="'+cls+'" href="'+item.href+'"'+(active===item.id?' aria-current="page"':"")+(item.plus?' aria-label="'+item.label+'"':'')+'><span class="bottom-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" '+dim+' fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">'+item.icon+'</svg></span>'+label+'</a>';
     }).join("");
     document.body.appendChild(nav);
   }
