@@ -54,3 +54,14 @@ test("redis-diag: 暴露 Worker 所在 PoP 与 RTT 采样（迁移效果要靠�
   assert.ok(src.includes('["PING"]'), "必须做 PING 往返采样");
   assert.ok(src.includes("endpoint"), "必须回传端点（用于确认连的是哪个区域的库）");
 });
+
+test("redis-diag: 报告管理员初始化密钥是否已配置（空库死锁的判据）", async () => {
+  // 只报布尔，绝不回传密钥值
+  assert.ok(src.includes("adminSetupKeyConfigured"), "必须回传管理员初始化密钥的配装状态");
+  assert.ok(!/adminSetupKeyConfigured:\s*env\.ADMIN_SETUP_KEY/.test(src),
+    "绝不能回传 ADMIN_SETUP_KEY 的值");
+  const res = await mod.onRequestGet(ctx("?k=zpdiag-8f3a2c", {ADMIN_SETUP_KEY: "s3cret"}));
+  assert.equal((await res.json()).adminSetupKeyConfigured, true);
+  const res2 = await mod.onRequestGet(ctx("?k=zpdiag-8f3a2c", {}));
+  assert.equal((await res2.json()).adminSetupKeyConfigured, false);
+});

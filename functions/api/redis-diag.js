@@ -37,6 +37,10 @@ export async function onRequestGet(context){
       branch: env.CF_PAGES_BRANCH ?? null,
       commit: (env.CF_PAGES_COMMIT_SHA ?? "").slice(0, 10) || null,
     },
+    // 空库时系统能否自助启动，全看这个开关：没它 /api/admin/bootstrap 直接 503，
+    // 于是"没有管理员 → 不能建邀请码 → 不能注册"死锁，数据清空后系统永远进不去。
+    // 只回传"配没配"，绝不回传值。
+    adminSetupKeyConfigured: !!env.ADMIN_SETUP_KEY,
     cf: {
       colo: request.cf?.colo ?? null,
       country: request.cf?.country ?? null,
