@@ -31,6 +31,12 @@ export async function onRequestGet(context){
     success: true,
     configured: true,
     endpoint: endpointOf(env),
+    // 环境变量改完必须重新部署才生效，所以要把线上实际跑的构建也报出来，
+    // 否则无法区分"配置没改"和"改了但没部署"。
+    deploy: {
+      branch: env.CF_PAGES_BRANCH ?? null,
+      commit: (env.CF_PAGES_COMMIT_SHA ?? "").slice(0, 10) || null,
+    },
     cf: {
       colo: request.cf?.colo ?? null,
       country: request.cf?.country ?? null,
@@ -58,11 +64,11 @@ export async function onRequestGet(context){
   }
 
   // 2) 键空间概览（只统计，不返回任何键名/键值）
+  const types = Object.create(null);
   try {
     let cursor = "0";
     let total = 0;
     const prefixes = Object.create(null);
-    const types = Object.create(null);
     do {
       const res = await command(env, ["SCAN", cursor, "COUNT", "500"]);
       const next = Array.isArray(res) ? String(res[0]) : "0";
