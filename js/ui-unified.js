@@ -35,8 +35,19 @@
       const resolved=chosen==="system"?(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):chosen;
       root.dataset.zpTheme=resolved;
       root.dataset.zpThemeChoice=chosen;
+      const dark=resolved!=="light";
+      const bg=dark?"#05070A":"#F4F6F8";
       const meta=document.querySelector('meta[name="theme-color"]');
-      if(meta)meta.setAttribute("content",resolved==="light"?"#F4F6F8":"#05070A");
+      if(meta)meta.setAttribute("content",bg);
+      // 安卓壳（Capacitor）状态栏同步：壳里此前是「透明状态栏 + 图标跟随系统深浅色」，
+      // 于是 App 深色外观 + 系统浅色模式（或反过来）时图标与底色同色，状态栏直接看不见。
+      // 这里把网页实际外观回传给壳，由壳把状态栏/导航栏底色设为不透明主题色、
+      // 图标明暗按底色取反，两个来源从此只有网页一个真值。浏览器/PWA 里没有该对象，
+      // 静默跳过即可（那条路径靠上面的 theme-color 生效）。
+      try{
+        const native=window.ZhipeiNative;
+        if(native&&typeof native.applyTheme==="function")native.applyTheme(bg,dark);
+      }catch(e){}
       document.dispatchEvent(new CustomEvent("zp:appearancechange",{detail:{theme:chosen,resolved}}));
     };
     // 全局字号缩放的目标标签：必须覆盖所有可能直接包裹文本的标签。

@@ -234,3 +234,43 @@
 **验证**：历史页四个板块（card/actions/secondary-row/list）双主题均为内缩 16px、宽 468，与线路页逐像素一致；45 项测试 736 ✅；左滑链路（跟手 tx=-60 / 双指无残留 / 单指吸附 -84）无回归；SW zp-pwa-67。
 
 **备注**：首页 `.home-app` 是 14px（比全局 token 少 2px，历史遗留）。本次只按用户要求对齐历史页；首页是否一并统一到 16px 待确认。
+
+---
+
+## #11 首页板块宽度统一到全局 16px
+
+上一节的备注项已确认处理。首页 `.home-app` 原为 `14px`（历史遗留），比全局 token `--zp-space-4: 16px` 少 2px，跨页切换时板块宽度会跳。
+
+**修复**：`css/home.css` 中 `.home-app` 左右 padding 改为 `var(--zp-space-4,16px)`；同时删除 `@media(max-width:380px)` 里把左右收紧到 12px 的覆盖（小屏与大屏内缩不一致会造成同类跳动）。
+
+**验证**：`/home` 的 `.task-card` 与 `.trend-card` 实测 left=16 / right=484 / w=468（视口 500），与线路页、历史页逐像素一致。
+
+**顺带发现（未处理，待确认）**：`/pages/today` 的 `.order-summary-card` / `.order-route-card` 内缩 12px、`.order-store-list` 内缩 17px，与全局 16px 仍不一致。
+
+---
+
+## #12 安卓壳：深色外观下状态栏看不见（P0）
+
+**现象**：APK 里切到「深色外观」，手机顶部状态栏（时间/电量/信号）看不见。
+
+**根因链**（三处叠加，缺一不会复现）：
+1. `MainActivity.applyStatusBarAppearance()` 里 `getWindow().setStatusBarColor(Color.TRANSPARENT)`——状态栏背景被强制透明，完全绕过 `capacitor.config.json` 的 `backgroundColor:#05070A`；
+2. 图标颜色 `setAppearanceLightStatusBars(!darkMode)` 跟的是**系统**深色模式，不是 App 内的外观设置；
+3. `WindowCompat.setDecorFitsSystemWindows(getWindow(), false)` + WebView 顶部 padding = 状态栏高度，于是状态栏背后露出的是 **WebView 的 padding 区，而 WebView 没设背景色 → 默认白色**。
+
+于是「App 深色 + 系统深色」= 白色图标叠在白条上 → 状态栏内容完全不可见；页面本身又是深色，视觉上状态栏整个"消失"。反之「App 深色 + 系统浅色」则是深色图标压在深色页面上，同样看不见。
+
+**另外一个坑**：`@capacitor/status-bar` 插件根本没装（`scripts/setup-android.mjs` 只注入 `android/cli/core`），所以 `capacitor.config.json` 里的 StatusBar 整段是**死配置**，怎么改都不会生效。
+
+**修复**：让「网页外观」成为状态栏配色的唯一真值。
+- 壳侧（`MainActivity`）：
+  - 新增 `@JavascriptInterface` 对象 `ZhipeiNative.applyTheme(colorHex, darkBg)`，内部在 UI 线程执行 `applyChrome()`：`setStatusBarColor`/`setNavigationBarColor` 设为**不透明主题色**，`setAppearanceLightStatusBars(!darkBg)` 让图标明暗按底色取反，并 `webView.setBackgroundColor(color)` 消除 padding 区白条；
+  - `setNavigationBarContrastEnforced(false)`（Android 15 会给手势条强制加对比蒙层，不关就用不上自己的底色）；
+  - 启动先按深色 `#05070A` 兜底，网页加载后由网页按实际主题覆盖。
+- web 侧：`js/ui-unified.js` 的 `applyTheme()` 回传 `ZhipeiNative.applyTheme(bg, dark)`；`ui-unified.js` 在页面底部，为免首帧跳变，各页 `<head>` 的内联主题脚本（比任何外链 JS 都早）也同步回传一次。
+
+**同步修的隐患**：`android-template/` 下的 MainActivity 还停留在旧版（缺 inset 与字体锁定修复），下次跑 `setup-android.mjs` 会把 `android/` 覆盖回旧版。本次两个目录一并写成同一份新版。
+
+**守护**：`tests/appearance-theme-bootstrap.test.mjs` 新增断言——`ui-unified.js` 必须回传且底色常量与主题一致；所有含 theme-color 的主题页，首屏内联脚本必须同步壳（防止有人把状态栏改回透明/跟随系统）。
+
+**验证**：45 项 node 测试全绿（含 sw-precache 94 项）；SW zp-pwa-68。

@@ -1,5 +1,7 @@
 /* 智配One · 首页移动端 UI */
-.home-app{width:min(100%,430px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:14px 14px calc(24px + env(safe-area-inset-bottom));background:#05070A}
+/* 板块宽度对齐全局：与线路页 / 历史页同用 --zp-space-4（16px）。
+   原为 14px 历史遗留值，比全局窄 2px，跨页切换时板块宽度会跳。 */
+.home-app{width:min(100%,430px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:var(--zp-space-4,16px) var(--zp-space-4,16px) calc(24px + env(safe-area-inset-bottom));background:#05070A}
 .home-app .topbar{display:flex;justify-content:space-between;align-items:center;z-index:100;margin-bottom:8px}
 .home-brand{display:flex;flex-direction:column;line-height:1.2}
 .home-brand strong{font-size:19px;font-weight:700;letter-spacing:.5px;color:#fff}
@@ -74,7 +76,7 @@
 .source-option:focus, .upload-cancel-btn:focus, .processing-retry-btn:focus, .processing-cancel-btn:focus{outline:none;box-shadow:none}
 .source-option:focus-visible, .upload-cancel-btn:focus-visible, .processing-retry-btn:focus-visible, .processing-cancel-btn:focus-visible{outline:2px solid rgba(255,255,255,.24);outline-offset:2px}
 @media(max-width:380px){
- .home-app{padding-left:12px;padding-right:12px}
+ /* 左右内缩不再收紧到 12px：与全局 --zp-space-4 保持同一档，跨页一致 */
  .task-card{margin-top:14px;padding:13px 14px 12px;border-radius:16px}
  .task-title{font-size:20px;line-height:26px}
  .task-date{font-size:16px;line-height:23px}

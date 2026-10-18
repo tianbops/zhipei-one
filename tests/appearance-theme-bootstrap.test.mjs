@@ -71,4 +71,21 @@ assert.ok(
   !/\bbutton\[class\*="danger"\](?!:not)/.test(unified.split("/* 全站删除/危险动作唯一标准")[1] || ""),
   "折叠行组件不得套用危险动作按钮实底样式"
 );
+// 安卓壳状态栏同步：壳里曾把状态栏设为透明、图标跟随「系统」深浅色，
+// 于是 App 深色外观 + 系统浅色（或反之）时图标与底色同色，状态栏直接看不见。
+// 现在唯一真值是网页外观：网页必须把实际主题回传给壳（不透明主题底色 + 图标取反）。
+const unifiedJs = fs.readFileSync(path.join(root, "js/ui-unified.js"), "utf8");
+assert.match(unifiedJs, /ZhipeiNative[\s\S]{0,200}applyTheme\(/,
+  "js/ui-unified.js 必须在应用主题时把底色与深浅回传给安卓壳（ZhipeiNative.applyTheme）");
+assert.ok(/const\s+dark\s*=\s*resolved\s*!==\s*"light"/.test(unifiedJs) && unifiedJs.includes('"#05070A":"#F4F6F8"'),
+  "回传给壳的底色必须与网页主题一致（深色 #05070A / 浅色 #F4F6F8）");
+// ui-unified.js 在页面底部，App 内加载线上页面时可能晚于首帧，
+// 因此 <head> 里的内联主题脚本（比任何外链 JS 都早）也必须回传一次，否则浅色用户会先看到深色状态栏再跳变。
+for (const file of themedPages) {
+  const html = fs.readFileSync(file, "utf8");
+  if (!html.includes('meta[name="theme-color"]')) continue;
+  const firstCss = html.search(/<link\s+[^>]*rel=["']stylesheet["'][^>]*>/i);
+  assert.ok(firstCss >= 0 && html.slice(0, firstCss).includes("ZhipeiNative"),
+    path.relative(root, file) + " 的首屏内联主题脚本必须同步安卓壳状态栏（避免首帧状态栏配色跳变）");
+}
 console.log("主题首屏初始化与浅色基础对比度规则检查通过（" + themedPages.length + " 个页面）");
