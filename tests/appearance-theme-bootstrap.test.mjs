@@ -49,10 +49,21 @@ assert.ok(
   unified.includes('border:1px solid #E8BFC3!important;'),
   "全站危险操作按钮必须使用统一的危险语义红，且与页面背景明确区分"
 );
-for (const selector of [".history-choice-delete", ".history-delete", ".data-swipe-actions .data-swipe-delete", ".page2-danger-btn"]) {
+for (const selector of [".history-choice-delete", ".data-swipe-actions .data-swipe-delete", ".page2-danger-btn"]) {
   assert.ok(unified.includes(selector), "全局危险操作按钮样式缺少覆盖: " + selector);
 }
-assert.ok(unified.includes('button[class*="delete"]:not(.account-collapse-head):active'), "危险操作按钮缺少按压状态");
+// .history-delete（历史页滑动露出的整行高度动作条）改由 history.css 专用实心样式接管，
+// 必须从全站普通按钮标准中显式排除：半透明红晕底会透过行表面（「没滑动却看得见按钮」），
+// 1px 边框会与左侧圆角混绘出「圆角 + 直角框」。
+assert.ok(
+  unified.includes(":not(.history-delete)") && !/^\s*\.history-delete[,:{]/m.test(unified),
+  "滑动动作条 .history-delete 必须从全站普通按钮危险样式中显式排除（透视+圆角直角混绘）"
+);
+assert.ok(
+  fs.readFileSync(path.join(root, "css/history.css"), "utf8").includes(".history-delete{"),
+  "history.css 必须接管 .history-delete 专用样式"
+);
+assert.ok(unified.includes('button[class*="delete"]:not(.account-collapse-head):not(.history-delete):active'), "危险操作按钮缺少按压状态");
 assert.ok(unified.includes('button[class*="delete"]:not(.account-collapse-head):disabled'), "危险操作按钮缺少禁用状态");
 // 折叠行组件（我的页「危险操作」展开头）不是动作按钮，必须被排除在实底红样式之外，保持与其它折叠行形状统一。
 assert.ok(

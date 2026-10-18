@@ -37,7 +37,10 @@
   z-index:2;
   transform:translate3d(0,0,0);
   transition:transform .2s cubic-bezier(.2,.8,.2,1);
-  background:rgba(13,18,24,.82);
+  /* 不透明！此前 rgba(13,18,24,.82) 的 18% 透明度会让下层的红色删除按钮透出来，
+     用户「没滑动却看得见删除按钮」即由此而来。取色 = 该半透明色叠加后的实际观感值，
+     改动零视觉差异。 */
+  background:#0C1117;
   will-change:transform;
 }
 .history-swipe-row.swiped .history-row-surface{
@@ -45,7 +48,11 @@
   box-shadow:8px 0 16px rgba(0,0,0,.28);
 }
 /* 左滑露出的删除按钮：图标+文字纵向居中，红渐变明确危险语义。
-   宽度与 JS 的 SWIPE_W 保持同步（小屏 80px，见文末媒体查询）。 */
+   宽度与 JS 的 SWIPE_W 保持同步（小屏 80px，见文末媒体查询）。
+   注意：已从 ui-unified.css 的「全站删除按钮统一标准」中排除——
+   那是为独立按钮设计的（半透明红晕底 + 1px 红边框 + 红字），
+   套在整行高的滑动动作条上会与左侧圆角混绘出「圆角 + 直角框」。
+   本按钮改为实心 + 无边框 + 白字，左右形状与行严格贴合。 */
 .history-delete{
   position:absolute;
   z-index:1;
@@ -65,7 +72,8 @@
   font-size:12px;
   font-weight:600;
   letter-spacing:1px;
-  box-shadow:inset 1px 0 0 rgba(255,255,255,.10);
+  box-shadow:none;
+  outline:none;
 }
 .history-delete svg{
   width:17px;
@@ -127,7 +135,7 @@
   background:rgba(10,14,19,.88);
 }
 .history-month.expanded .history-month-body{display:block}
-.history-month-body .history-row-surface{background:rgba(10,14,19,.88)}
+.history-month-body .history-row-surface{background:#0A0E13}
 .history-month-body .history-swipe-row{
   border-bottom:1px solid rgba(255,255,255,.055);
 }
@@ -396,10 +404,10 @@
 }
 .history-row-surface{
   min-height:54px;
-  background:rgba(10,14,19,.88);
+  background:#0A0E13;
 }
 .history-month-body .history-row-surface{
-  background:rgba(10,14,19,.88);
+  background:#0A0E13;
 }
 .history-date-main{
   min-height:54px;
@@ -520,6 +528,9 @@
 :root[data-zp-theme="light"] .history-month-main:active{background:#E8EDF1}
 :root[data-zp-theme="light"] .history-count-highlight{color:#17202A}
 :root[data-zp-theme="light"] .history-month + .history-month{border-top-color:#F4F6F8}
+/* 浅色下删除按钮保持白字：ui-unified 的「浅色下所有 button 用深字」通用规则
+   （:root[data-zp-theme="light"] button）优先级低于本规则，显式压回。 */
+:root[data-zp-theme="light"] .history-delete{color:#fff}
 
 /* ---- 浅色补充（全站审计）：日期选择器此前整块沿用深色硬编码 ---- */
 :root[data-zp-theme="light"] .history-picker{background:rgba(24,36,48,.32)}
