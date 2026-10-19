@@ -11,6 +11,15 @@ import {guard} from "../_safe.js";
 
 const clean=v=>String(v??"").trim();
 const parse=v=>{try{return typeof v==="string"?JSON.parse(v):v}catch{return null}};
+const safeTiming=value=>{
+  if(!value||typeof value!=="object"||Array.isArray(value))return null;
+  const out={};
+  for(const key of ["recognizedMs","ocrMs","baseMs","extractMs","matchMs","dedupeMs","planMs","totalMs"]){
+    const n=value[key];
+    if(typeof n==="number"&&Number.isFinite(n)&&n>=0)out[key]=n;
+  }
+  return Object.keys(out).length?out:null;
+};
 
 async function diagnosticGet({request,env}){
   const user=await currentUser(request,env);
@@ -131,6 +140,7 @@ async function diagnosticGet({request,env}){
           ocr:w.ocr||null,
           quality:w.quality||null,
           requestId:w.requestId||null,
+          timing:safeTiming(w.timing),
           pipeline:Array.isArray(w.pipeline)?w.pipeline:[],
           createdAt:w.createdAt||null,
           confirmedAt:w.confirmedAt||null,
