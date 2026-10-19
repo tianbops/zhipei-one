@@ -17,7 +17,7 @@ return {session, user or false}
 `;
 
 export async function currentUser(request,env){
- const token=(request.headers.get("authorization")||"").replace(/^Bearer\\s+/i,"")||readSession(request);
+ const token=(request.headers.get("authorization")||"").replace(/^Bearer\s+/i,"")||readSession(request);
  if(!token) return null;
 
  // 一个 Redis EVAL 在服务端原子读取 session + user，避免两个串行 HTTP 往返。
@@ -43,7 +43,7 @@ export async function currentUser(request,env){
 }
 function readSession(request){
  const raw=request.headers.get("cookie")||"";
- const m=raw.match(/(^|;\\s*)zp_session=([^;]+)/);
+ const m=raw.match(/(^|;\s*)zp_session=([^;]+)/);
  return m?decodeURIComponent(m[2]):"";
 }
 export function requireUser(request,env){
