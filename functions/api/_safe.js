@@ -1,40 +1,28 @@
 /**
- * 智配One · API 错误兜底（1.1 可靠性）
- * ------------------------------------------------------------------
- * 背景（2026-10-06 生产事件）：运单诊断列表因超出 Cloudflare Workers 子请求上限而崩溃，
- * 前端只能拿到一个毫无信息的裸 `500`，排障成本极高。
- *
- * 目标：任何未被业务逻辑捕获的异常，都必须变成**可分诊**的结构化响应：
- *   - Redis / 数据服务类失败 → 503 + DATA_STORE_UNAVAILABLE（对用户是「稍后重试」，不该展示内部细节）
- *   - 其余服务端异常       → 500 + INTERNAL_ERROR（附带截断 detail，便于定位，不外泄凭据）
- * 且**不向上抛出**，避免 Pages Functions 返回 HTML 错误页导致前端 JSON 解析失败。
+ * 智配One · API 错误兜底与轻量性能观测
+ * 所有经 guard 包装的 API 响应都会带 Server-Timing: app;dur=<ms> 与 X-ZP-Request-Id，
+ * 便于浏览器 Network 面板区分「后端处理耗时」与「浏览器/网络等待」。
+ * 仅增加响应头，不改变业务返回体、状态码、鉴权或 Redis 访问行为。
  */
 import { json } from "./_json.js";
 
 const REDIS_MARKERS = ["REDIS_NOT_CONFIGURED", "REDIS_ERROR", "REDIS_PIPELINE_ERROR"];
 const BUDGET_MARKERS = ["SUBREQUEST_BUDGET_EXCEEDED"];
 
-/** 判定是否为数据服务（Redis/Upstash）类失败 */
 export function isDataStoreError(e) {
   const msg = String(e?.message || e || "");
   return REDIS_MARKERS.some(m => msg.startsWith(m));
 }
-
-/** 判定是否为「单次请求子请求预算耗尽」（架构级护栏，见 _redis-budget.js） */
 export function isBudgetError(e) {
   const msg = String(e?.message || e || "");
   return BUDGET_MARKERS.some(m => msg.startsWith(m));
 }
-
-/** 把异常规整为 {code,error,detail,status} */
 export function classify(e) {
   if (isDataStoreError(e)) {
     return { code: "DATA_STORE_UNAVAILABLE", status: 503,
       error: "数据服务暂时不可用，请稍后重试", detail: String(e?.message || e).slice(0, 180) };
   }
   if (isBudgetError(e)) {
-    // 不是服务故障，而是「本次请求要扫描的数据量超过平台单次上限」——用户应缩小范围后重试，
-    // 而非把它当成 5xx 内部错误（避免前端误报、运维误判）。
     return { code: "REQUEST_BUDGET_EXCEEDED", status: 503,
       error: "本次请求需扫描的数据量超出平台单次上限，请缩小范围后重试",
       detail: String(e?.message || e).slice(0, 180) };
@@ -43,18 +31,28 @@ export function classify(e) {
     error: "服务处理失败，请稍后重试", detail: String(e?.message || e || "UNKNOWN_ERROR").slice(0, 180) };
 }
 
+function withTiming(response, startedAt) {
+  if (!(response instanceof Response)) return response;
+  const headers = new Headers(response.headers);
+  const elapsed = Math.max(0, Number((performance.now() - startedAt).toFixed(1)));
+  headers.set("Server-Timing", "app;dur=" + elapsed);
+  // Request id 只用于把浏览器 Network 面板中的一次请求与诊断记录对应，不含用户信息。
+  if (!headers.has("X-ZP-Request-Id")) headers.set("X-ZP-Request-Id", crypto.randomUUID());
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
 /**
- * 包装 Pages Functions 的 onRequest* handler：捕获未处理异常并返回结构化 JSON。
- * 用法：export const onRequestGet = guard(async ({request,env}) => { ... });
+ * 包装 Pages Functions handler。只为响应添加轻量计时头；不修改业务 JSON。
  */
 export function guard(handler, fallbackCode) {
   return async ctx => {
-    try { return await handler(ctx); }
-    catch (e) {
+    const startedAt = performance.now();
+    try {
+      return withTiming(await handler(ctx), startedAt);
+    } catch (e) {
       const info = classify(e);
-      return json({ success: false, code: fallbackCode || info.code, error: info.error, detail: info.detail }, info.status);
+      return withTiming(json({ success: false, code: fallbackCode || info.code, error: info.error, detail: info.detail }, info.status), startedAt);
     }
   };
 }
-
 export default { guard, classify, isDataStoreError };
