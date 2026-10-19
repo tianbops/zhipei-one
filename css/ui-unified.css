@@ -1072,11 +1072,10 @@ textarea:disabled,
 }
 
 
-/* 全站删除/危险动作唯一标准（双主题，醒目危险语义红，与页面背景明确区分）：
-   深色 = --ui-danger-soft 红晕底 + 红边 + var(--ui-danger)=#FF8278 字；
-   浅色 = #FCEBEC 浅红底 + #E8BFC3 边 + var(--ui-danger)=#B4232F 字；
-   按压态各加深一档。仅统一视觉颜色，保留原按钮尺寸、位置、文案与确认逻辑。
-   排除 .account-collapse-head（我的页折叠行组件，非动作按钮，保持透明行样式与圆角卡片形状统一）。 */
+/* 全站危险操作按钮颜色标准化：与全站次按钮统一采用中性色，不以红色作为常规操作按钮底色。
+   深色：深灰底/灰边/浅字；浅色：浅灰底/浅灰边/深字。
+   历史页整行滑动动作条单独保持无边框实底，避免两端出现白边。
+   仅调整颜色和边框，不改变尺寸、位置、文案及确认逻辑。 */
 button[class*="delete"]:not(.account-collapse-head):not(.history-delete),
 a[class*="delete"],
 button[class*="danger"]:not(.account-collapse-head),
@@ -1086,9 +1085,9 @@ a[class*="danger"],
 .data-swipe-actions .data-swipe-delete,
 .page2-danger-btn,
 .invite-actions .small-action.danger {
-  background:var(--ui-danger-soft)!important;
-  border:1px solid rgba(255,130,120,.5)!important;
-  color:var(--ui-danger)!important;
+  background:#11171D!important;
+  border:1px solid #35404C!important;
+  color:#E8EDF2!important;
   box-shadow:none!important;
 }
 button[class*="delete"]:not(.account-collapse-head):not(.history-delete):active,
@@ -1100,9 +1099,9 @@ a[class*="danger"]:active,
 .data-swipe-actions .data-swipe-delete:active,
 .page2-danger-btn:active,
 .invite-actions .small-action.danger:active {
-  background:rgba(255,130,120,.16)!important;
-  border-color:rgba(255,130,120,.7)!important;
-  color:var(--ui-danger)!important;
+  background:#202B36!important;
+  border-color:#3A4652!important;
+  color:#FFFFFF!important;
 }
 :root[data-zp-theme="light"] button[class*="delete"]:not(.account-collapse-head):not(.history-delete),
 :root[data-zp-theme="light"] a[class*="delete"],
@@ -1113,9 +1112,9 @@ a[class*="danger"]:active,
 :root[data-zp-theme="light"] .data-swipe-actions .data-swipe-delete,
 :root[data-zp-theme="light"] .page2-danger-btn,
 :root[data-zp-theme="light"] .invite-actions .small-action.danger {
-  background:#FCEBEC!important;
-  border:1px solid #E8BFC3!important;
-  color:var(--ui-danger)!important;
+  background:#F0F2F4!important;
+  border:1px solid #D7DDE3!important;
+  color:#17202A!important;
   box-shadow:none!important;
 }
 :root[data-zp-theme="light"] button[class*="delete"]:not(.account-collapse-head):not(.history-delete):active,
@@ -1127,9 +1126,30 @@ a[class*="danger"]:active,
 :root[data-zp-theme="light"] .data-swipe-actions .data-swipe-delete:active,
 :root[data-zp-theme="light"] .page2-danger-btn:active,
 :root[data-zp-theme="light"] .invite-actions .small-action.danger:active {
-  background:#F5DCDD!important;
-  border-color:#DCA6AC!important;
-  color:#741E27!important;
+  background:#E1E7EC!important;
+  border-color:#C9D1D9!important;
+  color:#17202A!important;
+}
+/* 历史页整行滑动删除：中性色实底且无边框，防止按钮两端混绘出白边。 */
+:root:not([data-zp-theme="light"]) .history-delete {
+  background:#11171D!important;
+  border:0!important;
+  color:#E8EDF2!important;
+  box-shadow:none!important;
+}
+:root:not([data-zp-theme="light"]) .history-delete:active {
+  background:#202B36!important;
+  color:#FFFFFF!important;
+}
+:root[data-zp-theme="light"] .history-delete {
+  background:#F0F2F4!important;
+  border:0!important;
+  color:#17202A!important;
+  box-shadow:none!important;
+}
+:root[data-zp-theme="light"] .history-delete:active {
+  background:#E1E7EC!important;
+  color:#17202A!important;
 }
 
 /* ============================================================
