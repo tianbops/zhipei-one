@@ -79,7 +79,9 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
   }));
   form.append("file", file, file.name || "waybill");
 
+  const timing = { ocrSubmitMs: 0, ocrStatusPollCount: 0, ocrStatusWaitMs: 0, ocrStatusRequestMs: 0, ocrResultFetchMs: 0, ocrResultFetchAttempts: 0 };
   let submitted;
+  const submitStarted = Date.now();
   try {
     submitted = await requestJson(base + JOB_PATH, {
       method: "POST",
@@ -90,6 +92,7 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
     throw fail(e?.code || "OCR_API", e?.message || "OCR服务请求失败", { status: e?.status, detail: e?.detail, base });
   }
 
+  timing.ocrSubmitMs = Date.now() - submitStarted;
   const jobId = clean(submitted?.data?.jobId);
   if (!jobId) throw fail("OCR_SUBMIT_FAILED", "OCR任务提交失败");
   onProgress(10);
@@ -98,16 +101,23 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
   const deadline = Date.now() + 19000;
   let delay = 1500;
   while (Date.now() < deadline) {
+    const waitStarted = Date.now();
     await new Promise(r => setTimeout(r, delay));
+    timing.ocrStatusWaitMs += Date.now() - waitStarted;
     let status;
+    const statusStarted = Date.now();
     try {
       status = await requestJson(
         base + JOB_PATH + "/" + encodeURIComponent(jobId),
         { headers: { Authorization: "Bearer " + token, Accept: "application/json" } },
         6000, signal
       );
+      timing.ocrStatusPollCount++;
+      timing.ocrStatusRequestMs += Date.now() - statusStarted;
     } catch (e) {
-      throw fail(e?.code || "OCR_API", e?.message || "OCR服务请求失败", { status: e?.status, detail: e?.detail, jobId, base });
+      timing.ocrStatusPollCount++;
+      timing.ocrStatusRequestMs += Date.now() - statusStarted;
+      throw fail(e?.code || "OCR_API", e?.message || "OCR服务请求失败", { status: e?.status, detail: e?.detail, jobId, base, ...timing });
     }
 
     const data = status?.data || {};
@@ -166,13 +176,18 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
       let url = url0, lastError = null;
       for (let attempt = 0; attempt < 3; attempt++) {
         if (attempt) await new Promise(r => setTimeout(r, 800 * attempt));
+        const resultStarted = Date.now();
+        timing.ocrResultFetchAttempts++;
         try {
           if (attempt > 0 && lastError?.refreshUrl) {
             const again = await requestJson(STATUS_PATH, { headers: { Authorization: "Bearer " + token, Accept: "application/json" } }, 6000);
             url = clean(again?.data?.resultUrl?.jsonUrl) || url;
           }
-          return await parseResult(await readResult(url));
+          const parsed = await parseResult(await readResult(url));
+          timing.ocrResultFetchMs += Date.now() - resultStarted;
+          return { ...parsed, ...timing };
         } catch (e) {
+          timing.ocrResultFetchMs += Date.now() - resultStarted;
           lastError = e;
           if (!e?.retryable) throw e;
         }
