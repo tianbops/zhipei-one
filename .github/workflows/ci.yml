@@ -11,5 +11,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22" # sw-precache.test.mjs 用 node:fs 的 globSync（Node>=22），与本地验证工具链一致
-      - run: npm install --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
       - run: npm run test:node
