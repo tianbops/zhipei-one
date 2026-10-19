@@ -410,3 +410,47 @@ GitHub Releases，本仓库 `downloads/` 只镜像最新包——发版时没同
 - `tianbops/zhipei` 发行版 `v1.0.9`（标题 `智配One V1.0.9`）、`zhipei-one` 发行版 `智配One V1.0.9` 均已创建。
 - APK 为 1.0.9 真构建（资产名 `zhipei-one-1.0.9-release.apk`，内部 `versionName` 1.0.9）；其字节大小与 1.0.8 相同属正常（仅版本字符串一字符之差，压缩后总大小不变）。
 - app `gradle` `versionName` 1.0.9 / `versionCode` 9（源码基线同步；CI 构建时按 tag 覆盖）。
+
+---
+
+## 方案C rollup 上线 + CI 门禁修复 + 缓存漏刷修复（2026-10-19）
+
+### 一、方案C rollup：历史概览改读每日汇总键（根治「历史越多越慢」）
+
+**设计**：新增每日汇总键 `zp:route:{routeId}:waybills:{date}:meta = {v:1,count,storeCount,totalWeight}`，历史概览从「MGET 全量运单完整体算汇总」改为「读 meta 小键 + 索引 SMEMBERS（仅 id）」，成本与单量彻底脱钩（O(天数)）。
+
+| 文件 | 变更 |
+|------|------|
+| `functions/api/waybills/_waybill-meta.js`（新） | `dayMetaKey/aggregateWaybills/parseMeta/recomputeDayMeta/readDayMeta/rebuildAllMeta`；重算从当日索引**真实数据**聚合（恒正确，不依赖增量维护，无漂移） |
+| `functions/api/history.js` | 概览走 `readDayAggregates`：pipeline SMEMBERS 取 id + MGET 读 meta；legacy 缺 meta **批量**自愈回填（受共享 Budget 约束，超限 503 明确报错）；删除运单后重算当日 meta |
+| `functions/api/waybills/process.js` | 4 个保存成功点挂钩 `recomputeDayMeta` |
+| `functions/api/waybills/confirm.js` | 确认 + commit 成功后挂钩 |
+| `functions/api/history-trash.js` | 回收站恢复后挂钩 |
+| `functions/api/routes.js` | 删整条线路时同步删各日 `:meta` |
+| `functions/api/waybills/diagnostic.js` | 新增管理端点 `rebuild-meta`（游标分批回填） |
+| `tests/integration-history-rollup.cjs`（新） | 14 断言：直接重算 / 读已存在 meta / legacy 自愈 / 删除同步 / 严格模式排除他建运单且不写 meta |
+
+**关键边界**：`WAYBILL_STRICT_OWNER=1` 紧急模式下 meta 是全线路口径（含他人运单），概览**不信 meta 快路**，逐日读真实体按 `createdBy` 过滤，且绝不回写 meta——保证所有模式口径一致。
+
+**测试期揪出并修复的 3 个真问题**：
+1. 严格 owner 模式误信 meta（会把他人运单算进概览）；
+2. rollup 测试自身把 env 键写成 `envStrict`（Pages Function 解构 `{request,env}` → env=undefined → 伪装成「严格模式无 history」）；
+3. P1-06 回归：初版 per-day 自愈设 10 天硬上限，40 天 legacy 只返回 10 天 → 改**批量**自愈（与旧代码同效率，40 天仅 9 个子请求；rollup 的真正收益是响应体大小而非子请求数）。
+
+**验证**：CI `HISTORY_ROLLUP 集成：通过 14 / 失败 0`；`npm run test:node` 全量绿。
+
+### 二、CI 门禁修复：Node 20 → 22（连续 10 条全红的真因）
+
+`tests/sw-precache.test.mjs` 用 `node:fs` 的 `globSync`（**Node ≥22 才有该导出**），而 CI 固定 Node 20 → import 即 SyntaxError。该测试 10-18 入库起，**每条提交的 CI 必红**（连续 10 条 failure，全部中断在同一行），极易被误判为「测试本身有问题」。
+
+- `.github/workflows/ci.yml`：`node-version: "20"` → `"22"`（与本地验证工具链一致；Node 20 已 EOL）；
+- `package.json`：`test:node` 链补入 `integration-history-rollup.cjs`（此前未入链，CI 覆盖不到 rollup）；新增 `engines.node>=22` 防再踩；
+- 修后 CI 全绿（2026-10-19 首绿）：sw-precache 94 ✅ + HISTORY_ROLLUP 14/0 + BOOTSTRAP_AGGREGATE 15/0 + 其余全链。
+
+### 三、缓存版本漏刷：5 个 HTML 的 `ui-unified.css ?v=a6382104 → a6a16363`
+
+审计 P1「静态资源缓存双版本」**在远端属实**（本地树跑过 bump 故初判「未复现」——**本地绿 ≠ 远端绿**）。CI sw-precache 实证：`setup.html`、`admin-bootstrap.html`、`index.html`、`offline.html`、`register.html` 共 5 个 HTML 停在旧哈希 `a6382104`，而 css 本体与 sw.js PRECACHE 均已是 `a6a16363`——漏刷的页面其 CSS 会以错误版本键进 SW/浏览器缓存，用户拿旧样式。
+
+- 5 个文件逐个 diff 证实**仅差 `?v=` 一行**（0 个文件有其他内容差异，无覆盖风险）后推齐；
+- 线上 curl 复验：`https://zhipeione.ccwu.cc/` 已返回 `a6a16363`；
+- 教训（同 10-18 夜间第二次踩到）：bump 跑过 ≠ 远端推齐——**以 CI 的 sw-precache 跑绿为唯一标准**。
