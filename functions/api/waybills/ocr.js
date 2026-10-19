@@ -296,6 +296,7 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
             throw e;
           }
         } catch (e) {
+          timing.ocrResultFetchMs += Date.now() - resultStarted;
           lastError = e;
           if (!e?.retryable) throw withTiming(e, timing);
         }
