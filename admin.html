@@ -537,7 +537,7 @@ async function renderDiagnostics(){
     const flags=(w.quality&&w.quality.flags||[]).join("、")||"正常";
     const evs=(w.events||[]).slice(-8).reverse().map(e=>esc(e.event)+(e.t?" · "+esc(String(e.t).slice(11,19)):"")).join("<br>");
     const t=w.timing&&typeof w.timing==="object"?w.timing:null;
-    const timingParts=t?[["识别","recognizedMs"],["OCR","ocrMs"],["基准","baseMs"],["提取","extractMs"],["匹配","matchMs"],["去重","dedupeMs"],["规划","planMs"],["处理总计","totalMs"]].filter(x=>typeof t[x[1]]==="number"&&Number.isFinite(t[x[1]])&&t[x[1]]>=0).map(x=>x[0]+" "+Math.round(t[x[1]])+"ms"):[];
+    const timingParts=t?[["识别","recognizedMs"],["OCR","ocrMs"],["提交","ocrSubmitMs"],["轮询次数","ocrStatusPollCount"],["轮询等待","ocrStatusWaitMs"],["状态请求","ocrStatusRequestMs"],["结果读取","ocrResultFetchMs"],["结果读取次数","ocrResultFetchAttempts"],["基准","baseMs"],["提取","extractMs"],["匹配","matchMs"],["去重","dedupeMs"],["规划","planMs"],["处理总计","totalMs"]].filter(x=>typeof t[x[1]]==="number"&&Number.isFinite(t[x[1]])&&t[x[1]]>=0).map(x=>x[0]+" "+Math.round(t[x[1]])+(/次数$/.test(x[0])?"":"ms")):[];
     const timingHtml=timingParts.length?'<div class="meta">耗时：'+esc(timingParts.join(" · "))+'</div>':'<div class="meta">暂无阶段计时记录（可能为旧运单，或该记录未保存计时）</div>';
     const copyLines=[
       "智配One 运单诊断",
