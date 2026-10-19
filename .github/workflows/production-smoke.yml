@@ -1,0 +1,47 @@
+name: Production smoke check
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 */6 * * *"
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/production-smoke.yml"
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Check production homepage and referenced assets
+        env:
+          BASE_URL: https://zhipeione.ccwu.cc
+        run: |
+          node --input-type=module <<'NODE'
+          const base = process.env.BASE_URL;
+          const fail = (message) => { console.error(`FAIL: ${message}`); process.exitCode = 1; };
+          const fetchChecked = async (url) => {
+            const response = await fetch(url, { redirect: 'follow', signal: AbortSignal.timeout(15000) });
+            if (!response.ok) throw new Error(`HTTP ${response.status} for ${url}`);
+            return response;
+          };
+          try {
+            const pageResponse = await fetchChecked(base + '/');
+            if (new URL(pageResponse.url).protocol !== 'https:') throw new Error('Homepage did not remain on HTTPS');
+            const html = await pageResponse.text();
+            if (!/<title>[^<]*智配One/i.test(html)) throw new Error('Expected 智配One page title was not found');
+            if (!/name=["']viewport["']/i.test(html)) throw new Error('Mobile viewport meta tag was not found');
+            const refs = [...html.matchAll(/(?:href|src)=["'](\/[^"'#?]+(?:\?[^"']*)?)["']/gi)]
+              .map(match => match[1])
+              .filter(path => /\.(?:css|js)$/.test(path.split('?')[0]))
+              .filter((path, index, all) => all.indexOf(path) === index)
+              .slice(0, 8);
+            if (refs.length === 0) throw new Error('No local CSS/JS assets were found in homepage HTML');
+            for (const path of refs) {
+              const response = await fetchChecked(new URL(path, base).toString());
+              console.log(`OK ${response.status} ${path}`);
+            }
+            console.log(`OK production homepage: ${pageResponse.status}; checked ${refs.length} local CSS/JS assets`);
+          } catch (error) {
+            fail(error instanceof Error ? error.message : String(error));
+          }
+          NODE
