@@ -503,7 +503,7 @@ async function load(){
   $("menuUsername").textContent=m.user.username;
   try{
     const r=await api("/api/routes?adminLoad="+Date.now());
-    S.routes=r.routes||[];
+    S.routes=r.routes||[];renderDiagnosticRoutes();
     const [u,q,i]=await Promise.all([
       api("/api/admin/users?adminLoad="+Date.now()),
       api("/api/admin/route-requests?adminLoad="+Date.now()),
@@ -521,7 +521,7 @@ async function renderDiagnostics(){
   const selectedRoute=(S.routes||[]).find(r=>String(r.id)===routeId);
   if(!routeId||!selectedRoute){$("diagnostics").innerHTML='<div class="empty">'+(S.routes&&S.routes.length?"请选择一条有效线路":"线路列表尚未加载，或当前没有可选线路")+'</div>';return}
   const date=($("diagDate").value||"").trim(),vehicle=($("diagVehicle").value||"").trim();
-  if(date&&!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)){$("diagnostics").innerHTML='<div class="empty">日期格式无效，请选择有效日期</div>';return}
+  if(date&&!/^\d{4}-\d{2}-\d{2}$/.test(date)){$("diagnostics").innerHTML='<div class="empty">日期格式无效，请选择有效日期</div>';return}
   $("diagRouteMeta").textContent="线路："+(rn(selectedRoute.name)||selectedRoute.name||routeId)+" · 线路ID："+routeId;
   let q="/api/waybills/diagnostic?routeId="+encodeURIComponent(routeId);
   if(date)q+="&date="+encodeURIComponent(date);
@@ -537,7 +537,7 @@ async function renderDiagnostics(){
     const flags=(w.quality&&w.quality.flags||[]).join("、")||"正常";
     const evs=(w.events||[]).slice(-8).reverse().map(e=>esc(e.event)+(e.t?" · "+esc(String(e.t).slice(11,19)):"")).join("<br>");
     const t=w.timing&&typeof w.timing==="object"?w.timing:null;
-    const timingParts=t?[["OCR","ocrMs"],["提取","extractMs"],["匹配","matchMs"],["去重","dedupeMs"],["规划","planMs"],["处理总计","totalMs"]].filter(x=>typeof t[x[1]]==="number"&&Number.isFinite(t[x[1]])&&t[x[1]]>=0).map(x=>x[0]+" "+Math.round(t[x[1]])+"ms"):[];
+    const timingParts=t?[["识别","recognizedMs"],["OCR","ocrMs"],["基准","baseMs"],["提取","extractMs"],["匹配","matchMs"],["去重","dedupeMs"],["规划","planMs"],["处理总计","totalMs"]].filter(x=>typeof t[x[1]]==="number"&&Number.isFinite(t[x[1]])&&t[x[1]]>=0).map(x=>x[0]+" "+Math.round(t[x[1]])+"ms"):[];
     const timingHtml=timingParts.length?'<div class="meta">耗时：'+esc(timingParts.join(" · "))+'</div>':'<div class="meta">暂无阶段计时记录（可能为旧运单，或该记录未保存计时）</div>';
     return '<div class="row"><div class="content"><div class="main"><strong>'+esc(w.date||"-")+' · '+esc(w.vehicle||"-")+'</strong>'
       +'<span class="q-badge '+ql+'">'+esc(ql.toUpperCase())+(w.quality&&w.quality.flags&&w.quality.flags.length?(" · "+esc(flags)):"")+'</span></div>'
