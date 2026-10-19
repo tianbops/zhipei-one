@@ -1,0 +1,25 @@
+name: Web static regression
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  static-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify theme bootstrap and neutral action styles
+        run: node tests/appearance-theme-bootstrap.test.mjs
+      - name: Verify static asset hashes and Service Worker precache
+        run: node tests/sw-precache.test.mjs
