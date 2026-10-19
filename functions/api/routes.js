@@ -55,7 +55,7 @@ async function cleanupRouteWaybills(env,routeId){
  // 5) 组装删除键（与 history.js 单删逻辑对齐：主键 / 事件 / 处理票据 / 指纹 / 去重）
  const del=[];
  for(const id of ids){const r=recs.get(id);del.push("zp:waybill:"+id,"zp:waybill:"+id+":events");if(r?.requestId)del.push("zp:waybill:proc:"+clean(r.requestId));if(r?.businessFingerprint)del.push("zp:waybill:fingerprint:"+r.businessFingerprint);if(r){try{const sig=await dailyWaybillKey(r);if(sig)del.push("zp:waybill:dedupe:"+sig)}catch{}}}
- for(const b of buckets)del.push(b); // 整条线路删除，直接 DEL 日期桶
+ for(const b of buckets){del.push(b);del.push(b+":meta");} // 整条线路删除，直接 DEL 日期桶及其汇总键
  // 6) 批量 DEL（每批 100 键）
  let deleted=0;for(let i=0;i<del.length;i+=100){const r=await command(env,["DEL",...del.slice(i,i+100)]);deleted+=Number(r||0);}
  return deleted;

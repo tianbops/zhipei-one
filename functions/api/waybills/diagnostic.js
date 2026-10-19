@@ -5,6 +5,7 @@ import {canUseRoute,isSystemAdmin} from "../_permissions.js";
 import {canReadWaybill} from "../_waybill-acl.js";
 import {getProc, failProc, effectiveStage} from "./_waybill-proc.js";
 import {scanConsistency,repairConsistency} from "./_consistency.js";
+import {rebuildAllMeta} from "./_waybill-meta.js";
 import {computeStats} from "./_stats.js";
 import {guard} from "../_safe.js";
 
@@ -171,6 +172,14 @@ export const onRequestPost=guard(async ({request,env})=>{
   if(!isSystemAdmin(user))return json({success:false,error:"仅管理员可执行一致性修复"},403);
   const url=new URL(request.url);
   const action=clean(url.searchParams.get("action"));
+  // 方案C rollup 回填：游标分批重算每日汇总键（legacy 数据部署后首次查看前的一次性修复）
+  if(action==="rebuild-meta"){
+    const routeId=clean(url.searchParams.get("routeId"));
+    const all=routeId?false:true;
+    const cursor=clean(url.searchParams.get("cursor"))||"0";
+    const res=await rebuildAllMeta(env,{routeId:all?null:routeId,all,cursor});
+    return json({success:true,scope:all?"ALL":routeId,...res});
+  }
   if(action!=="repair-consistency")return json({success:false,error:"未知操作"},400);
   const routeId=clean(url.searchParams.get("routeId"));
   const all=routeId?false:true;

@@ -3,6 +3,7 @@ import {currentUser} from "../_auth.js";
 import {get,command,newId} from "../_redis.js";
 import {canUseRoute} from "../_permissions.js";
 import {businessFingerprint,dailyWaybillKey,dailyWaybillSignatureString} from "../_waybill-identity.js";
+import {recomputeDayMeta} from "./_waybill-meta.js";
 import {isTempRoute} from "../dispatch.js";
 import {getRoute} from "../_route.js";
 import {recognizeImage} from "./ocr.js";
@@ -385,6 +386,8 @@ async function saveWaybill(order, requestId, resumed){
     return failProcess("WAYBILL_SAVE_CLAIM_FAILED","保存任务状态发生变化，请重试",409,{recoverable:true,action:"RETRY_SAVE",hint:"保存任务状态发生变化，请重试保存",order});
   }
   const routeId=order.routeId;
+  // 方案C rollup：保存成功后重算当日汇总键（best-effort；读路径缺失 meta 会自动自愈）
+  const touchMeta=async()=>{try{await recomputeDayMeta(env,routeId,clean(order.date))}catch{}};
   const quality=order.quality;
   emit(96,"正在保存运单");
   order.businessFingerprint=await businessFingerprint(order);
@@ -433,7 +436,7 @@ async function saveWaybill(order, requestId, resumed){
           }
         }
         try { await appendWaybillEvent(env, finalId, {event:"WAYBILL_IDEMPOTENT",stage:"SAVED",requestId,reuse:finalId,dedupe:"DAILY_MATCH"}); } catch { /* best-effort */ }
-        await finishProc(env, requestId, finalId); return json({success:true,waybill:w,idempotent:true,dedupe:"DAILY_MATCH",indexSync:"OK",quality,requestId});
+        await touchMeta(); await finishProc(env, requestId, finalId); return json({success:true,waybill:w,idempotent:true,dedupe:"DAILY_MATCH",indexSync:"OK",quality,requestId});
       }
     }
   }
@@ -460,7 +463,7 @@ async function saveWaybill(order, requestId, resumed){
       const repairKey=reason==="VERIFY_DAILY"?dedupeKey:fingerprintKey;
       const repair=await command(env,["EVAL",'if redis.call("GET",KEYS[1])==ARGV[1] then redis.call("SADD",KEYS[2],ARGV[1]); return 1 end; return 0',"2",repairKey,indexKey,verifyId]);
       if(Number(repair)===1){
-        await finishProc(env, requestId, verifyId);
+        await touchMeta(); await finishProc(env, requestId, verifyId);
         try{await appendWaybillEvent(env,verifyId,{event:"WAYBILL_IDEMPOTENT",stage:"SAVED",requestId,reuse:verifyId,dedupe:reason==="VERIFY_DAILY"?"DAILY_MATCH_LEGACY":"FINGERPRINT_LEGACY"});}catch{}
         return json({success:true,waybill:verifyOrder,idempotent:true,dedupe:reason==="VERIFY_DAILY"?"DAILY_MATCH_LEGACY":"FINGERPRINT_LEGACY",indexSync:"OK",quality,requestId});
       }
@@ -478,14 +481,14 @@ async function saveWaybill(order, requestId, resumed){
     emit(100,"处理完成");
     if(resumed){ try { await appendWaybillEvent(env, order.id, {event:"WAYBILL_RESUMED_SAVE",stage:"SAVED",requestId,id:order.id,qualityLevel:order.quality?.level,qualityFlags:order.quality?.flags||[]}); } catch { /* best-effort */ } }
     else { await recordWaybillLifecycle(env, order, {requestId, rawExtractCount, extractCount:order.summary?.extractCount, recoveredCount:order.summary?.recoveredCount, matched, pending, d}); }
-    await finishProc(env, requestId, order.id); return json({success:true,waybill:order,pipeline:order.pipeline,summary:order.summary,indexSync:"OK",quality,requestId});
+    await touchMeta(); await finishProc(env, requestId, order.id); return json({success:true,waybill:order,pipeline:order.pipeline,summary:order.summary,indexSync:"OK",quality,requestId});
   }
   const existingRaw=await command(env,["GET","zp:waybill:"+savedId]);
   if(existingRaw){
     const existingOrder=typeof existingRaw==="string"?JSON.parse(existingRaw):existingRaw;
     await command(env,["SADD",indexKey,existingOrder.id]);
     try { await appendWaybillEvent(env, existingOrder.id, {event:"WAYBILL_IDEMPOTENT",stage:"SAVED",requestId,reuse:existingOrder.id,dedupe:reason}); } catch { /* best-effort */ }
-    await finishProc(env, requestId, existingOrder.id); return json({success:true,waybill:existingOrder,idempotent:true,dedupe:reason,indexSync:"OK",quality,requestId});
+    await touchMeta(); await finishProc(env, requestId, existingOrder.id); return json({success:true,waybill:existingOrder,idempotent:true,dedupe:reason,indexSync:"OK",quality,requestId});
   }
   return failProcess("WAYBILL_DEDUPE_LOOKUP_FAILED","已存在的运单记录丢失，请重试",409,{recoverable:true,action:"RETRY_SAVE",hint:"已存在的运单记录丢失，请重试保存",order});
 }

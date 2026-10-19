@@ -5,6 +5,7 @@ import {canUseRoute} from "./_permissions.js";
 import {canReadWaybill,canWriteWaybill} from "./_waybill-acl.js";
 import {getRoute} from "./_route.js";
 import {dailyWaybillKey} from "./_waybill-identity.js";
+import {recomputeDayMeta,dayMetaKey,parseMeta} from "./waybills/_waybill-meta.js";
 import {Budget,scanKeysBudgeted,mgetBatchMap,throwBudgetExceeded,SUBREQUEST_BUDGET_EXCEEDED} from "./_redis-budget.js";
 
 export const clean=v=>String(v??"").trim();
@@ -82,10 +83,73 @@ export async function readDateWaybillsBatch(env,user,entries,budget=null){
   for(const entry of chunk){
    const ids=idsByDate.get(entry.date)||[];
    const list=ids.map(id=>byId.get(id)).filter(w=>w&&w.routeId===entry.routeId&&w.date===entry.date&&canReadWaybill(user,w,env)).sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
-   out.set(entry.date,list);
+    out.set(entry.date,list);
+   }
+  }
+  return out;
+ }
+
+// 方案C rollup：历史概览聚合改为读「每日汇总键」meta（O(天数) 小键）+ 索引 SMEMBERS（仅 id），
+// 稳态下不再 MGET 全量运单完整体 → 响应体与单量脱钩。legacy 数据缺 meta 时**批量**读体回填
+// （与旧 readDateWaybillsBatch 同效率：pipeline SMEMBERS + 分批 MGET，整段请求仅数次子请求），
+// 受共享 budget 约束，超限即抛 → 调用方转结构化 503「请缩小范围」；meta 一回填，后续请求即走快路。
+// 严格 owner 模式（WAYBILL_STRICT_OWNER=1）不信 meta（全线路口径，含他人运单），逐日按 createdBy
+// 过滤读体，保证与单日详情口径一致，且绝不回写 meta（避免污染后续非严格读取）。
+export async function readDayAggregates(env,{user,routeId,entries,budget=null}){
+ const strictOwner=String(env?.WAYBILL_STRICT_OWNER||"")==="1";
+ // 1) 索引 SMEMBERS：取每日运单 id（不含完整体，廉价）
+ const idsByDate=new Map();
+ for(let i=0;i<entries.length;i+=50){
+  if(budget&&!budget.take(1))throwBudgetExceeded(budget.max,"history-read-dates-ids");
+  const chunk=entries.slice(i,i+50);
+  const results=await pipeline(env,chunk.map(x=>["SMEMBERS",waybillIndexKey(x.routeId,x.date)]));
+  for(let j=0;j<chunk.length;j++){const ids=Array.isArray(results?.[j])?results[j].map(clean).filter(Boolean):[];idsByDate.set(chunk[j].date,ids);}
+ }
+ // 2) 每日汇总键 meta（批量 MGET）
+ const metaByDate=new Map();
+ {
+  const metaKeys=entries.map(e=>dayMetaKey(e.routeId,e.date));
+  for(let i=0;i<metaKeys.length;i+=100){
+   if(budget&&!budget.take(1))throwBudgetExceeded(budget.max,"history-read-meta");
+   const chunk=metaKeys.slice(i,i+100);
+   const raws=await command(env,["MGET",...chunk]);
+   for(let j=0;j<chunk.length;j++){const o=parseMeta(raws?.[j]);if(o)metaByDate.set(chunk[j],o);}
   }
  }
- return out;
+ // 3) 有 meta 且非严格 → 直接用（rollup 快路）；严格模式不信 meta，其余天按 legacy 批量读体
+ const dates=[];const legacy=[];
+ for(const entry of entries){
+  const ids=idsByDate.get(entry.date)||[];
+  const m=strictOwner?null:metaByDate.get(dayMetaKey(entry.routeId,entry.date));
+  if(m){
+   if(m.count>0)dates.push({date:entry.date,count:m.count,waybillIds:ids,hasMultiple:m.count>1,storeCount:m.storeCount,totalWeight:m.totalWeight});
+   continue; // count===0 空日跳过
+  }
+  legacy.push(entry);
+ }
+ if(legacy.length){
+  // 批量读 legacy 天全部运单体（一次聚合所有 id 后分批 MGET，受 budget 约束，超限抛 → 503）。
+  const allIds=[];const idsOf=new Map();
+  for(const e of legacy){const ids=idsByDate.get(e.date)||[];idsOf.set(e.date,ids);allIds.push(...ids);}
+  const bodies=await readWaybills(env,allIds,budget);
+  const byId=new Map(bodies.map(w=>[w.id,w]));
+  const metaWrites=[];
+  for(const e of legacy){
+   const list=(idsOf.get(e.date)||[]).map(id=>byId.get(id)).filter(w=>w&&w.routeId===e.routeId&&w.date===e.date&&canReadWaybill(user,w,env)).sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
+   const storeCount=list.reduce((sum,w)=>sum+(Number(w.summary?.finalCount)||Number(w.summary?.total)||w.stores.length),0);
+   const totalWeight=list.reduce((sum,w)=>sum+(Number(w.totalWeight)||0),0);
+   dates.push({date:e.date,count:list.length,waybillIds:list.map(w=>w.id),hasMultiple:list.length>1,storeCount,totalWeight});
+   // 非严格模式下 canReadWaybill 对同线路成员恒 true，list 即全量可读运单，
+   // 故此处计数与 recomputeDayMeta/aggregateWaybills 口径一致，可直接回写 meta。
+   if(!strictOwner)metaWrites.push(["SET",dayMetaKey(e.routeId,e.date),JSON.stringify({v:1,count:list.length,storeCount,totalWeight})]);
+  }
+  // best-effort 批量回填 meta（一次 pipeline = 1 子请求）：让后续请求走 rollup 快路
+  if(metaWrites.length&&budget&&budget.canTake(1)){
+   budget.take(1);
+   try{await pipeline(env,metaWrites)}catch{}
+  }
+ }
+ return {dates,degraded:false};
 }
 
 export async function readDates(env,routeId,range,budget=null){
@@ -189,23 +253,27 @@ export async function onRequestGet({request,env}){
  // 预算不足即抛 SUBREQUEST_BUDGET_EXCEEDED → 转结构化 503「请缩小查询范围」，
  // 而不是让 worker 在无预算的裸循环里撞上平台硬限（Error 1101）。
  const budget=new Budget();
- let entries,batch;
+ let entries;
  try{
   entries=await readDates(env,routeId,range,budget);
-  batch=await readDateWaybillsBatch(env,user,entries,budget);
  }catch(e){
   if(e?.code===SUBREQUEST_BUDGET_EXCEEDED)return json({success:false,code:"PARTIAL_FAILURE",error:"历史查询范围过大，请缩小查询月份后重试",range,budgetUsed:budget.used,budgetMax:budget.max},503);
   throw e;
  }
- const dates=[];
-  for(const entry of entries){
-   const list=batch.get(entry.date)||[];if(!list.length)continue;
-   const storeCount=list.reduce((sum,w)=>sum+(Number(w.summary?.finalCount)||Number(w.summary?.total)||w.stores.length),0),totalWeight=list.reduce((sum,w)=>sum+(Number(w.totalWeight)||0),0);
-   dates.push({date:entry.date,count:list.length,waybillIds:list.map(w=>w.id),hasMultiple:list.length>1,storeCount,totalWeight});
-  }
-  const monthMap=new Map();
-  for(const item of dates){const month=item.date.slice(0,7),current=monthMap.get(month)||{month,days:0,waybills:0,totalStores:0,totalWeight:0};current.days++;current.waybills+=item.count;current.totalStores+=item.storeCount;current.totalWeight+=item.totalWeight;monthMap.set(month,current)}
-  return json({success:true,routeId,range,months:[...monthMap.values()],history:dates});
+ // 方案C rollup：概览只依赖「每日汇总键」(O(天数) 小键) + 索引 SMEMBERS(仅 id，不含运单完整体)，
+ // 稳态成本与单量彻底脱钩。legacy 数据缺 meta 时批量读体回填（同旧 readDateWaybillsBatch 效率），
+ // 受同一 budget 约束；超限即转结构化 503「请缩小范围」，绝不谎报半截数据。
+ let agg;
+ try{
+  agg=await readDayAggregates(env,{user,routeId,entries,budget});
+ }catch(e){
+  if(e?.code===SUBREQUEST_BUDGET_EXCEEDED)return json({success:false,code:"PARTIAL_FAILURE",error:"当前历史范围较大，请缩小月份范围后重试",range,budgetUsed:budget.used,budgetMax:budget.max},503);
+  throw e;
+ }
+ const dates=agg.dates;
+ const monthMap=new Map();
+ for(const item of dates){const month=item.date.slice(0,7),current=monthMap.get(month)||{month,days:0,waybills:0,totalStores:0,totalWeight:0};current.days++;current.waybills+=item.count;current.totalStores+=item.storeCount;current.totalWeight+=item.totalWeight;monthMap.set(month,current)}
+ return json({success:true,routeId,range,months:[...monthMap.values()],history:dates,degraded:agg.degraded||undefined});
  }catch(e){return json({success:false,code:"HISTORY_READ_FAILED",error:"统一运单查询失败",detail:String(e?.message||e||"UNKNOWN_ERROR").slice(0,180)},500)}
 }
 
@@ -259,6 +327,8 @@ async function deleteWaybill(env,routeId,date,waybillId,budget){
  // 3) 日期索引移除（查询对用户立即干净）。
  const indexKey=waybillIndexKey(routeId,date);
  try{budget.take(1);await command(env,["SREM",indexKey,waybillId]);indexOk=true}catch(e){errors.push(e)}
+ // 方案C rollup：删除后同步重算当日汇总键（best-effort；读路径缺失 meta 会自动自愈）
+ try{await recomputeDayMeta(env,routeId,date)}catch{}
  // 4) 反向引用（指纹/日去重）按原逻辑清理：仅当仍指向本单才 DEL，已被覆盖/复用的键不动，保护重传幂等。
  const refKeys=[];
  if(record?.businessFingerprint)refKeys.push("zp:waybill:fingerprint:"+record.businessFingerprint);

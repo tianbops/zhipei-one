@@ -3,6 +3,7 @@ import { currentUser } from "./_auth.js";
 import { canUseRoute } from "./_permissions.js";
 import { command, get, pipeline } from "./_redis.js";
 import { dailyWaybillKey } from "./_waybill-identity.js";
+import { recomputeDayMeta } from "./waybills/_waybill-meta.js";
 import { Budget, scanKeysBudgeted, mgetBatchMap, SUBREQUEST_BUDGET_EXCEEDED } from "./_redis-budget.js";
 
 // 历史回收站（P2-3，软删除配套）：
@@ -115,6 +116,7 @@ export async function onRequestPost({ request, env }) {
     // 3) 重建日期索引
     if (!budget.take(1)) throwBudget(budget);
     await command(env, ["SADD", "zp:route:" + routeId + ":waybills:" + (w.date || ""), id]);
+    if (clean(w.date)) { try { await recomputeDayMeta(env, routeId, clean(w.date)); } catch {} }
     // 4) 条件重建反向引用：仅当键为空或指向本 id 才 SET；已被新单占用则跳过（保护重传幂等）
     const refKeys = [];
     if (w.businessFingerprint) refKeys.push("zp:waybill:fingerprint:" + w.businessFingerprint);
