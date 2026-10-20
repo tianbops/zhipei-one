@@ -23,9 +23,7 @@
       if(p.indexOf("/api/home")===0)return "api-home";
       if(p.indexOf("/api/history")===0){if(u.searchParams.has("q"))return "api-history-search";if(u.searchParams.has("date"))return "api-history-detail";return "api-history";}
       if(p.indexOf("/api/dispatch")===0||p.indexOf("/api/routes")===0)return "api-routes";
-      if(p==="/api/me"||p.indexOf("/api/me/")===0)return "api-me";
-      if(p==="/api/account-settings"||p.indexOf("/api/account-settings/")===0)return "api-account-settings";
-      if(p.indexOf("/api/account")===0)return "api-account";
+      if(p.indexOf("/api/me")===0||p.indexOf("/api/account")===0)return "api-account";
       if(p.indexOf("/api/waybill")===0||p.indexOf("/api/waybills")===0)return "api-waybills";
       if(p.indexOf("/api/login")===0||p.indexOf("/api/session")===0)return "api-auth";
       return "api-other";
