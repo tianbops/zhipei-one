@@ -1,0 +1,53 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+
+// 只为测试把模块内的请求辅助函数导出到临时 data: module；生产模块导出面不变。
+const source = readFileSync(new URL("../functions/api/waybills/ocr.js", import.meta.url), "utf8");
+assert.match(source, /const text = await r\.text\(\);[\s\S]*?finally\s*\{\s*clearTimeout\(timer\)/,
+  "响应正文读取必须在超时计时器清理之前完成");
+const testModule = source.replace("async function requestJson(", "export async function requestJson(");
+assert.notEqual(testModule, source, "requestJson test hook target must exist");
+const moduleUrl = "data:text/javascript;base64," + Buffer.from(testModule).toString("base64");
+const { requestJson } = await import(moduleUrl);
+
+const originalFetch = globalThis.fetch;
+try {
+  // 模拟上游已返回响应头、正文却一直不结束；AbortSignal 必须仍能中断正文读取。
+  globalThis.fetch = async (_url, init) => new Response(new ReadableStream({
+    start(controller) {
+      init.signal.addEventListener("abort", () => {
+        controller.error(new DOMException("The operation was aborted", "AbortError"));
+      }, { once: true });
+    },
+  }));
+  const timed = requestJson("https://ocr.example.invalid/result", {}, 20);
+  await assert.rejects(
+    Promise.race([
+      timed,
+      new Promise((_, reject) => setTimeout(() => reject(new Error("body timeout was not enforced")), 250)),
+    ]),
+    error => error?.code === "OCR_NETWORK_TIMEOUT",
+    "body read must fail with OCR_NETWORK_TIMEOUT instead of hanging"
+  );
+
+  // 自定义 HTTP 鉴权错误必须保留原分类，不能被误报为网络超时。
+  globalThis.fetch = async () => new Response(JSON.stringify({ msg: "unauthorized" }), { status: 401 });
+  await assert.rejects(
+    requestJson("https://ocr.example.invalid/auth", {}, 100),
+    error => error?.code === "OCR_AUTH" && error?.status === 401
+  );
+
+  // 调用前已取消必须立即终止，不再发出外部请求。
+  const controller = new AbortController();
+  controller.abort();
+  let called = false;
+  globalThis.fetch = async () => { called = true; return new Response("{}"); };
+  await assert.rejects(
+    requestJson("https://ocr.example.invalid/cancel", {}, 100, controller.signal),
+    error => error?.code === "OCR_CANCELLED"
+  );
+  assert.equal(called, false, "already-aborted request must not reach fetch");
+  console.log("OCR request timeout regression tests passed.");
+} finally {
+  globalThis.fetch = originalFetch;
+}
