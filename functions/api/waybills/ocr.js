@@ -161,9 +161,11 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
       // 最多尝试 3 次（每次 8s 超时，退避 0.8s/1.6s）。
       // HTTP 5xx/429/403/404 视为可重试，且下次尝试前重查任务状态刷新结果地址；网络超时保留原地址重试。
       const readResult = async (u) => {
-        let rr;
+        let rr, raw;
         try {
+          // 8 秒超时同时覆盖响应头和正文读取；正文卡住也必须进入可重试的超时分支。
           rr = await fetch(u, { signal: AbortSignal.timeout(8000) });
+          raw = await rr.text();
         } catch (e) {
           if (e?.name === "TimeoutError" || e?.name === "AbortError") {
             const err = fail("OCR_RESULT_TIMEOUT", "OCR结果读取超时", { jobId });
@@ -173,16 +175,14 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
           throw fail("OCR_RESULT_FETCH", "OCR结果读取失败", { jobId, detail: e?.message || "" });
         }
         if (!rr.ok) {
-          const detail = await rr.text().catch(() => "");
-          const err = fail("OCR_RESULT_FETCH", `OCR结果读取失败（HTTP ${rr.status}）`, { jobId, status: rr.status, detail: detail.slice(0, 300) });
+          const err = fail("OCR_RESULT_FETCH", `OCR结果读取失败（HTTP ${rr.status}）`, { jobId, status: rr.status, detail: raw.slice(0, 300) });
           err.retryable = rr.status >= 500 || rr.status === 429 || rr.status === 403 || rr.status === 404;
           err.refreshUrl = err.retryable;
           throw err;
         }
-        return rr;
+        return raw;
       };
-      const parseResult = async (rr) => {
-        const raw = await rr.text();
+      const parseResult = async (raw) => {
         const texts = [];
         for (const line of raw.split(/\r?\n/)) {
           if (!line.trim()) continue;
