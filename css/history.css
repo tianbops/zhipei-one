@@ -619,19 +619,19 @@ main.history-shell{
 .history-export-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px}
 .history-export-row span{font-size:15px;color:#E8EDF2;font-weight:550}
 .history-export-row select{
-  min-width:0;height:44px;flex:1;max-width:200px;padding:0 10px;
+  min-width:0;height:48px;flex:1;max-width:200px;padding:0 10px;
   border:1px solid #35404C;border-radius:11px;background:#141C25;color:#F4F6F8;font-size:14px;
 }
 
 /* 客户快查 */
 .history-lookup-row{display:flex;gap:8px;margin:0 0 12px}
 .history-lookup-row input{
-  flex:1;min-width:0;height:44px;padding:0 12px;
+  flex:1;min-width:0;height:48px;padding:0 12px;
   border:1px solid #35404C;border-radius:11px;background:#141C25;color:#F4F6F8;font-size:14px;
 }
 .history-lookup-row input::placeholder{color:#7F8A95}
 .history-lookup-row button{
-  flex:0 0 auto;height:44px;padding:0 18px;
+  flex:0 0 auto;height:48px;padding:0 18px;
   border:1px solid var(--zp-primary);border-radius:11px;background:var(--zp-primary);color:var(--zp-on-primary);font-size:15px;font-weight:600;
 }
 .history-lookup-result{min-height:20px}
