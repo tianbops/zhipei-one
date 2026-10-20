@@ -77,5 +77,21 @@
 /assets/*
   Cache-Control: public, max-age=604800
 
+# 版本/下载清单：这两个 JSON 由**发版流水线**写入，平时从不改动，
+# 但因为没有缓存规则，一直落在 CF 默认头（max-age=0, must-revalidate 且无 ETag）：
+# 2026-10-20 实测，一个 52 字节的 version.json 要 **3.0~3.5s** 才回来，
+# 而同样新 URL 的 /js/*（immutable，边缘直出）只要 1.0~1.2s —— 差的就是这一次回源。
+# 账户页会把这两个 JSON 与 /api/me 一起并发拉取；在这条丢包率不低的链路上，
+# 多一个请求就多一次卡住的机会（实测见过 ERR_ABORTED / 30s 超时），能省就省。
+#
+# TTL 取很短是有意的：这两个文件都是「发版后必须立刻反映新值」的东西，
+# 60s 是「发布完最多陈旧一分钟」的上界，且 stale-while-revalidate 保证
+# 过期后先给旧值、后台静默换新，用户不会因此多等。
+# 不要把它调大：更大的 TTL 会让用户在新版本发布后仍看到旧版本号与旧 APK。
+/version.json
+  Cache-Control: public, max-age=60, stale-while-revalidate=86400
+/downloads/manifest.json
+  Cache-Control: public, max-age=60, stale-while-revalidate=86400
+
 /manifest.json
   Cache-Control: public, max-age=3600
