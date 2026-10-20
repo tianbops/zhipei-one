@@ -3,10 +3,11 @@ import {currentUser} from "./_auth.js";
 import {get,command,sessionCookie} from "./_redis.js";
 import {hash} from "./login.js";
 import {isSystemAdmin} from "./_permissions.js";
+import {guard} from "./_safe.js";
 
 function validUsername(v){return /^[A-Za-z0-9_\-.]{3,32}$/.test(v)}
 
-export async function onRequestPost({request,env}){
+export const onRequestPost=guard(async ({request,env})=>{
  try{
   const actor=await currentUser(request,env);
   if(!actor)return json({success:false,error:"未登录",code:"AUTH_REQUIRED"},401);
@@ -70,4 +71,4 @@ export async function onRequestPost({request,env}){
  }catch(e){
   return json({success:false,error:"账号设置服务异常，请稍后重试",code:"ACCOUNT_SETTINGS_INTERNAL_ERROR"},500);
  }
-}
+});
