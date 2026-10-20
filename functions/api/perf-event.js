@@ -8,13 +8,14 @@ const LUA = `
 local rate = tonumber(redis.call("INCR", KEYS[2]))
 if rate == 1 then redis.call("EXPIRE", KEYS[2], 3600) end
 if rate > 3000 then return -1 end
-for i=1,#ARGV,6 do
+for i=1,#ARGV,7 do
   local page=ARGV[i]
   local endpoint=ARGV[i+1]
   local status=ARGV[i+2]
   local duration=tonumber(ARGV[i+3])
   local server=tonumber(ARGV[i+4])
   local hasServer=tonumber(ARGV[i+5])
+  local phasesRaw=ARGV[i+6]
   if page and endpoint and status and duration then
     local base=page.."|"..endpoint.."|"..status.."|"
     redis.call("HINCRBY",KEYS[1],base.."count",1)
@@ -26,6 +27,23 @@ for i=1,#ARGV,6 do
       redis.call("HINCRBYFLOAT",KEYS[1],base.."server_sum",server)
       local so=tonumber(redis.call("HGET",KEYS[1],base.."server_max") or "0")
       if server>so then redis.call("HSET",KEYS[1],base.."server_max",server) end
+    end
+    if phasesRaw and phasesRaw~="" then
+      local ok,phases=pcall(cjson.decode,phasesRaw)
+      if ok and type(phases)=="table" then
+        for name,dur in pairs(phases) do
+          if string.match(name,"^history%-[a-z%-]+$") then
+            local value=tonumber(dur)
+            if value and value>=0 and value<=120000 then
+              local phaseBase=base.."phase:"..name..":"
+              redis.call("HINCRBY",KEYS[1],phaseBase.."count",1)
+              redis.call("HINCRBYFLOAT",KEYS[1],phaseBase.."sum",value)
+              local phaseMax=tonumber(redis.call("HGET",KEYS[1],phaseBase.."max") or "0")
+              if value>phaseMax then redis.call("HSET",KEYS[1],phaseBase.."max",value) end
+            end
+          end
+        end
+      end
     end
   end
 end
@@ -40,7 +58,15 @@ function validEvent(e) {
   const server = e.server == null ? null : Number(e.server);
   if (!status || !Number.isFinite(duration) || duration < 0 || duration > 120000) return null;
   if (server !== null && (!Number.isFinite(server) || server < 0 || server > 120000)) return null;
-  return [e.page,e.endpoint,status,String(Math.round(duration*10)/10),server===null?"0":String(Math.round(server*10)/10),server===null?"0":"1"];
+  const allowedPhases = new Set(["history-auth","history-route","history-index","history-aggregate","history-search-index","history-search-read","history-detail-read","history-detail-enrich"]);
+  const phases = {};
+  if (e.phases && typeof e.phases === "object" && !Array.isArray(e.phases)) {
+    for (const [name, value] of Object.entries(e.phases)) {
+      const n = Number(value);
+      if (allowedPhases.has(name) && Number.isFinite(n) && n >= 0 && n <= 120000) phases[name] = Math.round(n*10)/10;
+    }
+  }
+  return [e.page,e.endpoint,status,String(Math.round(duration*10)/10),server===null?"0":String(Math.round(server*10)/10),server===null?"0":"1",JSON.stringify(phases)];
 }
 
 export const onRequestPost = guard(async ({request,env}) => {
