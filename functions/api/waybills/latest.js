@@ -18,14 +18,26 @@ async function latestGet({request,env}){
  if(user.role==="admin"||!canUseRoute(user))return json({success:false,error:"无权查看配送业务"},403);
  const url=new URL(request.url),id=clean(url.searchParams.get("id")),confirmedOnly=url.searchParams.get("confirmed")==="1",routeId=clean(user.dispatchRouteId||user.boundRouteId);
  if(!routeId)return json({success:true,waybill:null});
- const route=await getRoute(env,routeId);const routeName=clean(route?.name)||"临时";
+ if(!routeId)return json({success:true,waybill:null});
+ // 弱网口径（2026-10-20 实测：重庆 → Cloudflare LAX → Upstash，见 /api/redis-diag）：
+ // Worker→Redis **单次**往返中位 186ms。原先 getRoute（取线路名）、SMEMBERS（今日索引）、
+ // get base（基准库补全）三件事彼此毫无依赖，却跟着 MGET 一起逐个 await，
+ // 等于把 5 个 RTT 串成一串（≈930ms）再加到跨境往返之上。
+ // 改法：这三件事的**结果**都要到最后填充运单时才用得上，发起时机却不必等任何东西，
+ // 所以在这里先行并发挂起，让它们的等待时间与后续阶段重叠。
+ const routePromise=getRoute(env,routeId).catch(()=>null);
+ const basePromise=get(env,"route:"+routeId+":base").catch(()=>null);
  async function withRouteData(w, rid){
   if(!w)return w;
   const effRid=clean(rid)||routeId;
+  const route=await routePromise;const routeName=clean(route?.name)||"临时";
   w.routeName=clean(w.routeName)||routeName;
   if(!Array.isArray(w.stores)||!w.stores.length)return w;
   try{
-   const rawBase=await get(env,"route:"+effRid+":base");
+   // 只有「运单线路 == 会话线路」时才能复用上面预取的 base：显式 id 路径下
+   // 运单可能属于另一条线路（这正是当年 routeId 漂移问题的现场），此时必须按
+   // effRid 重新取，否则会拿别人的基准库去补全门店。
+   const rawBase=effRid===routeId?await basePromise:await get(env,"route:"+effRid+":base");
    const parsed=typeof rawBase==="string"?JSON.parse(rawBase):rawBase;
    const baseStores=Array.isArray(parsed?.stores)?parsed.stores:[];
    const byId=new Map(baseStores.map(s=>[clean(s?.storeId),s]).filter(x=>x[0]));

@@ -427,6 +427,13 @@ async function loadHome(){
     // layer2/3 又用 waybill.routeId==="" 过滤，永不命中 → 显示「暂无运单」。
     // 聚合接口：一次往返同时拿「调度线路 + 当前用户」（历史为 /api/dispatch 与
     // /api/me 两次并行请求，两次 currentUser 各 2 次 Redis 往返；合并后鉴权只做一次）
+    // 并行发起：原实现是「bootstrap 回来 → 才知道 effectiveRouteId → 才敢发 latest」，
+    // 但 latest 是服务端按会话自行解析线路的 GET，压根不需要前端先把 routeId 递过去——
+    // routeId 只用于**结果校验**，而校验必然发生在两个响应都齐了之后。
+    // 串行那段在中国大陆就直接换算成一次跨境往返（实测 bootstrap 单独就要 ~1.3s），
+    // 白白加到首屏数据就绪的关键路径上。现在两者同时起飞。
+    // 未 await 时不会静默抛错：末尾 .catch 把失败收敛成 null，layer1 自然降级到 layer2/3。
+    const latestPromise=fetchJson("/api/waybills/latest",20000).catch(()=>null);
     const {res,data}=await fetchJson("/api/home-bootstrap");
     // 会话失效：头部守卫之外的兜底（如登录态残留但服务端会话已过期）。清标记并回登录页。
     if(res.status===401){if(window.zpAuthFail)window.zpAuthFail("expired");return;}
@@ -453,9 +460,13 @@ async function loadHome(){
     // 避免同日多次上传时出现“刚上传A，首页却显示B”的数据分叉。
     if(effectiveRouteId){
       try{
-        const {res,data}=await fetchJson("/api/waybills/latest",20000);
-        if(res.ok&&data.success&&data.waybill&&data.waybill.routeId===cmpRouteId&&data.waybill.date===todayKey){
-          w=data.waybill;
+        // 取的是上面已并发出去的那个请求（此刻通常早已在传输中或已完成）
+        const latest=await latestPromise;
+        if(latest){
+          const {res:lr,data:ld}=latest;
+          if(lr.ok&&ld.success&&ld.waybill&&ld.waybill.routeId===cmpRouteId&&ld.waybill.date===todayKey){
+            w=ld.waybill;
+          }
         }
       }catch{}
     }
