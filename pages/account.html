@@ -112,13 +112,10 @@
 .acct-destroy-link:active{opacity:.6}
 .acct-destroy-link[hidden]{display:none}
 
-/* --- 关于：品牌区（成熟 App 范式，版本进 hero） --- */
-.acct-about-hero{display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px 0 6px}
-.acct-about-logo{width:72px;height:72px;border-radius:18px;display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(135deg,#2C7BE5,#1B4F9C);color:#fff;font-size:34px;font-weight:800;line-height:1;
-  box-shadow:0 8px 22px rgba(28,79,156,.28);user-select:none}
-.acct-about-name{margin:0;color:var(--zp-text,#fff);font-size:18px;font-weight:700}
-.acct-about-ver{margin:0;color:var(--zp-muted,#8B98A5);font-size:13px}
+/* --- 关于：品牌区（一排左右，左名称右版本，与卡片列表左右语言一致） --- */
+.acct-about-hero{display:flex;flex-direction:row;align-items:baseline;justify-content:space-between;gap:8px;padding:10px 2px 4px}
+.acct-about-name{margin:0;color:var(--zp-text,#fff);font-size:16px;font-weight:700}
+.acct-about-ver{margin:0;color:var(--zp-muted,#8B98A5);font-size:12px}
 /* --- 关于：获取/信息卡片 + 版权 --- */
 .acct-about-copyright{margin:14px 0 4px;text-align:center;color:var(--zp-muted,#8B98A5);font-size:12px}
 .install-guide{margin:2px 0 12px}
@@ -203,7 +200,6 @@
 </section>
 
 <div class="acct-about-hero">
-  <div class="acct-about-logo" aria-hidden="true">智</div>
   <p class="acct-about-name">智配One</p>
   <p class="acct-about-ver" id="aboutVersion">版本 网页版</p>
 </div>
