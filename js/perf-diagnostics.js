@@ -46,8 +46,8 @@
       var header=response.headers.get("Server-Timing")||"";
       var match=header.match(/(?:^|[,;\s])app;dur=([\d.]+)/);
       var server=match&&Number.isFinite(Number(match[1]))?Number(match[1]):null;
-      var phases={},phasePattern=/(?:^|[,;\\s])(history-auth|history-route|history-index|history-aggregate|history-search-index|history-search-read|history-detail-read|history-detail-enrich);dur=([\\d.]+)/g,phaseMatch;
-      while((phaseMatch=phasePattern.exec(header))!==null){var phaseValue=Number(phaseMatch[2]);if(Number.isFinite(phaseValue)&&phaseValue>=0&&phaseValue<=120000)phases[phaseMatch[1]]=Math.round(phaseValue*10)/10;}
+      var phases={},phaseParts=header.split(","),phasePattern=/^(history-auth|history-route|history-index|history-aggregate|history-search-index|history-search-read|history-detail-read|history-detail-enrich);dur=([\\d.]+)$/,phaseMatch;
+      for(var pi=0;pi<phaseParts.length;pi++){phaseMatch=phaseParts[pi].trim().match(phasePattern);if(phaseMatch){var phaseValue=Number(phaseMatch[2]);if(Number.isFinite(phaseValue)&&phaseValue>=0&&phaseValue<=120000)phases[phaseMatch[1]]=Math.round(phaseValue*10)/10;}}
       push(endpoint,response.status,performance.now()-t0,server,phases);
       return response;
     },function(error){push(endpoint,"network",performance.now()-t0,null);throw error});
