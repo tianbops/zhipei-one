@@ -46,7 +46,7 @@ const PRECACHE = [
   "/js/login.js?v=2f574a8a",
   "/js/order_detail.js?v=a4660bc5",
   "/js/pwa.js?v=864ce384",
-  "/js/perf-diagnostics.js?v=phasefix20261020",
+  "/js/perf-diagnostics.js?v=ac270dfd",
   "/js/register.js?v=eafb4977",
   "/js/ui-unified.js?v=dab603e1",
   "/assets/icons/apple-touch-icon.png",
