@@ -30,9 +30,9 @@
     }catch(e){return null}
   };
   var statusClass=function(status){if(status==="network")return "network";if(status>=500)return "5xx";if(status>=400)return "4xx";if(status>=300)return "3xx";return "2xx"};
-  var push=function(endpoint,status,duration,server){
+  var push=function(endpoint,status,duration,server,phases){
     if(rows.length>=25)return;
-    var row={page:page,endpoint:endpoint,status:statusClass(status),duration:Math.max(0,Math.min(120000,Math.round(duration*10)/10)),server:server};
+    var row={page:page,endpoint:endpoint,status:statusClass(status),duration:Math.max(0,Math.min(120000,Math.round(duration*10)/10)),server:server,phases:phases||{}};
     rows.push(row);
     if(debug)console.info("[ZP-PERF]",row);
   };
@@ -46,7 +46,9 @@
       var header=response.headers.get("Server-Timing")||"";
       var match=header.match(/(?:^|[,;\s])app;dur=([\d.]+)/);
       var server=match&&Number.isFinite(Number(match[1]))?Number(match[1]):null;
-      push(endpoint,response.status,performance.now()-t0,server);
+      var phases={},phasePattern=/(?:^|[,;\\s])(history-auth|history-route|history-index|history-aggregate|history-search-index|history-search-read|history-detail-read|history-detail-enrich);dur=([\\d.]+)/g,phaseMatch;
+      while((phaseMatch=phasePattern.exec(header))!==null){var phaseValue=Number(phaseMatch[2]);if(Number.isFinite(phaseValue)&&phaseValue>=0&&phaseValue<=120000)phases[phaseMatch[1]]=Math.round(phaseValue*10)/10;}
+      push(endpoint,response.status,performance.now()-t0,server,phases);
       return response;
     },function(error){push(endpoint,"network",performance.now()-t0,null);throw error});
   };
