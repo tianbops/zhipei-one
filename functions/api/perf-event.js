@@ -58,8 +58,8 @@ export const onRequestPost = guard(async ({request,env}) => {
   if (!events.length) return json({success:true,accepted:0});
   const now = new Date();
   const hour = now.toISOString().slice(0,13).replace(/[-T:]/g,"");
-  const key = "zp:perf:hour:" + hour;
-  const rateKey = "zp:perf:ingest-rate:" + hour;
+  const key = "perf:hour:" + hour;
+  const rateKey = "perf:ingest-rate:" + hour;
   const result = await command(env,["EVAL",LUA,"2",key,rateKey,...events.flat()]);
   if (Number(result) === -1) return json({success:false,error:"采集限流"},429);
   return json({success:true,accepted:events.length});
