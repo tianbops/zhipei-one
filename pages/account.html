@@ -112,8 +112,15 @@
 .acct-destroy-link:active{opacity:.6}
 .acct-destroy-link[hidden]{display:none}
 
-/* --- 关于卡 --- */
-.about-version{font-size:13px}
+/* --- 关于：品牌区（成熟 App 范式，版本进 hero） --- */
+.acct-about-hero{display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px 0 6px}
+.acct-about-logo{width:72px;height:72px;border-radius:18px;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#2C7BE5,#1B4F9C);color:#fff;font-size:34px;font-weight:800;line-height:1;
+  box-shadow:0 8px 22px rgba(28,79,156,.28);user-select:none}
+.acct-about-name{margin:0;color:var(--zp-text,#fff);font-size:18px;font-weight:700}
+.acct-about-ver{margin:0;color:var(--zp-muted,#8B98A5);font-size:13px}
+/* --- 关于：获取/信息卡片 + 版权 --- */
+.acct-about-copyright{margin:14px 0 4px;text-align:center;color:var(--zp-muted,#8B98A5);font-size:12px}
 .install-guide{margin:2px 0 12px}
 .install-guide ol{margin:0;padding-left:20px;color:var(--zp-muted,#8B98A5);font-size:13px;line-height:22px}
 /* 小链接热区透明扩展至 ≥44px（保持早前可达性巡检结论） */
@@ -195,26 +202,26 @@
   </div>
 </section>
 
-<h2 class="acct-group-label">关于</h2>
-<section id="aboutCard" class="acct-card about-card">
+<div class="acct-about-hero">
+  <div class="acct-about-logo" aria-hidden="true">智</div>
+  <p class="acct-about-name">智配One</p>
+  <p class="acct-about-ver" id="aboutVersion">版本 网页版</p>
+</div>
+
+<section id="aboutCard" class="acct-card about-card" aria-label="获取">
   <div class="acct-rows">
     <div class="acct-row" role="group">
-      <span class="acct-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 7.8v.4"></path></svg></span>
-      <span class="acct-row-label">当前版本</span>
-      <span class="acct-row-value" id="aboutVersion">网页版</span>
-    </div>
-    <button id="checkUpdateBtn" class="acct-row" type="button">
-      <span class="acct-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.34-5.66"></path><path d="M20 4v4h-4"></path></svg></span>
-      <span class="acct-row-label">检查更新</span>
-      <span class="acct-row-value" id="updateState">检查最新版本</span>
-      <svg class="acct-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
-    </button>
-    <div id="installRow" class="acct-row" hidden>
-      <span class="acct-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5"></path><path d="M5 19h14"></path></svg></span>
+      <span class="acct-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2.5"></rect><path d="M10 7h4"></path></svg></span>
       <span id="installLabelBtn" class="acct-row-label" role="button" tabindex="0">下载应用</span>
       <span class="about-row-actions">
-        <a id="installDlLink" class="about-link" hidden>安卓安装包</a>
-        <button id="installCopyBtn" class="about-link" type="button">复制网址</button>
+        <a id="installDlLink" class="about-link" hidden>最新安装包</a>
+      </span>
+    </div>
+    <div class="acct-row" role="group">
+      <span class="acct-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18"></path></svg></span>
+      <span class="acct-row-label">网页端地址</span>
+      <span class="about-row-actions">
+        <button id="webCopyBtn" class="about-link" type="button">复制</button>
       </span>
     </div>
   </div>
@@ -222,6 +229,31 @@
     <ol id="installGuideSteps"></ol>
   </div>
 </section>
+
+<section class="acct-card about-card" aria-label="信息">
+  <div class="acct-rows">
+    <button class="acct-row" id="privacyLink" type="button" aria-haspopup="dialog">
+      <span class="acct-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"></path></svg></span>
+      <span class="acct-row-label">隐私政策</span>
+      <span class="acct-row-value" aria-hidden="true"></span>
+      <svg class="acct-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
+    </button>
+    <button class="acct-row" id="termsLink" type="button" aria-haspopup="dialog">
+      <span class="acct-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4h7l4 4v12H7z"></path><path d="M14 4v4h4"></path></svg></span>
+      <span class="acct-row-label">服务条款</span>
+      <span class="acct-row-value" aria-hidden="true"></span>
+      <svg class="acct-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
+    </button>
+    <button class="acct-row" id="helpLink" type="button">
+      <span class="acct-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1 .9-1 1.7"></path><path d="M12 17h.01"></path></svg></span>
+      <span class="acct-row-label">帮助反馈</span>
+      <span class="acct-row-value" aria-hidden="true"></span>
+      <svg class="acct-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
+    </button>
+  </div>
+</section>
+
+<div class="acct-about-copyright">© 2026 智配One</div>
 
 <section class="account-logout-section">
   <button id="logout" class="account-logout" type="button">退出登录</button>
@@ -342,94 +374,70 @@ $("deleteConfirm").onclick=async()=>{
  }catch(e){show("deleteMessage",e);$("deleteConfirm").disabled=false}
 };
 
-/* 关于：版本号 + 检查更新 + 下载应用（PWA 安装），全浏览器适配。
-   - 版本号读 /version.json（部署时更新）
-   - 检查更新：触发 Service Worker 检查，有等待中的新版本就刷新
-   - 下载应用：单行展示，左「下载应用」点击触发安装/引导，右「安卓安装包」同域直链（读 /downloads/manifest.json）+「复制网址」；
-     已安装隐藏；微信/iOS 给步骤引导；Android/桌面 Chromium 用 beforeinstallprompt 一键安装 */
+/* 关于（成熟 App 范式 2.0）：品牌区版本 + 获取组（下载应用/网页端地址）+ 信息组（隐私/条款/帮助）。
+   - 版本号读 /version.json；最新安装包版本读 /downloads/manifest.json（发版零改动）
+   - 下载应用：点击触发 PWA 安装/引导；右侧「最新安装包 Vx.x.x」同域直链
+   - 网页端地址：点击复制官网 https://tianyou-zhipei.pages.dev
+   - 信息组暂为占位（真实页面待补） */
 (function(){
- const card=$("aboutCard"),row=$("installRow"),copyBtn=$("installCopyBtn"),
+ const verEl=$("aboutVersion"),
   installDlLink=$("installDlLink"),guide=$("installGuide"),steps=$("installGuideSteps"),
-  checkBtn=$("checkUpdateBtn"),state=$("updateState"),verEl=$("aboutVersion");
- if(!card)return;
+  webCopyBtn=$("webCopyBtn");
+ if(!verEl)return;
  const installed=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
 
- /* 版本号 */
+ /* 品牌区版本号 */
  fetch("/version.json?ts="+Date.now(),{cache:"no-store"}).then(r=>r.json()).then(v=>{
-  if(v&&v.version)verEl.textContent="V"+v.version;
- }).catch(()=>{});
+  if(v&&v.version)verEl.textContent="版本 V"+v.version;
+ }).catch(()=>{verEl.textContent="版本 网页版"});
 
- /* 检查更新 */
- let wantReload=false;
- if("serviceWorker" in navigator){
-  navigator.serviceWorker.addEventListener("controllerchange",()=>{
-   if(wantReload){wantReload=false;location.reload()}
-  });
+ /* 网页端地址：复制固定官网地址 */
+ const WEB_URL="https://tianyou-zhipei.pages.dev";
+ function fallbackCopy(text){
+  const ta=document.createElement("textarea");ta.value=text;ta.style.position="fixed";ta.style.opacity="0";
+  document.body.appendChild(ta);ta.select();
+  try{document.execCommand("copy");if(window.zpToast)window.zpToast("网页端地址已复制","success")}catch(e){}
+  ta.remove();
  }
- checkBtn.onclick=async()=>{
-  state.textContent="检查中…";checkBtn.disabled=true;
+ function copyWeb(){
   try{
-   if("serviceWorker" in navigator){
-    const reg=await navigator.serviceWorker.getRegistration();
-    if(reg){
-     await reg.update();
-     if(reg.waiting){
-      state.textContent="发现新版本，正在刷新…";wantReload=true;
-      try{reg.waiting.postMessage("SKIP_WAITING")}catch(e){}
-      setTimeout(()=>location.reload(),1200);
-      return;
-     }
-    }
-   }
-   await fetch("/version.json?ts="+Date.now(),{cache:"no-store"});
-   state.textContent="已是最新 ✓";
-  }catch(e){state.textContent="网络异常，稍后再试"}
-  setTimeout(()=>{state.textContent="检查最新版本";checkBtn.disabled=false},2600);
- };
+   if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(WEB_URL).then(
+     ()=>{if(window.zpToast)window.zpToast("网页端地址已复制","success")},
+     ()=>fallbackCopy(WEB_URL)
+    );
+   }else fallbackCopy(WEB_URL);
+  }catch(e){fallbackCopy(WEB_URL)}
+ }
+ webCopyBtn.onclick=copyWeb;
 
- /* 下载应用：单行展示 —— 左「下载应用」点击触发安装/引导，右「GitHub 下载」「复制网址」 */
+ /* 下载应用：触发安装/引导；右侧最新安装包版本读 manifest */
  function showSteps(list){
   steps.innerHTML="";
   list.forEach(t=>{const li=document.createElement("li");li.textContent=t;steps.appendChild(li)});
   guide.hidden=false;
  }
- async function copyUrl(){
-  const url=location.href;
-  try{await navigator.clipboard.writeText(url)}
-  catch(e){
-   const ta=document.createElement("textarea");ta.value=url;ta.style.position="fixed";ta.style.opacity="0";
-   document.body.appendChild(ta);ta.select();document.execCommand("copy");ta.remove();
-  }
-  if(window.zpToast)window.zpToast("网址已复制，请粘贴到浏览器打开","success");
- }
- copyBtn.onclick=copyUrl;
-
  const ua=navigator.userAgent||"";
  const isWeChat=/MicroMessenger/i.test(ua);
  const isIOS=/iPad|iPhone|iPod/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
-
- /* 右侧下载直链：读 /downloads/manifest.json 动态生成（发新版只需替换 APK + 更新清单，页面零改动）。
-    manifest: {version, file}；file 为 /downloads/ 下的稳定文件名。iOS 不显示（APK 仅 Android 适用）。 */
  function setApk(file,ver){
   installDlLink.href="/downloads/"+file;
   installDlLink.setAttribute("download","zhipei-one-v"+(ver||"latest")+".apk");
-  installDlLink.textContent="安卓安装包"+(ver?" V"+ver:"");
+  installDlLink.textContent="最新安装包"+(ver?" V"+ver:"");
   installDlLink.hidden=false;
  }
+ const label=$("installLabelBtn");
  if(isIOS){
   installDlLink.hidden=true;
  }else{
   fetch("/downloads/manifest.json?ts="+Date.now(),{cache:"no-store"})
    .then(r=>r.ok?r.json():null)
-   .then(m=>{setApk((m&&m.file)||"zhipei-one-latest-release.apk",m&&m.version)})
+   .then(m=>setApk((m&&m.file)||"zhipei-one-latest-release.apk",m&&m.version))
    .catch(()=>{setApk("zhipei-one-latest-release.apk")});
  }
-
  if(!installed){
-  row.hidden=false;
   let deferred=null;
   window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferred=e});
-  const label=$("installLabelBtn");
   const labelClick=()=>{
    guide.hidden=true;
    if(isWeChat){
@@ -441,20 +449,25 @@ $("deleteConfirm").onclick=async()=>{
     try{
      ev.prompt();
      Promise.resolve(ev.userChoice).then(r=>{
-      if(r&&r.outcome==="accepted"){row.hidden=true;guide.hidden=true;if(window.zpToast)window.zpToast("已添加到桌面","success")}
+      if(r&&r.outcome==="accepted"){if(label)label.textContent="已添加到桌面";guide.hidden=true;if(window.zpToast)window.zpToast("已添加到桌面","success")}
      }).catch(()=>{});
     }catch(e){}
    }else{
-    if(window.zpToast)window.zpToast("如未自动安装，请点右侧「安卓安装包」","info");
+    if(window.zpToast)window.zpToast("如未自动安装，请点右侧「最新安装包」","info");
    }
   };
-  label.addEventListener("click",labelClick);
-  label.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();labelClick()}});
+  if(label){label.addEventListener("click",labelClick);label.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();labelClick()}});}
  }
  window.addEventListener("appinstalled",()=>{
-  row.hidden=true;guide.hidden=true;
-  if(window.zpToast)window.zpToast("已添加到桌面","success");
-});
+  if(label)label.textContent="已安装";guide.hidden=true;if(window.zpToast)window.zpToast("已添加到桌面","success");
+ });
+
+ /* 信息组：占位，待补真实页面 */
+ function placeholder(name){return ()=>{if(window.zpToast)window.zpToast(name+"页面即将上线","info")}}
+ const p=$("privacyLink"),t=$("termsLink"),h=$("helpLink");
+ if(p)p.onclick=placeholder("隐私政策");
+ if(t)t.onclick=placeholder("服务条款");
+ if(h)h.onclick=placeholder("帮助反馈");
 })();
 
 load();
