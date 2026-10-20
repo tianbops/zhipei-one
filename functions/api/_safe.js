@@ -35,7 +35,8 @@ function withTiming(response, startedAt) {
   if (!(response instanceof Response)) return response;
   const headers = new Headers(response.headers);
   const elapsed = Math.max(0, Number((performance.now() - startedAt).toFixed(1)));
-  headers.set("Server-Timing", "app;dur=" + elapsed);
+  const phaseTiming = headers.get("Server-Timing");
+  headers.set("Server-Timing", (phaseTiming ? phaseTiming + ", " : "") + "app;dur=" + elapsed);
   // Request id 只用于把浏览器 Network 面板中的一次请求与诊断记录对应，不含用户信息。
   if (!headers.has("X-ZP-Request-Id")) headers.set("X-ZP-Request-Id", crypto.randomUUID());
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
