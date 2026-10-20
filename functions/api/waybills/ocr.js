@@ -121,7 +121,8 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
 
   // 给 Cloudflare Worker 后续的提取、匹配、去重、规划和保存留出时间，避免 OCR 长时间占用整个同步请求。
   const deadline = Date.now() + 19000;
-  let delay = 1500;
+  // 首次状态检查提前到 900ms；19 秒截止时间、单次超时与后续退避策略保持不变。
+  let delay = 900;
   while (Date.now() < deadline) {
     const waitStarted = Date.now();
     await new Promise(r => setTimeout(r, delay));
