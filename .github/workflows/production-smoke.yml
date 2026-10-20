@@ -14,7 +14,7 @@ jobs:
     steps:
       - name: Check production homepage and referenced assets
         env:
-          BASE_URL: https://zhipeione.ccwu.cc
+          BASE_URL: https://tianyou-zhipei.pages.dev
         run: |
           node --input-type=module <<'NODE'
           const base = process.env.BASE_URL;
