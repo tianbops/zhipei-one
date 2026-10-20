@@ -5,6 +5,8 @@ import { readFileSync } from "node:fs";
 const source = readFileSync(new URL("../functions/api/waybills/ocr.js", import.meta.url), "utf8");
 assert.match(source, /const text = await r\.text\(\);[\s\S]*?finally\s*\{\s*clearTimeout\(timer\)/,
   "响应正文读取必须在超时计时器清理之前完成");
+assert.match(source, /const readResult = async \(u\) => \{[\s\S]*?raw = await rr\.text\(\);[\s\S]*?const err = fail\("OCR_RESULT_TIMEOUT"[\s\S]*?err\.retryable = true;/,
+  "OCR 结果正文超时必须归类为可重试的 OCR_RESULT_TIMEOUT");
 const testModule = source.replace("async function requestJson(", "export async function requestJson(");
 assert.notEqual(testModule, source, "requestJson test hook target must exist");
 const moduleUrl = "data:text/javascript;base64," + Buffer.from(testModule).toString("base64");
