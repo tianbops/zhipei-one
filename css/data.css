@@ -60,7 +60,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-store-name-line{display:flex;align-items:flex-start;gap:8px;min-width:0}
 .data-store-name-line .data-store-name{flex:1;min-width:0}
 
-.data-route-kicker{margin-bottom:4px;color:#687584;font-size:11px;line-height:17px;letter-spacing:.02em}
+.data-route-kicker{margin-bottom:4px;color:#9BA7B3;font-size:11px;line-height:17px;letter-spacing:.02em}
 .data-route-title h2{min-width:0}
 .data-tools-card{margin-top:0}
 
@@ -216,3 +216,8 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 :root[data-zp-theme="light"] .data-swipe-actions button{background:#FFFFFF;border-color:#D7DDE3;color:#17202A}
 :root[data-zp-theme="light"] .data-swipe-actions button:active{background:#E8EDF1}
 :root[data-zp-theme="light"] .data-swipe-actions .data-swipe-delete{background:#FCEBEC;border-color:#E8BFC3;color:#C2453A}
+
+/* 移动端可达性（2026-10-20 巡检）：次要文本对比度达标 + 小链接热区扩展 */
+:root[data-zp-theme="light"] .data-store-index,:root[data-zp-theme="light"] .data-list-count,:root[data-zp-theme="light"] .data-store-meta{color:#59636E}
+:root[data-zp-theme="light"] .data-route-kicker{color:#59636E}
+.data-store-name{padding:11px 0;margin:-11px 0}

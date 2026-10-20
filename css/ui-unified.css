@@ -41,7 +41,7 @@
        高度 42 / 圆角 12 / 字号 13·600 / 边框 1px / 水平内边距 8px
        段宽按钮（选项组内）= calc((容器宽 - 2*间隙)/3)
      新增同类按钮一律沿用本 token，禁止在页面级 CSS 另起度量。 */
-  --zp-seg-btn-h:42px;
+  --zp-seg-btn-h:44px;
   --zp-seg-btn-radius:12px;
   --zp-seg-btn-pad:0 8px;
   --zp-seg-btn-font:13px;

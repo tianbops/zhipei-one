@@ -459,3 +459,8 @@
 :root[data-zp-theme="light"] .order-dialog-actions .primary-btn{background:var(--zp-primary);color:#FFFFFF;border-color:var(--zp-primary)}
 :root[data-zp-theme="light"] .order-pending-fab{background:var(--zp-primary);color:#FFFFFF;border-color:var(--zp-primary);box-shadow:0 10px 30px rgba(20,30,40,.30)}
 :root[data-zp-theme="light"] .order-pending-fab:active{background:#1D2A36}
+
+/* 移动端可达性（2026-10-20 巡检）：浅色主题下次要文本 #7F8A95 对比度仅 3.52:1，加深达标 */
+:root[data-zp-theme="light"] .order-meta-label,:root[data-zp-theme="light"] .order-store-index{color:#59636E}
+/* 行内门店名链接热区扩展：inline 垂直 padding 不参与布局，命中区 22→44px 而行距不变 */
+.order-store-name.nav{padding:11px 0}

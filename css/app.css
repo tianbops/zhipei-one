@@ -612,7 +612,7 @@ body {
 .login-message {
   min-height: 20px;
   margin: 0 0 7px;
-  color: #FFB4AB;
+  color: #FF8A80;
   font-size: 13px;
   line-height: 20px;
 }
@@ -655,6 +655,9 @@ body {
   color: #fff;
   font-size: 13px;
   text-decoration: none;
+  /* 热区扩展：inline 垂直 padding 不占布局；水平用负 margin 抵消，视觉不变 */
+  padding: 14px 8px;
+  margin: -14px -8px;
 }
 
 .login-links .register-hint {
@@ -723,7 +726,7 @@ body {
 :root[data-zp-theme="light"] .login-card{background:transparent!important;border:0!important;box-shadow:none!important}
 :root[data-zp-theme="light"] .login-brand-row{margin-bottom:38px}
 :root[data-zp-theme="light"] .login-brand-name{color:var(--zp-text)!important}
-:root[data-zp-theme="light"] .login-eyebrow{color:#69747F!important}
+:root[data-zp-theme="light"] .login-eyebrow{color:#5D6975!important}
 :root[data-zp-theme="light"] .login-headline{color:var(--zp-text)!important}
 :root[data-zp-theme="light"] .login-sub{color:#596674!important}
 :root[data-zp-theme="light"] .login-field,

@@ -27,7 +27,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="智配One"><script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F4F6F8":"#05070A");try{var zn=window.ZhipeiNative;if(zn&&zn.applyTheme)zn.applyTheme(r==="light"?"#F4F6F8":"#05070A",r!=="light")}catch(e2){}}catch(e){}</script>
-<link rel="stylesheet" href="/css/app.css?v=fc3c9fab"><link rel="stylesheet" href="/css/ui-unified.css?v=5bb9a9e5"><link rel="stylesheet" href="/css/mobile-ui.css?v=285d41d0"><link rel="stylesheet" href="/css/business-pages.css?v=4ffa4ab7">
+<link rel="stylesheet" href="/css/app.css?v=4068cc31"><link rel="stylesheet" href="/css/ui-unified.css?v=6ee7b1af"><link rel="stylesheet" href="/css/mobile-ui.css?v=285d41d0"><link rel="stylesheet" href="/css/business-pages.css?v=4ffa4ab7">
 <style>
 .about-head{display:flex;align-items:baseline;justify-content:space-between;margin:0 0 4px}
 .about-head h2{margin:0}
@@ -49,6 +49,9 @@
 .about-row-install-label:active{opacity:.55}
 .about-row-actions{display:flex;align-items:center;gap:16px;flex:none;margin-left:auto}
 .about-row-actions .about-link{padding:0;border:0;background:none;color:var(--zp-text,#fff);font-size:13px;text-decoration:underline;cursor:pointer}
+/* 移动端可达性（2026-10-20 巡检）：小链接热区透明伪元素扩展至 ≥44px，布局零变化 */
+#installLabelBtn,.about-row-actions .about-link,.about-hint .about-link{position:relative}
+#installLabelBtn::after,.about-row-actions .about-link::after,.about-hint .about-link::after{content:"";position:absolute;inset:-14px -10px}
 </style><script src="/js/perf-diagnostics.js?v=a2065bec"></script>
 </head>
 <body><main class="page2 account-page zp-shell">

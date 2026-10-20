@@ -130,7 +130,7 @@
 .trend-controls{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .trend-title{margin:0;font-size:15px;line-height:21px;color:#F2F5F7;font-weight:650;letter-spacing:.5px}
 .trend-year{
-  appearance:none;margin:0;padding:4px 10px;border:1px solid #2C3742;border-radius:999px;
+  appearance:none;margin:0;padding:5px 10px;border:1px solid #2C3742;border-radius:999px;
   background:rgba(16,24,32,.82);color:#9BA7B3;font-size:12px;line-height:16px;cursor:pointer;white-space:nowrap;
   transition:background .15s,color .15s,border-color .15s;
 }
@@ -143,9 +143,12 @@
 }
 .trend-nav:active{background:var(--zp-primary);color:var(--zp-on-primary)}
 .trend-nav:disabled{opacity:.2;pointer-events:none}
+/* 移动端 44px 可点性下限（2026-10-20 巡检）：按钮本体保持紧凑观感，用透明伪元素扩展热区 */
+.trend-nav,.trend-metric-btn,.trend-year{position:relative}
+.trend-nav::after,.trend-metric-btn::after,.trend-year::after{content:"";position:absolute;inset:-8px}
 .trend-month{color:#C2CBD4;font-size:12px;line-height:18px;font-variant-numeric:tabular-nums;letter-spacing:.5px;will-change:transform}
 .trend-metric{display:flex;gap:6px}
-.trend-metric-btn{appearance:none;border:1px solid #2C3742;background:rgba(16,24,32,.82);color:#B8C2CC;font-size:12px;line-height:18px;padding:2px 11px;border-radius:999px;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.trend-metric-btn{appearance:none;border:1px solid #2C3742;background:rgba(16,24,32,.82);color:#B8C2CC;font-size:12px;line-height:18px;padding:5px 11px;border-radius:999px;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
 .trend-metric-btn.is-active{background:#C7D0D9;color:#0E141A;border-color:#C7D0D9;font-weight:600}
 .trend-metric-btn:active{transform:translateY(.5px)}
 /* 底排：配送汇总（9 单 / 6.98 t）居左，环比提示居右，同排显示省一行高度 */
@@ -168,7 +171,7 @@
 .trend-point:focus-visible{stroke:#fff;stroke-width:2.5}
 .trend-year-bar{fill:#3A4651}
 .trend-year-bar.is-peak{fill:#C7D0D9}
-.trend-axis{height:15px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 3px;color:#65717D;font-size:9px;line-height:13px;font-variant-numeric:tabular-nums}
+.trend-axis{height:15px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 3px;color:#9BA7B3;font-size:9px;line-height:13px;font-variant-numeric:tabular-nums}
 .trend-hint{min-height:0;margin-top:0;flex:none;color:#7F8A95;font-size:9px;line-height:14px;text-align:right}
 .trend-hint b{color:#9BA7B3;font-weight:600;font-variant-numeric:tabular-nums}
 @media(prefers-reduced-motion:reduce){
@@ -302,7 +305,7 @@
 @media(max-width:380px){
  .home-app{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
  .today-store-list{max-height:252px}   /* 行高 42px × 6 = 252px，固定展示 6 家 */
- .today-store-row{min-height:42px}
+ .today-store-row{min-height:44px}
  .today-store-name{font-size:16px}
  .bottom-nav{padding-left:6px;padding-right:6px}
 }
@@ -330,7 +333,8 @@ body.sheet-open .bottom-nav{z-index:1001 !important}
    门店清单、月度统计卡与上传弹层（此前仅覆盖底部导航，页面主体仍是深色） */
 :root[data-zp-theme="light"] .home-app{background:var(--zp-bg)}
 :root[data-zp-theme="light"] .home-brand strong{color:var(--zp-text)}
-:root[data-zp-theme="light"] .home-brand span{color:var(--zp-soft)}
+:root[data-zp-theme="light"] .home-brand span{color:#59636E}
+:root[data-zp-theme="light"] .home-brand span{color:#59636E}
 :root[data-zp-theme="light"] .menu-item-icon{color:var(--zp-muted)}
 :root[data-zp-theme="light"] .menu-divider{background:rgba(20,30,40,.10)}
 :root[data-zp-theme="light"] .task-card{box-shadow:0 8px 24px rgba(20,30,40,.08)}
