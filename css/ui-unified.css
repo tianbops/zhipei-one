@@ -691,13 +691,7 @@ textarea:disabled,
 }
 
 /* --- 5.8 加载态：全站 spinner / 进度条统一用主色与中性灰 --- */
-.spinner,
-.zp-spinner{
-  border:2px solid var(--zp-line);
-  border-top-color:var(--zp-primary);
-}
-.loading,
-.is-loading{
+.loading{
   color:var(--zp-muted);
 }
 

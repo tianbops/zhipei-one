@@ -34,10 +34,8 @@
 .account-page .page2-card{background:rgba(13,18,24,.82);border:1px solid rgba(255,255,255,.075);border-radius:16px;padding:14px;margin-bottom:8px;box-shadow:0 12px 30px rgba(0,0,0,.18)}
 .account-page .page2-card h2{margin:0 0 6px;color:#fff;font-size:15px!important;line-height:21px!important;font-weight:700}
 .account-page .page2-soft{margin:4px 0 0;color:#7F8A95;font-size:13px;line-height:20px}
-.account-page .account-info-card{padding:14px}
 .account-page .account-row{min-height:46px;border-bottom:0;color:#B8C2CC;font-size:15px;line-height:22px}
 .account-page .account-row strong{color:#fff;font-size:15px;font-weight:600;text-align:right}
-.account-page .account-edit-card,.account-page .account-danger-card{padding:0;overflow:hidden}
 .account-page .account-collapse-head{width:100%;min-height:48px;padding:0 14px;border:0;background:transparent;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;font-size:15px;line-height:21px;font-weight:700}
 .account-page .account-collapse-icon{width:32px;height:32px;flex:0 0 32px;display:inline-flex;align-items:center;justify-content:center;color:#B8C2CC;font-size:0!important;line-height:0!important}
 .account-page .account-collapse-icon::before{content:"";display:block;width:7px;height:7px;border-right:1.7px solid currentColor;border-bottom:1.7px solid currentColor;transform:rotate(45deg) translate(-1px,-1px);transition:transform .18s ease}
@@ -49,7 +47,6 @@
 .account-page .page2-label input::placeholder{color:#75818C}
 .account-page .page2-primary,.account-page .page2-secondary{min-height:var(--zp-control-height);margin-top:12px;border-radius:11px;font-size:15px;font-weight:600}
 .account-page .page2-primary{background:var(--zp-primary);border:1px solid var(--zp-primary);color:var(--zp-on-primary)}
-.account-page .account-danger-head{color:#FF8278}
 .account-page .account-danger-box{padding:12px 14px 14px;border-top:1px solid rgba(255,255,255,.08)}
 .account-page .account-danger-box strong{display:block;color:#fff;font-size:14px;line-height:20px}
 .account-page .account-danger-box p{margin:5px 0 0;color:#7F8A95;font-size:12px;line-height:19px}
@@ -106,9 +103,7 @@
 
 
 /* 浅色外观适配：账号页、线路申请页与业务页面导航 */
-:root[data-zp-theme="light"] .appearance-card,
-:root[data-zp-theme="light"] .account-info-card,
-:root[data-zp-theme="light"] .account-edit-card{background:#FFFFFF!important;border-color:#D7DDE3!important;color:#17202A!important}
+:root[data-zp-theme="light"] .appearance-card{background:#FFFFFF!important;border-color:#D7DDE3!important;color:#17202A!important}
 :root[data-zp-theme="light"] .appearance-setting+.appearance-setting{border-top-color:rgba(20,30,40,.12)}
 :root[data-zp-theme="light"] .appearance-theme-option{background:#F0F2F4;color:#46515D;border-color:#D7DDE3}
 :root[data-zp-theme="light"] .appearance-theme-option.is-selected{background:#DCE5EC;color:#17202A;border-color:#778796}
@@ -143,6 +138,5 @@
 :root[data-zp-theme="light"] .account-page .account-danger-box strong{color:var(--zp-text)}
 :root[data-zp-theme="light"] .account-page .account-danger-box p{color:var(--zp-soft)}
 :root[data-zp-theme="light"] .account-page .page2-danger-btn{background:#FCEBEC;border-color:#E8BFC3;color:#8A2630}
-:root[data-zp-theme="light"] .account-page .account-danger-head{color:#C2453A}
 :root[data-zp-theme="light"] .page2-danger{color:#C2453A!important}
 :root[data-zp-theme="light"] .empty{color:var(--zp-soft)}
