@@ -21,6 +21,12 @@ function fail(code, message, extra = {}) {
   return e;
 }
 
+// 保留失败前已完成的阶段计时，便于通过 requestId 诊断超时和外部服务错误。
+function withTiming(error, timing) {
+  if (error && typeof error === "object") Object.assign(error, timing);
+  return error;
+}
+
 function collectText(value, out = []) {
   if (!value) return out;
   if (Array.isArray(value)) { for (const x of value) collectText(x, out); return out; }
@@ -89,12 +95,13 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
       body: form,
     }, 10000, signal);
   } catch (e) {
-    throw fail(e?.code || "OCR_API", e?.message || "OCR服务请求失败", { status: e?.status, detail: e?.detail, base });
+    timing.ocrSubmitMs = Date.now() - submitStarted;
+    throw fail(e?.code || "OCR_API", e?.message || "OCR服务请求失败", { status: e?.status, detail: e?.detail, base, ...timing });
   }
 
   timing.ocrSubmitMs = Date.now() - submitStarted;
   const jobId = clean(submitted?.data?.jobId);
-  if (!jobId) throw fail("OCR_SUBMIT_FAILED", "OCR任务提交失败");
+  if (!jobId) throw fail("OCR_SUBMIT_FAILED", "OCR任务提交失败", { ...timing });
   onProgress(10);
 
   // 给 Cloudflare Worker 后续的提取、匹配、去重、规划和保存留出时间，避免 OCR 长时间占用整个同步请求。
@@ -127,13 +134,13 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
       : Math.min(90, 10 + Math.round(((Date.now() - (deadline - 19000)) / 19000) * 80)));
 
     if (state === "failed" || state === "error") {
-      throw fail("OCR_JOB_FAILED", data.errorMsg || data.msg || "OCR识别失败", { jobId });
+      throw fail("OCR_JOB_FAILED", data.errorMsg || data.msg || "OCR识别失败", { jobId, ...timing });
     }
 
     if (state === "done" || state === "completed" || data.resultUrl?.jsonUrl) {
       const STATUS_PATH = base + JOB_PATH + "/" + encodeURIComponent(jobId);
       const url0 = clean(data.resultUrl?.jsonUrl);
-      if (!url0) throw fail("OCR_RESULT_MISSING", "OCR结果地址缺失", { jobId });
+      if (!url0) throw fail("OCR_RESULT_MISSING", "OCR结果地址缺失", { jobId, ...timing });
 
       // 结果 JSON 偶发读取抖动（AI Studio 慢/结果地址未同步）会让整单处理前功尽弃：
       // 最多尝试 3 次（每次 8s 超时，退避 0.8s/1.6s）。
@@ -189,14 +196,14 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
         } catch (e) {
           timing.ocrResultFetchMs += Date.now() - resultStarted;
           lastError = e;
-          if (!e?.retryable) throw e;
+          if (!e?.retryable) throw withTiming(e, timing);
         }
       }
-      throw lastError || fail("OCR_RESULT_FETCH", "OCR结果读取失败", { jobId });
+      throw withTiming(lastError || fail("OCR_RESULT_FETCH", "OCR结果读取失败", { jobId }), timing);
     }
     delay = Math.min(5000, Math.round(delay * 1.35));
   }
-  throw fail("OCR_TIMEOUT", "OCR识别超时，请稍后重试", { jobId });
+  throw fail("OCR_TIMEOUT", "OCR识别超时，请稍后重试", { jobId, ...timing });
 }
 
 export default { recognizeImage };
