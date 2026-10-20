@@ -105,12 +105,12 @@
 .account-page .account-logout-section .message{margin:10px 2px 0;text-align:center}
 
 /* --- 底部注销账号：无边框红色文字链接（与参考图一致） --- */
-.acct-danger-link{display:block;margin:16px auto 0;padding:12px 24px;border:0;background:none;
+.acct-destroy-link{display:block;margin:16px auto 0;padding:12px 24px;border:0;background:none;
   color:#E5483F;font-size:15px;font-weight:400;cursor:pointer}
-:root[data-zp-theme="light"] .acct-danger-link{color:#C2453A}
-:root[data-zp-theme="dark"] .acct-danger-link{color:#FF8278}
-.acct-danger-link:active{opacity:.6}
-.acct-danger-link[hidden]{display:none}
+:root[data-zp-theme="light"] .acct-destroy-link{color:#C2453A}
+:root[data-zp-theme="dark"] .acct-destroy-link{color:#FF8278}
+.acct-destroy-link:active{opacity:.6}
+.acct-destroy-link[hidden]{display:none}
 
 /* --- 关于卡 --- */
 .about-version{font-size:13px}
@@ -228,7 +228,7 @@
   <p id="message" class="message"></p>
 </section>
 
-<button id="dangerToggle" class="acct-danger-link" type="button" aria-expanded="false" aria-controls="dangerBody">注销账号</button>
+<button id="dangerToggle" class="acct-destroy-link" type="button" aria-expanded="false" aria-controls="dangerBody">注销账号</button>
 <div id="dangerBody" class="acct-card acct-danger-card" hidden>
   <div id="deletePrompt" class="account-danger-box">
     <strong>注销账号</strong>
