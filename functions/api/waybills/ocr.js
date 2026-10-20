@@ -44,30 +44,44 @@ function collectText(value, out = []) {
 
 async function requestJson(url, init, timeoutMs = 8000, abortSignal = null) {
   const controller = new AbortController();
-  if (abortSignal) { try { abortSignal.addEventListener("abort", () => controller.abort()); } catch {} }
+  const onAbort = () => controller.abort();
+  if (abortSignal) {
+    // 处理调用前已取消的请求，也避免监听器在请求结束后残留。
+    if (abortSignal.aborted) controller.abort();
+    else {
+      try { abortSignal.addEventListener("abort", onAbort, { once: true }); } catch {}
+    }
+  }
+  // 超时必须覆盖 fetch 响应头和响应正文读取；否则上游只返回响应头、正文卡住时会失去超时保护。
   const timer = setTimeout(() => controller.abort(), timeoutMs);
-  let r;
   try {
-    r = await fetch(url, { ...(init || {}), signal: controller.signal });
+    const r = await fetch(url, { ...(init || {}), signal: controller.signal });
+    const text = await r.text();
+    let data = {};
+    try { data = text ? JSON.parse(text) : {}; } catch { throw fail("OCR_BAD_RESPONSE", "OCR服务返回格式异常"); }
+    if (!r.ok) {
+      const detail = data?.msg || data?.message || data?.error || text?.slice(0, 300) || "";
+      throw fail(
+        r.status === 401 || r.status === 403 ? "OCR_AUTH" : r.status === 404 ? "OCR_ENDPOINT" : "OCR_API",
+        `OCR服务请求失败（HTTP ${r.status}）`,
+        { status: r.status, detail }
+      );
+    }
+    return data;
   } catch (e) {
-    if (e?.name === "AbortError") {
-      if (abortSignal && abortSignal.aborted) throw fail("OCR_CANCELLED", "已取消识别");
+    // 自定义业务错误（HTTP 状态、JSON 格式）不能被误报成网络超时。
+    if (e?.code) throw e;
+    if (controller.signal.aborted) {
+      if (abortSignal?.aborted) throw fail("OCR_CANCELLED", "已取消识别");
       throw fail("OCR_NETWORK_TIMEOUT", "OCR服务响应超时");
     }
     throw e;
-  } finally { clearTimeout(timer); }
-  const text = await r.text();
-  let data = {};
-  try { data = text ? JSON.parse(text) : {}; } catch { throw fail("OCR_BAD_RESPONSE", "OCR服务返回格式异常"); }
-  if (!r.ok) {
-    const detail = data?.msg || data?.message || data?.error || text?.slice(0, 300) || "";
-    throw fail(
-      r.status === 401 || r.status === 403 ? "OCR_AUTH" : r.status === 404 ? "OCR_ENDPOINT" : "OCR_API",
-      `OCR服务请求失败（HTTP ${r.status}）`,
-      { status: r.status, detail }
-    );
+  } finally {
+    clearTimeout(timer);
+    if (abortSignal) {
+      try { abortSignal.removeEventListener("abort", onAbort); } catch {}
+    }
   }
-  return data;
 }
 
 export async function recognizeImage(env, file, onProgress = () => {}, signal = null) {
