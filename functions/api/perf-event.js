@@ -3,7 +3,7 @@ import { command } from "./_redis.js";
 import { guard } from "./_safe.js";
 
 const PAGES = new Set(["home","history","routes","account","login"]);
-const ENDPOINTS = new Set(["page-load","api-home","api-history","api-routes","api-account","api-waybills","api-auth","api-other"]);
+const ENDPOINTS = new Set(["page-load","api-home","api-history","api-history-detail","api-history-search","api-routes","api-account","api-waybills","api-auth","api-other"]);
 const LUA = `
 local rate = tonumber(redis.call("INCR", KEYS[2]))
 if rate == 1 then redis.call("EXPIRE", KEYS[2], 3600) end
@@ -58,7 +58,7 @@ function validEvent(e) {
   const server = e.server == null ? null : Number(e.server);
   if (!status || !Number.isFinite(duration) || duration < 0 || duration > 120000) return null;
   if (server !== null && (!Number.isFinite(server) || server < 0 || server > 120000)) return null;
-  const allowedPhases = new Set(["history-auth","history-route","history-index","history-aggregate","history-search-index","history-search-read","history-detail-read","history-detail-enrich"]);
+  const allowedPhases = new Set(["history-auth","history-route","history-index","history-aggregate","history-search-index","history-search-read","history-detail-read","history-detail-enrich","history-response-build"]);
   const phases = {};
   if (e.phases && typeof e.phases === "object" && !Array.isArray(e.phases)) {
     for (const [name, value] of Object.entries(e.phases)) {

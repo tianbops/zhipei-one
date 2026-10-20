@@ -21,7 +21,7 @@
       if(u.origin!==location.origin||!u.pathname.startsWith("/api/")||u.pathname==="/api/perf-event")return null;
       var p=u.pathname;
       if(p.indexOf("/api/home")===0)return "api-home";
-      if(p.indexOf("/api/history")===0)return "api-history";
+      if(p.indexOf("/api/history")===0){if(u.searchParams.has("q"))return "api-history-search";if(u.searchParams.has("date"))return "api-history-detail";return "api-history";}
       if(p.indexOf("/api/dispatch")===0||p.indexOf("/api/routes")===0)return "api-routes";
       if(p.indexOf("/api/me")===0||p.indexOf("/api/account")===0)return "api-account";
       if(p.indexOf("/api/waybill")===0||p.indexOf("/api/waybills")===0)return "api-waybills";
@@ -46,7 +46,7 @@
       var header=response.headers.get("Server-Timing")||"";
       var match=header.match(/(?:^|[,;\s])app;dur=([\d.]+)/);
       var server=match&&Number.isFinite(Number(match[1]))?Number(match[1]):null;
-      var phases={},phaseParts=header.split(","),phasePattern=/^(history-auth|history-route|history-index|history-aggregate|history-search-index|history-search-read|history-detail-read|history-detail-enrich);dur=([\d.]+)$/,phaseMatch;
+      var phases={},phaseParts=header.split(","),phasePattern=/^(history-auth|history-route|history-index|history-aggregate|history-search-index|history-search-read|history-detail-read|history-detail-enrich|history-response-build);dur=([\d.]+)$/,phaseMatch;
       for(var pi=0;pi<phaseParts.length;pi++){phaseMatch=phaseParts[pi].trim().match(phasePattern);if(phaseMatch){var phaseValue=Number(phaseMatch[2]);if(Number.isFinite(phaseValue)&&phaseValue>=0&&phaseValue<=120000)phases[phaseMatch[1]]=Math.round(phaseValue*10)/10;}}
       push(endpoint,response.status,performance.now()-t0,server,phases);
       return response;

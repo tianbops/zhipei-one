@@ -195,7 +195,7 @@ export async function enrichFactory(env,routeId){
 async function historyGet({request,env}){
  const timing={};let phaseStart=performance.now();
  const mark=(name,started)=>{timing[name]=Math.max(0,Number((performance.now()-started).toFixed(1)));};
- const respond=(body,status=200)=>{const response=json(body,status);const metrics=Object.entries(timing).map(([name,dur])=>name+";dur="+dur).join(", ");if(metrics)response.headers.set("Server-Timing",metrics);return response;};
+ const respond=(body,status=200)=>{const responseStart=performance.now();const response=json(body,status);mark("history-response-build",responseStart);const metrics=Object.entries(timing).map(([name,dur])=>name+";dur="+dur).join(", ");if(metrics)response.headers.set("Server-Timing",metrics);return response;};
  try{
   const user=await currentUser(request,env);mark("history-auth",phaseStart);if(!user)return respond({success:false,error:"未登录"},401);
   if(user.role==="admin"||!canUseRoute(user))return respond({success:false,error:"无权查看配送业务"},403);
