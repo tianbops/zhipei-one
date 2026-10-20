@@ -1,3 +1,4 @@
+import {guard} from "./_safe.js";
 import {json} from "./_json.js";
 import {currentUser} from "./_auth.js";
 import {get,command,pipeline} from "./_redis.js";
@@ -191,7 +192,7 @@ export async function enrichFactory(env,routeId){
  };
 }
 
-export async function onRequestGet({request,env}){
+async function historyGet({request,env}){
  try{
   const user=await currentUser(request,env);if(!user)return json({success:false,error:"未登录"},401);
   if(user.role==="admin"||!canUseRoute(user))return json({success:false,error:"无权查看配送业务"},403);
@@ -346,7 +347,7 @@ async function deleteWaybill(env,routeId,date,waybillId,budget){
  try{budget.take(1);await command(env,["DEL",mainKey]);mainOk=true}catch(e){errors.push(e)}
  return {mainOk,indexOk,childrenOk,refOk,budgetExceeded:false,errors};
 }
-export async function onRequestDelete({request,env}){
+async function historyDelete({request,env}){
  const user=await currentUser(request,env);if(!user)return json({success:false,error:"未登录"},401);
  if(user.role==="admin"||!canUseRoute(user))return json({success:false,error:"无权删除历史数据"},403);
  const url=new URL(request.url),routeId=clean(url.searchParams.get("routeId")||user.dispatchRouteId||user.boundRouteId),date=clean(url.searchParams.get("date")),month=clean(url.searchParams.get("month")),currentRoute=clean(user.dispatchRouteId)||clean(user.boundRouteId);
@@ -381,3 +382,8 @@ export async function onRequestDelete({request,env}){
  if(s.mainFailed)return json({success:false,code:"WAYBILL_DELETE_FAILED",error:"运单主记录删除失败,请重试",deleted:s.deleted,skipped,total:readable.length,date});
  return json({success:true,code:skipped>0?"PARTIAL_DELETE":(s.partial?"PARTIAL_FAILURE":undefined),message:skipped>0?`已删除 ${s.deleted} 单，另有 ${skipped} 单因无权限未删除`:(s.partial?"部分索引或子键清理未完成,建议稍后执行修复":undefined),deleted:s.deleted,skipped,total:readable.length,deletedWaybills:s.deleted,date});
 }
+
+
+// 统一记录历史接口服务端耗时与请求 ID；保持原有业务处理、响应体和状态码。
+export const onRequestGet = guard(historyGet, "HISTORY_READ_FAILED");
+export const onRequestDelete = guard(historyDelete, "HISTORY_DELETE_FAILED");
