@@ -1,0 +1,18 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+const ingest=readFileSync(new URL("../functions/api/perf-event.js",import.meta.url),"utf8");
+const report=readFileSync(new URL("../functions/api/perf-report.js",import.meta.url),"utf8");
+assert.match(ingest,/PAGES = new Set/);
+assert.match(ingest,/ENDPOINTS = new Set/);
+assert.match(ingest,/origin !== requestUrl.origin/);
+assert.match(ingest,/body.events.length > 25/);
+assert.match(ingest,/request.text\(\)/);
+assert.match(ingest,/TextEncoder\(\)/);
+assert.match(ingest,/1209600/);
+assert.match(ingest,/"perf:hour:"/);
+assert.match(ingest,/"perf:ingest-rate:"/);
+assert.doesNotMatch(ingest,/request\.headers\.get\(["']cookie|authorization|x-forwarded-for/i);
+assert.match(report,/user.role!=="admin" && user.role!=="system_admin"/);
+assert.match(report,/HGETALL/);
+assert.match(report,/windowHours:24/);
+console.log("Anonymous performance telemetry safeguards passed.");
