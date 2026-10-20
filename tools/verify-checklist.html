@@ -106,7 +106,7 @@ const esc = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'
   const el = $("whoami");
   try{
     const r = await fetch("/api/me?adminCheck=" + Date.now());
-    if(r.status === 401){ el.innerHTML = '<span style="color:var(--bad);font-weight:700;">未登录</span> —— 请先打开 <a style="color:var(--acc)" href="https://zhipeione.ccwu.cc/">首页</a> 用管理员账号登录后再回来。'; return; }
+    if(r.status === 401){ el.innerHTML = '<span style="color:var(--bad);font-weight:700;">未登录</span> —— 请先打开 <a style="color:var(--acc)" href="https://tianyou-zhipei.pages.dev/">首页</a> 用管理员账号登录后再回来。'; return; }
     const j = await r.json();
     const u = j.user || {};
     const ok = u.role === "admin" || u.role === "system_admin";
@@ -131,8 +131,8 @@ $("btnList").onclick = async () => {
   }catch(e){ $("listOut").textContent = "ERR " + e.message; }
 };
 
-$("btnAdmin1").onclick = () => window.open("https://zhipeione.ccwu.cc/admin.html", "_blank");
-$("btnAdmin2").onclick = () => window.open("https://zhipeione.ccwu.cc/admin.html", "_blank");
+$("btnAdmin1").onclick = () => window.open("https://tianyou-zhipei.pages.dev/admin.html", "_blank");
+$("btnAdmin2").onclick = () => window.open("https://tianyou-zhipei.pages.dev/admin.html", "_blank");
 
 async function postJSON(url, body){
   const r = await fetch(url, {method:"POST", headers:{"content-type":"application/json"},
