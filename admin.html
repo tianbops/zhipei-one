@@ -534,7 +534,7 @@ async function renderPerfReport(){
     const em=new Map();
     for(const g of groups){
       const key=String(g.endpoint||"未知接口"),x=em.get(key)||{count:0,sum:0,max:0,serverCount:0,serverSum:0,failures:0};
-      const n=Number(g.count)||0;x.count+=n;x.sum+=(Number(g.avgMs)||0)*n;x.max=Math.max(x.max,Number(g.maxMs)||0);
+      const n=Number(g.count)||0;x.count+=n;x.sum+=(Number(g.avgMs)||0)*n;x.max=Math.max(x.max,Number(g.max)||0);
       const sc=Number(g.serverCount)||0;x.serverCount+=sc;x.serverSum+=(Number(g.serverAvgMs)||0)*sc;
       if(["4xx","5xx","network"].includes(g.status))x.failures+=n;em.set(key,x);
     }
@@ -543,7 +543,7 @@ async function renderPerfReport(){
     endpoints.innerHTML='<div class="perf-list-title">接口耗时 · 按平均耗时排序</div>'+(top.length?top.map(([name,x])=>'<div class="perf-row"><div class="perf-row-top"><span>'+esc(name)+'</span><span>'+(x.count?Math.round(x.sum/x.count):0)+' ms 平均</span></div><div class="perf-row-meta">样本 '+x.count+' · 峰值 '+Math.round(x.max)+' ms · 服务端 '+(x.serverCount?Math.round(x.serverSum/x.serverCount)+' ms 平均（'+x.serverCount+'次）':'暂无服务端计时')+(x.failures?' · 异常 '+x.failures:'')+'</div></div>').join(""):'<div class="empty">最近24小时暂无接口样本</div>');
     const pm=new Map();
     for(const g of groups)for(const [name,p] of Object.entries(g.phases||{})){
-      const x=pm.get(name)||{count:0,sum:0,max:0},n=Number(p.count)||0;x.count+=n;x.sum+=(Number(p.avgMs)||0)*n;x.max=Math.max(x.max,Number(p.maxMs)||0);pm.set(name,x);
+      const x=pm.get(name)||{count:0,sum:0,max:0},n=Number(p.count)||0;x.count+=n;x.sum+=(Number(p.avgMs)||0)*n;x.max=Math.max(x.max,Number(p.max)||0);pm.set(name,x);
     }
     const ps=[...pm.entries()].sort((a,b)=>(b[1].count?b[1].sum/b[1].count:0)-(a[1].count?a[1].sum/a[1].count:0));
     reportLines.push("","历史查询阶段耗时（平均 / 峰值）");for(const [name,x] of ps)reportLines.push(name+"：样本 "+x.count+"，平均 "+(x.count?Math.round(x.sum/x.count):0)+" ms，峰值 "+Math.round(x.max)+" ms");reportLines.push("","说明：匿名聚合数据；不同时间段样本不一定可直接比较。");window.__zpPerfCopyText=reportLines.join("\n");
