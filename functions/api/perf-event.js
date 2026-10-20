@@ -3,7 +3,7 @@ import { command } from "./_redis.js";
 import { guard } from "./_safe.js";
 
 const PAGES = new Set(["home","history","routes","account","login"]);
-const ENDPOINTS = new Set(["page-load","api-home","api-history","api-history-detail","api-history-search","api-routes","api-account","api-waybills","api-auth","api-other"]);
+const ENDPOINTS = new Set(["page-load","api-home","api-history","api-history-detail","api-history-search","api-routes","api-account","api-me","api-account-settings","api-waybills","api-auth","api-other"]);
 const LUA = `
 local rate = tonumber(redis.call("INCR", KEYS[2]))
 if rate == 1 then redis.call("EXPIRE", KEYS[2], 3600) end
