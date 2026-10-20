@@ -15,7 +15,7 @@
 /*.html
   Cache-Control: no-cache
 
-# 无扩展名页面路由（/home、/pages/dispatch …）
+# 无扩展名页面路由（/、/home、/pages/dispatch …）
 # ------------------------------------------------------------------
 # 背景（2026-10-20 中国大陆实测校准）：Pages 会把 /home 解析成 home.html，
 # 但上面 `/*.html` 规则**不匹配**这些无扩展名路径，它们落到 Cloudflare 默认头：
@@ -29,6 +29,16 @@
 # 安全性依据（为什么陈旧 HTML 不会出问题）：HTML 只是静态外壳，业务数据全部走
 # /api/*（SW 明确不接管、不被缓存）；页面引用的 JS/CSS 均带 ?v=<内容哈希>，
 # 文件路径恒定，旧 ?v= 取到的仍是当前文件，不会 404，最坏是下一次刷新才看到新壳。
+#
+# 【根路径必须单独列出，否则前面所有优化都白做一半】
+# 「/」是站点唯一入口：冷启动落在它上面，登录守卫跳转（/?redirect=…&reason=auth）
+# 也全部落在它上面。2026-10-20 复测确认它会落到默认头：
+#   Cache-Control: public, max-age=0, must-revalidate   ← 无 max-age、无 ETag
+# 也就是说：别人都已经能 304 秒开了，唯独入口每一跳还要跨境整份重下载这一份外壳。
+# 补这条规则后，入口与其他页面同策略。（_headers 按路径匹配，查询串不影响，
+# 所以带 redirect 参数的跳转同样命中本规则。）
+/
+  Cache-Control: public, max-age=120, stale-while-revalidate=86400
 /pages/*
   Cache-Control: public, max-age=120, stale-while-revalidate=86400
 /home

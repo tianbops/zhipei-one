@@ -37,7 +37,9 @@ console.log("【1】_headers 缓存策略");
   check(/no-store/.test(swBlock), "/sw.js 仍然 no-store（新版本 SW 必须能下发）");
 
   // 无扩展名页面路由：Pages 的 /*.html 规则匹配不到它们，必须单独给策略
-  const pretty = ["/home", "/pages/*", "/history", "/dispatch", "/today", "/account", "/data", "/admin", "/login", "/register", "/setup", "/admin-bootstrap"];
+  // "/" 是站点唯一入口（冷启动 + 登录守卫跳转目标），漏掉它就等于每次进入都跨境重下外壳，
+  // 其余页面再快也补不回来，所以它是这条防线里优先级最高的一个。
+  const pretty = ["/", "/home", "/pages/*", "/history", "/dispatch", "/today", "/account", "/data", "/admin", "/login", "/register", "/setup", "/admin-bootstrap"];
   for (const p of pretty) {
     const b = rule(p);
     check(/max-age=120/.test(b) && /stale-while-revalidate=86400/.test(b),
