@@ -8,5 +8,8 @@ assert.match(source,/network/);
 assert.match(source,/api\/perf-event/);
 assert.match(source,/credentials:"same-origin"/);
 assert.match(source,/page-load/);
+assert.match(source,/api-history-detail/);
+assert.match(source,/api-history-search/);
+assert.match(source,/history-response-build/);
 assert.doesNotMatch(source,/sendBeacon|localStorage\.setItem|sessionStorage\.setItem|fetch\(["']https?:|console\.info\("\[ZP-PERF\]",\{[^}]*url/i);
 console.log("Automatic anonymous performance diagnostics safeguards passed.");
