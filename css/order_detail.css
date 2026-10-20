@@ -29,7 +29,11 @@
 .order-store-item{display:grid;grid-template-columns:34px minmax(0,1fr);gap:6px;padding:10px 3px;border-bottom:1px solid var(--zp-divider);min-height:56px}
 .order-store-item:last-child{border-bottom:0}.order-store-index{color:#7F8A95;font-size:12px;line-height:22px;font-weight:600}
 .order-store-main{min-width:0}.order-store-name{font-size:15px;line-height:22px;color:#fff;font-weight:600;word-break:break-all}
-.order-store-name.nav{display:inline;color:#fff!important;text-decoration:none!important;-webkit-text-decoration:none!important;cursor:pointer}
+/* 移动端可达性（2026-10-20 巡检）：行内门店名链接原为 display:inline，
+   垂直 padding 不计入命中框 → 点击区仅约 22px。改为 inline-block 后
+   padding:11px 0 真实撑开命中区到 44px，margin:-11px 0 抵消视觉位移，
+   行高/行距不变；.order-store-item 有 min-height:56px 兜底不会压行。 */
+.order-store-name.nav{display:inline-block;color:#fff!important;text-decoration:none!important;-webkit-text-decoration:none!important;cursor:pointer;padding:11px 0;margin:-11px 0}
 .order-store-name.nav:visited{color:#fff!important;text-decoration:none!important}.order-store-name.nav:active{opacity:.65}
 .order-store-note-inline{margin-left:5px;color:#7F8A95;font-size:11px;line-height:20px;font-weight:500;white-space:normal}
 .order-store-note{margin-top:3px;color:#9AA6B2;font-size:11px;line-height:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -462,5 +466,5 @@
 
 /* 移动端可达性（2026-10-20 巡检）：浅色主题下次要文本 #7F8A95 对比度仅 3.52:1，加深达标 */
 :root[data-zp-theme="light"] .order-meta-label,:root[data-zp-theme="light"] .order-store-index{color:#59636E}
-/* 行内门店名链接热区扩展：inline 垂直 padding 不参与布局，命中区 22→44px 而行距不变 */
-.order-store-name.nav{padding:11px 0}
+/* 行内门店名链接热区扩展已在上方 .order-store-name.nav 基础规则中统一处理
+   （inline-block + padding:11px 0 + margin:-11px 0），此处不再重复声明。 */
