@@ -23,7 +23,7 @@ export const onRequestGet = guard(async ({request,env}) => {
       const parts=field.split("|");if(parts.length!==4)continue;
       const [page,endpoint,status,metric]=parts;
       const id=page+"|"+endpoint+"|"+status;
-      if(!groups.has(id))groups.set(id,{page,endpoint,status,count:0,sum:0,max:0,serverCount:0,serverSum:0,serverMax:0});
+      if(!groups.has(id))groups.set(id,{page,endpoint,status,count:0,sum:0,max:0,serverCount:0,serverSum:0,serverMax:0,phases:{}});
       const g=groups.get(id),n=Number(value)||0;
       if(metric==="count")g.count=n;
       else if(metric==="sum")g.sum=n;
@@ -31,10 +31,13 @@ export const onRequestGet = guard(async ({request,env}) => {
       else if(metric==="server_count")g.serverCount=n;
       else if(metric==="server_sum")g.serverSum=n;
       else if(metric==="server_max")g.serverMax=n;
+      else if(metric.startsWith("phase:")){const bits=metric.split(":");if(bits.length===3&&/^history-[a-z-]+$/.test(bits[1])&&["count","sum","max"].includes(bits[2])){const phase=bits[1];if(!g.phases[phase])g.phases[phase]={count:0,sum:0,max:0};if(bits[2]==="count")g.phases[phase].count=n;else if(bits[2]==="sum")g.phases[phase].sum=n;else g.phases[phase].max=n;}}
     }
     for(const g of groups.values()){
       g.avgMs=g.count?Math.round(g.sum/g.count*10)/10:0;
       g.serverAvgMs=g.serverCount?Math.round(g.serverSum/g.serverCount*10)/10:null;
+      for(const phase of Object.values(g.phases)){phase.avgMs=phase.count?Math.round(phase.sum/phase.count*10)/10:0;delete phase.sum;}
+      if(!Object.keys(g.phases).length)delete g.phases;
       delete g.sum;delete g.serverSum;
       hour.events+=g.count;totals.events+=g.count;
       totals.pages[g.page]=(totals.pages[g.page]||0)+g.count;
