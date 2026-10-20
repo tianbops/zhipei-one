@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 const source=readFileSync(new URL("../js/perf-diagnostics.js",import.meta.url),"utf8");
 assert.match(source,/get\("zpPerf"\)==="1"/);
 assert.match(source,/Server-Timing|Server-Timing/);
+assert.ok(source.includes("dur=([\\d.]+)$/"), "history Server-Timing phase parser must match numeric durations");
 assert.match(source,/network/);
 assert.match(source,/api\/perf-event/);
 assert.match(source,/credentials:"same-origin"/);
