@@ -6,6 +6,8 @@ assert.match(ingest,/PAGES = new Set/);
 assert.match(ingest,/ENDPOINTS = new Set/);
 assert.match(ingest,/origin !== requestUrl.origin/);
 assert.match(ingest,/body.events.length > 25/);
+assert.match(ingest,/request.text\(\)/);
+assert.match(ingest,/TextEncoder\(\)/);
 assert.match(ingest,/1209600/);
 assert.match(ingest,/"perf:hour:"/);
 assert.match(ingest,/"perf:ingest-rate:"/);
