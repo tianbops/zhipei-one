@@ -20,11 +20,31 @@ export const onRequestGet = guard(async ({request,env}) => {
     const hour={at:dates[i].toISOString().slice(0,13)+":00Z",events:0,groups:[]};
     const groups=new Map();
     for(const [field,value] of Object.entries(hash)){
-      const parts=field.split("|");if(parts.length!==4)continue;
-      const [page,endpoint,status,metric]=parts;
+      // 兼容两种字段形状：page|endpoint|status|metric（原有）
+      // 与 page|endpoint|status|code:<code>|metric（新增的非 2xx 状态码细分）。
+      const parts=field.split("|");if(parts.length<4)continue;
+      const [page,endpoint,status]=parts;
+      const metric=parts.slice(3).join("|");
       const id=page+"|"+endpoint+"|"+status;
-      if(!groups.has(id))groups.set(id,{page,endpoint,status,count:0,sum:0,max:0,serverCount:0,serverSum:0,serverMax:0,phases:{}});
+      if(!groups.has(id))groups.set(id,{page,endpoint,status,count:0,sum:0,max:0,serverCount:0,serverSum:0,serverMax:0,phases:{},codes:{}});
       const g=groups.get(id),n=Number(value)||0;
+      if(metric.startsWith("code:")){
+        const bits=metric.split("|");
+        if(bits.length===2){
+          const code=bits[0].slice(5);
+          if(/^\d{3}$/.test(code)){
+            if(!g.codes[code])g.codes[code]={count:0,sum:0,max:0,serverCount:0,serverSum:0,serverMax:0};
+            const c=g.codes[code];
+            if(bits[1]==="count")c.count=n;
+            else if(bits[1]==="sum")c.sum=n;
+            else if(bits[1]==="max")c.max=n;
+            else if(bits[1]==="server_count")c.serverCount=n;
+            else if(bits[1]==="server_sum")c.serverSum=n;
+            else if(bits[1]==="server_max")c.serverMax=n;
+          }
+        }
+        continue;
+      }
       if(metric==="count")g.count=n;
       else if(metric==="sum")g.sum=n;
       else if(metric==="max")g.max=n;
@@ -36,8 +56,16 @@ export const onRequestGet = guard(async ({request,env}) => {
     for(const g of groups.values()){
       g.avgMs=g.count?Math.round(g.sum/g.count*10)/10:0;
       g.serverAvgMs=g.serverCount?Math.round(g.serverSum/g.serverCount*10)/10:null;
-      for(const phase of Object.values(g.phases)){phase.avgMs=phase.count?Math.round(phase.sum/phase.count*10)/10:0;delete phase.sum;}
-      if(!Object.keys(g.phases).length)delete g.phases;
+      const codes=g.codes||{};
+      for(const code of Object.values(codes)){
+        code.avgMs=code.count?Math.round(code.sum/code.count*10)/10:0;
+        code.serverAvgMs=code.serverCount?Math.round(code.serverSum/code.serverCount*10)/10:null;
+        delete code.sum;delete code.serverSum;
+      }
+      if(!Object.keys(codes).length)delete g.codes;
+      const phases=g.phases||{};
+      for(const phase of Object.values(phases)){phase.avgMs=phase.count?Math.round(phase.sum/phase.count*10)/10:0;delete phase.sum;}
+      if(!Object.keys(phases).length)delete g.phases;
       delete g.sum;delete g.serverSum;
       hour.events+=g.count;totals.events+=g.count;
       totals.pages[g.page]=(totals.pages[g.page]||0)+g.count;

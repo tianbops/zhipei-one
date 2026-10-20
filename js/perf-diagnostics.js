@@ -23,7 +23,11 @@
       if(p.indexOf("/api/home")===0)return "api-home";
       if(p.indexOf("/api/history")===0){if(u.searchParams.has("q"))return "api-history-search";if(u.searchParams.has("date"))return "api-history-detail";return "api-history";}
       if(p.indexOf("/api/dispatch")===0||p.indexOf("/api/routes")===0)return "api-routes";
-      if(p.indexOf("/api/me")===0||p.indexOf("/api/account")===0)return "api-account";
+      /* 账户类接口细分：此前 /api/me、/api/account* 全部并成一个 api-account，
+       * 导致「账户 30 次异常」无法定位到具体接口。拆成独立标签后可在管理端逐接口查看。 */
+      if(p.indexOf("/api/me")===0)return "api-account-me";
+      if(p.indexOf("/api/account-settings")===0)return "api-account-settings";
+      if(p.indexOf("/api/account")===0)return "api-account-other";
       if(p.indexOf("/api/waybill")===0||p.indexOf("/api/waybills")===0)return "api-waybills";
       if(p.indexOf("/api/login")===0||p.indexOf("/api/session")===0)return "api-auth";
       return "api-other";
@@ -32,7 +36,13 @@
   var statusClass=function(status){if(status==="network")return "network";if(status>=500)return "5xx";if(status>=400)return "4xx";if(status>=300)return "3xx";return "2xx"};
   var push=function(endpoint,status,duration,server,phases){
     if(rows.length>=25)return;
-    var row={page:page,endpoint:endpoint,status:statusClass(status),duration:Math.max(0,Math.min(120000,Math.round(duration*10)/10)),server:server,phases:phases||{}};
+    var cls=statusClass(status);
+    /* 仅在非 2xx 时附带具体 HTTP 状态码（如 401/403/409/429）。
+     * 目的：把「账户 30 次异常」落到真实原因上，而不是停留在 4xx 汇总桶；
+     * network 类没有状态码（连接层失败），仍靠 status 归类区分。 */
+    var code=(cls!=="2xx"&&cls!=="network"&&typeof status==="number"&&status>=100&&status<600)?status:null;
+    var row={page:page,endpoint:endpoint,status:cls,duration:Math.max(0,Math.min(120000,Math.round(duration*10)/10)),server:server,phases:phases||{}};
+    if(code!==null)row.code=code;
     rows.push(row);
     if(debug)console.info("[ZP-PERF]",row);
   };

@@ -19,4 +19,15 @@ assert.doesNotMatch(ingest,/request\.headers\.get\(["']cookie|authorization|x-fo
 assert.match(report,/user.role!=="admin" && user.role!=="system_admin"/);
 assert.match(report,/HGETALL/);
 assert.match(report,/windowHours:24/);
+
+// ---- 账户接口细分 + HTTP 状态码聚合 ----
+assert.match(ingest,/api-account-me/);
+assert.match(ingest,/api-account-settings/);
+assert.match(ingest,/api-account-other/);
+assert.match(ingest,/for i=1,#ARGV,8 do/,"每事件新增状态码参数后，Lua 步长必须同步为 8");
+assert.match(ingest,/local cd=base\.\."code:"/,"非 2xx 必须按 code:<状态码> 细分聚合");
+assert.match(ingest,/status=="4xx" or status=="5xx"/,"状态码细分只应用于 4xx/5xx（network 没有状态码）");
+assert.match(ingest,/statusCode >= 100 && statusCode < 600/);
+assert.match(report,/metric\.startsWith\("code:"\)/,"报告需能解析状态码细分字段");
+assert.match(report,/parts\.length<4/,"字段名已变为可变段数，不能再用固定 4 段解析");
 console.log("Anonymous performance telemetry safeguards passed.");

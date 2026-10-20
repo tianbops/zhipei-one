@@ -205,6 +205,29 @@ class MiniRedis {
       }
       case "HGET": { this._expireIfDue(a[0]); const h = this.hashes.get(a[0]); return h && h.has(a[1]) ? h.get(a[1]) : null; }
       case "HGETALL": { this._expireIfDue(a[0]); const h = this.hashes.get(a[0]); if (!h) return []; const out = []; for (const [f, v] of h) { out.push(f, v); } return out; }
+      // HINCRBY / HINCRBYFLOAT：性能遥测（zp:perf:hour:*）的 Lua 聚合依赖这两条命令。
+      // 与真实 Redis 一致：字段不存在按 0 起算；非数值返回 ERR 而非静默写 NaN。
+      case "HINCRBY": {
+        const key = a[0], field = a[1], step = Number(a[2]);
+        this._expireIfDue(key);
+        if (!Number.isFinite(step) || !Number.isInteger(step)) throw new Error("ERR value is not an integer or out of range");
+        let h = this.hashes.get(key); if (!h) { h = new Map(); this.hashes.set(key, h); }
+        const cur = h.has(field) ? Number(h.get(field)) : 0;
+        if (!Number.isFinite(cur)) throw new Error("ERR hash value is not an integer");
+        const nv = cur + step; h.set(field, String(nv)); return nv;
+      }
+      case "HINCRBYFLOAT": {
+        const key = a[0], field = a[1], step = Number(a[2]);
+        this._expireIfDue(key);
+        if (!Number.isFinite(step)) throw new Error("ERR value is not a valid float");
+        let h = this.hashes.get(key); if (!h) { h = new Map(); this.hashes.set(key, h); }
+        const cur = h.has(field) ? Number(h.get(field)) : 0;
+        if (!Number.isFinite(cur)) throw new Error("ERR hash value is not a float");
+        // Redis 以科学计数法可能出现精度尾巴；用 1e-6 收敛后再落库，避免 0.30000000000000004 之类
+        const nv = Math.round((cur + step) * 1e6) / 1e6;
+        h.set(field, String(nv));
+        return String(nv);
+      }
       case "HMGET": { this._expireIfDue(a[0]); const h = this.hashes.get(a[0]); return a.slice(1).map(f => (h && h.has(f)) ? h.get(f) : null); }
       case "HDEL": { this._expireIfDue(a[0]); const h = this.hashes.get(a[0]); if (!h) return 0; let n = 0; for (let i = 1; i < a.length; i++) if (h.delete(a[i])) n++; return n; }
       case "HLEN": { this._expireIfDue(a[0]); const h = this.hashes.get(a[0]); return h ? h.size : 0; }

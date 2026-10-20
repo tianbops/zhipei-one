@@ -12,4 +12,24 @@ assert.match(source,/api-history-detail/);
 assert.match(source,/api-history-search/);
 assert.match(source,/history-response-build/);
 assert.doesNotMatch(source,/sendBeacon|localStorage\.setItem|sessionStorage\.setItem|fetch\(["']https?:|console\.info\("\[ZP-PERF\]",\{[^}]*url/i);
+
+// ---- 账户接口细分 ----
+// 此前 /api/me 与 /api/account* 全部并成 api-account 一个标签，
+// 导致「账户 30 次异常」无法拆到具体接口，只能停留在平均值猜测。
+assert.match(source,/api-account-me/);
+assert.match(source,/api-account-settings/);
+assert.match(source,/api-account-other/);
+assert.doesNotMatch(source,/"api-account";/,"账户类不能再使用合并后的单一标签");
+
+// ---- 非 2xx 必须携带具体 HTTP 状态码 ----
+assert.match(source,/var code=/);
+assert.match(source,/row\.code=code/);
+assert.doesNotMatch(source,/status>=600/);
+
+// ---- 反向回归：埋点被移除时本测试必须失败 ----
+// 教训：仅断言脚本源码特征，无法发现「页面不再引用该脚本」造成的漏埋（同主题测试的漏检模式）。
+for(const p of ["index.html","home.html","pages/account.html","pages/history.html","pages/dispatch.html"]){
+  assert.ok(readFileSync(new URL("../"+p,import.meta.url),"utf8").includes("/js/perf-diagnostics.js?v="),
+    p+" 必须引用 /js/perf-diagnostics.js（移除引用会导致埋点静默失效）");
+}
 console.log("Automatic anonymous performance diagnostics safeguards passed.");

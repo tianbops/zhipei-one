@@ -3,12 +3,14 @@ import { command } from "./_redis.js";
 import { guard } from "./_safe.js";
 
 const PAGES = new Set(["home","history","routes","account","login"]);
-const ENDPOINTS = new Set(["page-load","api-home","api-history","api-history-detail","api-history-search","api-routes","api-account","api-waybills","api-auth","api-other"]);
+/* endpoint 白名单：账户类已细分为 -me / -settings / -other；
+ * 保留旧的 "api-account" 是为了让尚未升级到新版诊断脚本的浏览器仍能被接收（旧数据不丢）。 */
+const ENDPOINTS = new Set(["page-load","api-home","api-history","api-history-detail","api-history-search","api-routes","api-account","api-account-me","api-account-settings","api-account-other","api-waybills","api-auth","api-other"]);
 const LUA = `
 local rate = tonumber(redis.call("INCR", KEYS[2]))
 if rate == 1 then redis.call("EXPIRE", KEYS[2], 3600) end
 if rate > 3000 then return -1 end
-for i=1,#ARGV,7 do
+for i=1,#ARGV,8 do
   local page=ARGV[i]
   local endpoint=ARGV[i+1]
   local status=ARGV[i+2]
@@ -16,6 +18,7 @@ for i=1,#ARGV,7 do
   local server=tonumber(ARGV[i+4])
   local hasServer=tonumber(ARGV[i+5])
   local phasesRaw=ARGV[i+6]
+  local codeRaw=ARGV[i+7]
   if page and endpoint and status and duration then
     local base=page.."|"..endpoint.."|"..status.."|"
     redis.call("HINCRBY",KEYS[1],base.."count",1)
@@ -27,6 +30,22 @@ for i=1,#ARGV,7 do
       redis.call("HINCRBYFLOAT",KEYS[1],base.."server_sum",server)
       local so=tonumber(redis.call("HGET",KEYS[1],base.."server_max") or "0")
       if server>so then redis.call("HSET",KEYS[1],base.."server_max",server) end
+    end
+    -- 非 2xx 且携带具体状态码时，按 page|endpoint|status|code:<code> 细分聚合。
+    -- 用于把「账户 4xx 异常」拆到真实原因（401/403/409/429…），而不是停留在状态桶；
+    -- network 类没有状态码（连接层失败），仍按 status 归类统计，不进入本细分。
+    if (status=="4xx" or status=="5xx") and codeRaw and codeRaw~="" then
+      local cd=base.."code:"..codeRaw.."|"
+      redis.call("HINCRBY",KEYS[1],cd.."count",1)
+      redis.call("HINCRBYFLOAT",KEYS[1],cd.."sum",duration)
+      local cm=tonumber(redis.call("HGET",KEYS[1],cd.."max") or "0")
+      if duration>cm then redis.call("HSET",KEYS[1],cd.."max",duration) end
+      if hasServer==1 and server then
+        redis.call("HINCRBY",KEYS[1],cd.."server_count",1)
+        redis.call("HINCRBYFLOAT",KEYS[1],cd.."server_sum",server)
+        local csm=tonumber(redis.call("HGET",KEYS[1],cd.."server_max") or "0")
+        if server>csm then redis.call("HSET",KEYS[1],cd.."server_max",server) end
+      end
     end
     if phasesRaw and phasesRaw~="" then
       local ok,phases=pcall(cjson.decode,phasesRaw)
@@ -66,7 +85,10 @@ function validEvent(e) {
       if (allowedPhases.has(name) && Number.isFinite(n) && n >= 0 && n <= 120000) phases[name] = Math.round(n*10)/10;
     }
   }
-  return [e.page,e.endpoint,status,String(Math.round(duration*10)/10),server===null?"0":String(Math.round(server*10)/10),server===null?"0":"1",JSON.stringify(phases)];
+  // 状态码只在非 2xx 时有效：2xx 不需要细分，network 事件本就没有状态码。
+  const statusCode = Number(e.code);
+  const code = (status !== "2xx" && status !== "network" && Number.isInteger(statusCode) && statusCode >= 100 && statusCode < 600) ? String(statusCode) : "";
+  return [e.page,e.endpoint,status,String(Math.round(duration*10)/10),server===null?"0":String(Math.round(server*10)/10),server===null?"0":"1",JSON.stringify(phases),code];
 }
 
 export const onRequestPost = guard(async ({request,env}) => {

@@ -533,14 +533,21 @@ async function renderPerfReport(){
     updated.textContent="报告生成："+(d.generatedAt?new Date(d.generatedAt).toLocaleString():"时间未知")+" · 自动匿名汇总";
     const em=new Map();
     for(const g of groups){
-      const key=String(g.endpoint||"未知接口"),x=em.get(key)||{count:0,sum:0,max:0,serverCount:0,serverSum:0,failures:0};
+      const key=String(g.endpoint||"未知接口"),x=em.get(key)||{count:0,sum:0,max:0,serverCount:0,serverSum:0,failures:0,codes:new Map()};
       const n=Number(g.count)||0;x.count+=n;x.sum+=(Number(g.avgMs)||0)*n;x.max=Math.max(x.max,Number(g.max)||0);
       const sc=Number(g.serverCount)||0;x.serverCount+=sc;x.serverSum+=(Number(g.serverAvgMs)||0)*sc;
-      if(["4xx","5xx","network"].includes(g.status))x.failures+=n;em.set(key,x);
+      if(["4xx","5xx","network"].includes(g.status))x.failures+=n;
+      for(const [code,c] of Object.entries(g.codes||{})){const cn=Number(c.count)||0;const prev=x.codes.get(code)||{count:0,sum:0};prev.count+=cn;prev.sum+=(Number(c.avgMs)||0)*cn;x.codes.set(code,prev);}
+      em.set(key,x);
     }
+    /* 异常状态码细分：把 4xx/5xx 汇总拆成具体 HTTP 状态码，
+     * 便于区分「账户服务真的处理了并返回错误」与「网络层失败」。 */
+    const codesText=function(x){const cs=[...x.codes.entries()].sort((a,b)=>b[1].count-a[1].count);return cs.length?"（"+cs.map(([c,v])=>c+"×"+v.count).join("，")+"）":""};
     const top=[...em.entries()].sort((a,b)=>(b[1].count?b[1].sum/b[1].count:0)-(a[1].count?a[1].sum/a[1].count:0)).slice(0,8);
-    for(const [name,x] of top)reportLines.push(name+"：样本 "+x.count+"，平均 "+(x.count?Math.round(x.sum/x.count):0)+" ms，峰值 "+Math.round(x.max)+" ms，服务端平均 "+(x.serverCount?Math.round(x.serverSum/x.serverCount)+" ms（"+x.serverCount+"次）":"暂无")+(x.failures?"，异常 "+x.failures:""));
-    endpoints.innerHTML='<div class="perf-list-title">接口耗时 · 按平均耗时排序</div>'+(top.length?top.map(([name,x])=>'<div class="perf-row"><div class="perf-row-top"><span>'+esc(name)+'</span><span>'+(x.count?Math.round(x.sum/x.count):0)+' ms 平均</span></div><div class="perf-row-meta">样本 '+x.count+' · 峰值 '+Math.round(x.max)+' ms · 服务端 '+(x.serverCount?Math.round(x.serverSum/x.serverCount)+' ms 平均（'+x.serverCount+'次）':'暂无服务端计时')+(x.failures?' · 异常 '+x.failures:'')+'</div></div>').join(""):'<div class="empty">最近24小时暂无接口样本</div>');
+    for(const [name,x] of top)reportLines.push(name+"：样本 "+x.count+"，平均 "+(x.count?Math.round(x.sum/x.count):0)+" ms，峰值 "+Math.round(x.max)+" ms，服务端平均 "+(x.serverCount?Math.round(x.serverSum/x.serverCount)+" ms（"+x.serverCount+"次）":"暂无")+(x.failures?"，异常 "+x.failures+codesText(x):""));
+    const codeLines=[];for(const [name,x] of [...em.entries()])if(x.codes.size)codeLines.push(name+"：异常 "+x.failures+" "+codesText(x)+"，平均响应 "+(x.count?Math.round(x.sum/x.count):0)+" ms，服务端平均 "+(x.serverCount?Math.round(x.serverSum/x.serverCount)+" ms":"暂无"));
+    if(codeLines.length)reportLines.push("","异常状态码细分（HTTP 状态码×次数，用于区分服务端拒绝与网络失败）",...codeLines);
+    endpoints.innerHTML='<div class="perf-list-title">接口耗时 · 按平均耗时排序</div>'+(top.length?top.map(([name,x])=>'<div class="perf-row"><div class="perf-row-top"><span>'+esc(name)+'</span><span>'+(x.count?Math.round(x.sum/x.count):0)+' ms 平均</span></div><div class="perf-row-meta">样本 '+x.count+' · 峰值 '+Math.round(x.max)+' ms · 服务端 '+(x.serverCount?Math.round(x.serverSum/x.serverCount)+' ms 平均（'+x.serverCount+'次）':'暂无服务端计时')+(x.failures?' · 异常 '+x.failures+codesText(x):'')+'</div></div>').join(""):'<div class="empty">最近24小时暂无接口样本</div>');
     const pm=new Map();
     for(const g of groups)for(const [name,p] of Object.entries(g.phases||{})){
       const x=pm.get(name)||{count:0,sum:0,max:0},n=Number(p.count)||0;x.count+=n;x.sum+=(Number(p.avgMs)||0)*n;x.max=Math.max(x.max,Number(p.max)||0);pm.set(name,x);
