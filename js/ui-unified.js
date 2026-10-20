@@ -505,6 +505,14 @@
   // 记录上，再 back() 一步即越过去。即便历史里残留业务端首页，这一步会一并越过。
   function zpDoExit(){
     zpLeaving=true;
+    // Capacitor 安卓壳：交给原生 finish() 真正结束 Activity。壳内 window.close() 是空操作、
+    // history.back() 也退不出 WebView，唯一可靠的退出是 NativeChrome.exitApp()。
+    // 这条路还天然规避「历史里残留业务端首页」——直接结束任务，不会回退到司机首页。
+    try{
+      const native=window.ZhipeiNative;
+      if(native&&typeof native.exitApp==="function"){native.exitApp();return}
+    }catch{}
+    // 独立 PWA / 浏览器：越过首条历史记录，由系统退出（退回上一站/桌面）。
     // 置位一次性退出标记：若历史里残留业务端首页，下一页加载时会继续后退，绝不停在司机首页
     try{sessionStorage.setItem("zpExitAdmin","1")}catch{}
     try{history.back()}catch{}
@@ -522,6 +530,25 @@
     if(r==="exit"){zpDoExit();return}
     // "leave"：非根页面的普通返回，location.replace 已发起页面导航，此处不做任何额外动作
   }
+
+  // 供 Capacitor 安卓壳的物理/手势返回直接调用：MainActivity.onBackPressed 在
+  // 「无历史可退」时 evaluateJavascript("window.zpSystemBack()")。与顶部返回键、
+  // popstate 走同一个 zpHandleBack 裁决，三者行为完全一致；确认退出由 zpDoExit
+  // 回调原生 exitApp() 结束 Activity。登录/引导页（无工作区）也保留「再按一次退出」防误触。
+  window.zpSystemBack=async function(){
+    if(!zpZone){
+      if(zpExitArmed){zpDoExit();return "exit"}
+      zpExitArmed=true;
+      try{window.zpToast?window.zpToast("再按一次退出","info"):0}catch{}
+      clearTimeout(zpExitTimer);
+      zpExitTimer=setTimeout(()=>{zpExitArmed=false},2000);
+      return "exit-armed";
+    }
+    const r=await zpHandleBack();
+    if(zpLeaving)return r;
+    if(r==="exit")zpDoExit();
+    return r;
+  };
 
   function zpBindPageBack(){
     document.querySelectorAll(".app-back,#backBtn").forEach(el=>{

@@ -262,6 +262,61 @@ const HISTORY_SRC = readFileSync(fileURLToPath(new URL("../js/history.js", impor
   console.log((picker && dialog && swipe && overlayHook ? "✅ " : "❌ ") + "历史页：日历/确认框/左滑/功能浮层返回层级已覆盖");
 }
 
+/* ---------- 切片五：Capacitor 退出协调（zpDoExit 双路径 + zpSystemBack 入口）----------
+ * 背景：安卓壳 MainActivity.onBackPressed 只在「无历史可退」时转交 window.zpSystemBack()，
+ * 确认退出由 zpDoExit 回调原生 ZhipeiNative.exitApp() 结束 Activity；独立 PWA 仍走
+ * history.back()+window.close() 回退。两条路径都须有回归覆盖，防止「退不出」或「双 Toast」。 */
+const DOEXIT_SRC = slice("function zpDoExit(){", "  // 供 Capacitor");
+
+/** 在受控环境里真实执行 zpDoExit（zpLeaving 由外层 let 提供，其余依赖全部注入桩） */
+function runDoExit(opts = {}) {
+  const rec = { exitApp: false, histBack: false, sessionSet: null, closed: false };
+  const win = {
+    ZhipeiNative: opts.capacitor ? { exitApp: () => { rec.exitApp = true; } } : undefined,
+    matchMedia: (q) => ({ matches: !!opts.standalone && String(q).includes("display-mode") }),
+    navigator: { standalone: false },
+    close: () => { rec.closed = true; },
+  };
+  const sessionStorage = { setItem: (_k, v) => { rec.sessionSet = v; } };
+  const history = { back: () => { rec.histBack = true; } };
+  const factory = new Function("window", "sessionStorage", "history", "location",
+    "let zpLeaving=false;" + DOEXIT_SRC + "\nreturn zpDoExit;");
+  factory(win, sessionStorage, history, {})();
+  return rec;
+}
+
+console.log("\n五、Capacitor 退出协调（zpDoExit 双路径）");
+{
+  const cap = runDoExit({ capacitor: true });
+  t("Capacitor：确认退出调原生 exitApp()，且不再动 history/sessionStorage",
+    cap.exitApp === true && cap.histBack === false && cap.sessionSet === null,
+    JSON.stringify(cap));
+  console.log((cap.exitApp && !cap.histBack ? "✅ " : "❌ ") + "Capacitor：退出走原生 exitApp()（唯一真出口）");
+
+  const pwa = runDoExit({ standalone: true });
+  t("独立 PWA：无原生桥时回退 history.back()+window.close()，并置跨区退出标记",
+    pwa.exitApp === false && pwa.histBack === true && pwa.sessionSet === "1" && pwa.closed === true,
+    JSON.stringify(pwa));
+  console.log((pwa.histBack && pwa.closed && !pwa.exitApp ? "✅ " : "❌ ") + "独立 PWA：越过首条记录 + window.close()");
+
+  const plain = runDoExit({});
+  t("普通浏览器：非 standalone 只 history.back()，不 window.close()",
+    plain.histBack === true && plain.closed === false && plain.exitApp === false,
+    JSON.stringify(plain));
+  console.log((plain.histBack && !plain.closed ? "✅ " : "❌ ") + "普通浏览器：回退不断会话");
+}
+{
+  // zpSystemBack：原生「无历史可退」入口，必须存在、复用 zpHandleBack、退出走 zpDoExit
+  const has = /window\.zpSystemBack\s*=\s*async\s*function\(\)/.test(SRC);
+  const delegates = /zpSystemBack[\s\S]{0,400}?await\s+zpHandleBack\(\)/.test(SRC) &&
+    /zpSystemBack[\s\S]{0,400}?zpDoExit\(\)/.test(SRC);
+  const loginGuard = /if\s*\(!zpZone\)[\s\S]{0,260}?再按一次退出/.test(SRC);
+  t("zpSystemBack 入口存在且复用 zpHandleBack / zpDoExit", has && delegates, `has=${has} delegates=${delegates}`);
+  t("登录/引导页（无工作区）也保留「再按一次退出」防误触", loginGuard);
+  console.log((has && delegates ? "✅ " : "❌ ") + "zpSystemBack：原生返回统一走中央控制器");
+  console.log((loginGuard ? "✅ " : "❌ ") + "zpSystemBack：登录页返回仍有防误触");
+}
+
 console.log("\n" + "-".repeat(56));
 console.log(`结果：${pass}/${pass + fail} 通过`);
 if (fail) {
