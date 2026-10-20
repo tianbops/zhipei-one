@@ -15,6 +15,47 @@
 /*.html
   Cache-Control: no-cache
 
+# 无扩展名页面路由（/home、/pages/dispatch …）
+# ------------------------------------------------------------------
+# 背景（2026-10-20 中国大陆实测校准）：Pages 会把 /home 解析成 home.html，
+# 但上面 `/*.html` 规则**不匹配**这些无扩展名路径，它们落到 Cloudflare 默认头：
+#   Cache-Control: public, max-age=0, must-revalidate 且**不带 ETag**。
+# 结果：没有校验器 → 浏览器无法发 304 协商缓存 → 每次页面跳转都要跨境整份重下 HTML。
+# 实测该链路每个新连接 TLS 握手 2~13s、单次文档 TTFB 0.35~7.4s，来回磨损全落在这里。
+#
+# 改法：短 TTL + stale-while-revalidate。跳转先从缓存秒开（0 往返），浏览器后台静默
+# 更新，下次访问即为新版本。120s 是「发布后最多陈旧多久」的上界，取小值以压低陈旧窗口。
+#
+# 安全性依据（为什么陈旧 HTML 不会出问题）：HTML 只是静态外壳，业务数据全部走
+# /api/*（SW 明确不接管、不被缓存）；页面引用的 JS/CSS 均带 ?v=<内容哈希>，
+# 文件路径恒定，旧 ?v= 取到的仍是当前文件，不会 404，最坏是下一次刷新才看到新壳。
+/pages/*
+  Cache-Control: public, max-age=120, stale-while-revalidate=86400
+/home
+  Cache-Control: public, max-age=120, stale-while-revalidate=86400
+/today
+  Cache-Control: public, max-age=120, stale-while-revalidate=86400
+/dispatch
+  Cache-Control: public, max-age=120, stale-while-revalidate=86400
+/history
+  Cache-Control: public, max-age=120, stale-while-revalidate=86400
+/account
+  Cache-Control: public, max-age=120, stale-while-revalidate=86400
+/data
+  Cache-Control: public, max-age=120, stale-while-revalidate=86400
+/login
+  Cache-Control: public, max-age=120, stale-while-revalidate=86400
+/register
+  Cache-Control: public, max-age=120, stale-while-revalidate=86400
+/setup
+  Cache-Control: public, max-age=120, stale-while-revalidate=86400
+/admin
+  Cache-Control: public, max-age=120, stale-while-revalidate=86400
+
+# 管理端/独立页面：同样是无扩展名路由，单独列出以便和上面的业务页同策略
+/admin-bootstrap
+  Cache-Control: public, max-age=120, stale-while-revalidate=86400
+
 # 带 ?v=<hash> 的静态资源：内容变更即换 URL，可放心长期缓存
 /js/*
   Cache-Control: public, max-age=31536000, immutable
