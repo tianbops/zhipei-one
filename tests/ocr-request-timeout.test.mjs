@@ -7,6 +7,10 @@ assert.match(source, /const text = await r\.text\(\);[\s\S]*?finally\s*\{\s*clea
   "响应正文读取必须在超时计时器清理之前完成");
 assert.match(source, /const readResult = async \(u\) => \{[\s\S]*?raw = await rr\.text\(\);[\s\S]*?const err = fail\("OCR_RESULT_TIMEOUT"[\s\S]*?err\.retryable = true;/,
   "OCR 结果正文超时必须归类为可重试的 OCR_RESULT_TIMEOUT");
+assert.match(source, /let delay = 900;/, "首次状态轮询等待应缩短到 900ms");
+assert.match(source, /const deadline = Date\.now\(\) \+ 19000;/, "首次轮询优化不得缩短整体 OCR 截止时间");
+assert.match(source, /\}, 10000, signal\)/, "OCR 任务提交超时保持 10000ms");
+assert.match(source, /\},\s*6000, signal\s*\)/, "OCR 状态请求超时保持 6000ms");
 const testModule = source.replace("async function requestJson(", "export async function requestJson(");
 assert.notEqual(testModule, source, "requestJson test hook target must exist");
 const moduleUrl = "data:text/javascript;base64," + Buffer.from(testModule).toString("base64");
