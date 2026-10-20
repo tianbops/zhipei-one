@@ -193,46 +193,49 @@ export async function enrichFactory(env,routeId){
 }
 
 async function historyGet({request,env}){
+ const timing={};let phaseStart=performance.now();
+ const mark=(name,started)=>{timing[name]=Math.max(0,Number((performance.now()-started).toFixed(1)));};
+ const respond=(body,status=200)=>{const response=json(body,status);const metrics=Object.entries(timing).map(([name,dur])=>name+";dur="+dur).join(", ");if(metrics)response.headers.set("Server-Timing",metrics);return response;};
  try{
-  const user=await currentUser(request,env);if(!user)return json({success:false,error:"未登录"},401);
-  if(user.role==="admin"||!canUseRoute(user))return json({success:false,error:"无权查看配送业务"},403);
+  const user=await currentUser(request,env);mark("history-auth",phaseStart);if(!user)return respond({success:false,error:"未登录"},401);
+  if(user.role==="admin"||!canUseRoute(user))return respond({success:false,error:"无权查看配送业务"},403);
   const url=new URL(request.url),routeId=clean(url.searchParams.get("routeId")||user.dispatchRouteId||user.boundRouteId),date=clean(url.searchParams.get("date"));
-  if(!routeId)return json({success:true,routeId:null,months:[],history:[]});
-  const currentRoute=clean(user.dispatchRouteId)||clean(user.boundRouteId);if(routeId!==currentRoute)return json({success:false,error:"无权查看该线路历史"},403);
+  if(!routeId)return respond({success:true,routeId:null,months:[],history:[]});
+  const currentRoute=clean(user.dispatchRouteId)||clean(user.boundRouteId);if(routeId!==currentRoute)return respond({success:false,error:"无权查看该线路历史"},403);
   const monthsParam=clean(url.searchParams.get("months"));
   // 前端可经 ?months= 放宽查询窗口（仅 GET 生效，受 1–13 钳制）；默认沿用 env WAYBILL_HISTORY_MONTHS。
   // DELETE 路径不使用此参数，维持 env 默认窗口，避免客户端扩大可删除范围。
   const searchQuery=clean(url.searchParams.get("q")).normalize("NFKC").toLocaleLowerCase("zh-CN");
   const monthsN=monthsParam?Math.max(1,Math.min(13,Math.floor(Number(monthsParam)||3))):(searchQuery?3:env?.WAYBILL_HISTORY_MONTHS);
-  const range=historyRange(todayCN(),monthsN),enrich=await enrichFactory(env,routeId);
+  const range=historyRange(todayCN(),monthsN);phaseStart=performance.now();const enrich=await enrichFactory(env,routeId);mark("history-route",phaseStart);
   if(date){
-   if(!validDate(date))return json({success:false,code:"DATE_INVALID",error:"日期无效"},400);
-   if(!inRange(date,range))return json({success:false,code:"DATE_OUT_OF_RANGE",error:"日期不在历史查询范围内"},400);
+   if(!validDate(date))return respond({success:false,code:"DATE_INVALID",error:"日期无效"},400);
+   if(!inRange(date,range))return respond({success:false,code:"DATE_OUT_OF_RANGE",error:"日期不在历史查询范围内"},400);
    const budget=new Budget();
-   let waybills;
-   try{waybills=await readDateWaybills(env,user,routeId,date,budget)}catch(e){
-    if(e?.code===SUBREQUEST_BUDGET_EXCEEDED)return json({success:false,code:"PARTIAL_FAILURE",error:"该日期运单查询资源不足，请稍后重试",date,budgetUsed:budget.used,budgetMax:budget.max},503);
-    if(e?.code==="WAYBILL_HISTORY_INDEX_READ_FAILED")return json({success:false,code:"WAYBILL_HISTORY_INDEX_READ_FAILED",error:"历史运单索引读取失败，请稍后重试",date},503);
-    if(e?.code==="WAYBILL_HISTORY_STALE_INDEX")return json({success:false,code:"WAYBILL_HISTORY_STALE_INDEX",error:"历史运单索引与运单数据不一致，请稍后重试",date,missingCount:e.missingCount},503);
+   let waybills;phaseStart=performance.now();
+   try{waybills=await readDateWaybills(env,user,routeId,date,budget);mark("history-detail-read",phaseStart)}catch(e){
+    if(e?.code===SUBREQUEST_BUDGET_EXCEEDED)return respond({success:false,code:"PARTIAL_FAILURE",error:"该日期运单查询资源不足，请稍后重试",date,budgetUsed:budget.used,budgetMax:budget.max},503);
+    if(e?.code==="WAYBILL_HISTORY_INDEX_READ_FAILED")return respond({success:false,code:"WAYBILL_HISTORY_INDEX_READ_FAILED",error:"历史运单索引读取失败，请稍后重试",date},503);
+    if(e?.code==="WAYBILL_HISTORY_STALE_INDEX")return respond({success:false,code:"WAYBILL_HISTORY_STALE_INDEX",error:"历史运单索引与运单数据不一致，请稍后重试",date,missingCount:e.missingCount},503);
     throw e;
    }
-   const enriched=[];for(const w of waybills)enriched.push(await enrich(w));
-   return json({success:true,routeId,date,waybills:enriched,count:enriched.length,waybillIds:enriched.map(w=>w.id),hasMultiple:enriched.length>1});
+   phaseStart=performance.now();const enriched=[];for(const w of waybills)enriched.push(await enrich(w));mark("history-detail-enrich",phaseStart);
+   return respond({success:true,routeId,date,waybills:enriched,count:enriched.length,waybillIds:enriched.map(w=>w.id),hasMultiple:enriched.length>1});
   }
   if(searchQuery){
-   if(searchQuery.length>80)return json({success:false,code:"SEARCH_QUERY_TOO_LONG",error:"搜索内容最多 80 个字符"},400);
+   if(searchQuery.length>80)return respond({success:false,code:"SEARCH_QUERY_TOO_LONG",error:"搜索内容最多 80 个字符"},400);
    const budget=new Budget();
    let entries,batch;
    try{
-    entries=await readDates(env,routeId,range,budget);
-    batch=await readDateWaybillsBatch(env,user,entries,budget);
+    phaseStart=performance.now();entries=await readDates(env,routeId,range,budget);mark("history-search-index",phaseStart);
+    phaseStart=performance.now();batch=await readDateWaybillsBatch(env,user,entries,budget);mark("history-search-read",phaseStart);
    }catch(e){
-    if(e?.code===SUBREQUEST_BUDGET_EXCEEDED)return json({success:false,code:"PARTIAL_FAILURE",error:"当前历史范围较大，请缩小月份范围后重试",range,budgetUsed:budget.used,budgetMax:budget.max},503);
+    if(e?.code===SUBREQUEST_BUDGET_EXCEEDED)return respond({success:false,code:"PARTIAL_FAILURE",error:"当前历史范围较大，请缩小月份范围后重试",range,budgetUsed:budget.used,budgetMax:budget.max},503);
     throw e;
    }
    const normalize=v=>String(v??"").normalize("NFKC").toLocaleLowerCase("zh-CN").replace(/[\s\p{P}\p{S}]+/gu,"");
    const needle=normalize(searchQuery);
-   if(!needle)return json({success:false,code:"SEARCH_QUERY_INVALID",error:"请输入有效的搜索关键词"},400);
+   if(!needle)return respond({success:false,code:"SEARCH_QUERY_INVALID",error:"请输入有效的搜索关键词"},400);
    const results=[];
    for(const entry of entries){
     for(const w of (batch.get(entry.date)||[])){
@@ -248,7 +251,7 @@ async function historyGet({request,env}){
     }
     if(results.length>=100)break;
    }
-   return json({success:true,routeId,query:searchQuery,range,results,count:results.length,limited:results.length>=100});
+   return respond({success:true,routeId,query:searchQuery,range,results,count:results.length,limited:results.length>=100});
   }
   // P1-06 收口：readDates / readDateWaybillsBatch 共享同一 Budget，
  // 预算不足即抛 SUBREQUEST_BUDGET_EXCEEDED → 转结构化 503「请缩小查询范围」，
@@ -256,9 +259,9 @@ async function historyGet({request,env}){
  const budget=new Budget();
  let entries;
  try{
-  entries=await readDates(env,routeId,range,budget);
+  phaseStart=performance.now();entries=await readDates(env,routeId,range,budget);mark("history-index",phaseStart);
  }catch(e){
-  if(e?.code===SUBREQUEST_BUDGET_EXCEEDED)return json({success:false,code:"PARTIAL_FAILURE",error:"历史查询范围过大，请缩小查询月份后重试",range,budgetUsed:budget.used,budgetMax:budget.max},503);
+  if(e?.code===SUBREQUEST_BUDGET_EXCEEDED)return respond({success:false,code:"PARTIAL_FAILURE",error:"历史查询范围过大，请缩小查询月份后重试",range,budgetUsed:budget.used,budgetMax:budget.max},503);
   throw e;
  }
  // 方案C rollup：概览只依赖「每日汇总键」(O(天数) 小键) + 索引 SMEMBERS(仅 id，不含运单完整体)，
@@ -266,16 +269,16 @@ async function historyGet({request,env}){
  // 受同一 budget 约束；超限即转结构化 503「请缩小范围」，绝不谎报半截数据。
  let agg;
  try{
-  agg=await readDayAggregates(env,{user,routeId,entries,budget});
+  phaseStart=performance.now();agg=await readDayAggregates(env,{user,routeId,entries,budget});mark("history-aggregate",phaseStart);
  }catch(e){
-  if(e?.code===SUBREQUEST_BUDGET_EXCEEDED)return json({success:false,code:"PARTIAL_FAILURE",error:"当前历史范围较大，请缩小月份范围后重试",range,budgetUsed:budget.used,budgetMax:budget.max},503);
+  if(e?.code===SUBREQUEST_BUDGET_EXCEEDED)return respond({success:false,code:"PARTIAL_FAILURE",error:"当前历史范围较大，请缩小月份范围后重试",range,budgetUsed:budget.used,budgetMax:budget.max},503);
   throw e;
  }
  const dates=agg.dates;
  const monthMap=new Map();
  for(const item of dates){const month=item.date.slice(0,7),current=monthMap.get(month)||{month,days:0,waybills:0,totalStores:0,totalWeight:0};current.days++;current.waybills+=item.count;current.totalStores+=item.storeCount;current.totalWeight+=item.totalWeight;monthMap.set(month,current)}
- return json({success:true,routeId,range,months:[...monthMap.values()],history:dates,degraded:agg.degraded||undefined});
- }catch(e){return json({success:false,code:"HISTORY_READ_FAILED",error:"统一运单查询失败",detail:String(e?.message||e||"UNKNOWN_ERROR").slice(0,180)},500)}
+ return respond({success:true,routeId,range,months:[...monthMap.values()],history:dates,degraded:agg.degraded||undefined});
+ }catch(e){return respond({success:false,code:"HISTORY_READ_FAILED",error:"统一运单查询失败",detail:String(e?.message||e||"UNKNOWN_ERROR").slice(0,180)},500)}
 }
 
 // 回收站：软删除用（P2-3）。主记录与子键迁入 zp:waybill:trash:<id>[:*]，TTL 7 天由 Upstash 自动消亡。

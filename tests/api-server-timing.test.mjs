@@ -12,6 +12,14 @@ assert.match(res.headers.get("Server-Timing") || "", /^app;dur=\d+(\.\d+)?$/);
 assert.match(res.headers.get("X-ZP-Request-Id") || "", /^[0-9a-f-]{36}$/i);
 assert.deepEqual(await res.json(), { success: true, value: 7 });
 
+const phased = guard(async () => new Response("ok", {
+  headers: { "Server-Timing": "history-index;dur=12.3, history-aggregate;dur=45.6" }
+}));
+const phasedRes = await phased({});
+assert.ok((phasedRes.headers.get("Server-Timing") || "").includes("history-index;dur=12.3"));
+assert.ok((phasedRes.headers.get("Server-Timing") || "").includes("history-aggregate;dur=45.6"));
+assert.match(phasedRes.headers.get("Server-Timing") || "", /app;dur=/);
+
 const fail = guard(async () => { throw new Error("test failure"); }, "TEST_FAILED");
 const err = await fail({});
 assert.equal(err.status, 500);
