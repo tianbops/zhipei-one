@@ -43,6 +43,7 @@ function collectText(value, out = []) {
 }
 
 async function requestJson(url, init, timeoutMs = 8000, abortSignal = null) {
+  if (abortSignal?.aborted) throw fail("OCR_CANCELLED", "已取消识别");
   const controller = new AbortController();
   const onAbort = () => controller.abort();
   if (abortSignal) {
