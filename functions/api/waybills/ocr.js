@@ -71,7 +71,7 @@ async function requestJson(url, init, timeoutMs = 8000, abortSignal = null) {
     return data;
   } catch (e) {
     // 自定义业务错误（HTTP 状态、JSON 格式）不能被误报成网络超时。
-    if (e?.code) throw e;
+    if (String(e?.code || "").startsWith("OCR_")) throw e;
     if (controller.signal.aborted) {
       if (abortSignal?.aborted) throw fail("OCR_CANCELLED", "已取消识别");
       throw fail("OCR_NETWORK_TIMEOUT", "OCR服务响应超时");
