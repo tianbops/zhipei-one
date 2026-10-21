@@ -10,11 +10,15 @@
  * 改动这里请同步改 `tests/security-headers.test.mjs` 与 `_headers`。
  *
  * 说明（为什么 CSP 仍带 'unsafe-inline'）：
- * 全站每个页面都有 2~3 段内联 script（登录门禁、主题、埋点），且 pages/data.html 有 24 处
- * 内联事件属性。去掉 'unsafe-inline' 会让整站立刻白屏，因此本期 CSP 的价值定位是
- * **堵住数据外传与嵌套**：connect-src 'self'（XSS 也偷不走数据到第三方）、
- * frame-ancestors 'none'（反点击劫持）、object-src 'none'、base-uri/form-action 'self'。
- * 真正去掉 'unsafe-inline' 需要把内联脚本全部 nonce 化，已记入 P1。
+ * 全站 16 个被服务页面共 34 段内联 <script>（主题引导、配置初始化、每页 boot 等），
+ * 均为静态、字节稳定、且无 eval/new Function。去掉 'unsafe-inline' 会让这些内联脚本
+ * 全部被拦、整站功能损坏，因此本期 CSP 的价值定位是**堵住数据外传与嵌套**：
+ * connect-src 'self'（XSS 也偷不走数据到第三方）、frame-ancestors 'none'（反点击劫持）、
+ * object-src 'none'、base-uri/form-action 'self'。
+ * 去 'unsafe-inline' 的可行路径是 **hash-based CSP**（对每段内联脚本计算 sha256 列入
+ * script-src）；nonce 化在 CF Pages 静态托管下不可行（无逐请求 HTML 生成）。完整评估与
+ * 迁移方案见 docs/CSP-hardening.md（P1-7）。style-src 的 'unsafe-inline' 因内联 style=
+ * 属性仍存在，暂保留。
  */
 export const SECURITY_HEADERS={
  "x-content-type-options":"nosniff",

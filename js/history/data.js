@@ -10,6 +10,8 @@ async function load(){
  }catch(e){
   console.error("[history] load failed",e);
   stateEl.textContent=e.message||"历史记录读取失败";
+  // 离线时登记「重连后自动重取」（P1-4：只重放幂等 GET 刷新，按 key 去重）
+  try{if(navigator.onLine===false&&window.zpOfflineQueue)window.zpOfflineQueue.scheduleRefresh("history",()=>load())}catch(_){}
  }
 }
 function askDelete(type,key,message){closeOpen();pendingDelete={type,key};dialogText.textContent=message;dialog.hidden=false;confirmBtn.disabled=false;confirmBtn.textContent="确定"}

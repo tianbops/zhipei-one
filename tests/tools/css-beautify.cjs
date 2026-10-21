@@ -91,7 +91,7 @@ const root = postcss.parse(css, { from: file });
 const lines = [];
 let prevWasBlock = false;
 root.each((node) => {
-  const isBlock = node.type === "rule" || (node.type === "atrule" && node.nodes);
+  let isBlock = node.type === "rule" || (node.type === "atrule" && node.nodes);
   if (node.type === "atrule" && !node.nodes) isBlock = false;
   if (prevWasBlock) lines.push("");
   lines.push(...serialize(node, 0));
