@@ -14,7 +14,7 @@ function walk(dir) {
 }
 walk(root);
 
-const themedPages = htmlFiles.filter(file => fs.readFileSync(file, "utf8").includes("ui-unified.css"));
+const themedPages = htmlFiles.filter(file => fs.readFileSync(file, "utf8").includes("ui-base.css"));
 assert.ok(themedPages.length >= 8, "应覆盖主要业务页面");
 
 for (const file of themedPages) {
@@ -27,7 +27,25 @@ for (const file of themedPages) {
   assert.match(early, /data-zp-theme/, path.relative(root, file) + " 必须在首屏绘制前设置主题");
 }
 
-const unified = fs.readFileSync(path.join(root, "css/ui-unified.css"), "utf8");
+// 2026-10-22：ui-unified.css（55KB / 1207 行）按职责拆成 ui-base/ui-overlay/ui-theme/ui-shell 四份，
+// 各页按此顺序引入 → 层叠顺序与原文件完全一致。这里按同样顺序拼接后断言，等价于断言原文件。
+const UI_CSS_PARTS = ["css/ui-base.css", "css/ui-overlay.css", "css/ui-theme.css", "css/ui-shell.css"];
+// 拆分后最容易出错的不是内容，而是「引入顺序」——顺序一乱，层叠就变、主题覆盖失效。
+// 这里钉死：四个文件必须齐全且严格按 base→overlay→theme→shell 出现。
+for (const file of themedPages) {
+  const html = fs.readFileSync(file, "utf8");
+  const at = UI_CSS_PARTS.map(p => html.indexOf("/" + p));
+  assert.ok(at.every(i => i >= 0), path.relative(root, file) + " 缺少拆分后的 UI 样式文件");
+  assert.ok(at.every((v, i) => i === 0 || v > at[i - 1]),
+    path.relative(root, file) + " 的 UI 样式引入顺序错误（必须 base→overlay→theme→shell）");
+}
+
+const unified = UI_CSS_PARTS
+  .map(p => fs.readFileSync(path.join(root, p), "utf8"))
+  .join("\n");
+for (const p of UI_CSS_PARTS) {
+  assert.ok(fs.readFileSync(path.join(root, p), "utf8").trim().length > 0, p + " 不应为空");
+}
 assert.match(unified, /:root\[data-zp-theme="light"\]\s*\{[\s\S]*?color-scheme:\s*light/);
 // Uber 风格中性灰阶（浅色）：底色/文字/分割线均去蓝，仅 surface/danger 保留语义色。
 for (const token of ["--zp-bg:#F2F2F2", "--zp-surface:#FFFFFF", "--zp-text:#141414", "--zp-line:#E0E0E0", "--zp-danger:#C2453A"]) {
@@ -75,12 +93,12 @@ assert.ok(
 // 安卓壳状态栏同步：壳里曾把状态栏设为透明、图标跟随「系统」深浅色，
 // 于是 App 深色外观 + 系统浅色（或反之）时图标与底色同色，状态栏直接看不见。
 // 现在唯一真值是网页外观：网页必须把实际主题回传给壳（不透明主题底色 + 图标取反）。
-const unifiedJs = fs.readFileSync(path.join(root, "js/ui-unified.js"), "utf8");
+const unifiedJs = fs.readFileSync(path.join(root, "js/ui/appearance.js"), "utf8");
 assert.match(unifiedJs, /ZhipeiNative[\s\S]{0,200}applyTheme\(/,
-  "js/ui-unified.js 必须在应用主题时把底色与深浅回传给安卓壳（ZhipeiNative.applyTheme）");
+  "js/ui/appearance.js 必须在应用主题时把底色与深浅回传给安卓壳（ZhipeiNative.applyTheme）");
 assert.ok(/const\s+dark\s*=\s*resolved\s*!==\s*"light"/.test(unifiedJs) && unifiedJs.includes('"#05070A":"#F4F6F8"'),
   "回传给壳的底色必须与网页主题一致（深色 #05070A / 浅色 #F4F6F8）");
-// ui-unified.js 在页面底部，App 内加载线上页面时可能晚于首帧，
+// js/ui/appearance.js 在页面底部，App 内加载线上页面时可能晚于首帧，
 // 因此 <head> 里的内联主题脚本（比任何外链 JS 都早）也必须回传一次，否则浅色用户会先看到深色状态栏再跳变。
 for (const file of themedPages) {
   const html = fs.readFileSync(file, "utf8");

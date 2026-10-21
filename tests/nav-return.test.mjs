@@ -8,15 +8,26 @@
  *   二、跨区防火墙：管理员端 12 条 —— 独立工作区，永不串到业务端
  *   三、返回层级 ladder 7 条 —— 弹窗优先、未保存拦截、拒绝关闭不穿透
  *
- * 实现方式：直接截取 js/ui-unified.js 中的真实源码片段求值（不是复制副本），
+ * 实现方式：直接截取 js/ui/back.js 中的真实源码片段求值（不是复制副本），
  * 注入假的 window/document/getComputedStyle/location，因此修改源文件后
  * 本测试自动跟随，不会出现"测试通过但线上不是这个行为"的情况。
+ *
+ * 2026-10-22：ui-unified.js 拆分为 js/ui/ 六个模块后，返回控制器落在 js/ui/back.js，
+ * 它依赖的 normPath/detectZone/normFrom 由 js/ui/core.js 提供 —— 本测试先真实求值
+ * core.js 得到 window.__zpUi，再把「const UI=window.__zpUi」拼到切片前面，
+ * 保证被测的仍是线上那份代码，而不是被测试改写的副本。
  */
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-const SRC = readFileSync(fileURLToPath(new URL("../js/ui-unified.js", import.meta.url)), "utf8");
+const SRC = readFileSync(fileURLToPath(new URL("../js/ui/back.js", import.meta.url)), "utf8");
+const CORE_SRC = readFileSync(fileURLToPath(new URL("../js/ui/core.js", import.meta.url)), "utf8");
+
+/** 在假环境里真实执行 core.js，得到 window.__zpUi（与浏览器里完全同一份源码） */
+function installCore(win, doc, loc) {
+  new Function("window", "document", "location", CORE_SRC)(win, doc, loc);
+}
 
 let pass = 0, fail = 0;
 const failures = [];
@@ -37,8 +48,10 @@ const LADDER_BODY = slice("function zpIsVisible(", "window.zpHandleBack=");
 /** 用给定的 URL（可含 ?from= ）求解析结果 */
 function resolve(url, fallback) {
   const u = new URL(url, "https://x.invalid");
-  const factory = new Function("window", "document", "location", RESOLVE_BODY + "\nreturn window.zpResolveBack;");
   const win = {}, doc = { body: { dataset: {} } }, loc = { pathname: u.pathname, search: u.search };
+  installCore(win, doc, loc);
+  const factory = new Function("window", "document", "location",
+    "const UI=window.__zpUi;" + RESOLVE_BODY + "\nreturn window.zpResolveBack;");
   return factory(win, doc, loc)(fallback);
 }
 
@@ -113,8 +126,10 @@ function makeEnv() {
     querySelector: (sel) => (sel === "#zpUiLayer .zp-confirm" ? env.document.confirmEl : null),
   };
   const getComputedStyle = () => ({ display: "flex", visibility: "visible", opacity: "1" });
+  installCore(env.window, env.document, { pathname: "/", search: "" });
   env.engine = new Function("window", "document", "getComputedStyle",
-    LADDER_BODY + "\nreturn {close:zpCloseTopLayer};")(env.window, env.document, getComputedStyle);
+    "const UI=window.__zpUi;const sharedState=UI.state||{};" + LADDER_BODY +
+    "\nreturn {close:zpCloseTopLayer};")(env.window, env.document, getComputedStyle);
   return env;
 }
 const fakeEl = (over) => Object.assign({
@@ -128,9 +143,11 @@ console.log("\n三、失效上下文 zpMarkStale（3 条）");
   /** 先置「已失效」标记再解析：删除类操作后不得再回跳到已删除的对象 */
   function resolveStale(url, fallback) {
     const u = new URL(url, "https://x.invalid");
+    const win = {}, doc = { body: { dataset: {} } }, loc = { pathname: u.pathname, search: u.search };
+    installCore(win, doc, loc);
     const factory = new Function("window", "document", "location",
-      RESOLVE_BODY + "\nwindow.zpMarkStale();return window.zpResolveBack;");
-    return factory({}, { body: { dataset: {} } }, { pathname: u.pathname, search: u.search })(fallback);
+      "const UI=window.__zpUi;" + RESOLVE_BODY + "\nwindow.zpMarkStale();return window.zpResolveBack;");
+    return factory(win, doc, loc)(fallback);
   }
   const cases = [
     ["/pages/order_detail?id=W1&source=today&from=history&date=2026-10-02", "", "/home",

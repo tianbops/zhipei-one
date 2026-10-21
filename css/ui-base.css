@@ -1,0 +1,411 @@
+/* 智配One · 全局 UI 统一层 2.1
+   只负责视觉、层级、触控与反馈，不承载任何业务规则。 */
+:root{
+  /* ===== 全局设计 Token · 单一真相源（Commit 2A） =====
+     背景：历史上并存三套割裂的变量 —— app.css 的无前缀版（--bg/--card/--card2/--line/--muted；--soft 已于 Commit 4B 删除）、
+           mobile-ui.css 的 --zp-* 版、本文件的 --ui-* 版，同一语义写三遍，改主题必须改三处。
+     做法：将取值完全一致的语义统一收敛到 --zp-* 名下，放在本 :root。
+           之所以选本文件作为权威层，是因为它是**唯一被全部页面加载**的 CSS
+           （ui-unified.css 覆盖 14/14；app.css 缺 admin.html；mobile-ui.css 仅覆盖 7/14）。
+     兼容：旧变量名一律保留为别名指向新 token，任何既有 var(...) 的解析结果逐字节不变。
+
+     未合并项（勿强行统一，强行合并会造成视觉漂移）：
+       ◆ danger 双值共役：--zp-danger=#FFB4AB（mobile-ui.css，当前 .message.error 在用，1 处）
+                          --ui-danger =#FF8278（本文件，4 处在用）
+         两者都在服役且取值不同，合并必然改变某一方的红色外观，故保持独立，列为待决策项。
+       ◆ app.css 的 --soft=#202B36 其实是表面色（等同 surface-3），并非弱文字色，属历史命名错误。
+         全仓核查确认它是死定义：admin.html 不加载 app.css 而用内联 --soft:#7F8A95，普通页面不引用 --soft，
+         故已于 Commit 4B 直接删除，零视觉影响（无页面级 var(--soft) 解析值变化）。 */
+  /* ===== 页面 / 表面 / 文字（Uber 风格中性灰阶 · 深色）=====
+     对标 Uber Base Web：近黑底 + 纯白文字 + 中性灰梯度，
+     主按钮深色模式反白（白底黑字）、浅色模式反黑（黑底白字）。 */
+  --zp-bg:#0A0A0A;
+  --zp-surface:#1A1A1A;
+  --zp-surface-2:#262626;
+  --zp-surface-3:#333333;
+  --zp-line:#2E2E2E;
+  --zp-text:#FFFFFF;
+  --zp-muted:#A8A8A8;
+  --zp-soft:#767676;
+  --zp-radius:14px;
+  /* 骨架微光条（加载占位）双外观 token：order_detail / home / data 三处
+     页面级骨架共用同一取值。深色外观为暗灰微光；浅色外观在下方
+     [data-zp-theme="light"] 覆盖为浅灰微光——修复浅色背景下骨架条
+     仍是硬编码深色「大黑条」的问题（2026-10-16）。 */
+  --zp-sk-a:#1A222C;
+  --zp-sk-b:#202A31;
+  /* ===== 全局按钮标准 · 分段式动作按钮（单一真相源）=====
+     基准度量取自「外观模式」选项组（跟随系统/深色/浅色）与「线路切换」等
+     行内动作按钮，两类按钮历史上各自起值（高 40/42、圆角 10/12、宽度
+     自适应 vs 三等分），表现为跨页按钮胖瘦不一。现统一为：
+       高度 42 / 圆角 12 / 字号 13·600 / 边框 1px / 水平内边距 8px
+       段宽按钮（选项组内）= calc((容器宽 - 2*间隙)/3)
+     新增同类按钮一律沿用本 token，禁止在页面级 CSS 另起度量。 */
+  --zp-seg-btn-h:44px;
+  --zp-seg-btn-radius:12px;
+  --zp-seg-btn-pad:0 8px;
+  --zp-seg-btn-font:13px;
+  --zp-seg-btn-gap:8px;
+  /* ===== 主按钮（Uber 风格：深色反白 / 浅色反黑）=====
+     --zp-primary 是按钮「底色」：深色模式=白，浅色模式=近黑；
+     --zp-on-primary 是按钮上的「文字/图标色」，与底色反相。 */
+  --zp-primary:#FFFFFF;
+  --zp-on-primary:#0A0A0A;
+  /* 次按钮（描边 / 幽灵按钮） */
+  --zp-secondary-bg:#1F1F1F;
+  --zp-secondary-border:#404040;
+  --zp-secondary-text:#FFFFFF;
+  /* 禁用态 */
+  --zp-disabled-bg:#2A2A2A;
+  --zp-disabled-text:#6B6B6B;
+  /* 浮层遮罩（弹窗 / 底部面板上方的半透明黑幕） */
+  --zp-scrim:rgba(0,0,0,.72);
+  /* 键盘 / 焦点可见环 */
+  --zp-focus:#FFFFFF;
+  /* 交互态：hover（悬停）、active（按压） */
+  --zp-primary-hover:#EAEAEA;
+  --zp-primary-active:#D4D4D4;
+  --zp-secondary-hover:#2A2A2A;
+  --zp-secondary-active:#333333;
+  /* 半透明 / 不透明卡片底色（保留两种用途，取值随主题翻转） */
+  --zp-card-translucent:rgba(26,26,26,.82);
+  --zp-card-translucent-2:rgba(10,10,10,.88);
+  --zp-card:var(--zp-surface);
+  /* 列表分隔线（方案第十五章 Row，统一为 .10 单一来源） */
+  --zp-divider:rgba(255,255,255,.10);
+  /* ===== 功能状态色（成功 / 警告 / 错误 / 提示）=====
+     -strong 用于边框 / 图标 / 危险操作；-soft 用于底色微染；
+     --zp-danger 专用于「错误正文」（浅红，可读性优先），随主题翻转。 */
+  --zp-success:#2ECC71;
+  --zp-success-soft:rgba(46,204,113,.14);
+  --zp-warning:#F5A623;
+  --zp-warning-soft:rgba(245,166,35,.14);
+  --zp-error:#FF6B5E;
+  --zp-error-soft:rgba(255,107,94,.14);
+  --zp-danger:#FFB4AB;
+  --zp-info:#4DA3FF;
+  --zp-info-soft:rgba(77,163,255,.14);
+
+  /* ===== 间距与控件尺寸（方案第九 / 十一 / 十二章） =====
+     取值取自当前代码的实际分布，不是凭空定的理想值，避免引入尺寸跳变：
+       header-height 54px —— 现有值为 42/48/52/54/56，取方案第十一章推荐的标准值。
+         注意：矮屏 @media(max-height:700px) 的压缩态属响应式特例，不套用此变量。
+       control-height 48px —— Android 最小可靠触控靶区。现有取值从 40 到 44 不等，
+         全部低于该标准，故本轮是「只放大不缩小」的单向收敛（见 css-touch-audit.cjs）。 */
+  --zp-header-height:54px;
+  --zp-control-height:48px;
+  --zp-space-4:16px;
+
+  --ui-bg:var(--zp-bg);
+  --ui-surface:var(--zp-surface);
+  --ui-surface-2:var(--zp-surface-2);
+  --ui-surface-3:var(--zp-surface-3);
+  --ui-line:var(--zp-line);
+  --ui-text:var(--zp-text);
+  --ui-muted:var(--zp-muted);
+  --ui-soft:var(--zp-soft);
+  --ui-radius:var(--zp-radius);
+  /* danger 保持独立取值（不与 --zp-danger 合并），理由见顶部注释 */
+  --ui-danger:#FF8278;
+  --ui-danger-soft:rgba(255,130,120,.08);
+  --ui-dialog-radius:18px;
+  --ui-control-radius:11px;
+
+  /* ===== 全局层级体系 3.0 =====
+     目的：任何"后打开的弹窗都在上层"，Toast 永远可见，确认框永远盖不住。
+     约定：同一层级内的元素不得互相覆盖；跨层级严格递进。
+     规则：页面内所有 position:fixed / absolute + z-index 一律引用下列变量，禁止硬编码。 */
+  --ui-z-topbar:10;        /* 顶栏：页面顶部固定栏 */
+  --ui-z-float:90;         /* 悬浮操作：快速滚动、悬浮按钮（不遮挡弹窗） */
+  --ui-z-menu:200;         /* 菜单浮层：下拉菜单、页面菜单、选择器（非模态） */
+  --ui-z-modal:1000;       /* 模态第 1 层：业务弹窗（导入/订单/历史/账号/上传） */
+  --ui-z-modal-stack:1100; /* 模态第 2 层：模态之上再弹（历史选择器等） */
+  --ui-z-modal-top:1200;   /* 模态第 3 层：最终确认（删除等破坏性操作） */
+  --ui-z-toast:2000;       /* 全局提示：Toast / 气泡反馈（永远最上） */
+}
+html,body{background:var(--ui-bg);color:var(--ui-text)}
+button,a,input,select,textarea{font-family:inherit}
+button,a{-webkit-tap-highlight-color:transparent}
+button:active{transform:translateY(0)}
+/* 细节微调（不改全局设计语言）：
+   1) 移除所有可点元素的原生点击高亮，统一触控反馈（含 div 型行/卡片，此前只对 button/a 生效）；
+   2) 首帧后开启颜色/背景/边框/阴影/不透明度的短过渡，让主题切换与状态变化更顺滑；
+   3) 关键按钮按压时轻微缩放，点按手感一致。
+   用 :where() 把覆盖特异性降到 0，确保各组件自带 transition（悬浮滚动、入场动画等）不被覆盖；
+   首帧开关由 js/ui-unified.js 的 zp-ui-ready 类控制，初始渲染不闪。 */
+*{ -webkit-tap-highlight-color:transparent; -webkit-touch-callout:none }
+.zp-ui-ready :where(*):not(:where(svg,svg *)){
+  transition:background-color .22s ease,border-color .22s ease,color .22s ease,box-shadow .2s ease,opacity .2s ease;
+}
+.zp-ui-ready :where(button,a,[role="button"],.data-action-btn,.account-logout,.login-submit,.trend-year,.trend-metric-btn,.source-option,.choice-btn){
+  transition:background-color .22s ease,border-color .22s ease,color .22s ease,box-shadow .2s ease,opacity .2s ease,transform .1s ease;
+}
+.zp-ui-ready :where(.data-action-btn,.account-logout,.login-submit,.trend-year,.trend-metric-btn,.source-option,.choice-btn):active{
+  transform:scale(.98);
+}
+@media (prefers-reduced-motion:reduce){
+  .zp-ui-ready :where(*){transition:none!important}
+  .zp-ui-ready :where(.data-action-btn,.account-logout,.login-submit,.trend-year,.trend-metric-btn,.source-option,.choice-btn):active{transform:none}
+}
+/* hidden 属性必须始终生效，且优先级高于所有遮罩层 display 规则。
+   用 !important + 属性选择器双写，确保任何后出现的 !important 规则都无法覆盖它。
+   背景：弹窗遮罩统一使用 display:flex!important 后，与 [hidden] 权重相同，
+   若顺序靠后会导致 hidden 失效、弹窗无法关闭。此处以 [hidden][hidden] 提升权重。 */
+[hidden],
+[hidden][hidden]{display:none!important}
+
+/* 页面层级：页面 > 卡片 > 次级区域，避免无意义的多层嵌套视觉 */
+.card,.page2-card,.data-route-card,.data-list-card,.task-card{
+  border-color:rgba(255,255,255,.075);
+  box-shadow:none;
+}
+.card,.page2-card{border-radius:var(--ui-radius)}
+.confirm-panel,.pending-box{background:var(--ui-surface-2);border-color:rgba(255,255,255,.07)}
+
+/* 顶部栏统一：标准 Header 钩子 .topbar（阶段 6 · 5A）
+   布局由各页旧类规则承载（保留差异：dispatch 白字标题 / data 头 padding / history 占位 /
+   order 按钮返回 #backBtn / home flex 无返回），.topbar 仅提供统一钩子 + 共享三栏排版 +
+   标题字重。不在此设 margin-bottom（dispatch/data 头间距由各自规则控制，避免零回归外的位移）。
+   详见资产审计台账第二十四章。 */
+.topbar{
+  display:grid;
+  grid-template-columns:var(--zp-control-height) 1fr var(--zp-control-height);
+  align-items:center;
+  min-height:var(--zp-header-height);
+  position:relative;
+}
+.topbar strong,.order-title{font-weight:650}
+/* 统一返回钩子 .app-back（阶段 6 · 5A）：link 型返回键统一为 48px 触控靶区；
+   order 页返回为 <button id="backBtn>（由 ID 接线，不在此类）。 */
+.app-back{
+  width:var(--zp-control-height);
+  height:var(--zp-control-height);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border:0;
+  border-radius:12px;
+  background:transparent;
+  color:var(--ui-muted);
+  text-decoration:none;
+  font-size:0;
+  box-sizing:border-box;
+}
+.app-back svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.app-back:active{background:rgba(20,28,37,.80);color:#fff}
+
+/* 菜单统一为单层浮层 */
+.data-page-menu, .order-menu{
+  border:1px solid var(--ui-line);
+  border-radius:12px;
+  background:var(--ui-surface);
+  box-shadow:0 14px 34px rgba(0,0,0,.34);
+  overflow:hidden;
+}
+/* 菜单面板内的条目本身就是点击目标，不是「列表里的文字」，按第十三章必须 ≥48。
+   注意：本条是跨页面的兜底值，data.css / order_detail.css 里还有同选择器的后续定义，
+   后者会覆盖这里 —— 已一并收敛，改动是否真的生效以 css-button-resolve.cjs 的页面级结果为准。 */
+.data-page-menu button, .order-menu button{
+  min-height:var(--zp-control-height);
+}
+.menu-divider{background:rgba(255,255,255,.07)}
+
+/* 统一按钮语义：主操作右侧、取消/次要操作左侧 */
+.data-import-actions,.history-dialog-actions,.order-dialog-actions,.account-dialog-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.data-import-actions button,.history-dialog-actions button,.order-dialog-actions button,.account-dialog-actions button{
+  min-height:var(--zp-control-height);
+  border-radius:var(--ui-control-radius);
+  font-size:14px;
+  font-weight:550;
+}
+.data-import-actions button:first-child,.history-dialog-actions button:first-child,.order-dialog-actions button:first-child,.account-dialog-actions button:first-child{
+  background:var(--ui-surface-2);
+  border:1px solid #35404C;
+  color:#E8EDF2;
+}
+.data-import-actions button:last-child,.history-dialog-actions button:last-child,.order-dialog-actions button:last-child,.account-dialog-actions button:last-child{
+  background:var(--ui-surface-3);
+  border:1px solid #3A4652;
+  color:#fff;
+}
+
+/* 统一模态层：只保留一层遮罩 + 一个内容面板 */
+.order-dialog,.history-dialog,.data-import,.upload-overlay{
+  background:rgba(0,0,0,.58)!important;
+}
+.order-dialog-panel,.history-dialog-panel,.data-import-panel,.account-dialog,.upload-sheet{
+  background:var(--ui-surface);
+  border:1px solid var(--ui-line);
+  border-radius:var(--ui-dialog-radius);
+  box-shadow:0 18px 50px rgba(0,0,0,.42);
+}
+.order-dialog-panel,.history-dialog-panel,.data-import-panel,.account-dialog{
+  max-width:398px;
+}
+.order-dialog-head,.data-import-head{
+  min-height:40px;
+}
+.order-dialog-head strong,.data-import-head h3,.history-dialog-panel>strong,.account-dialog h2{
+  font-size:17px;
+  line-height:24px;
+  font-weight:650;
+}
+.order-dialog-panel>p,.history-dialog-panel>p,.account-dialog>p{
+  color:var(--ui-muted);
+}
+
+/* 二次确认：不再使用大图标/装饰层，突出标题、风险说明、操作 */
+.page2-danger-btn,.data-swipe-delete{color:var(--ui-danger)!important}
+
+/* 上传/处理：同一面板内切换内容，不叠加第二个面板 */
+.upload-sheet{overflow:hidden}
+.upload-source-menu,.upload-processing{background:transparent}
+.sheet-handle{opacity:.8}
+
+/* 表单统一：标签、输入、错误信息节奏一致 */
+input,select,textarea{
+  border-radius:var(--ui-control-radius)!important;
+}
+.message,.login-message{line-height:20px}
+.message.error,.login-message[role=alert]{color:#FFB4AB}
+
+/* Toast/轻反馈：用于成功、复制、保存等非破坏性反馈 */
+.ui-toast{
+  position:fixed;
+  left:50%;
+  bottom:calc(24px + env(safe-area-inset-bottom));
+  z-index:400;
+  max-width:calc(100vw - 32px);
+  padding:10px 14px;
+  border:1px solid var(--ui-line);
+  border-radius:10px;
+  background:var(--ui-surface);
+  color:#fff;
+  font-size:13px;
+  line-height:18px;
+  text-align:center;
+  box-shadow:0 10px 28px rgba(0,0,0,.36);
+  transform:translate(-50%,10px);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .18s ease,transform .18s ease;
+}
+.ui-toast.show{opacity:1;transform:translate(-50%,0)}
+.ui-toast.success{background:#1D2A24}
+.ui-toast.error{background:#302326;border-color:#594048}
+
+/* 状态文字与列表节奏统一 */
+.empty,.dispatch-empty,.dispatch-message,.history-state{
+  color:var(--ui-soft);
+}
+.store-row,.account-row,.request-row{
+  border-bottom-color:rgba(255,255,255,.065);
+}
+
+/* 小屏：进一步减少外层留白，不缩小触控目标 */
+@media(max-width:380px){
+  .order-dialog,.history-dialog,.data-import,.upload-overlay{padding:14px}
+  .order-dialog-panel,.history-dialog-panel,.data-import-panel,.account-dialog{border-radius:16px}
+}
+@media(prefers-reduced-motion:reduce){
+  .ui-toast{transition:none}
+}
+
+/* 全局二次确认弹窗 */
+.zp-confirm{position:fixed;top:0;right:0;bottom:0;left:0;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.58)}
+.zp-confirm[hidden]{display:none}
+.zp-confirm-panel{width:min(100%,360px);padding:20px 18px 16px;border:1px solid var(--ui-line);border-radius:18px;background:var(--ui-surface);box-shadow:0 18px 50px rgba(0,0,0,.45)}
+.zp-confirm-panel h3{margin:0;color:#fff;font-size:17px;line-height:24px;font-weight:650}
+.zp-confirm-panel p{margin:8px 0 0;color:var(--ui-muted);font-size:13px;line-height:20px;word-break:break-word}
+.zp-confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+.zp-confirm-actions button{min-height:var(--zp-control-height);border-radius:11px;font-size:14px;font-weight:550}
+.zp-confirm-actions button:first-child{border:1px solid #35404C;background:rgba(10,14,19,.88);color:#E8EDF2}
+.zp-confirm-actions button:last-child{border:1px solid #3A4652;background:rgba(26,38,46,.82);color:#fff}
+
+/* Android 移动端文字规范 2.4
+   仅调整文字尺寸与行高，不改变业务规则、数据结构、交互逻辑或页面布局。
+   目标层级：页面标题 20px / 区块标题 18px / 正文 16px / 辅助 15px / 元信息 14px。 */
+.topbar strong,.account-page .topbar h1,.route-apply-page .topbar h1,.data-page .topbar h1,.dispatch-page .topbar h1,.order-title{font-size:20px!important;line-height:26px!important}
+.card h2, .page2-card h2, .section-title, .data-route-title h2{font-size:18px!important;line-height:24px!important}
+.data-import-actions button,.history-dialog-actions button,.order-dialog-actions button,.account-dialog-actions button,.zp-confirm-actions button{font-size:16px!important;line-height:22px!important}
+.order-dialog-head strong,.data-import-head h3,.history-dialog-panel>strong,.account-dialog h2,.zp-confirm-panel h3{font-size:18px!important;line-height:24px!important}
+.order-dialog-panel>p,.history-dialog-panel>p,.account-dialog>p,.zp-confirm-panel p{font-size:15px!important;line-height:22px!important}
+.ui-toast{font-size:15px!important;line-height:21px!important}
+.empty,.dispatch-empty,.dispatch-message,.history-state{font-size:15px!important;line-height:22px!important}
+
+/* Modal positioning 2.5
+   所有业务弹窗统一居中显示；菜单、Toast、悬浮操作不属于模态弹窗，不参与居中规则。 */
+.order-dialog,
+.history-dialog,
+.history-picker,
+.data-import,
+.upload-overlay{
+  align-items:center!important;
+  justify-content:center!important;
+}
+.order-dialog-panel,
+.history-dialog-panel,
+.history-picker-panel,
+.data-import-panel,
+.account-dialog,
+.upload-sheet{
+  margin:0 auto!important;
+  border-radius:18px!important;
+  max-height:min(88vh,760px);max-height:min(88dvh,760px);
+}
+.upload-sheet{
+  width:min(100%,390px)!important;
+  padding:20px 18px calc(18px + env(safe-area-inset-bottom))!important;
+}
+@media(max-width:380px){
+  .order-dialog,
+  .history-dialog,
+  .history-picker,
+  .data-import,
+  .upload-overlay{padding:14px!important}
+  .order-dialog-panel,
+  .history-dialog-panel,
+  .history-picker-panel,
+  .data-import-panel,
+  .account-dialog,
+  .upload-sheet{border-radius:16px!important}
+}
+
+
+/* 全局快速滚动箭头已下线（产品决策）：不再注入 ↑/↓ 悬浮按钮。 */
+
+
+/* 全局密码显隐 2.7：所有密码输入统一使用小眼睛，空值时隐藏，输入后即时出现。 */
+.zp-password-control{
+  position:relative;display:flex;align-items:center;width:100%;min-height:48px;
+  border:1px solid #35414D;border-radius:11px;background:rgba(10,14,19,.88);
+  transition:border-color .16s ease,box-shadow .16s ease;
+}
+.zp-password-control:focus-within{border-color:#687584;box-shadow:0 0 0 3px rgba(184,194,204,.08)}
+.zp-password-control input[type="password"],
+.zp-password-control input[type="text"]{
+  display:block;flex:1;min-width:0;width:100%;height:48px!important;min-height:48px!important;
+  margin:0!important;padding:0 48px 0 12px!important;border:0!important;border-radius:10px!important;
+  outline:none!important;box-shadow:none!important;background:transparent!important;color:#F5F7F9;
+  font-size:16px;line-height:22px;letter-spacing:.01em;
+}
+.zp-password-control input::placeholder{color:#75818C}
+.zp-password-eye{
+  position:absolute;right:4px;top:50%;transform:translateY(-50%);
+  display:flex;align-items:center;justify-content:center;width:38px;height:38px;
+  padding:0;border:0;border-radius:9px;background:transparent;color:#8F9BA7;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+.zp-password-eye svg{display:block;width:19px;height:19px;pointer-events:none}
+.zp-password-eye:active{background:var(--zp-primary);color:var(--zp-on-primary)}
+.zp-password-eye[hidden]{display:none!important}
+.field .zp-password-control{margin-top:0}
+.page2-label>.zp-password-control{margin-top:6px}
+.reset-password-field>label{display:block;margin:0 0 8px;color:#DCE3E9;font-size:14px;line-height:20px;font-weight:600}
+.reset-password-field{margin-top:16px}
+@media(max-width:380px){.zp-password-eye{right:3px;width:36px;height:36px}}
+

@@ -9,7 +9,7 @@
  *   - 图片/字体       ：stale-while-revalidate（内容基本不变，秒开优先）
  * 资产缓存键用完整 URL（含 ?v=）精确匹配；页面缓存键用 pathname 规整（忽略 ?from 等查询）。
  */
-const VERSION = "zp-pwa-88";
+const VERSION = "zp-pwa-90";
 const STATIC_CACHE = VERSION + "-static";
 const PAGES_CACHE = VERSION + "-pages";
 const OFFLINE_URL = "/offline";
@@ -43,7 +43,10 @@ const PRECACHE = [
   "/css/home.css?v=32b2fd4b",
   "/css/mobile-ui.css?v=285d41d0",
   "/css/order_detail.css?v=32306b23",
-  "/css/ui-unified.css?v=b86b49dd",
+  "/css/ui-base.css?v=14c3478a",
+  "/css/ui-overlay.css?v=180cd7da",
+  "/css/ui-shell.css?v=00f1c71d",
+  "/css/ui-theme.css?v=f7983217",
   "/js/admin/account.js?v=48cd535f",
   "/js/admin/boot.js?v=729b29c2",
   "/js/admin/core.js?v=668a3e97",
@@ -65,7 +68,12 @@ const PRECACHE = [
   "/js/perf-diagnostics.js?v=a2065bec",
   "/js/pwa.js?v=cf30b44d",
   "/js/register.js?v=eafb4977",
-  "/js/ui-unified.js?v=a7ef4d51",
+  "/js/ui/appearance.js?v=4ab4a4fa",
+  "/js/ui/back.js?v=966dcd37",
+  "/js/ui/core.js?v=1c74a596",
+  "/js/ui/feedback.js?v=8ba90ed4",
+  "/js/ui/nav-prefetch.js?v=7c589b89",
+  "/js/ui/nav.js?v=fee2f25c",
   "/assets/icons/apple-touch-icon.png",
   "/assets/icons/icon-192.png",
   "/assets/icons/icon-512.png",

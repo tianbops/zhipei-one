@@ -25,7 +25,8 @@ const ROOT = path.resolve(__dirname, "..");
 const WRITE = process.argv.includes("--write");
 
 const CSS_FILES = [
-  "css/app.css", "css/ui-unified.css", "css/mobile-ui.css", "css/home.css",
+  "css/app.css", "css/ui-base.css", "css/ui-overlay.css", "css/ui-theme.css", "css/ui-shell.css",
+  "css/mobile-ui.css", "css/home.css",
   "css/business-pages.css", "css/data.css", "css/history.css", "css/order_detail.css",
 ];
 

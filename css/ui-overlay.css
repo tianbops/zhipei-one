@@ -1,0 +1,357 @@
+/* ================================================================
+ * 全局层级体系 3.0 · 落地规则
+ * ----------------------------------------------------------------
+ * 上面的变量只是"声明"，这里是"执行"：把所有既有的层级硬编码
+ * 统一收口到变量上，使多层弹窗拥有确定且可预测的叠放秩序。
+ *
+ * 解决的问题：
+ *   1) 原首页上传层 z-index:999 高于 Toast(400) 与确认框(500)，
+ *      导致上传过程中弹出的确认框被遮挡、用户看不到按钮；
+ *   2) 业务弹窗原分散在 100/120 两个值上，5 个弹窗抢同一层，
+ *      叠放顺序取决于 CSS 加载顺序，不可控。
+ *
+ * 层级顺序（由低到高）：
+ *   内容 1 → 顶栏 10 → 悬浮 90 → 菜单 200
+ *   → 模态一层 1000 → 模态二层 1100 → 模态三层 1200 → 提示 2000
+ * ================================================================ */
+
+/* --- 模态第 1 层：所有业务弹窗归于同一层 --- */
+.order-dialog,
+.history-dialog,
+.data-import,
+.upload-overlay{
+  z-index:var(--ui-z-modal)!important;
+}
+
+/* --- 模态第 2 层：在弹窗之上再开的浮层 --- */
+.history-picker{
+  z-index:var(--ui-z-modal-stack)!important;
+}
+
+/* --- 模态第 3 层：最终确认（破坏性操作） --- */
+.zp-confirm{
+  z-index:var(--ui-z-modal-top)!important;
+}
+
+/* --- 全局提示：永远在最上层，不被任何弹窗遮挡 --- */
+.ui-toast,
+.data-feedback{
+  z-index:var(--ui-z-toast)!important;
+}
+
+/* --- 菜单浮层：非模态，低于一切弹窗 --- */
+.data-page-menu, .order-menu{
+  z-index:var(--ui-z-menu)!important;
+}
+
+/* --- 悬浮操作：位于内容之上、弹窗之下（快速滚动箭头已下线） --- */
+.order-pending-fab{
+  z-index:var(--ui-z-float)!important;
+}
+
+/* --- 顶栏 --- */
+.home-app .topbar,
+.order-shell .topbar{
+  z-index:var(--ui-z-topbar)!important;
+}
+
+
+/* ================================================================
+ * 弹窗样式收敛 4.0 · 单一来源
+ * ----------------------------------------------------------------
+ * 背景：同一弹窗曾散落在 2~4 个文件重复定义，且样式互相矛盾
+ *       （例：.data-import 在 app.css 居中、在 data.css 底部弹出），
+ *       最终靠"后面再补一条覆盖"打补丁，改一处不起作用。
+ * 处理：以下弹窗的"遮罩层 + 面板"统一由本处定义，各页面 CSS
+ *       不再重复定义这些属性，只保留页面特有的内部布局。
+ *
+ * 统一后所有业务弹窗行为一致：
+ *   遮罩 rgba(0,0,0,.72) + 3px 模糊 · 居中显示 · 面板 18px 圆角
+ *
+ * ⚠ 数据中心（data.html）：弹窗外观与本文件 2.1/2.5 节的统一规则保持
+ *   原版完全一致（原版即由本文件接管遮罩与面板：居中模态、398px 上限、
+ *   18px 圆角）。css/data.css 只保留内部布局 + dvh 兜底 + 入场动效。
+ *   本节（4.0）不得对 .data-import 追加 display 等强覆盖规则 ——
+ *   data.html 用内联 style="display:none" 控制开关，任何 display!important
+ *   都会让弹窗常驻展开、挡住整个页面（2026-10-03 已修复的缺陷）。
+ * ================================================================ */
+
+/* --- 统一遮罩层 --- */
+.order-dialog,
+.history-dialog,
+.history-picker,
+.upload-overlay{
+  position:fixed!important;
+  top:0!important;right:0!important;bottom:0!important;left:0!important;inset:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:12px!important;
+  background:rgba(0,0,0,.58)!important;
+}
+
+/* --- 统一面板 ---
+   所有业务弹窗面板统一为 398px 宽（与上方 2.1 节 max-width 一致）。
+   滚动策略保持各页原有行为：面板整体滚动（overflow:auto），
+   订单确认弹窗的"头部固定+内容区滚动"由 order_detail.css 页面级定义。 */
+.order-dialog-panel,
+.history-dialog-panel,
+.history-picker-panel,
+.account-dialog,
+.upload-sheet{
+  width:min(100%,398px);
+  max-height:min(88vh,760px);max-height:min(88dvh,760px);
+  overflow:auto;
+  margin:0 auto;
+  padding:18px;
+  border:1px solid var(--ui-line);
+  border-radius:var(--ui-dialog-radius);
+  background:var(--ui-surface);
+  box-shadow:0 18px 50px rgba(0,0,0,.42);
+}
+
+/* --- 统一次级按钮（取消类）--- */
+.order-dialog-actions,
+.history-dialog-actions,
+.account-dialog-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:14px;
+}
+/* 与第 121 行的五元组是同一批按钮的两次定义（后者覆盖前者），
+   两处都已收敛到 --zp-control-height。只改一处会被另一处盖回去 ——
+   Commit 2B 在 history.css 已踩过这个坑，所以本轮以 css-button-resolve.cjs
+   的「页面最终生效值」为准，不逐行数改了几处。 */
+.order-dialog-actions button,
+.history-dialog-actions button,
+.account-dialog-actions button{
+  min-height:var(--zp-control-height);
+  border:1px solid #35404C;
+  border-radius:var(--ui-control-radius);
+  background:var(--ui-surface-2);
+  color:#E8EDF2;
+  font-size:16px;
+  font-weight:550;
+}
+.order-dialog-actions button:last-child,
+.history-dialog-actions button:last-child,
+.account-dialog-actions button:last-child{
+  border-color:#3A4652;
+  background:var(--ui-surface-3);
+  color:#fff;
+}
+
+
+/* ================================================================
+ * 视觉细节收敛 5.0 · 同类同形
+ * ----------------------------------------------------------------
+ * 巡检发现的问题（均为"同类元素在不同页面长得不一样"）：
+ *   1) 主按钮三处三种底色：#26313C(app) / #26313C(同) / #2E3B47(business)；
+ *   2) 主按钮三处三种圆角：11px(app) / 11px(同) / 12px(部分页面)；
+ *   3) 空状态三套内边距：28px 12px / 28px 10px / 30px 10px / 22px 16px；
+ *   4) 焦点可见环只有部分页面有（业务页有，登录页无）；
+ *   5) 状态类 .dispatch-* 在 ui-unified 中声明但页面用局部 \3c style> 重复实现。
+ *
+ * 角色色约定（核对此前渲染结果后确认保持不变）：
+ *   错误文字 = #FFB4AB（浅红，正文可读优先）；危险操作 = #FF8278（深红，警示优先）。
+ *
+ * 处理原则：只统一"同类元素的形状与色值"，不改任何布局尺寸与业务逻辑。
+ * 所有规则置于文件末尾，保证覆盖此前同名声明；不增加 !important，
+ * 以便页面级"确有需要"的差异化仍可通过更高优先级表达。
+ * ================================================================ */
+
+/* --- 5.1 主按钮：Uber 招牌反色（深色白底黑字 / 浅色黑底白字） --- */
+.primary-btn,
+.login-submit,
+.page2-primary,
+.confirm-submit{
+  background:var(--zp-primary);
+  border:1px solid var(--zp-primary);
+  border-radius:var(--ui-control-radius);
+  color:var(--zp-on-primary);
+  font-weight:650;
+  transition:background .15s ease,transform .12s ease;
+}
+.primary-btn:hover:not(:disabled),
+.login-submit:hover:not(:disabled),
+.page2-primary:hover:not(:disabled),
+.confirm-submit:hover:not(:disabled){
+  background:var(--zp-primary-hover);
+  border-color:var(--zp-primary-hover);
+}
+.primary-btn:active:not(:disabled),
+.login-submit:active:not(:disabled),
+.page2-primary:active:not(:disabled),
+.confirm-submit:active:not(:disabled){
+  background:var(--zp-primary-active);
+  border-color:var(--zp-primary-active);
+  transform:scale(.985);
+}
+
+/* --- 5.2 次按钮：描边 / 幽灵（与背景分离，靠边框与文字色区分层级） --- */
+.secondary-btn,
+.page2-secondary{
+  background:var(--zp-secondary-bg);
+  border:1px solid var(--zp-secondary-border);
+  border-radius:var(--ui-control-radius);
+  color:var(--zp-secondary-text);
+  font-weight:600;
+  transition:background .15s ease,transform .12s ease;
+}
+.secondary-btn:hover:not(:disabled),
+.page2-secondary:hover:not(:disabled){
+  background:var(--zp-secondary-hover);
+}
+.secondary-btn:active:not(:disabled),
+.page2-secondary:active:not(:disabled){
+  background:var(--zp-secondary-active);
+  transform:scale(.985);
+}
+
+/* --- 5.3 危险按钮：统一危险色（错误正文用 --zp-error，随主题翻转保证对比度） --- */
+.page2-danger-btn,
+.page2-danger{
+  color:var(--zp-error);
+}
+.page2-danger-btn{
+  border-color:var(--zp-error);
+  background:var(--zp-error-soft);
+}
+.page2-danger-btn:hover:not(:disabled){
+  background:color-mix(in srgb,var(--zp-error) 18%,transparent);
+}
+.page2-danger-btn:active:not(:disabled){
+  background:color-mix(in srgb,var(--zp-error) 28%,transparent);
+  transform:scale(.985);
+}
+
+/* --- 5.4 错误文案：统一为可读性更好的语义红（深色更亮 / 浅色更深） --- */
+.message.error,
+.login-message,
+.login-message[role=alert],
+.processing-error-message{
+  color:var(--zp-error);
+}
+
+/* --- 5.5 空状态 / 状态文字：统一内边距与居中节奏 ---
+   注意：history-state 在 history.css 里被定义了两次（22px 16px 与 18px 8px），
+   此处收口为同一个值，消除"改一处不生效"。 */
+.empty,
+.data-empty,
+.history-state,
+.dispatch-empty,
+.dispatch-message{
+  padding:28px 12px;
+  text-align:center;
+  color:var(--ui-soft);
+}
+
+/* --- 5.6 焦点可见环：全站统一（键盘/外接设备可访问性） --- */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible{
+  outline:2px solid var(--zp-focus);
+  outline-offset:2px;
+}
+
+/* --- 5.7 禁用态：统一配色与光标 --- */
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled,
+[disabled]{
+  cursor:default;
+}
+.primary-btn:disabled,
+.login-submit:disabled,
+.page2-primary:disabled,
+.page2-secondary:disabled,
+.secondary-btn:disabled,
+.confirm-submit:disabled{
+  background:var(--zp-disabled-bg);
+  border-color:var(--zp-disabled-bg);
+  color:var(--zp-disabled-text);
+  opacity:1;
+}
+
+/* --- 5.8 加载态：全站 spinner / 进度条统一用主色与中性灰 --- */
+.loading{
+  color:var(--zp-muted);
+}
+
+/* --- 5.8 小标签 / 状态胶囊：同圆角、同行高 --- */
+
+/* UI 2.6：页面进入动效统一——
+   所有业务页加载时统一 fade + 6px 上移（120ms），消除「页面突然换掉」的生硬感。
+   仅作用于各页 <main> 主壳；dialog/picker/sheet 是 <main> 的兄弟节点，不受影响。
+   尊重系统的「减少动态效果」偏好（mobile-ui.css 的 reduce-motion 媒体查询会将其压到 ~0ms）。
+   ⚠ 禁止加 animation-fill-mode:both/forwards：动画结束后残留的恒等 transform
+   会让 <main> 常驻成为 position:fixed 后代的包含块 + stacking context，
+   把 main 内部的弹窗/反馈条（如 data 页的 .data-import、#dataFeedback）钉进
+   main 的层级与文档坐标——表现为弹窗跑到文档中部、遮罩不满屏、
+   body 级悬浮元素（z 90）反而盖住 z 1000 的弹窗。 */
+@keyframes zpPageEnter{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.home-app,.shell,.login-shell,.auth-shell,.page2,.order-shell,.history-shell,.dispatch-page,.route-apply-page,.zp-offline{animation:zpPageEnter .12s ease-out}
+
+/* UI 2.6：弹窗/选择框统一进入动效——
+   遮罩淡现 + 面板轻微上移（16px / 160ms），替代「啪地出现」。
+   普通业务弹窗不再使用 backdrop blur（稳、硬朗）。 */
+@keyframes zpModalIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes zpModalFade{from{opacity:0}to{opacity:1}}
+.order-dialog:not([hidden]),.history-dialog:not([hidden]),.history-picker:not([hidden]),.zp-confirm:not([hidden]){animation:zpModalFade .16s ease-out}
+.order-dialog-panel,.history-dialog-panel,.history-picker-panel,.zp-confirm-panel{animation:zpModalIn .16s ease-out}
+
+/* 菜单轻入场：opacity + 轻微上移，弱化 Web Dropdown 观感（全站通用） */
+
+/* 业务端一级导航：所有业务页面统一常驻，避免页面各自维护不同版本。
+   该类由 js/ui-unified.js 在业务页 body 上添加（原误置于 JS 文件内导致整文件语法错误，
+   现回归此处）。 */
+.zp-business-nav-page{padding-bottom:0!important;overflow-x:hidden}
+.zp-business-nav-page .bottom-nav{
+  position:fixed!important;left:50%!important;right:auto!important;bottom:0!important;z-index:40!important;
+  width:min(100%,430px)!important;min-height:64px!important;
+  padding:6px 8px calc(6px + env(safe-area-inset-bottom))!important;
+  transform:translateX(-50%)!important;
+  display:grid!important;grid-template-columns:repeat(5,1fr)!important;gap:4px!important;
+  background:#05070A!important;border-top:1px solid #27323D!important;
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+}
+.zp-business-nav-page .bottom-nav-item{
+  min-width:0!important;min-height:52px!important;border:0!important;border-radius:10px!important;
+  background:transparent!important;color:#7F8A95!important;text-decoration:none!important;
+  display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;
+  gap:3px!important;font-size:12px!important;line-height:17px!important;font-weight:600!important;
+  -webkit-tap-highlight-color:transparent;
+}
+.zp-business-nav-page .bottom-nav-item:active{background:#18212B!important;color:#F2F5F7!important}
+.zp-business-nav-page .bottom-nav-icon{width:22px!important;height:22px!important;display:flex!important;align-items:center!important;justify-content:center!important}
+.zp-business-nav-page .bottom-nav-icon svg{width:21px!important;height:21px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important}
+.zp-business-nav-page .bottom-nav-item[aria-current="page"]{color:#F2F5F7!important}
+/* 中间上传加号（底栏 5 位改版）：无文字标签的凸起圆形按钮。
+   圆形由 .bottom-nav-icon 承载，上移凸出导航条；底色沿用唯一主色 --zp-primary，
+   白 + 图标，按压提亮——不引入新的强调色。 */
+.zp-business-nav-page .bottom-nav-plus .bottom-nav-icon{
+  width:52px!important;height:52px!important;border-radius:50%!important;
+  background:var(--zp-primary)!important;color:var(--zp-on-primary)!important;
+  transform:translateY(-16px)!important;
+  box-shadow:0 8px 20px rgba(5,7,10,.45)!important;
+}
+.zp-business-nav-page .bottom-nav-plus .bottom-nav-icon svg{width:24px!important;height:24px!important;stroke-width:2.2!important}
+.zp-business-nav-page .bottom-nav-plus:active{background:transparent!important}
+.zp-business-nav-page .bottom-nav-plus:active .bottom-nav-icon{filter:brightness(1.15)!important}
+/* 底部让位已废弃（2026-10-18）：zp-shell / order-shell 均为 overflow:hidden 的 flex 外壳，
+   main 不再滚动，旧 82px 让位只会把滚动容器底边抬到导航横线上方 ~18px，
+   形成常驻黑色死区（任何滚动位置下内容都被悬空裁切）。
+   让位职责由各滚动容器自身 padding-bottom（72px + 安全区 = 导航 64px + 8px 呼吸位）接管。 */
+.zp-business-nav-page main{padding-bottom:0!important}
+@media(max-width:430px){
+  .zp-business-nav-page .bottom-nav{width:100%!important}
+}
+@media(max-width:380px){
+  .zp-business-nav-page .bottom-nav{padding-left:6px!important;padding-right:6px!important}
+}
+

@@ -1,0 +1,377 @@
+/* ===== 用户外观偏好：主题与全局字号 · 浅色完整覆盖 ===== */
+:root[data-zp-theme="light"]{
+  color-scheme:light;
+  /* ===== 页面 / 表面 / 文字（Uber 风格中性灰阶 · 浅色）===== */
+  --zp-bg:#F2F2F2;
+  --zp-surface:#FFFFFF;
+  --zp-surface-2:#F5F5F5;
+  --zp-surface-3:#EAEAEA;
+  --zp-line:#E0E0E0;
+  --zp-text:#141414;
+  --zp-muted:#5A5A5A;
+  --zp-soft:#767676;
+  --zp-danger:#C2453A; /* 浅色主题的错误/危险提示文字，避免沿用深色浅红造成低对比度 */
+  --zp-card:#FFFFFF;
+  --zp-card-translucent:rgba(255,255,255,.82);
+  --zp-card-translucent-2:#F5F5F5;
+  /* 骨架微光条浅色化：白卡上改为浅灰微光，与表面色系同族 */
+  --zp-sk-a:#E4E9EE;
+  --zp-sk-b:#EDF1F5;
+  --zp-divider:rgba(0,0,0,.08);
+  /* ===== 主按钮反黑：黑底白字（Uber 浅色招牌）===== */
+  --zp-primary:#0A0A0A;
+  --zp-on-primary:#FFFFFF;
+  --zp-secondary-bg:#FFFFFF;
+  --zp-secondary-border:#D4D4D4;
+  --zp-secondary-text:#0A0A0A;
+  --zp-disabled-bg:#EAEAEA;
+  --zp-disabled-text:#A0A0A0;
+  --zp-scrim:rgba(0,0,0,.45);
+  --zp-focus:#0A0A0A;
+  --zp-primary-hover:#262626;
+  --zp-primary-active:#404040;
+  --zp-secondary-hover:#F0F0F0;
+  --zp-secondary-active:#E6E6E6;
+  /* 功能状态色（浅色：文字更深以保证对比度） */
+  --zp-success:#157A45;
+  --zp-success-soft:rgba(21,122,69,.12);
+  --zp-warning:#9A5B00;
+  --zp-warning-soft:rgba(154,91,0,.12);
+  --zp-error:#C2453A;
+  --zp-error-soft:rgba(194,69,58,.12);
+  --zp-info:#1E6FD0;
+  --zp-info-soft:rgba(30,111,208,.12);
+  --ui-bg:var(--zp-bg);
+  --ui-surface:var(--zp-surface);
+  --ui-surface-2:var(--zp-surface-2);
+  --ui-surface-3:var(--zp-surface-3);
+  --ui-line:var(--zp-line);
+  --ui-text:var(--zp-text);
+  --ui-muted:var(--zp-muted);
+  --ui-soft:var(--zp-soft);
+  /* 兼容旧页面和管理员内联样式使用的无前缀变量 */
+  --bg:#F2F2F2;
+  --card:#FFFFFF;
+  --card2:#F5F5F5;
+  --line:#E0E0E0;
+  --muted:#5A5A5A;
+  --soft:#767676;
+  --ui-danger:#B4232F;
+  --ui-danger-soft:rgba(180,35,47,.08);
+}
+:root[data-zp-theme="light"] body,
+:root[data-zp-theme="light"] .page2,
+:root[data-zp-theme="light"] .shell,
+:root[data-zp-theme="light"] .page,
+:root[data-zp-theme="light"] .viewport{
+  background-color:var(--zp-bg);
+  color:var(--zp-text);
+}
+:root[data-zp-theme="light"] .page2-card, :root[data-zp-theme="light"] .card, :root[data-zp-theme="light"] .data-list-card, :root[data-zp-theme="light"] .data-route-card, :root[data-zp-theme="light"] .task-card, :root[data-zp-theme="light"] .confirm-panel, :root[data-zp-theme="light"] .pending-box, :root[data-zp-theme="light"] .account-dialog, :root[data-zp-theme="light"] .order-dialog-panel, :root[data-zp-theme="light"] .history-dialog-panel, :root[data-zp-theme="light"] .history-picker-panel, :root[data-zp-theme="light"] .data-import-panel, :root[data-zp-theme="light"] .upload-sheet, :root[data-zp-theme="light"] .zp-confirm-panel{
+  background-color:var(--zp-surface);
+  border-color:var(--zp-line);
+  color:var(--zp-text);
+  box-shadow:0 8px 24px rgba(20,30,40,.08);
+}
+:root[data-zp-theme="light"] .topbar,
+:root[data-zp-theme="light"] .app-back,
+:root[data-zp-theme="light"] .account-collapse-head,
+:root[data-zp-theme="light"] .page2-secondary,
+:root[data-zp-theme="light"] .page2-label,
+:root[data-zp-theme="light"] .account-row,
+:root[data-zp-theme="light"] .page2-row,
+:root[data-zp-theme="light"] .section-title,
+:root[data-zp-theme="light"] .order-title{
+  color:var(--zp-text);
+}
+:root[data-zp-theme="light"] p,
+:root[data-zp-theme="light"] label,
+:root[data-zp-theme="light"] strong,
+:root[data-zp-theme="light"] h1,
+:root[data-zp-theme="light"] h2,
+:root[data-zp-theme="light"] h3,
+:root[data-zp-theme="light"] h4,
+:root[data-zp-theme="light"] legend,
+:root[data-zp-theme="light"] summary,
+:root[data-zp-theme="light"] .page2-soft,
+:root[data-zp-theme="light"] .summary,
+:root[data-zp-theme="light"] .empty,
+:root[data-zp-theme="light"] .dispatch-empty,
+:root[data-zp-theme="light"] .dispatch-message,
+:root[data-zp-theme="light"] .history-state{
+  color:var(--zp-text);
+}
+/* span 不做全局强制改色：状态徽标、重量标签、成功/警告文字需保留语义颜色。 */
+:root[data-zp-theme="light"] .page2-soft,
+:root[data-zp-theme="light"] .field-hint,
+:root[data-zp-theme="light"] .meta,
+:root[data-zp-theme="light"] .hint,
+:root[data-zp-theme="light"] .muted,
+:root[data-zp-theme="light"] .empty,
+:root[data-zp-theme="light"] .dispatch-empty,
+:root[data-zp-theme="light"] .dispatch-message,
+:root[data-zp-theme="light"] .history-state,
+:root[data-zp-theme="light"] .account-row>span:first-child{
+  color:var(--zp-muted);
+}
+:root[data-zp-theme="light"] input,
+:root[data-zp-theme="light"] select,
+:root[data-zp-theme="light"] textarea{
+  background:#FFFFFF!important;
+  color:#17202A!important;
+  border-color:#C9D1D9!important;
+  caret-color:#17202A;
+}
+:root[data-zp-theme="light"] input::placeholder,
+:root[data-zp-theme="light"] textarea::placeholder{
+  color:#687582!important;
+  opacity:1;
+}
+:root[data-zp-theme="light"] input:focus,
+:root[data-zp-theme="light"] select:focus,
+:root[data-zp-theme="light"] textarea:focus{
+  border-color:#7D8A98!important;
+  box-shadow:0 0 0 3px rgba(65,85,105,.12)!important;
+}
+:root[data-zp-theme="light"] a{color:#34495E}
+:root[data-zp-theme="light"] button{color:var(--zp-text)}
+:root[data-zp-theme="light"] button:disabled{opacity:.55}
+:root[data-zp-theme="light"] .page2-primary,
+:root[data-zp-theme="light"] .login-submit,
+:root[data-zp-theme="light"] .data-action-primary,
+:root[data-zp-theme="light"] .primary,
+:root[data-zp-theme="light"] button.primary,
+:root[data-zp-theme="light"] .primary-btn,
+:root[data-zp-theme="light"] .confirm-submit{
+  background:var(--zp-primary)!important;
+  border-color:var(--zp-primary)!important;
+  color:#FFFFFF!important;
+}
+/* 浅色主题次按钮：app.css 的 .secondary-btn 为深底白字，而上面的 button
+   通配浅色文字规则只改文字色不改底色，会出现「深底深字」不可读
+   （route_apply 解除线路绑定）。按 order_detail 弹窗既有浅色值补齐。 */
+:root[data-zp-theme="light"] .secondary-btn{
+  background:#E8EDF1;
+  border-color:#D1D8DF;
+  color:var(--zp-text);
+}
+:root[data-zp-theme="light"] .page2-secondary{
+  background:#F0F2F4;
+  border-color:#D7DDE3;
+  color:#17202A;
+}
+/* 折叠行不再填灰：浅色下 #F0F2F4 与页面背景 #F4F6F8 近同色，灰条浮在白卡外显得乱色。
+   改为透明底融入白卡，仅按压时给轻灰反馈；文字色由上方浅色文本组统一。 */
+:root[data-zp-theme="light"] .account-collapse-head{background:transparent;border-color:transparent;color:#17202A}
+:root[data-zp-theme="light"] .account-collapse-head:active{background:#F0F2F4}
+:root[data-zp-theme="light"] .appearance-theme-option.is-selected,
+:root[data-zp-theme="light"] [aria-pressed="true"].appearance-theme-option{
+  background:#DCE5EC;
+  border-color:#778796;
+  color:#17202A;
+  box-shadow:inset 0 0 0 1px #778796;
+}
+:root[data-zp-theme="light"] .account-page .account-logout-section .account-logout{
+  background:#FFFFFF;
+  border-color:#D7DDE3;
+  color:#17202A;
+}
+:root[data-zp-theme="light"] .order-dialog,
+:root[data-zp-theme="light"] .history-dialog,
+:root[data-zp-theme="light"] .history-picker,
+:root[data-zp-theme="light"] .data-import,
+:root[data-zp-theme="light"] .upload-overlay,
+:root[data-zp-theme="light"] .zp-confirm{
+  background:rgba(24,36,48,.32)!important;
+}
+:root[data-zp-theme="light"] .ui-toast{
+  background:#FFFFFF!important;
+  border-color:#D7DDE3!important;
+  color:#17202A!important;
+  box-shadow:0 8px 24px rgba(20,30,40,.16);
+}
+:root[data-zp-theme="light"] .ui-toast.success{
+  background:#E8F5EC!important;
+  border-color:#B8DCC3!important;
+  color:#205C35!important;
+}
+:root[data-zp-theme="light"] .ui-toast.error{
+  background:#FCEBEC!important;
+  border-color:#E8BFC3!important;
+  color:#8A2630!important;
+}
+:root[data-zp-theme="light"] .zp-confirm-panel h3{color:var(--zp-text)}
+:root[data-zp-theme="light"] .zp-confirm-actions button:first-child{
+  background:#F0F2F4;border-color:#D7DDE3;color:#26323D;
+}
+:root[data-zp-theme="light"] .zp-confirm-actions button:last-child{
+  background:var(--zp-primary);border-color:var(--zp-primary);color:#FFFFFF;
+}
+:root[data-zp-theme="light"] .zp-password-control{
+  background:#FFFFFF;border-color:#C9D1D9;
+}
+:root[data-zp-theme="light"] .zp-password-control input[type="password"],
+:root[data-zp-theme="light"] .zp-password-control input[type="text"]{
+  background:transparent!important;color:#17202A!important;
+}
+:root[data-zp-theme="light"] .zp-password-control input::placeholder{color:#687582!important}
+:root[data-zp-theme="light"] .zp-password-eye{color:#536170}
+:root[data-zp-theme="light"] .zp-password-eye:active{background:#E8EDF1;color:#17202A}
+:root[data-zp-theme="light"] .data-page-menu, :root[data-zp-theme="light"] .order-menu{
+  background:#FFFFFF;border-color:#D7DDE3;color:#17202A;
+  box-shadow:0 12px 28px rgba(20,30,40,.14);
+}
+:root[data-zp-theme="light"] .menu-divider{background:rgba(20,30,40,.12)}
+:root[data-zp-theme="light"] .store-row,
+:root[data-zp-theme="light"] .account-row,
+:root[data-zp-theme="light"] .request-row{border-bottom-color:rgba(20,30,40,.12)}
+
+
+/* 管理员工作区浅色适配：覆盖 admin.html 内联样式中的固定深色值 */
+:root[data-zp-theme="light"] .head .who .role,
+:root[data-zp-theme="light"] .menu-btn,
+:root[data-zp-theme="light"] .tab.active,
+:root[data-zp-theme="light"] .add,
+:root[data-zp-theme="light"] .search input,
+:root[data-zp-theme="light"] .small-action,
+:root[data-zp-theme="light"] .copy,
+:root[data-zp-theme="light"] .invite-actions .small-action{
+  color:#17202A;
+}
+:root[data-zp-theme="light"] .head .who .role{color:var(--zp-primary)!important}
+:root[data-zp-theme="light"] .menu-btn,
+:root[data-zp-theme="light"] .add,
+:root[data-zp-theme="light"] .small-action,
+:root[data-zp-theme="light"] .copy{
+  background:#F0F2F4!important;border-color:#D7DDE3!important;color:#26323D!important;
+}
+:root[data-zp-theme="light"] .tab.active{background:#FFFFFF!important;color:#17202A!important}
+:root[data-zp-theme="light"] .tabs{background:#F0F2F4!important;border-color:#D7DDE3!important}
+:root[data-zp-theme="light"] .row,
+:root[data-zp-theme="light"] .route,
+:root[data-zp-theme="light"] .card,
+:root[data-zp-theme="light"] .invite,
+:root[data-zp-theme="light"] .row .content,
+:root[data-zp-theme="light"] .invite-content,
+:root[data-zp-theme="light"] .route-content{background:#FFFFFF!important;border-color:#D7DDE3!important;color:#17202A}
+:root[data-zp-theme="light"] .person,
+:root[data-zp-theme="light"] .row .meta,
+:root[data-zp-theme="light"] .meta,
+:root[data-zp-theme="light"] .route-count,
+:root[data-zp-theme="light"] .head .who .uname{color:#596674!important}
+:root[data-zp-theme="light"] .dialog-bg,
+:root[data-zp-theme="light"] .menu-bg{background:rgba(24,36,48,.32)!important}
+:root[data-zp-theme="light"] .dialog{background:#FFFFFF!important;border-color:#D7DDE3!important;color:#17202A}
+:root[data-zp-theme="light"] .dialog h2,
+:root[data-zp-theme="light"] .dialog p,
+:root[data-zp-theme="light"] .field label{color:#17202A}
+:root[data-zp-theme="light"] .dialog-actions .cancel{background:#F0F2F4!important;border-color:#D7DDE3!important;color:#26323D!important}
+:root[data-zp-theme="light"] .dialog-actions .ok{background:var(--zp-primary)!important;border-color:var(--zp-primary)!important;color:#FFFFFF!important}
+:root[data-zp-theme="light"] .toast{background:#FFFFFF!important;border-color:#D7DDE3!important;color:#17202A!important}
+
+/* 浅色模式中的危险与错误状态采用深色语义色，确保浅底上可读 */
+:root[data-zp-theme="light"] .message.error,
+:root[data-zp-theme="light"] .login-message[role="alert"],
+:root[data-zp-theme="light"] [role="alert"]{color:#B4232F}
+
+/* ---- 浅色补充（全站审计）：body 底色兜底 + 注入底栏浅色 ---- */
+/* 登录/注册等无 .page 容器的页面，body 硬编码 color:#fff 需在浅色下翻转 */
+:root[data-zp-theme="light"] body{color:var(--zp-text)}
+/* 注入底栏的深色定义在本文件（.zp-business-nav-page .bottom-nav），
+   浅色覆盖必须同样全站可用——此前只写在 business-pages.css，
+   history/order_detail 等不加载该文件的页面底栏一直是黑条 */
+:root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav{background:#FFFFFF!important;border-top-color:#D7DDE3!important;box-shadow:0 -4px 18px rgba(20,30,40,.06)}
+:root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-item{color:#596674!important}
+:root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-item:active{background:#E8EDF1!important;color:#17202A!important}
+:root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-item[aria-current="page"]{color:#17202A!important}
+/* 浅色下中间加号：圆形仍为主色底白图标，仅按压态与阴影适配（不加新强调色） */
+:root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-plus .bottom-nav-icon{box-shadow:0 8px 20px rgba(20,30,40,.22)!important}
+:root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-plus:active{background:transparent!important}
+
+:root[data-zp-theme="light"] button[class*="delete"]:not(.account-collapse-head):disabled,
+:root[data-zp-theme="light"] button[class*="danger"]:not(.account-collapse-head):disabled,
+:root[data-zp-theme="light"] .history-choice-delete:disabled {
+  opacity:.55;
+  cursor:not-allowed;
+}
+
+
+/* 全站危险操作按钮颜色标准化：与全站次按钮统一采用中性色，不以红色作为常规操作按钮底色。
+   深色：深灰底/灰边/浅字；浅色：浅灰底/浅灰边/深字。
+   历史页整行滑动动作条单独保持无边框实底，避免两端出现白边。
+   仅调整颜色和边框，不改变尺寸、位置、文案及确认逻辑。 */
+button[class*="delete"]:not(.account-collapse-head):not(.history-delete),
+a[class*="delete"],
+button[class*="danger"]:not(.account-collapse-head),
+a[class*="danger"],
+.history-choice-delete,
+.history-dialog-actions .delete,
+.data-swipe-actions .data-swipe-delete,
+.page2-danger-btn,
+.invite-actions .small-action.danger {
+  background:#11171D!important;
+  border:1px solid #35404C!important;
+  color:#E8EDF2!important;
+  box-shadow:none!important;
+}
+button[class*="delete"]:not(.account-collapse-head):not(.history-delete):active,
+a[class*="delete"]:active,
+button[class*="danger"]:not(.account-collapse-head):active,
+a[class*="danger"]:active,
+.history-choice-delete:active,
+.history-dialog-actions .delete:active,
+.data-swipe-actions .data-swipe-delete:active,
+.page2-danger-btn:active,
+.invite-actions .small-action.danger:active {
+  background:#202B36!important;
+  border-color:#3A4652!important;
+  color:#FFFFFF!important;
+}
+:root[data-zp-theme="light"] button[class*="delete"]:not(.account-collapse-head):not(.history-delete),
+:root[data-zp-theme="light"] a[class*="delete"],
+:root[data-zp-theme="light"] button[class*="danger"]:not(.account-collapse-head),
+:root[data-zp-theme="light"] a[class*="danger"],
+:root[data-zp-theme="light"] .history-choice-delete,
+:root[data-zp-theme="light"] .history-dialog-actions .delete,
+:root[data-zp-theme="light"] .data-swipe-actions .data-swipe-delete,
+:root[data-zp-theme="light"] .page2-danger-btn,
+:root[data-zp-theme="light"] .invite-actions .small-action.danger {
+  background:#F0F2F4!important;
+  border:1px solid #D7DDE3!important;
+  color:#17202A!important;
+  box-shadow:none!important;
+}
+:root[data-zp-theme="light"] button[class*="delete"]:not(.account-collapse-head):not(.history-delete):active,
+:root[data-zp-theme="light"] a[class*="delete"]:active,
+:root[data-zp-theme="light"] button[class*="danger"]:not(.account-collapse-head):active,
+:root[data-zp-theme="light"] a[class*="danger"]:active,
+:root[data-zp-theme="light"] .history-choice-delete:active,
+:root[data-zp-theme="light"] .history-dialog-actions .delete:active,
+:root[data-zp-theme="light"] .data-swipe-actions .data-swipe-delete:active,
+:root[data-zp-theme="light"] .page2-danger-btn:active,
+:root[data-zp-theme="light"] .invite-actions .small-action.danger:active {
+  background:#E1E7EC!important;
+  border-color:#C9D1D9!important;
+  color:#17202A!important;
+}
+/* 历史页整行滑动删除：中性色实底且无边框，防止按钮两端混绘出白边。 */
+:root:not([data-zp-theme="light"]) .history-delete {
+  background:#11171D!important;
+  border:0!important;
+  color:#E8EDF2!important;
+  box-shadow:none!important;
+}
+:root:not([data-zp-theme="light"]) .history-delete:active {
+  background:#202B36!important;
+  color:#FFFFFF!important;
+}
+:root[data-zp-theme="light"] .history-delete {
+  background:#F0F2F4!important;
+  border:0!important;
+  color:#17202A!important;
+  box-shadow:none!important;
+}
+:root[data-zp-theme="light"] .history-delete:active {
+  background:#E1E7EC!important;
+  color:#17202A!important;
+}

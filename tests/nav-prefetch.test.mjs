@@ -7,7 +7,7 @@
  * 覆盖：
  *   1. _headers：SW 不缓存；无扩展名页面路由必须给出「短 TTL + stale-while-revalidate」；
  *      哈希化的 JS/CSS 仍必须 immutable（防止有人图省事改成通配规则把它们一起吞掉）。
- *   2. js/ui-unified.js：预取实现的三条铁律——只预取同源静态页面、
+ *   2. js/ui/nav-prefetch.js：预取实现的三条铁律——只预取同源静态页面、
  *      跳过 /api 与第三方、弱网/省流量模式不预取；以及幂等上限。
  */
 import { readFileSync } from "node:fs";
@@ -18,7 +18,7 @@ import assert from "node:assert/strict";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "..");
 const headers = readFileSync(path.join(root, "_headers"), "utf8");
-const ui = readFileSync(path.join(root, "js/ui-unified.js"), "utf8");
+const ui = readFileSync(path.join(root, "js/ui/nav-prefetch.js"), "utf8");
 
 let failures = 0;
 const check = (cond, label) => {
@@ -60,7 +60,7 @@ console.log("【1】_headers 缓存策略");
   }
 }
 
-console.log("\n【2】js/ui-unified.js 预取实现的三条铁律");
+console.log("\n【2】js/ui/nav-prefetch.js 预取实现的三条铁律");
 {
   check(/rel="prefetch"/.test(ui), "使用 link rel=prefetch（低优先级，不与当前页争带宽）");
   check(/if\(u\.origin!==location\.origin\)return null;/.test(ui), "铁律1：跨源目标直接放弃");
