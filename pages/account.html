@@ -416,6 +416,11 @@ $("deleteConfirm").onclick=async()=>{
  const ua=navigator.userAgent||"";
  const isWeChat=/MicroMessenger/i.test(ua);
  const isIOS=/iPad|iPhone|iPod/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+ const isAndroid=/Android/i.test(ua);
+ // 智配One APK 壳（Capacitor WebView）：beforeinstallprompt 永不触发，
+ // PWA 安装语义在这里无意义，点击「下载应用」应直接下 APK——由原生
+ // DownloadManager 监听接管（见 repo-app MainActivity.setDownloadListener）。
+ const isNativeApp=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());
  function setApk(file,ver){
   installDlLink.href="/downloads/"+file;
   installDlLink.setAttribute("download","zhipei-one-v"+(ver||"latest")+".apk");
@@ -436,10 +441,17 @@ $("deleteConfirm").onclick=async()=>{
   window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferred=e});
   const labelClick=()=>{
    guide.hidden=true;
+   const apkReady=!!(installDlLink&&installDlLink.getAttribute("href"));
    if(isWeChat){
     showSteps(["点右上角「···」","选「在浏览器中打开」","在浏览器中打开后再安装到桌面"]);
    }else if(isIOS){
     showSteps(["点底部「分享」按钮","选「添加到主屏幕」","点「添加」，之后从桌面打开"]);
+   }else if(isNativeApp){
+    /* 壳内：直接下载 APK，别再绕 PWA 引导（WebView 里也没有安装概念） */
+    if(apkReady){
+     installDlLink.click();
+     if(window.zpToast)window.zpToast("开始下载安装包…","info");
+    }else if(window.zpToast)window.zpToast("安装包信息加载中，请稍候再试","info");
    }else if(deferred){
     const ev=deferred;deferred=null;
     try{
@@ -448,6 +460,9 @@ $("deleteConfirm").onclick=async()=>{
       if(r&&r.outcome==="accepted"){if(label)label.textContent="已添加到桌面";guide.hidden=true;if(window.zpToast)window.zpToast("已添加到桌面","success")}
      }).catch(()=>{});
     }catch(e){}
+   }else if(isAndroid&&apkReady){
+    /* 安卓浏览器但不满足 PWA 安装条件：安卓用户要的就是 APK，直接给 */
+    installDlLink.click();
    }else{
     if(window.zpToast)window.zpToast("如未自动安装，请点右侧「最新安装包」","info");
    }
