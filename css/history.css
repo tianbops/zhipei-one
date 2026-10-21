@@ -228,7 +228,7 @@
 }
 .history-calendar-day.has-data{
   background:var(--zp-primary);
-  color:#F4F6F8;
+  color:var(--zp-on-primary);
 }
 .history-calendar-day.has-data:active{background:#3A4652}
 .history-calendar-day:disabled{opacity:1}
@@ -298,9 +298,12 @@
 }
 .history-dialog-actions button:last-child{
   background:var(--zp-primary);
-  color:#fff;
+  /* --zp-primary 在深色模式下是白色底，文字必须用反相 token（黑字），
+     硬编码 #fff 会白底白字不可见。 */
+  color:var(--zp-on-primary);
 }
 .history-dialog-actions button:active{background:#303C48}
+.history-dialog-actions button:last-child:active{background:var(--zp-primary-hover);color:var(--zp-on-primary)}
 .history-dialog-actions button:disabled{opacity:.5}
 
 @media(max-width:380px){

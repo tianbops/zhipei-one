@@ -14,13 +14,19 @@ export async function onRequestPost({request,env}){
   const action=String(input.action||"");
 
   if(action==="rename"){
+   const password=String(input.password||"");
+   // 敏感操作统一要求当前密码验证（与改密码/注销一致）
+   if(!password)return json({success:false,error:"请输入当前密码确认修改",code:"CURRENT_PASSWORD_REQUIRED"},400);
+   if(actor.passwordHash!==await hash(password))return json({success:false,error:"当前密码错误",code:"CURRENT_PASSWORD_INVALID"},403);
    const username=String(input.username||"").trim();
    if(!validUsername(username))return json({success:false,error:"用户名需为3-32位字母、数字、下划线、短横线或点"},400);
    if(username.toLowerCase()===String(actor.username||"").toLowerCase())return json({success:true,user:{id:actor.id,username}});
    const oldKey="zp:user:index:"+String(actor.username||"").toLowerCase();
    const newKey="zp:user:index:"+username.toLowerCase();
    const userKey="zp:user:"+actor.id;
-   const script="local raw=redis.call('GET',KEYS[1]); if not raw then return 2 end; local ok,u=pcall(cjson.decode,raw); if not ok or type(u)~='table' or u.id~=ARGV[2] then return 3 end; if redis.call('GET',KEYS[2]) then return 4 end; redis.call('DEL',KEYS[1]); u.username=ARGV[1]; u.sessionVersion=(u.sessionVersion or 1)+1; redis.call('SET',KEYS[3],cjson.encode(u)); redis.call('SET',KEYS[2],ARGV[2]); return 1";
+   // 注意：user:index:<用户名> 存的是纯用户 id（register/login 均以此语义读写），
+   // 不是用户 JSON——旧实现把 id 当 JSON 解码导致 type(u)~='table' 恒真、必然 409。
+   const script="local idx=redis.call('GET',KEYS[1]); if not idx then return 2 end; if idx~=ARGV[2] then return 3 end; local raw=redis.call('GET',KEYS[3]); if not raw then return 2 end; local ok,u=pcall(cjson.decode,raw); if not ok or type(u)~='table' or u.id~=ARGV[2] then return 3 end; if redis.call('GET',KEYS[2]) then return 4 end; redis.call('DEL',KEYS[1]); u.username=ARGV[1]; u.sessionVersion=(u.sessionVersion or 1)+1; redis.call('SET',KEYS[3],cjson.encode(u)); redis.call('SET',KEYS[2],ARGV[2]); return 1";
    const code=Number(await command(env,["EVAL",script,"3",oldKey,newKey,userKey,username,actor.id]));
    if(code===4)return json({success:false,error:"用户名已存在",code:"USERNAME_EXISTS"},409);
    if(code!==1)return json({success:false,error:"账号状态已变化，请刷新后重试"},409);

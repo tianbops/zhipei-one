@@ -269,17 +269,18 @@
     }
   },true);
 
-  // 一级导航 toggle（以首页为标准点）：点击当前所在页对应的 tab（is-active）时，
-  // 不再重载本页而是回到首页；点击非激活 tab 照常首次进入对应页面。
-  // 例外：首页 tab（bottom-nav-home）在首页再次点击时不重载本页。
+  // 一级导航：点击已激活的底部 tab 不再跳回首页（已有独立首页按钮，跳转属多余），
+  // 而是停留在当前页并把内容滚回顶部（成熟 App 范式，如微信/Instagram）。
+  // 点击未激活 tab 仍照常导航到对应页面（走 a 默认 href）。
   // 首页上传弹窗的 toggle 由 home.js 处理（#uploadAction，非 a 标签，不走本规则）。
   document.addEventListener("click",e=>{
     const active=e.target.closest?.(".bottom-nav a.is-active");
     if(!active)return;
     if(typeof window.zpIsProcessing==="function"&&window.zpIsProcessing())return; // 处理中交由上方守卫确认
     e.preventDefault();
-    if(active.classList.contains("bottom-nav-home")&&zpNormPath(location.pathname)==="/home")return;
-    location.href="/home";
+    const scroller=document.querySelector(".zp-scroll");
+    if(scroller)scroller.scrollTop=0;
+    window.scrollTo(0,0);
   },true);
 
   window.zpConfirm=function(title,text,okText){
