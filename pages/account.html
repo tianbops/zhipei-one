@@ -110,6 +110,28 @@
 :root[data-zp-theme="light"] .acct-destroy-link{color:#C2453A}
 :root[data-zp-theme="dark"] .acct-destroy-link{color:#FF8278}
 .acct-destroy-link:active{opacity:.6}
+
+/* --- 帮助反馈弹层：底部卡片式，返回键经 zpRegisterBackHook 优先关闭 --- */
+.acct-help-layer{position:fixed;inset:0;z-index:200;display:flex;align-items:flex-end;justify-content:center;
+  padding:18px 14px calc(18px + env(safe-area-inset-bottom,0px));background:rgba(8,12,18,.55)}
+.acct-help-layer[hidden]{display:none}
+.acct-help-panel{width:100%;max-width:480px;max-height:82vh;display:flex;flex-direction:column;overflow:hidden;
+  border-radius:20px;background:var(--zp-card,#FFFFFF);box-shadow:0 18px 50px rgba(8,12,18,.35)}
+.acct-help-head{display:flex;align-items:center;justify-content:space-between;flex:none;
+  padding:16px 16px 10px;border-bottom:1px solid var(--zp-line,#2A3540)}
+.acct-help-head h2{margin:0;color:var(--zp-text,#fff);font-size:17px;font-weight:700}
+.acct-help-close{width:36px;height:36px;padding:0;border:0;border-radius:999px;background:none;
+  color:var(--zp-muted,#8B98A5);cursor:pointer}
+.acct-help-close svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.acct-help-close:active{opacity:.6}
+.acct-help-body{overflow-y:auto;padding:6px 16px 18px;-webkit-overflow-scrolling:touch}
+.acct-help-sub{margin:14px 0 8px;color:var(--zp-text,#fff);font-size:14px;font-weight:700}
+.acct-help-q{margin:10px 0 2px;color:var(--zp-text,#fff);font-size:14px;font-weight:600;line-height:20px}
+.acct-help-a{margin:0;color:var(--zp-muted,#8B98A5);font-size:13px;line-height:20px}
+#helpMailBtn{margin-top:10px;padding:10px 18px;min-height:44px;border:0;border-radius:999px;
+  background:var(--zp-primary,#FFFFFF);color:var(--zp-on-primary,#0A0A0A);
+  font-size:14px;font-weight:600;cursor:pointer}
+#helpMailBtn:active{opacity:.75}
 .acct-destroy-link[hidden]{display:none}
 
 /* --- 关于：品牌区（一排左右，左名称右版本，与卡片列表左右语言一致） --- */
@@ -252,13 +274,13 @@
 
 <section class="acct-card about-card" aria-label="信息">
   <div class="acct-rows">
-    <button class="acct-row" id="privacyLink" type="button" aria-haspopup="dialog">
+    <button class="acct-row" id="privacyLink" type="button">
       <span class="acct-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"></path></svg></span>
       <span class="acct-row-label">隐私政策</span>
       <span class="acct-row-value" aria-hidden="true"></span>
       <svg class="acct-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
     </button>
-    <button class="acct-row" id="termsLink" type="button" aria-haspopup="dialog">
+    <button class="acct-row" id="termsLink" type="button">
       <span class="acct-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4h7l4 4v12H7z"></path><path d="M14 4v4h4"></path></svg></span>
       <span class="acct-row-label">服务条款</span>
       <span class="acct-row-value" aria-hidden="true"></span>
@@ -295,6 +317,31 @@
     <div class="account-dialog-actions">
       <button id="deleteCancel" class="page2-secondary" type="button">取消</button>
       <button id="deleteConfirm" class="page2-danger-btn" type="button">确认注销</button>
+    </div>
+  </div>
+</div>
+
+<div class="acct-help-layer" id="helpLayer" hidden>
+  <div class="acct-help-panel" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <div class="acct-help-head">
+      <h2 id="helpTitle">帮助与反馈</h2>
+      <button id="helpClose" class="acct-help-close" type="button" aria-label="关闭">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+      </button>
+    </div>
+    <div class="acct-help-body">
+      <h3 class="acct-help-sub">常见问题</h3>
+      <p class="acct-help-q">忘记密码怎么办？</p>
+      <p class="acct-help-a">请联系下方反馈邮箱或你的线路管理员重置密码。</p>
+      <p class="acct-help-q">数据存在哪里？</p>
+      <p class="acct-help-a">云端加密存储，换设备登录同一账号即可同步。</p>
+      <p class="acct-help-q">如何更新 App？</p>
+      <p class="acct-help-a">账号设置 → 下载应用 → 最新安装包。</p>
+      <p class="acct-help-q">运单识别不准？</p>
+      <p class="acct-help-a">识别结果可能存在误差，务必人工核对，可手动修正后再使用。</p>
+      <h3 class="acct-help-sub">反馈渠道</h3>
+      <p class="acct-help-a">遇到问题或有功能建议，欢迎邮件反馈：</p>
+      <button id="helpMailBtn" class="acct-help-mail" type="button">复制反馈邮箱 tianbops@live.com</button>
     </div>
   </div>
 </div>
@@ -461,22 +508,23 @@ $("deleteConfirm").onclick=async()=>{
 
  /* 网页端地址：复制固定官网地址 */
  const WEB_URL="https://tianyou-zhipei.pages.dev";
- function fallbackCopy(text){
+ function fallbackCopy(text,tip){
   const ta=document.createElement("textarea");ta.value=text;ta.style.position="fixed";ta.style.opacity="0";
   document.body.appendChild(ta);ta.select();
-  try{document.execCommand("copy");if(window.zpToast)window.zpToast("网页端地址已复制","success")}catch(e){}
+  try{document.execCommand("copy");if(window.zpToast)window.zpToast(tip||"已复制","success")}catch(e){}
   ta.remove();
  }
- function copyWeb(){
+ function copyText(text,tip){
   try{
    if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(WEB_URL).then(
-     ()=>{if(window.zpToast)window.zpToast("网页端地址已复制","success")},
-     ()=>fallbackCopy(WEB_URL)
+    navigator.clipboard.writeText(text).then(
+     ()=>{if(window.zpToast)window.zpToast(tip||"已复制","success")},
+     ()=>fallbackCopy(text,tip)
     );
-   }else fallbackCopy(WEB_URL);
-  }catch(e){fallbackCopy(WEB_URL)}
+   }else fallbackCopy(text,tip);
+  }catch(e){fallbackCopy(text,tip)}
  }
+ function copyWeb(){copyText(WEB_URL,"网页端地址已复制")}
  webCopyBtn.onclick=copyWeb;
 /* 旧壳兜底引导里的复制按钮：与「网页端地址 → 复制」同一逻辑 */
 const guideCopyBtn=$("guideCopyBtn");
@@ -567,11 +615,36 @@ if(guideCopyBtn)guideCopyBtn.onclick=copyWeb;
  });
 
  /* 信息组：占位，待补真实页面 */
- function placeholder(name){return ()=>{if(window.zpToast)window.zpToast(name+"页面即将上线","info")}}
- const p=$("privacyLink"),t=$("termsLink"),h=$("helpLink");
- if(p)p.onclick=placeholder("隐私政策");
- if(t)t.onclick=placeholder("服务条款");
- if(h)h.onclick=placeholder("帮助反馈");
+/* 隐私政策 / 服务条款：独立静态页（公开免登录、可分享）；帮助反馈：页内弹层 */
+(function(){
+ const helpLayer=$("helpLayer"),helpClose=$("helpClose"),helpMailBtn=$("helpMailBtn");
+ function openHelp(){
+  if(!helpLayer)return;
+  helpLayer.hidden=false;
+  document.body.style.overflow="hidden";
+ }
+ function closeHelp(){
+  if(!helpLayer)return;
+  helpLayer.hidden=true;
+  document.body.style.overflow="";
+ }
+ /* 返回键：帮助弹层作为本页最上层（rank 8 高于通用确认框 rank 5），
+    物理/手势返回先关弹层而非退出页面——与顶部关闭按钮行为一致 */
+ window.zpRegisterBackHook?.({
+  rank:8,
+  probe:()=>helpLayer&&!helpLayer.hidden?helpLayer:null,
+  close:()=>{closeHelp();return true}
+ });
+ const h=$("helpLink");
+ if(h)h.addEventListener("click",openHelp);
+ if(helpClose)helpClose.addEventListener("click",closeHelp);
+ /* 点遮罩空白处关闭（面板内点击不关） */
+ if(helpLayer)helpLayer.addEventListener("click",e=>{if(e.target===helpLayer)closeHelp()});
+ if(helpMailBtn)helpMailBtn.addEventListener("click",()=>copyText("tianbops@live.com","反馈邮箱已复制"));
+})();
+const p=$("privacyLink"),t=$("termsLink");
+if(p)p.addEventListener("click",()=>location.assign("/pages/privacy"));
+if(t)t.addEventListener("click",()=>location.assign("/pages/terms"));
 })();
 
 load();
