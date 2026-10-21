@@ -1,0 +1,33 @@
+/* UI 2.4：顶部返回键与运单详情统一
+   历史查询不显示右侧三横，仅保留与运单详情一致的返回箭头。 */
+.history-shell .app-back{color:#fff}
+.history-shell .app-back:active{background:rgba(20,28,37,.80);transform:none}
+.history-topbar-placeholder{
+  width:44px;
+  height:44px;
+  display:block;
+}
+
+/* Android 返回层 2.5：历史查询返回按钮沿用运单详情纯箭头。 */
+.history-shell .app-back{touch-action:manipulation}
+
+/* 日历月份滑动切换：左滑下月（内容自右滑入）、右滑上月（内容自左滑入） */
+@keyframes historyCalInLeft{
+  from{opacity:0;transform:translate3d(-10px,0,0)}
+  to{opacity:1;transform:none}
+}
+@keyframes historyCalInRight{
+  from{opacity:0;transform:translate3d(10px,0,0)}
+  to{opacity:1;transform:none}
+}
+.history-picker-head strong.cal-anim-left,
+.history-calendar-grid.cal-anim-left{animation:historyCalInLeft .17s ease-out}
+.history-picker-head strong.cal-anim-right,
+.history-calendar-grid.cal-anim-right{animation:historyCalInRight .17s ease-out}
+@media(prefers-reduced-motion:reduce){
+  .history-picker-head strong.cal-anim-left,
+  .history-calendar-grid.cal-anim-left,
+  .history-picker-head strong.cal-anim-right,
+  .history-calendar-grid.cal-anim-right{animation:none}
+}
+

@@ -1,0 +1,118 @@
+/* 智配One · 首页移动端 UI */
+/* 板块宽度对齐全局：与线路页 / 历史页同用 --zp-space-4（16px）。
+   原为 14px 历史遗留值，比全局窄 2px，跨页切换时板块宽度会跳。 */
+.home-app{width:min(100%,430px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:var(--zp-space-4,16px) var(--zp-space-4,16px) calc(24px + env(safe-area-inset-bottom));background:#05070A}
+.home-app .topbar{display:flex;justify-content:space-between;align-items:center;z-index:100;margin-bottom:8px}
+.home-brand{display:flex;flex-direction:column;line-height:1.2}
+.home-brand strong{font-size:19px;font-weight:700;letter-spacing:.5px;color:#fff}
+.home-brand span{margin-top:2px;font-size:11px;color:#7F8B98;letter-spacing:1.5px}
+.menu-item-icon{width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;color:#B8C2CC}
+.menu-item-icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.menu-divider{height:1px;margin:5px 7px;background:rgba(255,255,255,.07)}
+
+.task-card{position:relative;overflow:hidden;margin-top:14px;padding:14px;min-height:0;background:rgba(13,18,24,.82);border:1px solid rgba(255,255,255,.075);border-radius:16px;box-shadow:0 12px 30px rgba(0,0,0,.18)}
+.task-title{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:21px;line-height:28px;font-weight:700}
+.task-name{display:flex;align-items:center;gap:9px;min-width:0;white-space:nowrap}
+.task-date{margin:0;text-align:right;white-space:nowrap;color:#7F8A95;font-size:15px;line-height:23px;font-weight:500}
+.status-dot{width:26px;height:26px;min-width:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:#5B7188;color:#fff;border:1px solid rgba(255,255,255,.14);font:650 11px/26px Arial,"Microsoft YaHei",sans-serif}
+.status-dot[hidden]{display:none}
+.today-summary .sub-badge{display:inline;color:#F2F5F7;font:600 14px/29px "Microsoft YaHei",sans-serif;white-space:nowrap}
+.today-summary .sub-badge[hidden]{display:none}
+.task-main{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:8px;margin-top:9px}
+.task-info{min-width:0;color:#9AA6B2;font-size:15px;line-height:27px}
+.today-summary{display:flex;align-items:baseline;gap:9px;white-space:nowrap;line-height:29px}
+.today-summary strong{color:#F2F5F7;font-size:20px;line-height:29px;font-weight:600}
+.today-summary span{font-size:16px;line-height:29px;color:#B8C2CC}
+.delivery-man{width:84px;height:60px;display:flex;align-items:flex-end;justify-content:flex-end;opacity:.4;transform:translateY(8px)}
+.delivery-man img{width:100%;height:100%;object-fit:contain}
+/* radius 14→12（方案第十三章 10–12）。padding 0 48px 保持不动：
+   它是 width:100% + justify-content:center 的居中大按钮，48px 只用于限制内容最大宽度，
+   实际内容远不满宽，改成 16 不会带来任何视觉差异，纯粹是无收益的改动。
+   padX 48 本身也满足「≥16」，并不违规。 */
+
+.upload-overlay:not([hidden]){display:flex;animation:zpModalFade .16s ease-out}
+.upload-sheet{width:min(100%,390px);max-width:390px;margin:0 auto;padding:20px 18px calc(18px + env(safe-area-inset-bottom));border-radius:20px 20px 16px 16px;background:rgba(13,18,24,.82);border:1px solid #2A3540;box-shadow:0 18px 46px rgba(0,0,0,.5);animation:zpModalIn .16s ease-out}
+.sheet-handle{width:34px;height:4px;margin:0 auto 16px;border-radius:4px;background:rgba(255,255,255,.15)}
+.upload-source-menu{margin:0;padding:0;background:transparent}
+.source-menu-title{height:28px;line-height:28px;margin:0 0 20px;color:#F2F5F7;text-align:center;font-size:20px;font-weight:700}
+.source-menu-options{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.source-option{height:auto;min-height:72px;padding:9px 0;border:1px solid rgba(255,255,255,.075);border-radius:12px;background:rgba(20,31,40,.82);color:#D5DCE2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.source-option:active{background:var(--zp-primary);color:var(--zp-on-primary);transform:scale(.985)}
+.source-icon{width:24px;height:24px;display:flex;align-items:center;justify-content:center}
+.source-icon svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.source-option strong{font-size:13px;font-weight:600;line-height:18px}
+.upload-cancel-btn{width:100%;height:48px;min-height:48px;margin-top:12px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(20,31,40,.82);color:#B8C2CC;font-size:14px;font-weight:650;-webkit-tap-highlight-color:transparent}
+.upload-cancel-btn:active{background:var(--zp-primary);color:var(--zp-on-primary);transform:scale(.985)}
+.upload-processing{padding:8px 2px 6px}
+.upload-processing[hidden],.upload-processing-error[hidden]{display:none}
+.processing-title{color:#F2F5F7;text-align:center;font-size:16px;font-weight:700;line-height:28px}
+#processingPercent{display:inline-block;margin-left:4px;font-variant-numeric:tabular-nums;color:#B8C2CC;font-weight:650}
+.processing-progress{position:relative;width:100%;height:22px;margin:22px 0 5px}
+.processing-progress-line{position:absolute;left:0;right:0;top:10px;height:2px;border-radius:2px;background:#35414D;display:block}
+.processing-progress-line:before{content:"";position:absolute;left:0;top:0;width:var(--progress,0%);height:2px;border-radius:2px;background:#B8C2CC}
+.processing-progress-line i{position:absolute;left:var(--progress,0%);top:50%;width:10px;height:10px;margin:-4px 0 0 -5px;border-radius:50%;background:#F2F5F7;box-shadow:0 0 0 2px rgba(255,255,255,.08)}
+.processing-error-title{color:#F2F5F7;text-align:center;font-size:19px;font-weight:700;line-height:28px}
+.processing-error-message{margin-top:10px;color:#B8C2CC;text-align:center;font-size:15px;line-height:23px;word-break:break-word}
+.processing-retry-btn{display:block;width:100%;height:48px;min-height:48px;margin-top:20px;border:1px solid var(--zp-primary);border-radius:12px;background:var(--zp-primary);color:var(--zp-on-primary);font-size:15px;font-weight:650;-webkit-tap-highlight-color:transparent}
+.processing-retry-btn:active{background:#35414D;transform:scale(.985)}
+/* 等待期信息层：阶段文案 + 已用时，让"干等"变成"有进度可看" */
+.processing-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px}
+.processing-stage{min-width:0;overflow:hidden;color:#B8C2CC;text-align:left;font-size:14px;line-height:20px;text-overflow:ellipsis;white-space:nowrap}
+.processing-elapsed{flex:none;color:#7F8A95;font-size:13px;line-height:20px;font-variant-numeric:tabular-nums}
+.processing-cancel-btn{display:block;width:100%;min-height:var(--zp-control-height);margin-top:12px;border:1px solid #2A3540;border-radius:12px;background:rgba(10,14,19,.88);color:#B8C2CC;font-size:15px;font-weight:650;-webkit-tap-highlight-color:transparent}
+.processing-cancel-btn[hidden]{display:none}
+.processing-cancel-btn:active{background:rgba(20,28,37,.80);color:#F2F5F7}
+/* 停滞但存活：进度条叠加流动微光，表示"服务端仍在运行"而非卡死。
+   仅在收到心跳（证明连接存活）且久无新进度时启用，不伪造百分比。 */
+.processing-progress.is-stalled .processing-progress-line:before{
+  background:linear-gradient(90deg,#8F9BA7 0%,#F2F5F7 50%,#8F9BA7 100%);
+  background-size:200% 100%;
+  animation:zp-progress-flow 2.2s linear infinite;
+}
+@keyframes zp-progress-flow{from{background-position:200% 0}to{background-position:0 0}}
+@media(prefers-reduced-motion:reduce){
+  .processing-progress.is-stalled .processing-progress-line:before{animation:none}
+}
+.source-option:focus, .upload-cancel-btn:focus, .processing-retry-btn:focus, .processing-cancel-btn:focus{outline:none;box-shadow:none}
+.source-option:focus-visible, .upload-cancel-btn:focus-visible, .processing-retry-btn:focus-visible, .processing-cancel-btn:focus-visible{outline:2px solid rgba(255,255,255,.24);outline-offset:2px}
+@media(max-width:380px){
+ /* 左右内缩不再收紧到 12px：与全局 --zp-space-4 保持同一档，跨页一致 */
+ .task-card{margin-top:14px;padding:13px 14px 12px;border-radius:16px}
+ .task-title{font-size:20px;line-height:26px}
+ .task-date{font-size:16px;line-height:23px}
+ .today-summary strong{font-size:19px}.today-summary span{font-size:15px}
+ .delivery-man{width:64px;height:46px;opacity:.4;transform:translateY(8px)}
+ .upload-sheet{width:min(90vw,340px);padding:20px 17px 18px}
+ .source-menu-title{font-size:19px;margin-bottom:18px}
+ .source-menu-options{gap:7px}
+ .source-option{height:auto;min-height:62px}
+ .processing-title{font-size:17px}.processing-progress{margin-top:20px}
+ .processing-error-title{font-size:18px}.processing-error-message{font-size:13px}
+}
+
+/* 当前线路显示 */
+/* 菜单项直接以用户名作主标题：左对齐、与菜单文字同色，撑满剩余宽度，
+   超长省略号截断，不换行 */
+
+/* Final Android typography normalization: size/line-height only */
+.home-brand strong{font-size:20px;line-height:26px;letter-spacing:.5px}
+.home-brand span{font-size:12px;line-height:18px}
+.task-title{font-size:16.5px;line-height:22px}
+.task-date{font-size:15px;line-height:22px}
+.task-info{font-size:16px;line-height:23px}
+.today-summary strong{font-size:20px;line-height:27px}
+.today-summary span{font-size:16px;line-height:23px}
+.source-menu-title{font-size:18px;line-height:24px}
+.processing-title{font-size:18px;line-height:26px}
+.processing-error-title{font-size:18px;line-height:24px}
+.processing-error-message{font-size:16px;line-height:23px}
+.processing-retry-btn{font-size:16px;line-height:22px}
+
+/* 加载占位优化：菜单「当前线路」空值期间显示骨架微光条，替代「—」横线闪现 */
+
+/* 上传入口「文件」按钮副标题：明确此入口用于 PDF 运单，
+   避免与「拍摄/相册」的图片入口混淆 */
+.source-option small{font-size:10px;line-height:14px;color:#7F8A95;font-weight:500}
+
+/* 首页菜单轻入场：opacity + 轻微上移，弱化「Web Dropdown」观感 */
+

@@ -79,7 +79,7 @@ assert.ok(
   "滑动动作条 .history-delete 必须从全站普通按钮危险样式中显式排除（透视+圆角直角混绘）"
 );
 assert.ok(
-  fs.readFileSync(path.join(root, "css/history.css"), "utf8").includes(".history-delete{"),
+  fs.readFileSync(path.join(root, "css/history-shell.css"), "utf8").includes(".history-delete{"),
   "history.css 必须接管 .history-delete 专用样式"
 );
 assert.ok(unified.includes('button[class*="delete"]:not(.account-collapse-head):not(.history-delete):active'), "危险操作按钮缺少按压状态");

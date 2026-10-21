@@ -1,0 +1,87 @@
+/* 浅色外观适配：首页固定导航与菜单交互 */
+:root[data-zp-theme="light"] .bottom-nav{background:rgba(255,255,255,.96)!important;border-color:#D7DDE3!important;box-shadow:0 -4px 18px rgba(20,30,40,.06)}
+/* 人物推车插画（assets/delivery-route.png）为深色主题绘制：白描线 + 蓝定位点。
+   浅色主题下白线在浅灰背景上几乎不可见——反相使线条变深，
+   hue-rotate(180deg) 把反相后的补色色相转回，蓝点保持蓝色。 */
+:root[data-zp-theme="light"] .delivery-man{opacity:.55}
+:root[data-zp-theme="light"] .delivery-man img{filter:invert(1) hue-rotate(180deg) brightness(.92)}
+:root[data-zp-theme="light"] .bottom-nav-plus .bottom-nav-icon{box-shadow:0 8px 20px rgba(20,30,40,.22)}
+:root[data-zp-theme="light"] .bottom-nav-plus:active{background:transparent}
+:root[data-zp-theme="light"] .bottom-nav-item{color:#596674}
+:root[data-zp-theme="light"] .bottom-nav-item[aria-current="page"],
+:root[data-zp-theme="light"] .bottom-nav-item.active{color:#17202A!important}
+:root[data-zp-theme="light"] .bottom-nav-item:active{background:#E8EDF1!important;color:#17202A!important}
+
+/* 浅色外观适配补全：页面背景、品牌区、菜单、今日卡文字、功能按钮、
+   门店清单、月度统计卡与上传弹层（此前仅覆盖底部导航，页面主体仍是深色） */
+:root[data-zp-theme="light"] .home-app{background:var(--zp-bg)}
+:root[data-zp-theme="light"] .home-brand strong{color:var(--zp-text)}
+:root[data-zp-theme="light"] .home-brand span{color:#59636E}
+:root[data-zp-theme="light"] .home-brand span{color:#59636E}
+:root[data-zp-theme="light"] .menu-item-icon{color:var(--zp-muted)}
+:root[data-zp-theme="light"] .menu-divider{background:rgba(20,30,40,.10)}
+:root[data-zp-theme="light"] .task-card{box-shadow:0 8px 24px rgba(20,30,40,.08)}
+:root[data-zp-theme="light"] .task-date,
+:root[data-zp-theme="light"] .task-info,
+:root[data-zp-theme="light"] .today-store-index,
+:root[data-zp-theme="light"] .today-store-empty,
+:root[data-zp-theme="light"] .today-metrics span{color:var(--zp-soft)}
+:root[data-zp-theme="light"] .today-summary strong{color:var(--zp-text)}
+:root[data-zp-theme="light"] .today-summary span,
+:root[data-zp-theme="light"] .today-summary .sub-badge{color:var(--zp-muted)}
+:root[data-zp-theme="light"] .today-store-list,
+:root[data-zp-theme="light"] .today-metrics{border-top-color:rgba(20,30,40,.10)}
+:root[data-zp-theme="light"] .today-store-row{color:var(--zp-text);border-bottom-color:rgba(20,30,40,.08)}
+:root[data-zp-theme="light"] .today-store-row:active{background:#EDF1F5}
+:root[data-zp-theme="light"] .today-store-name{color:var(--zp-text)}
+:root[data-zp-theme="light"] .source-option:focus-visible, :root[data-zp-theme="light"] .upload-cancel-btn:focus-visible, :root[data-zp-theme="light"] .processing-retry-btn:focus-visible, :root[data-zp-theme="light"] .processing-cancel-btn:focus-visible{outline-color:rgba(23,32,42,.35)}
+
+/* 浅色：月度统计卡（Smart Trend）——曲线与坐标在白卡上需换深色墨水 */
+:root[data-zp-theme="light"] .trend-card{background:#FFFFFF;border-color:#D7DDE3}
+:root[data-zp-theme="light"] .trend-title{color:var(--zp-text)}
+:root[data-zp-theme="light"] .trend-year,
+:root[data-zp-theme="light"] .trend-metric-btn{background:#F0F2F4;border-color:#D7DDE3;color:var(--zp-muted)}
+:root[data-zp-theme="light"] .trend-year:active,
+:root[data-zp-theme="light"] .trend-year.is-active{background:#E1E7EC;color:var(--zp-text);border-color:#8793A0}
+:root[data-zp-theme="light"] .trend-metric-btn.is-active{background:var(--zp-primary);color:#FFFFFF;border-color:var(--zp-primary)}
+:root[data-zp-theme="light"] .trend-nav{color:var(--zp-muted)}
+:root[data-zp-theme="light"] .trend-nav:active{background:#E8EDF1;color:var(--zp-text)}
+:root[data-zp-theme="light"] .trend-month{color:#46515D}
+:root[data-zp-theme="light"] .trend-stat{color:var(--zp-muted)}
+:root[data-zp-theme="light"] .trend-stat b{color:var(--zp-text)}
+:root[data-zp-theme="light"] .trend-stat i{color:var(--zp-soft)}
+:root[data-zp-theme="light"] .trend-delta.is-up{color:#2E7D4F}
+:root[data-zp-theme="light"] .trend-delta.is-down{color:#B4472F}
+:root[data-zp-theme="light"] .trend-grid{stroke:#D7DDE3}
+:root[data-zp-theme="light"] .trend-area{fill:var(--zp-primary)}
+:root[data-zp-theme="light"] .trend-line{stroke:var(--zp-primary)}
+:root[data-zp-theme="light"] .trend-point{fill:#FFFFFF;stroke:var(--zp-primary)}
+:root[data-zp-theme="light"] .trend-point.is-peak{fill:var(--zp-primary);stroke:var(--zp-primary)}
+:root[data-zp-theme="light"] .trend-year-bar{fill:#B7C3CE}
+:root[data-zp-theme="light"] .trend-year-bar.is-peak{fill:var(--zp-primary)}
+:root[data-zp-theme="light"] .trend-axis{color:#66717D}
+:root[data-zp-theme="light"] .trend-hint{color:var(--zp-soft)}
+:root[data-zp-theme="light"] .trend-hint b{color:var(--zp-muted)}
+
+/* 浅色：上传来源弹层与识别处理态 */
+:root[data-zp-theme="light"] .upload-sheet{background:#FFFFFF;border-color:#D7DDE3;box-shadow:0 18px 46px rgba(20,30,40,.22)}
+:root[data-zp-theme="light"] .sheet-handle{background:rgba(20,30,40,.18)}
+:root[data-zp-theme="light"] .source-menu-title,
+:root[data-zp-theme="light"] .processing-title,
+:root[data-zp-theme="light"] .processing-error-title{color:var(--zp-text)}
+:root[data-zp-theme="light"] .source-option{background:#F0F2F4;border-color:#D7DDE3;color:var(--zp-text)}
+:root[data-zp-theme="light"] .source-option:active{background:#E8EDF1}
+:root[data-zp-theme="light"] .source-option small{color:var(--zp-soft)}
+:root[data-zp-theme="light"] .upload-cancel-btn{background:#F0F2F4;border-color:#D7DDE3;color:var(--zp-muted)}
+:root[data-zp-theme="light"] .upload-cancel-btn:active{background:#E8EDF1;color:var(--zp-text)}
+:root[data-zp-theme="light"] #processingPercent,
+:root[data-zp-theme="light"] .processing-error-message,
+:root[data-zp-theme="light"] .processing-stage{color:var(--zp-muted)}
+:root[data-zp-theme="light"] .processing-elapsed{color:var(--zp-soft)}
+:root[data-zp-theme="light"] .processing-progress-line{background:#D7DDE3}
+:root[data-zp-theme="light"] .processing-progress-line:before{background:#46515D}
+:root[data-zp-theme="light"] .processing-progress-line i{background:var(--zp-primary);box-shadow:0 0 0 2px rgba(20,30,40,.10)}
+:root[data-zp-theme="light"] .processing-retry-btn{background:var(--zp-primary);border-color:var(--zp-primary);color:#FFFFFF}
+:root[data-zp-theme="light"] .processing-retry-btn:active{background:#1D2A36}
+:root[data-zp-theme="light"] .processing-cancel-btn{background:#F0F2F4;border-color:#D7DDE3;color:var(--zp-muted)}
+:root[data-zp-theme="light"] .processing-cancel-btn:active{background:#E8EDF1;color:var(--zp-text)}

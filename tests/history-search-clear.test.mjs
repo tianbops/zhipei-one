@@ -6,7 +6,9 @@ const html = readFileSync(new URL("../pages/history.html", import.meta.url), "ut
 const HIST_DIR = new URL("../js/history/", import.meta.url);
 const source = ["core.js", "render.js", "data.js", "overlay.js"]
   .map((f) => readFileSync(new URL(f, HIST_DIR), "utf8")).join("\n");
-const css = readFileSync(new URL("../css/history.css", import.meta.url), "utf8");
+const HIST_CSS = new URL("../css/", import.meta.url);
+const css = ["history-shell.css", "history-list.css", "history-nav.css", "history-light.css", "history-overlays.css", "history-overlay-light.css"]
+  .map((f) => readFileSync(new URL(f, HIST_CSS), "utf8")).join("\n");
 
 // 历史页不再提供关键词搜索、搜索时间范围或搜索提交入口。
 assert.doesNotMatch(html, /historySearchForm|historySearchInput|historySearchMonths|historySearchState|historySearchResults|搜索姓名、电话、地址、运单号或门店|近3个月/);
@@ -16,7 +18,10 @@ assert.doesNotMatch(css, /\.history-search(?:\b|-)/);
 // 非搜索历史功能必须保留。
 assert.match(html, /id="historyList"/);
 assert.match(html, /id="historyPickerBtn" class="zp-btn zp-btn--secondary history-date-button"/);
-assert.ok(html.includes('href="/css/history.css?v='), "历史页样式表必须有版本参数");
+const CSS_ORDER = ["history-shell", "history-list", "history-nav", "history-light", "history-overlays", "history-overlay-light"];
+const histCssLinks = [...html.matchAll(/\/css\/(history-[a-z-]+)\.css\?v=[0-9a-f]+/g)].map((m) => m[1]);
+assert.deepStrictEqual(histCssLinks, CSS_ORDER,
+  `历史页 CSS 组件引用顺序必须是 ${CSS_ORDER.join("→")}（实际 ${histCssLinks.join("→")}）`);
 assert.match(css, /\.history-date-button\s*\{[^}]*min-height:\s*48px/s);
 assert.doesNotMatch(css.slice(css.lastIndexOf("/* 日期选择：沿用全站次级按钮风格")), /(?:^|[;{])\s*(?:background|border|border-radius|color)\s*:/m);
 assert.match(html, /id="historyLookupBtn"/);

@@ -1,0 +1,173 @@
+/* UI 2.3：历史查询成熟 Android 列表布局
+   目标：减少“卡片套卡片”，强化月份层级，日期使用轻量列表行。
+   仅调整视觉与触控区域，不改变历史查询业务逻辑。 */
+/* 板块宽度对齐全局：全局间距 token 为 --zp-space-4（16px），线路页 .dispatch-page
+   即用 16px。历史页此前是满宽贴边（内缩 0），与各页不一致；此处统一到 16px。
+   用 main.history-shell（0,1,1）与 main.zp-shell 同特异性，靠后加载胜出，
+   且不受 ui-unified 中 main.zp-shell 的 padding-top/bottom:0 影响。
+   注意：板块自身不再重复缩进（见下方 .history-actions 等归零），否则会变成 16+16。 */
+main.history-shell{
+  padding-left:var(--zp-space-4,16px);
+  padding-right:var(--zp-space-4,16px);
+}
+.history-shell{
+  padding-top:8px;
+  padding-bottom:0;
+}
+.history-shell .topbar{margin-bottom:8px;z-index:100;background:var(--zp-bg)}
+.history-card{
+  padding:0;
+  background:transparent;
+  border:0;
+  border-radius:0;
+  overflow:visible;
+}
+/* 工具栏语义按钮 · 浅色覆盖（P0-3） */
+/* 浅色主题 .card 通配规则（白底+阴影）会盖过 .history-card 的透明背景，
+   导致历史查询页顶部出现一块带阴影的白色方块。此处显式压回无卡片样式。 */
+:root[data-zp-theme="light"] .history-card{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important}
+:root[data-zp-theme="light"] .zp-btn--secondary{background:rgba(0,0,0,.04);color:var(--zp-text);border-color:var(--zp-line)}
+/* 左右缩进统一交给 main.history-shell，浅色不再另加 8px（会与全局错位） */
+:root[data-zp-theme="light"] .history-divider{border-top-color:var(--zp-divider)}
+.history-state{
+  min-height:20px;
+  padding:18px 0;
+  color:#7F8A95;
+  font-size:14px;
+  line-height:20px;
+}
+.history-list{
+  width:100%;
+  border:1px solid rgba(255,255,255,.075);
+  border-radius:17px;
+  overflow:hidden;
+  background:rgba(13,18,24,.82);
+}
+.history-month{
+  background:rgba(13,18,24,.82);
+  border-bottom:1px solid rgba(255,255,255,.075);
+}
+.history-month:last-child{
+  border-bottom:0;
+}
+.history-month-main{
+  min-height:58px;
+  padding:0 16px;
+  background:rgba(20,28,37,.80);
+}
+.history-month-main span{
+  font-size:17px;
+  line-height:24px;
+  font-weight:650;
+  letter-spacing:.1px;
+}
+.history-month-main small{
+  margin-left:auto;
+  padding-right:4px;
+  color:#9AA5AF;
+  font-size:14px;
+  line-height:20px;
+  font-weight:450;
+}
+.history-month-main::after{
+  width:7px;
+  height:7px;
+  margin-left:12px;
+}
+.history-month.expanded .history-month-main{
+  border-bottom:1px solid rgba(255,255,255,.065);
+}
+.history-month-body{
+  display:none;
+  background:rgba(10,14,19,.88);
+}
+.history-month.expanded .history-month-body{
+  display:block;
+}
+/* 列表行分隔线统一到 --zp-divider（.055 → .06）。
+   注意本文件里 .history-month / .history-month-body 那几条 .055 / .065 / .07 / .075
+   刻意没动：它们是「月份分组容器」的内部分隔，不是列表行的行分隔线，
+   语义不同 —— 顺手统一会让分组边界和行边界看起来一样重，反而丢掉层级。 */
+.history-swipe-row{
+  background:rgba(10,14,19,.88);
+  border-bottom:1px solid var(--zp-divider);
+}
+.history-month-body .history-swipe-row:last-child{
+  border-bottom:0;
+}
+.history-row-surface{
+  min-height:54px;
+  background:#0A0E13;
+}
+.history-month-body .history-row-surface{
+  background:#0A0E13;
+}
+.history-date-main{
+  min-height:54px;
+  padding:0 16px 0 32px;
+  background:transparent;
+}
+.history-date-main span{
+  color:#E8EDF2;
+  font-size:16px;
+  line-height:22px;
+  font-weight:500;
+}
+.history-date-main small{
+  margin-left:auto;
+  color:#9AA5AF;
+  font-size:14px;
+  line-height:20px;
+  font-weight:450;
+}
+.history-date-main:active,
+.history-month-main:active{
+  background:rgba(26,38,46,.82);
+}
+.history-count-highlight{
+  color:#fff;
+  font-size:14px;
+  line-height:20px;
+  font-weight:750;
+}
+.history-delete{
+  width:84px;
+  background:linear-gradient(180deg,#D9534B,#B93B32);
+  color:#fff;
+  font-size:12px;
+  line-height:16px;
+  font-weight:600;
+  letter-spacing:1px;
+}
+.history-swipe-row.swiped .history-row-surface{
+  transform:translate3d(-84px,0,0);
+}
+
+/* 月份之间增加清晰但克制的呼吸感 */
+.history-month + .history-month{
+  border-top:6px solid #05070A;
+}
+
+/* 日历/确认弹窗保持与全局 Android 2.0 视觉一致 */
+.history-picker-panel,
+.history-dialog-panel{
+  border-radius:18px;
+}
+.history-picker-close,
+.history-dialog-actions button{
+  font-size:16px;
+  line-height:22px;
+}
+
+@media(max-width:380px){
+  .history-month-main{padding-left:14px;padding-right:14px}
+  .history-date-main{padding-left:28px;padding-right:14px}
+  .history-month-main span{font-size:16px}
+  .history-month-main small,
+  .history-date-main small{font-size:13px}
+  .history-delete{width:80px}
+  .history-swipe-row.swiped .history-row-surface{
+    transform:translate3d(-80px,0,0);
+  }
+}
+
