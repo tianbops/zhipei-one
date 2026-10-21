@@ -205,6 +205,7 @@
     </button>
   </div>
   <div id="usernameBody" class="acct-body" hidden>
+    <label class="page2-label">当前密码<input id="renamePassword" type="password" autocomplete="current-password" placeholder="验证身份后修改"></label>
     <label class="page2-label">新用户名<input id="newUsername" type="text" autocomplete="username" maxlength="32" placeholder="字母、数字、_-.，3-32位"></label>
     <p class="page2-soft">修改后需重新登录。</p>
     <button id="renameBtn" class="page2-primary" type="button">保存用户名</button>
@@ -410,12 +411,13 @@ async function load(){
 }
 
 $("renameBtn").onclick=async()=>{
- const username=$("newUsername").value.trim();
+ const password=$("renamePassword").value,username=$("newUsername").value.trim();
+ if(!password){$("renameMessage").textContent="请输入当前密码验证身份";return}
  if(!username){$("renameMessage").textContent="请输入新用户名";return}
  if(!/^[-A-Za-z0-9_.]{3,32}$/.test(username)){$("renameMessage").textContent="用户名需为3-32位字母、数字、下划线、短横线或点";return}
  $("renameBtn").disabled=true;$("renameMessage").textContent="保存中…";
  try{
-  await api("/api/account-settings",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"rename",username})});
+  await api("/api/account-settings",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"rename",username,password})});
   $("renameMessage").textContent="用户名已修改，正在退出登录…";
   await reauthLogout();
  }catch(e){show("renameMessage",e);$("renameBtn").disabled=false}
