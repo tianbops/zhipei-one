@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------
  * 运行：node tests/unit-retry-action.test.mjs
  *
- * 实现方式：直接截取 js/home.js 中 [RETRY-MAP-START]..[RETRY-MAP-END] 之间的
+ * 实现方式：直接截取 js/home/upload-error.js 中 [RETRY-MAP-START]..[RETRY-MAP-END] 之间的
  * 真实源码（retryActionInfo + RETRY_ACTION_INFO），以 new Function 求值后断言，
  * 因此修改源文件后本测试自动跟随，不会出现「测试通过但线上不是这个行为」的情况。
  * 与后端 process.js 的 failProcess 信封（action/recoverable）对齐。
@@ -11,7 +11,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-const SRC = readFileSync(fileURLToPath(new URL("../js/home.js", import.meta.url)), "utf8");
+const SRC = readFileSync(fileURLToPath(new URL("../js/home/upload-error.js", import.meta.url)), "utf8");
 const START = "/* [RETRY-MAP-START]";
 const END = "[RETRY-MAP-END] */";
 const i = SRC.indexOf(START);

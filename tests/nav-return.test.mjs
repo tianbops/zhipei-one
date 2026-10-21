@@ -251,7 +251,7 @@ const DISPATCH_SRC = readFileSync(fileURLToPath(new URL("../pages/dispatch.html"
 
 
 /* ---------- 切片四：首页上传与历史页返回层级 ---------- */
-const HOME_SRC = readFileSync(fileURLToPath(new URL("../js/home.js", import.meta.url)), "utf8");
+const HOME_SRC = readFileSync(fileURLToPath(new URL("../js/home/back.js", import.meta.url)), "utf8");
 const HISTORY_SRC = readFileSync(fileURLToPath(new URL("../js/history.js", import.meta.url)), "utf8");
 {
   const homeStart = HOME_SRC.indexOf("// 这里只注册本页返回层级：上传 Bottom Sheet");

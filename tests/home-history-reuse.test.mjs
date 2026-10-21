@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 
-const home = readFileSync(new URL("../js/home.js", import.meta.url), "utf8");
+const home = readFileSync(new URL("../js/home/today.js", import.meta.url), "utf8");
 const monthly = readFileSync(new URL("../js/home-monthly.js", import.meta.url), "utf8");
 
 // The monthly-statistics request is the shared source for the final home fallback.
