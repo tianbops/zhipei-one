@@ -70,8 +70,8 @@
 </table>
 
 <h2 id="copy">三、注入脚本（点按钮复制，粘贴到真机 DevTools Console）</h2>
-<button class="btn" onclick="copyInject()">复制注入脚本</button>
-<button class="btn" onclick="showInject()">显示/隐藏脚本</button>
+<button class="btn" id="btnCopyInject">复制注入脚本</button>
+<button class="btn" id="btnShowInject">显示/隐藏脚本</button>
 <pre id="injectBox" style="display:none"></pre>
 
 <script id="inject">
@@ -148,6 +148,8 @@
     else { var ta=document.createElement('textarea'); ta.value=src; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); alert('已复制'); }
   }
   function showInject(){ var b=document.getElementById('injectBox'); b.style.display = b.style.display==='none'?'block':'none'; b.textContent = src; }
+  document.getElementById('btnCopyInject').addEventListener('click', copyInject);
+  document.getElementById('btnShowInject').addEventListener('click', showInject);
 </script>
 </body>
 </html>

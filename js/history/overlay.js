@@ -6,7 +6,7 @@ const toast=m=>{try{window.zpToast&&window.zpToast(m,"success")}catch(e){}};
 function closeOverlay(){overlay.hidden=true;overlayPanel.innerHTML=""}
 overlay.addEventListener("click",e=>{if(e.target===overlay)closeOverlay()});
 // 删除成功后提示已入回收站
-confirmBtn.onclick=async()=>{if(!pendingDelete)return;const job=pendingDelete;confirmBtn.disabled=true;confirmBtn.textContent="删除中…";try{if(job.type==="date")await deleteDate(job.key);else await deleteMonth(job.key);closeDialog();toast("已移入回收站，7天内可在回收站恢复");await load()}catch(e){confirmBtn.disabled=false;confirmBtn.textContent="确定";dialogText.textContent=e.message||"删除失败，请稍后重试"}};
+confirmBtn.onclick=async()=>{if(!pendingDelete)return;const job=pendingDelete;confirmBtn.disabled=true;confirmBtn.textContent="删除中…";try{if(job.type==="date")await deleteDate(job.key);else await deleteMonth(job.key);closeDialog();toast("已移入回收站，7天内可在回收站恢复");await load()}catch(e){confirmBtn.disabled=false;confirmBtn.textContent="确定";if(e?.offlineQueued){closeDialog();toast(e.message||"已登记，联网后自动删除")}else{dialogText.textContent=e.message||"删除失败，请稍后重试"}}};
 // 回收站
 async function renderTrash(){
   const r=await zpFetch("/api/history-trash",{credentials:"same-origin",cache:"no-store"});

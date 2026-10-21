@@ -64,3 +64,37 @@ script-src 'self' 'sha256-AbCd...=' 'sha256-EfGh...=' ...
 - 纠正 `functions/api/_json.js` 中过时的「data.html 24 处内联事件属性」注释，
   改为「34 个内联 `<script>` 块；去 unsafe-inline 走 hash-based，见 docs/CSP-hardening.md」。
 - CSP 维持现状，`tests/security-headers.test.mjs` 继续守护双处一致。
+
+---
+
+## 六、P1-7b 已落地（hash-based 灰度，2026-10-22）
+
+按第四节建议顺序执行完毕：
+
+1. **生成器**：`scripts/csp-hashes.mjs`（`npm run csp:hashes`）。扫描全仓库
+   21 个 HTML，抽取可执行内联 `<script>` 块（跳过 `src=` 与 `application/json`
+   等数据岛 type），逐段 sha256-base64，产出 **18 段唯一哈希**（42 块去重——
+   多页共享同一段主题引导脚本），写入 `functions/api/_csp-hashes.js`，
+   并用**同一组装函数**重写 `_headers` 的 CSP 行（单一真源）。
+2. **API 侧**：`functions/api/_json.js` 运行时 `import {cspWithInlineHashes}`
+   组装（`_headers` 对 Pages Functions 无效，故必须双边发）。
+3. **灰度形态**：`script-src 'self' 'unsafe-inline' <18 hashes>`。
+   CSP3 浏览器见 hash 即忽略 `'unsafe-inline'`（只放行哈希命中块）；
+   旧浏览器不识 hash、回退 `'unsafe-inline'`——无版本切换风险。
+4. **前置清理**：`tools/android-e2e-{helper,launcher}.html` 的 5 处内联事件
+   属性已改 `addEventListener`（hash 生效后内联属性会被拦停）；全仓库复检
+   0 处内联事件属性、0 处 `javascript:` URL、0 处 `eval(`/`new Function(`。
+5. **守卫**：`tests/csp-hashes.test.mjs`（并入 `test:node`）钉死四件事——
+   ① `--check` 漂移（HTML 变了没重跑即红）；② `_headers` CSP 行 ≡
+   `_csp-hashes.js` 表 ≡ `_json.js` 运行时值；③ 灰度形态（unsafe-inline
+   回退 + 全部 hash 在场）；④ 防回归（禁内联事件属性 / 禁 eval）。
+   与 `tests/security-headers.test.mjs` 双保险。
+
+### 纪律（后续改 HTML 必读）
+
+- **改任何 HTML 的内联 `<script>` 后必须重跑** `npm run csp:hashes`，
+  否则现代浏览器会拦截未列入哈希的内联脚本——表现为页面功能**静默失效**
+  （主题不生效、boot 不跑），且 `'unsafe-inline'` 仍在头里、极易误判。
+- 新增页面若含内联脚本，同样要走生成器；`--check` 会在 CI 拦下漏跑。
+- 彻底移除 `'unsafe-inline'`（script-src）的前置条件：内联 `style=` 属性
+  清零（当前 `style-src 'unsafe-inline'` 仍需要），属独立任务。

@@ -45,9 +45,9 @@
 <h2>一、目标页</h2>
 <input id="target" placeholder="留空=本页同域首页；或填完整同域 URL，如 https://zp.xxx.com/">
 <div>
-  <button class="btn" onclick="launch()">打开并注入</button>
-  <button class="btn" onclick="setHome()">填首页/</button>
-  <button class="btn" onclick="setAdmin()">填管理员/admin</button>
+  <button class="btn" id="btnLaunch">打开并注入</button>
+  <button class="btn" id="btnSetHome">填首页/</button>
+  <button class="btn" id="btnSetAdmin">填管理员/admin</button>
 </div>
 <div id="log">就绪。点「打开并注入」后，新开的 app 标签页左上角应出现绿色面板。</div>
 
@@ -152,6 +152,9 @@
     w.addEventListener('load', function(){ setTimeout(tryInject, 400); });
     setTimeout(tryInject, 700);
   }
+  document.getElementById('btnLaunch').addEventListener('click', launch);
+  document.getElementById('btnSetHome').addEventListener('click', setHome);
+  document.getElementById('btnSetAdmin').addEventListener('click', setAdmin);
 </script>
 </body>
 </html>

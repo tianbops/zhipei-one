@@ -19,13 +19,22 @@
  * script-src）；nonce 化在 CF Pages 静态托管下不可行（无逐请求 HTML 生成）。完整评估与
  * 迁移方案见 docs/CSP-hardening.md（P1-7）。style-src 的 'unsafe-inline' 因内联 style=
  * 属性仍存在，暂保留。
+ *
+ * P1-7b（hash-based 灰度，已落地）：内联脚本哈希表由 scripts/csp-hashes.mjs 从全部
+ * HTML 实算生成（functions/api/_csp-hashes.js），script-src 以「'unsafe-inline' + 全部
+ * hash」形式灰度——CSP3 浏览器见 hash 即忽略 'unsafe-inline'（只放行哈希命中块），
+ * 旧浏览器回退 'unsafe-inline'。_headers 的 CSP 行由同一生成器写入，两边一致性由
+ * tests/security-headers.test.mjs + tests/csp-hashes.test.mjs 双守卫钉死。
+ * ⚠ 改任何 HTML 的内联脚本后必须重跑 node scripts/csp-hashes.mjs，否则现代浏览器
+ * 会拦截未列入哈希的内联脚本（表现为页面功能静默失效）。
  */
+import {cspWithInlineHashes} from "./_csp-hashes.js";
 export const SECURITY_HEADERS={
  "x-content-type-options":"nosniff",
  "referrer-policy":"strict-origin-when-cross-origin",
  "x-frame-options":"DENY",
  "permissions-policy":"geolocation=(self), camera=(self), microphone=(), payment=(), usb=()",
- "content-security-policy":"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
+ "content-security-policy":cspWithInlineHashes("default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"),
  "strict-transport-security":"max-age=31536000"
 };
 /** 合并到已有 Headers 上（不覆盖业务自定义的头，如 set-cookie） */
