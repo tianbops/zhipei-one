@@ -2,7 +2,10 @@ import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 
 const html = readFileSync(new URL("../pages/history.html", import.meta.url), "utf8");
-const source = readFileSync(new URL("../js/history.js", import.meta.url), "utf8");
+// history.js 已拆分为 js/history/ 四模块（core→render→data→overlay），按序拼接后断言（与线上加载顺序一致）
+const HIST_DIR = new URL("../js/history/", import.meta.url);
+const source = ["core.js", "render.js", "data.js", "overlay.js"]
+  .map((f) => readFileSync(new URL(f, HIST_DIR), "utf8")).join("\n");
 const css = readFileSync(new URL("../css/history.css", import.meta.url), "utf8");
 
 // 历史页不再提供关键词搜索、搜索时间范围或搜索提交入口。

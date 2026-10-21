@@ -252,7 +252,10 @@ const DISPATCH_SRC = readFileSync(fileURLToPath(new URL("../pages/dispatch.html"
 
 /* ---------- 切片四：首页上传与历史页返回层级 ---------- */
 const HOME_SRC = readFileSync(fileURLToPath(new URL("../js/home/back.js", import.meta.url)), "utf8");
-const HISTORY_SRC = readFileSync(fileURLToPath(new URL("../js/history.js", import.meta.url)), "utf8");
+// history.js 已拆分为 js/history/ 四模块（core→render→data→overlay），按加载顺序拼接后切片断言
+const HIST_DIR = new URL("../js/history/", import.meta.url);
+const HISTORY_SRC = ["core.js", "render.js", "data.js", "overlay.js"]
+  .map((f) => readFileSync(fileURLToPath(new URL(f, HIST_DIR)), "utf8")).join("\n");
 {
   const homeStart = HOME_SRC.indexOf("// 这里只注册本页返回层级：上传 Bottom Sheet");
   const homeEnd = HOME_SRC.indexOf(");", homeStart);
