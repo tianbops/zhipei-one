@@ -1,0 +1,188 @@
+/* css/admin-forms.css —— 表单与抽屉：密码框/用户名框、字段提示、系统设置菜单、弹窗变体
+ * 拆分自 admin.html（原内联 <style> 第 2 段），规则顺序原样保留，层叠结果不变。
+ */
+/* 管理员密码输入框 3.4：强化输入区域、焦点状态与密码显隐操作。 */
+.reset-password-field{margin-top:16px}
+.reset-password-field>label{display:block;margin:0 0 8px;color:#DCE3E9;font-size:14px;line-height:20px;font-weight:600}
+.reset-password-control{position:relative;display:flex;align-items:center;min-height:52px;border:1px solid #3A4652;border-radius:12px;background:#0D1217;transition:border-color .16s ease,box-shadow .16s ease}
+.reset-password-control:focus-within{border-color:#778795;box-shadow:0 0 0 3px rgba(184,194,204,.10)}
+.reset-password-control input{flex:1;min-width:0;width:100%;height:50px!important;padding:0 10px 0 14px!important;border:0!important;border-radius:12px;background:transparent!important;color:#F5F7F9;font-size:16px;line-height:22px;letter-spacing:.02em;outline:none!important;box-shadow:none!important}
+.reset-password-control input::placeholder{color:#75818C;letter-spacing:0}
+.reset-password-control button{flex:0 0 auto;min-width:54px;height:36px;margin:0 7px;padding:0 9px;border:1px solid #35414D;border-radius:9px;background:#18212B;color:#D5DCE2;font-size:13px;line-height:20px;font-weight:600}
+.reset-password-control button:active{background:#26313C}
+.field-hint{margin-top:7px;color:#85919C;font-size:12px;line-height:18px}
+@media(max-width:380px){.reset-password-control input{font-size:16px}.reset-password-control button{min-width:50px;margin-right:6px}}
+/* 管理员用户管理 3.1：搜索图标置于输入框右侧；用户信息左右对齐。 */
+.search{position:relative;display:block}
+.search>span{position:absolute;right:12px;top:50%;z-index:2;transform:translateY(-50%);margin:0;color:var(--soft);font-size:20px;line-height:1;pointer-events:none}
+.search input{width:100%;padding-left:12px;padding-right:42px}
+#users .row .content{align-items:center}
+#users .row .main{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-width:0}
+#users .row .main strong{flex:1;min-width:0}
+#users .row .main .meta{flex:0 0 auto;white-space:nowrap;text-align:right}
+#users .row .arrow{display:none!important}#users .row .content{padding-right:13px}
+/* 左滑操作：删除动作始终位于内容层后方，仅在左滑露出。 */
+#routes .route{overflow:hidden}
+#routes .route-delete{right:-74px;top:0;height:100%;min-height:54px;margin:0;padding:0;width:74px;border:0;border-radius:0;background:#4A2528;color:#FFD5D1;z-index:1;pointer-events:none}
+#routes .route-content{position:relative;z-index:2;background:var(--card);transform:translateX(0)}
+#routes .route.open .route-content{transform:translateX(-74px)}
+#routes .route.open .route-delete{pointer-events:auto}
+/* 管理员用户/线路左滑 3.2：移除无意义箭头；线路删除按钮仅在左滑后露出。 */
+#users .row .arrow{display:none!important}
+#routes .route{position:relative;overflow:hidden}
+#routes .route-delete{
+  right:-74px!important;top:0!important;bottom:0!important;
+  width:74px!important;height:100%!important;min-height:54px!important;
+  margin:0!important;padding:0!important;border:0!important;border-radius:0!important;
+  background:#4A2528!important;color:#FFD5D1!important;z-index:1!important;
+  pointer-events:none!important;transition:none!important
+}
+#routes .route-content{
+  position:relative;z-index:2;background:var(--card);
+  transform:translateX(0)!important;transition:transform .18s ease
+}
+#routes .route.open .route-content{transform:translateX(-74px)!important}
+#routes .route.open .route-delete{right:0!important;pointer-events:auto!important}
+#routes .route .person .small-action{z-index:3}
+/* 线路左滑删除 4.0：线路行独立手势层，避免管理员分页横滑控制器抢占触摸事件。 */
+#routes .route{
+  touch-action:pan-y;
+  -webkit-user-select:none;
+  user-select:none;
+}
+#routes .route-content{will-change:transform}
+#routes .route-delete{
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+}
+
+/* 管理员系统菜单 3.4：保持右上锚定浮层外观，但遮罩层必须可接收点击 ——
+   此前 pointer-events:none 让整层对点击穿透，"点空白收起"的监听永远
+   收不到事件（2026-10-04 修复）。外观仍为全透明，不加暗色遮罩。 */
+.menu-bg{
+  position:fixed!important;inset:0!important;z-index:var(--ui-z-modal-stack,1100)!important;
+  display:block!important;padding:0!important;
+  background:transparent!important;backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  cursor:default
+}
+.menu-bg[hidden]{display:none!important}
+.menu-bg>.dialog{
+  position:fixed;top:calc(env(safe-area-inset-top) + 62px);
+  right:max(12px,calc((100vw - 680px)/2 + 14px));
+  width:208px!important;max-height:min(72dvh,560px);
+  overflow:auto;padding:6px!important;
+  border:1px solid #2A3540!important;border-radius:12px!important;
+  background:#18212B!important;
+  box-shadow:0 10px 24px rgba(0,0,0,.3)!important;
+  animation:admin-menu-in .14s ease-out;
+  pointer-events:auto
+}
+/* 菜单项：与用户端三横菜单同款（css/home.css）——图标+文字行、无标题无箭头、
+   退出登录前有分隔线、退出项红色 */
+.menu-bg .setting{
+  display:flex;align-items:center;gap:11px;width:100%;
+  min-height:48px;padding:0 12px!important;
+  border:0!important;border-radius:11px;
+  color:#D5DCE2;font-size:14px;line-height:20px;font-weight:600;
+  background:transparent;text-align:left;cursor:pointer
+}
+.menu-bg .setting:active{background:#26313C;transform:scale(.985)}
+.menu-bg .menu-item-icon{width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;color:#B8C2CC}
+.menu-bg .menu-item-icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.menu-bg .setting>span:last-child,.menu-bg .menu-username{min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.menu-bg .menu-username{color:inherit}
+.menu-bg .menu-divider{height:1px;margin:5px 7px;background:rgba(255,255,255,.07)}
+.menu-bg #logout{color:#FF8278}
+.menu-bg #logout .menu-item-icon{color:#FF8278}
+@keyframes admin-menu-in{
+  from{opacity:0;transform:translateY(-5px) scale(.985)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+@media(max-width:380px){
+  .menu-bg>.dialog{right:12px;width:min(220px,calc(100vw - 24px))!important}
+}
+
+/* 管理员密码弹窗 3.5：紧凑居中布局与统一小眼睛控件。 */
+.dialog.password-dialog{width:min(100%,390px);padding:22px 20px 18px;border-radius:19px}
+.dialog.password-dialog h2{font-size:19px;line-height:26px}
+.dialog.password-dialog p{margin-top:5px;font-size:15px;line-height:22px}
+.dialog.password-dialog .dialog-actions{margin-top:20px;gap:10px}
+.dialog.password-dialog .dialog-actions button{height:48px;font-size:16px;line-height:22px}
+.zp-password-control{position:relative;display:flex;align-items:center;width:100%;min-height:48px;border:1px solid #35414D;border-radius:11px;background:#0D1217;transition:border-color .16s ease,box-shadow .16s ease}
+.zp-password-control:focus-within{border-color:#778795;box-shadow:0 0 0 3px rgba(184,194,204,.10)}
+.zp-password-control input[type="password"],.zp-password-control input[type="text"]{display:block;flex:1;min-width:0;width:100%;height:48px!important;margin:0!important;padding:0 48px 0 12px!important;border:0!important;border-radius:10px!important;background:transparent!important;color:#F5F7F9;font-size:16px;line-height:22px;outline:none!important;box-shadow:none!important}
+.zp-password-control input::placeholder{color:#75818C}
+.zp-password-eye{position:absolute;right:4px;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:38px;height:38px;padding:0;border:0;border-radius:9px;background:transparent;color:#8F9BA7;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.zp-password-eye svg{display:block;width:19px;height:19px;pointer-events:none}
+.zp-password-eye:active{background:#26313C;color:#E8EDF2}
+.zp-password-eye[hidden]{display:none!important}
+@media(max-width:380px){.dialog.password-dialog{padding:20px 16px 16px}.zp-password-eye{right:3px;width:36px;height:36px}}
+
+/* 管理员用户名弹窗 3.7：标题与重新登录提示同排，字段标签与输入提示分层。 */
+.dialog.username-dialog{width:min(100%,390px);padding:22px 20px 18px;border-radius:19px}
+.dialog.username-dialog h2{font-size:18px;line-height:24px;flex:0 0 auto}
+.dialog.username-dialog p{margin:0 0 0 auto;color:#8F9BA7;font-size:11px;line-height:16px;white-space:nowrap;text-align:right}
+.dialog.username-dialog #db{margin-top:18px}
+.dialog.username-dialog .dialog-actions{margin-top:20px;gap:10px}
+.dialog.username-dialog .dialog-actions button{height:48px;font-size:16px;line-height:22px}
+.dialog:not(.password-dialog) .username-field{margin-top:0}
+.username-field>label{display:block;margin:0 0 8px;color:#DCE3E9;font-size:14px;line-height:20px;font-weight:600}
+.username-control{display:flex;align-items:center;min-height:52px;border:1px solid #3A4652;border-radius:12px;background:#0D1217;transition:border-color .16s ease,box-shadow .16s ease}
+.username-control:focus-within{border-color:#778795;box-shadow:0 0 0 3px rgba(184,194,204,.10)}
+.username-control input{display:block;flex:1;min-width:0;width:100%;height:50px!important;margin:0!important;padding:0 14px!important;border:0!important;border-radius:12px;background:transparent!important;color:#F5F7F9;font-size:16px;line-height:22px;letter-spacing:.01em;outline:none!important;box-shadow:none!important}
+.username-control input::placeholder{color:#75818C;letter-spacing:0}
+.username-field .field-hint{margin-top:8px}
+
+/* 管理员用户管理 3.7：左滑已表达操作方向，禁止用户行末尾出现装饰箭头。 */
+#users .row .arrow,#users .row .content::after,#users .row .main::after{display:none!important;content:none!important}
+#users .row .content{padding-left:13px!important;padding-right:13px!important}
+#users .row .main{width:100%;margin:0;justify-content:space-between}
+#users .row .main strong{flex:1 1 auto;min-width:0;text-align:left}
+#users .row .main .meta{flex:0 0 auto;margin-left:12px;text-align:right}
+
+/* 管理员用户名弹窗 3.9：统一弹窗内垂直节奏，拉开说明、字段标签和输入框的距离。 */
+.dialog.username-dialog{
+  padding:22px 20px 20px;
+}
+.dialog.username-dialog h2{
+  margin:0!important;
+  font-size:19px;
+  line-height:26px;
+}
+.dialog.username-dialog p{
+  display:block;
+  margin:7px 0 0!important;
+  color:var(--muted);
+  font-size:14px;
+  line-height:21px;
+  white-space:normal;
+  text-align:left;
+}
+.dialog.username-dialog #db{
+  margin-top:20px!important;
+}
+.dialog.username-dialog .username-field{
+  margin-top:0!important;
+}
+.dialog.username-dialog .username-field>label{
+  margin-bottom:9px;
+  font-size:14px;
+  line-height:20px;
+}
+.dialog.username-dialog .username-control{
+  min-height:52px;
+}
+.dialog.username-dialog .dialog-actions{
+  margin-top:22px!important;
+  gap:10px;
+}
+.dialog.username-dialog .dialog-actions button{
+  height:48px;
+}
+#users .row .arrow{display:none!important}
+@media(max-width:380px){
+  .dialog.username-dialog{padding:20px 16px 18px}
+  .dialog.username-dialog #db{margin-top:18px!important}
+  .dialog.username-dialog .dialog-actions{margin-top:20px!important}
+}

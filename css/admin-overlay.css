@@ -1,0 +1,65 @@
+/* css/admin-overlay.css —— 覆盖层：居中确认模态 zp-confirm 与用户行细节
+ * 拆分自 admin.html（原内联 <style> 第 3 段），规则顺序原样保留，层叠结果不变。
+ */
+/* 管理员页面与全局 UI 统一层：左滑用户行不显示多余方向箭头。 */
+#users .row .arrow,
+#users .row .content::after,
+#users .row .main::after{
+  display:none!important;
+  content:none!important;
+}
+
+/* 管理员退出确认：补齐全局 zpConfirm 在独立 admin 页面所需的居中模态样式。 */
+#zpUiLayer{position:relative;z-index:var(--ui-z-modal-top,1200)}
+#zpUiLayer .zp-confirm{
+  position:fixed;inset:0;z-index:var(--ui-z-modal-top,1200);
+  display:flex;align-items:center;justify-content:center;
+  padding:18px;
+  background:rgba(0,0,0,.58);
+}
+#zpUiLayer .zp-confirm[hidden]{display:none!important}
+#zpUiLayer .zp-confirm-panel{
+  width:min(100%,360px);max-height:min(88dvh,760px);overflow:auto;
+  margin:0 auto;padding:22px 20px 18px;
+  border:1px solid #2A3540;border-radius:18px;
+  background:#18212B;color:#fff;
+  box-shadow:0 18px 50px rgba(0,0,0,.45);
+}
+#zpUiLayer .zp-confirm-panel h3{
+  margin:0;color:#fff;font-size:18px;line-height:24px;font-weight:650;
+}
+#zpUiLayer .zp-confirm-panel p{
+  margin:8px 0 0;color:#B8C2CC;font-size:15px;line-height:22px;
+  white-space:normal;word-break:break-word;
+}
+#zpUiLayer .zp-confirm-actions{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px;
+}
+#zpUiLayer .zp-confirm-actions button{
+  min-width:0;min-height:48px;padding:0 10px;
+  border:1px solid #35404C;border-radius:11px;
+  background:#11171D;color:#E8EDF2;
+  font:600 16px/22px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+#zpUiLayer .zp-confirm-actions button:last-child{
+  border-color:#3A4652;background:#202B36;color:#fff;
+}
+#zpUiLayer .zp-confirm-actions button:active{background:#26313C}
+@media(max-width:380px){
+  #zpUiLayer .zp-confirm{padding:14px}
+  #zpUiLayer .zp-confirm-panel{padding:20px 16px 16px;border-radius:16px}
+  #zpUiLayer .zp-confirm-actions{gap:8px;margin-top:18px}
+}
+
+/* ===== 面板横滑 4.0 =====
+   旧问题：内容不足时 #viewport 高度只有列表那么高，屏幕下半部的触摸 target 是
+   .panel/.shell，事件不会冒泡到挂在 #viewport 的监听器 → 底部完全滑不动。
+   修复：整条链路改成「视口高度 + 面板内滚动」，让每一页都铺满可滑动热区。 */
+html,body{height:100%}
+body{overflow-y:hidden}
+.shell{height:100dvh;display:flex;flex-direction:column}
+.panel{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+.viewport{flex:1 1 auto;min-height:0;overflow:hidden;touch-action:pan-y}
+.pages{height:100%}
+.page{height:100%;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.tabs{touch-action:pan-y}

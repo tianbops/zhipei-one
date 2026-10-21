@@ -1,0 +1,11 @@
+/* admin/users.js —— 用户管理：列表渲染与绑定/解绑/删除
+ * 拆分自 admin.html（原 72KB 单体文件），功能等价、行为不变。
+ * 顶部从命名空间解构出同名局部绑定，故函数体保持原始写法，未做标识符改写。
+ */
+(function(A){
+const { $, S, esc, rn, api, toast, open, close, page, sw, closeSwipes, dlg, dt, dp, db, dc, do_ } = A;
+function renderUsers(){const q=$("search").value.trim().toLowerCase(),a=S.users.filter(u=>(u.username||"").toLowerCase().includes(q));$("users").innerHTML=a.length?a.map((u)=>'<div class="row"><div class="actions">'+(u.boundRouteId?'<button class="act normal" data-u="unbind">解绑</button>':'<button class="act normal" data-u="bind">绑定</button>')+'<button class="act danger" data-u="delete">删除</button></div><div class="content"><div class="main"><strong>'+esc(u.username)+'</strong><div class="meta">'+esc(u.boundRouteId?(rn(u.routeName)||"线路未知")+" · "+(u.routeDuty==="driver"?"司机":"配送"):"暂无绑定线路")+'</div></div></div></div>').join(""):'<div class="empty">暂无用户</div>';document.querySelectorAll("#users .row").forEach((e,i)=>{sw(e);e.querySelectorAll("[data-u]").forEach(b=>b.onclick=()=>userAct(a[i],b.dataset.u))})}
+function userAct(u,a){if(a==="delete")return open("删除用户","确定永久删除「"+u.username+"」吗？","账号、绑定关系及待审核申请将被删除，此操作无法撤销。","确定",true,async()=>{await api("/api/admin/users",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"delete",userId:u.id})});close();toast("用户已删除");A.load()});if(a==="unbind")return open("解除线路绑定","确定解除"+u.username+"的\n"+rn(u.routeName)+" · "+(u.routeDuty==="driver"?"司机":"配送")+"绑定吗？","","确定",false,async()=>{await api("/api/admin/users",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"unbind",userId:u.id})});close();toast("绑定已解除");A.load()});const o=S.routes.filter(r=>r.status==="active").map(r=>'<option value="'+esc(r.id)+'">'+esc(rn(r.name))+'</option>').join("");open("绑定线路","选择线路和岗位",'<div class="field"><label>线路</label><select id="br">'+o+'</select></div><div class="field"><label>岗位</label><select id="bd"><option value="driver">司机</option><option value="delivery">配送</option></select></div>',"确定",false,async()=>{await api("/api/admin/users",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"bind",userId:u.id,routeId:br.value,duty:bd.value})});close();toast("绑定成功");A.load()})}
+A.renderUsers=renderUsers;
+A.userAct=userAct;
+})(window.ZPAdmin);
