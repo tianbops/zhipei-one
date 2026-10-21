@@ -9,7 +9,7 @@
  *   - 图片/字体       ：stale-while-revalidate（内容基本不变，秒开优先）
  * 资产缓存键用完整 URL（含 ?v=）精确匹配；页面缓存键用 pathname 规整（忽略 ?from 等查询）。
  */
-const VERSION = "zp-pwa-82";
+const VERSION = "zp-pwa-83";
 const STATIC_CACHE = VERSION + "-static";
 const PAGES_CACHE = VERSION + "-pages";
 const OFFLINE_URL = "/offline";
@@ -27,8 +27,6 @@ const PRECACHE = [
   "/pages/history",
   "/pages/route_apply",
   "/pages/account",
-  "/pages/privacy",
-  "/pages/terms",
   "/register",
   "/offline",
   "/assets/delivery-route.webp?v=32331a42",
@@ -48,7 +46,7 @@ const PRECACHE = [
   "/js/login.js?v=2f574a8a",
   "/js/order_detail.js?v=a4660bc5",
   "/js/perf-diagnostics.js?v=a2065bec",
-  "/js/pwa.js?v=864ce384",
+  "/js/pwa.js?v=cf30b44d",
   "/js/register.js?v=eafb4977",
   "/js/ui-unified.js?v=3e6b15d6",
   "/assets/icons/apple-touch-icon.png",
@@ -76,6 +74,17 @@ self.addEventListener("activate", event => {
     const names = await caches.keys();
     await Promise.all(names.map(n => (n.startsWith("zp-pwa-") && n !== STATIC_CACHE && n !== PAGES_CACHE) ? caches.delete(n) : null));
     await self.clients.claim();
+    /* 根治「部署成功却看不到修复」：新版本 SW 接管后，主动把已打开的页面全部导航到
+     * 当前 URL（强制刷新）。浏览器每次导航都会重新校验 /sw.js（见 _headers 的
+     * no-store），所以即便页面当前跑着旧版 pwa.js（没有 controllerchange 监听），
+     * 新 sw.js 一旦安装并激活，这里就能把旧页面强制拉到最新 HTML/JS/CSS——
+     * 无需用户手动刷新。SW 每个版本仅激活一次，不会循环重载。 */
+    try {
+      const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      for (const client of clients) {
+        try { await client.navigate(client.url); } catch { /* 个别客户端导航失败忽略，不影响其他 */ }
+      }
+    } catch { /* 不支持则降级：依赖 pwa.js 的 controllerchange / 版本守卫兜底 */ }
   })());
 });
 

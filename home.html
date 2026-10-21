@@ -164,6 +164,6 @@
 document.getElementById("logout")?.addEventListener("click",async()=>{const ok=window.zpConfirm?await window.zpConfirm("退出登录","确定要退出当前账号吗？","退出"):true;if(!ok)return;try{await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"})}finally{location.replace("/")}})
 </script>
 <script src="/js/ui-unified.js?v=3e6b15d6"></script>
-<script src="/js/pwa.js?v=864ce384"></script>
+<script src="/js/pwa.js?v=cf30b44d"></script>
 </body>
 </html>
