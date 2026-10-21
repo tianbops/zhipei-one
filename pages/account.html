@@ -129,6 +129,16 @@
 .acct-about-copyright{margin:14px 0 4px;text-align:center;color:var(--zp-muted,#8B98A5);font-size:12px}
 .install-guide{margin:2px 0 12px}
 .install-guide ol{margin:0;padding-left:20px;color:var(--zp-muted,#8B98A5);font-size:13px;line-height:22px}
+/* 旧壳兜底引导：≤1.0.11 的 APK 壳没有原生下载监听，App 内点下载无反应，
+   引导用户去浏览器打开网页端地址自愈（新壳 ≥1.0.12 不展示） */
+.install-guide-fallback{margin:8px 0 0;padding:12px 14px;border-radius:12px;
+  background:var(--zp-bg,#F5F7F9);color:var(--zp-text,#fff);font-size:13px;line-height:20px}
+.install-guide-fallback p{margin:0 0 4px}
+.install-guide-fallback b{font-weight:600}
+.install-guide-copy{margin-top:8px;padding:8px 16px;min-height:36px;border:0;border-radius:999px;
+  background:var(--zp-primary,#FFFFFF);color:var(--zp-on-primary,#0A0A0A);
+  font-size:13px;font-weight:600;cursor:pointer}
+.install-guide-copy:active{opacity:.75}
 /* 小链接热区透明扩展至 ≥44px（保持早前可达性巡检结论） */
 #installLabelBtn,.about-row-actions .about-link{position:relative}
 #installLabelBtn::after,.about-row-actions .about-link::after{content:"";position:absolute;inset:-14px -10px}
@@ -232,6 +242,11 @@
   </div>
   <div id="installGuide" class="install-guide" hidden>
     <ol id="installGuideSteps"></ol>
+    <div class="install-guide-fallback" id="installGuideFallback" hidden>
+      <p>当前 App 版本较旧，可能无法在应用内直接下载安装包。</p>
+      <p>请用手机浏览器打开网页端 <b>tianyou-zhipei.pages.dev</b>，进入「账号设置 → 下载应用」获取最新安装包。</p>
+      <button id="guideCopyBtn" class="install-guide-copy" type="button">复制网页端地址</button>
+    </div>
   </div>
 </section>
 
@@ -463,6 +478,9 @@ $("deleteConfirm").onclick=async()=>{
   }catch(e){fallbackCopy(WEB_URL)}
  }
  webCopyBtn.onclick=copyWeb;
+/* 旧壳兜底引导里的复制按钮：与「网页端地址 → 复制」同一逻辑 */
+const guideCopyBtn=$("guideCopyBtn");
+if(guideCopyBtn)guideCopyBtn.onclick=copyWeb;
 
  /* 下载应用：触发安装/引导；右侧最新安装包版本读 manifest */
  function showSteps(list){
@@ -509,6 +527,15 @@ $("deleteConfirm").onclick=async()=>{
      installDlLink.click();
      if(window.zpToast)window.zpToast("开始下载安装包…","info");
     }else if(window.zpToast)window.zpToast("安装包信息加载中，请稍候再试","info");
+    /* 旧壳兜底：appVersion 接口是 V1.0.12 才加的，没有它说明壳 ≤1.0.11——
+       其中 ≤1.0.10 的包没有原生下载监听，上面的 click() 不会触发任何下载
+       （用户反馈「点击下载没反应」即此）。展开引导让用户去浏览器自愈；
+       新壳（≥1.0.12）下载已由原生 DownloadManager 接管，不展示引导。 */
+    if(!(window.ZhipeiNative&&typeof window.ZhipeiNative.appVersion==="function")){
+     guide.hidden=false;
+     const fb=$("installGuideFallback");
+     if(fb)fb.hidden=false;
+    }
    }else if(deferred){
     const ev=deferred;deferred=null;
     try{
