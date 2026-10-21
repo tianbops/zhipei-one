@@ -522,15 +522,24 @@ if(guideCopyBtn)guideCopyBtn.onclick=copyWeb;
    }else if(isIOS){
     showSteps(["点底部「分享」按钮","选「添加到主屏幕」","点「添加」，之后从桌面打开"]);
    }else if(isNativeApp){
-    /* 壳内：直接下载 APK，别再绕 PWA 引导（WebView 里也没有安装概念） */
+    /* 壳内：直接下载 APK，别再绕 PWA 引导（WebView 里也没有安装概念）。
+       优先走原生接口 ZhipeiNative.downloadApk()（V1.0.13 起提供）——程序化
+       click() 对 WebView onDownloadStart 的派发不可靠，原生直接 enqueue
+       DownloadManager 才是全版本可靠路径；老壳无此接口才降级 click()。 */
     if(apkReady){
-     installDlLink.click();
-     if(window.zpToast)window.zpToast("开始下载安装包…","info");
+     const nativeDl=window.ZhipeiNative&&typeof window.ZhipeiNative.downloadApk==="function";
+     if(nativeDl){
+      window.ZhipeiNative.downloadApk(installDlLink.href);
+      if(window.zpToast)window.zpToast("开始下载安装包…","info");
+     }else{
+      installDlLink.click();
+      if(window.zpToast)window.zpToast("开始下载安装包…","info");
+     }
     }else if(window.zpToast)window.zpToast("安装包信息加载中，请稍候再试","info");
     /* 旧壳兜底：appVersion 接口是 V1.0.12 才加的，没有它说明壳 ≤1.0.11——
        其中 ≤1.0.10 的包没有原生下载监听，上面的 click() 不会触发任何下载
        （用户反馈「点击下载没反应」即此）。展开引导让用户去浏览器自愈；
-       新壳（≥1.0.12）下载已由原生 DownloadManager 接管，不展示引导。 */
+       新壳（≥1.0.13 有 downloadApk 接口）下载已由原生接管，不展示引导。 */
     if(!(window.ZhipeiNative&&typeof window.ZhipeiNative.appVersion==="function")){
      guide.hidden=false;
      const fb=$("installGuideFallback");
