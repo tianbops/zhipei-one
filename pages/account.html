@@ -388,6 +388,17 @@ document.addEventListener("zp:fontscalechange",renderAppearance);
 async function api(u,o={}){const r=await fetch(u,{credentials:"same-origin",cache:"no-store",...o});const d=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(d.error||d.message||"请求失败");e.code=d.code||"HTTP_"+r.status;throw e}return d}
 function show(id,e){$(id).textContent=(e.code?"["+e.code+"] ":"")+(e.message||"请求失败")}
 
+/* 敏感信息变更后强制重新鉴权：后端已使旧会话失效（user.sessionVersion 自增），
+   此处彻底清登录态并回登录页——与成熟 App「改密码/改用户名后需重新登录」一致。
+   必须同时清 cookie（/api/logout 删服务端会话 + 清 cookie）与会话标记 sessionStorage.zpAuth，
+   否则首页守卫会因 zpAuth 仍在而放行，但 /api/me 因版本不匹配返回 401，
+   导致卡在「已登录却拉不到数据」的坏状态（此前「修改不成功」的根因）。 */
+async function reauthLogout(){
+ try{await fetch("/api/logout",{method:"POST",credentials:"same-origin"})}catch(e){}
+ try{sessionStorage.removeItem("zpAuth")}catch(e){}
+ setTimeout(()=>location.replace("/?reason=reauth"),700);
+}
+
 async function load(){
  try{
   const x=await api("/api/me"),me=x.user||{};
@@ -405,8 +416,8 @@ $("renameBtn").onclick=async()=>{
  $("renameBtn").disabled=true;$("renameMessage").textContent="保存中…";
  try{
   await api("/api/account-settings",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"rename",username})});
-  $("renameMessage").textContent="用户名已修改，即将返回登录页面…";
-  setTimeout(()=>location.replace("/"),900);
+  $("renameMessage").textContent="用户名已修改，正在退出登录…";
+  await reauthLogout();
  }catch(e){show("renameMessage",e);$("renameBtn").disabled=false}
 };
 
@@ -418,9 +429,9 @@ $("passwordBtn").onclick=async()=>{
  $("passwordBtn").disabled=true;$("passwordMessage").textContent="保存中…";
  try{
   await api("/api/account-settings",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"password",currentPassword,password:newPassword,confirmPassword})});
-  $("passwordMessage").textContent="密码已修改，即将返回登录页面…";
+  $("passwordMessage").textContent="密码已修改，正在退出登录…";
   $("currentPassword").value="";$("newPassword").value="";$("confirmPassword").value="";
-  setTimeout(()=>location.replace("/"),900);
+  await reauthLogout();
  }catch(e){show("passwordMessage",e);$("passwordBtn").disabled=false}
 };
 
@@ -437,6 +448,7 @@ $("deleteConfirm").onclick=async()=>{
  try{
   await api("/api/account-settings",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"delete",password})});
   $("deleteMessage").textContent="账号已注销，即将返回登录页面…";
+  try{sessionStorage.removeItem("zpAuth")}catch(e){}
   setTimeout(()=>location.replace("/"),700);
  }catch(e){show("deleteMessage",e);$("deleteConfirm").disabled=false}
 };
