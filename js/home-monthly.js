@@ -319,7 +319,7 @@
     try{
       // 同比需要去年同月数据：默认历史窗口仅 13 个月（起于 11 个月前），不含去年同月，
       // 故首页主动请求 25 个月窗口，保证当前及近 13 个月均可算同比（最早月份无去年同期时自然留空）。
-      const r=await fetch("/api/history?months=25",{credentials:"same-origin",cache:"no-store"});
+      const r=await zpFetch("/api/history?months=25",{credentials:"same-origin",cache:"no-store"});
       if(!r.ok)return null;
       const d=await r.json().catch(()=>null);
       if(!d?.success||!Array.isArray(d.history))return null;

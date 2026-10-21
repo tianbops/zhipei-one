@@ -2,6 +2,7 @@
 <html lang="zh-CN">
 <head>
 <script src="/js/error-guard.js?v=f695272a"></script>
+<script src="/js/fetch-retry.js?v=73861cd4"></script>
 <script>
 (function(){
   function goLogin(){
@@ -67,7 +68,7 @@
 const $=id=>document.getElementById(id);
 const maintainToggle=$("maintainToggle"),maintainBody=$("maintainBody");
 maintainToggle?.addEventListener("click",()=>{const open=maintainBody.hidden;maintainBody.hidden=!open;maintainToggle.setAttribute("aria-expanded",String(open));maintainToggle.querySelector(".collapse-icon").textContent=open?"⌃":"⌄"});
-async function api(u,o={}){const r=await fetch(u,{credentials:"same-origin",cache:"no-store",...o}),d=await r.json().catch(()=>({}));if(!r.ok){const x=new Error(d.error||d.message||"请求失败");x.code=d.code||"HTTP_"+r.status;throw x}return d}
+async function api(u,o={}){const r=await zpFetch(u,{credentials:"same-origin",cache:"no-store",...o}),d=await r.json().catch(()=>({}));if(!r.ok){const x=new Error(d.error||d.message||"请求失败");x.code=d.code||"HTTP_"+r.status;throw x}return d}
 function msg(e){return (e.code?"["+e.code+"] ":"")+(e.message||"请求失败")}
 async function load(){
  try{
@@ -104,6 +105,6 @@ $("submit").onclick=async()=>{
 load();
 </script>
 <script src="/js/ui/core.js?v=1c74a596"></script><script src="/js/ui/appearance.js?v=4ab4a4fa"></script><script src="/js/ui/feedback.js?v=8ba90ed4"></script><script src="/js/ui/nav.js?v=fee2f25c"></script><script src="/js/ui/back.js?v=966dcd37"></script><script src="/js/ui/nav-prefetch.js?v=7c589b89"></script>
-<script src="/js/pwa.js?v=cf30b44d"></script>
+<script src="/js/pwa.js?v=68dbac73"></script>
 </body>
 </html>

@@ -40,7 +40,8 @@
     if (now - lastGuardAt < GUARD_INTERVAL) return;   // 节流：同一会话内不频繁打网络
     lastGuardAt = now;
     try {
-      const res = await fetch("/version.json?ts=" + now, { cache: "no-store" });
+      const _f = window.zpFetch || fetch;
+      const res = await _f("/version.json?ts=" + now, { cache: "no-store" });
       if (!res.ok) return;
       const data = await res.json();
       const live = data && typeof data.version === "string" ? data.version : null;

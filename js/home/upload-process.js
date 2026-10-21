@@ -4,7 +4,7 @@
 async function ensureDispatchRoute(){
   if(dispatchRouteId)return true;
   try{
-    const r=await fetch("/api/dispatch",{credentials:"same-origin",cache:"no-store"});
+    const r=await zpFetch("/api/dispatch",{credentials:"same-origin",cache:"no-store"});
     const d=await r.json().catch(()=>({}));
     if(r.ok&&d.success&&d.dispatchRoute?.id){
       dispatchRouteId=d.dispatchRoute.id;

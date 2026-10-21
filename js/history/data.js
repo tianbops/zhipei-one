@@ -1,7 +1,7 @@
 'use strict';
 async function load(){
  try{
-  const r=await fetch("/api/history",{credentials:"same-origin",cache:"no-store"});
+  const r=await zpFetch("/api/history",{credentials:"same-origin",cache:"no-store"});
   let text=await r.text(),d=null;
   try{d=JSON.parse(text)}catch{throw new Error(r.ok?"历史接口返回数据格式错误":"历史接口异常（HTTP "+r.status+"）")}
   if(!r.ok||!d?.success){const code=String(d?.code||("HTTP_"+r.status));const detail=String(d?.detail||"").trim();throw new Error(code+(detail?"："+detail:"："+(d?.error||"历史记录读取失败")))}

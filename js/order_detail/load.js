@@ -6,7 +6,7 @@ async function load(){
     :(source==='today'?'/api/waybills/latest?confirmed=1':'/api/waybills/latest'));
 
  const fetchJson=async(url,signal)=>{
-  const r=await fetch(url,{credentials:'same-origin',cache:'no-store',signal});
+  const r=await zpFetch(url,{credentials:'same-origin',cache:'no-store',signal});
   const d=await r.json().catch(()=>({}));
   return {r,d};
  };
@@ -77,7 +77,7 @@ async function load(){
 // 待定门店的"指定已有门店"入口需要线路基准库；按线路缓存，同一张运单多次打开只读一次
 async function loadBaseStores(routeId){
  if(baseStoreCache&&baseStoreRoute===routeId)return baseStoreCache;
- const r=await fetch('/api/base?routeId='+encodeURIComponent(routeId),{credentials:'same-origin',cache:'no-store'});
+ const r=await zpFetch('/api/base?routeId='+encodeURIComponent(routeId),{credentials:'same-origin',cache:'no-store'});
  const d=await r.json().catch(()=>({}));
  if(!r.ok||!d.success)throw Error(d.error||'线路数据资料读取失败');
  const stores=Array.isArray(d.base?.stores)?d.base.stores:[];

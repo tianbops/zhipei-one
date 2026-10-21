@@ -2,6 +2,7 @@
 <html lang="zh-CN">
 <head>
 <script src="/js/error-guard.js?v=f695272a"></script>
+<script src="/js/fetch-retry.js?v=73861cd4"></script>
 <script>
 (function(){
   function goLogin(){
@@ -89,7 +90,7 @@ var dataBaseline="";// 门店资料基线：用于判断是否存在「暂存但
     if(oid){const a=document.querySelector(".app-back");if(a)a.href="/pages/order_detail?id="+encodeURIComponent(oid)+"&source=process&from=process"}
   }
 })();
-async function api(u,o={}){const r=await fetch(u,{credentials:"same-origin",...o});const d=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(d.error||d.message||"请求失败");e.code=d.code||"HTTP_"+r.status;e.detail=d.detail||"";throw e}return d}
+async function api(u,o={}){const r=await zpFetch(u,{credentials:"same-origin",...o});const d=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(d.error||d.message||"请求失败");e.code=d.code||"HTTP_"+r.status;e.detail=d.detail||"";throw e}return d}
 function err(e){return(e.code?"["+e.code+"] ":"")+e.message+(e.detail?" · "+e.detail:"")}
 let routeId="",canMaintain=false,stores=[],baseVersion=1,saving=false,baseVersionConflict=false,editingIndex=-1,confirming=false,dragIndex=-1,hiddenIndexes=new Set();
 
@@ -381,5 +382,5 @@ load();
     filled(openPanel())||!!(dataBaseline&&dataBaseline!==JSON.stringify(stores)));
 })();
 </script><script src="/js/ui/core.js?v=1c74a596"></script><script src="/js/ui/appearance.js?v=4ab4a4fa"></script><script src="/js/ui/feedback.js?v=8ba90ed4"></script><script src="/js/ui/nav.js?v=fee2f25c"></script><script src="/js/ui/back.js?v=966dcd37"></script><script src="/js/ui/nav-prefetch.js?v=7c589b89"></script>
-<script src="/js/pwa.js?v=cf30b44d"></script>
+<script src="/js/pwa.js?v=68dbac73"></script>
 </body></html>

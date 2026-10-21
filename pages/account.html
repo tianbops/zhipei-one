@@ -2,6 +2,7 @@
 <html lang="zh-CN">
 <head>
 <script src="/js/error-guard.js?v=f695272a"></script>
+<script src="/js/fetch-retry.js?v=73861cd4"></script>
 <script>
 (function(){
   function goLogin(){
@@ -387,7 +388,7 @@ document.addEventListener("zp:appearancechange",renderAppearance);
 document.addEventListener("zp:fontscalechange",renderAppearance);
 
 
-async function api(u,o={}){const r=await fetch(u,{credentials:"same-origin",cache:"no-store",...o});const d=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(d.error||d.message||"请求失败");e.code=d.code||"HTTP_"+r.status;throw e}return d}
+async function api(u,o={}){const r=await zpFetch(u,{credentials:"same-origin",cache:"no-store",...o});const d=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(d.error||d.message||"请求失败");e.code=d.code||"HTTP_"+r.status;throw e}return d}
 function show(id,e){$(id).textContent=(e.code?"["+e.code+"] ":"")+(e.message||"请求失败")}
 
 /* 敏感信息变更后强制重新鉴权：后端已使旧会话失效（user.sessionVersion 自增），
@@ -516,7 +517,7 @@ $("deleteConfirm").onclick=async()=>{
     textEl.textContent=webVer?("版本 V"+webVer):"版本 网页版";
    }
   }
-  fetch("/version.json?ts="+Date.now(),{cache:"no-store"}).then(r=>r.json()).then(v=>{
+  zpFetch("/version.json?ts="+Date.now(),{cache:"no-store"}).then(r=>r.json()).then(v=>{
    render(v&&v.version);
   }).catch(()=>{render(null)});
  })();
@@ -569,7 +570,7 @@ if(guideCopyBtn)guideCopyBtn.onclick=copyWeb;
  if(isIOS){
   installDlLink.hidden=true;
  }else{
-  fetch("/downloads/manifest.json?ts="+Date.now(),{cache:"no-store"})
+  zpFetch("/downloads/manifest.json?ts="+Date.now(),{cache:"no-store"})
    .then(r=>r.ok?r.json():null)
    .then(m=>setApk((m&&m.file)||"zhipei-one-latest-release.apk",m&&m.version))
    .catch(()=>{setApk("zhipei-one-latest-release.apk")});
@@ -664,5 +665,5 @@ if(t)t.addEventListener("click",()=>location.assign("/pages/terms"));
 
 load();
 </script><script src="/js/ui/core.js?v=1c74a596"></script><script src="/js/ui/appearance.js?v=4ab4a4fa"></script><script src="/js/ui/feedback.js?v=8ba90ed4"></script><script src="/js/ui/nav.js?v=fee2f25c"></script><script src="/js/ui/back.js?v=966dcd37"></script><script src="/js/ui/nav-prefetch.js?v=7c589b89"></script>
-<script src="/js/pwa.js?v=cf30b44d"></script>
+<script src="/js/pwa.js?v=68dbac73"></script>
 </body></html>

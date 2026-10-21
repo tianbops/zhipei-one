@@ -7,7 +7,7 @@ async function loadHome(){
     const controller=new AbortController();
     const timer=setTimeout(()=>controller.abort(),timeoutMs);
     try{
-      const res=await fetch(url,{credentials:"same-origin",cache:"no-store",signal:controller.signal});
+      const res=await zpFetch(url,{credentials:"same-origin",cache:"no-store",signal:controller.signal});
       const data=await res.json().catch(()=>({}));
       return {res,data};
     }finally{clearTimeout(timer);}

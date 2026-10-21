@@ -2,6 +2,7 @@
 <html lang="zh-CN">
 <head>
 <script src="/js/error-guard.js?v=f695272a"></script>
+<script src="/js/fetch-retry.js?v=73861cd4"></script>
 <script>
 (function(){
   function goLogin(){
@@ -271,7 +272,7 @@ async function api(url,opt={}){
   const ctl=new AbortController();
   const timer=setTimeout(()=>ctl.abort(),API_TIMEOUT);
   try{
-    const r=await fetch(url,{credentials:"same-origin",cache:"no-store",signal:ctl.signal,...opt});
+    const r=await zpFetch(url,{credentials:"same-origin",cache:"no-store",signal:ctl.signal,...opt});
     const d=await r.json().catch(()=>({}));
     if(!r.ok||!d.success)throw new Error(d.error||"请求失败");
     return d;
@@ -399,6 +400,6 @@ async function load(){
 load();
 </script>
 <script src="/js/ui/core.js?v=1c74a596"></script><script src="/js/ui/appearance.js?v=4ab4a4fa"></script><script src="/js/ui/feedback.js?v=8ba90ed4"></script><script src="/js/ui/nav.js?v=fee2f25c"></script><script src="/js/ui/back.js?v=966dcd37"></script><script src="/js/ui/nav-prefetch.js?v=7c589b89"></script>
-<script src="/js/pwa.js?v=cf30b44d"></script>
+<script src="/js/pwa.js?v=68dbac73"></script>
 </body>
 </html>
