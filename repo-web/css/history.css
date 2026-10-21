@@ -1,0 +1,694 @@
+/* 智配One · 历史查询 · Android 2.0 */
+.history-shell{padding-bottom:0}
+.history-shell .topbar{margin-bottom:8px;z-index:100;background:var(--zp-bg)}
+.history-shell .topbar>strong{text-align:center;font-size:20px;line-height:26px;font-weight:700}
+
+.history-card{
+  padding:0;
+  overflow:hidden;
+  background:rgba(13,18,24,.82);
+  border-color:rgba(255,255,255,.075);
+  border-radius:18px;
+}
+
+.history-state{
+  min-height:20px;
+  padding:22px 16px;
+  color:#7F8A95;
+  font-size:13px;
+  line-height:20px;
+  text-align:center;
+}
+.history-list{width:100%}
+.history-month{
+  border-bottom:1px solid rgba(255,255,255,.065);
+}
+.history-month:last-child{border-bottom:0}
+
+.history-swipe-row{
+  position:relative;
+  overflow:hidden;
+  background:rgba(10,14,19,.88);
+  isolation:isolate;
+  touch-action:pan-y;
+}
+.history-row-surface{
+  position:relative;
+  z-index:2;
+  transform:translate3d(0,0,0);
+  transition:transform .2s cubic-bezier(.2,.8,.2,1);
+  /* 不透明！此前 rgba(13,18,24,.82) 的 18% 透明度会让下层的红色删除按钮透出来，
+     用户「没滑动却看得见删除按钮」即由此而来。取色 = 该半透明色叠加后的实际观感值，
+     改动零视觉差异。 */
+  background:#0C1117;
+  will-change:transform;
+}
+.history-swipe-row.swiped .history-row-surface{
+  transform:translate3d(-84px,0,0);
+  box-shadow:8px 0 16px rgba(0,0,0,.28);
+}
+/* 左滑露出的删除按钮：图标+文字纵向居中，红渐变明确危险语义。
+   宽度与 JS 的 SWIPE_W 保持同步（小屏 80px，见文末媒体查询）。
+   注意：已从 ui-unified.css 的「全站删除按钮统一标准」中排除——
+   那是为独立按钮设计的（半透明红晕底 + 1px 红边框 + 红字），
+   套在整行高的滑动动作条上会与左侧圆角混绘出「圆角 + 直角框」。
+   本按钮改为实心 + 无边框 + 白字，左右形状与行严格贴合。 */
+/* 形态：四角同圆的动作条，右侧与屏幕右缘留 6px 呼吸位——
+   此前「左侧圆角 + 右侧直角贴屏」虽是常见做法，但左右不对称，
+   在浅色卡片背景上尤其突兀（体现为「圆角和直角并存」的观感）。 */
+.history-delete{
+  position:absolute;
+  z-index:1;
+  inset:0 6px 0 auto;
+  top:0;right:6px;bottom:0;left:auto;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  width:84px;
+  margin:0;
+  padding:0;
+  border:0;
+  border-radius:12px;
+  background:linear-gradient(180deg,#D9534B,#B93B32);
+  color:#fff;
+  font-size:12px;
+  font-weight:600;
+  letter-spacing:1px;
+  box-shadow:none;
+  outline:none;
+}
+.history-delete svg{
+  width:17px;
+  height:17px;
+  flex:none;
+}
+.history-delete:active{background:#A0372E}
+
+.history-month-main,
+.history-date-main{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  width:100%;
+  min-height:56px;
+  padding:0 16px;
+  border:0;
+  background:transparent;
+  color:#fff;
+  text-align:left;
+  -webkit-tap-highlight-color:transparent;
+}
+.history-month-main span{
+  font-size:16px;
+  line-height:22px;
+  font-weight:650;
+}
+.history-month-main small,
+.history-date-main small{
+  flex:none;
+  margin-left:12px;
+  color:#8F9AA5;
+  font-size:12px;
+  line-height:20px;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:.3px;
+  white-space:nowrap;
+}
+.history-month.expanded .history-month-main{
+  border-bottom:1px solid rgba(255,255,255,.055);
+}
+.history-month-main::after{
+  content:"";
+  width:7px;
+  height:7px;
+  margin-left:10px;
+  border-right:1.5px solid #7F8A95;
+  border-bottom:1.5px solid #7F8A95;
+  transform:rotate(45deg) translateY(-2px);
+  transition:transform .18s ease;
+  flex:none;
+}
+.history-month.expanded .history-month-main::after{
+  transform:rotate(225deg) translate(-1px,-1px);
+}
+.history-month-body{
+  display:none;
+  background:rgba(10,14,19,.88);
+}
+.history-month.expanded .history-month-body{display:block}
+.history-month-body .history-row-surface{background:#0A0E13}
+.history-month-body .history-swipe-row{
+  border-bottom:1px solid rgba(255,255,255,.055);
+}
+.history-month-body .history-swipe-row:last-child{border-bottom:0}
+
+.history-date-main{
+  min-height:52px;
+  padding-left:30px;
+}
+.history-date-main span{
+  font-size:14px;
+  line-height:20px;
+  font-weight:500;
+  color:#E8EDF2;
+}
+.history-date-main small{font-size:12px}
+.history-date-main:active,
+.history-month-main:active{background:rgba(26,38,46,.82)}
+
+.history-picker{
+  position:fixed;
+  top:0;right:0;bottom:0;left:0;inset:0;
+  z-index:130;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  background:rgba(0,0,0,.68);
+}
+.history-picker[hidden]{display:none}
+.history-picker-panel{
+  width:min(100%,390px);
+  padding:17px 16px 15px;
+  background:rgba(20,28,37,.80);
+  border:1px solid #2A3540;
+  border-radius:18px;
+  box-shadow:0 18px 50px rgba(0,0,0,.42);
+}
+/* 月份/日期选择器的左右翻页箭头：格子与按钮必须同步放大。
+   按钮 40→48 而 grid 仍留 42px 的话，48 的按钮会溢出格子把中间标题挤歪 ——
+   与 Commit 2B 里 home-menu-panel 的 top 补偿是同一类牵连：改触控尺寸时，
+   凡是「用具体数值给按钮预留位置」的地方都要跟着改。 */
+.history-picker-head{
+  display:grid;
+  grid-template-columns:var(--zp-control-height) 1fr var(--zp-control-height);
+  align-items:center;
+  text-align:center;
+}
+.history-picker-head strong{font-size:16px;line-height:22px;font-weight:650}
+/* font-size 24→20：翻页箭头 ‹ › 是字符图标，适用 icon 18–20px 标准（非文字 14–16px）。 */
+.history-picker-head button{
+  width:var(--zp-control-height);
+  height:var(--zp-control-height);
+  border:0;
+  border-radius:10px;
+  background:rgba(10,14,19,.88);
+  color:#E8EDF2;
+  font-size:20px;
+  line-height:1;
+}
+.history-picker-head button:active{background:var(--zp-primary);color:var(--zp-on-primary)}
+.history-picker-head button:disabled{opacity:.3}
+.history-calendar-week,
+.history-calendar-grid{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  gap:5px;
+}
+.history-calendar-week{
+  margin:15px 0 7px;
+  color:#7F8A95;
+  font-size:11px;
+  line-height:18px;
+  text-align:center;
+}
+.history-calendar-grid{min-height:238px}
+.history-calendar-empty{height:36px}
+.history-calendar-day{
+  height:36px;
+  border:0;
+  border-radius:9px;
+  background:rgba(10,14,19,.88);
+  color:#4F5A65;
+  font-size:13px;
+  font-weight:500;
+}
+.history-calendar-day.has-data{
+  background:var(--zp-primary);
+  color:var(--zp-on-primary);
+}
+.history-calendar-day.has-data:active{background:#3A4652}
+.history-calendar-day:disabled{opacity:1}
+.history-picker-panel p{
+  margin:12px 2px 10px;
+  color:#7F8A95;
+  font-size:11px;
+  line-height:17px;
+  text-align:center;
+}
+.history-picker-close{
+  width:100%;
+  height:44px;
+  border:1px solid #35404C;
+  border-radius:11px;
+  background:rgba(10,14,19,.88);
+  color:#E8EDF2;
+  font-size:14px;
+  font-weight:550;
+}
+.history-picker-close:active{background:var(--zp-primary);color:var(--zp-on-primary)}
+
+.history-dialog{
+  position:fixed;
+  top:0;right:0;bottom:0;left:0;inset:0;
+  z-index:120;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:rgba(0,0,0,.68);
+}
+.history-dialog[hidden]{display:none}
+.history-dialog-panel{
+  width:min(100%,360px);
+  padding:20px;
+  background:rgba(20,28,37,.80);
+  border:1px solid #2A3540;
+  border-radius:18px;
+  box-shadow:0 18px 50px rgba(0,0,0,.45);
+}
+.history-dialog-panel>strong{
+  display:block;
+  font-size:17px;
+  line-height:24px;
+  font-weight:650;
+}
+.history-dialog-panel>p{
+  margin:10px 0 18px;
+  color:#B8C2CC;
+  font-size:14px;
+  line-height:21px;
+}
+.history-dialog-actions{
+  display:flex;
+  gap:10px;
+}
+.history-dialog-actions button{
+  flex:1;
+  height:var(--zp-control-height);
+  border:1px solid #35404C;
+  border-radius:11px;
+  background:rgba(10,14,19,.88);
+  color:#E8EDF2;
+  font-size:15px;
+  font-weight:550;
+}
+.history-dialog-actions button:last-child{
+  background:var(--zp-primary);
+  /* --zp-primary 在深色模式下是白色底，文字必须用反相 token（黑字），
+     硬编码 #fff 会白底白字不可见。 */
+  color:var(--zp-on-primary);
+}
+.history-dialog-actions button:active{background:#303C48}
+.history-dialog-actions button:last-child:active{background:var(--zp-primary-hover);color:var(--zp-on-primary)}
+.history-dialog-actions button:disabled{opacity:.5}
+
+@media(max-width:380px){
+  .history-month-main,.history-date-main{padding-right:14px}
+  .history-date-main{padding-left:27px}
+  .history-month-main span{font-size:15px}
+  .history-month-main small,.history-date-main small{font-size:11px}
+  .history-delete{width:80px}
+  .history-swipe-row.swiped .history-row-surface{transform:translate3d(-80px,0,0)}
+  .history-calendar-grid{min-height:232px}
+}
+
+/* 同日多次派送：仅高亮次数数字 */
+.history-count-highlight{color:#fff;font-size:13px;font-weight:750;letter-spacing:.1px}
+
+/* UI 2.3：历史查询成熟 Android 列表布局
+   目标：减少“卡片套卡片”，强化月份层级，日期使用轻量列表行。
+   仅调整视觉与触控区域，不改变历史查询业务逻辑。 */
+/* 板块宽度对齐全局：全局间距 token 为 --zp-space-4（16px），线路页 .dispatch-page
+   即用 16px。历史页此前是满宽贴边（内缩 0），与各页不一致；此处统一到 16px。
+   用 main.history-shell（0,1,1）与 main.zp-shell 同特异性，靠后加载胜出，
+   且不受 ui-unified 中 main.zp-shell 的 padding-top/bottom:0 影响。
+   注意：板块自身不再重复缩进（见下方 .history-actions 等归零），否则会变成 16+16。 */
+main.history-shell{
+  padding-left:var(--zp-space-4,16px);
+  padding-right:var(--zp-space-4,16px);
+}
+.history-shell{
+  padding-top:8px;
+  padding-bottom:0;
+}
+.history-shell .topbar{margin-bottom:8px;z-index:100;background:var(--zp-bg)}
+.history-card{
+  padding:0;
+  background:transparent;
+  border:0;
+  border-radius:0;
+  overflow:visible;
+}
+/* 工具栏语义按钮 · 浅色覆盖（P0-3） */
+/* 浅色主题 .card 通配规则（白底+阴影）会盖过 .history-card 的透明背景，
+   导致历史查询页顶部出现一块带阴影的白色方块。此处显式压回无卡片样式。 */
+:root[data-zp-theme="light"] .history-card{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important}
+:root[data-zp-theme="light"] .zp-btn--secondary{background:rgba(0,0,0,.04);color:var(--zp-text);border-color:var(--zp-line)}
+/* 左右缩进统一交给 main.history-shell，浅色不再另加 8px（会与全局错位） */
+:root[data-zp-theme="light"] .history-divider{border-top-color:var(--zp-divider)}
+.history-state{
+  min-height:20px;
+  padding:18px 0;
+  color:#7F8A95;
+  font-size:14px;
+  line-height:20px;
+}
+.history-list{
+  width:100%;
+  border:1px solid rgba(255,255,255,.075);
+  border-radius:17px;
+  overflow:hidden;
+  background:rgba(13,18,24,.82);
+}
+.history-month{
+  background:rgba(13,18,24,.82);
+  border-bottom:1px solid rgba(255,255,255,.075);
+}
+.history-month:last-child{
+  border-bottom:0;
+}
+.history-month-main{
+  min-height:58px;
+  padding:0 16px;
+  background:rgba(20,28,37,.80);
+}
+.history-month-main span{
+  font-size:17px;
+  line-height:24px;
+  font-weight:650;
+  letter-spacing:.1px;
+}
+.history-month-main small{
+  margin-left:auto;
+  padding-right:4px;
+  color:#9AA5AF;
+  font-size:14px;
+  line-height:20px;
+  font-weight:450;
+}
+.history-month-main::after{
+  width:7px;
+  height:7px;
+  margin-left:12px;
+}
+.history-month.expanded .history-month-main{
+  border-bottom:1px solid rgba(255,255,255,.065);
+}
+.history-month-body{
+  display:none;
+  background:rgba(10,14,19,.88);
+}
+.history-month.expanded .history-month-body{
+  display:block;
+}
+/* 列表行分隔线统一到 --zp-divider（.055 → .06）。
+   注意本文件里 .history-month / .history-month-body 那几条 .055 / .065 / .07 / .075
+   刻意没动：它们是「月份分组容器」的内部分隔，不是列表行的行分隔线，
+   语义不同 —— 顺手统一会让分组边界和行边界看起来一样重，反而丢掉层级。 */
+.history-swipe-row{
+  background:rgba(10,14,19,.88);
+  border-bottom:1px solid var(--zp-divider);
+}
+.history-month-body .history-swipe-row:last-child{
+  border-bottom:0;
+}
+.history-row-surface{
+  min-height:54px;
+  background:#0A0E13;
+}
+.history-month-body .history-row-surface{
+  background:#0A0E13;
+}
+.history-date-main{
+  min-height:54px;
+  padding:0 16px 0 32px;
+  background:transparent;
+}
+.history-date-main span{
+  color:#E8EDF2;
+  font-size:16px;
+  line-height:22px;
+  font-weight:500;
+}
+.history-date-main small{
+  margin-left:auto;
+  color:#9AA5AF;
+  font-size:14px;
+  line-height:20px;
+  font-weight:450;
+}
+.history-date-main:active,
+.history-month-main:active{
+  background:rgba(26,38,46,.82);
+}
+.history-count-highlight{
+  color:#fff;
+  font-size:14px;
+  line-height:20px;
+  font-weight:750;
+}
+.history-delete{
+  width:84px;
+  background:linear-gradient(180deg,#D9534B,#B93B32);
+  color:#fff;
+  font-size:12px;
+  line-height:16px;
+  font-weight:600;
+  letter-spacing:1px;
+}
+.history-swipe-row.swiped .history-row-surface{
+  transform:translate3d(-84px,0,0);
+}
+
+/* 月份之间增加清晰但克制的呼吸感 */
+.history-month + .history-month{
+  border-top:6px solid #05070A;
+}
+
+/* 日历/确认弹窗保持与全局 Android 2.0 视觉一致 */
+.history-picker-panel,
+.history-dialog-panel{
+  border-radius:18px;
+}
+.history-picker-close,
+.history-dialog-actions button{
+  font-size:16px;
+  line-height:22px;
+}
+
+@media(max-width:380px){
+  .history-month-main{padding-left:14px;padding-right:14px}
+  .history-date-main{padding-left:28px;padding-right:14px}
+  .history-month-main span{font-size:16px}
+  .history-month-main small,
+  .history-date-main small{font-size:13px}
+  .history-delete{width:80px}
+  .history-swipe-row.swiped .history-row-surface{
+    transform:translate3d(-80px,0,0);
+  }
+}
+
+/* UI 2.4：顶部返回键与运单详情统一
+   历史查询不显示右侧三横，仅保留与运单详情一致的返回箭头。 */
+.history-shell .app-back{color:#fff}
+.history-shell .app-back:active{background:rgba(20,28,37,.80);transform:none}
+.history-topbar-placeholder{
+  width:44px;
+  height:44px;
+  display:block;
+}
+
+/* Android 返回层 2.5：历史查询返回按钮沿用运单详情纯箭头。 */
+.history-shell .app-back{touch-action:manipulation}
+
+/* 日历月份滑动切换：左滑下月（内容自右滑入）、右滑上月（内容自左滑入） */
+@keyframes historyCalInLeft{
+  from{opacity:0;transform:translate3d(-10px,0,0)}
+  to{opacity:1;transform:none}
+}
+@keyframes historyCalInRight{
+  from{opacity:0;transform:translate3d(10px,0,0)}
+  to{opacity:1;transform:none}
+}
+.history-picker-head strong.cal-anim-left,
+.history-calendar-grid.cal-anim-left{animation:historyCalInLeft .17s ease-out}
+.history-picker-head strong.cal-anim-right,
+.history-calendar-grid.cal-anim-right{animation:historyCalInRight .17s ease-out}
+@media(prefers-reduced-motion:reduce){
+  .history-picker-head strong.cal-anim-left,
+  .history-calendar-grid.cal-anim-left,
+  .history-picker-head strong.cal-anim-right,
+  .history-calendar-grid.cal-anim-right{animation:none}
+}
+
+/* ---- 浅色补充：月份分组列表（此前整块沿用深色硬编码） ---- */
+:root[data-zp-theme="light"] .history-list{background:#FFFFFF;border-color:rgba(20,30,40,.12)}
+:root[data-zp-theme="light"] .history-month{background:#FFFFFF;border-bottom-color:rgba(20,30,40,.10)}
+:root[data-zp-theme="light"] .history-month-main{background:#F0F2F4}
+:root[data-zp-theme="light"] .history-month-main span{color:var(--zp-text)}
+:root[data-zp-theme="light"] .history-month-main small{color:var(--zp-muted)}
+:root[data-zp-theme="light"] .history-month.expanded .history-month-main{border-bottom-color:rgba(20,30,40,.12)}
+:root[data-zp-theme="light"] .history-month-body,
+:root[data-zp-theme="light"] .history-swipe-row,
+:root[data-zp-theme="light"] .history-row-surface,
+:root[data-zp-theme="light"] .history-month-body .history-row-surface{background:#FFFFFF}
+:root[data-zp-theme="light"] .history-date-main span{color:var(--zp-text)}
+:root[data-zp-theme="light"] .history-date-main small{color:var(--zp-muted)}
+:root[data-zp-theme="light"] .history-date-main:active,
+:root[data-zp-theme="light"] .history-month-main:active{background:#E8EDF1}
+:root[data-zp-theme="light"] .history-count-highlight{color:#17202A}
+:root[data-zp-theme="light"] .history-month + .history-month{border-top-color:#F4F6F8}
+/* 浅色下删除按钮保持白字并对齐浅色 danger token：
+   ui-unified 的「浅色下所有 button 用深字」通用规则优先级低于本规则，显式压回。
+   同时把红渐变收敛到与 --zp-danger 同色系，避免在浅灰 (#F2F2F2) 页面上过跳。 */
+:root[data-zp-theme="light"] .history-delete{
+  color:#fff;
+  background:linear-gradient(180deg,#C2453A,#A0362D);
+}
+
+/* ---- 浅色补充（全站审计）：日期选择器此前整块沿用深色硬编码 ---- */
+:root[data-zp-theme="light"] .history-picker{background:rgba(24,36,48,.32)}
+:root[data-zp-theme="light"] .history-picker-head button{background:#F0F2F4;color:#46515D}
+:root[data-zp-theme="light"] .history-picker-head button:active{background:#E8EDF1;color:#17202A}
+:root[data-zp-theme="light"] .history-calendar-day{background:#E8EDF1;color:#9AA5B1}
+:root[data-zp-theme="light"] .history-calendar-day.has-data{background:#F0F2F4;color:#17202A;box-shadow:inset 0 0 0 1px #8793A0}
+:root[data-zp-theme="light"] .history-calendar-day.has-data:active{background:#E1E7EC}
+:root[data-zp-theme="light"] .history-picker-close{background:#F0F2F4;border-color:#D7DDE3;color:#17202A}
+:root[data-zp-theme="light"] .history-picker-close:active{background:#E8EDF1}
+
+/* 工具栏 / 操作按钮统一语义体系（P0-3）：基于 --zp-* token；P1 提升为全局 .zp-btn 组件 */
+.zp-btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  height:var(--zp-control-height);
+  padding:0 var(--zp-space-4);
+  border:1px solid transparent;
+  border-radius:var(--zp-radius);
+  font-size:15px;font-weight:550;line-height:1;
+  cursor:pointer;
+  transition:background .15s,color .15s,border-color .15s;
+  -webkit-tap-highlight-color:transparent;
+}
+.zp-btn--secondary{background:rgba(255,255,255,.06);color:var(--zp-text);border-color:var(--zp-line)}
+.zp-btn:active{filter:brightness(.94)}
+.zp-btn:disabled{opacity:.5;cursor:default}
+
+/* 信息架构分组（P0-1） */
+.history-divider{border:0;border-top:1px solid var(--zp-divider);margin:14px 0}
+/* 左右缩进已由 main.history-shell 统一，板块内不再重复留白 */
+.history-actions{padding:0}
+.history-actions-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+/* 选择日期：quiet 操作行（与线路功能入口同语言：图标+文字+箭头），
+   替代原孤立幽灵文字按钮，使其融进卡片列表节奏 */
+.history-secondary-row{padding:0 0 4px}
+
+/* 浮层通用提示与空态 */
+.history-overlay-hint{margin:10px 0 16px;color:#B8C2CC;font-size:13px;line-height:20px}
+.history-overlay-empty{margin:8px 0 4px;padding:14px;text-align:center;color:#9AA5AF;font-size:13px;background:rgba(10,14,19,.6);border:1px solid rgba(255,255,255,.06);border-radius:12px}
+
+/* 回收站 */
+.history-trash-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:14px 0;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.history-trash-item:last-of-type{border-bottom:0}
+.history-trash-meta{display:flex;flex-direction:column;gap:3px;min-width:0}
+.history-trash-meta strong{font-size:14px;font-weight:600;color:#E8EDF2}
+.history-trash-meta span{font-size:12px;color:#9AA5AF}
+.history-trash-meta small{font-size:11px;color:#7F8A95}
+.history-trash-item .history-dialog-actions{flex:0 0 auto;gap:8px}
+.history-trash-restore,
+.history-trash-purge{
+  flex:0 0 auto!important;
+  height:34px!important;
+  padding:0 12px!important;
+  font-size:13px!important;
+  border-radius:9px!important;
+}
+.history-trash-purge{
+  background:rgba(120,40,40,.30)!important;
+  border-color:#5A2A2A!important;
+  color:#FFB4B4!important;
+}
+
+/* 导出 */
+.history-export-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px}
+.history-export-row span{font-size:15px;color:#E8EDF2;font-weight:550}
+.history-export-row select{
+  min-width:0;height:48px;flex:1;max-width:200px;padding:0 10px;
+  border:1px solid #35404C;border-radius:11px;background:#141C25;color:#F4F6F8;font-size:14px;
+}
+
+/* 客户快查 */
+.history-lookup-row{display:flex;gap:8px;margin:0 0 12px}
+.history-lookup-row input{
+  flex:1;min-width:0;height:48px;padding:0 12px;
+  border:1px solid #35404C;border-radius:11px;background:#141C25;color:#F4F6F8;font-size:14px;
+}
+.history-lookup-row input::placeholder{color:#7F8A95}
+.history-lookup-row button{
+  flex:0 0 auto;height:48px;padding:0 18px;
+  border:1px solid var(--zp-primary);border-radius:11px;background:var(--zp-primary);color:var(--zp-on-primary);font-size:15px;font-weight:600;
+}
+.history-lookup-result{min-height:20px}
+.history-lookup-card{margin:6px 0 0;padding:14px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(10,14,19,.6)}
+.history-lookup-line{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.history-lookup-line:last-of-type{border-bottom:0}
+.history-lookup-line span{font-size:13px;color:#9AA5AF}
+.history-lookup-line b{font-size:14px;font-weight:600;color:#E8EDF2;text-align:right}
+.history-lookup-stores{margin:10px 0 0}
+.history-lookup-stores strong{display:block;margin:0 0 8px;font-size:13px;color:#B8C2CC}
+.history-lookup-store{display:flex;flex-direction:column;gap:2px;padding:8px 10px;margin:0 0 6px;background:rgba(10,14,19,.6);border:1px solid rgba(255,255,255,.06);border-radius:10px}
+.history-lookup-store span{font-size:14px;font-weight:600;color:#E8EDF2}
+.history-lookup-store small{font-size:12px;color:#9AA5AF;line-height:18px}
+
+/* 浅色补充：新浮层与对话框（此前整块沿用深色硬编码） */
+:root[data-zp-theme="light"] .history-overlay-hint{color:#596674!important}
+:root[data-zp-theme="light"] .history-overlay-empty{background:#F0F2F4!important;color:#596674!important;border-color:#D7DDE3!important}
+:root[data-zp-theme="light"] .history-trash-item{border-bottom-color:rgba(20,30,40,.10)!important}
+:root[data-zp-theme="light"] .history-trash-meta strong{color:#17202A!important}
+:root[data-zp-theme="light"] .history-trash-meta span{color:#596674!important}
+:root[data-zp-theme="light"] .history-trash-meta small{color:#8793A0!important}
+:root[data-zp-theme="light"] .history-trash-purge{background:#FBEAEA!important;border-color:#E3B6B6!important;color:#B23B3B!important}
+:root[data-zp-theme="light"] .history-trash-purge:active{background:#F3D6D6!important}
+:root[data-zp-theme="light"] .history-export-row span{color:#17202A!important}
+:root[data-zp-theme="light"] .history-export-row select{background:#FFFFFF!important;color:#17202A!important;border-color:#C9D1D9!important}
+:root[data-zp-theme="light"] .history-lookup-row input{background:#FFFFFF!important;color:#17202A!important;border-color:#C9D1D9!important}
+:root[data-zp-theme="light"] .history-lookup-row input::placeholder{color:#8793A0!important}
+:root[data-zp-theme="light"] .history-lookup-row button{background:#F0F2F4!important;border-color:#D7DDE3!important;color:#17202A!important}
+:root[data-zp-theme="light"] .history-lookup-row button:active{background:#E8EDF1!important}
+:root[data-zp-theme="light"] .history-lookup-card{background:#F0F2F4!important;border-color:#D7DDE3!important}
+:root[data-zp-theme="light"] .history-lookup-line{border-bottom-color:rgba(20,30,40,.08)!important}
+:root[data-zp-theme="light"] .history-lookup-line span{color:#596674!important}
+:root[data-zp-theme="light"] .history-lookup-line b{color:#17202A!important}
+:root[data-zp-theme="light"] .history-lookup-stores strong{color:#46515D!important}
+:root[data-zp-theme="light"] .history-lookup-store{background:#FFFFFF!important;border-color:#D7DDE3!important}
+:root[data-zp-theme="light"] .history-lookup-store span{color:#17202A!important}
+:root[data-zp-theme="light"] .history-lookup-store small{color:#596674!important}
+/* 对话框面板与操作按钮浅色覆盖（顺带修好既有删除确认弹窗） */
+:root[data-zp-theme="light"] .history-dialog-panel{background:#FFFFFF!important;border-color:#D7DDE3!important}
+:root[data-zp-theme="light"] .history-dialog-panel>strong{color:#17202A!important}
+:root[data-zp-theme="light"] .history-dialog-panel>p{color:#596674!important}
+:root[data-zp-theme="light"] .history-dialog-actions button{background:#FFFFFF!important;color:#17202A!important;border-color:#C9D1D9!important}
+:root[data-zp-theme="light"] .history-dialog-actions button:last-child{background:#F0F2F4!important;color:#17202A!important}
+:root[data-zp-theme="light"] .history-dialog-actions button:active{background:#E8EDF1!important}
+
+/* 日期入口强化：从弱提示行升级为清晰、可识别的主要操作区 */
+.history-secondary-row{padding:2px 0 10px}
+
+/* 日期选择：沿用全站次级按钮风格，仅调整为独立的长方形入口 */
+.history-secondary-row{padding:2px 0 10px}
+.history-date-button{
+  display:flex;align-items:center;justify-content:center;gap:9px;
+  width:100%;min-height:48px;padding:0 16px;
+  font-size:15px;line-height:20px;font-weight:650;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+.history-date-button svg{width:20px;height:20px;flex:none}

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");if(r==="light")document.documentElement.setAttribute("data-zp-theme","light")}catch(e){}</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>智配One · 初始化管理员</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#05070A">
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="智配One">
+<link rel="stylesheet" href="/css/app.css?v=e6a645c1"><link rel="stylesheet" href="/css/ui-unified.css?v=b86b49dd">
+<style>
+.password-field{position:relative}
+.password-field input{padding-right:52px}
+.password-toggle{position:absolute;right:6px;bottom:0;width:40px;height:48px;padding:0;border:0;background:transparent;color:#8f9aa6;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.password-toggle:hover{color:#d5dce2}
+.password-toggle svg{width:20px;height:20px;pointer-events:none}
+</style>
+</head>
+<body>
+<main class="login-shell">
+<section class="login-card">
+<div class="login-brand">
+<div class="login-brand-row"><span class="login-brand-badge"><img src="/assets/logo.webp?v=bd681172" class="login-logo" alt="智配One"></span><span class="login-brand-name">智配One</span></div>
+</div>
+
+<h1 class="register-title">初始化管理员</h1>
+
+<form id="form" class="login-form">
+<label class="login-field">
+<span>管理员账号</span>
+<input id="username" autocomplete="username" placeholder="请输入管理员账号" required maxlength="32">
+</label>
+
+<label class="login-field password-field">
+<span>管理员密码</span>
+<input id="password" type="password" autocomplete="new-password" placeholder="请输入管理员密码" minlength="6" required>
+<button type="button" class="password-toggle" data-password-toggle="password" aria-label="显示密码" aria-pressed="false" hidden>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.2 12s3.2-5 9.8-5 9.8 5 9.8 5-3.2 5-9.8 5-9.8-5-9.8-5Z"/><circle cx="12" cy="12" r="2.5"/></svg>
+</button>
+</label>
+
+<label class="login-field password-field">
+<span>初始化密钥</span>
+<input id="setupKey" type="password" autocomplete="off" placeholder="请输入初始化密钥" required>
+<button type="button" class="password-toggle" data-password-toggle="setupKey" aria-label="显示密钥" aria-pressed="false" hidden>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.2 12s3.2-5 9.8-5 9.8 5 9.8 5-3.2 5-9.8 5-9.8-5-9.8-5Z"/><circle cx="12" cy="12" r="2.5"/></svg>
+</button>
+</label>
+
+<div id="message" class="login-message" role="alert"></div>
+<button id="button" class="login-submit" type="submit">建立管理员</button>
+</form>
+
+<div class="login-links">
+<a href="/">返回登录</a>
+</div>
+</section>
+</main>
+<script>
+const form=document.getElementById('form');
+const message=document.getElementById('message');
+const button=document.getElementById('button');
+
+document.querySelectorAll('[data-password-toggle]').forEach(toggle=>{
+ const input=document.getElementById(toggle.dataset.passwordToggle);
+ if(!input)return;
+ const syncVisibility=()=>{
+  toggle.hidden=input.value.length===0;
+  if(toggle.hidden&&input.type==='text'){
+   input.type='password';
+   toggle.setAttribute('aria-pressed','false');
+   toggle.setAttribute('aria-label',toggle.dataset.passwordToggle==='setupKey'?'显示密钥':'显示密码');
+  }
+ };
+ syncVisibility();
+ input.addEventListener('input',syncVisibility);
+ toggle.addEventListener('click',()=>{
+  if(input.value.length===0)return;
+  const visible=input.type==='text';
+  input.type=visible?'password':'text';
+  toggle.setAttribute('aria-pressed',String(!visible));
+  toggle.setAttribute('aria-label',visible?(toggle.dataset.passwordToggle==='setupKey'?'显示密钥':'显示密码'):(toggle.dataset.passwordToggle==='setupKey'?'隐藏密钥':'隐藏密码'));
+ });
+});
+
+form.addEventListener('submit',async e=>{
+ e.preventDefault();
+ message.textContent='';
+ button.disabled=true;
+ button.textContent='建立中…';
+ try{
+  const r=await fetch('/api/admin/bootstrap',{method:'POST',headers:{'content-type':'application/json'},credentials:'same-origin',body:JSON.stringify({
+   username:document.getElementById('username').value.trim(),
+   password:document.getElementById('password').value,
+   setupKey:document.getElementById('setupKey').value
+  })});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d.error||'初始化失败');
+  message.textContent='管理员创建成功，正在进入登录页…';
+  setTimeout(()=>location.replace('/'),700);
+ }catch(err){
+  message.textContent=err.message||'初始化失败';
+  button.disabled=false;
+  button.textContent='建立管理员';
+ }
+});
+</script>
+<script src="/js/pwa.js?v=864ce384"></script>
+</body>
+</html>

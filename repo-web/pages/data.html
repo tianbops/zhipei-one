@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<script>
+(function(){
+  function goLogin(){
+    try{document.documentElement.style.display="none"}catch(e){}
+    var p=location.pathname+location.search;
+    location.replace("/?redirect="+encodeURIComponent(p)+"&reason=auth");
+  }
+  try{
+    if(sessionStorage.getItem("zpAuth")!=="1"){goLogin();return;}
+  }catch(e){}
+  try{
+    window.addEventListener("pageshow",function(ev){
+      if(ev.persisted){try{if(sessionStorage.getItem("zpAuth")!=="1")location.replace("/?reason=auth");}catch(e){}}
+    });
+  }catch(e){}
+})();
+</script>
+
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>智配One · 数据资料</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#05070A">
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="智配One"><script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F4F6F8":"#05070A");try{var zn=window.ZhipeiNative;if(zn&&zn.applyTheme)zn.applyTheme(r==="light"?"#F4F6F8":"#05070A",r!=="light")}catch(e2){}}catch(e){}</script>
+<link rel="stylesheet" href="/css/app.css?v=e6a645c1"><link rel="stylesheet" href="/css/ui-unified.css?v=b86b49dd"><link rel="stylesheet" href="/css/mobile-ui.css?v=285d41d0"><link rel="stylesheet" href="/css/business-pages.css?v=b76afebb"><link rel="stylesheet" href="/css/data.css?v=a0b138d6"></head>
+<body><main class="page2 data-page zp-shell">
+<header class="topbar"><a class="app-back" href="/home" aria-label="返回"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><h1>数据资料</h1><button id="pageMenuBtn" class="data-page-menu-btn" type="button" aria-label="打开菜单">☰</button></header>
+<div class="zp-scroll">
+<section class="page2-card data-route-card"><div class="data-route-kicker">当前调度线路</div><div class="data-route-title"><h2 id="title">加载中…</h2><div id="summary" class="data-summary"><strong></strong></div></div><p id="hint" class="data-route-hint">正在读取线路资料</p></section>
+<div id="pageMenu" class="data-page-menu" hidden><button id="dataShareBtn" type="button">分享</button><button id="dataLogoutBtn" type="button">退出</button></div>
+<section class="card data-tools-card" id="tools" style="display:none">
+<div class="data-maintenance">
+  <div class="data-maintenance-group">
+    <button id="replaceBtn" class="data-action-btn" type="button">批量替换</button>
+    <button id="appendBtn" class="data-action-btn" type="button">单独追加</button>
+  </div>
+  <div class="data-maintenance-group">
+    <button id="restoreBtn" class="data-action-btn" type="button">恢复数据</button>
+    <button id="saveStoresTop" class="data-action-btn data-action-primary" type="button">提交更新</button>
+  </div>
+  <input id="restoreFile" type="file" accept=".json,.txt,.csv,application/json,text/plain,text/csv" hidden>
+</div>
+</section>
+<div id="dataFeedback" class="data-feedback" hidden></div><section class="page2-card data-list-card"><div class="data-list-head"><span class="data-list-title">门店资料</span><span id="storeCount" class="data-list-count"></span></div><div id="stores" class="data-store-list">加载中…</div></section>
+<div id="editBox" class="data-import data-editor" style="display:none"><div class="data-import-panel data-editor-panel"><div class="data-import-head"><h3 id="editTitle">编辑门店</h3><button id="editClose" class="data-import-close" type="button" aria-label="关闭">×</button></div><label class="data-field"><span>排列序号</span><input id="editOrder" class="data-input" type="number" min="1" step="1" inputmode="numeric" placeholder="例如 1"><small id="editOrderHint" class="data-field-hint"></small></label><label class="data-field"><span>门店名称</span><input id="editName" class="data-input" type="text" maxlength="120"></label><label class="data-field"><span>导航地址</span><input id="editNavigation" class="data-input" type="url" placeholder="https://..."></label><label class="data-field"><span>备注</span><textarea id="editNote" class="data-textarea data-note" placeholder="可选"></textarea></label><div id="editError" class="data-help data-preview"></div><div class="data-import-actions"><button id="editCancel" type="button">取消</button><button id="editSave" type="button">保存</button></div></div></div>
+<div id="replaceBox" class="data-import" style="display:none"><div class="data-import-panel">
+<div class="data-import-head"><h3>批量替换</h3><button id="replaceClose" class="data-import-close" type="button" aria-label="关闭">×</button></div>
+<p class="data-help">用新的完整门店资料替换当前线路显示的资料。确认提交前，不会修改服务器中的正式数据。</p>
+<input id="replaceFile" class="data-file" type="file" accept=".txt,.csv,.json,application/json,text/plain,text/csv">
+<textarea id="replaceText" class="data-textarea" placeholder="01、江北胡汪洋经销商
+导航：https://...
+备注：由经销商代送
+
+02、渝北中景隆贸易有限公司"></textarea>
+<div id="replacePreview" class="data-help data-preview"></div>
+<div class="data-import-actions"><button id="replaceCancel" type="button">取消</button><button id="replaceApply" type="button">预览替换</button></div>
+</div></div>
+<div id="appendBox" class="data-import" style="display:none"><div class="data-import-panel">
+<div class="data-import-head"><h3>单独追加</h3><button id="appendClose" class="data-import-close" type="button" aria-label="关闭">×</button></div>
+<p class="data-help">新增一家门店到当前资料的末尾。追加内容先保存在页面，确认无误后再提交更新。</p>
+<label class="data-field"><span>排列序号</span><input id="appendOrder" class="data-input" type="number" min="1" step="1" inputmode="numeric" placeholder="例如 1"><small id="appendOrderHint" class="data-field-hint"></small></label><label class="data-field"><span>门店名称</span><input id="appendName" class="data-input" type="text" maxlength="120"></label>
+<label class="data-field"><span>导航地址</span><input id="appendNavigation" class="data-input" type="url" placeholder="https://..."></label>
+<label class="data-field"><span>备注</span><textarea id="appendNote" class="data-textarea data-note" placeholder="可选"></textarea></label>
+<div id="appendError" class="data-help data-preview"></div>
+<div class="data-import-actions"><button id="appendCancel" type="button">取消</button><button id="appendApply" type="button">追加</button></div>
+</div></div>
+<div id="restoreBox" class="data-import" style="display:none"><div class="data-import-panel">
+<div class="data-import-head"><h3>恢复数据</h3><button id="restoreClose" class="data-import-close" type="button" aria-label="关闭">×</button></div>
+<p class="data-help">选择之前保存的线路资料文件。恢复只替换当前页面显示的暂存数据，检查无误后再点击“提交更新”。</p>
+<div id="restorePreview" class="data-help data-preview">等待选择数据文件</div>
+<div class="data-import-actions"><button id="restoreCancel" type="button">取消</button><button id="restoreChoose" type="button">选择文件</button></div>
+</div></div>
+</div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+var dataBaseline="";// 门店资料基线：用于判断是否存在「暂存但未提交」的修改
+// 来源驱动返回：从运单详情内进入数据资料时，返回箭头应回到原运单而非首页
+(function(){
+  const p=new URLSearchParams(location.search);
+  if(p.get("from")==="order"){
+    const oid=p.get("id");
+    if(oid){const a=document.querySelector(".app-back");if(a)a.href="/pages/order_detail?id="+encodeURIComponent(oid)+"&source=process&from=process"}
+  }
+})();
+async function api(u,o={}){const r=await fetch(u,{credentials:"same-origin",...o});const d=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(d.error||d.message||"请求失败");e.code=d.code||"HTTP_"+r.status;e.detail=d.detail||"";throw e}return d}
+function err(e){return(e.code?"["+e.code+"] ":"")+e.message+(e.detail?" · "+e.detail:"")}
+let routeId="",canMaintain=false,stores=[],baseVersion=1,saving=false,baseVersionConflict=false,editingIndex=-1,confirming=false,dragIndex=-1,hiddenIndexes=new Set();
+
+function cleanName(v){return String(v||"").trim().replace(/^[、.．)）\\-\s]+|[、.．\\-\s]+$/g,"").trim()}
+function parseImport(text){
+ const raw=String(text||"").trim();
+ if(raw.startsWith("[")||raw.startsWith("{")){
+  try{
+   const j=JSON.parse(raw),a=Array.isArray(j)?j:(Array.isArray(j.stores)?j.stores:(Array.isArray(j.data)?j.data:[]));
+   if(a.length)return a.map((x,i)=>({storeId:String(x.storeId||"").trim(),originalName:String(x.originalName||x.name||x.displayName||"").trim(),name:String(x.name||x.displayName||x.originalName||"").trim(),aliases:Array.isArray(x.aliases)?x.aliases:[],businessStoreCode:String(x.businessStoreCode||"").trim(),navigation:String(x.navigation||"").trim(),routeOrder:Number(x.routeOrder)||i+1,note:String(x.note||"").trim()})).filter(x=>x.name);
+  }catch{}
+ }
+ const lines=String(text||"").replace(/\r/g,"").split("\n").map(x=>x.trim()).filter(Boolean),out=[];let cur=null;
+ const push=()=>{if(cur?.name){cur.name=cleanName(cur.name);if(cur.name)out.push(cur)}cur=null};
+ for(let line of lines){
+  const nav=line.match(/(?:导航\s*[:：]?\s*)?(https?:\/\/[^\s）)]+)/i);
+  if(nav){if(!cur){const before=line.slice(0,nav.index).trim();if(before)cur={name:before,nav:"",note:""}}if(cur)cur.nav=nav[1].trim();line=(line.slice(0,nav.index)+line.slice(nav.index+nav[0].length)).trim();if(!line)continue}
+  if(/^备注\s*[:：]/i.test(line)){if(cur)cur.note=line.replace(/^备注\s*[:：]\s*/i,"").trim();continue}
+  const m=line.match(/^\d+\s*[、.．)）-]?\s*(.+)$/);
+  if(m){push();cur={name:m[1].trim(),nav:"",note:""};continue}
+  if(!cur)cur={name:line,nav:"",note:""};else cur.name+=" "+line
+ }
+ push();
+ const seen=new Set();
+ return out.filter(x=>{const k=x.name.replace(/[\s　]+/g,"").toLowerCase();if(!k||seen.has(k))return false;seen.add(k);return true}).map((x,i)=>({storeId:"",originalName:x.name,name:x.name,aliases:[],businessStoreCode:"",navigation:/^https?:\/\//i.test(x.nav)?x.nav:"",routeOrder:i+1,note:x.note||""}))
+}
+function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+/* 全局标准：文本位置统一「X号线」（与 ui-unified.js 的 zpRouteName 同规则，ui-unified 未加载时兜底） */
+function rn(v){const s=String(v??"").trim();if(!s)return"";if(window.zpRouteName)return window.zpRouteName(s)||s;if(/号线$/.test(s))return s;if(/^(\d+)号$/.test(s))return s.replace("号","")+"号线";if(/^\d+路$/.test(s))return s.replace("路","")+"号线";if(/^\d+$/.test(s))return s+"号线";return s}
+function navUrl(v){const u=String(v||"").trim();return /^https?:\/\//i.test(u)?u:""}
+function showDataFeedback(type,message,actionLabel="",action=null){
+ const el=$("dataFeedback");if(!el)return;
+ el.className="data-feedback "+type;el.replaceChildren();
+ const text=document.createElement("span");text.textContent=message;el.appendChild(text);
+ if(actionLabel&&typeof action==="function"){
+  const btn=document.createElement("button");btn.type="button";btn.className="data-feedback-action";btn.textContent=actionLabel;btn.onclick=action;el.appendChild(btn)
+ }
+ el.hidden=false;clearTimeout(showDataFeedback.timer);
+ showDataFeedback.timer=setTimeout(()=>{el.hidden=true},actionLabel?15000:2600)
+}
+function downloadDraft(){
+ const payload={routeId,baseVersion,exportedAt:new Date().toISOString(),stores:stores.map((s,i)=>({...s,routeOrder:i+1}))};
+ const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json;charset=utf-8"});
+ const url=URL.createObjectURL(blob),a=document.createElement("a");
+ a.href=url;a.download="zhipei-one-data-draft-"+(routeId||"route")+"-"+new Date().toISOString().slice(0,10)+".json";
+ document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)
+}
+function render(){
+ const box=$("stores");$("storeCount").textContent=stores.length+"家";
+ if(!stores.length){box.innerHTML='<div class="data-empty">暂无门店资料</div>';return}
+ const ordered=stores.map((s,index)=>({s,index})).sort((a,b)=>(a.s.routeOrder||0)-(b.s.routeOrder||0));
+ box.innerHTML=ordered.map((entry,i)=>{
+  const s=entry.s,index=entry.index,hidden=hiddenIndexes.has(index);
+  const name=esc(s.name||s.originalName||"未命名门店");
+  const meta=[];
+  if(s.aliases?.length)meta.push('<span><b class="data-store-meta-label">别名</b>'+esc(s.aliases.join("、").replace(/\\n/g," "))+'</span>');
+  if(s.note)meta.push('<span><b class="data-store-meta-label">备注</b>'+esc(s.note)+'</span>');
+  const nav=navUrl(s.navigation);
+  const rowClass=hidden?"data-store-row data-store-hidden":"data-store-row";
+  return '<article class="'+rowClass+'" data-index="'+index+'" draggable="'+(canMaintain?"true":"false")+'">'+
+   '<span class="data-store-index">'+String(i+1).padStart(2,"0")+'</span>'+
+   '<div class="data-store-main">'+
+   '<div class="data-store-name-line">'+
+   (nav?'<a class="data-store-name data-store-nav" href="'+esc(nav)+'" target="_blank" rel="noopener noreferrer">'+name+'</a>':'<strong class="data-store-name">'+name+'</strong>')+
+   ""+
+   '</div>'+
+   (meta.length?'<div class="data-store-meta">'+meta.join("")+'</div>':"")+
+   '</div>'+
+   (canMaintain?'<div class="data-swipe-actions"><button type="button" data-swipe-edit="'+index+'">编辑</button><button type="button" class="data-swipe-delete" data-swipe-delete="'+index+'">删除</button></div>':"")+
+   '</article>'
+ }).join("");
+}
+function openEditor(index=-1){
+ editingIndex=index;
+ const s=index>=0?stores[index]:{name:"",originalName:"",navigation:"",note:""};
+ $("editTitle").textContent=index>=0?"编辑门店":"新增门店";
+ $("editOrder").value=index>=0?(s.routeOrder||index+1):stores.length+1;
+ updateOrderHint();
+ $("editName").value=s.name||s.originalName||"";
+ $("editNavigation").value=s.navigation||"";
+ $("editNote").value=s.note||"";
+ $("editError").textContent="";
+ showPanel("editBox");
+ setTimeout(()=>$("editName").focus(),0)
+}
+function updateOrderHint(){
+ const max=stores.length+(editingIndex<0?1:0),value=Number($("editOrder").value),hint=$("editOrderHint");
+ if(!Number.isInteger(value)||value<1||value>max){hint.textContent="请输入 1～"+max+" 的序号";hint.className="data-field-hint invalid";return}
+ hint.textContent=editingIndex<0?"将插入第 "+value+" 位":"保存后将调整到第 "+value+" 位";hint.className="data-field-hint"
+}
+function syncPanelScrollLock(){
+ const open=["editBox","replaceBox","appendBox","restoreBox"].some(id=>$(id).style.display==="flex");
+ document.body.classList.toggle("data-panel-open",open)
+}
+function showPanel(id){
+ ["editBox","replaceBox","appendBox","restoreBox"].forEach(key=>{if(key!==id)$(key).style.display="none"});
+ $(id).style.display="flex";syncPanelScrollLock()
+}
+function hidePanel(id){$(id).style.display="none";syncPanelScrollLock()}
+function closeEditor(){hidePanel("editBox");editingIndex=-1}
+async function askConfirm(title,message,okText="确定"){
+ if(confirming)return false;
+ confirming=true;
+ try{return await zpConfirm(title,message,okText)}
+ finally{confirming=false}
+}
+function applyOrder(index,target){
+ const to=Math.max(1,Math.min(Number(target)||1,stores.length))-1;
+ if(index<0||index>=stores.length||index===to)return;
+ const [item]=stores.splice(index,1);stores.splice(to,0,item);stores.forEach((s,i)=>s.routeOrder=i+1);hiddenIndexes.clear();render()
+}
+$("editOrder").oninput=updateOrderHint;
+$("editClose").onclick=closeEditor;$("editCancel").onclick=closeEditor;
+$("editSave").onclick=()=>{
+ const name=$("editName").value.trim(),order=Number($("editOrder").value);
+ if(!name){$("editError").textContent="请输入门店名称";$("editName").focus();return}
+ const max=stores.length+(editingIndex<0?1:0);
+ if(!Number.isInteger(order)||order<1||order>max){$("editError").textContent="排列序号无效";return}
+ let item=editingIndex>=0?stores[editingIndex]:{storeId:"",originalName:"",aliases:[],businessStoreCode:"",routeOrder:stores.length+1};
+ item.name=name;if(!item.originalName)item.originalName=name;item.navigation=$("editNavigation").value.trim();item.note=$("editNote").value.trim();
+ if(editingIndex<0){stores.push(item);editingIndex=stores.length-1}
+ const from=editingIndex;applyOrder(from,order);closeEditor();render()
+};
+function closeAllPanels(){["replaceBox","appendBox","restoreBox"].forEach(hidePanel)}
+
+// 数据资料编辑/导入面板：点击遮罩或按 Esc 关闭，不影响全局确认弹窗。
+["editBox","replaceBox","appendBox","restoreBox"].forEach(id=>{
+ $(id).addEventListener("click",e=>{if(e.target!==$(id))return;
+  if(id==="editBox")closeEditor();else if(id==="replaceBox")closeAllPanels();else hidePanel(id)
+ })
+});
+document.addEventListener("keydown",e=>{
+ if(e.key!=="Escape")return;
+ const active=["editBox","replaceBox","appendBox","restoreBox"].find(id=>$(id).style.display==="flex");
+ if(!active)return;
+ e.preventDefault();
+ if(active==="editBox")closeEditor();else if(active==="replaceBox")closeAllPanels();else hidePanel(active)
+});
+
+function openReplace(){$("replaceText").value="";$("replaceFile").value="";$("replacePreview").textContent="";showPanel("replaceBox")}
+function openAppend(){$("appendOrder").value=stores.length+1;$("appendOrderHint").textContent="默认追加到第 "+(stores.length+1)+" 位";$("appendName").value="";$("appendNavigation").value="";$("appendNote").value="";$("appendError").textContent="";showPanel("appendBox");setTimeout(()=>$("appendOrder").focus(),0)}
+function showRestore(){ $("restorePreview").textContent="等待选择数据文件"; showPanel("restoreBox") }
+function prepareReplace(){
+ const p=parseImport($("replaceText").value);
+ $("replacePreview").textContent=p.length?"已识别 "+p.length+" 家门店，将替换当前 "+stores.length+" 家资料。":"尚未识别到有效门店";
+ return p
+}
+$("replaceBtn").onclick=()=>canMaintain&&openReplace();
+$("replaceClose").onclick=$("replaceCancel").onclick=()=>closeAllPanels();
+$("replaceText").oninput=prepareReplace;
+$("replaceFile").onchange=async e=>{const file=e.target.files?.[0];if(!file)return;try{$("replaceText").value=await file.text();prepareReplace()}catch{$("replacePreview").textContent="文件读取失败"}};
+$("replaceApply").onclick=async()=>{
+ const p=prepareReplace();if(!p.length)return;
+ const ok=await zpConfirm("确认批量替换","当前资料 "+stores.length+" 家，新资料 "+p.length+" 家。确认后只替换当前页面的暂存资料；服务器正式资料仍需点击“提交更新”才会改变。","确认替换");
+ if(!ok)return;
+ stores=p.map((s,i)=>({...s,routeOrder:i+1}));hiddenIndexes.clear();hidePanel("replaceBox");render();
+};
+$("appendBtn").onclick=()=>canMaintain&&openAppend();
+$("appendClose").onclick=$("appendCancel").onclick=()=>hidePanel("appendBox");
+$("appendApply").onclick=()=>{
+ const name=$("appendName").value.trim(),order=Number($("appendOrder").value);
+ if(!Number.isInteger(order)||order<1||order>stores.length+1){$("appendError").textContent="排列序号无效，请输入 1～"+(stores.length+1);return}
+ if(!name){$("appendError").textContent="请输入门店名称";return}
+ stores.splice(order-1,0,{storeId:"",originalName:name,name,aliases:[],businessStoreCode:"",navigation:$("appendNavigation").value.trim(),routeOrder:order,note:$("appendNote").value.trim()});
+ stores.forEach((s,i)=>s.routeOrder=i+1);
+ hiddenIndexes.clear();render();hidePanel("appendBox")
+};
+$("restoreBtn").onclick=()=>{if(canMaintain){showRestore();$("restoreFile").click()}};
+$("restoreChoose").onclick=()=>$("restoreFile").click();
+$("restoreClose").onclick=$("restoreCancel").onclick=()=>hidePanel("restoreBox");
+$("restoreFile").onchange=async e=>{
+ const file=e.target.files?.[0];if(!file)return;
+ try{
+  const raw=await file.text(),parsed=parseImport(raw);
+  if(!parsed.length){$("restorePreview").textContent="未识别到有效门店资料，请选择之前导出的数据文件。";return}
+  $("restorePreview").textContent="已读取 "+parsed.length+" 家门店。恢复后将替换当前页面显示的暂存资料。";
+  if(await askConfirm("恢复数据","确认用这份 "+parsed.length+" 家门店资料替换当前页面显示的数据吗？")){stores=parsed.map((s,i)=>({...s,routeOrder:i+1}));hiddenIndexes.clear();render();hidePanel("restoreBox")}
+ }catch(e){$("restorePreview").textContent="恢复失败："+err(e)}
+ finally{e.target.value=""}
+};
+$("saveStoresTop").onclick=async()=>submitStores();
+async function shareSavedBase(){
+ try{
+  const d=await api("/api/base?routeId="+encodeURIComponent(routeId));
+  const saved=Array.isArray(d.base?.stores)?d.base.stores:[];
+  const routeName=rn(d.route?.name)||$("title").textContent||"当前线路";/* 全局标准：文本位置统一「X号线」 */
+  const lines=["智配One · "+routeName,"已保存线路资料 · "+saved.length+"家",""];
+  saved.slice().sort((a,b)=>(a.routeOrder||0)-(b.routeOrder||0)).forEach((s,i)=>{
+   const name=s.name||s.originalName||"未命名门店";
+   lines.push(String(i+1).padStart(2,"0")+"  "+name);
+   if(s.navigation)lines.push("导航："+s.navigation);
+   if(s.note)lines.push("备注："+s.note);
+  });
+  const text=lines.join("\n");
+  if(navigator.share){await navigator.share({title:routeName+" · 线路资料",text})}
+  else if(navigator.clipboard){await navigator.clipboard.writeText(text);zpToast("已复制已保存的线路资料","success")}
+  else{zpToast("当前设备不支持分享","error")}
+ }catch(e){if(e?.name!=="AbortError")zpToast("分享失败："+(e?.message||"请求失败"),"error")}
+}
+$("pageMenuBtn").onclick=()=>{$("pageMenu").hidden=!$("pageMenu").hidden};
+document.addEventListener("click",e=>{if(!e.target.closest(".data-page-menu,.data-page-menu-btn"))$("pageMenu").hidden=true});
+$("dataShareBtn").onclick=async()=>{ $("pageMenu").hidden=true; if(routeId)await shareSavedBase() };
+$("dataLogoutBtn").onclick=async()=>{ $("pageMenu").hidden=true; if(!(await zpConfirm("退出登录","确定退出当前账号吗？")))return; try{await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"})}finally{location.replace("/")} };
+async function submitStores(){
+ if(saving)return;saving=true;$("saveStoresTop").disabled=true;
+ try{
+  stores.forEach((s,i)=>s.routeOrder=i+1);
+  const d=await api("/api/base",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({routeId,expectedVersion:baseVersion,stores})});
+  stores=Array.isArray(d.base?.stores)?d.base.stores:stores;baseVersion=Number(d.base?.version)||baseVersion;hiddenIndexes.clear();dataBaseline=JSON.stringify(stores);render();
+  $("summary").innerHTML="<strong>"+stores.length+"家</strong>";showDataFeedback("success","数据更新成功")
+ }catch(e){
+   if(e.code==="BASE_VERSION_CONFLICT"){
+    baseVersionConflict=true;
+    showDataFeedback("error","服务器资料已被其他操作更新。当前暂存修改已保留但不能直接提交，请下载副本后刷新并合并。","下载暂存副本",downloadDraft)
+   }else showDataFeedback("error","数据更新失败："+(e.message||"请稍后重试"))
+  }
+ finally{saving=false;$("saveStoresTop").disabled=false}
+}
+function bindTouch(){
+ const list=$("stores");let touchRow=null;
+ list.addEventListener("touchstart",e=>{
+  const row=e.target.closest(".data-store-row");if(!row||!canMaintain)return;
+  touchRow=row;
+  row._touch={x:e.touches[0].clientX,y:e.touches[0].clientY,t:Date.now(),long:false};
+  row._timer=setTimeout(()=>{if(row._touch){row._touch.long=true;row.classList.add("data-drag-active")}},550)
+ },{passive:true});
+ list.addEventListener("touchmove",e=>{
+  const row=touchRow,t=row?row._touch:null;if(!row||!t)return;
+  const dx=e.touches[0].clientX-t.x,dy=e.touches[0].clientY-t.y;
+  if(Math.abs(dx)>12||Math.abs(dy)>12){clearTimeout(row._timer);if(!t.long)return}
+  if(t.long){e.preventDefault();row.classList.add("data-drag-active")}
+ },{passive:false});
+ list.addEventListener("touchend",e=>{
+  const row=touchRow,t=row?row._touch:null;if(!row||!t)return;clearTimeout(row._timer);
+  const dx=e.changedTouches[0].clientX-t.x,dy=e.changedTouches[0].clientY-t.y;row.classList.remove("data-drag-active");row._touch=null;
+  if(t.long){const target=document.elementFromPoint(e.changedTouches[0].clientX,e.changedTouches[0].clientY)?.closest(".data-store-row");row.classList.remove("data-drag-active");if(target&&target!==row){applyOrder(Number(row.dataset.index),Number(target.dataset.index))}touchRow=null;return;}
+  if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)){const index=Number(row.dataset.index);if(dx<0){document.querySelectorAll(".data-store-row.data-swipe-open").forEach(x=>x.classList.remove("data-swipe-open"));row.classList.add("data-swipe-open")}else{hiddenIndexes.add(index);render()}touchRow=null;return}
+  touchRow=null;
+ },{passive:true});
+ list.addEventListener("dragstart",e=>{const row=e.target.closest(".data-store-row");if(!row||!canMaintain)return;dragIndex=Number(row.dataset.index);row.classList.add("data-drag-active")});
+ list.addEventListener("dragover",e=>{if(dragIndex>=0)e.preventDefault()});
+ list.addEventListener("drop",e=>{const row=e.target.closest(".data-store-row");if(!row||dragIndex<0)return;e.preventDefault();applyOrder(dragIndex,Number(row.dataset.index));dragIndex=-1});
+ list.addEventListener("dragend",()=>{dragIndex=-1;document.querySelectorAll(".data-drag-active").forEach(x=>x.classList.remove("data-drag-active"))});
+}
+$("stores").addEventListener("click",e=>{
+ const edit=e.target.closest("[data-swipe-edit]"),del=e.target.closest("[data-swipe-delete]");
+ if(edit){openEditor(Number(edit.dataset.swipeEdit));return}
+ if(del){
+  const i=Number(del.dataset.swipeDelete);
+  if(Number.isInteger(i)&&i>=0&&i<stores.length){
+   askConfirm("删除门店","确定删除“"+(stores[i].name||stores[i].originalName||"该门店")+"”吗？").then(ok=>{if(!ok)return;stores.splice(i,1);stores.forEach((s,n)=>s.routeOrder=n+1);hiddenIndexes.clear();render()})
+  }
+  return
+ }
+ const nav=e.target.closest(".data-store-nav");if(nav)return;
+ const row=e.target.closest(".data-store-row");if(!row)return;
+ if(row.classList.contains("data-swipe-open"))row.classList.remove("data-swipe-open");
+});
+bindTouch();
+/* 快速滚动箭头已按产品决策下线（与全局保持一致），滚动交给原生手势。 */
+async function load(){
+ try{
+  const d=await api("/api/dispatch");routeId=d.dispatchRoute?.id||"";
+  if(!routeId){$("hint").textContent="请先在首页选择调度线路";$("stores").textContent="暂无可查看的数据资料";return}
+  if(routeId&&routeId.startsWith("__temp__:")){$("title").textContent="临时用户 · 数据资料";$("hint").textContent="临时用户不建立正式数据资料";$("summary").innerHTML="<strong>临时用户</strong>";$("stores").textContent="临时用户使用全局学习识别门店，规划按运单原始顺序排列。";return}
+  const x=await api("/api/base?routeId="+encodeURIComponent(routeId));
+  canMaintain=!!x.canMaintain;
+  $("tools").style.display=canMaintain?"block":"none";
+  stores=Array.isArray(x.base?.stores)?x.base.stores:[];baseVersion=Number(x.base?.version)||1;dataBaseline=JSON.stringify(stores);
+  $("title").textContent=(x.route?.name?(rn(x.route.name)||"当前线路"):"当前线路");/* 全局标准：文本位置统一「X号线」 */
+  $("hint").textContent=canMaintain?"你目前拥有该线路维护权限":"你目前仅拥有该线路使用权限";
+  $("summary").innerHTML="<strong>"+stores.length+"家</strong>";
+  render()
+ }catch(e){$("hint").textContent=err(e);$("stores").textContent="数据资料加载失败";$("summary").innerHTML="<strong>—</strong>";$("storeCount").textContent="—"}
+}
+load();
+/* 返回层级：四个导入面板（用内联 style.display，非 hidden）→ 下拉菜单 → 页面导航。
+   另加页面级未保存拦截，保护「暂存但尚未提交」的门店修改。 */
+(function(){
+  const PANELS=["editBox","replaceBox","appendBox","restoreBox"];
+  const openPanel=()=>{for(const id of PANELS){const el=$(id);if(el&&el.style.display==="flex")return el}return null};
+  const filled=el=>!!el&&[...el.querySelectorAll("input,textarea,select")].some(x=>String(x.value||"").trim()!=="");
+  (window.zpBackHooks=window.zpBackHooks||[]).push(
+    {rank:10,probe:openPanel,dirty:()=>filled(openPanel()),
+     close:()=>{const el=openPanel();if(!el)return false;hidePanel(el.id);if(el.id==="editBox")editingIndex=-1;return true}},
+    {rank:20,probe:()=>$("pageMenu"),close:()=>{$("pageMenu").hidden=true;return true}}
+  );
+  (window.zpDirtyProbes=window.zpDirtyProbes||[]).push(()=>
+    filled(openPanel())||!!(dataBaseline&&dataBaseline!==JSON.stringify(stores)));
+})();
+</script><script src="/js/ui-unified.js?v=3e6b15d6"></script>
+<script src="/js/pwa.js?v=864ce384"></script>
+</body></html>

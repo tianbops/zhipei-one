@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");if(r==="light")document.documentElement.setAttribute("data-zp-theme","light")}catch(e){}</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>智配One · 注册</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#05070A">
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="智配One">
+<link rel="stylesheet" href="/css/app.css?v=e6a645c1"><link rel="stylesheet" href="/css/ui-unified.css?v=b86b49dd">
+<style>
+.password-field{position:relative}
+.password-field input{padding-right:52px}
+.password-toggle{position:absolute;right:6px;bottom:0;width:40px;height:48px;padding:0;border:0;background:transparent;color:#8f9aa6;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.password-toggle:hover{color:#d5dce2}
+.password-toggle svg{width:20px;height:20px;pointer-events:none}
+</style>
+</head>
+<body>
+<main class="login-shell">
+<section class="login-card">
+<div class="login-brand">
+<div class="login-brand-row"><span class="login-brand-badge"><img src="/assets/logo.webp?v=bd681172" class="login-logo" alt="智配One"></span><span class="login-brand-name">智配One</span></div>
+<p class="login-sub">注册后，加入你的配送线路。</p>
+</div>
+
+<form id="registerForm" class="login-form">
+<label class="login-field">
+<span>账号</span>
+<input id="username" autocomplete="username" placeholder="请输入账号" required maxlength="32">
+</label>
+
+<label class="login-field password-field">
+<span>密码</span>
+<input id="password" type="password" autocomplete="new-password" placeholder="请输入密码" minlength="6" required>
+<button type="button" class="password-toggle" data-password-toggle="password" aria-label="显示密码" aria-pressed="false" hidden>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.2 12s3.2-5 9.8-5 9.8 5 9.8 5-3.2 5-9.8 5-9.8-5-9.8-5Z"/><circle cx="12" cy="12" r="2.5"/></svg>
+</button>
+</label>
+
+<label class="login-field password-field">
+<span>确认密码</span>
+<input id="confirmPassword" type="password" autocomplete="new-password" placeholder="请再次输入密码" minlength="6" required>
+<button type="button" class="password-toggle" data-password-toggle="confirmPassword" aria-label="显示密码" aria-pressed="false" hidden>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.2 12s3.2-5 9.8-5 9.8 5 9.8 5-3.2 5-9.8 5-9.8-5-9.8-5Z"/><circle cx="12" cy="12" r="2.5"/></svg>
+</button>
+</label>
+
+<label class="login-field">
+<span>邀请码</span>
+<input id="inviteCode" autocomplete="off" placeholder="请输入管理员提供的邀请码" required maxlength="64">
+</label>
+
+<div id="registerMessage" class="login-message" role="alert"></div>
+<button id="registerButton" class="login-submit" type="submit">注册</button>
+</form>
+
+<div class="login-links">
+<a href="/">返回登录</a>
+</div>
+</section>
+</main>
+<script src="/js/register.js?v=eafb4977"></script>
+<script src="/js/pwa.js?v=864ce384"></script>
+</body>
+</html>
