@@ -116,6 +116,15 @@
 .acct-about-hero{display:flex;flex-direction:row;align-items:baseline;justify-content:space-between;gap:8px;padding:10px 2px 4px}
 .acct-about-name{margin:0;color:var(--zp-text,#fff);font-size:16px;font-weight:700}
 .acct-about-ver{margin:0;color:var(--zp-muted,#8B98A5);font-size:12px}
+/* App 端壳版本落后于最新版时的更新徽标：主色胶囊（沿用唯一主色 --zp-primary），
+   点击直接触发 APK 下载（原生 DownloadManager 接管）。类名避开 danger/delete
+   子串（全站危险按钮兜底规则红线）；#aboutVersion 锚定提升特异性，压过
+   ui-unified.css 的全局 button 文字兜底（:root[data-zp-theme=light] button）。 */
+#aboutVersion .acct-ver-badge{margin-left:8px;padding:3px 10px;border:0;border-radius:999px;
+  background:var(--zp-primary,#FFFFFF);color:var(--zp-on-primary,#0A0A0A);
+  font-size:11px;font-weight:600;line-height:16px;cursor:pointer;white-space:nowrap;
+  vertical-align:middle;-webkit-tap-highlight-color:transparent}
+#aboutVersion .acct-ver-badge:active{opacity:.75}
 /* --- 关于：获取/信息卡片 + 版权 --- */
 .acct-about-copyright{margin:14px 0 4px;text-align:center;color:var(--zp-muted,#8B98A5);font-size:12px}
 .install-guide{margin:2px 0 12px}
@@ -201,7 +210,7 @@
 
 <div class="acct-about-hero">
   <p class="acct-about-name">智配One</p>
-  <p class="acct-about-ver" id="aboutVersion">版本 网页版</p>
+  <p class="acct-about-ver" id="aboutVersion"><span id="aboutVerText">版本 网页版</span></p>
 </div>
 
 <section id="aboutCard" class="acct-card about-card" aria-label="获取">
@@ -376,16 +385,64 @@ $("deleteConfirm").onclick=async()=>{
    - 网页端地址：点击复制官网 https://tianyou-zhipei.pages.dev
    - 信息组暂为占位（真实页面待补） */
 (function(){
- const verEl=$("aboutVersion"),
-  installDlLink=$("installDlLink"),guide=$("installGuide"),steps=$("installGuideSteps"),
+ const installDlLink=$("installDlLink"),guide=$("installGuide"),steps=$("installGuideSteps"),
   webCopyBtn=$("webCopyBtn");
- if(!verEl)return;
+ if(!$("aboutVersion"))return;
  const installed=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
 
- /* 品牌区版本号 */
- fetch("/version.json?ts="+Date.now(),{cache:"no-store"}).then(r=>r.json()).then(v=>{
-  if(v&&v.version)verEl.textContent="版本 V"+v.version;
- }).catch(()=>{verEl.textContent="版本 网页版"});
+ /* 品牌区版本号：多端版本语义分层（App 壳版本 ≠ 网页实时版本）。
+    - 浏览器/桌面/微信/PWA：web 实时版本（version.json，SW 保证永远最新）→「版本 Vx.x.x」
+    - App 壳：APK 版本（ZhipeiNative.appVersion()，锁在安装包）→「App Vx.x.x」；
+      落后于最新版（version.json 与发版 tag 一致，即最新 APK 版本）时追加
+      「有新版本」徽标，点击直接下载（原生 DownloadManager 接管）。
+    - 老包无 appVersion 接口：降级为 web 版本显示（渐进增强，v1.0.12 起完整生效）。 */
+ (function(){
+  const textEl=$("aboutVerText");if(!textEl)return;
+  function apkVersion(){
+   try{
+    if(window.ZhipeiNative&&window.ZhipeiNative.appVersion){
+     const v=window.ZhipeiNative.appVersion();
+     if(v&&/^\d+(\.\d+)*$/.test(String(v)))return String(v);
+    }
+   }catch(e){}
+   return null;
+  }
+  /* 点分版本号比较：a<b 返回 -1，相等 0，a>b 1 */
+  function compareVer(a,b){
+   const pa=String(a).split(".").map(n=>parseInt(n,10)||0);
+   const pb=String(b).split(".").map(n=>parseInt(n,10)||0);
+   const n=Math.max(pa.length,pb.length);
+   for(let i=0;i<n;i++){
+    const x=pa[i]||0,y=pb[i]||0;
+    if(x!==y)return x<y?-1:1;
+   }
+   return 0;
+  }
+  function render(webVer){
+   const apkV=apkVersion();
+   if(apkV){
+    textEl.textContent="App V"+apkV;
+    if(webVer&&compareVer(apkV,webVer)<0){
+     const badge=document.createElement("button");
+     badge.type="button";badge.className="acct-ver-badge";
+     badge.textContent="有新版本 V"+webVer;
+     badge.setAttribute("aria-label","有新版本 V"+webVer+"，点击下载安装包");
+     badge.addEventListener("click",()=>{
+      if(installDlLink&&installDlLink.getAttribute("href")){
+       installDlLink.click();
+       if(window.zpToast)window.zpToast("开始下载安装包…","info");
+      }else if(window.zpToast)window.zpToast("安装包信息加载中，请稍候","info");
+     });
+     textEl.after(badge);
+    }
+   }else{
+    textEl.textContent=webVer?("版本 V"+webVer):"版本 网页版";
+   }
+  }
+  fetch("/version.json?ts="+Date.now(),{cache:"no-store"}).then(r=>r.json()).then(v=>{
+   render(v&&v.version);
+  }).catch(()=>{render(null)});
+ })();
 
  /* 网页端地址：复制固定官网地址 */
  const WEB_URL="https://tianyou-zhipei.pages.dev";
