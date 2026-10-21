@@ -4,7 +4,7 @@
  * 便于浏览器 Network 面板区分「后端处理耗时」与「浏览器/网络等待」。
  * 仅增加响应头，不改变业务返回体、状态码、鉴权或 Redis 访问行为。
  */
-import { json } from "./_json.js";
+import { json, withSecurityHeaders } from "./_json.js";
 
 const REDIS_MARKERS = ["REDIS_NOT_CONFIGURED", "REDIS_ERROR", "REDIS_PIPELINE_ERROR"];
 const BUDGET_MARKERS = ["SUBREQUEST_BUDGET_EXCEEDED"];
@@ -33,7 +33,9 @@ export function classify(e) {
 
 function withTiming(response, startedAt) {
   if (!(response instanceof Response)) return response;
-  const headers = new Headers(response.headers);
+  // 安全头在这里统一补一次：Pages 的 _headers 对 Functions 响应无效，
+  // 而登录成功这类返回是裸 new Response（没走 json()），是唯一能兜住它们的公共出口。
+  const headers = withSecurityHeaders(response.headers);
   const elapsed = Math.max(0, Number((performance.now() - startedAt).toFixed(1)));
   const phaseTiming = headers.get("Server-Timing");
   headers.set("Server-Timing", (phaseTiming ? phaseTiming + ", " : "") + "app;dur=" + elapsed);

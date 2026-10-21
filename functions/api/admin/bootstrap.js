@@ -1,6 +1,6 @@
 import {json,body} from "../_json.js";
 import {get,command,newId} from "../_redis.js";
-import {hash} from "../login.js";
+import {hashPassword} from "../_password.js";
 
 function normalize(v){return String(v||"").trim()}
 
@@ -23,7 +23,7 @@ export async function onRequestPost({request,env}){
       return json({success:false,error:"系统未配置初始化密钥"},503);
 
     const id=newId();
-    const user={id,username,name:"系统管理员",role:"admin",disabled:false,boundRouteId:null,routeDuty:null,dispatchRouteId:null,sessionVersion:1,passwordHash:await hash(password),createdAt:new Date().toISOString()};
+    const user={id,username,name:"系统管理员",role:"admin",disabled:false,boundRouteId:null,routeDuty:null,dispatchRouteId:null,sessionVersion:1,passwordHash:await hashPassword(password,env),createdAt:new Date().toISOString()};
     const userJson=JSON.stringify(user);
     const userIndexKey="zp:user:index:"+username.toLowerCase();
     const userKey="zp:user:"+id;

@@ -1,8 +1,14 @@
 import {json,body} from "./_json.js";
 import {get,command,newId} from "./_redis.js";
-import {hash} from "./login.js";
+import {hashPassword} from "./_password.js";
 import {TEMP_ROUTE_PREFIX} from "./dispatch.js";
 import {envAdminCredentials} from "./_env-admin.js";
+import {peek,bump,clear,clientIp,scopePart,firstExceeded} from "./_ratelimit.js";
+
+// 注册限流（P0-7）：邀请码是唯一注册入口，而没有失败次数限制时它可被无限次枚举。
+// 真人注册失败（邀请码打错、账号重复）一小时 20 次不可能，脚本一小时几万次很轻松。
+const REGISTER_WINDOW_SECONDS=3600;
+const REGISTER_LIMIT_IP=20;
 
 function normalize(v){return String(v??"").trim()}
 
@@ -29,20 +35,32 @@ export async function onRequestPost({request,env}){
   if(!username||!password||!inviteCode)return json({success:false,error:"请输入账号、密码和邀请码"},400);
   if(!/^[A-Za-z0-9_\-.]{3,32}$/.test(username))return json({success:false,error:"账号需为3-32位字母、数字、下划线、短横线或点"},400);
   if(password.length<6)return json({success:false,error:"密码至少6位"},400);
+
+  // 限流：邀请码爆破防护。只统计**失败**，成功注册不清零也不计数（见 _ratelimit.js 说明）
+  const scopes=["register:ip:"+scopePart(clientIp(request))];
+  const limits=[REGISTER_LIMIT_IP];
+  const before=await peek(env,scopes);
+  const blocked=firstExceeded(before,limits);
+  if(blocked>=0)return json({success:false,error:"尝试过于频繁，请稍后重试",code:"REGISTER_RATE_LIMITED"},429,
+    {"retry-after":String(Math.max(1,before[blocked].retryAfter||REGISTER_WINDOW_SECONDS))});
+  const fail=async res=>{await bump(env,scopes,REGISTER_WINDOW_SECONDS);return res};
+
   const existing=await get(env,"user:index:"+username.toLowerCase());
-  if(existing)return json({success:false,error:"账号已存在"},409);
+  if(existing)return fail(json({success:false,error:"账号已存在"},409));
   // 环境变量管理员的账号名是保留名：不能被普通注册抢占，否则管理员会被挤掉。
   const envAdmin=envAdminCredentials(env);
   if(envAdmin&&username.toLowerCase()===envAdmin.username.toLowerCase())
-    return json({success:false,error:"该账号为系统保留账号，无法注册"},409);
+    return fail(json({success:false,error:"该账号为系统保留账号，无法注册"},409));
   const id=newId();
-  const passwordHash=await hash(password);
+  const passwordHash=await hashPassword(password,env);
   const result=Number(await registerAtomically(env,{id,username,name,passwordHash,inviteCode}));
-  if(result===-5)return json({success:false,error:"账号已存在"},409);
-  if(result===-1)return json({success:false,error:"邀请码不存在"},400);
-  if(result===-2)return json({success:false,error:"邀请码已停用"},400);
-  if(result===-3)return json({success:false,error:"邀请码已过期"},400);
-  if(result===-4)return json({success:false,error:"邀请码已用完"},400);
+  // 邀请码类失败是爆破的目标，全部计数；系统级异常（500）不计数——那不是攻击者的错，
+  // 也不该让一次后端抖动把正常用户锁一小时。
+  if(result===-5)return fail(json({success:false,error:"账号已存在"},409));
+  if(result===-1)return fail(json({success:false,error:"邀请码不存在"},400));
+  if(result===-2)return fail(json({success:false,error:"邀请码已停用"},400));
+  if(result===-3)return fail(json({success:false,error:"邀请码已过期"},400));
+  if(result===-4)return fail(json({success:false,error:"邀请码已用完"},400));
   if(result===-6||result===-7)return json({success:false,error:"注册数据异常，请联系管理员处理"},409);
   if(result!==1)return json({success:false,error:"注册失败，请稍后重试"},500);
   return json({success:true,message:"注册成功，请登录",user:{id,username,name,role:"user"}},201);

@@ -7,6 +7,35 @@
 # ?v=<内容哈希>，内容一变 URL 就跟着变，所以对它们设 immutable 不会让用户拿到旧版。
 # （已核对：全部 71 处 JS/CSS 引用均带版本号）
 
+# 安全响应头（P0-5）：全站统一
+# ------------------------------------------------------------------
+# 依据 Cloudflare Pages 规则：「一个请求命中多条规则时，会继承所有规则的头」。
+# 所以这里用 /* 通配给全站发安全头，后面的缓存规则只设 Cache-Control，不会覆盖它们。
+#
+# 【红线】这个块里绝不能出现 Cache-Control。
+# 同名头命中两次时 CF 会用逗号把值**拼接**起来（官方规则），一旦这里写了缓存值，
+# 下面逐条校准过的 no-store / immutable / max-age=120 会被全部污染成非法值。
+#
+# 【另一个坑】_headers 只对**静态资源**生效，对 Pages Functions（/api/*）无效
+# （CF 官方明示）。而口令与会话恰恰都在 API 侧，所以同一套头在
+# functions/api/_json.js 的 SECURITY_HEADERS 里发了一份，两边值必须保持一致。
+#
+# 【为什么 CSP 还带 'unsafe-inline'】全站每页都有 2~3 段内联 script（登录门禁/主题/埋点），
+# pages/data.html 另有 24 处内联事件属性；去掉 'unsafe-inline' 会立刻白屏。
+# 因此本期 CSP 的定位是「堵数据外传 + 反嵌套」，而不是消灭内联：
+#   connect-src 'self'        → 即使被 XSS，数据也发不到第三方域名
+#   frame-ancestors 'none'    → 反点击劫持（配合 X-Frame-Options 覆盖老浏览器）
+#   object-src 'none'         → 关掉 Flash/Java 类插件入口
+#   base-uri / form-action    → 防 <base> 劫持相对路径、防表单外发
+# 内联脚本 nonce 化（真正去掉 unsafe-inline）属 P1，需先消灭全站内联脚本。
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+  Permissions-Policy: geolocation=(self), camera=(self), microphone=(), payment=(), usb=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Strict-Transport-Security: max-age=31536000
+
 # Service Worker 绝不能被缓存：否则新版本 SW 无法下发，客户端会一直用旧缓存。
 /sw.js
   Cache-Control: no-store, no-cache, must-revalidate

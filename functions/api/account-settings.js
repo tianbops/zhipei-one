@@ -1,7 +1,7 @@
 import {json,body} from "./_json.js";
 import {currentUser} from "./_auth.js";
 import {get,command,sessionCookie} from "./_redis.js";
-import {hash} from "./login.js";
+import {verifyPassword,hashPassword} from "./_password.js";
 import {isSystemAdmin} from "./_permissions.js";
 
 function validUsername(v){return /^[A-Za-z0-9_\-.]{3,32}$/.test(v)}
@@ -17,7 +17,7 @@ export async function onRequestPost({request,env}){
    const password=String(input.password||"");
    // 敏感操作统一要求当前密码验证（与改密码/注销一致）
    if(!password)return json({success:false,error:"请输入当前密码确认修改",code:"CURRENT_PASSWORD_REQUIRED"},400);
-   if(actor.passwordHash!==await hash(password))return json({success:false,error:"当前密码错误",code:"CURRENT_PASSWORD_INVALID"},403);
+   if(!(await verifyPassword(password,actor.passwordHash)))return json({success:false,error:"当前密码错误",code:"CURRENT_PASSWORD_INVALID"},403);
    const username=String(input.username||"").trim();
    if(!validUsername(username))return json({success:false,error:"用户名需为3-32位字母、数字、下划线、短横线或点"},400);
    if(username.toLowerCase()===String(actor.username||"").toLowerCase())return json({success:true,user:{id:actor.id,username}});
@@ -40,8 +40,8 @@ export async function onRequestPost({request,env}){
    if(!currentPassword||!password||!confirmPassword)return json({success:false,error:"请完整填写密码"},400);
    if(password.length<6)return json({success:false,error:"新密码至少6位"},400);
    if(password!==confirmPassword)return json({success:false,error:"两次输入的新密码不一致"},400);
-   if(actor.passwordHash!==await hash(currentPassword))return json({success:false,error:"当前密码错误",code:"CURRENT_PASSWORD_INVALID"},403);
-   const nextHash=await hash(password);
+   if(!(await verifyPassword(currentPassword,actor.passwordHash)))return json({success:false,error:"当前密码错误",code:"CURRENT_PASSWORD_INVALID"},403);
+   const nextHash=await hashPassword(password,env);
    const key="zp:user:"+actor.id;
    const script="local raw=redis.call('GET',KEYS[1]); if not raw then return 2 end; local ok,u=pcall(cjson.decode,raw); if not ok or type(u)~='table' or u.id~=ARGV[2] then return 3 end; u.passwordHash=ARGV[1]; u.sessionVersion=(u.sessionVersion or 1)+1; redis.call('SET',KEYS[1],cjson.encode(u)); return 1";
    const code=Number(await command(env,["EVAL",script,"1",key,nextHash,actor.id]));
@@ -53,7 +53,7 @@ export async function onRequestPost({request,env}){
    if(isSystemAdmin(actor))return json({success:false,error:"系统管理员账号不能自行注销，请联系管理员处理",code:"ADMIN_ACCOUNT_DELETE_BLOCKED"},403);
    const password=String(input.password||"");
    if(!password)return json({success:false,error:"请输入当前密码确认注销"},400);
-   if(actor.passwordHash!==await hash(password))return json({success:false,error:"当前密码错误",code:"CURRENT_PASSWORD_INVALID"},403);
+   if(!(await verifyPassword(password,actor.passwordHash)))return json({success:false,error:"当前密码错误",code:"CURRENT_PASSWORD_INVALID"},403);
 
    const userKey="zp:user:"+actor.id;
    const userIndexKey="zp:user:index:"+String(actor.username||"").toLowerCase();

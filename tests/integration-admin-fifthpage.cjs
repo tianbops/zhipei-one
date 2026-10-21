@@ -5,9 +5,23 @@
 //   JS   page(i){ S.page=Math.max(0,Math.min(4,i)); translateX(-S.page*20%) }
 //   即 5 × 20% = 100%，与 JS 五页模型（下标 0..4）严格一致。
 // 此前缺陷：.pages=400% / .page=25% 与 JS 五页(20%)模型错配，第五页被压出视口。
+//
+// 2026-10-21 更新：admin.html 已拆分为「骨架 + 4 个 CSS + 11 个 JS 模块」，
+// 内联样式与脚本都不在 admin.html 里了。这里改为**按目录聚合**读取
+// （css/admin-*.css 全部拼接 + js/admin/*.js 全部拼接），
+// 这样断言的是"这套模块合起来是否仍然自洽"，后续再挪文件也不会误报。
 // 运行：node tests/integration-admin-fifthpage.cjs
 const fs = require("fs");
 const path = require("path");
+
+const ROOT = path.join(__dirname, "..");
+function concat(dir, pattern) {
+  return fs.readdirSync(dir)
+    .filter(n => pattern.test(n))
+    .sort()
+    .map(n => fs.readFileSync(path.join(dir, n), "utf8"))
+    .join("\n");
+}
 
 let pass = 0, fail = 0;
 function check(name, cond, info) {
@@ -16,7 +30,13 @@ function check(name, cond, info) {
 }
 
 (async () => {
-  const html = fs.readFileSync(path.join(__dirname, "..", "admin.html"), "utf8");
+  // 拆分后：CSS 在 css/admin-*.css，JS 在 js/admin/*.js，admin.html 只剩骨架
+  const cssAll = concat(path.join(ROOT, "css"), /^admin-.*\.css$/);
+  const jsAll = concat(path.join(ROOT, "js", "admin"), /^.*\.js$/);
+  const html = cssAll + "\n" + jsAll;
+  check("拆分产物存在：css/admin-*.css 与 js/admin/*.js 均非空",
+    cssAll.length > 1000 && jsAll.length > 1000,
+    `css=${cssAll.length}B js=${jsAll.length}B`);
 
   console.log("\n【P0-2】管理员第五页布局：CSS 宽度与 JS 五页模型一致");
   // CSS：.pages 总宽度应为 500%（5 个等宽页）

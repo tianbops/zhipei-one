@@ -116,7 +116,15 @@ const req = (p, token, body) => ({
 
   // ============ 【P2-12】管理员弹窗移除 backdrop-filter ============
   console.log("【P2-12】admin.html 弹窗遮罩不再使用 backdrop-filter（移动端掉帧源）");
-  const html = fs.readFileSync(path.join(__dirname, "..", "admin.html"), "utf8");
+  // 2026-10-21：admin.html 已拆分为「骨架 + css/admin-*.css + js/admin/*.js」，
+  // 弹窗样式不在 admin.html 里了。这里连同拆出的 CSS 一起读，断言的仍是同一件事：
+  // 管理员弹窗遮罩不得再使用 backdrop-filter（移动端掉帧源）。
+  const adminCssDir = path.join(__dirname, "..", "css");
+  const adminCss = fs.existsSync(adminCssDir)
+    ? fs.readdirSync(adminCssDir).filter(f => /^admin-.*\.css$/.test(f))
+        .map(f => fs.readFileSync(path.join(adminCssDir, f), "utf8")).join("\n")
+    : "";
+  const html = fs.readFileSync(path.join(__dirname, "..", "admin.html"), "utf8") + "\n" + adminCss;
   // 取出 .dialog-bg 规则（排除注释行）
   const dialogRules = html.split("\n").filter(l => l.includes(".dialog-bg") && !l.trim().startsWith("/*") && !l.trim().startsWith("*"));
   const ruleText = dialogRules.join("\n");

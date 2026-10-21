@@ -2,7 +2,7 @@ import {json,body} from "../_json.js";
 import {currentUser} from "../_auth.js";
 import {get,command} from "../_redis.js";
 import {Budget,scanKeysBudgeted,SUBREQUEST_LIMIT} from "../_redis-budget.js";
-import {hash} from "../login.js";
+import {verifyPassword,hashPassword} from "../_password.js";
 import {isSystemAdmin} from "../_permissions.js";
 import {normalizeLegacyRoles} from "../_migrations.js";
 function validUsername(v){return /^[A-Za-z0-9_]{3,32}$/.test(v)}
@@ -33,8 +33,8 @@ export async function onRequestPost({request,env}){
     const password=String(input.password||"");
     if(!currentPassword||!password)return json({success:false,error:"请输入当前密码和新密码"},400);
     if(password.length<6)return json({success:false,error:"密码至少6位"},400);
-    if(actor.passwordHash!==await hash(currentPassword))return json({success:false,error:"当前密码错误"},403);
-    const nextHash=await hash(password);
+    if(!(await verifyPassword(currentPassword,actor.passwordHash)))return json({success:false,error:"当前密码错误"},403);
+    const nextHash=await hashPassword(password,env);
     const key="zp:user:"+actor.id;
     const script="local raw=redis.call('GET',KEYS[1]); if not raw then return 2 end; local ok,u=pcall(cjson.decode,raw); if not ok or type(u)~='table' or u.id~=ARGV[2] or (u.role~='admin' and u.role~='system_admin') then return 3 end; u.passwordHash=ARGV[1]; u.sessionVersion=(u.sessionVersion or 1)+1; redis.call('SET',KEYS[1],cjson.encode(u)); return 1";
     const code=Number(await command(env,["EVAL",script,"1",key,nextHash,actor.id]));
@@ -45,7 +45,7 @@ export async function onRequestPost({request,env}){
   if(action==="reset"){
     const password=String(input.password||"");
     if(!password)return json({success:false,error:"请输入管理员密码"},400);
-    if(actor.passwordHash!==await hash(password))return json({success:false,error:"管理员密码错误"},403);
+    if(!(await verifyPassword(password,actor.passwordHash)))return json({success:false,error:"管理员密码错误"},403);
 
     // 只清理旧运单/历史运行数据，保留管理员、普通用户、线路、线路基准和系统配置。
     const oldPatterns=[
