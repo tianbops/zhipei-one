@@ -1,0 +1,16 @@
+# 第三方 / 构建产物
+node_modules/
+package-lock.json
+
+# 非 JS/TS 资产：手写 CSS 与下载产物不做格式化（避免大规模无意义 diff）
+css/
+downloads/
+assets/
+
+# 生成或敏感目录
+docs/
+.workbuddy/
+*.min.js
+
+# sw.js 含脚本生成的 PRECACHE 块，交由 bump_asset_versions.py 管理，勿格式化
+sw.js

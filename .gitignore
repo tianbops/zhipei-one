@@ -23,6 +23,10 @@ build/
 .DS_Store
 Thumbs.db
 
+# 依赖锁文件与覆盖率产物：仓库约定不跟踪锁文件；coverage/ 为 c8 本地度量产物
+package-lock.json
+coverage/
+
 # 编辑器/系统
 .vscode/
 .idea/
