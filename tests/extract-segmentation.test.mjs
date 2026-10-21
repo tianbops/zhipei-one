@@ -2,13 +2,16 @@ import fs from 'node:fs';
 import { formatCompareKey } from '../functions/api/waybills/_store-match.js';
 import { businessFingerprint, dailyWaybillKey } from '../functions/api/_waybill-identity.js';
 
-const source=fs.readFileSync(new URL('../functions/api/waybills/process.js',import.meta.url),'utf8');
+// P1-1g：helper 区已拆至 _process-plan.js（baseIdentityNames→plan 连续字节不变），
+// recordWaybillLifecycle 另拆至 _process-persist.js，故末尾即文件尾。
+const source=fs.readFileSync(new URL('../functions/api/waybills/_process-plan.js',import.meta.url),'utf8');
 const start=source.indexOf('function baseIdentityNames');
-const end=source.indexOf('\n/**\n * 记录运单生命周期',start);
-if(start<0||end<0)throw new Error('extract segmentation helpers not found');
+const end=source.length;
+if(start<0||end<=start)throw new Error('extract segmentation helpers not found');
 const helperSource=source.slice(start,end);
 const clean=v=>String(v??'').trim();
-const factory=new Function('clean','formatCompareKey','number',helperSource+'\nreturn {splitByRouteBase,dedupe,plan};');
+// P1-1g：模块内函数带 export 前缀，eval 前剥掉（factory 显式 return，语义不变）
+const factory=new Function('clean','formatCompareKey','number',helperSource.replace(/^export /gm,'')+'\nreturn {splitByRouteBase,dedupe,plan};');
 const number=v=>{const n=Number(v);return Number.isFinite(n)?n:null;};
 const {splitByRouteBase,dedupe,plan}=factory(clean,formatCompareKey,number);
 

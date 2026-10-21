@@ -37,4 +37,4 @@
 | POST | `/api/store-learn` | — |
 | POST | `/api/waybills/confirm` | 指纹漂移回收（2026-10-07 生产实测发现）。 businessFingerprint 的入参包含每个门店的 pending / routeOrde… |
 | POST | `/api/waybills/extract` | — |
-| POST | `/api/waybills/process` | 记录运单生命周期事件链（append-only，best-effort）。 仅用于运维追溯，失败不影响主保存流程。 |
+| POST | `/api/waybills/process` | 智配One · 运单处理入口（POST /api/waybills/process） ----------------------------------… |

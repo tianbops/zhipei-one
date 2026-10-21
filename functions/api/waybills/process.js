@@ -1,3 +1,13 @@
+/**
+ * 智配One · 运单处理入口（POST /api/waybills/process）
+ * ------------------------------------------------------------------
+ * 上传运单 → OCR 识别 → 门店匹配 → 去重 → 线路规划 → 校验 → 落库。
+ * 实现按职责拆至 _process-common / _process-extract / _process-plan /
+ * _process-persist（P1-1g，函数体零改写）；本文件保留 base、runProcess
+ * （含嵌套其内、与 runProcess 局部量闭包耦合的 saveWaybill）与 onRequestPost。
+ * 纪律：客户端取消（AbortController）仅断连接，Worker 内任务在高成本阶段
+ *   边界主动检查；失败统一经 failProcess 写状态机票据并返回可恢复提示。
+ */
 import {json} from "../_json.js";
 import {currentUser} from "../_auth.js";
 import {get,command,newId} from "../_redis.js";
@@ -13,235 +23,12 @@ import {evaluateQualityGates,countLines} from "./_quality-gate.js";
 import {appendWaybillEvent} from "./_waybill-events.js";
 import {beginProc,failProc,finishProc,getProc,claimProcSave,cancelProc} from "./_waybill-proc.js";
 import {Budget,mgetBatchMap} from "../_redis-budget.js";
+import {waybillIndexKey,number,todayCN} from "./_process-common.js";
+import {extract} from "./_process-extract.js";
+import {baseIdentityNames,splitByRouteBase,validateResult,dedupe,plan} from "./_process-plan.js";
+import {recordWaybillLifecycle} from "./_process-persist.js";
 
-const waybillIndexKey=(routeId,date)=>"zp:route:"+routeId+":waybills:"+date;
-// 运单日期兜底（1.1 数据一致性）：OCR 未识别日期且未手填时，原实现会写 null，
-// 导致其后 indexKey = zp:route:<routeId>:waybills: （空日期桶）——历史查询按日期枚举
-// 取不到、诊断列表按日期格式过滤也取不到，运单在两侧同时「消失」。
-// 兜底到「今天（Asia/Shanghai）」与司机实际上传日一致，并保留 dateInferred 标记供追溯。
-const todayCN=()=>{const p=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());const v=Object.fromEntries(p.filter(x=>x.type!=="literal").map(x=>[x.type,x.value]));return `${v.year}-${v.month}-${v.day}`};
-const number=v=>{const n=Number(v);return Number.isFinite(n)?n:null};
 async function base(env,id){const raw=await get(env,"route:"+id+":base");if(!raw)throw Object.assign(new Error("线路数据资料尚未建立"),{code:"BASE_NOT_FOUND"});let x;try{x=typeof raw==="string"?JSON.parse(raw):raw}catch{throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"})}if(!x||!Array.isArray(x.stores))throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"});return x.stores}
-
-function extract(rawText){
-  const stores=[]; let date=null,vehicle=null,totalWeight=null,driver=null,deliveryPerson=null;
-  // 多截图属于同一张运单。截图来源标记只用于诊断，不得进入门店提取文本。
-  const normalizedInput=String(rawText||"").replace(/【第\d+张截图】/g,"\n");
-  const lines=clean(normalizedInput).split(/\r?\n+/).map(x=>x.trim()).filter(Boolean).slice(0,5000);
-  const full=lines.join(" ");
-  const dm=full.match(/(20\d{2}[-/.年]\d{1,2}[-/.月]\d{1,2}日?)/);
-  if(dm){const p=dm[1].replace(/[年月/.]/g,"-").replace(/日$/,"").split("-").map(x=>x.padStart(2,"0"));if(p.length===3)date=p.join("-")}
-  // OCR 常会把车牌省份简称、字母和数字之间拆成空格，因此车辆提取不能要求字符连续。
-  // 先按车辆字段提取，再对整段文本做通用车牌兜底；只做格式兼容，不做具体车辆硬编码。
-  const vehiclePattern=/(?:车牌号?|车牌|车辆|车号)\s*[:：]?\s*([\u4e00-\u9fa5])\s*([A-Z])\s*([A-Z0-9](?:\s*[A-Z0-9]){4,7})/i;
-  let vm=full.match(vehiclePattern);
-  if(vm){
-    vehicle=(vm[1]+vm[2]+vm[3]).replace(/\s+/g,"").toUpperCase();
-  }else{
-    const fallback=full.match(/(^|[^\u4e00-\u9fa5A-Z0-9])([\u4e00-\u9fa5])\s*([A-Z])\s*([A-Z0-9](?:\s*[A-Z0-9]){4,7})(?=$|[^A-Z0-9])/i);
-    if(fallback)vehicle=(fallback[2]+fallback[3]+fallback[4]).replace(/\s+/g,"").toUpperCase();
-  }
-  // 司机/送货员属于运单抬头字段，单独提取并保存；兼容标签和值分行、多个字段同行。
-  const personLabels=["主司机","司机姓名","驾驶员","司机","送货员","送货人","配送员"];
-  const extractPerson=labels=>{
-    const pattern=/(主司机|司机姓名|驾驶员|司机|送货员|送货人|配送员)\s*[:：]?\s*([^\s,，;；|]+)/g;
-    let match;
-    while((match=pattern.exec(full))){
-      if(!labels.includes(match[1]))continue;
-      const value=String(match[2]||"").replace(/^[：:，,;；|]+|[：:，,;；|]+$/g,"").trim();
-      if(!value||personLabels.includes(value)||/^(?:姓名|名称|无|暂无|未知|—|-)$/.test(value))continue;
-      if(value.length>20||/^(?:运单列表|订单列表|车牌号?|车辆|车号|送货员|送货人|配送员|主司机|司机|驾驶员)$/.test(value))continue;
-      return value;
-    }
-    return null;
-  };
-  driver=extractPerson(["主司机","司机姓名","驾驶员","司机"]);
-  deliveryPerson=extractPerson(["送货员","送货人","配送员"]);
-  const wm=full.match(/(?:总重量|重量)\s*[:：]?\s*([\d.]+)\s*(?:吨|t|T)?/);
-  if(wm)totalWeight=number(wm[1]);
-
-  const waybillTail=/ZW\d{8}[A-Z0-9]+/ig;
-  const cleanStoreName=value=>clean(value)
-    .replace(/^[\s|>→]+|[\s|>→]+$/g,"")
-    .replace(/^[-:：]+/,"")
-    .replace(waybillTail,"")
-    .trim();
-
-  const addRouteText=text=>{
-    const hasWaybillCode=/\bZW\d{8}[A-Z0-9]+\b/i.test(text);
-    const parts=clean(text).split(/\s*(?:-\s*>|→|＞)\s*/).map(cleanStoreName).filter(Boolean);
-    for(let partIndex=0;partIndex<parts.length;partIndex++){
-      let part=parts[partIndex];
-      if(hasWaybillCode&&partIndex===parts.length-1){
-        part=part.replace(/\s+\d{5,}(?:\s+\d{5,})*\s*$/g,"").trim();
-      }
-      const idm=part.match(/\b(?:JM|A|Q)[\p{Pd}_ ]?\d{3,12}\b/i);
-      const storeId=idm?idm[0].replace(/[\p{Pd} ]/gu,"").toUpperCase():null;
-      const rawName=cleanStoreName(part);
-      const name=cleanStoreName(part.replace(/\b(?:JM|A|Q)[\p{Pd}_ ]?\d{3,12}\b/i,""));
-      if(name.length>=2&&/[\u4e00-\u9fa5A-Za-z]/.test(name))stores.push({rawName, name, sourceLine:text, storeId});
-    }
-  };
-
-  const firstArrow=full.search(/\s*(?:->|→|＞)\s*/);
-  if(firstArrow>=0){
-    let routeText=full;
-    const percentMatches=[...full.matchAll(/\(?\s*\d+(?:\.\d+)?\s*%\s*\)?/g)];
-    if(percentMatches.length){
-      const last=percentMatches[percentMatches.length-1];
-      if(last.index<firstArrow)routeText=full.slice(last.index+last[0].length);
-    }
-    addRouteText(routeText);
-  }else{
-    for(const line of lines){
-      if(/^(?:运单列表|订单列表|运输日期|日期|时间|车牌号?|车辆|车号|额定装载|额定载重|额定体积|主司机|司机|送货员|承运订单|总重量|总数量|数量|件数|总体积)/i.test(line))continue;
-      const cleaned=line.replace(/(?:运单列表订单列表|承运订单.*?)(?=[\u4e00-\u9fa5])/g,"").trim();
-      if(cleaned) addRouteText(cleaned);
-    }
-  }
-  return {date,vehicle,totalWeight,driver,deliveryPerson,stores};
-}
-
-function baseIdentityNames(store){
-  return [store?.name,store?.originalName,...(Array.isArray(store?.aliases)?store.aliases:[])]
-    .map(v=>clean(v).split('•')[0].split('·')[0].trim()).filter(v=>v.length>=2);
-}
-
-function splitByRouteBase(items,baseStores){
-  const bases=Array.isArray(baseStores)?baseStores:[];
-  if(!bases.length)return items;
-  return items.flatMap(item=>{
-    const rawName=clean(item?.rawName||item?.name);
-    const rawKey=formatCompareKey(rawName);
-    const hits=[];
-    for(const store of bases){
-      for(const name of baseIdentityNames(store)){
-        const key=formatCompareKey(name);
-        if(key.length>=4&&rawKey.includes(key))hits.push({store,name,key,pos:rawKey.indexOf(key)});
-      }
-    }
-    const unique=new Map();
-    for(const hit of hits){const id=clean(hit.store?.storeId)||hit.key;const old=unique.get(id);if(!old||hit.key.length>old.key.length)unique.set(id,hit);}
-    const candidates=[...unique.values()].sort((a,b)=>b.key.length-a.key.length||a.pos-b.pos);
-    const selected=[];
-    for(const candidate of candidates){
-      const start=candidate.pos;
-      const end=start+candidate.key.length;
-      const overlaps=selected.some(hit=>{
-        const hitStart=hit.pos;
-        const hitEnd=hitStart+hit.key.length;
-        return start< hitEnd && hitStart<end;
-      });
-      if(!overlaps)selected.push(candidate);
-    }
-    selected.sort((a,b)=>a.pos-b.pos||b.key.length-a.key.length);
-    if(selected.length<2)return [item];
-    return selected.map((hit,index)=>({...item,rawName:hit.name,name:hit.name,storeId:clean(hit.store?.storeId)||null,extractionMethod:'route-base-segment',extractionSegment:index+1,extractionSegments:selected.length}));
-  });
-}
-
-function validateResult(order){
-  const errors=[];
-  if(!order.date)errors.push("缺少运单日期");
-  if(!order.vehicle)errors.push("缺少车辆信息");
-  if(!Array.isArray(order.stores)||!order.stores.length)errors.push("没有规划门店");
-  const seen=new Set();const seenOrders=new Set();for(const s of order.stores||[]){const k=s.storeId?"id:"+s.storeId:"pending:"+formatCompareKey(s.rawName);if(seen.has(k))errors.push("规划结果存在重复门店");seen.add(k);const ro=number(s.routeOrder);if(ro==null||ro<1||!Number.isInteger(ro))errors.push("规划结果存在无效线路顺序");else if(seenOrders.has(ro))errors.push("规划结果存在重复线路顺序");else seenOrders.add(ro)}
-  if((order.stores||[]).some((s,i)=>s.routeOrder!==i+1))errors.push("线路顺序不连续");
-  return {valid:errors.length===0,errors};
-}
-function dedupe(items){
-  const seen=new Map(),out=[],conflicts=[],removed=[];
-  let merged=0;
-  for(const s of items){
-    // 门店身份判断必须优先使用“原始识别名”。
-    // matchStores / global learning 会把 name 标准化为基准库名称；
-    // 如果这里再用 name 判断，不同 OCR 门店被错误映射到同一 storeId 后
-    // 会被误认为“同名重复”并直接吞掉。
-    const identityKey=formatCompareKey(s.rawName||s.name);
-    const displayName=clean(s.name||s.rawName);
-    let key=s.storeId?"id:"+s.storeId:"pending:"+identityKey;
-    if(s.storeId&&seen.has(key)){
-      const previous=seen.get(key);
-      const previousIdentity=formatCompareKey(previous.rawName||previous.name);
-      if(previousIdentity!==identityKey){
-        // 不再把冲突项留在 matched/storeId 状态；安全转待定，
-        // 让最终数量保留，并要求人工确认真实门店。
-        conflicts.push({
-          storeId:s.storeId,
-          firstName:previous.rawName||previous.name,
-          conflictName:s.rawName||s.name,
-        });
-        const pending={
-          ...s,
-          storeId:null,
-          name:clean(s.rawName||s.name),
-          originalName:clean(s.rawName||s.name),
-          pending:true,
-          matchStatus:"pending",
-          matchMethod:null,
-          correction:false,
-          candidates:[{
-            storeId:s.storeId,
-            name:displayName,
-            reason:"同一运单中不同识别项指向同一门店，存在身份冲突",
-          }],
-          matchConfidence:{
-            level:"PENDING",
-            reason:"STORE_ID_COLLISION",
-            score:null,
-            candidateCount:1,
-            topScore:null,
-            secondScore:null,
-            scoreGap:null,
-          },
-          matchDiagnostics:{
-            ...(s.matchDiagnostics||{}),
-            reason:"STORE_ID_COLLISION",
-            storeId:s.storeId,
-            previousRawName:previous.rawName||previous.name,
-          },
-        };
-        out.push(pending);
-        continue;
-      }
-      merged++;
-      removed.push({
-        rawName:s.rawName,
-        name:s.name,
-        storeId:s.storeId||null,
-        mergedInto:{
-          rawName:previous.rawName,
-          name:previous.name,
-          storeId:previous.storeId||null,
-        },
-      });
-      continue;
-    }
-    seen.set(key,s);
-    out.push(s);
-  }
-  return{items:out,merged,conflicts,removed};
-}
-function plan(items,useRouteOrder=true){const list=useRouteOrder?[...items].sort((a,b)=>(number(a.routeOrder)??100000)-(number(b.routeOrder)??100000)||formatCompareKey(a.name).localeCompare(formatCompareKey(b.name),"zh-CN")):[...items];return list.map((s,i)=>({...s,routeOrder:i+1}))}
-
-/**
- * 记录运单生命周期事件链（append-only，best-effort）。
- * 仅用于运维追溯，失败不影响主保存流程。
- */
-async function recordWaybillLifecycle(env, order, ctx) {
-  const { requestId, rawExtractCount, extractCount, recoveredCount, matched, pending, d } = ctx;
-  const events = [
-    { event: "WAYBILL_CREATED", stage: "CREATED", requestId, routeId: order.routeId, userId: order.createdBy },
-    { event: "EXTRACT_COMPLETED", stage: "EXTRACT", requestId, rawExtractCount, extractCount: order.diagnostics?.extractCount ?? order.stores.length, recoveredCount: order.diagnostics?.recoveredCount ?? 0, finalCount: order.stores.length },
-    { event: "MATCH_COMPLETED", stage: "MATCH", requestId, matched: matched.filter(x => !x.pending).length, pending: pending.length },
-    { event: "DEDUPE_COMPLETED", stage: "DEDUPE", requestId, before: matched.length, after: d.items.length, merged: d.merged },
-    { event: "PLAN_COMPLETED", stage: "PLAN", requestId, count: order.stores.length },
-    { event: "WAYBILL_SAVED", stage: "SAVED", requestId, id: order.id, qualityLevel: order.quality?.level, qualityFlags: order.quality?.flags || [] },
-  ];
-  for (const ev of events) {
-    try { await appendWaybillEvent(env, order.id, ev); } catch { /* best-effort: lifecycle events never invalidate a successful save */ }
-  }
-}
 
 async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:providedUser=null}){
   emit(3,"运单已接收");
@@ -493,6 +280,7 @@ async function saveWaybill(order, requestId, resumed){
   return failProcess("WAYBILL_DEDUPE_LOOKUP_FAILED","已存在的运单记录丢失，请重试",409,{recoverable:true,action:"RETRY_SAVE",hint:"已存在的运单记录丢失，请重试保存",order});
 }
 }
+
 
 export async function onRequestPost({request,env}){
   const user=await currentUser(request,env);if(!user)return json({success:false,error:"未登录"},401);

@@ -161,7 +161,7 @@ const WAYBILL_INPUT_DAYS = {
 };
 
 /* ================================================================
- * plan() 镜像（process.js:225）+ 源码一致性防漂移断言
+ * plan() 镜像（_process-plan.js，P1-1g 拆分后字节级同一行）+ 源码一致性防漂移断言
  * ================================================================ */
 const number = v => { const n = Number(v); return Number.isFinite(n) ? n : null; };
 const mirrorPlan = (items, useRouteOrder = true) => {
@@ -173,10 +173,10 @@ const mirrorPlan = (items, useRouteOrder = true) => {
   return list.map((s, i) => ({ ...s, routeOrder: i + 1 }));
 };
 
-const processSrc = readFileSync(path.join(repoRoot, "functions/api/waybills/process.js"), "utf8");
+const processSrc = readFileSync(path.join(repoRoot, "functions/api/waybills/_process-plan.js"), "utf8");
 const PLAN_LINE = 'function plan(items,useRouteOrder=true){const list=useRouteOrder?[...items].sort((a,b)=>(number(a.routeOrder)??100000)-(number(b.routeOrder)??100000)||formatCompareKey(a.name).localeCompare(formatCompareKey(b.name),"zh-CN")):[...items];return list.map((s,i)=>({...s,routeOrder:i+1}))}';
 if (!processSrc.includes(PLAN_LINE)) {
-  console.error("✗ process.js 的 plan() 源码已变化，镜像实现需同步更新（防漂移断言）");
+  console.error("✗ _process-plan.js 的 plan() 源码已变化，镜像实现需同步更新（防漂移断言）");
   process.exit(1);
 }
 

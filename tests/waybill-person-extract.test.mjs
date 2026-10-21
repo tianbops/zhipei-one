@@ -1,8 +1,9 @@
 import fs from "node:fs";
 import assert from "node:assert/strict";
-const source=fs.readFileSync(new URL("../functions/api/waybills/process.js",import.meta.url),"utf8");
+// P1-1g：extract 已拆至 _process-extract.js（process.js 入口只留编排），改读模块本体。
+const source=fs.readFileSync(new URL("../functions/api/waybills/_process-extract.js",import.meta.url),"utf8");
 const start=source.indexOf("function extract(rawText)");
-const end=source.indexOf("\nfunction baseIdentityNames",start);
+const end=source.length;
 assert.ok(start>=0&&end>start,"waybill extract function must exist");
 const clean=value=>String(value??"").trim();
 const number=value=>{const n=Number(value);return Number.isFinite(n)?n:null};
