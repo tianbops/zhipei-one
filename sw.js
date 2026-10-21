@@ -27,6 +27,8 @@ const PRECACHE = [
   "/pages/history",
   "/pages/route_apply",
   "/pages/account",
+  "/pages/privacy",
+  "/pages/terms",
   "/register",
   "/offline",
   "/assets/delivery-route.webp?v=32331a42",
