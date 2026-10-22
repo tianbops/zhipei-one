@@ -53,7 +53,7 @@ async function diagnosticGet({request,env}){
       const reaped=await failProc(env,requestedProc,{stage:effectiveStage(ticket),recoverable:false,action:null,hint:null});
       if(reaped)eff=reaped;
     }
-    return json({success:true,requestId:requestedProc,procTicket:eff,effectiveStage:effectiveStage(eff)});
+    return json({success:true,requestId:requestedProc,procTicket:{...eff,timing:safeTiming(eff.timing)},effectiveStage:effectiveStage(eff)});
   }
   // 数据一致性自检（P1.5）：只读扫描索引/去重/指纹/事件链/主记录的引用完整性，输出可解释差异报告（不改动任何数据）。
   const wantCheck=clean(url.searchParams.get("check"));
