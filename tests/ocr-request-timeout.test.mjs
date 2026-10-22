@@ -17,6 +17,12 @@ assert.match(source, /const resultStarted = Date\.now\(\);\s*timing\.ocrResultFe
   "结果读取尝试计数必须只覆盖实际结果读取，不能包含结果地址刷新");
 assert.match(source, /timing\.ocrResultFetchMs \+= Date\.now\(\) - resultStarted;\s*throw e;/,
   "结果读取失败也必须累计独立的结果读取耗时");
+assert.match(source, /ocrResultFetchWaitMs: 0/,
+  "OCR 结果重试等待必须有独立计时字段");
+assert.match(source, /const retryWait = 800 \* attempt;[\s\S]*?timing\.ocrResultFetchWaitMs \+= Date\.now\(\) - waitStarted;/,
+  "结果读取重试的退避等待必须独立计时");
+assert.match(source, /"ocrResultFetchWaitMs"/,
+  "管理员诊断允许列表必须暴露结果读取重试等待");
 const testModule = source.replace("async function requestJson(", "export async function requestJson(");
 assert.notEqual(testModule, source, "requestJson test hook target must exist");
 const moduleUrl = "data:text/javascript;base64," + Buffer.from(testModule).toString("base64");
