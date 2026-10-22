@@ -21,4 +21,14 @@ assert.equal(splitLabel.deliveryPerson,"赵师傅","标签和值分行时应提�
 const missing=extract("车辆：渝DK7692\n重庆门店甲");
 assert.equal(missing.driver,null,"没有司机字段时应保持为空");
 assert.equal(missing.deliveryPerson,null,"没有送货员字段时应保持为空");
+// 2026-10-22 用户报障：OCR 抬头装饰性尖括号/箭头被吞进姓名（详情页显示「田波 >」）
+const arrowAttached=extract("主司机：张三>\n送货员：李四＞\n车牌号：渝DK7692\n重庆门店甲");
+assert.equal(arrowAttached.driver,"张三","司机姓名尾部 > 应被剥离");
+assert.equal(arrowAttached.deliveryPerson,"李四","送货员姓名尾部 ＞ 应被剥离");
+const arrowSpaced=extract("司机 王师傅 > 送货员 赵师傅 → 车辆 渝DK7692");
+assert.equal(arrowSpaced.driver,"王师傅","司机姓名后空格+> 不应带入姓名");
+assert.equal(arrowSpaced.deliveryPerson,"赵师傅","送货员姓名后空格+→ 不应带入姓名");
+const arrowOnly=extract("司机：>\n送货员：→\n重庆门店甲");
+assert.equal(arrowOnly.driver,null,"仅有装饰符号时不应产出姓名");
+assert.equal(arrowOnly.deliveryPerson,null,"仅有装饰符号时不应产出姓名");
 console.log("waybill driver/delivery extraction regression passed");

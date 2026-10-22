@@ -34,7 +34,9 @@ export function extract(rawText){
     let match;
     while((match=pattern.exec(full))){
       if(!labels.includes(match[1]))continue;
-      const value=String(match[2]||"").replace(/^[：:，,;；|]+|[：:，,;；|]+$/g,"").trim();
+      // OCR 抬头常带装饰性尖括号/箭头（如「司机：田波>」「送货员 陈兴亚 >」），
+      // 姓名只取人名本体：首尾剥离 ：,;| 与 > › » ＞ 〉 》 → 类噪声（2026-10-22 用户报障）
+      const value=String(match[2]||"").replace(/^[：:，,;；|>›»＞〉》→]+|[：:，,;；|>›»＞〉》→]+$/g,"").trim();
       if(!value||personLabels.includes(value)||/^(?:姓名|名称|无|暂无|未知|—|-)$/.test(value))continue;
       if(value.length>20||/^(?:运单列表|订单列表|车牌号?|车辆|车号|送货员|送货人|配送员|主司机|司机|驾驶员)$/.test(value))continue;
       return value;

@@ -33,10 +33,10 @@ const CSP_BASE = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-s
 const HASHES_PATH = path.join(root, "functions/api/_csp-hashes.js");
 const HEADERS_PATH = path.join(root, "_headers");
 
-/** 递归收集全部 *.html（排除 node_modules） */
+/** 递归收集全部 *.html（排除 node_modules 与 coverage/ 本地度量产物） */
 function collectHtml(dir, out = []) {
   for (const name of readdirSync(dir)) {
-    if (name === "node_modules") continue;
+    if (name === "node_modules" || name === "coverage") continue;
     const p = path.join(dir, name);
     const st = statSync(p);
     if (st.isDirectory()) collectHtml(p, out);

@@ -19,7 +19,8 @@ function render(){
     const s=x.summary||{},confirmed=x.stage==='CONFIRMED';
     // 状态角标可见：此前 stage 只算不用，用户看不出哪张是「待确认」，删除失败时无从判断
     const status='<span class="history-choice-status '+(confirmed?'ok':'wait')+'">'+(confirmed?'已确认':'待确认')+'</span>';
-    return '<div class="order-history-swipe-row" data-history-index="'+i+'"><button type="button" class="order-history-choice"><span class="history-choice-index">'+(i+1)+'</span><span class="history-choice-vehicle">'+esc(cleanVehicle(x.vehicle))+(x.driver?' · 司机 '+esc(x.driver):'')+(x.deliveryPerson?' · 送货员 '+esc(x.deliveryPerson):'')+'</span><span class="history-choice-main">'+(Number(s.finalCount)||Number(s.total)||(Array.isArray(x.stores)?x.stores.length:0))+'家 · '+fmtWeight(x.totalWeight)+'t</span>'+status+'</button><button type="button" class="history-choice-delete" aria-label="删除运单">删除</button></div>';
+    const drv=personName(x.driver),dp=personName(x.deliveryPerson);
+    return '<div class="order-history-swipe-row" data-history-index="'+i+'"><button type="button" class="order-history-choice"><span class="history-choice-index">'+(i+1)+'</span><span class="history-choice-vehicle">'+esc(cleanVehicle(x.vehicle))+(drv?' · 司机 '+esc(drv):'')+(dp?' · 送货员 '+esc(dp):'')+'</span><span class="history-choice-main">'+(Number(s.finalCount)||Number(s.total)||(Array.isArray(x.stores)?x.stores.length:0))+'家 · '+fmtWeight(x.totalWeight)+'t</span>'+status+'</button><button type="button" class="history-choice-delete" aria-label="删除运单">删除</button></div>';
   }).join('');
   $('routeList').querySelectorAll('.order-history-swipe-row').forEach(row=>{
     const b=row.querySelector('.order-history-choice');
@@ -75,8 +76,8 @@ function render(){
  $('routeName').textContent=routeText(order.routeName)||'—';
  $('menuRoute').textContent=routeText(order.routeName)||'当前线路';
  $('vehicle').textContent=vehicleText(order.vehicle).replace(/^车辆\s*/,'')||'—';
- $('driver').textContent=String(order.driver||'').trim()||'—';
- $('deliveryPerson').textContent=String(order.deliveryPerson||'').trim()||'—';
+ $('driver').textContent=personName(order.driver)||'—';
+ $('deliveryPerson').textContent=personName(order.deliveryPerson)||'—';
  const metrics=[];
  if(Number(s.recoveredCount)>0)metrics.push('恢复'+s.recoveredCount+'家');
  if(Number(s.correction)>0)metrics.push('更正'+s.correction+'家');

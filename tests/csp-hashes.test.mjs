@@ -55,7 +55,7 @@ test("灰度形态：script-src 含 'unsafe-inline'（旧浏览器回退）+ 全
 test("防回归：全仓库 HTML 无内联事件属性（hash 生效后会被拦停）", () => {
   const walk = (dir, out = []) => {
     for (const name of fs.readdirSync(dir)) {
-      if (name === "node_modules") continue;
+      if (name === "node_modules" || name === "coverage") continue;
       const p = path.join(dir, name);
       if (fs.statSync(p).isDirectory()) walk(p, out);
       else if (name.endsWith(".html")) out.push(p);
