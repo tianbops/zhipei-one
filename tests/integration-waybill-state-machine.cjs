@@ -133,6 +133,10 @@ async function toJson(resp) { return await resp.json(); }
   check("OCR 超时响应含 requestId", ocrResult && typeof ocrResult.requestId === "string");
   const ocrProc = ocrResult ? await procMod.getProc(env, ocrResult.requestId) : null;
   check("处理票据转 TIMEOUT", ocrProc && ocrProc.stage === "TIMEOUT");
+  check("OCR失败票据保留阶段计时", ocrProc && ocrProc.timing && typeof ocrProc.timing.ocrSubmitMs === "number" && typeof ocrProc.timing.ocrStatusWaitMs === "number");
+  const diagOcr = await diagMod.onRequestGet({ request: getReq("https://t.zp/api/waybills/diagnostic?requestId=" + ocrResult.requestId, tokAdmin), env });
+  const diagOcrJson = await toJson(diagOcr);
+  check("requestId诊断可读取失败OCR计时", diagOcrJson.success === true && diagOcrJson.procTicket && diagOcrJson.procTicket.timing && typeof diagOcrJson.procTicket.timing.ocrStatusWaitMs === "number");
 
   console.log("─".repeat(50));
   console.log("状态机/失败恢复 回归：通过 " + pass + " / 失败 " + fail);

@@ -3,6 +3,16 @@ import { readFileSync } from "node:fs";
 
 // 只为测试把模块内的请求辅助函数导出到临时 data: module；生产模块导出面不变。
 const source = readFileSync(new URL("../functions/api/waybills/ocr.js", import.meta.url), "utf8");
+const processSource = readFileSync(new URL("../functions/api/waybills/process.js", import.meta.url), "utf8");
+const adminDiagnosticsSource = readFileSync(new URL("../js/admin/diagnostics.js", import.meta.url), "utf8");
+assert.match(processSource, /ocrResultFetchWaitMs:results\.reduce\(\(n,x\)=>n\+\(Number\(x\.ocrResultFetchWaitMs\)\|\|0\),0\)/,
+  "成功处理时必须汇总 OCR 结果读取重试等待");
+assert.match(processSource, /ocrResultFetchWaitMs:ocr\.ocrResultFetchWaitMs/,
+  "成功运单必须保存 OCR 结果读取重试等待");
+assert.match(adminDiagnosticsSource, /ocrResultFetchWaitMs:"结果重试等待"/,
+  "按 requestId 查询时必须显示结果读取重试等待");
+assert.match(adminDiagnosticsSource, /\["结果重试等待","ocrResultFetchWaitMs"\]/,
+  "线路/日期运单诊断也必须显示结果读取重试等待");
 assert.match(source, /const text = await r\.text\(\);[\s\S]*?finally\s*\{\s*clearTimeout\(timer\)/,
   "响应正文读取必须在超时计时器清理之前完成");
 assert.match(source, /const readResult = async \(u\) => \{[\s\S]*?raw = await rr\.text\(\);[\s\S]*?const err = fail\("OCR_RESULT_TIMEOUT"[\s\S]*?err\.retryable = true;/,
@@ -11,6 +21,16 @@ assert.match(source, /let delay = 900;/, "首次状态轮询等待应缩短到 9
 assert.match(source, /const deadline = Date\.now\(\) \+ 19000;/, "首次轮询优化不得缩短整体 OCR 截止时间");
 assert.match(source, /\}, 10000, signal\)/, "OCR 任务提交超时保持 10000ms");
 assert.match(source, /\},\s*6000, signal\s*\)/, "OCR 状态请求超时保持 6000ms");
+assert.match(source, /const refreshStarted = Date\.now\(\);[\s\S]*?finally\s*\{\s*timing\.ocrStatusPollCount\+\+;\s*timing\.ocrStatusRequestMs \+= Date\.now\(\) - refreshStarted;\s*\}/,
+  "重试时刷新 OCR 结果地址必须单独计入状态请求耗时，失败时也要计时");
+assert.match(source, /const resultStarted = Date\.now\(\);\s*timing\.ocrResultFetchAttempts\+\+;\s*try\s*\{\s*const parsed = await parseResult\(await readResult\(url\)\);/,
+  "结果读取尝试计数必须只覆盖实际结果读取，不能包含结果地址刷新");
+assert.match(source, /timing\.ocrResultFetchMs \+= Date\.now\(\) - resultStarted;\s*throw e;/,
+  "结果读取失败也必须累计独立的结果读取耗时");
+assert.match(source, /ocrResultFetchWaitMs: 0/,
+  "OCR 结果重试等待必须有独立计时字段");
+assert.match(source, /const retryWait = 800 \* attempt;[\s\S]*?timing\.ocrResultFetchWaitMs \+= Date\.now\(\) - waitStarted;/,
+  "结果读取重试的退避等待必须独立计时");
 const testModule = source.replace("async function requestJson(", "export async function requestJson(");
 assert.notEqual(testModule, source, "requestJson test hook target must exist");
 const moduleUrl = "data:text/javascript;base64," + Buffer.from(testModule).toString("base64");

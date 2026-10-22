@@ -100,7 +100,7 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
   }));
   form.append("file", file, file.name || "waybill");
 
-  const timing = { ocrSubmitMs: 0, ocrStatusPollCount: 0, ocrStatusWaitMs: 0, ocrStatusRequestMs: 0, ocrResultFetchMs: 0, ocrResultFetchAttempts: 0 };
+  const timing = { ocrSubmitMs: 0, ocrStatusPollCount: 0, ocrStatusWaitMs: 0, ocrStatusRequestMs: 0, ocrResultFetchMs: 0, ocrResultFetchWaitMs: 0, ocrResultFetchAttempts: 0 };
   let submitted;
   const submitStarted = Date.now();
   try {
@@ -198,19 +198,31 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
 
       let url = url0, lastError = null;
       for (let attempt = 0; attempt < 3; attempt++) {
-        if (attempt) await new Promise(r => setTimeout(r, 800 * attempt));
-        const resultStarted = Date.now();
-        timing.ocrResultFetchAttempts++;
+        if (attempt) { const retryWait = 800 * attempt; const waitStarted = Date.now(); await new Promise(r => setTimeout(r, retryWait)); timing.ocrResultFetchWaitMs += Date.now() - waitStarted; }
         try {
+          // 刷新结果地址属于状态请求，单独计时；不能混入结果 JSON 读取耗时。
+          // 刷新失败也必须走统一错误出口，保留已有阶段计时。
           if (attempt > 0 && lastError?.refreshUrl) {
-            const again = await requestJson(STATUS_PATH, { headers: { Authorization: "Bearer " + token, Accept: "application/json" } }, 6000);
-            url = clean(again?.data?.resultUrl?.jsonUrl) || url;
+            const refreshStarted = Date.now();
+            try {
+              const again = await requestJson(STATUS_PATH, { headers: { Authorization: "Bearer " + token, Accept: "application/json" } }, 6000);
+              url = clean(again?.data?.resultUrl?.jsonUrl) || url;
+            } finally {
+              timing.ocrStatusPollCount++;
+              timing.ocrStatusRequestMs += Date.now() - refreshStarted;
+            }
           }
-          const parsed = await parseResult(await readResult(url));
-          timing.ocrResultFetchMs += Date.now() - resultStarted;
-          return { ...parsed, ...timing };
+          const resultStarted = Date.now();
+          timing.ocrResultFetchAttempts++;
+          try {
+            const parsed = await parseResult(await readResult(url));
+            timing.ocrResultFetchMs += Date.now() - resultStarted;
+            return { ...parsed, ...timing };
+          } catch (e) {
+            timing.ocrResultFetchMs += Date.now() - resultStarted;
+            throw e;
+          }
         } catch (e) {
-          timing.ocrResultFetchMs += Date.now() - resultStarted;
           lastError = e;
           if (!e?.retryable) throw withTiming(e, timing);
         }

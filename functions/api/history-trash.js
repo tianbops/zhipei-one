@@ -1,6 +1,7 @@
 import { json } from "./_json.js";
 import { currentUser } from "./_auth.js";
 import { canUseRoute } from "./_permissions.js";
+import { canWriteWaybill } from "./_waybill-acl.js";
 import { command, get, pipeline } from "./_redis.js";
 import { dailyWaybillKey } from "./_waybill-identity.js";
 import { recomputeDayMeta } from "./waybills/_waybill-meta.js";
@@ -95,7 +96,7 @@ export async function onRequestPost({ request, env }) {
   const raw = await get(env, "waybill:trash:" + id);
   if (!raw) return json({ success: false, code: "TRASH_NOT_FOUND", error: "回收站中无此运单或已过期" }, 404);
   let w; try { w = typeof raw === "string" ? JSON.parse(raw) : raw; } catch { return json({ success: false, code: "TRASH_PARSE_FAILED", error: "回收站数据异常" }, 500); }
-  if (clean(w.routeId) !== routeId) return json({ success: false, code: "FORBIDDEN", error: "无权恢复该线路运单" }, 403);
+  if (clean(w.routeId) !== routeId || !canWriteWaybill(auth.user, w, env)) return json({ success: false, code: "FORBIDDEN", error: "无权恢复该运单" }, 403);
 
   const budget = new Budget();
   let warnings = [];
@@ -148,8 +149,8 @@ export async function onRequestDelete({ request, env }) {
   if (!id) return json({ success: false, code: "ID_REQUIRED", error: "缺少运单 id" }, 400);
   const raw = await get(env, "waybill:trash:" + id);
   if (!raw) return json({ success: false, code: "TRASH_NOT_FOUND", error: "回收站中无此运单或已过期" }, 404);
-  let w; try { w = typeof raw === "string" ? JSON.parse(raw) : raw; } catch { w = null; }
-  if (w && clean(w.routeId) !== routeId) return json({ success: false, code: "FORBIDDEN", error: "无权删除该线路运单" }, 403);
+  let w; try { w = typeof raw === "string" ? JSON.parse(raw) : raw; } catch { return json({ success: false, code: "TRASH_PARSE_FAILED", error: "回收站数据异常，已拒绝删除" }, 500); }
+  if (!w || typeof w !== "object" || clean(w.routeId) !== routeId || !canWriteWaybill(auth.user, w, env)) return json({ success: false, code: "FORBIDDEN", error: "无权删除该运单" }, 403);
 
   const budget = new Budget();
   try {

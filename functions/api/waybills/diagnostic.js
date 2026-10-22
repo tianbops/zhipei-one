@@ -14,7 +14,7 @@ const parse=v=>{try{return typeof v==="string"?JSON.parse(v):v}catch{return null
 const safeTiming=value=>{
   if(!value||typeof value!=="object"||Array.isArray(value))return null;
   const out={};
-  for(const key of ["recognizedMs","ocrMs","baseMs","extractMs","matchMs","dedupeMs","planMs","totalMs","ocrSubmitMs","ocrStatusPollCount","ocrStatusWaitMs","ocrStatusRequestMs","ocrResultFetchMs","ocrResultFetchAttempts"]){
+  for(const key of ["recognizedMs","ocrMs","baseMs","extractMs","matchMs","dedupeMs","planMs","totalMs","ocrSubmitMs","ocrStatusPollCount","ocrStatusWaitMs","ocrStatusRequestMs","ocrResultFetchMs","ocrResultFetchWaitMs","ocrResultFetchAttempts"]){
     const n=value[key];
     if(typeof n==="number"&&Number.isFinite(n)&&n>=0)out[key]=n;
   }
@@ -53,7 +53,7 @@ async function diagnosticGet({request,env}){
       const reaped=await failProc(env,requestedProc,{stage:effectiveStage(ticket),recoverable:false,action:null,hint:null});
       if(reaped)eff=reaped;
     }
-    return json({success:true,requestId:requestedProc,procTicket:eff,effectiveStage:effectiveStage(eff)});
+    return json({success:true,requestId:requestedProc,procTicket:{...eff,timing:safeTiming(eff.timing)},effectiveStage:effectiveStage(eff)});
   }
   // 数据一致性自检（P1.5）：只读扫描索引/去重/指纹/事件链/主记录的引用完整性，输出可解释差异报告（不改动任何数据）。
   const wantCheck=clean(url.searchParams.get("check"));
