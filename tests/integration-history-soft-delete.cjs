@@ -61,8 +61,8 @@ function getReq(url, token) {
   const indexKey = "zp:route:" + ROUTE + ":waybills:" + TODAY;
   const delById = (id) => historyMod.onRequestDelete({ request: getReq("https://app.local/api/history?date=" + TODAY + "&waybillId=" + id + "&routeId=" + ROUTE, tokM), env });
   const trashGet = () => trashMod.onRequestGet({ request: getReq("https://app.local/api/history-trash", tokM), env });
-  const trashPost = (id) => trashMod.onRequestPost({ request: getReq("https://app.local/api/history-trash?id=" + id, tokM), env });
-  const trashDel = (id) => trashMod.onRequestDelete({ request: getReq("https://app.local/api/history-trash?id=" + id, tokM), env });
+  const trashPost = (id, token = tokM) => trashMod.onRequestPost({ request: getReq("https://app.local/api/history-trash?id=" + id, token), env });
+  const trashDel = (id, token = tokM) => trashMod.onRequestDelete({ request: getReq("https://app.local/api/history-trash?id=" + id, token), env });
   const j = async (r) => await r.json();
 
   console.log("\n【1】DELETE /api/history → 软删：原主记录进回收站，索引/子键/反引清理");
@@ -91,6 +91,18 @@ function getReq(url, token) {
   const lg = await j(await trashGet());
   check("列表成功且含 w1", lg.success === true && lg.items.some(it => it.id === "w1"), "count=" + lg.count);
   check("w1 剩余天数在合理范围(0,604800)", (() => { const it = lg.items.find(x => x.id === "w1"); return it && it.ttl > 0 && it.ttl <= 604800; })());
+
+  // 同线路代班人员可查看线路运单，但不能恢复/彻底删除他人创建的运单。
+  seedJson("zp:user:uX", { id: "uX", role: "user", boundRouteId: OTHER, dispatchRouteId: ROUTE, routeDuty: "delivery", sessionVersion: 1 });
+  seedJson("zp:session:tok-X", { userId: "uX", sessionVersion: 1 });
+  const unauthorizedRestore = await trashMod.onRequestPost({ request: getReq("https://app.local/api/history-trash?id=w1", "tok-X"), env });
+  const unauthorizedRestoreBody = await j(unauthorizedRestore);
+  check("同线路代班人员恢复他人运单 → 403", unauthorizedRestore.status === 403 && unauthorizedRestoreBody.code === "FORBIDDEN");
+  check("拒绝恢复后回收站记录仍保留", !!getJson("zp:waybill:trash:w1") && getJson("zp:waybill:w1") === null);
+  const unauthorizedDelete = await trashMod.onRequestDelete({ request: getReq("https://app.local/api/history-trash?id=w1", "tok-X"), env });
+  const unauthorizedDeleteBody = await j(unauthorizedDelete);
+  check("同线路代班人员彻底删除他人运单 → 403", unauthorizedDelete.status === 403 && unauthorizedDeleteBody.code === "FORBIDDEN");
+  check("拒绝彻底删除后回收站记录仍保留", !!getJson("zp:waybill:trash:w1"));
 
   console.log("\n【3】POST /api/history-trash?id=w1 → 恢复");
   const r3 = await j(await trashPost("w1"));
