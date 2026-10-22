@@ -11,6 +11,12 @@ assert.match(source, /let delay = 900;/, "首次状态轮询等待应缩短到 9
 assert.match(source, /const deadline = Date\.now\(\) \+ 19000;/, "首次轮询优化不得缩短整体 OCR 截止时间");
 assert.match(source, /\}, 10000, signal\)/, "OCR 任务提交超时保持 10000ms");
 assert.match(source, /\},\s*6000, signal\s*\)/, "OCR 状态请求超时保持 6000ms");
+assert.match(source, /const refreshStarted = Date\.now\(\);[\s\S]*?finally\s*\{\s*timing\.ocrStatusPollCount\+\+;\s*timing\.ocrStatusRequestMs \+= Date\.now\(\) - refreshStarted;\s*\}/,
+  "重试时刷新 OCR 结果地址必须单独计入状态请求耗时，失败时也要计时");
+assert.match(source, /const resultStarted = Date\.now\(\);\s*timing\.ocrResultFetchAttempts\+\+;\s*try\s*\{\s*const parsed = await parseResult\(await readResult\(url\)\);/,
+  "结果读取尝试计数必须只覆盖实际结果读取，不能包含结果地址刷新");
+assert.match(source, /timing\.ocrResultFetchMs \+= Date\.now\(\) - resultStarted;\s*throw e;/,
+  "结果读取失败也必须累计独立的结果读取耗时");
 const testModule = source.replace("async function requestJson(", "export async function requestJson(");
 assert.notEqual(testModule, source, "requestJson test hook target must exist");
 const moduleUrl = "data:text/javascript;base64," + Buffer.from(testModule).toString("base64");
