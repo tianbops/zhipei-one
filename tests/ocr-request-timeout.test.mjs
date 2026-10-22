@@ -3,6 +3,16 @@ import { readFileSync } from "node:fs";
 
 // 只为测试把模块内的请求辅助函数导出到临时 data: module；生产模块导出面不变。
 const source = readFileSync(new URL("../functions/api/waybills/ocr.js", import.meta.url), "utf8");
+const processSource = readFileSync(new URL("../functions/api/waybills/process.js", import.meta.url), "utf8");
+const adminDiagnosticsSource = readFileSync(new URL("../js/admin/diagnostics.js", import.meta.url), "utf8");
+assert.match(processSource, /ocrResultFetchWaitMs:results\.reduce\(\(n,x\)=>n\+\(Number\(x\.ocrResultFetchWaitMs\)\|\|0\),0\)/,
+  "成功处理时必须汇总 OCR 结果读取重试等待");
+assert.match(processSource, /ocrResultFetchWaitMs:ocr\.ocrResultFetchWaitMs/,
+  "成功运单必须保存 OCR 结果读取重试等待");
+assert.match(adminDiagnosticsSource, /ocrResultFetchWaitMs:"结果重试等待"/,
+  "按 requestId 查询时必须显示结果读取重试等待");
+assert.match(adminDiagnosticsSource, /\["结果重试等待","ocrResultFetchWaitMs"\]/,
+  "线路/日期运单诊断也必须显示结果读取重试等待");
 assert.match(source, /const text = await r\.text\(\);[\s\S]*?finally\s*\{\s*clearTimeout\(timer\)/,
   "响应正文读取必须在超时计时器清理之前完成");
 assert.match(source, /const readResult = async \(u\) => \{[\s\S]*?raw = await rr\.text\(\);[\s\S]*?const err = fail\("OCR_RESULT_TIMEOUT"[\s\S]*?err\.retryable = true;/,
