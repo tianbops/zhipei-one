@@ -38,9 +38,9 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
   const uploadedAt=new Date().toISOString();
   // 处理失败统一收口：写状态机票据（PROCESSING→FAILED/TIMEOUT/CANCELLED）+ 返回可恢复提示（P1 #18）。
   const failProcess=async(code,message,status,opts={})=>{
-    const {stage="FAILED",recoverable=false,action=null,hint=null,detail=null,jobId=null,validation=null}=opts;
-    await failProc(env,requestId,{stage,recoverable,action,hint,detail:detail||(jobId?String(jobId):null), order:opts.order||null});
-    return json({success:false,code,error:message,message,requestId,recoverable,action,hint,detail,jobId,validation},status);
+    const {stage="FAILED",recoverable=false,action=null,hint=null,detail=null,jobId=null,validation=null,timing=null}=opts;
+    await failProc(env,requestId,{stage,recoverable,action,hint,detail:detail||(jobId?String(jobId):null),timing,order:opts.order||null});
+    return json({success:false,code,error:message,message,requestId,recoverable,action,hint,detail,jobId,validation,...(timing?{timing}: {})},status);
   };
   // AbortController 只中断客户端连接；Worker 内部任务仍可能继续执行，因此在高成本阶段边界主动检查。
   const stopIfClientCancelled=async(stage)=>{
@@ -107,7 +107,7 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
           const ocrHint={OCR_TIMEOUT:"OCR识别超时，可重新上传运单重试",OCR_CANCELLED:"已取消识别，可重新上传运单",OCR_JOB_FAILED:"OCR识别失败，请上传更清晰的运单照片",OCR_EMPTY:"OCR未识别到文字，请上传更清晰的运单照片",OCR_RESULT_MISSING:"OCR结果缺失，请重新上传运单",OCR_RESULT_FETCH:"OCR结果读取失败，请重新上传运单",OCR_RESULT_TIMEOUT:"OCR结果读取超时，请重新上传运单",OCR_NETWORK_TIMEOUT:"OCR服务响应超时，请稍后重试",OCR_SUBMIT_FAILED:"OCR任务提交失败，请稍后重试",OCR_API:"OCR服务暂时不可用，请稍后重试",OCR_BAD_RESPONSE:"OCR服务返回异常，请稍后重试",OCR_AUTH:"OCR服务鉴权失败，请联系管理员",OCR_ENDPOINT:"OCR服务地址异常，请联系管理员"};
           const ocrStage=ocrCode==="OCR_TIMEOUT"?"TIMEOUT":(ocrCode==="OCR_CANCELLED"?"CANCELLED":"FAILED");
           const ocrRecoverable=ocrCode!=="OCR_NOT_CONFIGURED";
-          return failProcess(ocrCode,e.message||"OCR识别失败",e.code==="OCR_NOT_CONFIGURED"?503:422,{stage:ocrStage,recoverable:ocrRecoverable,action:ocrRecoverable?"RETRY_OCR":null,hint:ocrHint[ocrCode]||"OCR识别失败，请稍后重试",jobId:e.jobId||null,detail:e.message||null});
+          return failProcess(ocrCode,e.message||"OCR识别失败",e.code==="OCR_NOT_CONFIGURED"?503:422,{stage:ocrStage,recoverable:ocrRecoverable,action:ocrRecoverable?"RETRY_OCR":null,hint:ocrHint[ocrCode]||"OCR识别失败，请稍后重试",jobId:e.jobId||null,detail:e.message||null,timing:{ocrSubmitMs:e.ocrSubmitMs,ocrStatusPollCount:e.ocrStatusPollCount,ocrStatusWaitMs:e.ocrStatusWaitMs,ocrStatusRequestMs:e.ocrStatusRequestMs,ocrResultFetchMs:e.ocrResultFetchMs,ocrResultFetchAttempts:e.ocrResultFetchAttempts}});
         }
       }
       const imageTexts=results.map(x=>String(x.rawText||""));
