@@ -82,6 +82,7 @@ export async function failProc(env, requestId, patch) {
       action: patch.action || null,
       hint: patch.hint || null,
       detail: patch.detail || null,
+      timing: patch.timing && typeof patch.timing === "object" && !Array.isArray(patch.timing) ? patch.timing : rec.timing || null,
       order: patch.order || null,
       updatedAt: nowISO(),
     };
