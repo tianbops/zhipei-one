@@ -51,6 +51,7 @@ export async function beginProc(env, { requestId, routeId, userId, fileName = nu
     action: null,
     hint: null,
     detail: null,
+    timing: null,
   };
   try {
     await command(env, ["SET", procKey(requestId), JSON.stringify(rec), "EX", String(PROC_TTL)]);
