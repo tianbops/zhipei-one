@@ -56,7 +56,7 @@ const exportedNames = (p, seen = new Set()) => {
   for (const m of src.matchAll(/^export (?:const|let|var|async function|function|class) (\w+)/gm)) names.add(m[1]);
   // re-export 传递解析：export {a,b} from "./x.js";  /  export {default} from ...
   for (const m of src.matchAll(/^export \{([^}]*)\} from "(\.[^"]+)";/gm)) {
-    const target = new URL(m[2], pathToFileURL(p)).pathname.replace(/^\//, "");
+    const target = fileURLToPath(new URL(m[2], pathToFileURL(p)));
     const sub = exportedNames(target, seen);
     for (const raw of m[1].split(",")) {
       const n = raw.trim();
