@@ -59,7 +59,7 @@ async function renderDiagnostics(){
       "质量："+lvl+(flags&&flags!=="正常"?" · "+flags:""),
       "耗时："+(timingParts.length?timingParts.join(" · "):"暂无阶段计时记录"),
       "事件："+((w.events||[]).slice(-8).reverse().map(e=>(e.event||"-")+(e.t?" · "+String(e.t).slice(11,19):"")).join("；")||"无")
-    ].join("\\n");
+    ].join("\n");
     return '<div class="row"><div class="content" style="display:block;width:100%"><div class="main"><strong>'+esc(w.date||"-")+' · '+esc(w.vehicle||"-")+'</strong>'
       +'<span class="q-badge '+ql+'">'+esc(ql.toUpperCase())+(w.quality&&w.quality.flags&&w.quality.flags.length?(" · "+esc(flags)):"")+'</span></div>'
       +'<div class="meta">stage='+esc(w.stage||"-")+' · '+esc(w.routeId)+' · requestId '+esc(w.requestId||"-")+'</div>'
