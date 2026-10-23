@@ -25,9 +25,10 @@
 }
 .trend-nav:active{background:var(--zp-primary);color:var(--zp-on-primary)}
 .trend-nav:disabled{opacity:.2;pointer-events:none}
-/* 移动端 44px 可点性下限（2026-10-20 巡检）：按钮本体保持紧凑观感，用透明伪元素扩展热区 */
+/* 移动端 48px 可点性下限：按钮本体保持紧凑观感（30px 胶囊），透明伪元素把热区扩到 48px
+   （四周 -9px）。2026-10-24 由 44px 下限提级到 Android 标准 48px。 */
 .trend-nav,.trend-metric-btn,.trend-year{position:relative}
-.trend-nav::after,.trend-metric-btn::after,.trend-year::after{content:"";position:absolute;inset:-8px}
+.trend-nav::after,.trend-metric-btn::after,.trend-year::after{content:"";position:absolute;inset:-9px}
 .trend-month{color:var(--zp-muted);font-size:12px;line-height:18px;font-variant-numeric:tabular-nums;letter-spacing:.5px;will-change:transform}
 .trend-metric{display:flex;gap:6px}
 .trend-metric-btn{appearance:none;border:1px solid var(--zp-line);background:var(--zp-surface-2);color:var(--zp-muted);font-size:12px;line-height:18px;padding:5px 11px;border-radius:999px;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
