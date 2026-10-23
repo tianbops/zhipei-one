@@ -115,9 +115,7 @@
 :root[data-zp-theme="light"] .appearance-font-control output,
 :root[data-zp-theme="light"] .appearance-font-small{color:#596674}
 :root[data-zp-theme="light"] .appearance-font-large{color:#17202A}
-:root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav{background:#FFFFFF!important;border-color:#D7DDE3!important}
-:root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-item{color:#596674!important}
-:root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-item[aria-current="page"]{color:#17202A!important}
+/* 底栏颜色已收敛为 --zp-nav-* 令牌组（Phase 4），此处不再覆盖 */
 
 /* 浅色外观适配补全：线路页/账号页页面背景与标题、线路申请折叠面板、
    通用卡片文本（此前标题白字落在浅背景上不可读） */

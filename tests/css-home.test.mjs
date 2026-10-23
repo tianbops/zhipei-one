@@ -40,7 +40,10 @@ const reps = [
   ".trend-card{",               // trend：配送趋势
   ".bottom-nav{",               // dashboard：底部导航
   "body.sheet-open .bottom-nav",// dashboard：上传弹层置顶
-  ':root[data-zp-theme="light"] .bottom-nav{', // light：浅色导航
+  // Phase 4：底栏配色收敛为 --zp-nav-* 令牌组（浅色白底/深色近黑底），
+  // 原 :root[data-zp-theme="light"] .bottom-nav 补丁已删除，改由 light 段
+  // 的页面级代表规则守门（该段仍按浅色补丁形态维护）。
+  ':root[data-zp-theme="light"] .home-app{', // light：浅色页面背景
 ];
 for (const sel of reps) {
   assert.ok(concat.includes(sel), `拆分后缺失代表选择器（段落丢失）：${sel}`);

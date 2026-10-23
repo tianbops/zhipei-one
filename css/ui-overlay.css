@@ -319,20 +319,20 @@ textarea:disabled,
   padding:6px 8px calc(6px + env(safe-area-inset-bottom))!important;
   transform:translateX(-50%)!important;
   display:grid!important;grid-template-columns:repeat(5,1fr)!important;gap:4px!important;
-  background:var(--zp-logo-plate)!important;border-top:1px solid var(--zp-line)!important;
+  background:var(--zp-nav-bg)!important;border-top:1px solid var(--zp-line)!important;
   backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
 }
 .zp-business-nav-page .bottom-nav-item{
   min-width:0!important;min-height:52px!important;border:0!important;border-radius:10px!important;
-  background:transparent!important;color:var(--zp-muted)!important;text-decoration:none!important;
+  background:transparent!important;color:var(--zp-nav-text)!important;text-decoration:none!important;
   display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;
   gap:3px!important;font-size:12px!important;line-height:17px!important;font-weight:600!important;
   -webkit-tap-highlight-color:transparent;
 }
-.zp-business-nav-page .bottom-nav-item:active{background:var(--zp-surface-2)!important;color:var(--zp-text)!important}
+.zp-business-nav-page .bottom-nav-item:active{background:var(--zp-nav-active-bg)!important;color:var(--zp-nav-text-active)!important}
 .zp-business-nav-page .bottom-nav-icon{width:22px!important;height:22px!important;display:flex!important;align-items:center!important;justify-content:center!important}
 .zp-business-nav-page .bottom-nav-icon svg{width:21px!important;height:21px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important}
-.zp-business-nav-page .bottom-nav-item[aria-current="page"]{color:var(--zp-text)!important}
+.zp-business-nav-page .bottom-nav-item[aria-current="page"]{color:var(--zp-nav-text-active)!important}
 /* 中间上传加号（底栏 5 位改版）：无文字标签的凸起圆形按钮。
    圆形由 .bottom-nav-icon 承载，上移凸出导航条；底色沿用唯一主色 --zp-primary，
    白 + 图标，按压提亮——不引入新的强调色。 */
