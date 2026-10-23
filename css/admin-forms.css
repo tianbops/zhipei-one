@@ -16,6 +16,9 @@
 .search{position:relative;display:block}
 .search>span{position:absolute;right:12px;top:50%;z-index:2;transform:translateY(-50%);margin:0;color:var(--soft);font-size:20px;line-height:1;pointer-events:none}
 .search input{width:100%;padding-left:12px;padding-right:42px}
+/* 运单诊断筛选行（日期框遮挡报障）：行内输入无 ⌕ 图标，收回 padding-right；日期框最小宽度兜底，行内放不下时整体换行也不裁字。 */
+.diag-filters input{padding-right:10px}
+#diagDate{flex:1 1 150px;min-width:150px}
 #users .row .content{align-items:center}
 #users .row .main{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-width:0}
 #users .row .main strong{flex:1;min-width:0}
