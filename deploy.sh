@@ -14,12 +14,12 @@ PROJECT="${ZP_PROJECT:-zhipei-one}"
 MODE="${1:-deploy}"
 WRANGLER="npx wrangler@latest"
 
-# 发布前必须执行：给静态资源引用打上 ?v=<内容哈希>，
-# 否则浏览器 HTTP 缓存 / Service Worker 会继续提供旧版 JS/CSS，
-# 用户看不到本次修改。见 tools/stamp_assets.py
+# 发布前必须执行：给静态资源引用打上 ?v=<内容哈希>，并重建 SW 预缓存、递增 SW 版本，
+# 否则浏览器 HTTP 缓存 / Service Worker 会继续提供旧版 JS/CSS，用户看不到本次修改。
+# 见 scripts/bump_asset_versions.py（内部调用 tools/stamp_assets.py 刷 HTML 引用）
 stamp() {
-  echo "==> 给静态资源引用打版本号"
-  python3 tools/stamp_assets.py || { echo "✗ 打版本号失败"; exit 1; }
+  echo "==> 刷新资源版本号 + 重建 SW 预缓存 + 递增 SW 版本"
+  python3 scripts/bump_asset_versions.py || { echo "✗ 版本号刷新失败"; exit 1; }
 }
 
 case "$MODE" in
