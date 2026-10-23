@@ -1,24 +1,24 @@
 /* css/admin-base.css —— 骨架与组件基础：:root 变量、页头、Tab、列表行 .row/.route、弹窗 .dialog、Toast
  * 拆分自 admin.html（原内联 <style> 第 1 段），规则顺序原样保留，层叠结果不变。
  */
-:root{--bg:var(--zp-bg);--card:var(--zp-card);--panel:var(--zp-surface-2);--line:var(--zp-line);--muted:var(--zp-muted);--soft:var(--zp-soft)}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#fff;font:16px/22px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.shell{min-height:100dvh;padding:max(12px,var(--zp-safe-top)) 14px calc(28px + env(safe-area-inset-bottom))}.panel{width:min(100%,680px);margin:auto}.head{min-height:58px;padding:0 2px 10px}.head img{width:36px;height:36px;padding:5px;background:var(--zp-logo-plate);border-radius:10px}.head h1{font-size:20px;line-height:26px}.menu-btn{width:48px;height:48px;border:1px solid var(--line);border-radius:11px;background:var(--panel)}.tabs{border-bottom:1px solid var(--line)}.tab{height:46px;font-size:16px;line-height:22px}.viewport{margin-top:12px}.title{font-size:18px;line-height:24px;margin-bottom:10px}.search input,.field input,.field select{height:48px;background:var(--panel);border-color:var(--zp-line);border-radius:11px}.row,.route,.card,.invite{background:var(--panel);border-color:var(--line);border-radius:14px}.row .content{background:var(--panel);min-height:58px}.route-content{background:var(--card)}.dialog-bg{background:var(--zp-scrim)}.dialog{background:var(--card);border-color:var(--line);border-radius:17px}.dialog-actions button{height:48px}.cancel{order:0}.ok{order:1}.toast{background:var(--zp-secondary-active)}
+:root{--bg:var(--zp-bg);--card:var(--zp-card);--panel:var(--zp-surface-2);--line:var(--zp-line);--muted:var(--zp-muted);--soft:var(--zp-soft)}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--zp-text);font:16px/22px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.shell{min-height:100dvh;padding:max(12px,var(--zp-safe-top)) 14px calc(28px + env(safe-area-inset-bottom))}.panel{width:min(100%,680px);margin:auto}.head{min-height:58px;padding:0 2px 10px}.head img{width:36px;height:36px;padding:5px;background:var(--zp-logo-plate);border-radius:10px}.head h1{font-size:20px;line-height:26px}.menu-btn{width:48px;height:48px;border:1px solid var(--line);border-radius:11px;background:var(--panel)}.tabs{border-bottom:1px solid var(--line)}.tab{height:46px;font-size:16px;line-height:22px}.viewport{margin-top:12px}.title{font-size:18px;line-height:24px;margin-bottom:10px}.search input,.field input,.field select{height:48px;background:var(--panel);border-color:var(--zp-line);border-radius:11px}.row,.route,.card,.invite{background:var(--panel);border-color:var(--line);border-radius:14px}.row .content{background:var(--panel);min-height:58px}.route-content{background:var(--card)}.dialog-bg{background:var(--zp-scrim)}.dialog{background:var(--card);border-color:var(--line);border-radius:17px}.dialog-actions button{height:48px}.cancel{order:0}.ok{order:1}.toast{background:var(--zp-secondary-active)}
 .head{display:flex;align-items:center;gap:11px;padding:8px 2px 12px}
 .head .head-info{min-width:0;flex:1}.head h1{margin:0;line-height:22px;font-weight:700}
 .head .who{display:flex;align-items:baseline;gap:8px;min-width:0;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.head .who .role{font-size:18px;line-height:23px;font-weight:700;color:#fff;flex:0 0 auto}
+.head .who .role{font-size:18px;line-height:23px;font-weight:700;color:var(--zp-text);flex:0 0 auto}
 .head .who .uname{font-size:12px;line-height:17px;color:var(--soft);overflow:hidden;text-overflow:ellipsis}
-.menu-btn{flex:0 0 48px;color:#fff;font-size:18px}
+.menu-btn{flex:0 0 48px;color:var(--zp-text);font-size:18px}
 
 
 /* 底部固定导航（5 模块 · 双主题自动适配 · 独立命名空间，避免污染业务端 .bottom-nav） */
 .admin-nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;gap:2px;padding:6px 6px calc(8px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--line);max-width:680px;margin:0 auto;box-shadow:0 -8px 24px var(--zp-shadow-md)}
 .admin-nav .nav-item{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:46px;border:0;border-radius:12px;background:transparent;color:var(--muted);font-size:12px;font-weight:600}
 .admin-nav .nav-item svg{width:22px;height:22px;display:block;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.admin-nav .nav-item.active{background:var(--card);color:var(--accent,#1677FF)}
+.admin-nav .nav-item.active{background:var(--card);color:var(--zp-primary)}
 .viewport{margin-top:14px}.title{display:flex;align-items:center;justify-content:space-between;min-height:30px;margin-bottom:9px;font-size:16px;font-weight:700}
-.add{width:34px;height:34px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:#fff;font-size:20px;line-height:1}
-.search{margin-bottom:8px}.search input{width:100%;padding:0 12px;color:#fff}
-.row,.route,.card,.invite{border:1px solid var(--zp-line);box-shadow:none}.invite{position:relative;overflow:hidden;touch-action:pan-y;-webkit-user-select:none;user-select:none}.invite-head{display:flex;align-items:center;gap:8px}.invite-head .code{margin-right:auto}.invite-head .q-badge{margin-left:auto}.invite-head .copy{flex:0 0 auto}.invite-content{position:relative;z-index:2;background:var(--panel);padding:13px 14px;transition:transform .18s ease}.invite-actions{position:absolute;inset:0 0 0 auto;width:148px;display:flex;align-items:stretch;z-index:1;margin:0;padding:0;border:0}.invite-actions .small-action{width:74px;min-width:0;border:0;border-radius:0;background:var(--zp-secondary-active);color:#fff}.invite-actions .small-action.danger{background:var(--zp-error-surface);border-color:transparent;color:var(--zp-danger)}.invite.open .invite-content{transform:translateX(-148px)}.invite-actions .small-action{touch-action:manipulation;-webkit-tap-highlight-color:transparent}.row{margin-bottom:6px;overflow:hidden}.row .content{min-height:54px}
+.add{width:34px;height:34px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--zp-text);font-size:20px;line-height:1}
+.search{margin-bottom:8px}.search input{width:100%;padding:0 12px;color:var(--zp-text)}
+.row,.route,.card,.invite{border:1px solid var(--zp-line);box-shadow:none}.invite{position:relative;overflow:hidden;touch-action:pan-y;-webkit-user-select:none;user-select:none}.invite-head{display:flex;align-items:center;gap:8px}.invite-head .code{margin-right:auto}.invite-head .q-badge{margin-left:auto}.invite-head .copy{flex:0 0 auto}.invite-content{position:relative;z-index:2;background:var(--panel);padding:13px 14px;transition:transform .18s ease}.invite-actions{position:absolute;inset:0 0 0 auto;width:148px;display:flex;align-items:stretch;z-index:1;margin:0;padding:0;border:0}.invite-actions .small-action{width:74px;min-width:0;border:0;border-radius:0;background:var(--zp-secondary-active);color:var(--zp-text)}.invite-actions .small-action.danger{background:var(--zp-error-surface);border-color:transparent;color:var(--zp-danger)}.invite.open .invite-content{transform:translateX(-148px)}.invite-actions .small-action{touch-action:manipulation;-webkit-tap-highlight-color:transparent}.row{margin-bottom:6px;overflow:hidden}.row .content{min-height:54px}
 .row .main strong{font-size:14px}.row .meta,.meta{color:var(--soft);font-size:12px}
 .route{margin-bottom:7px;background:var(--card);overflow:hidden}.route-content{padding:13px 14px;background:transparent}
 .route-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}.route-name{font-size:14px;font-weight:700}.route-count{color:var(--muted);font-size:12px}
@@ -46,7 +46,7 @@ body{touch-action:pan-y}
 .row .main strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .row .arrow{color:var(--soft);font-size:22px;line-height:1}
 .row .actions{position:absolute;inset:0 0 0 auto;width:148px;display:flex;align-items:stretch;z-index:1}
-.row .actions .act{width:74px;border:0;color:#fff;font-size:13px}
+.row .actions .act{width:74px;border:0;color:var(--zp-text);font-size:13px}
 .row .actions .normal{background:var(--zp-secondary-active)}
 .row .actions .danger{background:var(--zp-error-surface)}
 .row.open .content{transform:translateX(-148px)}
@@ -68,10 +68,10 @@ body{touch-action:pan-y}
 .sub-title{font-size:14px;font-weight:700;margin:16px 0 8px;color:var(--muted)}
 .search{display:flex;align-items:center;gap:8px}
 .search>span{color:var(--soft);font-size:20px;line-height:1}
-.search input{flex:1;min-width:0;border:1px solid var(--zp-line);color:#fff;outline:none}
+.search input{flex:1;min-width:0;border:1px solid var(--zp-line);color:var(--zp-text);outline:none}
 .search input::placeholder{color:var(--zp-muted)}
-input,select{color:#fff;outline:none}
-select option{background:var(--zp-secondary-bg);color:#fff}
+input,select{color:var(--zp-text);outline:none}
+select option{background:var(--zp-secondary-bg);color:var(--zp-text)}
 /* P2-12 收口：移除全屏遮罩上的 backdrop-filter。
    原因：backdrop-filter 强制 GPU 每帧重新合成遮罩后方的整屏内容，在移动端/低端机上是弹窗
    打开与页面跳转掉帧的最典型来源（与已做过的半透明卡片叠加后合成成本更高）。
@@ -85,12 +85,12 @@ select option{background:var(--zp-secondary-bg);color:#fff}
 .dialog .field input:focus,.dialog .field select:focus{border-width:1px}
 .dialog .field select{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 20px) 50%,calc(100% - 14px) 50%;background-size:6px 6px;background-repeat:no-repeat}
 .dialog .field input[type=number]{appearance:textfield;-webkit-appearance:textfield;-moz-appearance:textfield}
-.dialog-actions button{color:#fff;border:1px solid var(--zp-line);background:var(--zp-secondary-bg)}
+.dialog-actions button{color:var(--zp-text);border:1px solid var(--zp-line);background:var(--zp-secondary-bg)}
 .dialog-actions .ok{background:var(--zp-secondary-bg);border-color:var(--zp-line)}
 .dialog-actions .ok.danger{background:var(--zp-error-surface);border-color:var(--zp-error-surface-strong);color:var(--zp-danger)}
 .menu-bg{z-index:var(--ui-z-modal-stack,1100)}
 .menu-bg .dialog{width:min(100%,360px)}
-.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));z-index:var(--ui-z-toast,2000);display:block;min-height:42px;max-width:calc(100vw - 32px);padding:10px 14px;border:1px solid var(--line);border-radius:11px;background:var(--zp-secondary-active);color:#fff;font-size:14px;line-height:20px;text-align:center;box-shadow:0 10px 28px var(--zp-shadow-md);transform:translate(-50%,10px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .18s ease,transform .18s ease,visibility .18s ease}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));z-index:var(--ui-z-toast,2000);display:block;min-height:42px;max-width:calc(100vw - 32px);padding:10px 14px;border:1px solid var(--line);border-radius:11px;background:var(--zp-secondary-active);color:var(--zp-text);font-size:14px;line-height:20px;text-align:center;box-shadow:0 10px 28px var(--zp-shadow-md);transform:translate(-50%,10px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .18s ease,transform .18s ease,visibility .18s ease}
 .toast.show{opacity:1;visibility:visible;transform:translate(-50%,0)}
 .menu-btn{cursor:pointer}
 .nav-item,.add,.small-action,.route-delete,.copy,.dialog button,.setting{cursor:pointer}
@@ -124,7 +124,7 @@ select option{background:var(--zp-secondary-bg);color:#fff}
 /* 数据总览卡片（用户页顶部 · 双主题自动适配） */
 .overview{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:2px 0 12px}
 .ov-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 6px;text-align:center}
-.ov-val{font-size:22px;font-weight:700;color:var(--accent,#1677FF);line-height:1.15}
+.ov-val{font-size:22px;font-weight:700;color:var(--zp-primary);line-height:1.15}
 .ov-label{font-size:12px;color:var(--muted);margin-top:4px}
 /* 固定底栏占位：Toast 抬到底栏之上，避免被遮挡 */
 .toast{bottom:calc(76px + env(safe-area-inset-bottom))!important}

@@ -5,20 +5,20 @@
 .page2-card{background:var(--zp-card-translucent);border:1px solid var(--zp-line);border-radius:16px;padding:16px;margin-bottom:10px}
 .page2-card h2{margin:0 0 8px;font-size:16px;line-height:22px}
 .page2-label{display:block;margin-top:13px;color:var(--zp-muted);font-size:13px}
-.page2-label select,.page2-label input,.page2-label textarea{display:block;width:100%;min-height:48px;margin-top:6px;padding:0 16px;border:1px solid var(--zp-line);border-radius:11px;background:var(--zp-card-translucent-2);color:#fff}
+.page2-label select,.page2-label input,.page2-label textarea{display:block;width:100%;min-height:48px;margin-top:6px;padding:0 16px;border:1px solid var(--zp-line);border-radius:11px;background:var(--zp-card-translucent-2);color:var(--zp-text)}
 .page2-primary,.page2-secondary{width:100%;min-height:48px;margin-top:14px;border-radius:11px;font-size:15px}
 .page2-primary{border:1px solid var(--zp-primary);background:var(--zp-primary);color:var(--zp-on-primary)}
-.page2-secondary{border:1px solid var(--zp-line);background:var(--zp-card-translucent-2);color:#fff}
+.page2-secondary{border:1px solid var(--zp-line);background:var(--zp-card-translucent-2);color:var(--zp-text)}
 .page2-primary:disabled,.page2-secondary:disabled{opacity:.45}
 .page2-soft{margin:4px 0 0;color:var(--zp-muted);font-size:12px;line-height:18px}
 .page2-danger{color:var(--ui-danger)!important}
-@media(max-width:380px){.page2{padding-left:12px;padding-right:12px}.page2-card{padding:15px}}.request-row{padding:12px 0;border-bottom:1px solid var(--zp-divider);font-size:13px;line-height:21px;color:var(--zp-muted)}.request-row:last-child{border-bottom:0}.request-row strong{color:#fff}.data-help{margin:6px 0 0;color:var(--zp-muted);font-size:12px;line-height:19px}.data-import{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;background:var(--zp-scrim)}.data-import-panel{width:min(100%,430px);max-height:88vh;overflow:auto;padding:18px;border:1px solid var(--zp-line);border-radius:17px;background:var(--zp-card-translucent)}.data-textarea{width:100%;min-height:190px;margin-top:10px;padding:12px;border:1px solid var(--zp-line);border-radius:11px;background:var(--zp-card-translucent-2);color:#fff;resize:vertical}.data-import-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.data-import-actions button{min-height:var(--zp-control-height);border:1px solid var(--zp-line);border-radius:10px;background:var(--zp-card-translucent-2);color:#fff}.data-import-actions button:last-child{background:var(--zp-primary);border-color:var(--zp-primary);color:var(--zp-on-primary)}.account-row{display:flex;justify-content:space-between;align-items:center;min-height:48px;border-bottom:1px solid var(--zp-divider);font-size:13px;color:var(--zp-muted)}.account-row:last-child{border-bottom:0}.account-row strong{color:#fff}.account-logout{margin-top:0}.empty{padding:30px 10px;text-align:center;color:var(--zp-muted)}
+@media(max-width:380px){.page2{padding-left:12px;padding-right:12px}.page2-card{padding:15px}}.request-row{padding:12px 0;border-bottom:1px solid var(--zp-divider);font-size:13px;line-height:21px;color:var(--zp-muted)}.request-row:last-child{border-bottom:0}.request-row strong{color:var(--zp-text)}.data-help{margin:6px 0 0;color:var(--zp-muted);font-size:12px;line-height:19px}.data-import{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;background:var(--zp-scrim)}.data-import-panel{width:min(100%,430px);max-height:88vh;overflow:auto;padding:18px;border:1px solid var(--zp-line);border-radius:17px;background:var(--zp-card-translucent)}.data-textarea{width:100%;min-height:190px;margin-top:10px;padding:12px;border:1px solid var(--zp-line);border-radius:11px;background:var(--zp-card-translucent-2);color:var(--zp-text);resize:vertical}.data-import-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.data-import-actions button{min-height:var(--zp-control-height);border:1px solid var(--zp-line);border-radius:10px;background:var(--zp-card-translucent-2);color:var(--zp-text)}.data-import-actions button:last-child{background:var(--zp-primary);border-color:var(--zp-primary);color:var(--zp-on-primary)}.account-row{display:flex;justify-content:space-between;align-items:center;min-height:48px;border-bottom:1px solid var(--zp-divider);font-size:13px;color:var(--zp-muted)}.account-row:last-child{border-bottom:0}.account-row strong{color:var(--zp-text)}.account-logout{margin-top:0}.empty{padding:30px 10px;text-align:center;color:var(--zp-muted)}
 /* 线路申请页：保持现有视觉，只压缩占用并将维护申请改为折叠面板 */
 .route-apply-page .page2-card{padding:14px;margin-bottom:8px}
 .route-apply-page .page2-card h2{font-size:15px;margin-bottom:6px}
 .route-apply-page .message{margin:0;font-size:13px;line-height:20px}
 .route-apply-page .maintain-card{padding:0;overflow:hidden}
-.route-apply-page .collapse-head{width:100%;min-height:48px;padding:0 14px;border:0;background:transparent;color:#fff;display:flex;align-items:center;justify-content:space-between;text-align:left;font-size:15px;font-weight:700}
+.route-apply-page .collapse-head{width:100%;min-height:48px;padding:0 14px;border:0;background:transparent;color:var(--zp-text);display:flex;align-items:center;justify-content:space-between;text-align:left;font-size:15px;font-weight:700}
 .route-apply-page .collapse-icon{color:var(--zp-muted);font-size:20px;line-height:1;transition:transform .18s ease}
 .route-apply-page .collapse-body{padding:0 14px 14px}
 .route-apply-page .collapse-body[hidden]{display:none}
@@ -30,25 +30,25 @@
 /* 我的页：与线路申请页统一布局、颜色与密度。 */
 .account-page{background:var(--zp-logo-plate);padding-top:16px /* 近黑页底与 logo 底板同值，共用令牌 */;padding-bottom:calc(92px + env(safe-area-inset-bottom))}
 .account-page .topbar{margin-bottom:8px;z-index:100;background:var(--zp-bg)}
-.account-page .topbar h1{margin:0;text-align:center;color:#fff;font-size:17px;line-height:23px;font-weight:700}
+.account-page .topbar h1{margin:0;text-align:center;color:var(--zp-text);font-size:17px;line-height:23px;font-weight:700}
 .account-page .page2-card{background:var(--zp-card-translucent-2);border:1px solid var(--zp-tint);border-radius:16px;padding:14px;margin-bottom:8px;box-shadow:0 12px 30px var(--zp-shadow-md)}
-.account-page .page2-card h2{margin:0 0 6px;color:#fff;font-size:15px!important;line-height:21px!important;font-weight:700}
+.account-page .page2-card h2{margin:0 0 6px;color:var(--zp-text);font-size:15px!important;line-height:21px!important;font-weight:700}
 .account-page .page2-soft{margin:4px 0 0;color:var(--zp-muted);font-size:13px;line-height:20px}
 .account-page .account-row{min-height:46px;border-bottom:0;color:var(--zp-muted);font-size:15px;line-height:22px}
-.account-page .account-row strong{color:#fff;font-size:15px;font-weight:600;text-align:right}
-.account-page .account-collapse-head{width:100%;min-height:48px;padding:0 14px;border:0;background:transparent;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;font-size:15px;line-height:21px;font-weight:700}
+.account-page .account-row strong{color:var(--zp-text);font-size:15px;font-weight:600;text-align:right}
+.account-page .account-collapse-head{width:100%;min-height:48px;padding:0 14px;border:0;background:transparent;color:var(--zp-text);display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;font-size:15px;line-height:21px;font-weight:700}
 .account-page .account-collapse-icon{width:32px;height:32px;flex:0 0 32px;display:inline-flex;align-items:center;justify-content:center;color:var(--zp-muted);font-size:0!important;line-height:0!important}
 .account-page .account-collapse-icon::before{content:"";display:block;width:7px;height:7px;border-right:1.7px solid currentColor;border-bottom:1.7px solid currentColor;transform:rotate(45deg) translate(-1px,-1px);transition:transform .18s ease}
 .account-page .account-collapse-head[aria-expanded="true"] .account-collapse-icon::before{transform:rotate(225deg) translate(-1px,-1px)}
 .account-page .account-collapse-body{padding:0 14px 14px;border-top:1px solid var(--zp-tint)}
 .account-page .account-collapse-body[hidden]{display:none}
 .account-page .page2-label{display:block;margin-top:10px;color:var(--zp-muted);font-size:13px;line-height:20px}
-.account-page .page2-label input{display:block;width:100%;min-height:48px;margin-top:5px;padding:0 14px;border:1px solid var(--zp-line);border-radius:11px;background:var(--zp-card-translucent-2);color:#fff;font-size:15px}
+.account-page .page2-label input{display:block;width:100%;min-height:48px;margin-top:5px;padding:0 14px;border:1px solid var(--zp-line);border-radius:11px;background:var(--zp-card-translucent-2);color:var(--zp-text);font-size:15px}
 .account-page .page2-label input::placeholder{color:var(--zp-muted)}
 .account-page .page2-primary,.account-page .page2-secondary{min-height:var(--zp-control-height);margin-top:12px;border-radius:11px;font-size:15px;font-weight:600}
 .account-page .page2-primary{background:var(--zp-primary);border:1px solid var(--zp-primary);color:var(--zp-on-primary)}
 .account-page .account-danger-box{padding:12px 14px 14px;border-top:1px solid var(--zp-tint)}
-.account-page .account-danger-box strong{display:block;color:#fff;font-size:14px;line-height:20px}
+.account-page .account-danger-box strong{display:block;color:var(--zp-text);font-size:14px;line-height:20px}
 .account-page .account-danger-box p{margin:5px 0 0;color:var(--zp-muted);font-size:12px;line-height:19px}
 /* 死规则对齐：page2-danger-btn 是 <button class*=danger>，其 border/background/color
    已被 ui-theme.css Phase 2 全站危险按钮标准 !important 接管（中性底+红字），
@@ -63,13 +63,13 @@
 @media(prefers-reduced-motion:reduce){.account-page .account-collapse-icon::before{transition:none}}
 
 /* Android 返回层 2.5：所有业务页统一为运单详情同款纯箭头；点击走浏览器历史栈。 */
-.page2 .app-back{color:#fff}
-.page2 .app-back:active{color:#fff}
+.page2 .app-back{color:var(--zp-text)}
+.page2 .app-back:active{color:var(--zp-text)}
 
 /* 线路选择页（原 dispatch.html 局部样式，原样迁移至统一层；声明与级联顺序保持不变） */
 .dispatch-page{width:min(100%,430px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:16px 16px calc(28px + env(safe-area-inset-bottom));background:var(--zp-logo-plate)}
-.dispatch-page .app-back{color:#fff}
-.dispatch-page .topbar h1{margin:0;text-align:center;color:#fff;font-weight:700}
+.dispatch-page .app-back{color:var(--zp-text)}
+.dispatch-page .topbar h1{margin:0;text-align:center;color:var(--zp-text);font-weight:700}
 .dispatch-section{margin-top:18px}
 .dispatch-section-title{margin:0 0 9px 3px;color:var(--zp-muted);font-size:13px;font-weight:600}
 .dispatch-empty,.dispatch-message{padding:16px;color:var(--zp-muted);text-align:center;font-size:14px}

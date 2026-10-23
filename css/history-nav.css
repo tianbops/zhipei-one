@@ -1,6 +1,6 @@
 /* UI 2.4：顶部返回键与运单详情统一
    历史查询不显示右侧三横，仅保留与运单详情一致的返回箭头。 */
-.history-shell .app-back{color:#fff}
+.history-shell .app-back{color:var(--zp-text)}
 .history-shell .app-back:active{background:var(--zp-card-translucent);transform:none}
 .history-topbar-placeholder{
   width:44px;

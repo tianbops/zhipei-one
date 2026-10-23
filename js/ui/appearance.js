@@ -40,7 +40,11 @@
       root.dataset.zpTheme=resolved;
       root.dataset.zpThemeChoice=chosen;
       const dark=resolved!=="light";
-      const bg=dark?"#05070A":"#F4F6F8";
+      /* 壳底色与网页主题严格成对：深色 #121826 ↔ 浅色 #F6F7F9。
+         映射表是 meta theme-color 与安卓壳状态栏的共同真值来源
+         （浅色取映射值，深色取键本身），杜绝两处各写一半对不齐。 */
+      const SHELL_BG={"#121826":"#F6F7F9"};
+      const bg=dark?"#121826":SHELL_BG["#121826"];
       const meta=document.querySelector('meta[name="theme-color"]');
       if(meta)meta.setAttribute("content",bg);
       // 安卓壳（Capacitor）状态栏同步：壳里此前是「透明状态栏 + 图标跟随系统深浅色」，

@@ -1,12 +1,12 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");if(r==="light")document.documentElement.setAttribute("data-zp-theme","light")}catch(e){}</script>
+<head><script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F6F7F9":"#121826");try{var zn=window.ZhipeiNative;if(zn&&zn.applyTheme)zn.applyTheme(r==="light"?"#F6F7F9":"#121826",r!=="light")}catch(e2){}}catch(e){}</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>离线 · 智配One</title>
-<meta name="theme-color" content="#05070A">
-<link rel="stylesheet" href="/css/app.css?v=2eacebf8">
-<link rel="stylesheet" href="/css/ui-base.css?v=f8d819e1"><link rel="stylesheet" href="/css/ui-overlay.css?v=a690775f"><link rel="stylesheet" href="/css/ui-theme.css?v=debcddda"><link rel="stylesheet" href="/css/ui-shell.css?v=d7e34ce4">
+<meta name="theme-color" content="#F6F7F9">
+<link rel="stylesheet" href="/css/app.css?v=f2f20c99">
+<link rel="stylesheet" href="/css/ui-base.css?v=2682fb45"><link rel="stylesheet" href="/css/ui-overlay.css?v=a690775f"><link rel="stylesheet" href="/css/ui-theme.css?v=07dca7d5"><link rel="stylesheet" href="/css/ui-shell.css?v=d7e34ce4">
 <style>
 .zp-offline{min-width:100%;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--zp-logo-plate);box-sizing:border-box}
 .zp-offline-card{width:min(100%,360px);padding:28px 22px;border:1px solid var(--zp-line);border-radius:18px;background:var(--zp-surface-2);text-align:center}

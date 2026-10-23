@@ -1,11 +1,11 @@
 /* 智配One · 全局 UI 统一层 2.1
    只负责视觉、层级、触控与反馈，不承载任何业务规则。 */
 :root{
-  /* WebView 控件配色穿透：显式声明深色，否则表单控件/滚动条保持系统配色，
-     深色页面里出现「白底黑字滚动条」（历史教训）。浅色由 ui-theme.css 的
-     :root[data-zp-theme="light"] 以更高特异度覆盖为 light。 */
-  color-scheme:dark;
-  /* ===== 全局设计 Token · 单一真相源（Commit 2A） =====
+  /* WebView 控件配色穿透：显式声明浅色（Phase 4 起浅色为默认外观），否则表单控件/滚动条
+     保持系统配色，深色页面里出现「白底黑字滚动条」（历史教训）。深色由 ui-theme.css 的
+     :root[data-zp-theme="dark"] 以更高特异度覆盖为 dark。 */
+  color-scheme:light;
+  /* ===== 全局设计 Token · 单一真相源（Commit 2A / Phase 4 基底反转） =====
      背景：历史上并存三套割裂的变量 —— app.css 的无前缀版（--bg/--card/--card2/--line/--muted；--soft 已于 Commit 4B 删除）、
            mobile-ui.css 的 --zp-* 版、本文件的 --ui-* 版，同一语义写三遍，改主题必须改三处。
      做法：将取值完全一致的语义统一收敛到 --zp-* 名下，放在本 :root。
@@ -13,35 +13,33 @@
            （ui-unified.css 覆盖 14/14；app.css 缺 admin.html；mobile-ui.css 仅覆盖 7/14）。
      兼容：旧变量名一律保留为别名指向新 token，任何既有 var(...) 的解析结果逐字节不变。
 
-     未合并项（勿强行统一，强行合并会造成视觉漂移）：
-       ◆ danger 双值共役：--zp-danger=#FFB4AB（mobile-ui.css，当前 .message.error 在用，1 处）
-                          --ui-danger =#FF8278（本文件，4 处在用）
-         两者都在服役且取值不同，合并必然改变某一方的红色外观，故保持独立，列为待决策项。
-       ◆ app.css 的 --soft=#202B36 其实是表面色（等同 surface-3），并非弱文字色，属历史命名错误。
-         全仓核查确认它是死定义：admin.html 不加载 app.css 而用内联 --soft:#7F8A95，普通页面不引用 --soft，
-         故已于 Commit 4B 直接删除，零视觉影响（无页面级 var(--soft) 解析值变化）。 */
-  /* ===== 页面 / 表面 / 文字（Uber 风格中性灰阶 · 深色）=====
-     对标 Uber Base Web：近黑底 + 纯白文字 + 中性灰梯度，
-     主按钮深色模式反白（白底黑字）、浅色模式反黑（黑底白字）。 */
-  --zp-bg:#0A0A0A;
-  --zp-surface:#1A1A1A;
-  --zp-surface-2:#262626;
-  --zp-surface-3:#333333;
-  --zp-line:#2E2E2E;
-  --zp-text:#FFFFFF;
-  --zp-muted:#A8A8A8;
-  --zp-soft:#767676;
+     Phase 4（2026-10-23 基底反转）：默认 :root 由深色纪元翻为**浅色用户 spec**
+     （#F6F7F9 底 / #FFFFFF 面 / #111111 字 / #1677FF 主色），深色全套值移至
+     ui-theme.css 的 :root[data-zp-theme="dark"]，双主题共用同一套令牌名。
+
+     已消解的历史待决策项：
+       ◆ danger 双值共役：原 --zp-danger（#FFB4AB）与 --ui-danger（#FF8278）并存且异值，
+         现已统一 —— --ui-danger/--ui-danger-soft 降为 --zp-danger/--zp-danger-soft 的别名，
+         mobile-ui.css 的重复 :root 定义一并删除（Big Bang 换色天然消解「合并改外观」顾虑）。 */
+  /* ===== 页面 / 表面 / 文字（浅色 spec · Uber 风格中性灰阶）===== */
+  --zp-bg:#F6F7F9;
+  --zp-surface:#FFFFFF;
+  --zp-surface-2:#F2F3F5;
+  --zp-surface-3:#E8EAED;
+  --zp-line:#EEEEEE;
+  --zp-text:#111111;
+  --zp-muted:#666666;
+  --zp-soft:#999999;
   --zp-radius:14px;
   /* 顶部安全区兜底：env() 在部分 WebView（如旧版 Capacitor 壳 / 异常上报）返回 0 时，
      用 32px 兜底避免内容被状态栏压住；正常环境 env() 取到真实状态栏高度时取较大值。
      与安卓壳端 MainActivity 的 WebView 边距修复互补（嵌套关系，不会双重叠加）。 */
   --zp-safe-top: max(env(safe-area-inset-top, 0px), 32px);
   /* 骨架微光条（加载占位）双外观 token：order_detail / home / data 三处
-     页面级骨架共用同一取值。深色外观为暗灰微光；浅色外观在下方
-     [data-zp-theme="light"] 覆盖为浅灰微光——修复浅色背景下骨架条
-     仍是硬编码深色「大黑条」的问题（2026-10-16）。 */
-  --zp-sk-a:#1A222C;
-  --zp-sk-b:#202A31;
+     页面级骨架共用同一取值。浅色外观为浅灰微光；深色外观在 ui-theme.css 的
+     :root[data-zp-theme="dark"] 覆盖为 slate 族微光。 */
+  --zp-sk-a:#E9ECEF;
+  --zp-sk-b:#F3F5F7;
   /* ===== 全局按钮标准 · 分段式动作按钮（单一真相源）=====
      基准度量取自「外观模式」选项组（跟随系统/深色/浅色）与「线路切换」等
      行内动作按钮，两类按钮历史上各自起值（高 40/42、圆角 10/12、宽度
@@ -54,80 +52,81 @@
   --zp-seg-btn-pad:0 8px;
   --zp-seg-btn-font:13px;
   --zp-seg-btn-gap:8px;
-  /* ===== 主按钮（Uber 风格：深色反白 / 浅色反黑）=====
-     --zp-primary 是按钮「底色」：深色模式=白，浅色模式=近黑；
+  /* ===== 主按钮（浅色 spec：品牌蓝底白字）=====
+     --zp-primary 是按钮「底色」：浅色模式=品牌蓝 #1677FF，深色模式=亮蓝 #3B82F6；
      --zp-on-primary 是按钮上的「文字/图标色」，与底色反相。 */
-  --zp-primary:#FFFFFF;
-  --zp-on-primary:#0A0A0A;
+  --zp-primary:#1677FF;
+  --zp-on-primary:#FFFFFF;
   /* 次按钮（描边 / 幽灵按钮） */
-  --zp-secondary-bg:#1F1F1F;
-  --zp-secondary-border:#404040;
-  --zp-secondary-text:#FFFFFF;
+  --zp-secondary-bg:#F2F3F5;
+  --zp-secondary-border:#D0D5DD;
+  --zp-secondary-text:#111111;
   /* 禁用态 */
-  --zp-disabled-bg:#2A2A2A;
-  --zp-disabled-text:#6B6B6B;
+  --zp-disabled-bg:#F2F3F5;
+  --zp-disabled-text:#B5BCC4;
   /* 浮层遮罩（弹窗 / 底部面板上方的半透明黑幕） */
-  --zp-scrim:rgba(0,0,0,.72);
+  --zp-scrim:rgba(0,0,0,.45);
   /* 键盘 / 焦点可见环 */
-  --zp-focus:#FFFFFF;
-  /* 交互态：hover（悬停）、active（按压） */
-  --zp-primary-hover:#EAEAEA;
-  --zp-primary-active:#D4D4D4;
-  --zp-secondary-hover:#2A2A2A;
-  --zp-secondary-active:#333333;
+  --zp-focus:#1677FF;
+  /* 交互态：hover（悬停）、active（按压）——主色 hover/active 取 Ant 色阶
+     （#4096FF 提亮 / #0958D9 压深），与 #1677FF 同族。 */
+  --zp-primary-hover:#4096FF;
+  --zp-primary-active:#0958D9;
+  --zp-secondary-hover:#EAECEF;
+  --zp-secondary-active:#E0E3E8;
   /* 半透明 / 不透明卡片底色（保留两种用途，取值随主题翻转） */
-  --zp-card-translucent:rgba(26,26,26,.82);
-  --zp-card-translucent-2:rgba(10,10,10,.88);
+  --zp-card-translucent:rgba(255,255,255,.82);
+  --zp-card-translucent-2:rgba(246,247,249,.88);
   --zp-card:var(--zp-surface);
   /* 列表分隔线（方案第十五章 Row，统一为 .10 单一来源） */
-  --zp-divider:rgba(255,255,255,.10);
+  --zp-divider:rgba(0,0,0,.10);
   /* ===== 功能状态色（成功 / 警告 / 错误 / 提示）=====
      -strong 用于边框 / 图标 / 危险操作；-soft 用于底色微染；
-     --zp-danger 专用于「错误正文」（浅红，可读性优先），随主题翻转。 */
-  --zp-success:#2ECC71;
-  --zp-success-soft:rgba(46,204,113,.14);
-  --zp-warning:#F5A623;
-  --zp-warning-soft:rgba(245,166,35,.14);
-  --zp-error:#FF6B5E;
-  --zp-error-soft:rgba(255,107,94,.14);
-  --zp-danger:#FFB4AB;
-  --zp-info:#4DA3FF;
-  --zp-info-soft:rgba(77,163,255,.14);
+     --zp-danger 专用于「错误正文」（浅色用深红保对比度、深色用浅红），随主题翻转。 */
+  --zp-success:#00B42A;
+  --zp-success-soft:rgba(0,180,42,.10);
+  --zp-warning:#FF7D00;
+  --zp-warning-soft:rgba(255,125,0,.10);
+  --zp-error:#F53F3F;
+  --zp-error-soft:rgba(245,63,63,.10);
+  --zp-danger:#D4380D;
+  --zp-danger-soft:rgba(212,56,13,.08);
+  --zp-info:#1677FF;
+  --zp-info-soft:rgba(22,119,255,.10);
 
-  /* ===== 视觉整改 Phase 1 新增令牌 =====
-     现值一律取「深色纪元」字面量（组件层今天硬编码的值），零漂移；
-     浅色主题下这些组件今天同样是硬编码深色值，故本批令牌不随主题翻转，
-     由 ui-theme.css 既有的浅色补丁继续覆盖（补丁按选择器生效，与令牌无关）。
-     Phase 4 换色时统一给出浅色取值，此后全站只改这一处。 */
+  /* ===== 视觉整改 Phase 1 新增令牌（Phase 4 已给出浅色取值）=====
+     原「深色纪元字面量 + 浅色补丁覆盖」双轨制废止：此后全站只改本 :root
+     与 ui-theme.css 的 :root[data-zp-theme="dark"] 两处，组件层零直写。 */
   /* 品牌底板：登录页 brand badge / 底部导航的近黑底，logo 含白色描边，
      浅色下不能翻白（描边会消失），故双主题同值——命名令牌白名单，
      禁止组件层直写字面量（appearance-theme-bootstrap 断言在册）。 */
   --zp-logo-plate:#05070A;
-  /* 中性微染：弱描边/分隔线（原 .075/.07/.065 三档归一为 .07，亚感知差异）；
-     -strong 为强调描边（登录徽章边框 .16）。 */
-  --zp-tint:rgba(255,255,255,.07);
-  --zp-tint-strong:rgba(255,255,255,.16);
-  /* 模态遮罩：业务弹窗/二次确认（原 .58 与 .62 两档归一为 .58）。 */
-  --zp-scrim-dialog:rgba(0,0,0,.58);
-  /* 投影三档：sm 凸起元素（底栏加号）/ md 悬浮元素（FAB、Toast）/
-     lg 模态面板（原 .42/.45 两档归一为 .45，几何一致）。 */
-  --zp-shadow-sm:0 8px 20px rgba(0,0,0,.45);
-  --zp-shadow-md:0 10px 28px rgba(0,0,0,.35);
-  --zp-shadow-lg:0 18px 50px rgba(0,0,0,.45);
-  --zp-shadow-menu:0 14px 34px rgba(0,0,0,.34);
-  /* 焦点体系：ring 为 focus-visible 描边（mobile-ui 焦点环原值 #8793A0，
-     登录/密码框聚焦边框 #687584/#536273 一并归一）；
-     glow 为输入聚焦光晕（原 0 0 0 3px rgba(184,194,204,.08)）。 */
-  --zp-focus-ring:#8793A0;
-  --zp-focus-glow:0 0 0 3px rgba(184,194,204,.08);
-  /* 状态微染表面：Toast 成功/错误底色与错误描边（原 #1D2A24/#302326/#594048）。 */
-  --zp-success-surface:#1D2A24;
-  --zp-error-surface:#302326;
-  --zp-error-surface-strong:#594048;
+  /* 中性微染：弱描边/分隔线（原 .075/.07/.065 三档归一为 .05 浅色 / .07 深色）；
+     -strong 为强调描边（登录徽章边框 .10 / .16）。 */
+  --zp-tint:rgba(0,0,0,.05);
+  --zp-tint-strong:rgba(0,0,0,.10);
+  /* 模态遮罩：业务弹窗/二次确认（原 .58 与 .62 两档归一为 .40 浅色 / .58 深色）。 */
+  --zp-scrim-dialog:rgba(15,23,42,.40);
+  /* 投影：--zp-shadow 为通用单档（用户 spec），sm/md/lg/menu 为分档——
+     sm 凸起元素（底栏加号）/ md 悬浮元素（FAB、Toast）/ lg 模态面板 /
+     menu 下拉菜单；浅色用低 alpha 冷灰，深色用高 alpha 纯黑。 */
+  --zp-shadow:0 2px 8px rgba(0,0,0,.06);
+  --zp-shadow-sm:0 2px 8px rgba(0,0,0,.06);
+  --zp-shadow-md:0 4px 16px rgba(0,0,0,.08);
+  --zp-shadow-lg:0 8px 24px rgba(0,0,0,.10);
+  --zp-shadow-menu:0 6px 20px rgba(0,0,0,.08);
+  /* 焦点体系：ring 为 focus-visible 描边（浅色取中性深灰 #666666）；
+     glow 为输入聚焦光晕（主色 15% 微染）。 */
+  --zp-focus-ring:#666666;
+  --zp-focus-glow:0 0 0 3px rgba(22,119,255,.15);
+  /* 状态微染表面：Toast 成功/错误底色与错误描边（浅色取同族浅底）。 */
+  --zp-success-surface:#E9F7EF;
+  --zp-error-surface:#FDECEA;
+  --zp-error-surface-strong:#F5B7B1;
   /* 危险按钮悬停/按压微染：替代 color-mix()（WebView 兼容地板禁用了它），
-     按 --zp-error 现值 #FF6B5E 预计算 18%/28% 两档静态值。 */
-  --zp-error-soft-hover:rgba(255,107,94,.18);
-  --zp-error-soft-active:rgba(255,107,94,.28);
+     按 --zp-error 现值 #F53F3F 预计算 18%/28% 两档静态值。 */
+  --zp-error-soft-hover:rgba(245,63,63,.18);
+  --zp-error-soft-active:rgba(245,63,63,.28);
 
   /* ===== 间距与控件尺寸（方案第九 / 十一 / 十二章） =====
      取值取自当前代码的实际分布，不是凭空定的理想值，避免引入尺寸跳变：
@@ -148,9 +147,11 @@
   --ui-muted:var(--zp-muted);
   --ui-soft:var(--zp-soft);
   --ui-radius:var(--zp-radius);
-  /* danger 保持独立取值（不与 --zp-danger 合并），理由见顶部注释 */
-  --ui-danger:#FF8278;
-  --ui-danger-soft:rgba(255,130,120,.08);
+  /* danger 双值共役已消解（Phase 4）：原独立取值 #FF8278 与 mobile-ui 的 #FFB4AB
+     统一收敛到 --zp-danger（浅色 #D4380D 深红正文 / 深色 #FCA5A5 浅红正文），
+     此处降为别名，既有 var(--ui-danger) 引用点零改动跟随主题。 */
+  --ui-danger:var(--zp-danger);
+  --ui-danger-soft:var(--zp-danger-soft);
   --ui-dialog-radius:18px;
   --ui-control-radius:11px;
 
@@ -316,6 +317,13 @@ button:active{transform:translateY(0)}
 input,select,textarea{
   border-radius:var(--ui-control-radius)!important;
 }
+/* 跨页容器 / 行 / 对话框的令牌基座（Phase 4）：
+   原由 ui-theme 浅色补丁逐条 :root 前缀覆盖，基底反转后收敛到全局层，
+   双主题自适应；页面级文件（admin-base / business-pages）保留几何与布局，
+   同特异度后加载赢、取值同为令牌零漂移。 */
+.dispatch-page,.account-page{background:var(--zp-logo-plate)}
+.row{background:var(--zp-surface-2)}
+.dialog{background:var(--zp-card)}
 .message,.login-message{line-height:20px}
 .message.error,.login-message[role=alert]{color:var(--zp-error)}
 

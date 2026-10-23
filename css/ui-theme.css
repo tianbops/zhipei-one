@@ -1,296 +1,81 @@
-/* ===== 用户外观偏好：主题与全局字号 · 浅色完整覆盖 ===== */
-:root[data-zp-theme="light"]{
-  color-scheme:light;
-  /* ===== 页面 / 表面 / 文字（Uber 风格中性灰阶 · 浅色）===== */
-  --zp-bg:#F2F2F2;
-  --zp-surface:#FFFFFF;
-  --zp-surface-2:#F5F5F5;
-  --zp-surface-3:#EAEAEA;
-  --zp-line:#E0E0E0;
-  --zp-text:#141414;
-  --zp-muted:#5A5A5A;
-  --zp-soft:#767676;
-  --zp-danger:#C2453A; /* 浅色主题的错误/危险提示文字，避免沿用深色浅红造成低对比度 */
-  --zp-card:#FFFFFF;
-  --zp-card-translucent:rgba(255,255,255,.82);
-  --zp-card-translucent-2:#F5F5F5;
-  /* 骨架微光条浅色化：白卡上改为浅灰微光，与表面色系同族 */
-  --zp-sk-a:#E4E9EE;
-  --zp-sk-b:#EDF1F5;
-  --zp-divider:rgba(0,0,0,.08);
-  /* ===== 主按钮反黑：黑底白字（Uber 浅色招牌）===== */
-  --zp-primary:#0A0A0A;
+/* ===== 用户外观偏好：深色主题 · 全局令牌覆盖 =====
+   Phase 4（2026-10-23 基底反转）：浅色为用户 spec 默认值，全部令牌住在
+   ui-base.css 的 :root；本文件只承载深色覆盖与全站按钮标准。
+   历史「浅色补丁层」（59 条 :root[data-zp-theme="light"] .xxx 规则）已删除——
+   基底反转为浅色后补丁再无必要，且逐条 color-scheme 断言（appearance-theme-
+   bootstrap B 组）要求非 dark :root 块不得残留。 */
+:root[data-zp-theme="dark"]{
+  color-scheme:dark;
+  /* ===== 页面 / 表面 / 文字（深色 spec · slate 族）===== */
+  --zp-bg:#121826;
+  --zp-surface:#1E293B;
+  --zp-surface-2:#253345;
+  --zp-surface-3:#334155;
+  --zp-line:#334155;
+  --zp-text:#F1F5F9;
+  --zp-muted:#94A3B8;
+  --zp-soft:#64748B;
+  /* 骨架微光条深色化：slate 族同梯度微光 */
+  --zp-sk-a:#1E293B;
+  --zp-sk-b:#253345;
+  /* ===== 主按钮（深色 spec：亮蓝底白字）===== */
+  --zp-primary:#3B82F6;
   --zp-on-primary:#FFFFFF;
-  --zp-secondary-bg:#FFFFFF;
-  --zp-secondary-border:#D4D4D4;
-  --zp-secondary-text:#0A0A0A;
-  --zp-disabled-bg:#EAEAEA;
-  --zp-disabled-text:#A0A0A0;
-  --zp-scrim:rgba(0,0,0,.45);
-  --zp-focus:#0A0A0A;
-  --zp-primary-hover:#262626;
-  --zp-primary-active:#404040;
-  --zp-secondary-hover:#F0F0F0;
-  --zp-secondary-active:#E6E6E6;
-  /* 功能状态色（浅色：文字更深以保证对比度） */
-  --zp-success:#157A45;
-  --zp-success-soft:rgba(21,122,69,.12);
-  --zp-warning:#9A5B00;
-  --zp-warning-soft:rgba(154,91,0,.12);
-  --zp-error:#C2453A;
-  --zp-error-soft:rgba(194,69,58,.12);
-  --zp-info:#1E6FD0;
-  --zp-info-soft:rgba(30,111,208,.12);
-  --ui-bg:var(--zp-bg);
-  --ui-surface:var(--zp-surface);
-  --ui-surface-2:var(--zp-surface-2);
-  --ui-surface-3:var(--zp-surface-3);
-  --ui-line:var(--zp-line);
-  --ui-text:var(--zp-text);
-  --ui-muted:var(--zp-muted);
-  --ui-soft:var(--zp-soft);
-  /* 兼容旧页面和管理员内联样式使用的无前缀变量 */
-  --bg:#F2F2F2;
-  --card:#FFFFFF;
-  --card2:#F5F5F5;
-  --line:#E0E0E0;
-  --muted:#5A5A5A;
-  --soft:#767676;
-  --ui-danger:#B4232F;
-  --ui-danger-soft:rgba(180,35,47,.08);
+  --zp-secondary-bg:#253345;
+  --zp-secondary-border:#475569;
+  --zp-secondary-text:#F1F5F9;
+  --zp-disabled-bg:#253345;
+  --zp-disabled-text:#64748B;
+  --zp-scrim:rgba(2,6,23,.72);
+  --zp-focus:#F1F5F9;
+  --zp-primary-hover:#60A5FA;
+  --zp-primary-active:#2563EB;
+  --zp-secondary-hover:#2A3A4F;
+  --zp-secondary-active:#334155;
+  --zp-card-translucent:rgba(30,41,59,.82);
+  --zp-card-translucent-2:rgba(18,24,38,.88);
+  --zp-divider:rgba(255,255,255,.10);
+  /* ===== 功能状态色（深色 spec：提亮保对比度）===== */
+  --zp-success:#22C55E;
+  --zp-success-soft:rgba(34,197,94,.14);
+  --zp-warning:#FB923C;
+  --zp-warning-soft:rgba(251,146,60,.14);
+  --zp-error:#EF4444;
+  --zp-error-soft:rgba(239,68,68,.14);
+  --zp-danger:#FCA5A5;
+  --zp-danger-soft:rgba(252,165,165,.12);
+  --zp-info:#60A5FA;
+  --zp-info-soft:rgba(96,165,250,.14);
+  /* ===== Phase 1 令牌的深色取值 ===== */
+  --zp-tint:rgba(255,255,255,.07);
+  --zp-tint-strong:rgba(255,255,255,.16);
+  --zp-scrim-dialog:rgba(2,6,23,.58);
+  --zp-shadow:0 2px 8px rgba(0,0,0,.25);
+  --zp-shadow-sm:0 8px 20px rgba(0,0,0,.45);
+  --zp-shadow-md:0 10px 28px rgba(0,0,0,.35);
+  --zp-shadow-lg:0 18px 50px rgba(0,0,0,.45);
+  --zp-shadow-menu:0 14px 34px rgba(0,0,0,.34);
+  --zp-focus-ring:#94A3B8;
+  --zp-focus-glow:0 0 0 3px rgba(148,163,184,.18);
+  --zp-success-surface:#152A1E;
+  --zp-error-surface:#3B1D24;
+  --zp-error-surface-strong:#5C2B31;
+  --zp-error-soft-hover:rgba(239,68,68,.18);
+  --zp-error-soft-active:rgba(239,68,68,.28);
 }
-:root[data-zp-theme="light"] body,
-:root[data-zp-theme="light"] .page2,
-:root[data-zp-theme="light"] .shell,
-:root[data-zp-theme="light"] .page,
-:root[data-zp-theme="light"] .viewport{
-  background-color:var(--zp-bg);
-  color:var(--zp-text);
-}
-:root[data-zp-theme="light"] .page2-card, :root[data-zp-theme="light"] .card, :root[data-zp-theme="light"] .data-list-card, :root[data-zp-theme="light"] .data-route-card, :root[data-zp-theme="light"] .task-card, :root[data-zp-theme="light"] .confirm-panel, :root[data-zp-theme="light"] .pending-box, :root[data-zp-theme="light"] .account-dialog, :root[data-zp-theme="light"] .order-dialog-panel, :root[data-zp-theme="light"] .history-dialog-panel, :root[data-zp-theme="light"] .history-picker-panel, :root[data-zp-theme="light"] .data-import-panel, :root[data-zp-theme="light"] .upload-sheet, :root[data-zp-theme="light"] .zp-confirm-panel{
-  background-color:var(--zp-surface);
-  border-color:var(--zp-line);
-  color:var(--zp-text);
-  box-shadow:0 8px 24px rgba(20,30,40,.08);
-}
-:root[data-zp-theme="light"] .topbar,
-:root[data-zp-theme="light"] .app-back,
-:root[data-zp-theme="light"] .account-collapse-head,
-:root[data-zp-theme="light"] .page2-secondary,
-:root[data-zp-theme="light"] .page2-label,
-:root[data-zp-theme="light"] .account-row,
-:root[data-zp-theme="light"] .page2-row,
-:root[data-zp-theme="light"] .section-title,
-:root[data-zp-theme="light"] .order-title{
-  color:var(--zp-text);
-}
-:root[data-zp-theme="light"] p,
-:root[data-zp-theme="light"] label,
-:root[data-zp-theme="light"] strong,
-:root[data-zp-theme="light"] h1,
-:root[data-zp-theme="light"] h2,
-:root[data-zp-theme="light"] h3,
-:root[data-zp-theme="light"] h4,
-:root[data-zp-theme="light"] legend,
-:root[data-zp-theme="light"] summary,
-:root[data-zp-theme="light"] .page2-soft,
-:root[data-zp-theme="light"] .summary,
-:root[data-zp-theme="light"] .empty,
-:root[data-zp-theme="light"] .dispatch-empty,
-:root[data-zp-theme="light"] .dispatch-message,
-:root[data-zp-theme="light"] .history-state{
-  color:var(--zp-text);
-}
-/* span 不做全局强制改色：状态徽标、重量标签、成功/警告文字需保留语义颜色。 */
-:root[data-zp-theme="light"] .page2-soft,
-:root[data-zp-theme="light"] .field-hint,
-:root[data-zp-theme="light"] .meta,
-:root[data-zp-theme="light"] .hint,
-:root[data-zp-theme="light"] .muted,
-:root[data-zp-theme="light"] .empty,
-:root[data-zp-theme="light"] .dispatch-empty,
-:root[data-zp-theme="light"] .dispatch-message,
-:root[data-zp-theme="light"] .history-state,
-:root[data-zp-theme="light"] .account-row>span:first-child{
-  color:var(--zp-muted);
-}
-:root[data-zp-theme="light"] input,
-:root[data-zp-theme="light"] select,
-:root[data-zp-theme="light"] textarea{
-  background:#FFFFFF!important;
-  color:var(--zp-text)!important;
-  border-color:#C9D1D9!important;
-  caret-color:var(--zp-text);
-}
-:root[data-zp-theme="light"] input::placeholder,
-:root[data-zp-theme="light"] textarea::placeholder{
-  color:#687582!important;
-  opacity:1;
-}
-:root[data-zp-theme="light"] input:focus,
-:root[data-zp-theme="light"] select:focus,
-:root[data-zp-theme="light"] textarea:focus{
-  border-color:#7D8A98!important;
-  box-shadow:0 0 0 3px rgba(65,85,105,.12)!important;
-}
-:root[data-zp-theme="light"] a{color:#34495E}
-:root[data-zp-theme="light"] button{color:var(--zp-text)}
-:root[data-zp-theme="light"] button:disabled{opacity:.55}
-:root[data-zp-theme="light"] .page2-primary,
-:root[data-zp-theme="light"] .login-submit,
-:root[data-zp-theme="light"] .data-action-primary,
-:root[data-zp-theme="light"] .primary,
-:root[data-zp-theme="light"] button.primary,
-:root[data-zp-theme="light"] .primary-btn,
-:root[data-zp-theme="light"] .confirm-submit{
-  background:var(--zp-primary)!important;
-  border-color:var(--zp-primary)!important;
-  color:#FFFFFF!important;
-}
-/* 浅色主题次按钮：app.css 的 .secondary-btn 为深底白字，而上面的 button
-   通配浅色文字规则只改文字色不改底色，会出现「深底深字」不可读
-   （route_apply 解除线路绑定）。按 order_detail 弹窗既有浅色值补齐。 */
-:root[data-zp-theme="light"] .secondary-btn{
-  background:#E8EDF1;
-  border-color:#D1D8DF;
-  color:var(--zp-text);
-}
-:root[data-zp-theme="light"] .page2-secondary{
-  background:#F0F2F4;
-  border-color:#D7DDE3;
-  color:#17202A;
-}
-/* 折叠行不再填灰：浅色下 #F0F2F4 与页面背景 #F4F6F8 近同色，灰条浮在白卡外显得乱色。
-   改为透明底融入白卡，仅按压时给轻灰反馈；文字色由上方浅色文本组统一。 */
-:root[data-zp-theme="light"] .account-collapse-head{background:transparent;border-color:transparent;color:#17202A}
-:root[data-zp-theme="light"] .account-collapse-head:active{background:#F0F2F4}
-:root[data-zp-theme="light"] .appearance-theme-option.is-selected,
-:root[data-zp-theme="light"] [aria-pressed="true"].appearance-theme-option{
-  background:#DCE5EC;
-  border-color:#778796;
-  color:#17202A;
-  box-shadow:inset 0 0 0 1px #778796;
-}
-:root[data-zp-theme="light"] .account-page .account-logout-section .account-logout{
-  background:#FFFFFF;
-  border-color:#D7DDE3;
-  color:#17202A;
-}
-:root[data-zp-theme="light"] .order-dialog,
-:root[data-zp-theme="light"] .history-dialog,
-:root[data-zp-theme="light"] .history-picker,
-:root[data-zp-theme="light"] .data-import,
-:root[data-zp-theme="light"] .upload-overlay,
-:root[data-zp-theme="light"] .zp-confirm{
-  background:rgba(24,36,48,.32)!important;
-}
-:root[data-zp-theme="light"] .ui-toast{
-  background:#FFFFFF!important;
-  border-color:#D7DDE3!important;
-  color:var(--zp-text)!important;
-  box-shadow:0 8px 24px rgba(20,30,40,.16);
-}
-:root[data-zp-theme="light"] .ui-toast.success{
-  background:#E8F5EC!important;
-  border-color:#B8DCC3!important;
-  color:#205C35!important;
-}
-:root[data-zp-theme="light"] .ui-toast.error{
-  background:#FCEBEC!important;
-  border-color:#E8BFC3!important;
-  color:#8A2630!important;
-}
-:root[data-zp-theme="light"] .zp-confirm-panel h3{color:var(--zp-text)}
-:root[data-zp-theme="light"] .zp-confirm-actions button:first-child{
-  background:#F0F2F4;border-color:#D7DDE3;color:#26323D;
-}
-:root[data-zp-theme="light"] .zp-confirm-actions button:last-child{
-  background:var(--zp-primary);border-color:var(--zp-primary);color:#FFFFFF;
-}
-:root[data-zp-theme="light"] .zp-password-control{
-  background:#FFFFFF;border-color:#C9D1D9;
-}
-:root[data-zp-theme="light"] .zp-password-control input[type="password"],
-:root[data-zp-theme="light"] .zp-password-control input[type="text"]{
-  background:transparent!important;color:var(--zp-text)!important;
-}
-:root[data-zp-theme="light"] .zp-password-control input::placeholder{color:#687582!important}
-:root[data-zp-theme="light"] .zp-password-eye{color:#536170}
-:root[data-zp-theme="light"] .zp-password-eye:active{background:#E8EDF1;color:#17202A}
-:root[data-zp-theme="light"] .data-page-menu, :root[data-zp-theme="light"] .order-menu{
-  background:#FFFFFF;border-color:#D7DDE3;color:#17202A;
-  box-shadow:0 12px 28px rgba(20,30,40,.14);
-}
-:root[data-zp-theme="light"] .menu-divider{background:rgba(20,30,40,.12)}
-:root[data-zp-theme="light"] .store-row,
-:root[data-zp-theme="light"] .account-row,
-:root[data-zp-theme="light"] .request-row{border-bottom-color:rgba(20,30,40,.12)}
 
-
-/* 管理员工作区浅色适配：覆盖 admin.html 内联样式中的固定深色值 */
-:root[data-zp-theme="light"] .head .who .role,
-:root[data-zp-theme="light"] .menu-btn,
-:root[data-zp-theme="light"] .tab.active,
-:root[data-zp-theme="light"] .add,
-:root[data-zp-theme="light"] .search input,
-:root[data-zp-theme="light"] .small-action,
-:root[data-zp-theme="light"] .copy,
-:root[data-zp-theme="light"] .invite-actions .small-action{
-  color:#17202A;
+/* 首屏 placeholder 透明度：部分 WebView 默认给 placeholder 加半透明，
+   统一拉满保证弱化文字可读（原浅色补丁中的非颜色声明，提升为双主题基座）。 */
+input::placeholder,
+textarea::placeholder {
+  opacity: 1;
 }
-:root[data-zp-theme="light"] .head .who .role{color:var(--zp-primary)!important}
-:root[data-zp-theme="light"] .menu-btn,
-:root[data-zp-theme="light"] .add,
-:root[data-zp-theme="light"] .small-action,
-:root[data-zp-theme="light"] .copy{
-  background:var(--zp-surface-2)!important;border-color:var(--zp-line)!important;color:var(--zp-text)!important;
-}
-:root[data-zp-theme="light"] .tab.active{background:#FFFFFF!important;color:var(--zp-text)!important}
-:root[data-zp-theme="light"] .tabs{background:var(--zp-surface-2)!important;border-color:var(--zp-line)!important}
-:root[data-zp-theme="light"] .row,
-:root[data-zp-theme="light"] .route,
-:root[data-zp-theme="light"] .card,
-:root[data-zp-theme="light"] .invite,
-:root[data-zp-theme="light"] .row .content,
-:root[data-zp-theme="light"] .invite-content,
-:root[data-zp-theme="light"] .route-content{background:#FFFFFF!important;border-color:#D7DDE3!important;color:#17202A}
-:root[data-zp-theme="light"] .person,
-:root[data-zp-theme="light"] .row .meta,
-:root[data-zp-theme="light"] .meta,
-:root[data-zp-theme="light"] .route-count,
-:root[data-zp-theme="light"] .head .who .uname{color:#596674!important}
-:root[data-zp-theme="light"] .dialog-bg,
-:root[data-zp-theme="light"] .menu-bg{background:rgba(24,36,48,.32)!important}
-:root[data-zp-theme="light"] .dialog{background:#FFFFFF!important;border-color:#D7DDE3!important;color:#17202A}
-:root[data-zp-theme="light"] .dialog h2,
-:root[data-zp-theme="light"] .dialog p,
-:root[data-zp-theme="light"] .field label{color:#17202A}
-:root[data-zp-theme="light"] .dialog-actions .cancel{background:var(--zp-surface-2)!important;border-color:var(--zp-line)!important;color:var(--zp-text)!important}
-:root[data-zp-theme="light"] .dialog-actions .ok{background:var(--zp-primary)!important;border-color:var(--zp-primary)!important;color:#FFFFFF!important}
-:root[data-zp-theme="light"] .toast{background:#FFFFFF!important;border-color:#D7DDE3!important;color:var(--zp-text)!important}
 
-/* 浅色模式中的危险与错误状态采用深色语义色，确保浅底上可读 */
-:root[data-zp-theme="light"] .message.error,
-:root[data-zp-theme="light"] .login-message[role="alert"],
-:root[data-zp-theme="light"] [role="alert"]{color:#B4232F}
-
-/* ---- 浅色补充（全站审计）：body 底色兜底 + 注入底栏浅色 ---- */
-/* 登录/注册等无 .page 容器的页面，body 硬编码 color:#fff 需在浅色下翻转 */
-:root[data-zp-theme="light"] body{color:var(--zp-text)}
-/* 注入底栏的深色定义在本文件（.zp-business-nav-page .bottom-nav），
-   浅色覆盖必须同样全站可用——此前只写在 business-pages.css，
-   history/order_detail 等不加载该文件的页面底栏一直是黑条 */
-:root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav{background:#FFFFFF!important;border-top-color:#D7DDE3!important;box-shadow:0 -4px 18px rgba(20,30,40,.06)}
-:root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-item{color:#596674!important}
-:root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-item:active{background:#E8EDF1!important;color:var(--zp-text)!important}
-:root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-item[aria-current="page"]{color:var(--zp-text)!important}
-/* 浅色下中间加号：圆形仍为主色底白图标，仅按压态与阴影适配（不加新强调色） */
-:root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-plus .bottom-nav-icon{box-shadow:0 8px 20px rgba(20,30,40,.22)!important}
-:root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-plus:active{background:transparent!important}
-
-:root[data-zp-theme="light"] button[class*="delete"]:not(.account-collapse-head):disabled,
-:root[data-zp-theme="light"] button[class*="danger"]:not(.account-collapse-head):disabled,
-:root[data-zp-theme="light"] .history-choice-delete:disabled {
+/* 禁用态：破坏性动作按钮禁用时整体弱化、光标禁示；
+   双主题通用（原浅色补丁规则去前缀，深色下同样生效）。 */
+button[class*="delete"]:not(.account-collapse-head):disabled,
+button[class*="danger"]:not(.account-collapse-head):disabled,
+.history-choice-delete:disabled {
   opacity:.55;
   cursor:not-allowed;
 }
@@ -299,10 +84,9 @@
 /* 全站危险操作按钮唯一标准：中性底 + 红字（用户 2026-10 决策「中性底+红字」——
    破坏性操作不用红底恐吓、也不延续灰字，与全站次按钮同底、仅文字取错误色）。
    四令牌（--zp-secondary-bg 底 / --zp-line 边 / --zp-error 字 / --zp-secondary-active
-   按压）均带浅色覆盖值，一套规则双主题自适应，Phase 4 换色后自动跟随，
-   无需像旧版那样拆深浅两套 !important 特化。
+   按压）双主题各有一套值，一套规则自动自适应，无需拆深浅两套 !important 特化。
    历史页整行滑动动作条 .history-delete 显式排除：它是实底专用形态（带边框会与
-   行宽不齐、两端混绘出白边），颜色仍与本标准同族，见下方专用块；
+   行宽不齐、两端混绘出白边），颜色与本标准同族，基座见 history-shell.css；
    .account-collapse-head 是折叠行非动作按钮，同样排除。
    仅调整颜色和边框，不改变尺寸、位置、文案及确认逻辑。 */
 button[class*="delete"]:not(.account-collapse-head):not(.history-delete),
@@ -330,29 +114,5 @@ a[class*="danger"]:active,
 .invite-actions .small-action.danger:active {
   background:var(--zp-secondary-active)!important;
   border-color:var(--zp-line)!important;
-  color:var(--zp-error)!important;
-}
-/* 历史页整行滑动删除：与全站危险按钮同色（中性底+红字），但保持实底无边框专用
-   形态——带边框会与行宽不齐，两端混绘出白边（透视+圆角直角混绘）。
-   位置/尺寸/圆角由 history-shell.css 定义（页面级 CSS 在本文件之后加载、
-   特异度相同，必须靠 :root 前缀提特异度才能覆盖其渐变底），此处只覆盖颜色。 */
-:root:not([data-zp-theme="light"]) .history-delete {
-  background:var(--zp-secondary-bg)!important;
-  border:0!important;
-  color:var(--zp-error)!important;
-  box-shadow:none!important;
-}
-:root:not([data-zp-theme="light"]) .history-delete:active {
-  background:var(--zp-secondary-active)!important;
-  color:var(--zp-error)!important;
-}
-:root[data-zp-theme="light"] .history-delete {
-  background:var(--zp-secondary-bg)!important;
-  border:0!important;
-  color:var(--zp-error)!important;
-  box-shadow:none!important;
-}
-:root[data-zp-theme="light"] .history-delete:active {
-  background:var(--zp-secondary-active)!important;
   color:var(--zp-error)!important;
 }

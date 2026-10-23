@@ -15,13 +15,6 @@
 :root[data-zp-theme="light"] .history-month-main:active{background:#E8EDF1}
 :root[data-zp-theme="light"] .history-count-highlight{color:#17202A}
 :root[data-zp-theme="light"] .history-month + .history-month{border-top-color:#F4F6F8}
-/* 浅色下删除按钮保持白字并对齐浅色 danger token：
-   ui-unified 的「浅色下所有 button 用深字」通用规则优先级低于本规则，显式压回。
-   同时把红渐变收敛到与 --zp-danger 同色系，避免在浅灰 (#F2F2F2) 页面上过跳。 */
-:root[data-zp-theme="light"] .history-delete{
-  color:#fff;
-  background:linear-gradient(180deg,#C2453A,#A0362D);
-}
 
 /* ---- 浅色补充（全站审计）：日期选择器此前整块沿用深色硬编码 ---- */
 :root[data-zp-theme="light"] .history-picker{background:rgba(24,36,48,.32)}

@@ -2,18 +2,12 @@
    Loaded after app.css on pages that opt in.
    Goals: compact Android-style hierarchy, touch-safe controls, safe-area handling,
    consistent dialogs/forms/status states, responsive narrow screens. */
-/* 令牌权威在 ui-base.css 的 :root（原 ui-unified.css 已于 2026-10-22 拆分为
-   ui-base/overlay/theme/shell 四件套）：本文件加载的全部页面均先加载 ui-base，
-   普通 --zp-* 变量不再重复声明（历史双份真相源已删除）。
-   仅保留 --zp-danger：它与 ui-base 的 --ui-danger 取值不同且两者都在服役
-   （本文件的 .message.error 用 #FFB4AB，ui-base 侧 4 处用 #FF8278），
-   强行合并会改变某一方的红色外观，保持独立，列为待决策项。
-   注：本块特异度 (0,1,0) 低于 ui-theme 的 :root[data-zp-theme="light"] (0,2,0)，
-   浅色下浏览器实际取 #C2453A，删除本块零视觉变化；但 verify:css-vars 的顺序
-   合并模型会因此报「解析值变化」，故保留至 Phase 5 连同工具模型一并处理。 */
-:root{
-  --zp-danger:#FFB4AB;
-}
+/* 令牌权威唯一在 ui-base.css 的 :root（浅色默认）+ ui-theme.css 的
+   :root[data-zp-theme="dark"]（深色覆盖），原 ui-unified.css 已于 2026-10-22
+   拆分为 ui-base/overlay/theme/shell 四件套：本文件加载的全部页面均先加载
+   ui-base，普通 --zp-* 变量不重复声明（历史双份真相源已删除）。
+   Phase 4 已删除本文件残留的 :root{--zp-danger} 块——danger 双值共役消解，
+   --zp-danger 由 ui-base 定义、随主题翻转，本文件的 .message.error 直接沿用。 */
 html{background:var(--zp-bg);-webkit-text-size-adjust:100%}
 body{background:var(--zp-bg);color:var(--zp-text);overscroll-behavior-y:none}
 button,a,input,select,textarea{font:inherit}

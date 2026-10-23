@@ -50,7 +50,7 @@
 .trend-point{fill:var(--zp-surface-2);stroke:var(--zp-text);stroke-width:1.5;cursor:pointer;transition:r .15s}
 .trend-point.is-peak{fill:var(--zp-text);stroke:var(--zp-text);stroke-width:1.5}
 .trend-point:focus{outline:none}
-.trend-point:focus-visible{stroke:#fff;stroke-width:2.5}
+.trend-point:focus-visible{stroke:var(--zp-focus-ring);stroke-width:2.5}
 .trend-year-bar{fill:var(--zp-line)}
 .trend-year-bar.is-peak{fill:var(--zp-text)}
 .trend-axis{height:15px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 3px;color:var(--zp-muted);font-size:9px;line-height:13px;font-variant-numeric:tabular-nums}

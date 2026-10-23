@@ -125,15 +125,15 @@ main.history-shell{
   background:var(--zp-card-translucent);
 }
 .history-count-highlight{
-  color:#fff;
+  color:var(--zp-text);
   font-size:14px;
   line-height:20px;
   font-weight:750;
 }
 .history-delete{
   width:84px;
-  background:linear-gradient(180deg,var(--zp-error),var(--zp-error-surface-strong));
-  color:#fff;
+  background:var(--zp-secondary-bg);
+  color:var(--zp-error);
   font-size:12px;
   line-height:16px;
   font-weight:600;

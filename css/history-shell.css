@@ -71,8 +71,11 @@
   padding:0;
   border:0;
   border-radius:12px;
-  background:linear-gradient(180deg,var(--zp-error),var(--zp-error-surface-strong));
-  color:#fff;
+  /* 全站危险按钮标准「中性底+红字」的实底专用形态（Phase 4）：
+     与次按钮同底 var(--zp-secondary-bg)、文字取错误色 var(--zp-error)，
+     双主题自动跟随；按压态与次按钮按压同令牌。 */
+  background:var(--zp-secondary-bg);
+  color:var(--zp-error);
   font-size:12px;
   font-weight:600;
   letter-spacing:1px;
@@ -84,7 +87,7 @@
   height:17px;
   flex:none;
 }
-.history-delete:active{background:var(--zp-error-surface-strong)}
+.history-delete:active{background:var(--zp-secondary-active)}
 
 .history-month-main,
 .history-date-main{
@@ -97,7 +100,7 @@
   padding:0 16px;
   border:0;
   background:transparent;
-  color:#fff;
+  color:var(--zp-text);
   text-align:left;
   -webkit-tap-highlight-color:transparent;
 }
@@ -317,5 +320,5 @@
 }
 
 /* 同日多次派送：仅高亮次数数字 */
-.history-count-highlight{color:#fff;font-size:13px;font-weight:750;letter-spacing:.1px}
+.history-count-highlight{color:var(--zp-text);font-size:13px;font-weight:750;letter-spacing:.1px}
 
