@@ -39,7 +39,6 @@
 .acct-avatar{width:92px;height:92px;border-radius:50%;display:flex;align-items:center;justify-content:center;
   background:var(--zp-surface-2,var(--zp-surface-2));border:1px solid var(--zp-line,var(--zp-line));
   color:var(--zp-text,#fff);font-size:40px;font-weight:700;line-height:1;user-select:none}
-:root[data-zp-theme="light"] .acct-avatar{background:var(--zp-surface-2);border-color:var(--zp-line);color:var(--zp-text)}
 :root[data-zp-theme="dark"] .acct-avatar{background:var(--zp-surface-2);border-color:var(--zp-line);color:#FFFFFF}
 .acct-hero-sub{margin:0;color:var(--zp-muted,var(--zp-muted));font-size:13px}
 
@@ -48,12 +47,10 @@
 
 /* --- 卡片与行 --- */
 .acct-card{background:var(--zp-card,var(--zp-card-translucent));border:1px solid var(--zp-line,var(--zp-line));border-radius:16px;padding:4px 16px;margin:0 0 10px}
-:root[data-zp-theme="light"] .acct-card{background:#FFFFFF;border-color:var(--zp-line);box-shadow:0 8px 24px var(--zp-divider)}
 :root[data-zp-theme="dark"] .acct-card{background:var(--zp-card-translucent);border-color:var(--zp-line)}
 .acct-rows{display:flex;flex-direction:column}
 .acct-row{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:0;border:0;background:none;
   color:var(--zp-text,#fff);font-size:15px;text-align:left;cursor:pointer;border-bottom:1px solid var(--zp-line,var(--zp-line))}
-:root[data-zp-theme="light"] .acct-row{border-bottom-color:var(--zp-divider)}
 :root[data-zp-theme="dark"] .acct-row{border-bottom-color:var(--zp-surface-2)}
 .acct-rows .acct-row:last-child{border-bottom:0}
 .acct-row:active{opacity:.6}
@@ -70,12 +67,10 @@
 .acct-theme-row .acct-row-label{flex:none}
 .acct-seg{display:inline-flex;flex:1;justify-content:flex-end;gap:2px;padding:3px;border-radius:12px;
   background:var(--zp-surface-2,var(--zp-surface-2))}
-:root[data-zp-theme="light"] .acct-seg{background:var(--zp-line)}
 :root[data-zp-theme="dark"] .acct-seg{background:var(--zp-surface-2)}
 .account-page .acct-seg .appearance-theme-option{min-height:36px;padding:0 13px;border:0;border-radius:9px;background:transparent;
   color:var(--zp-muted,var(--zp-muted));font-size:14px;font-weight:600;box-shadow:none}
 .account-page .acct-seg .appearance-theme-option.is-selected{background:var(--zp-card,#FFFFFF);color:var(--zp-text);box-shadow:0 1px 4px var(--zp-shadow-md)}
-:root[data-zp-theme="light"] .account-page .acct-seg .appearance-theme-option.is-selected{background:var(--zp-surface);color:var(--zp-text)}
 :root[data-zp-theme="dark"] .account-page .acct-seg .appearance-theme-option.is-selected{background:var(--zp-line);color:#FFFFFF}
 
 /* --- 字体大小行 --- */
@@ -86,7 +81,6 @@
 
 /* --- 展开体（改名 / 改密 / 注销确认） --- */
 .acct-body{padding:14px 0 16px;border-top:1px solid var(--zp-line,var(--zp-line))}
-:root[data-zp-theme="light"] .acct-body{border-top-color:var(--zp-divider)}
 :root[data-zp-theme="dark"] .acct-body{border-top-color:var(--zp-surface-2)}
 .acct-body .page2-label{margin-top:10px}
 .acct-body .page2-primary,.acct-body .page2-secondary{margin-top:12px}
@@ -102,14 +96,12 @@
 .account-page .account-logout-section .account-logout{width:100%;min-height:var(--zp-control-height,48px);margin:0;
   border:1px solid var(--zp-line,var(--zp-line));border-radius:16px;background:var(--zp-card,#FFFFFF);
   color:var(--zp-text);font-size:15px;font-weight:600}
-:root[data-zp-theme="light"] .account-page .account-logout-section .account-logout{background:var(--zp-surface);border-color:var(--zp-line);color:var(--zp-text);box-shadow:0 8px 24px var(--zp-divider)}
 :root[data-zp-theme="dark"] .account-page .account-logout-section .account-logout{background:var(--zp-card-translucent);border-color:var(--zp-line);color:#FFFFFF}
 .account-page .account-logout-section .message{margin:10px 2px 0;text-align:center}
 
 /* --- 底部注销账号：无边框红色文字链接（与参考图一致） --- */
 .acct-destroy-link{display:block;margin:16px auto 0;padding:12px 24px;border:0;background:none;
   color:var(--zp-error);font-size:15px;font-weight:400;cursor:pointer}
-:root[data-zp-theme="light"] .acct-destroy-link{color:var(--zp-error)}
 :root[data-zp-theme="dark"] .acct-destroy-link{color:var(--ui-danger)}
 .acct-destroy-link:active{opacity:.6}
 
