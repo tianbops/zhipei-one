@@ -51,6 +51,7 @@
   --zp-nav-text:#94A3B8;
   --zp-nav-text-active:#F1F5F9;
   --zp-nav-active-bg:rgba(255,255,255,.08);
+  --zp-nav-pill-bg:rgba(59,130,246,.20); /* 深色：主色半透明背景块 */
   /* ===== Phase 1 令牌的深色取值 ===== */
   --zp-tint:rgba(255,255,255,.07);
   --zp-tint-strong:rgba(255,255,255,.16);
