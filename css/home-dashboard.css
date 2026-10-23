@@ -102,7 +102,9 @@
 .bottom-nav-item:active{background:var(--zp-nav-active-bg);color:var(--zp-nav-text-active)}
 .bottom-nav-icon{width:22px;height:22px;display:flex;align-items:center;justify-content:center}
 .bottom-nav-icon svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.bottom-nav-item[aria-current="page"]{color:var(--zp-primary);background:var(--zp-nav-pill-bg);font-weight:700}
+/* 选中态只改文字/图标颜色（2026-10-24 用户定稿）：不加背景块、不改字重，
+   与未选中态仅靠 主色 ↔ 中性灰 的色差区分，保持底栏干净 */
+.bottom-nav-item[aria-current="page"]{color:var(--zp-primary)}
 /* 中间上传加号：无文字标签的凸起圆形按钮（首页静态导航版；
    业务页生效值由 ui-unified.css 的 !important 规则统一，此处保持一致） */
 .bottom-nav-plus .bottom-nav-icon{
