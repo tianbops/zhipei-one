@@ -30,8 +30,8 @@
 .trend-nav::after,.trend-metric-btn::after,.trend-year::after{content:"";position:absolute;inset:-8px}
 .trend-month{color:var(--zp-muted);font-size:12px;line-height:18px;font-variant-numeric:tabular-nums;letter-spacing:.5px;will-change:transform}
 .trend-metric{display:flex;gap:6px}
-.trend-metric-btn{appearance:none;border:1px solid var(--zp-line);background:var(--zp-card-translucent);color:var(--zp-muted);font-size:12px;line-height:18px;padding:5px 11px;border-radius:999px;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
-.trend-metric-btn.is-active{background:var(--zp-text);color:var(--zp-surface-2);border-color:var(--zp-text);font-weight:600}
+.trend-metric-btn{appearance:none;border:1px solid var(--zp-line);background:var(--zp-surface-2);color:var(--zp-muted);font-size:12px;line-height:18px;padding:5px 11px;border-radius:999px;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.trend-metric-btn.is-active{background:var(--zp-primary);color:var(--zp-on-primary);border-color:var(--zp-primary);font-weight:600}
 .trend-metric-btn:active{transform:translateY(.5px)}
 /* 底排：配送汇总（9 单 / 6.98 t）居左，环比提示居右，同排显示省一行高度 */
 .trend-bottom-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:1px}

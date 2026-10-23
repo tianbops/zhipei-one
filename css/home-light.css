@@ -34,10 +34,8 @@
 :root[data-zp-theme="light"] .trend-card{background:#FFFFFF;border-color:#D7DDE3}
 :root[data-zp-theme="light"] .trend-title{color:var(--zp-text)}
 :root[data-zp-theme="light"] .trend-year,
-:root[data-zp-theme="light"] .trend-metric-btn{background:#F0F2F4;border-color:#D7DDE3;color:var(--zp-muted)}
 :root[data-zp-theme="light"] .trend-year:active,
 :root[data-zp-theme="light"] .trend-year.is-active{background:#E1E7EC;color:var(--zp-text);border-color:#8793A0}
-:root[data-zp-theme="light"] .trend-metric-btn.is-active{background:var(--zp-primary);color:#FFFFFF;border-color:var(--zp-primary)}
 :root[data-zp-theme="light"] .trend-nav{color:var(--zp-muted)}
 :root[data-zp-theme="light"] .trend-nav:active{background:#E8EDF1;color:var(--zp-text)}
 :root[data-zp-theme="light"] .trend-month{color:#46515D}
