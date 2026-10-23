@@ -103,6 +103,33 @@
   .menu-bg>.dialog{right:12px;width:min(220px,calc(100vw - 24px))!important}
 }
 
+/* ===== 浅色外观：系统菜单跟随主题 =====
+   背景：菜单面板被通用 :root[data-zp-theme="light"] .dialog 规则刷成白底，
+   但 .menu-bg .setting 的文字（#D5DCE2）、图标（#B8C2CC）、分隔线
+   （rgba(255,255,255,.07)）仍是深色态的浅色值 —— 白底上几乎不可见
+   （2026-10-23 反馈：「修改密码 / 重置数据」文字看不清）。 */
+:root[data-zp-theme="light"] .menu-bg>.dialog{
+  border-color:#D7DDE3!important;
+  background:#FFFFFF!important;
+  box-shadow:0 10px 24px rgba(20,30,40,.16)!important;
+}
+:root[data-zp-theme="light"] .menu-bg .setting{
+  color:#17202A!important;
+}
+:root[data-zp-theme="light"] .menu-bg .setting:active{
+  background:#EEF1F4!important;
+}
+:root[data-zp-theme="light"] .menu-bg .menu-item-icon{
+  color:#5A5A5A!important;
+}
+:root[data-zp-theme="light"] .menu-bg .menu-divider{
+  background:rgba(20,30,40,.10)!important;
+}
+:root[data-zp-theme="light"] .menu-bg #logout,
+:root[data-zp-theme="light"] .menu-bg #logout .menu-item-icon{
+  color:var(--zp-error)!important;
+}
+
 /* 管理员密码弹窗 3.5：紧凑居中布局与统一小眼睛控件。 */
 .dialog.password-dialog{width:min(100%,390px);padding:22px 20px 18px;border-radius:19px}
 .dialog.password-dialog h2{font-size:19px;line-height:26px}
