@@ -34,7 +34,7 @@ main > .topbar{
   flex:0 0 auto;
   position:static;
   z-index:100;
-  padding-top:env(safe-area-inset-top);
+  padding-top:var(--zp-safe-top);
   min-height:var(--zp-header-height);
   background:var(--zp-bg);
 }

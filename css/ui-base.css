@@ -28,6 +28,10 @@
   --zp-muted:#A8A8A8;
   --zp-soft:#767676;
   --zp-radius:14px;
+  /* 顶部安全区兜底：env() 在部分 WebView（如旧版 Capacitor 壳 / 异常上报）返回 0 时，
+     用 32px 兜底避免内容被状态栏压住；正常环境 env() 取到真实状态栏高度时取较大值。
+     与安卓壳端 MainActivity 的 WebView 边距修复互补（嵌套关系，不会双重叠加）。 */
+  --zp-safe-top: max(env(safe-area-inset-top, 0px), 32px);
   /* 骨架微光条（加载占位）双外观 token：order_detail / home / data 三处
      页面级骨架共用同一取值。深色外观为暗灰微光；浅色外观在下方
      [data-zp-theme="light"] 覆盖为浅灰微光——修复浅色背景下骨架条

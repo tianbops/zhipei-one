@@ -32,7 +32,7 @@ export async function onRequestPost({request,env}){
     const currentPassword=String(input.currentPassword||"");
     const password=String(input.password||"");
     if(!currentPassword||!password)return json({success:false,error:"请输入当前密码和新密码"},400);
-    if(password.length<6)return json({success:false,error:"密码至少6位"},400);
+    if(password.length<8)return json({success:false,error:"密码至少8位"},400);
     if(!(await verifyPassword(currentPassword,actor.passwordHash)))return json({success:false,error:"当前密码错误"},403);
     const nextHash=await hashPassword(password,env);
     const key="zp:user:"+actor.id;

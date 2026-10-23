@@ -1,5 +1,5 @@
 /* 智配One · 业务页面 2.0 */
-.page2{width:min(100%,430px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:max(14px,env(safe-area-inset-top)) 16px calc(30px + env(safe-area-inset-bottom))}
+.page2{width:min(100%,430px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:max(14px,var(--zp-safe-top)) 16px calc(30px + env(safe-area-inset-bottom))}
 .account-page .topbar,.route-apply-page .topbar{margin-bottom:8px;z-index:100;background:var(--zp-bg)}
 .account-page .topbar h1,.route-apply-page .topbar h1{margin:0;text-align:center;font-weight:700}
 .page2-card{background:rgba(20,28,37,.80);border:1px solid #2A3540;border-radius:16px;padding:16px;margin-bottom:10px}

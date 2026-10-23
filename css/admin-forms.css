@@ -68,7 +68,7 @@
 }
 .menu-bg[hidden]{display:none!important}
 .menu-bg>.dialog{
-  position:fixed;top:calc(env(safe-area-inset-top) + 62px);
+  position:fixed;top:calc(var(--zp-safe-top) + 62px);
   right:max(12px,calc((100vw - 680px)/2 + 14px));
   width:208px!important;max-height:min(72dvh,560px);
   overflow:auto;padding:6px!important;

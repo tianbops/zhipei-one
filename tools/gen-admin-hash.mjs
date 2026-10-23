@@ -17,8 +17,8 @@ if (!password) {
   console.error("用法: node tools/gen-admin-hash.mjs <管理员密码> [--legacy]");
   process.exit(1);
 }
-if (password.length < 6) {
-  console.error("密码至少 6 位（与注册接口的校验一致）");
+if (password.length < 8) {
+  console.error("密码至少 8 位（与注册接口的校验一致）");
   process.exit(1);
 }
 

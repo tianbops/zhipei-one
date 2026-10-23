@@ -38,7 +38,7 @@ export async function onRequestPost({request,env}){
    const password=String(input.password||"");
    const confirmPassword=String(input.confirmPassword||"");
    if(!currentPassword||!password||!confirmPassword)return json({success:false,error:"请完整填写密码"},400);
-   if(password.length<6)return json({success:false,error:"新密码至少6位"},400);
+   if(password.length<8)return json({success:false,error:"新密码至少8位"},400);
    if(password!==confirmPassword)return json({success:false,error:"两次输入的新密码不一致"},400);
    if(!(await verifyPassword(currentPassword,actor.passwordHash)))return json({success:false,error:"当前密码错误",code:"CURRENT_PASSWORD_INVALID"},403);
    const nextHash=await hashPassword(password,env);

@@ -34,7 +34,7 @@ export async function onRequestPost({request,env}){
   const inviteCode=normalize(input.inviteCode).toUpperCase();
   if(!username||!password||!inviteCode)return json({success:false,error:"请输入账号、密码和邀请码"},400);
   if(!/^[A-Za-z0-9_\-.]{3,32}$/.test(username))return json({success:false,error:"账号需为3-32位字母、数字、下划线、短横线或点"},400);
-  if(password.length<6)return json({success:false,error:"密码至少6位"},400);
+  if(password.length<8)return json({success:false,error:"密码至少8位"},400);
 
   // 限流：邀请码爆破防护。只统计**失败**，成功注册不清零也不计数（见 _ratelimit.js 说明）
   const scopes=["register:ip:"+scopePart(clientIp(request))];

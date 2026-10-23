@@ -1,6 +1,11 @@
 import {json,body} from "../_json.js";
 import {get,command,newId} from "../_redis.js";
 import {hashPassword} from "../_password.js";
+import {peek,bump,clientIp,scopePart,firstExceeded} from "../_ratelimit.js";
+
+// 管理员初始化限流（防 ADMIN_SETUP_KEY 爆破）：一次性入口，错误尝试应受约束
+const BOOTSTRAP_WINDOW_SECONDS=3600;
+const BOOTSTRAP_LIMIT_IP=10;
 
 function normalize(v){return String(v||"").trim()}
 
@@ -13,14 +18,21 @@ export async function onRequestPost({request,env}){
 
     if(!/^[A-Za-z0-9_]{3,32}$/.test(username))
       return json({success:false,error:"管理员账号需为3-32位字母、数字或下划线"},400);
-    if(password.length<6)
-      return json({success:false,error:"密码至少6位"},400);
+    if(password.length<8)
+      return json({success:false,error:"密码至少8位"},400);
+    // 限流：初始化密钥爆破防护（一次性初始化入口，错误尝试应受约束）
+    const scopes=["bootstrap:ip:"+scopePart(clientIp(request))];
+    const limits=[BOOTSTRAP_LIMIT_IP];
+    const before=await peek(env,scopes);
+    const blocked=firstExceeded(before,limits);
+    if(blocked>=0)return json({success:false,error:"尝试过于频繁，请稍后重试",code:"BOOTSTRAP_RATE_LIMITED"},429,{"retry-after":String(Math.max(1,before[blocked].retryAfter||BOOTSTRAP_WINDOW_SECONDS))});
+    const fail=async res=>{await bump(env,scopes,BOOTSTRAP_WINDOW_SECONDS);return res};
     if(!setupKey)
       return json({success:false,error:"初始化密钥不能为空"},400);
-    if(env.ADMIN_SETUP_KEY&&setupKey!==env.ADMIN_SETUP_KEY)
-      return json({success:false,error:"初始化校验失败"},403);
     if(!env.ADMIN_SETUP_KEY)
       return json({success:false,error:"系统未配置初始化密钥"},503);
+    if(env.ADMIN_SETUP_KEY&&setupKey!==env.ADMIN_SETUP_KEY)
+      return fail(json({success:false,error:"初始化校验失败"},403));
 
     const id=newId();
     const user={id,username,name:"系统管理员",role:"admin",disabled:false,boundRouteId:null,routeDuty:null,dispatchRouteId:null,sessionVersion:1,passwordHash:await hashPassword(password,env),createdAt:new Date().toISOString()};
