@@ -27,7 +27,12 @@ global.fetch = async (...args) => { subrequests++; return innerFetch(...args); }
 
 const R = "route-budget";
 const seed = (key, obj) => red.command(["SET", "zp:" + key, JSON.stringify(obj)]);
-const dates = ["2026-09-21", "2026-09-22", "2026-09-23"];
+// 日期种子按「今天」相对生成（Asia/Shanghai 近似，与 functions/api/waybills/_stats.js
+// 的 dateWindow 同算法）：硬编码日期会随真实时间滑出 days=30 窗口之外，
+// scannedWaybills=0 让后续预算断言失去意义——这是一颗定时炸弹，改为时间无关。
+const shanghaiToday = new Date(Date.now() + 8 * 3600 * 1000);
+const fmtDate = d => `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+const dates = [2, 1, 0].map(i => { const d = new Date(shanghaiToday); d.setUTCDate(d.getUTCDate() - i); return fmtDate(d); });
 
 function seedWaybills(from, to) {
   for (let i = from; i <= to; i++) {

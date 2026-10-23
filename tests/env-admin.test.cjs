@@ -86,9 +86,11 @@ const reqJson = (obj) => ({ json: async () => obj });
   check("用户名不匹配时不创建管理员", other === null && !red4.command(["GET", "zp:user:env-admin"]));
 
   // ---- 7) 保留账号名不能被普通注册抢占 ----
+  // 注意：密码必须满足 8 位下限，否则先被 register.js 的长度校验拦成 400，
+  // 永远走不到保留名校验——用例意图（验证 409 保留名）会被悄悄短路。
   const red5 = makeUpstash(new MiniRedis());
   const env5 = { ...env };
-  const reg = await registerMod.onRequestPost({ request: reqJson({ username: "rootadmin", password: "abc123", inviteCode: "ZP-XXXX" }), env: env5 });
+  const reg = await registerMod.onRequestPost({ request: reqJson({ username: "rootadmin", password: "rootadmin1", inviteCode: "ZP-XXXX" }), env: env5 });
   check("系统保留账号名无法被注册", reg.status === 409, "HTTP " + reg.status + " " + JSON.stringify(await reg.json()).slice(0, 120));
 
   console.log("\n环境变量管理员：通过 " + pass + " / 失败 " + fail);
