@@ -283,6 +283,25 @@ for (const f of cssFiles) {
 // ---------------------------------------------------------------------------
 // 输出：违规即工作清单（Phase 1-3 令牌化 / Phase 4 换色的逐项待办）
 // ---------------------------------------------------------------------------
+// ④ 页面内联浅色补丁归零（2026-10-24 事故护栏）
+//    Phase 4 基底反转为浅色后，HTML 内联 <style> 里的
+//    :root[data-zp-theme="light"] 整段覆盖既冗余又危险——dispatch.html 曾残留
+//    `:root[data-zp-theme="light"] .dispatch-page{background:var(--zp-text)}`
+//    （Phase 3 批量令牌化把页面底色误植为文字色），特异度高于基座，
+//    导致浅色主题整页 #111111 黑底、说明文字不可读，且常规测试全绿无感知。
+//    深色专用补丁（:root[data-zp-theme="dark"]）不在此列——与深色令牌块语义一致。
+const inlineLightPatches = [];
+for (const h of htmlFiles) {
+  const text = htmlScannable(fs.readFileSync(path.join(root, h), "utf8"));
+  for (const [a, b] of htmlStyleRanges(text)) {
+    // CSS 注释里提到选择器名不算补丁（blankOut 保长度，行号不漂移）
+    const block = blankOut(text.slice(a, b), /\/\*[\s\S]*?\*\//g);
+    for (const m of block.matchAll(/:root\s*\[\s*data-zp-theme\s*=\s*["']?light/gi)) {
+      inlineLightPatches.push({ file: h, line: lineOf(text, a + m.index), value: ":root[data-zp-theme=light]" });
+    }
+  }
+}
+
 const MAX_DETAIL = 400;
 const report = (title, list) => {
   const byFile = new Map();
@@ -300,8 +319,10 @@ if (colorMix.length) {
   console.log("\n【③ color-mix() 违反 WebView 兼容地板】共 " + colorMix.length + " 处：");
   for (const c of colorMix) console.log("  " + c.file + ":" + c.line);
 }
+if (inlineLightPatches.length) report("④ 页面内联 :root[data-zp-theme=light] 浅色补丁（基底反转后应删除）", inlineLightPatches);
 
 assert.equal(v1.length, 0, "组件层存在 " + v1.length + " 处字面量重复实现 Token 取值（见上清单）");
 assert.equal(v2.length, 0, "旧设计退休色板复现 " + v2.length + " 处（见上清单）");
 assert.equal(colorMix.length, 0, "存在 " + colorMix.length + " 处 color-mix()，违反安卓 WebView 兼容地板");
-console.log("\n主题 Token 纪律检查通过：组件层零字面量绕过、退休色板零复现、无 color-mix()");
+assert.equal(inlineLightPatches.length, 0, "页面内联 <style> 残留 " + inlineLightPatches.length + " 处浅色补丁（基底反转为浅色后应删除，见上清单）");
+console.log("\n主题 Token 纪律检查通过：组件层零字面量绕过、退休色板零复现、无 color-mix()、无内联浅色补丁");
