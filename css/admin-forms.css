@@ -72,8 +72,8 @@
   right:max(12px,calc((100vw - 680px)/2 + 14px));
   width:208px!important;max-height:min(72dvh,560px);
   overflow:auto;padding:6px!important;
-  border:1px solid #2A3540!important;border-radius:12px!important;
-  background:#18212B!important;
+  border:1px solid var(--ui-line)!important;border-radius:12px!important;
+  background:var(--ui-surface)!important;
   box-shadow:0 10px 24px rgba(0,0,0,.3)!important;
   animation:admin-menu-in .14s ease-out;
   pointer-events:auto
@@ -84,17 +84,17 @@
   display:flex;align-items:center;gap:11px;width:100%;
   min-height:48px;padding:0 12px!important;
   border:0!important;border-radius:11px;
-  color:#D5DCE2;font-size:14px;line-height:20px;font-weight:600;
+  color:var(--ui-text);font-size:14px;line-height:20px;font-weight:600;
   background:transparent;text-align:left;cursor:pointer
 }
-.menu-bg .setting:active{background:#26313C;transform:scale(.985)}
-.menu-bg .menu-item-icon{width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;color:#B8C2CC}
+.menu-bg .setting:active{background:var(--zp-surface-3);transform:scale(.985)}
+.menu-bg .menu-item-icon{width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;color:var(--ui-muted)}
 .menu-bg .menu-item-icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .menu-bg .setting>span:last-child,.menu-bg .menu-username{min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .menu-bg .menu-username{color:inherit}
-.menu-bg .menu-divider{height:1px;margin:5px 7px;background:rgba(255,255,255,.07)}
-.menu-bg #logout{color:#FF8278}
-.menu-bg #logout .menu-item-icon{color:#FF8278}
+.menu-bg .menu-divider{height:1px;margin:5px 7px;background:var(--zp-divider)}
+.menu-bg #logout{color:var(--zp-error)}
+.menu-bg #logout .menu-item-icon{color:var(--zp-error)}
 @keyframes admin-menu-in{
   from{opacity:0;transform:translateY(-5px) scale(.985)}
   to{opacity:1;transform:translateY(0) scale(1)}
@@ -103,32 +103,15 @@
   .menu-bg>.dialog{right:12px;width:min(220px,calc(100vw - 24px))!important}
 }
 
-/* ===== 浅色外观：系统菜单跟随主题 =====
-   背景：菜单面板被通用 :root[data-zp-theme="light"] .dialog 规则刷成白底，
-   但 .menu-bg .setting 的文字（#D5DCE2）、图标（#B8C2CC）、分隔线
-   （rgba(255,255,255,.07)）仍是深色态的浅色值 —— 白底上几乎不可见
-   （2026-10-23 反馈：「修改密码 / 重置数据」文字看不清）。 */
-:root[data-zp-theme="light"] .menu-bg>.dialog{
-  border-color:#D7DDE3!important;
-  background:#FFFFFF!important;
-  box-shadow:0 10px 24px rgba(20,30,40,.16)!important;
-}
-:root[data-zp-theme="light"] .menu-bg .setting{
-  color:#17202A!important;
-}
-:root[data-zp-theme="light"] .menu-bg .setting:active{
-  background:#EEF1F4!important;
-}
-:root[data-zp-theme="light"] .menu-bg .menu-item-icon{
-  color:#5A5A5A!important;
-}
-:root[data-zp-theme="light"] .menu-bg .menu-divider{
-  background:rgba(20,30,40,.10)!important;
-}
-:root[data-zp-theme="light"] .menu-bg #logout,
-:root[data-zp-theme="light"] .menu-bg #logout .menu-item-icon{
-  color:var(--zp-error)!important;
-}
+/* ===== 收口：系统菜单配色全面改吃主题变量 =====
+   历史问题（2026-10-23）：
+   · 深色态把面板/文字/图标/分隔线写死成一整套蓝灰（#18212B/#2A3540/#D5DCE2/
+     #B8C2CC），与 admin 页其余表面（全用中性灰 --zp-*）不一致，是页面孤岛；
+   · 而 :root[data-zp-theme="light"] .dialog 通用规则又只会把面板刷白，
+     文字/图标/分隔线没有跟随 → 白底浅字，「修改密码/重置数据」看不清。
+   旧修法：额外补一整段 :root[...light] 覆盖（两块并行、易漂移）。
+   现修法：面板/文字/图标/分隔线/退出项/按压态一律改用 --ui-*/--zp-* 变量，
+   随 data-zp-theme 自动翻转，深/浅双主题一次到位，无需再打浅色补丁。 */
 
 /* 管理员密码弹窗 3.5：紧凑居中布局与统一小眼睛控件。 */
 .dialog.password-dialog{width:min(100%,390px);padding:22px 20px 18px;border-radius:19px}

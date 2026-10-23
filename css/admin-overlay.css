@@ -9,77 +9,14 @@
   content:none!important;
 }
 
-/* 管理员退出确认：补齐全局 zpConfirm 在独立 admin 页面所需的居中模态样式。 */
+/* 管理员退出确认：zpConfirm 居中模态（遮罩/面板/按钮/双主题）已由全局单一来源
+   css/ui-base.css(.zp-confirm 第 323-338 行) + css/ui-theme.css(浅色覆盖 第 70/203-209 行)
+   全权提供；admin.html 首个即加载 ui-base.css，故此处不再重复声明。
+   历史教训：曾在此用 #zpUiLayer ID 选择器(特异度 1,1,0)复制一份并写死深色，
+   压过全局浅色规范 → 浅色页面弹出深色确认框(2026-10-23 反馈)。
+   删除冗余块、回归全局规范后：双主题自动正确，且消除 ID 特异度脆弱点。
+   仅保留 #zpUiLayer 容器定位，确保反馈层稳定位于模态顶层。 */
 #zpUiLayer{position:relative;z-index:var(--ui-z-modal-top,1200)}
-#zpUiLayer .zp-confirm{
-  position:fixed;inset:0;z-index:var(--ui-z-modal-top,1200);
-  display:flex;align-items:center;justify-content:center;
-  padding:18px;
-  background:rgba(0,0,0,.58);
-}
-#zpUiLayer .zp-confirm[hidden]{display:none!important}
-#zpUiLayer .zp-confirm-panel{
-  width:min(100%,360px);max-height:min(88dvh,760px);overflow:auto;
-  margin:0 auto;padding:22px 20px 18px;
-  border:1px solid #2A3540;border-radius:18px;
-  background:#18212B;color:#fff;
-  box-shadow:0 18px 50px rgba(0,0,0,.45);
-}
-#zpUiLayer .zp-confirm-panel h3{
-  margin:0;color:#fff;font-size:18px;line-height:24px;font-weight:650;
-}
-#zpUiLayer .zp-confirm-panel p{
-  margin:8px 0 0;color:#B8C2CC;font-size:15px;line-height:22px;
-  white-space:normal;word-break:break-word;
-}
-#zpUiLayer .zp-confirm-actions{
-  display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px;
-}
-#zpUiLayer .zp-confirm-actions button{
-  min-width:0;min-height:48px;padding:0 10px;
-  border:1px solid #35404C;border-radius:11px;
-  background:#11171D;color:#E8EDF2;
-  font:600 16px/22px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-}
-#zpUiLayer .zp-confirm-actions button:last-child{
-  border-color:#3A4652;background:#202B36;color:#fff;
-}
-#zpUiLayer .zp-confirm-actions button:active{background:#26313C}
-@media(max-width:380px){
-  #zpUiLayer .zp-confirm{padding:14px}
-  #zpUiLayer .zp-confirm-panel{padding:20px 16px 16px;border-radius:16px}
-  #zpUiLayer .zp-confirm-actions{gap:8px;margin-top:18px}
-}
-
-/* ===== 浅色外观：确认框跟随主题 =====
-   上面 #zpUiLayer .zp-confirm-* 用 ID 选择器（特异度 1,1,0）写死深色，
-   压过了 ui-theme.css 的 :root[data-zp-theme="light"] .zp-confirm-panel
-   （0,3,0），于是浅色页面里会弹出深色框（2026-10-23 反馈）。
-   这里在 ID 前叠加主题属性选择器，把特异度提到 1,3,0，保证浅色下翻白。 */
-:root[data-zp-theme="light"] #zpUiLayer .zp-confirm{
-  background:rgba(24,36,48,.32)!important;
-}
-:root[data-zp-theme="light"] #zpUiLayer .zp-confirm-panel{
-  background:#FFFFFF!important;
-  border-color:#D7DDE3!important;
-  color:#17202A!important;
-  box-shadow:0 18px 50px rgba(20,30,40,.18)!important;
-}
-:root[data-zp-theme="light"] #zpUiLayer .zp-confirm-panel h3{color:#17202A!important}
-:root[data-zp-theme="light"] #zpUiLayer .zp-confirm-panel p{color:#5A5A5A!important}
-:root[data-zp-theme="light"] #zpUiLayer .zp-confirm-actions button{
-  border-color:#D7DDE3!important;
-  background:#F0F2F4!important;
-  color:#26323D!important;
-}
-:root[data-zp-theme="light"] #zpUiLayer .zp-confirm-actions button:last-child{
-  border-color:var(--zp-primary)!important;
-  background:var(--zp-primary)!important;
-  color:#FFFFFF!important;
-}
-:root[data-zp-theme="light"] #zpUiLayer .zp-confirm-actions button:first-child:active{
-  background:#E3E7EB!important;
-}
 
 /* ===== 面板横滑 4.0 =====
    旧问题：内容不足时 #viewport 高度只有列表那么高，屏幕下半部的触摸 target 是
