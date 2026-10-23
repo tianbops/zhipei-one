@@ -28,7 +28,7 @@
 @media(max-width:380px){.route-apply-page .page2-card{padding:12px}.route-apply-page .maintain-card{padding:0}.route-apply-page .collapse-head{min-height:46px;padding:0 12px}.route-apply-page .collapse-body{padding:0 12px 12px}}
 
 /* 我的页：与线路申请页统一布局、颜色与密度。 */
-.account-page{background:var(--zp-logo-plate);padding-top:16px /* 近黑页底与 logo 底板同值，共用令牌 */;padding-bottom:calc(92px + env(safe-area-inset-bottom))}
+.account-page{background:var(--zp-bg);padding-top:16px /* 页面底色随主题（Phase 4：不再借用 logo 底板） */;padding-bottom:calc(92px + env(safe-area-inset-bottom))}
 .account-page .topbar{margin-bottom:8px;z-index:100;background:var(--zp-bg)}
 .account-page .topbar h1{margin:0;text-align:center;color:var(--zp-text);font-size:17px;line-height:23px;font-weight:700}
 .account-page .page2-card{background:var(--zp-card-translucent-2);border:1px solid var(--zp-tint);border-radius:16px;padding:14px;margin-bottom:8px;box-shadow:0 12px 30px var(--zp-shadow-md)}
@@ -67,7 +67,7 @@
 .page2 .app-back:active{color:var(--zp-text)}
 
 /* 线路选择页（原 dispatch.html 局部样式，原样迁移至统一层；声明与级联顺序保持不变） */
-.dispatch-page{width:min(100%,430px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:16px 16px calc(28px + env(safe-area-inset-bottom));background:var(--zp-logo-plate)}
+.dispatch-page{width:min(100%,430px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:16px 16px calc(28px + env(safe-area-inset-bottom));background:var(--zp-bg)}
 .dispatch-page .app-back{color:var(--zp-text)}
 .dispatch-page .topbar h1{margin:0;text-align:center;color:var(--zp-text);font-weight:700}
 .dispatch-section{margin-top:18px}

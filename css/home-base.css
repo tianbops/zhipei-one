@@ -1,7 +1,7 @@
 /* 智配One · 首页移动端 UI */
 /* 板块宽度对齐全局：与线路页 / 历史页同用 --zp-space-4（16px）。
    原为 14px 历史遗留值，比全局窄 2px，跨页切换时板块宽度会跳。 */
-.home-app{width:min(100%,430px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:var(--zp-space-4,16px) var(--zp-space-4,16px) calc(24px + env(safe-area-inset-bottom));background:var(--zp-logo-plate)}
+.home-app{width:min(100%,430px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:var(--zp-space-4,16px) var(--zp-space-4,16px) calc(24px + env(safe-area-inset-bottom));background:var(--zp-bg)}
 .home-app .topbar{display:flex;justify-content:space-between;align-items:center;z-index:100;margin-bottom:8px}
 .home-brand{display:flex;flex-direction:column;line-height:1.2}
 .home-brand strong{font-size:19px;font-weight:700;letter-spacing:.5px;color:var(--zp-text)}

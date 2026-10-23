@@ -76,7 +76,7 @@
   --zp-secondary-active:#E0E3E8;
   /* 半透明 / 不透明卡片底色（保留两种用途，取值随主题翻转） */
   --zp-card-translucent:rgba(255,255,255,.82);
-  --zp-card-translucent-2:rgba(246,247,249,.88);
+  --zp-card-translucent-2:rgba(242,243,245,.88);
   --zp-card:var(--zp-surface);
   /* 列表分隔线（方案第十五章 Row，统一为 .10 单一来源） */
   --zp-divider:rgba(0,0,0,.10);
@@ -329,7 +329,7 @@ input,select,textarea{
    原由 ui-theme 浅色补丁逐条 :root 前缀覆盖，基底反转后收敛到全局层，
    双主题自适应；页面级文件（admin-base / business-pages）保留几何与布局，
    同特异度后加载赢、取值同为令牌零漂移。 */
-.dispatch-page,.account-page{background:var(--zp-logo-plate)}
+.dispatch-page,.account-page{background:var(--zp-bg)}
 .row{background:var(--zp-surface-2)}
 .dialog{background:var(--zp-card)}
 .message,.login-message{line-height:20px}
