@@ -67,11 +67,14 @@
    外框宽度随「系统/浅色/深色」文字自适应（避免出现超宽长方形底框）。 */
 .acct-theme-row{display:flex;align-items:center;gap:10px;min-height:56px}
 .acct-theme-row .acct-row-label{flex:none}
-.acct-seg{display:inline-flex;flex:none;margin-left:auto;align-items:center;gap:2px;padding:3px;border-radius:12px;
+.acct-seg{display:inline-flex;flex:none;margin-left:auto;align-items:center;gap:2px;padding:2px;border-radius:10px;
   background:var(--zp-surface-2,var(--zp-surface-2))}
 :root[data-zp-theme="dark"] .acct-seg{background:var(--zp-surface-2)}
-.account-page .acct-seg .appearance-theme-option{min-height:48px;padding:0 13px;border:0;border-radius:9px;background:transparent;
-  color:var(--zp-muted,var(--zp-muted));font-size:14px;font-weight:600;box-shadow:none}
+/* 视觉高度按文字收紧：14px 文字 + 32px 按钮高，替代原先过高的 48px；
+   触控热区不缩水 —— 用 ::after 把可点区域仍撑到 48px 高（视觉轻、触控不缩水）。 */
+.account-page .acct-seg .appearance-theme-option{position:relative;min-height:32px;padding:0 12px;border:0;border-radius:9px;background:transparent;
+  color:var(--zp-muted,var(--zp-muted));font-size:14px;line-height:1.4;font-weight:600;box-shadow:none}
+.account-page .acct-seg .appearance-theme-option::after{content:"";position:absolute;left:-2px;right:-2px;top:50%;transform:translateY(-50%);height:48px}
 .account-page .acct-seg .appearance-theme-option.is-selected{background:var(--zp-card,#FFFFFF);color:var(--zp-accent);box-shadow:0 1px 4px var(--zp-shadow-md)}
 :root[data-zp-theme="dark"] .account-page .acct-seg .appearance-theme-option.is-selected{background:var(--zp-line)}
 
