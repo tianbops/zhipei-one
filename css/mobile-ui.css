@@ -2,12 +2,16 @@
    Loaded after app.css on pages that opt in.
    Goals: compact Android-style hierarchy, touch-safe controls, safe-area handling,
    consistent dialogs/forms/status states, responsive narrow screens. */
+/* 令牌权威在 ui-base.css 的 :root（原 ui-unified.css 已于 2026-10-22 拆分为
+   ui-base/overlay/theme/shell 四件套）：本文件加载的全部页面均先加载 ui-base，
+   普通 --zp-* 变量不再重复声明（历史双份真相源已删除）。
+   仅保留 --zp-danger：它与 ui-base 的 --ui-danger 取值不同且两者都在服役
+   （本文件的 .message.error 用 #FFB4AB，ui-base 侧 4 处用 #FF8278），
+   强行合并会改变某一方的红色外观，保持独立，列为待决策项。
+   注：本块特异度 (0,1,0) 低于 ui-theme 的 :root[data-zp-theme="light"] (0,2,0)，
+   浅色下浏览器实际取 #C2453A，删除本块零视觉变化；但 verify:css-vars 的顺序
+   合并模型会因此报「解析值变化」，故保留至 Phase 5 连同工具模型一并处理。 */
 :root{
-  /* Commit 2A：--zp-* 的权威定义已上移至 ui-unified.css（唯一被全部页面加载的层）。
-     本文件原先重复声明一遍同值变量，属双份真相源，一旦改动必然漂移，故删除重复项。
-     仅保留 --zp-danger：它与 ui-unified.css 的 --ui-danger 取值不同且两者都在服役
-     （本文件的 .message.error 用 #FFB4AB，ui-unified 侧 4 处用 #FF8278），
-     强行合并会改变外观，保持独立，列为待决策项。 */
   --zp-danger:#FFB4AB;
 }
 html{background:var(--zp-bg);-webkit-text-size-adjust:100%}
@@ -15,7 +19,7 @@ body{background:var(--zp-bg);color:var(--zp-text);overscroll-behavior-y:none}
 button,a,input,select,textarea{font:inherit}
 button,a{touch-action:manipulation}
 button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
-  outline:2px solid #8793A0;outline-offset:2px;
+  outline:2px solid var(--zp-focus-ring);outline-offset:2px;
 }
 .shell{
   width:min(calc(100% - 24px),560px);
@@ -35,7 +39,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   border-radius:11px;
 }
 input,select,textarea{
-  border-color:#35414D!important;
+  border-color:var(--zp-line)!important;
   background:var(--zp-surface-2)!important;
   color:var(--zp-text)!important;
 }

@@ -1,11 +1,10 @@
 :root {
-  color-scheme: dark;
   font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  background: #05070A;
-  color: #fff;
-  /* 以下 5 个无前缀变量（--bg/--card/--card2/--line/--muted）为历史遗留写法，现全部转为指向 ui-unified.css 的 --zp-* 单一真相源；--soft 为死定义已于 Commit 4B 删除（admin.html 走内联 --soft:#7F8A95）。
-     之所以放在 app.css 而由别名指向别处：本文件未被 admin.html 加载，
-     若把权威定义写在本层，管理员端会取到未定义值。详见 ui-unified.css 顶部注释。 */
+  background: var(--zp-bg);
+  color: var(--zp-text);
+  /* 以下 5 个无前缀变量（--bg/--card/--card2/--line/--muted）为历史遗留写法，现全部转为指向 ui-base.css 的 --zp-* 单一真相源；--soft 为死定义已于 Commit 4B 删除（admin.html 走内联 --soft:#7F8A95）。
+      之所以放在 app.css 而由别名指向别处：本文件未被 admin.html 加载，
+      若把权威定义写在本层，管理员端会取到未定义值。详见 ui-base.css 顶部注释。 */
   --bg: var(--zp-bg);
   --card: var(--zp-card-translucent);
   --card2: var(--zp-card-translucent-2);
@@ -24,7 +23,7 @@ html {
 body {
   margin: 0;
   background: var(--bg);
-  color: #fff;
+  color: var(--zp-text);
   min-height: 100vh;
   min-height: 100dvh;
 }
@@ -62,7 +61,7 @@ body {
 }
 
 .message.error {
-  color: #ffb4ab;
+  color: var(--zp-error);
 }
 
 .route-card {
@@ -102,7 +101,7 @@ body {
 }
 
 .grid a {
-  background: rgba(20,28,37,.80);
+  background: var(--zp-card-translucent-2);
   border: 1px solid var(--line);
 }
 
@@ -126,7 +125,7 @@ body {
   gap: 12px;
   min-height: 48px;
   padding: 9px 2px;
-  border-bottom: 1px solid rgba(255,255,255,.07);
+  border-bottom: 1px solid var(--zp-tint);
   font-size: 14px;
 }
 
@@ -136,12 +135,12 @@ body {
 
 .store-row small {
   flex: none;
-  color: #8F9AA5;
+  color: var(--zp-muted);
   font-size: 11px;
 }
 
 .store-nav {
-  color: #fff;
+  color: var(--zp-text);
   text-decoration: none;
 }
 
@@ -151,7 +150,7 @@ body {
 
 .summary {
   margin: 0;
-  color: #B8C2CC;
+  color: var(--zp-muted);
   font-size: 13px;
   line-height: 20px;
 }
@@ -159,14 +158,14 @@ body {
 .confirm-panel {
   margin-top: 14px;
   padding: 12px;
-  border: 1px solid #303943;
+  border: 1px solid var(--zp-line);
   border-radius: 12px;
   background: var(--card2);
 }
 
 .pending-box {
   padding: 12px 0;
-  border-bottom: 1px solid rgba(255,255,255,.07);
+  border-bottom: 1px solid var(--zp-tint);
 }
 
 .pending-box:first-child {
@@ -192,23 +191,23 @@ body {
   width: 100%;
   padding: 11px 12px;
   background: var(--card);
-  border: 1px solid #35404C;
+  border: 1px solid var(--zp-line);
   border-radius: 9px;
-  color: #fff;
+  color: var(--zp-text);
   text-align: left;
   font-size: 13px;
 }
 
 .choice-btn.selected {
-  border-color: #7F8B98;
-  background: rgba(26,38,46,.82);
+  border-color: var(--zp-muted);
+  background: var(--zp-card-translucent);
 }
 
 .secondary-btn {
   width: 100%;
-  border: 1px solid #35404C;
-  background: rgba(10,14,19,.88);
-  color: #fff;
+  border: 1px solid var(--zp-line);
+  background: var(--zp-card-translucent-2);
+  color: var(--zp-text);
 }
 
 .confirm-submit {
@@ -227,10 +226,10 @@ body {
   white-space: pre-wrap;
   overflow: auto;
   max-height: 420px;
-  border: 1px solid #303943;
+  border: 1px solid var(--zp-line);
   border-radius: 10px;
-  background: rgba(10,14,19,.88);
-  color: #B8C2CC;
+  background: var(--zp-bg);
+  color: var(--zp-muted);
   font-size: 12px;
 }
 
@@ -263,7 +262,7 @@ body {
 .auth-card>p {
   text-align: center;
   margin: 7px 0 24px;
-  color: #9DA8B3;
+  color: var(--zp-muted);
   font-size: 13px;
 }
 
@@ -274,7 +273,7 @@ body {
 .auth-card label {
   display: block;
   margin: 0 0 15px;
-  color: #B8C2CC;
+  color: var(--zp-muted);
   font-size: 14px;
 }
 
@@ -287,7 +286,7 @@ body {
 }
 
 .auth-card input:focus {
-  border-color: #536273;
+  border-color: var(--zp-focus-ring);
 }
 
 .auth-card .message {
@@ -308,7 +307,7 @@ body {
 }
 
 .auth-card a {
-  color: #B8C2CC;
+  color: var(--zp-muted);
   text-decoration: none;
 }
 
@@ -348,7 +347,7 @@ body {
   justify-content: space-between;
   gap: 16px;
   min-height: 48px;
-  border-bottom: 1px solid rgba(255,255,255,.07);
+  border-bottom: 1px solid var(--zp-tint);
 }
 
 .account-row:last-child {
@@ -363,7 +362,7 @@ body {
 .account-row strong {
   font-size: 15px;
   font-weight: 500;
-  color: #fff;
+  color: var(--zp-text);
   word-break: break-all;
   text-align: right;
 }
@@ -376,7 +375,7 @@ body {
 
 .data-help {
   margin: 10px 0 0;
-  color: #8A97A5;
+  color: var(--zp-muted);
   font-size: 13px;
   line-height: 1.6;
 }
@@ -385,7 +384,7 @@ body {
   position: fixed;
   inset: 0;
   z-index: 120;
-  background: rgba(0,0,0,.62);
+  background: var(--zp-scrim-dialog);
   padding: 16px;
   display: flex;
   align-items: center;
@@ -410,7 +409,7 @@ body {
 .data-file {
   width: 100%;
   margin: 8px 0 12px;
-  color: #fff;
+  color: var(--zp-text);
 }
 
 .data-textarea {
@@ -419,8 +418,8 @@ body {
   box-sizing: border-box;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #10161D;
-  color: #E8EDF2;
+  background: var(--zp-bg);
+  color: var(--zp-text);
   padding: 12px;
   font-size: 15px;
   line-height: 1.6;
@@ -439,10 +438,10 @@ body {
 
 .data-import-actions button {
   height: var(--zp-control-height);
-  border: 1px solid #35404C;
+  border: 1px solid var(--zp-line);
   border-radius: 10px;
-  background: rgba(10,14,19,.88);
-  color: #fff;
+  background: var(--zp-card-translucent-2);
+  color: var(--zp-text);
   font-size: 15px;
 }
 
@@ -452,7 +451,7 @@ body {
 
 .request-row {
   padding: 12px 0;
-  border-bottom: 1px solid rgba(255,255,255,.07);
+  border-bottom: 1px solid var(--zp-tint);
   font-size: 14px;
   line-height: 21px;
 }
@@ -468,10 +467,10 @@ body {
    补到 8px 16px 后约 36px，仍不足 48px：再往上撑会顶破 .request-row 的单行布局，
    故留到 Row 阶段（方案第十五章）连同行高一起处理，此处不硬凑数值。 */
 .request-row button {
-  border: 1px solid #35404C;
+  border: 1px solid var(--zp-line);
   border-radius: 10px;
-  background: rgba(10,14,19,.88);
-  color: #fff;
+  background: var(--zp-card-translucent-2);
+  color: var(--zp-text);
   padding: 8px 16px;
   font-size: 14px;
 }
@@ -520,11 +519,11 @@ body {
   width: 54px;
   height: 54px;
   flex: 0 0 auto;
-  border: 1px solid rgba(255,255,255,.16);
+  border: 1px solid var(--zp-tint-strong);
   border-radius: 15px;
-  /* 徽章底色始终为 logo 原图底色 #05070A：logo 含白色描边，
+  /* 徽章底色始终为 logo 原图底色（令牌 --zp-logo-plate）：logo 含白色描边，
      白底（浅色外观）下描边会消失，故不随外观翻转 */
-  background: #05070A;
+  background: var(--zp-logo-plate);
 }
 
 .login-logo {
@@ -538,7 +537,7 @@ body {
   font-size: 19px;
   font-weight: 700;
   letter-spacing: .01em;
-  color: #fff;
+  color: var(--zp-text);
 }
 
 .login-eyebrow {
@@ -552,7 +551,7 @@ body {
 
 .login-headline {
   margin: 0 0 12px;
-  color: #fff;
+  color: var(--zp-text);
   font-size: 31px;
   line-height: 1.32;
   font-weight: 700;
@@ -589,11 +588,11 @@ body {
   box-sizing: border-box;
   margin: 0;
   padding: 0 16px;
-  border: 1px solid #35404C;
+  border: 1px solid var(--zp-line);
   border-radius: 13px;
   outline: none;
-  background: rgba(10,14,19,.88);
-  color: #fff;
+  background: var(--zp-card-translucent-2);
+  color: var(--zp-text);
   font: inherit;
   font-size: 16px;
   line-height: 54px;
@@ -601,18 +600,20 @@ body {
 }
 
 .login-field input::placeholder {
-  color: #6F7B87;
+  color: var(--zp-soft);
 }
 
 .login-field input:focus {
-  border-color: #687584;
-  background: #141B22;
+  border-color: var(--zp-focus-ring);
+  background: var(--zp-surface);
 }
 
 .login-message {
   min-height: 20px;
   margin: 0 0 7px;
-  color: #FF8A80;
+  /* 死规则：ui-overlay.css 的 .login-message 同选择器且后加载，实际取 var(--zp-error)；
+     此处对齐令牌，消除字面量分叉（浅色由 ui-theme 的 .login-message 补丁覆盖） */
+  color: var(--zp-error);
   font-size: 13px;
   line-height: 20px;
 }
@@ -634,7 +635,9 @@ body {
 }
 
 .login-submit:active {
-  background: #31455A;
+  /* 死规则：ui-overlay.css 的 .login-submit:active:not(:disabled) 特异度更高，
+     实际取 var(--zp-primary-active)；此处对齐令牌，消除字面量分叉 */
+  background: var(--zp-primary-active);
 }
 
 .login-submit:disabled {
@@ -652,7 +655,7 @@ body {
 }
 
 .login-links a {
-  color: #fff;
+  color: var(--zp-text);
   font-size: 13px;
   text-decoration: none;
   /* 热区扩展：inline 垂直 padding 不占布局；水平用负 margin 抵消，视觉不变 */
@@ -669,11 +672,13 @@ body {
   width: 3px;
   height: 3px;
   border-radius: 50%;
-  background: #596572;
+  /* 链接间圆点分隔符：取弱化色（--zp-soft）而非 --zp-muted——
+     圆点必须弱于次级文字，深色下才能保持「装饰」而非「文本」的视觉层级 */
+  background: var(--zp-soft);
 }
 
 .login-links a:active {
-  color: #fff;
+  color: var(--zp-text);
 }
 
 @media (max-width:380px) {

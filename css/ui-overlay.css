@@ -66,7 +66,7 @@
  *       不再重复定义这些属性，只保留页面特有的内部布局。
  *
  * 统一后所有业务弹窗行为一致：
- *   遮罩 rgba(0,0,0,.72) + 3px 模糊 · 居中显示 · 面板 18px 圆角
+ *   遮罩 var(--zp-scrim-dialog) · 居中显示 · 面板 18px 圆角
  *
  * ⚠ 数据中心（data.html）：弹窗外观与本文件 2.1/2.5 节的统一规则保持
  *   原版完全一致（原版即由本文件接管遮罩与面板：居中模态、398px 上限、
@@ -87,7 +87,7 @@
   align-items:center!important;
   justify-content:center!important;
   padding:12px!important;
-  background:rgba(0,0,0,.58)!important;
+  background:var(--zp-scrim-dialog)!important;
 }
 
 /* --- 统一面板 ---
@@ -107,7 +107,7 @@
   border:1px solid var(--ui-line);
   border-radius:var(--ui-dialog-radius);
   background:var(--ui-surface);
-  box-shadow:0 18px 50px rgba(0,0,0,.42);
+  box-shadow:var(--zp-shadow-lg);
 }
 
 /* --- 统一次级按钮（取消类）--- */
@@ -127,19 +127,19 @@
 .history-dialog-actions button,
 .account-dialog-actions button{
   min-height:var(--zp-control-height);
-  border:1px solid #35404C;
+  border:1px solid var(--zp-line);
   border-radius:var(--ui-control-radius);
   background:var(--ui-surface-2);
-  color:#E8EDF2;
+  color:var(--zp-text);
   font-size:16px;
   font-weight:550;
 }
 .order-dialog-actions button:last-child,
 .history-dialog-actions button:last-child,
 .account-dialog-actions button:last-child{
-  border-color:#3A4652;
+  border-color:var(--zp-line);
   background:var(--ui-surface-3);
-  color:#fff;
+  color:var(--zp-text);
 }
 
 
@@ -219,10 +219,12 @@
   background:var(--zp-error-soft);
 }
 .page2-danger-btn:hover:not(:disabled){
-  background:color-mix(in srgb,var(--zp-error) 18%,transparent);
+  /* 原 color-mix(in srgb,var(--zp-error) 18%,transparent)：WebView 兼容地板禁用
+     color-mix，改用按深色纪元 --zp-error 预计算的静态微染令牌（Phase 4 可给浅色值） */
+  background:var(--zp-error-soft-hover);
 }
 .page2-danger-btn:active:not(:disabled){
-  background:color-mix(in srgb,var(--zp-error) 28%,transparent);
+  background:var(--zp-error-soft-active);
   transform:scale(.985);
 }
 
@@ -317,20 +319,20 @@ textarea:disabled,
   padding:6px 8px calc(6px + env(safe-area-inset-bottom))!important;
   transform:translateX(-50%)!important;
   display:grid!important;grid-template-columns:repeat(5,1fr)!important;gap:4px!important;
-  background:#05070A!important;border-top:1px solid #27323D!important;
+  background:var(--zp-logo-plate)!important;border-top:1px solid var(--zp-line)!important;
   backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
 }
 .zp-business-nav-page .bottom-nav-item{
   min-width:0!important;min-height:52px!important;border:0!important;border-radius:10px!important;
-  background:transparent!important;color:#7F8A95!important;text-decoration:none!important;
+  background:transparent!important;color:var(--zp-muted)!important;text-decoration:none!important;
   display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;
   gap:3px!important;font-size:12px!important;line-height:17px!important;font-weight:600!important;
   -webkit-tap-highlight-color:transparent;
 }
-.zp-business-nav-page .bottom-nav-item:active{background:#18212B!important;color:#F2F5F7!important}
+.zp-business-nav-page .bottom-nav-item:active{background:var(--zp-surface-2)!important;color:var(--zp-text)!important}
 .zp-business-nav-page .bottom-nav-icon{width:22px!important;height:22px!important;display:flex!important;align-items:center!important;justify-content:center!important}
 .zp-business-nav-page .bottom-nav-icon svg{width:21px!important;height:21px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important}
-.zp-business-nav-page .bottom-nav-item[aria-current="page"]{color:#F2F5F7!important}
+.zp-business-nav-page .bottom-nav-item[aria-current="page"]{color:var(--zp-text)!important}
 /* 中间上传加号（底栏 5 位改版）：无文字标签的凸起圆形按钮。
    圆形由 .bottom-nav-icon 承载，上移凸出导航条；底色沿用唯一主色 --zp-primary，
    白 + 图标，按压提亮——不引入新的强调色。 */
@@ -338,7 +340,7 @@ textarea:disabled,
   width:52px!important;height:52px!important;border-radius:50%!important;
   background:var(--zp-primary)!important;color:var(--zp-on-primary)!important;
   transform:translateY(-16px)!important;
-  box-shadow:0 8px 20px rgba(5,7,10,.45)!important;
+  box-shadow:var(--zp-shadow-sm)!important;
 }
 .zp-business-nav-page .bottom-nav-plus .bottom-nav-icon svg{width:24px!important;height:24px!important;stroke-width:2.2!important}
 .zp-business-nav-page .bottom-nav-plus:active{background:transparent!important}

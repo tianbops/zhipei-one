@@ -1,6 +1,10 @@
 /* 智配One · 全局 UI 统一层 2.1
    只负责视觉、层级、触控与反馈，不承载任何业务规则。 */
 :root{
+  /* WebView 控件配色穿透：显式声明深色，否则表单控件/滚动条保持系统配色，
+     深色页面里出现「白底黑字滚动条」（历史教训）。浅色由 ui-theme.css 的
+     :root[data-zp-theme="light"] 以更高特异度覆盖为 light。 */
+  color-scheme:dark;
   /* ===== 全局设计 Token · 单一真相源（Commit 2A） =====
      背景：历史上并存三套割裂的变量 —— app.css 的无前缀版（--bg/--card/--card2/--line/--muted；--soft 已于 Commit 4B 删除）、
            mobile-ui.css 的 --zp-* 版、本文件的 --ui-* 版，同一语义写三遍，改主题必须改三处。
@@ -90,6 +94,41 @@
   --zp-info:#4DA3FF;
   --zp-info-soft:rgba(77,163,255,.14);
 
+  /* ===== 视觉整改 Phase 1 新增令牌 =====
+     现值一律取「深色纪元」字面量（组件层今天硬编码的值），零漂移；
+     浅色主题下这些组件今天同样是硬编码深色值，故本批令牌不随主题翻转，
+     由 ui-theme.css 既有的浅色补丁继续覆盖（补丁按选择器生效，与令牌无关）。
+     Phase 4 换色时统一给出浅色取值，此后全站只改这一处。 */
+  /* 品牌底板：登录页 brand badge / 底部导航的近黑底，logo 含白色描边，
+     浅色下不能翻白（描边会消失），故双主题同值——命名令牌白名单，
+     禁止组件层直写字面量（appearance-theme-bootstrap 断言在册）。 */
+  --zp-logo-plate:#05070A;
+  /* 中性微染：弱描边/分隔线（原 .075/.07/.065 三档归一为 .07，亚感知差异）；
+     -strong 为强调描边（登录徽章边框 .16）。 */
+  --zp-tint:rgba(255,255,255,.07);
+  --zp-tint-strong:rgba(255,255,255,.16);
+  /* 模态遮罩：业务弹窗/二次确认（原 .58 与 .62 两档归一为 .58）。 */
+  --zp-scrim-dialog:rgba(0,0,0,.58);
+  /* 投影三档：sm 凸起元素（底栏加号）/ md 悬浮元素（FAB、Toast）/
+     lg 模态面板（原 .42/.45 两档归一为 .45，几何一致）。 */
+  --zp-shadow-sm:0 8px 20px rgba(0,0,0,.45);
+  --zp-shadow-md:0 10px 28px rgba(0,0,0,.35);
+  --zp-shadow-lg:0 18px 50px rgba(0,0,0,.45);
+  --zp-shadow-menu:0 14px 34px rgba(0,0,0,.34);
+  /* 焦点体系：ring 为 focus-visible 描边（mobile-ui 焦点环原值 #8793A0，
+     登录/密码框聚焦边框 #687584/#536273 一并归一）；
+     glow 为输入聚焦光晕（原 0 0 0 3px rgba(184,194,204,.08)）。 */
+  --zp-focus-ring:#8793A0;
+  --zp-focus-glow:0 0 0 3px rgba(184,194,204,.08);
+  /* 状态微染表面：Toast 成功/错误底色与错误描边（原 #1D2A24/#302326/#594048）。 */
+  --zp-success-surface:#1D2A24;
+  --zp-error-surface:#302326;
+  --zp-error-surface-strong:#594048;
+  /* 危险按钮悬停/按压微染：替代 color-mix()（WebView 兼容地板禁用了它），
+     按 --zp-error 现值 #FF6B5E 预计算 18%/28% 两档静态值。 */
+  --zp-error-soft-hover:rgba(255,107,94,.18);
+  --zp-error-soft-active:rgba(255,107,94,.28);
+
   /* ===== 间距与控件尺寸（方案第九 / 十一 / 十二章） =====
      取值取自当前代码的实际分布，不是凭空定的理想值，避免引入尺寸跳变：
        header-height 54px —— 现有值为 42/48/52/54/56，取方案第十一章推荐的标准值。
@@ -160,11 +199,11 @@ button:active{transform:translateY(0)}
 
 /* 页面层级：页面 > 卡片 > 次级区域，避免无意义的多层嵌套视觉 */
 .card,.page2-card,.data-route-card,.data-list-card,.task-card{
-  border-color:rgba(255,255,255,.075);
+  border-color:var(--zp-tint);
   box-shadow:none;
 }
 .card,.page2-card{border-radius:var(--ui-radius)}
-.confirm-panel,.pending-box{background:var(--ui-surface-2);border-color:rgba(255,255,255,.07)}
+.confirm-panel,.pending-box{background:var(--ui-surface-2);border-color:var(--zp-tint)}
 
 /* 顶部栏统一：标准 Header 钩子 .topbar（阶段 6 · 5A）
    布局由各页旧类规则承载（保留差异：dispatch 白字标题 / data 头 padding / history 占位 /
@@ -196,14 +235,17 @@ button:active{transform:translateY(0)}
   box-sizing:border-box;
 }
 .app-back svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.app-back:active{background:rgba(20,28,37,.80);color:#fff}
+/* 按压反馈：原 rgba(20,28,37,.80) 覆于页面底色合成约 (18,24,32)；
+   取 --zp-card-translucent（合成约 (23,23,23)，亚感知）而非 -2 变体
+   （合成恰为页面底色，按压反馈会被抹平）。浅色下随令牌翻为微妙提亮。 */
+.app-back:active{background:var(--zp-card-translucent);color:var(--zp-text)}
 
 /* 菜单统一为单层浮层 */
 .data-page-menu, .order-menu{
   border:1px solid var(--ui-line);
   border-radius:12px;
   background:var(--ui-surface);
-  box-shadow:0 14px 34px rgba(0,0,0,.34);
+  box-shadow:var(--zp-shadow-menu);
   overflow:hidden;
 }
 /* 菜单面板内的条目本身就是点击目标，不是「列表里的文字」，按第十三章必须 ≥48。
@@ -212,7 +254,7 @@ button:active{transform:translateY(0)}
 .data-page-menu button, .order-menu button{
   min-height:var(--zp-control-height);
 }
-.menu-divider{background:rgba(255,255,255,.07)}
+.menu-divider{background:var(--zp-tint)}
 
 /* 统一按钮语义：主操作右侧、取消/次要操作左侧 */
 .data-import-actions,.history-dialog-actions,.order-dialog-actions,.account-dialog-actions{
@@ -228,24 +270,24 @@ button:active{transform:translateY(0)}
 }
 .data-import-actions button:first-child,.history-dialog-actions button:first-child,.order-dialog-actions button:first-child,.account-dialog-actions button:first-child{
   background:var(--ui-surface-2);
-  border:1px solid #35404C;
-  color:#E8EDF2;
+  border:1px solid var(--zp-line);
+  color:var(--zp-text);
 }
 .data-import-actions button:last-child,.history-dialog-actions button:last-child,.order-dialog-actions button:last-child,.account-dialog-actions button:last-child{
   background:var(--ui-surface-3);
-  border:1px solid #3A4652;
-  color:#fff;
+  border:1px solid var(--zp-line);
+  color:var(--zp-text);
 }
 
 /* 统一模态层：只保留一层遮罩 + 一个内容面板 */
 .order-dialog,.history-dialog,.data-import,.upload-overlay{
-  background:rgba(0,0,0,.58)!important;
+  background:var(--zp-scrim-dialog)!important;
 }
 .order-dialog-panel,.history-dialog-panel,.data-import-panel,.account-dialog,.upload-sheet{
   background:var(--ui-surface);
   border:1px solid var(--ui-line);
   border-radius:var(--ui-dialog-radius);
-  box-shadow:0 18px 50px rgba(0,0,0,.42);
+  box-shadow:var(--zp-shadow-lg);
 }
 .order-dialog-panel,.history-dialog-panel,.data-import-panel,.account-dialog{
   max-width:398px;
@@ -275,7 +317,7 @@ input,select,textarea{
   border-radius:var(--ui-control-radius)!important;
 }
 .message,.login-message{line-height:20px}
-.message.error,.login-message[role=alert]{color:#FFB4AB}
+.message.error,.login-message[role=alert]{color:var(--zp-error)}
 
 /* Toast/轻反馈：用于成功、复制、保存等非破坏性反馈 */
 .ui-toast{
@@ -288,26 +330,26 @@ input,select,textarea{
   border:1px solid var(--ui-line);
   border-radius:10px;
   background:var(--ui-surface);
-  color:#fff;
+  color:var(--zp-text);
   font-size:13px;
   line-height:18px;
   text-align:center;
-  box-shadow:0 10px 28px rgba(0,0,0,.36);
+  box-shadow:var(--zp-shadow-md);
   transform:translate(-50%,10px);
   opacity:0;
   pointer-events:none;
   transition:opacity .18s ease,transform .18s ease;
 }
 .ui-toast.show{opacity:1;transform:translate(-50%,0)}
-.ui-toast.success{background:#1D2A24}
-.ui-toast.error{background:#302326;border-color:#594048}
+.ui-toast.success{background:var(--zp-success-surface)}
+.ui-toast.error{background:var(--zp-error-surface);border-color:var(--zp-error-surface-strong)}
 
 /* 状态文字与列表节奏统一 */
 .empty,.dispatch-empty,.dispatch-message,.history-state{
   color:var(--ui-soft);
 }
 .store-row,.account-row,.request-row{
-  border-bottom-color:rgba(255,255,255,.065);
+  border-bottom-color:var(--zp-tint);
 }
 
 /* 小屏：进一步减少外层留白，不缩小触控目标 */
@@ -320,15 +362,15 @@ input,select,textarea{
 }
 
 /* 全局二次确认弹窗 */
-.zp-confirm{position:fixed;top:0;right:0;bottom:0;left:0;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.58)}
+.zp-confirm{position:fixed;top:0;right:0;bottom:0;left:0;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;padding:18px;background:var(--zp-scrim-dialog)}
 .zp-confirm[hidden]{display:none}
-.zp-confirm-panel{width:min(100%,360px);padding:20px 18px 16px;border:1px solid var(--ui-line);border-radius:18px;background:var(--ui-surface);box-shadow:0 18px 50px rgba(0,0,0,.45)}
-.zp-confirm-panel h3{margin:0;color:#fff;font-size:17px;line-height:24px;font-weight:650}
+.zp-confirm-panel{width:min(100%,360px);padding:20px 18px 16px;border:1px solid var(--ui-line);border-radius:18px;background:var(--ui-surface);box-shadow:var(--zp-shadow-lg)}
+.zp-confirm-panel h3{margin:0;color:var(--zp-text);font-size:17px;line-height:24px;font-weight:650}
 .zp-confirm-panel p{margin:8px 0 0;color:var(--ui-muted);font-size:13px;line-height:20px;word-break:break-word}
 .zp-confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
 .zp-confirm-actions button{min-height:var(--zp-control-height);border-radius:11px;font-size:14px;font-weight:550}
-.zp-confirm-actions button:first-child{border:1px solid #35404C;background:rgba(10,14,19,.88);color:#E8EDF2}
-.zp-confirm-actions button:last-child{border:1px solid #3A4652;background:rgba(26,38,46,.82);color:#fff}
+.zp-confirm-actions button:first-child{border:1px solid var(--zp-line);background:var(--zp-card-translucent-2);color:var(--zp-text)}
+.zp-confirm-actions button:last-child{border:1px solid var(--zp-line);background:var(--zp-card-translucent);color:var(--zp-text)}
 
 /* Android 移动端文字规范 2.4
    仅调整文字尺寸与行高，不改变业务规则、数据结构、交互逻辑或页面布局。
@@ -386,22 +428,22 @@ input,select,textarea{
 /* 全局密码显隐 2.7：所有密码输入统一使用小眼睛，空值时隐藏，输入后即时出现。 */
 .zp-password-control{
   position:relative;display:flex;align-items:center;width:100%;min-height:48px;
-  border:1px solid #35414D;border-radius:11px;background:rgba(10,14,19,.88);
+  border:1px solid var(--zp-line);border-radius:11px;background:var(--zp-card-translucent-2);
   transition:border-color .16s ease,box-shadow .16s ease;
 }
-.zp-password-control:focus-within{border-color:#687584;box-shadow:0 0 0 3px rgba(184,194,204,.08)}
+.zp-password-control:focus-within{border-color:var(--zp-focus-ring);box-shadow:var(--zp-focus-glow)}
 .zp-password-control input[type="password"],
 .zp-password-control input[type="text"]{
   display:block;flex:1;min-width:0;width:100%;height:48px!important;min-height:48px!important;
   margin:0!important;padding:0 48px 0 12px!important;border:0!important;border-radius:10px!important;
-  outline:none!important;box-shadow:none!important;background:transparent!important;color:#F5F7F9;
+  outline:none!important;box-shadow:none!important;background:transparent!important;color:var(--zp-text);
   font-size:16px;line-height:22px;letter-spacing:.01em;
 }
-.zp-password-control input::placeholder{color:#75818C}
+.zp-password-control input::placeholder{color:var(--zp-soft)}
 .zp-password-eye{
   position:absolute;right:4px;top:50%;transform:translateY(-50%);
   display:flex;align-items:center;justify-content:center;width:38px;height:38px;
-  padding:0;border:0;border-radius:9px;background:transparent;color:#8F9BA7;
+  padding:0;border:0;border-radius:9px;background:transparent;color:var(--zp-muted);
   cursor:pointer;-webkit-tap-highlight-color:transparent;
 }
 .zp-password-eye svg{display:block;width:19px;height:19px;pointer-events:none}
@@ -409,7 +451,7 @@ input,select,textarea{
 .zp-password-eye[hidden]{display:none!important}
 .field .zp-password-control{margin-top:0}
 .page2-label>.zp-password-control{margin-top:6px}
-.reset-password-field>label{display:block;margin:0 0 8px;color:#DCE3E9;font-size:14px;line-height:20px;font-weight:600}
+.reset-password-field>label{display:block;margin:0 0 8px;color:var(--zp-text);font-size:14px;line-height:20px;font-weight:600}
 .reset-password-field{margin-top:16px}
 @media(max-width:380px){.zp-password-eye{right:3px;width:36px;height:36px}}
 
