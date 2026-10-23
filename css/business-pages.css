@@ -124,7 +124,6 @@
 :root[data-zp-theme="light"] .dispatch-page .topbar h1,
 :root[data-zp-theme="light"] .account-page .topbar h1,
 :root[data-zp-theme="light"] .route-apply-page .topbar h1{color:var(--zp-text)}
-:root[data-zp-theme="light"] .dispatch-section-title{color:var(--zp-soft)}
 :root[data-zp-theme="light"] .route-apply-page .collapse-head{color:var(--zp-text)}
 :root[data-zp-theme="light"] .route-apply-page .collapse-icon{color:var(--zp-muted)}
 :root[data-zp-theme="light"] .request-row{color:var(--zp-muted)}

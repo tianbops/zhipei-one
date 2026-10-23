@@ -14,7 +14,7 @@
 .task-title{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:21px;line-height:28px;font-weight:700}
 .task-name{display:flex;align-items:center;gap:9px;min-width:0;white-space:nowrap}
 .task-date{margin:0;text-align:right;white-space:nowrap;color:var(--zp-muted);font-size:15px;line-height:23px;font-weight:500}
-.status-dot{width:26px;height:26px;min-width:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:var(--zp-muted);color:var(--zp-text);border:1px solid var(--zp-tint-strong);font:650 11px/26px Arial,"Microsoft YaHei",sans-serif}
+.status-dot{width:26px;height:26px;min-width:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:var(--zp-muted);color:var(--zp-bg);border:1px solid var(--zp-tint-strong);font:650 11px/26px Arial,"Microsoft YaHei",sans-serif}
 .status-dot[hidden]{display:none}
 .today-summary .sub-badge{display:inline;color:var(--zp-text);font:600 14px/29px "Microsoft YaHei",sans-serif;white-space:nowrap}
 .today-summary .sub-badge[hidden]{display:none}
