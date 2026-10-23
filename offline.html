@@ -8,20 +8,20 @@
 <link rel="stylesheet" href="/css/app.css?v=2eacebf8">
 <link rel="stylesheet" href="/css/ui-base.css?v=f8d819e1"><link rel="stylesheet" href="/css/ui-overlay.css?v=a690775f"><link rel="stylesheet" href="/css/ui-theme.css?v=debcddda"><link rel="stylesheet" href="/css/ui-shell.css?v=d7e34ce4">
 <style>
-.zp-offline{min-width:100%;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;background:#05070A;box-sizing:border-box}
-.zp-offline-card{width:min(100%,360px);padding:28px 22px;border:1px solid #2A3540;border-radius:18px;background:#18212B;text-align:center}
+.zp-offline{min-width:100%;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--zp-logo-plate);box-sizing:border-box}
+.zp-offline-card{width:min(100%,360px);padding:28px 22px;border:1px solid var(--zp-line);border-radius:18px;background:var(--zp-surface-2);text-align:center}
 .zp-offline-card img{width:64px;height:64px;margin-bottom:14px}
 .zp-offline-card h1{margin:0;color:#fff;font-size:18px;line-height:24px;font-weight:700}
-.zp-offline-card p{margin:10px 0 0;color:#B8C2CC;font-size:14px;line-height:22px}
-.zp-offline-card .zp-offline-hint{margin-top:6px;color:#7F8A95;font-size:12px;line-height:19px}
-.zp-offline-btn{width:100%;min-height:46px;margin-top:20px;border:0;border-radius:11px;background:#26313C;color:#fff;font-size:15px;font-weight:650}
-.zp-offline-btn:active{background:#2E3A46}
-:root[data-zp-theme="light"] .zp-offline{background:#F4F6F8}
-:root[data-zp-theme="light"] .zp-offline-card{background:#FFFFFF;border-color:#D7DDE3;color:#17202A}
+.zp-offline-card p{margin:10px 0 0;color:var(--zp-muted);font-size:14px;line-height:22px}
+.zp-offline-card .zp-offline-hint{margin-top:6px;color:var(--zp-muted);font-size:12px;line-height:19px}
+.zp-offline-btn{width:100%;min-height:46px;margin-top:20px;border:0;border-radius:11px;background:var(--zp-secondary-bg);color:#fff;font-size:15px;font-weight:650}
+.zp-offline-btn:active{background:var(--zp-secondary-active)}
+:root[data-zp-theme="light"] .zp-offline{background:var(--zp-bg)}
+:root[data-zp-theme="light"] .zp-offline-card{background:var(--zp-card);border-color:var(--zp-line);color:var(--zp-text)}
 :root[data-zp-theme="light"] .zp-offline-card h1,
-:root[data-zp-theme="light"] .zp-offline-card p{color:#17202A}
+:root[data-zp-theme="light"] .zp-offline-card p{color:var(--zp-text)}
 :root[data-zp-theme="light"] .zp-offline-btn{background:var(--zp-primary);color:#fff}
-:root[data-zp-theme="light"] .zp-offline-btn:active{background:#1F2C38}
+:root[data-zp-theme="light"] .zp-offline-btn:active{background:var(--zp-primary-active)}
 </style>
 </head>
 <body>

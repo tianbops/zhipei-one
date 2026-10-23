@@ -32,20 +32,20 @@ main.history-shell{
 .history-state{
   min-height:20px;
   padding:18px 0;
-  color:#7F8A95;
+  color:var(--zp-muted);
   font-size:14px;
   line-height:20px;
 }
 .history-list{
   width:100%;
-  border:1px solid rgba(255,255,255,.075);
+  border:1px solid var(--zp-tint);
   border-radius:17px;
   overflow:hidden;
-  background:rgba(13,18,24,.82);
+  background:var(--zp-card-translucent-2);
 }
 .history-month{
-  background:rgba(13,18,24,.82);
-  border-bottom:1px solid rgba(255,255,255,.075);
+  background:var(--zp-card-translucent-2);
+  border-bottom:1px solid var(--zp-tint);
 }
 .history-month:last-child{
   border-bottom:0;
@@ -53,7 +53,7 @@ main.history-shell{
 .history-month-main{
   min-height:58px;
   padding:0 16px;
-  background:rgba(20,28,37,.80);
+  background:var(--zp-card-translucent);
 }
 .history-month-main span{
   font-size:17px;
@@ -64,7 +64,7 @@ main.history-shell{
 .history-month-main small{
   margin-left:auto;
   padding-right:4px;
-  color:#9AA5AF;
+  color:var(--zp-muted);
   font-size:14px;
   line-height:20px;
   font-weight:450;
@@ -75,11 +75,11 @@ main.history-shell{
   margin-left:12px;
 }
 .history-month.expanded .history-month-main{
-  border-bottom:1px solid rgba(255,255,255,.065);
+  border-bottom:1px solid var(--zp-tint);
 }
 .history-month-body{
   display:none;
-  background:rgba(10,14,19,.88);
+  background:var(--zp-card-translucent-2);
 }
 .history-month.expanded .history-month-body{
   display:block;
@@ -89,7 +89,7 @@ main.history-shell{
    刻意没动：它们是「月份分组容器」的内部分隔，不是列表行的行分隔线，
    语义不同 —— 顺手统一会让分组边界和行边界看起来一样重，反而丢掉层级。 */
 .history-swipe-row{
-  background:rgba(10,14,19,.88);
+  background:var(--zp-card-translucent-2);
   border-bottom:1px solid var(--zp-divider);
 }
 .history-month-body .history-swipe-row:last-child{
@@ -97,10 +97,10 @@ main.history-shell{
 }
 .history-row-surface{
   min-height:54px;
-  background:#0A0E13;
+  background:var(--zp-surface-2);
 }
 .history-month-body .history-row-surface{
-  background:#0A0E13;
+  background:var(--zp-surface-2);
 }
 .history-date-main{
   min-height:54px;
@@ -108,21 +108,21 @@ main.history-shell{
   background:transparent;
 }
 .history-date-main span{
-  color:#E8EDF2;
+  color:var(--zp-text);
   font-size:16px;
   line-height:22px;
   font-weight:500;
 }
 .history-date-main small{
   margin-left:auto;
-  color:#9AA5AF;
+  color:var(--zp-muted);
   font-size:14px;
   line-height:20px;
   font-weight:450;
 }
 .history-date-main:active,
 .history-month-main:active{
-  background:rgba(26,38,46,.82);
+  background:var(--zp-card-translucent);
 }
 .history-count-highlight{
   color:#fff;
@@ -132,7 +132,7 @@ main.history-shell{
 }
 .history-delete{
   width:84px;
-  background:linear-gradient(180deg,#D9534B,#B93B32);
+  background:linear-gradient(180deg,var(--zp-error),var(--zp-error-surface-strong));
   color:#fff;
   font-size:12px;
   line-height:16px;
@@ -145,7 +145,7 @@ main.history-shell{
 
 /* 月份之间增加清晰但克制的呼吸感 */
 .history-month + .history-month{
-  border-top:6px solid #05070A;
+  border-top:6px solid var(--zp-logo-plate);
 }
 
 /* 日历/确认弹窗保持与全局 Android 2.0 视觉一致 */

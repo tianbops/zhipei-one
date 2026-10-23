@@ -4,15 +4,15 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-route-card{padding:17px 16px}
 .data-route-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .data-route-title h2{margin:0;font-size:17px;line-height:24px;font-weight:700}
-.data-route-hint{margin:6px 0 0;color:#8F9AA5;font-size:15px;line-height:22px}
-.data-summary{display:flex;align-items:center;gap:8px;margin-top:13px;padding-top:13px;border-top:1px solid rgba(255,255,255,.07);color:#B8C2CC;font-size:15px;line-height:22px}
+.data-route-hint{margin:6px 0 0;color:var(--zp-muted);font-size:15px;line-height:22px}
+.data-summary{display:flex;align-items:center;gap:8px;margin-top:13px;padding-top:13px;border-top:1px solid var(--zp-tint);color:var(--zp-muted);font-size:15px;line-height:22px}
 .data-summary strong{color:#fff;font-size:16px;font-weight:600}
 .data-tools-card{padding:14px 16px}
-.data-help{margin:10px 0 0;color:#8A97A5;font-size:12px;line-height:19px}
+.data-help{margin:10px 0 0;color:var(--zp-muted);font-size:12px;line-height:19px}
 .data-list-card{padding:8px 14px 12px}
 .data-list-head{display:flex;align-items:center;justify-content:space-between;padding:7px 2px 10px}
 .data-list-title{font-size:14px;font-weight:600}
-.data-list-count{color:#7F8A95;font-size:12px}
+.data-list-count{color:var(--zp-muted);font-size:12px}
 .data-store-list{margin:0}
 /* 补 min-height 是为了容纳放大后的滑动操作按钮，不是顺手统一行高：
    .data-swipe-actions 是 absolute + 垂直居中，按钮 34→48 后，若店铺没有 meta
@@ -20,29 +20,29 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
    48px 的按钮会上下各溢出 1px。给行兜一个 48px 下限即可，内容多的行不受影响。 */
 .data-store-row{position:relative;display:grid;grid-template-columns:32px minmax(0,1fr);gap:10px;min-height:var(--zp-control-height);padding:12px 0;border-bottom:1px solid var(--zp-divider)}
 .data-store-row:last-child{border-bottom:0}
-.data-store-index{display:flex;align-items:flex-start;justify-content:center;padding-top:1px;color:#7F8A95;font-size:12px;font-variant-numeric:tabular-nums}
+.data-store-index{display:flex;align-items:flex-start;justify-content:center;padding-top:1px;color:var(--zp-muted);font-size:12px;font-variant-numeric:tabular-nums}
 .data-store-main{min-width:0}
 .data-store-name{display:block;color:#fff;font-size:15px;line-height:22px;font-weight:500;word-break:break-word}
-.data-store-meta{display:grid;gap:3px;margin-top:5px;color:#8F9AA5;font-size:14px;line-height:20px;word-break:break-all}
+.data-store-meta{display:grid;gap:3px;margin-top:5px;color:var(--zp-muted);font-size:14px;line-height:20px;word-break:break-all}
 .data-store-meta span{display:block}
-.data-store-meta-label{color:#687584;margin-right:4px}
-.data-empty{padding:28px 8px;text-align:center;color:#7F8A95;font-size:13px}
+.data-store-meta-label{color:var(--zp-muted);margin-right:4px}
+.data-empty{padding:28px 8px;text-align:center;color:var(--zp-muted);font-size:13px}
 /* 数据中心弹窗：内部布局沿用原始定义。
    遮罩与面板的定位/外观由 ui-unified.css 统一规则接管（与原版渲染一致）；
    此处仅补充 dvh 兜底（旧内核不支持 dvh 时退回 88vh，避免面板失去高度上限）。 */
-.data-import{position:fixed;inset:0;z-index:120;background:rgba(0,0,0,.58);padding:16px;display:flex;align-items:flex-end;justify-content:center}
+.data-import{position:fixed;inset:0;z-index:120;background:var(--zp-scrim-dialog);padding:16px;display:flex;align-items:flex-end;justify-content:center}
 /* 面板为纵向 flex：内容区滚动，底部「取消/确认」操作条 sticky 常驻，
    长表单（单独追加/编辑门店）在小屏上不再需要面板内滚动才能看到按钮 */
-.data-import-panel{width:min(100%,620px);max-height:min(88vh,760px);max-height:min(88dvh,760px);overflow:auto;display:flex;flex-direction:column;background:rgba(20,28,37,.80);border:1px solid #2A3540;border-radius:18px 18px 12px 12px;padding:18px 16px 0;box-shadow:0 -10px 40px rgba(0,0,0,.35)}
+.data-import-panel{width:min(100%,620px);max-height:min(88vh,760px);max-height:min(88dvh,760px);overflow:auto;display:flex;flex-direction:column;background:var(--zp-card-translucent);border:1px solid var(--zp-line);border-radius:18px 18px 12px 12px;padding:18px 16px 0;box-shadow:0 -10px 40px var(--zp-shadow-md)}
 .data-import-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
 .data-import-head h3{margin:0;font-size:17px;line-height:24px}
-.data-import-close{width:34px;height:34px;border:1px solid #35404C;border-radius:9px;background:rgba(10,14,19,.88);color:#B8C2CC;font-size:18px}
-.data-file{width:100%;margin:12px 0;color:#B8C2CC;font-size:13px}
-.data-textarea{width:100%;min-height:230px;resize:vertical;border:1px solid #35404C;border-radius:12px;background:#10161D;color:#E8EDF2;padding:12px 16px;font:inherit;font-size:14px;line-height:1.6;outline:none}
-.data-textarea:focus{border-color:#687584}
+.data-import-close{width:34px;height:34px;border:1px solid var(--zp-line);border-radius:9px;background:var(--zp-card-translucent-2);color:var(--zp-muted);font-size:18px}
+.data-file{width:100%;margin:12px 0;color:var(--zp-muted);font-size:13px}
+.data-textarea{width:100%;min-height:230px;resize:vertical;border:1px solid var(--zp-line);border-radius:12px;background:var(--zp-surface-2);color:var(--zp-text);padding:12px 16px;font:inherit;font-size:14px;line-height:1.6;outline:none}
+.data-textarea:focus{border-color:var(--zp-muted)}
 .data-preview{min-height:19px;margin-top:8px}
-.data-import-actions{position:sticky;bottom:0;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px -16px 0;padding:12px 16px calc(14px + env(safe-area-inset-bottom));background:rgba(20,28,37,.80);border-top:1px solid rgba(255,255,255,.05)}
-.data-import-actions button{height:var(--zp-control-height);border:1px solid #35404C;border-radius:10px;background:rgba(10,14,19,.88);color:#fff;font-size:15px}
+.data-import-actions{position:sticky;bottom:0;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px -16px 0;padding:12px 16px calc(14px + env(safe-area-inset-bottom));background:var(--zp-card-translucent);border-top:1px solid var(--zp-tint)}
+.data-import-actions button{height:var(--zp-control-height);border:1px solid var(--zp-line);border-radius:10px;background:var(--zp-card-translucent-2);color:#fff;font-size:15px}
 .data-import-actions #importSave{background:var(--zp-primary);color:var(--zp-on-primary)}
 @media(min-width:600px){.data-import{align-items:center}.data-import-panel{border-radius:18px}}
 /* 轻量入场动效：只做透明度+上滑，不改布局与结构；系统开启"减弱动态效果"时自动关闭 */
@@ -52,34 +52,34 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 
 .data-editor-panel{padding-top:16px}
 .data-field{display:block;margin-top:14px}
-.data-field>span{display:block;margin-bottom:6px;color:#B8C2CC;font-size:14px;line-height:20px}
-.data-input{display:block;width:100%;height:var(--zp-control-height);box-sizing:border-box;border:1px solid #35404C;border-radius:10px;background:#10161D;color:#E8EDF2;padding:0 16px;font:inherit;font-size:14px;outline:none}
-.data-input:focus,.data-note:focus{border-color:#687584}
+.data-field>span{display:block;margin-bottom:6px;color:var(--zp-muted);font-size:14px;line-height:20px}
+.data-input{display:block;width:100%;height:var(--zp-control-height);box-sizing:border-box;border:1px solid var(--zp-line);border-radius:10px;background:var(--zp-surface-2);color:var(--zp-text);padding:0 16px;font:inherit;font-size:14px;outline:none}
+.data-input:focus,.data-note:focus{border-color:var(--zp-muted)}
 .data-note{min-height:100px;margin-top:0}
 
 .data-store-name-line{display:flex;align-items:flex-start;gap:8px;min-width:0}
 .data-store-name-line .data-store-name{flex:1;min-width:0}
 
-.data-route-kicker{margin-bottom:4px;color:#9BA7B3;font-size:11px;line-height:17px;letter-spacing:.02em}
+.data-route-kicker{margin-bottom:4px;color:var(--zp-muted);font-size:11px;line-height:17px;letter-spacing:.02em}
 .data-route-title h2{min-width:0}
 .data-tools-card{margin-top:0}
 
 .data-field:first-of-type{margin-top:10px}
 .data-input[type=number]{font-variant-numeric:tabular-nums}
-.data-field-hint{display:block;margin-top:5px;color:#687584;font-size:11px;line-height:17px}.data-field-hint.invalid{color:#B8A0A0}
+.data-field-hint{display:block;margin-top:5px;color:var(--zp-muted);font-size:11px;line-height:17px}.data-field-hint.invalid{color:var(--zp-error)}
 
 /* 2.0 数据资料维护交互 */
 .data-tools-card{padding:12px 14px}
 .data-maintenance{display:grid;gap:9px}
 .data-maintenance-group{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-.data-action-btn{width:100%;min-height:var(--zp-control-height);margin:0;padding:0 16px;border:1px solid #35404C;border-radius:10px;background:rgba(10,14,19,.88);color:#E8EDF2;font-size:14px;font-weight:500}
+.data-action-btn{width:100%;min-height:var(--zp-control-height);margin:0;padding:0 16px;border:1px solid var(--zp-line);border-radius:10px;background:var(--zp-card-translucent-2);color:var(--zp-text);font-size:14px;font-weight:500}
 .data-action-btn:active{background:var(--zp-primary);color:var(--zp-on-primary)}
-.data-action-primary{background:#2E3B47;border-color:#4A5A68;color:#fff;font-weight:700}
+.data-action-primary{background:var(--zp-primary);border-color:var(--zp-primary);color:var(--zp-on-primary);font-weight:700}
 .data-store-row{touch-action:pan-y;user-select:none;transition:opacity .18s ease,transform .18s ease}
-.data-store-row.data-drag-active{opacity:.72;transform:scale(.99);background:rgba(255,255,255,.025)}
+.data-store-row.data-drag-active{opacity:.72;transform:scale(.99);background:var(--zp-tint)}
 .data-store-nav{color:#fff;text-decoration:none;cursor:pointer}
 .data-store-hidden{display:none}
-.data-store-meta-label{color:#687584}
+.data-store-meta-label{color:var(--zp-muted)}
 @media(min-width:600px){
  .data-tools-card{padding:14px 16px}
 }
@@ -96,8 +96,9 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
    会超出 .data-store-main 为它们预留的 padding-right:116px 而溢出。
    font 14 时「编辑/删除」两字约 28px + 18 padding = 46px < min-width 48px，
    实际宽度仍是 48px，预留不动也不会溢出。 */
-.data-swipe-actions button{min-width:48px;height:var(--zp-control-height);padding:0 9px;border:1px solid #35404C;border-radius:10px;background:rgba(10,14,19,.88);color:#E8EDF2;font-size:14px}
-.data-swipe-actions .data-swipe-delete{color:#FF8278}
+.data-swipe-actions button{min-width:48px;height:var(--zp-control-height);padding:0 9px;border:1px solid var(--zp-line);border-radius:10px;background:var(--zp-card-translucent-2);color:var(--zp-text);font-size:14px}
+/* 死规则对齐：已被 ui-theme.css Phase 2 .data-swipe-actions .data-swipe-delete !important 接管。 */
+.data-swipe-actions .data-swipe-delete{color:var(--ui-danger)}
 @media(min-width:600px){
  .data-swipe-actions{right:0}
  .data-store-row.data-swipe-open .data-store-main{padding-right:124px}
@@ -106,8 +107,8 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 /* 数据资料 2.0 顶部导航与菜单 */
 .data-page .topbar{z-index:100;padding:0 0 8px;height:auto;min-height:var(--zp-header-height);background:var(--zp-bg);margin-bottom:8px}
 .data-page .topbar h1{margin:0;text-align:center;font-weight:650}
-.data-page .app-back{width:var(--zp-control-height);height:var(--zp-control-height);display:flex;align-items:center;justify-content:center;border:1px solid #2A3540;border-radius:11px;background:rgba(10,14,19,.88);color:#fff;text-decoration:none;box-sizing:border-box}
-.data-page-menu-btn{width:var(--zp-control-height);height:var(--zp-control-height);display:flex;align-items:center;justify-content:center;border:1px solid #2A3540;border-radius:11px;background:rgba(10,14,19,.88);color:#fff;text-decoration:none;box-sizing:border-box}
+.data-page .app-back{width:var(--zp-control-height);height:var(--zp-control-height);display:flex;align-items:center;justify-content:center;border:1px solid var(--zp-line);border-radius:11px;background:var(--zp-card-translucent-2);color:#fff;text-decoration:none;box-sizing:border-box}
+.data-page-menu-btn{width:var(--zp-control-height);height:var(--zp-control-height);display:flex;align-items:center;justify-content:center;border:1px solid var(--zp-line);border-radius:11px;background:var(--zp-card-translucent-2);color:#fff;text-decoration:none;box-sizing:border-box}
 .data-page-menu-btn{font-size:19px;line-height:1}
 .data-page .app-back:active{background:var(--zp-primary);color:var(--zp-on-primary)}
 .data-page-menu-btn:active{background:var(--zp-primary);color:var(--zp-on-primary)}
@@ -116,7 +117,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-summary{margin-top:10px;padding-top:0;border-top:0}
 .data-summary strong{font-size:17px;font-weight:600}
 .data-route-hint{margin-top:4px}
-.data-page-menu{position:fixed;top:calc(58px + var(--zp-safe-top));right:14px;z-index:130;width:108px;padding:6px;background:rgba(20,28,37,.80);border:1px solid #2A3540;border-radius:12px;box-shadow:0 14px 34px rgba(0,0,0,.42)}
+.data-page-menu{position:fixed;top:calc(58px + var(--zp-safe-top));right:14px;z-index:130;width:108px;padding:6px;background:var(--zp-card-translucent);border:1px solid var(--zp-line);border-radius:12px;box-shadow:0 14px 34px var(--zp-shadow-menu)}
 .data-page-menu button{display:block;width:100%;height:var(--zp-control-height);border:0;border-radius:10px;background:transparent;color:#fff;text-align:left;padding:0 16px;font-size:14px}
 .data-page-menu button:active{background:var(--zp-primary);color:var(--zp-on-primary)}
 @media(min-width:600px){.data-page-menu{right:24px}}
@@ -127,7 +128,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-route-title .data-summary{flex:none;margin:0;padding:0;border:0}
 .data-route-title .data-summary strong{font-size:17px;white-space:nowrap}
 
-.data-feedback{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:160;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;max-width:calc(100vw - 32px);padding:10px 14px;border:1px solid #35404C;border-radius:10px;background:rgba(20,28,37,.80);color:#fff;font-size:13px;line-height:18px;box-shadow:0 10px 28px rgba(0,0,0,.4);text-align:center}.data-feedback.success{background:#1D2A24}.data-feedback.error{background:#302326;border-color:#594048}.data-feedback-action{flex:none;min-height:32px;padding:0 10px;border:1px solid #596674;border-radius:8px;background:rgba(20,28,37,.80);color:#fff;font-size:12px;font-weight:600}
+.data-feedback{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:160;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;max-width:calc(100vw - 32px);padding:10px 14px;border:1px solid var(--zp-line);border-radius:10px;background:var(--zp-card-translucent);color:#fff;font-size:13px;line-height:18px;box-shadow:0 10px 28px var(--zp-shadow-md);text-align:center}.data-feedback.success{background:var(--zp-success-surface)}.data-feedback.error{background:var(--zp-error-surface);border-color:var(--zp-error-surface-strong)}.data-feedback-action{flex:none;min-height:32px;padding:0 10px;border:1px solid var(--zp-muted);border-radius:8px;background:var(--zp-card-translucent);color:#fff;font-size:12px;font-weight:600}
 
 /* Android typography normalization: size/line-height only */
 .data-route-hint{font-size:15px;line-height:22px}

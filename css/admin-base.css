@@ -1,7 +1,7 @@
 /* css/admin-base.css —— 骨架与组件基础：:root 变量、页头、Tab、列表行 .row/.route、弹窗 .dialog、Toast
  * 拆分自 admin.html（原内联 <style> 第 1 段），规则顺序原样保留，层叠结果不变。
  */
-:root{--bg:var(--zp-bg);--card:var(--zp-card);--panel:var(--zp-surface-2);--line:var(--zp-line);--muted:var(--zp-muted);--soft:var(--zp-soft)}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#fff;font:16px/22px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.shell{min-height:100dvh;padding:max(12px,var(--zp-safe-top)) 14px calc(28px + env(safe-area-inset-bottom))}.panel{width:min(100%,680px);margin:auto}.head{min-height:58px;padding:0 2px 10px}.head img{width:36px;height:36px;padding:5px;background:#05070A;border-radius:10px}.head h1{font-size:20px;line-height:26px}.menu-btn{width:48px;height:48px;border:1px solid var(--line);border-radius:11px;background:var(--panel)}.tabs{border-bottom:1px solid var(--line)}.tab{height:46px;font-size:16px;line-height:22px}.viewport{margin-top:12px}.title{font-size:18px;line-height:24px;margin-bottom:10px}.search input,.field input,.field select{height:48px;background:var(--panel);border-color:#34414d;border-radius:11px}.row,.route,.card,.invite{background:var(--panel);border-color:var(--line);border-radius:14px}.row .content{background:var(--panel);min-height:58px}.route-content{background:var(--card)}.dialog-bg{background:rgba(0,0,0,.72)}.dialog{background:var(--card);border-color:var(--line);border-radius:17px}.dialog-actions button{height:48px}.cancel{order:0}.ok{order:1}.toast{background:#26313C}
+:root{--bg:var(--zp-bg);--card:var(--zp-card);--panel:var(--zp-surface-2);--line:var(--zp-line);--muted:var(--zp-muted);--soft:var(--zp-soft)}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#fff;font:16px/22px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.shell{min-height:100dvh;padding:max(12px,var(--zp-safe-top)) 14px calc(28px + env(safe-area-inset-bottom))}.panel{width:min(100%,680px);margin:auto}.head{min-height:58px;padding:0 2px 10px}.head img{width:36px;height:36px;padding:5px;background:var(--zp-logo-plate);border-radius:10px}.head h1{font-size:20px;line-height:26px}.menu-btn{width:48px;height:48px;border:1px solid var(--line);border-radius:11px;background:var(--panel)}.tabs{border-bottom:1px solid var(--line)}.tab{height:46px;font-size:16px;line-height:22px}.viewport{margin-top:12px}.title{font-size:18px;line-height:24px;margin-bottom:10px}.search input,.field input,.field select{height:48px;background:var(--panel);border-color:var(--zp-line);border-radius:11px}.row,.route,.card,.invite{background:var(--panel);border-color:var(--line);border-radius:14px}.row .content{background:var(--panel);min-height:58px}.route-content{background:var(--card)}.dialog-bg{background:var(--zp-scrim)}.dialog{background:var(--card);border-color:var(--line);border-radius:17px}.dialog-actions button{height:48px}.cancel{order:0}.ok{order:1}.toast{background:var(--zp-secondary-active)}
 .head{display:flex;align-items:center;gap:11px;padding:8px 2px 12px}
 .head .head-info{min-width:0;flex:1}.head h1{margin:0;line-height:22px;font-weight:700}
 .head .who{display:flex;align-items:baseline;gap:8px;min-width:0;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -11,24 +11,24 @@
 
 
 /* 底部固定导航（5 模块 · 双主题自动适配 · 独立命名空间，避免污染业务端 .bottom-nav） */
-.admin-nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;gap:2px;padding:6px 6px calc(8px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--line);max-width:680px;margin:0 auto;box-shadow:0 -8px 24px rgba(2,5,9,.28)}
+.admin-nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;gap:2px;padding:6px 6px calc(8px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--line);max-width:680px;margin:0 auto;box-shadow:0 -8px 24px var(--zp-shadow-md)}
 .admin-nav .nav-item{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:46px;border:0;border-radius:12px;background:transparent;color:var(--muted);font-size:12px;font-weight:600}
 .admin-nav .nav-item svg{width:22px;height:22px;display:block;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .admin-nav .nav-item.active{background:var(--card);color:var(--accent,#1677FF)}
 .viewport{margin-top:14px}.title{display:flex;align-items:center;justify-content:space-between;min-height:30px;margin-bottom:9px;font-size:16px;font-weight:700}
 .add{width:34px;height:34px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:#fff;font-size:20px;line-height:1}
 .search{margin-bottom:8px}.search input{width:100%;padding:0 12px;color:#fff}
-.row,.route,.card,.invite{border:1px solid rgba(42,53,64,.8);box-shadow:none}.invite{position:relative;overflow:hidden;touch-action:pan-y;-webkit-user-select:none;user-select:none}.invite-head{display:flex;align-items:center;gap:8px}.invite-head .code{margin-right:auto}.invite-head .q-badge{margin-left:auto}.invite-head .copy{flex:0 0 auto}.invite-content{position:relative;z-index:2;background:var(--panel);padding:13px 14px;transition:transform .18s ease}.invite-actions{position:absolute;inset:0 0 0 auto;width:148px;display:flex;align-items:stretch;z-index:1;margin:0;padding:0;border:0}.invite-actions .small-action{width:74px;min-width:0;border:0;border-radius:0;background:#26313C;color:#fff}.invite-actions .small-action.danger{background:#4A2528;border-color:transparent;color:#FFD5D1}.invite.open .invite-content{transform:translateX(-148px)}.invite-actions .small-action{touch-action:manipulation;-webkit-tap-highlight-color:transparent}.row{margin-bottom:6px;overflow:hidden}.row .content{min-height:54px}
+.row,.route,.card,.invite{border:1px solid var(--zp-line);box-shadow:none}.invite{position:relative;overflow:hidden;touch-action:pan-y;-webkit-user-select:none;user-select:none}.invite-head{display:flex;align-items:center;gap:8px}.invite-head .code{margin-right:auto}.invite-head .q-badge{margin-left:auto}.invite-head .copy{flex:0 0 auto}.invite-content{position:relative;z-index:2;background:var(--panel);padding:13px 14px;transition:transform .18s ease}.invite-actions{position:absolute;inset:0 0 0 auto;width:148px;display:flex;align-items:stretch;z-index:1;margin:0;padding:0;border:0}.invite-actions .small-action{width:74px;min-width:0;border:0;border-radius:0;background:var(--zp-secondary-active);color:#fff}.invite-actions .small-action.danger{background:var(--zp-error-surface);border-color:transparent;color:var(--zp-danger)}.invite.open .invite-content{transform:translateX(-148px)}.invite-actions .small-action{touch-action:manipulation;-webkit-tap-highlight-color:transparent}.row{margin-bottom:6px;overflow:hidden}.row .content{min-height:54px}
 .row .main strong{font-size:14px}.row .meta,.meta{color:var(--soft);font-size:12px}
 .route{margin-bottom:7px;background:var(--card);overflow:hidden}.route-content{padding:13px 14px;background:transparent}
 .route-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}.route-name{font-size:14px;font-weight:700}.route-count{color:var(--muted);font-size:12px}
-.person{min-height:40px;border-top:1px solid rgba(255,255,255,.055);display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--muted);font-size:12px}
-.small-action,.copy{border:1px solid #35414D;border-radius:8px;background:#11171D;color:#E8EDF2}.small-action{min-height:34px;padding:0 10px}
+.person{min-height:40px;border-top:1px solid var(--zp-tint);display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--muted);font-size:12px}
+.small-action,.copy{border:1px solid var(--zp-line);border-radius:8px;background:var(--zp-secondary-bg);color:var(--zp-text)}.small-action{min-height:34px;padding:0 10px}
 .dialog-bg{padding:18px}.dialog{width:min(100%,380px);padding:18px}.dialog h2{margin:0;font-size:16px;line-height:22px}
 .dialog p{margin:7px 0 0;color:var(--muted);font-size:14px;line-height:21px;white-space:pre-line}
 .field{margin-top:13px}.field label{display:block;margin-bottom:5px;color:var(--muted);font-size:12px}
 .dialog-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.dialog-actions button{width:100%;height:48px;border-radius:10px}
-.menu-bg .dialog{padding:6px}.setting{min-height:48px;padding:0 2px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.06);font-size:14px}
+.menu-bg .dialog{padding:6px}.setting{min-height:48px;padding:0 2px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--zp-tint);font-size:14px}
 .setting:last-child{border-bottom:0}.setting .chev{color:var(--soft);font-size:21px}
 .toast{min-height:42px;border:1px solid var(--line);border-radius:11px;padding:0 14px}
 /* 管理员页面结构修复 3.0：恢复分页、滑动操作、模态层和系统菜单的完整布局。 */
@@ -47,51 +47,54 @@ body{touch-action:pan-y}
 .row .arrow{color:var(--soft);font-size:22px;line-height:1}
 .row .actions{position:absolute;inset:0 0 0 auto;width:148px;display:flex;align-items:stretch;z-index:1}
 .row .actions .act{width:74px;border:0;color:#fff;font-size:13px}
-.row .actions .normal{background:#26313C}
-.row .actions .danger{background:#4A2528}
+.row .actions .normal{background:var(--zp-secondary-active)}
+.row .actions .danger{background:var(--zp-error-surface)}
 .row.open .content{transform:translateX(-148px)}
 .row .content{transition:transform .18s ease}
 .route{position:relative}
-.route-delete{position:absolute;right:12px;top:10px;z-index:3;border:1px solid #594048;border-radius:8px;background:#302326;color:#FFB4AB;min-height:32px;padding:0 10px}
+/* 死规则对齐：route-delete 是 <button class*=delete>，其 border/background/color 三声明
+   已被 ui-theme.css Phase 2 全站危险按钮标准 !important 接管（中性底+红字），
+   此处仅令牌化保留位置/尺寸声明，整条规则去留交 Phase 5。 */
+.route-delete{position:absolute;right:12px;top:10px;z-index:3;border:1px solid var(--zp-error-surface-strong);border-radius:8px;background:var(--zp-error-surface);color:var(--zp-danger);min-height:32px;padding:0 10px}
 .route.open .route-content{transform:translateX(-74px)}
 .route-content{position:relative;transition:transform .18s ease}
 .route-content .person .small-action{position:relative;z-index:4}
-.route-line{height:1px;background:rgba(255,255,255,.055);margin:9px 0 0}
+.route-line{height:1px;background:var(--zp-tint);margin:9px 0 0}
 .empty{padding:28px 12px;text-align:center;color:var(--soft)}
 .q-badge{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:700;vertical-align:middle;white-space:nowrap}
-.q-badge.ok{background:rgba(74,222,128,.16);color:#4ADE80}
-.q-badge.review{background:rgba(245,166,35,.18);color:#F5A623}
+.q-badge.ok{background:var(--zp-success-soft);color:var(--zp-success)}
+.q-badge.review{background:var(--zp-warning-soft);color:var(--zp-warning)}
 .evt{margin-top:6px;padding-top:6px;border-top:1px solid var(--line);color:var(--soft);font-size:11px;line-height:16px;word-break:break-all}
 .sub-title{font-size:14px;font-weight:700;margin:16px 0 8px;color:var(--muted)}
 .search{display:flex;align-items:center;gap:8px}
 .search>span{color:var(--soft);font-size:20px;line-height:1}
-.search input{flex:1;min-width:0;border:1px solid #34414d;color:#fff;outline:none}
-.search input::placeholder{color:#68737E}
+.search input{flex:1;min-width:0;border:1px solid var(--zp-line);color:#fff;outline:none}
+.search input::placeholder{color:var(--zp-muted)}
 input,select{color:#fff;outline:none}
-select option{background:#11171D;color:#fff}
+select option{background:var(--zp-secondary-bg);color:#fff}
 /* P2-12 收口：移除全屏遮罩上的 backdrop-filter。
    原因：backdrop-filter 强制 GPU 每帧重新合成遮罩后方的整屏内容，在移动端/低端机上是弹窗
    打开与页面跳转掉帧的最典型来源（与已做过的半透明卡片叠加后合成成本更高）。
    改为「稍重的纯色遮罩 + 原有投影」保持视觉层次，弹窗内容本身不受任何影响。 */
-.dialog-bg{position:fixed;inset:0;z-index:var(--ui-z-modal,1000);display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(2,5,9,.88)}
+.dialog-bg{position:fixed;inset:0;z-index:var(--ui-z-modal,1000);display:flex;align-items:center;justify-content:center;padding:18px;background:var(--zp-card-translucent-2)}
 .dialog-bg[hidden]{display:none!important}
-.dialog{width:min(100%,380px);max-height:88dvh;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:17px;padding:18px;box-shadow:0 18px 50px rgba(0,0,0,.45)}
+.dialog{width:min(100%,380px);max-height:88dvh;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:17px;padding:18px;box-shadow:0 18px 50px var(--zp-shadow-lg)}
 /* 弹窗内表单控件通栏：下拉框/输入框不再窄条贴左，与弹窗同宽，观感整齐 */
 /* 统一尺寸/字号/边框/padding：font-size>=16px 防安卓聚焦自动放大视口（此前 13.3px 导致聚焦的框明显变大） */
-.dialog .field input,.dialog .field select{width:100%;height:48px;padding:0 12px;font-size:16px;line-height:normal;text-align:center;text-align-last:center;border:1px solid #34414d;border-radius:11px;appearance:none;-webkit-appearance:none}
+.dialog .field input,.dialog .field select{width:100%;height:48px;padding:0 12px;font-size:16px;line-height:normal;text-align:center;text-align-last:center;border:1px solid var(--zp-line);border-radius:11px;appearance:none;-webkit-appearance:none}
 .dialog .field input:focus,.dialog .field select:focus{border-width:1px}
 .dialog .field select{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 20px) 50%,calc(100% - 14px) 50%;background-size:6px 6px;background-repeat:no-repeat}
 .dialog .field input[type=number]{appearance:textfield;-webkit-appearance:textfield;-moz-appearance:textfield}
-.dialog-actions button{color:#fff;border:1px solid #35404C;background:#11171D}
-.dialog-actions .ok{background:#202B36;border-color:#3A4652}
-.dialog-actions .ok.danger{background:#4A2528;border-color:#6A3940;color:#FFD5D1}
+.dialog-actions button{color:#fff;border:1px solid var(--zp-line);background:var(--zp-secondary-bg)}
+.dialog-actions .ok{background:var(--zp-secondary-bg);border-color:var(--zp-line)}
+.dialog-actions .ok.danger{background:var(--zp-error-surface);border-color:var(--zp-error-surface-strong);color:var(--zp-danger)}
 .menu-bg{z-index:var(--ui-z-modal-stack,1100)}
 .menu-bg .dialog{width:min(100%,360px)}
-.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));z-index:var(--ui-z-toast,2000);display:block;min-height:42px;max-width:calc(100vw - 32px);padding:10px 14px;border:1px solid var(--line);border-radius:11px;background:#26313C;color:#fff;font-size:14px;line-height:20px;text-align:center;box-shadow:0 10px 28px rgba(0,0,0,.36);transform:translate(-50%,10px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .18s ease,transform .18s ease,visibility .18s ease}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));z-index:var(--ui-z-toast,2000);display:block;min-height:42px;max-width:calc(100vw - 32px);padding:10px 14px;border:1px solid var(--line);border-radius:11px;background:var(--zp-secondary-active);color:#fff;font-size:14px;line-height:20px;text-align:center;box-shadow:0 10px 28px var(--zp-shadow-md);transform:translate(-50%,10px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .18s ease,transform .18s ease,visibility .18s ease}
 .toast.show{opacity:1;visibility:visible;transform:translate(-50%,0)}
 .menu-btn{cursor:pointer}
 .nav-item,.add,.small-action,.route-delete,.copy,.dialog button,.setting{cursor:pointer}
-.setting:active,.nav-item:active,.add:active,.small-action:active,.route-delete:active,.menu-btn:active{background:#26313C}
+.setting:active,.nav-item:active,.add:active,.small-action:active,.route-delete:active,.menu-btn:active{background:var(--zp-secondary-active)}
 @media(max-width:560px){
   .shell{padding-left:12px;padding-right:12px}
   .admin-nav{gap:2px;padding:5px 4px calc(6px + env(safe-area-inset-bottom))}

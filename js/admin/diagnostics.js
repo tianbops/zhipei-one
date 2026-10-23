@@ -40,7 +40,7 @@ async function renderDiagnostics(){
   let d;try{d=await api(q)}catch(e){$("diagnostics").innerHTML='<div class="empty">查询失败：'+esc(e.message)+'</div>';return}
   const list=d.waybills||[];
   if(!list.length){const scope=(date?"日期 "+date+" · ":"")+(vehicle?"车牌 "+vehicle+" · ":"");$("diagnostics").innerHTML='<div class="empty">'+esc(scope)+(date?"该线路在所选日期没有匹配到运单。":"该线路暂无匹配运单。")+'<br>如确认当天已有运单，可继续检查运单索引一致性。</div>';return}
-  const truncHint=(d.truncated&&Number(d.count)>list.length)?'<div class="empty" style="color:#e8b34b">共 '+esc(d.count)+' 张运单，当前仅显示最近 20 张</div>':"";
+  const truncHint=(d.truncated&&Number(d.count)>list.length)?'<div class="empty" style="color:var(--zp-warning)">共 '+esc(d.count)+' 张运单，当前仅显示最近 20 张</div>':"";
   const timingNote='<div class="meta" style="margin:6px 2px 10px">阶段计时仅展示记录中已保存的数据；“处理总计”不包含最终保存阶段耗时。</div>';
   $("diagnostics").innerHTML=timingNote+truncHint+list.map(w=>{
     const lvl=(w.quality&&w.quality.level)||"OK";const ql=lvl==="REVIEW"?"review":"ok";

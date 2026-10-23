@@ -10,7 +10,7 @@
   overflow-y:auto;
   overscroll-behavior:contain;
   -webkit-overflow-scrolling:touch;
-  border-top:1px solid rgba(255,255,255,.06);
+  border-top:1px solid var(--zp-tint);
   scrollbar-width:none;
 }
 .today-store-list::-webkit-scrollbar{display:none}
@@ -21,16 +21,16 @@
   gap:10px;
   /* 整体左移：去掉左侧留白（原 4px），门店名起点更靠左，可多显示约半个字 */
   padding:0 4px 0 0;
-  border-bottom:1px solid rgba(255,255,255,.055);
-  color:#F2F5F7;
+  border-bottom:1px solid var(--zp-tint);
+  color:var(--zp-text);
   text-decoration:none;
   -webkit-tap-highlight-color:transparent;
 }
-.today-store-row:active{background:rgba(255,255,255,.035)}
+.today-store-row:active{background:var(--zp-tint)}
 .today-store-index{
   width:22px;
   min-width:22px;
-  color:#7F8A95;
+  color:var(--zp-muted);
   font-size:15px;
   line-height:20px;
   font-variant-numeric:tabular-nums;
@@ -48,13 +48,13 @@
   scrollbar-width:none;
   overscroll-behavior-x:contain;
   -webkit-overflow-scrolling:touch;
-  color:#F2F5F7;
+  color:var(--zp-text);
   font-size:17px;
   line-height:24px;
   font-weight:550;
 }
 .today-store-name::-webkit-scrollbar{display:none}
-.today-store-empty{padding:18px 4px;color:#7F8A95;font-size:14px;text-align:center}
+.today-store-empty{padding:18px 4px;color:var(--zp-muted);font-size:14px;text-align:center}
 /* 统计版块精简：压缩垂直占用（小标签行高/间距收窄），无统计项时整块不占位。 */
 .today-metrics{
   display:flex;
@@ -62,10 +62,10 @@
   gap:4px 10px;
   margin-top:6px;
   padding-top:6px;
-  border-top:1px solid rgba(255,255,255,.06);
+  border-top:1px solid var(--zp-tint);
 }
 .today-metrics:empty{display:none}
-.today-metrics span{color:#B8C2CC;font-size:12px;line-height:18px}
+.today-metrics span{color:var(--zp-muted);font-size:12px;line-height:18px}
 .bottom-nav{
   position:fixed;
   left:50%;
@@ -78,8 +78,8 @@
   display:grid;
   grid-template-columns:repeat(5,1fr);
   gap:4px;
-  background:#05070A;
-  border-top:1px solid #27323D;
+  background:var(--zp-logo-plate);
+  border-top:1px solid var(--zp-line);
 }
 .bottom-nav-item{
   min-width:0;
@@ -87,7 +87,7 @@
   border:0;
   border-radius:10px;
   background:transparent;
-  color:#7F8A95;
+  color:var(--zp-muted);
   text-decoration:none;
   display:flex;
   flex-direction:column;
@@ -99,17 +99,17 @@
   font-weight:600;
   -webkit-tap-highlight-color:transparent;
 }
-.bottom-nav-item:active{background:#18212B;color:#F2F5F7}
+.bottom-nav-item:active{background:var(--zp-secondary-active);color:var(--zp-text)}
 .bottom-nav-icon{width:22px;height:22px;display:flex;align-items:center;justify-content:center}
 .bottom-nav-icon svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.bottom-nav-item[aria-current="page"]{color:#F2F5F7}
+.bottom-nav-item[aria-current="page"]{color:var(--zp-text)}
 /* 中间上传加号：无文字标签的凸起圆形按钮（首页静态导航版；
    业务页生效值由 ui-unified.css 的 !important 规则统一，此处保持一致） */
 .bottom-nav-plus .bottom-nav-icon{
   width:52px;height:52px;border-radius:50%;
   background:var(--zp-primary);color:var(--zp-on-primary);
   transform:translateY(-16px);
-  box-shadow:0 8px 20px rgba(5,7,10,.45);
+  box-shadow:0 8px 20px var(--zp-shadow-sm);
 }
 .bottom-nav-plus .bottom-nav-icon svg{width:24px;height:24px;stroke-width:2.2}
 .bottom-nav-plus:active{background:transparent}
