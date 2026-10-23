@@ -275,7 +275,7 @@ def main():
         def b1(b, base):
             c, pg = ctx(b); pg.goto(base + "/admin", wait_until="domcontentloaded"); pg.wait_for_timeout(900)
             who = pg.text_content("#who", timeout=3000) if pg.query_selector("#who") else ""
-            tabs = pg.query_selector_all(".tab")
+            tabs = pg.query_selector_all(".nav-item")
             # 面板数随版本变动（现为 用户管理/线路管理/线路审核/邀请码/运单诊断 5 个）
             check("B1 管理员端加载为 admin 工作区（含面板tab）", "管理员" in (who or "") and len(tabs) >= 4, f"who={who} tabs={len(tabs)}")
             c.close()

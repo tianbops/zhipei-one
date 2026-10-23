@@ -42,7 +42,7 @@ with sync_playwright() as p:
         page.goto(base + "/admin.html", wait_until="domcontentloaded")
         page.wait_for_timeout(700)
         # 切到邀请码 tab 并打开弹窗
-        page.evaluate("document.querySelectorAll('.tab')[3].click()")
+        page.evaluate("document.querySelectorAll('.nav-item')[3].click()")
         page.wait_for_timeout(200)
         page.evaluate("document.getElementById('addInvite').click()")
         page.wait_for_timeout(300)

@@ -39,7 +39,7 @@ with sync_playwright() as p:
     print("password dialog:", ov)
     page.evaluate("document.getElementById('dc').click()"); page.wait_for_timeout(200)
     # 2) 新增线路弹窗（第2个 tab）
-    page.evaluate("document.querySelectorAll('.tab')[1].click()"); page.wait_for_timeout(200)
+    page.evaluate("document.querySelectorAll('.nav-item')[1].click()"); page.wait_for_timeout(200)
     page.evaluate("document.getElementById('addRoute').click()"); page.wait_for_timeout(300)
     page.screenshot(path="/tmp/dlg-route.png")
     ov = page.evaluate("(()=>{const d=document.querySelector('#dlg .dialog');const r=d.getBoundingClientRect();return r.width+'x'+r.height+' scroll='+d.scrollHeight+'/'+d.clientHeight})()")

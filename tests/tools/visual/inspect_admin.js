@@ -6,7 +6,7 @@
  *
  * 双重验证（证明 admin 内联 :root 已订阅 --zp-* 单一真相源，而非写死）：
  *   1) 基线：6 个 token 经静态 shell 元素的 computed 值 == 预期十六进制
- *      （body→--bg / #who→--soft / .tabs→--panel&--line / .tab→--muted / .tab.active→--card）
+ *      （body→--bg / #who→--soft / .admin-nav→--bg&--line / .nav-item→--muted / .nav-item.active→--card）
  *      证明改动「零视觉回归」。
  *   2) 订阅证明：注入 :root{--zp-*:彩色!important}，断言上述元素颜色「跟随」--zp-*。
  *      若 admin 仍写死旧值则不会跟随；跟随即实锤已订阅真相源。
@@ -17,7 +17,7 @@ const puppeteer = require("/tmp/visualtools/node_modules/puppeteer-core");
 const EXPECT = {
   bodyBg: "rgb(5, 7, 10)",          // --bg = --zp-bg #05070A
   whoColor: "rgb(127, 138, 149)",   // --soft = --zp-soft #7F8A95
-  tabsBg: "rgb(17, 23, 29)",        // --panel = --zp-surface-2 #11171D
+  tabsBg: "rgb(5, 7, 10)",          // --bg = --zp-bg #05070A
   tabsBorder: "rgb(42, 53, 64)",    // --line = --zp-line #2A3540
   tabColor: "rgb(184, 194, 204)",   // --muted = --zp-muted #B8C2CC
   tabActiveBg: "rgb(28, 37, 48)",   // --card = --zp-card #1C2530
@@ -35,7 +35,7 @@ const INJECT = `:root{
 const INJECTED = {
   bodyBg: "rgb(255, 0, 0)",
   whoColor: "rgb(255, 0, 255)",
-  tabsBg: "rgb(0, 255, 0)",
+  tabsBg: "rgb(255, 0, 0)",
   tabsBorder: "rgb(0, 0, 255)",
   tabColor: "rgb(255, 255, 0)",
   tabActiveBg: "rgb(0, 0, 0)",
@@ -51,7 +51,7 @@ const INJECTED = {
     args: ["--no-sandbox", "--disable-gpu", "--hide-scrollbars"],
   });
   const page = await browser.newPage();
-  // 仅验证静态 shell 的计算样式（.head/.tabs/.tab/#who 均为静态 HTML，无需 JS）。
+  // 仅验证静态 shell 的计算样式（.head/.admin-nav/.nav-item/#who 均为静态 HTML，无需 JS）。
   // 禁用 JS 可避免 admin 在 mock 未认证下重定向到登录页，保证订阅证明确定可复现。
   await page.setJavaScriptEnabled(false);
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
@@ -69,10 +69,10 @@ const INJECTED = {
     return {
       bodyBg: cs("body", "backgroundColor"),
       whoColor: cs("#who", "color"),
-      tabsBg: cs(".tabs", "backgroundColor"),
-      tabsBorder: cs(".tabs", "borderTopColor"),
-      tabColor: cs(".tab:not(.active)", "color"),
-      tabActiveBg: cs(".tab.active", "backgroundColor"),
+      tabsBg: cs(".admin-nav", "backgroundColor"),
+      tabsBorder: cs(".admin-nav", "borderTopColor"),
+      tabColor: cs(".nav-item:not(.active)", "color"),
+      tabActiveBg: cs(".nav-item.active", "backgroundColor"),
     };
   });
 

@@ -31,7 +31,7 @@ with sync_playwright() as p:
     ctx = browser.new_context(viewport={"width": 412, "height": 915})
     page = ctx.new_page()
     page.goto(base + "/admin.html", wait_until="domcontentloaded"); page.wait_for_timeout(700)
-    page.evaluate("document.querySelectorAll('.tab')[3].click();document.getElementById('addInvite').click()")
+    page.evaluate("document.querySelectorAll('.nav-item')[3].click();document.getElementById('addInvite').click()")
     page.wait_for_timeout(300)
     diag = page.evaluate("""(()=>{
       const out=[];
