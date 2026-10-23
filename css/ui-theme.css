@@ -30,6 +30,10 @@
   --zp-focus:#F1F5F9;
   --zp-primary-hover:#60A5FA;
   --zp-primary-active:#2563EB;
+  /* 选中态强调色（主题蓝）：用于「已选中」文字/图标着色。
+     深色主题的选中块底为 --zp-line(#334155)，需比 --zp-primary 更亮一档才够对比度：
+     #60A5FA 在该底色上仅 4.07:1（不达 AA），故取 #93C5FD（5.74:1）。 */
+  --zp-accent:#93C5FD;
   --zp-secondary-hover:#2A3A4F;
   --zp-secondary-active:#334155;
   --zp-card-translucent:rgba(30,41,59,.82);

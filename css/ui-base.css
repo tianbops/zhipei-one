@@ -73,6 +73,10 @@
      （#4096FF 提亮 / #0958D9 压深），与 #1677FF 同族。 */
   --zp-primary-hover:#4096FF;
   --zp-primary-active:#0958D9;
+  /* 选中态强调色（主题蓝）：用于「已选中」文字/图标着色。
+     取 --zp-primary-active 同值（#0958D9），因其与白底选中块对比度 6.16:1，
+     满足 WCAG AA 正文级可读性（--zp-primary #1677FF 在白底仅 4.10:1，不达标）。 */
+  --zp-accent:#0958D9;
   --zp-secondary-hover:#EAECEF;
   --zp-secondary-active:#E0E3E8;
   /* 半透明 / 不透明卡片底色（保留两种用途，取值随主题翻转） */
