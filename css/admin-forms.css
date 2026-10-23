@@ -4,11 +4,13 @@
 /* 管理员密码输入框 3.4：强化输入区域、焦点状态与密码显隐操作。 */
 .reset-password-field{margin-top:16px}
 .reset-password-field>label{display:block;margin:0 0 8px;color:#DCE3E9;font-size:14px;line-height:20px;font-weight:600}
-.reset-password-control{position:relative;display:flex;align-items:center;min-height:52px;border:1px solid #3A4652;border-radius:12px;background:#0D1217;transition:border-color .16s ease,box-shadow .16s ease}
+.reset-password-control{position:relative;display:flex;align-items:center;min-height:62px;border:1px solid #3A4652;border-radius:12px;background:#0D1217;transition:border-color .16s ease,box-shadow .16s ease}
 .reset-password-control:focus-within{border-color:#778795;box-shadow:0 0 0 3px rgba(184,194,204,.10)}
 .reset-password-control input{flex:1;min-width:0;width:100%;height:50px!important;padding:0 10px 0 14px!important;border:0!important;border-radius:12px;background:transparent!important;color:#F5F7F9;font-size:16px;line-height:22px;letter-spacing:.02em;outline:none!important;box-shadow:none!important}
 .reset-password-control input::placeholder{color:#75818C;letter-spacing:0}
-.reset-password-control button{flex:0 0 auto;min-width:54px;height:36px;margin:0 7px;padding:0 9px;border:1px solid #35414D;border-radius:9px;background:#18212B;color:#D5DCE2;font-size:13px;line-height:20px;font-weight:600}
+/* 2026-10 触控靶区整改：36px → 48px（WCAG 2.5.5 / 安卓 48dp 建议线），
+   容器 min-height 同步 52 → 62（48 + 上下 7px 呼吸位）。 */
+.reset-password-control button{flex:0 0 auto;min-width:54px;height:48px;margin:0 7px;padding:0 9px;border:1px solid #35414D;border-radius:9px;background:#18212B;color:#D5DCE2;font-size:13px;line-height:20px;font-weight:600}
 .reset-password-control button:active{background:#26313C}
 .field-hint{margin-top:7px;color:#85919C;font-size:12px;line-height:18px}
 @media(max-width:380px){.reset-password-control input{font-size:16px}.reset-password-control button{min-width:50px;margin-right:6px}}

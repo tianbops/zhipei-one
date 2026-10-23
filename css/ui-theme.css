@@ -118,9 +118,9 @@
 :root[data-zp-theme="light"] select,
 :root[data-zp-theme="light"] textarea{
   background:#FFFFFF!important;
-  color:#17202A!important;
+  color:var(--zp-text)!important;
   border-color:#C9D1D9!important;
-  caret-color:#17202A;
+  caret-color:var(--zp-text);
 }
 :root[data-zp-theme="light"] input::placeholder,
 :root[data-zp-theme="light"] textarea::placeholder{
@@ -187,7 +187,7 @@
 :root[data-zp-theme="light"] .ui-toast{
   background:#FFFFFF!important;
   border-color:#D7DDE3!important;
-  color:#17202A!important;
+  color:var(--zp-text)!important;
   box-shadow:0 8px 24px rgba(20,30,40,.16);
 }
 :root[data-zp-theme="light"] .ui-toast.success{
@@ -212,7 +212,7 @@
 }
 :root[data-zp-theme="light"] .zp-password-control input[type="password"],
 :root[data-zp-theme="light"] .zp-password-control input[type="text"]{
-  background:transparent!important;color:#17202A!important;
+  background:transparent!important;color:var(--zp-text)!important;
 }
 :root[data-zp-theme="light"] .zp-password-control input::placeholder{color:#687582!important}
 :root[data-zp-theme="light"] .zp-password-eye{color:#536170}
@@ -243,10 +243,10 @@
 :root[data-zp-theme="light"] .add,
 :root[data-zp-theme="light"] .small-action,
 :root[data-zp-theme="light"] .copy{
-  background:#F0F2F4!important;border-color:#D7DDE3!important;color:#26323D!important;
+  background:var(--zp-surface-2)!important;border-color:var(--zp-line)!important;color:var(--zp-text)!important;
 }
-:root[data-zp-theme="light"] .tab.active{background:#FFFFFF!important;color:#17202A!important}
-:root[data-zp-theme="light"] .tabs{background:#F0F2F4!important;border-color:#D7DDE3!important}
+:root[data-zp-theme="light"] .tab.active{background:#FFFFFF!important;color:var(--zp-text)!important}
+:root[data-zp-theme="light"] .tabs{background:var(--zp-surface-2)!important;border-color:var(--zp-line)!important}
 :root[data-zp-theme="light"] .row,
 :root[data-zp-theme="light"] .route,
 :root[data-zp-theme="light"] .card,
@@ -265,9 +265,9 @@
 :root[data-zp-theme="light"] .dialog h2,
 :root[data-zp-theme="light"] .dialog p,
 :root[data-zp-theme="light"] .field label{color:#17202A}
-:root[data-zp-theme="light"] .dialog-actions .cancel{background:#F0F2F4!important;border-color:#D7DDE3!important;color:#26323D!important}
+:root[data-zp-theme="light"] .dialog-actions .cancel{background:var(--zp-surface-2)!important;border-color:var(--zp-line)!important;color:var(--zp-text)!important}
 :root[data-zp-theme="light"] .dialog-actions .ok{background:var(--zp-primary)!important;border-color:var(--zp-primary)!important;color:#FFFFFF!important}
-:root[data-zp-theme="light"] .toast{background:#FFFFFF!important;border-color:#D7DDE3!important;color:#17202A!important}
+:root[data-zp-theme="light"] .toast{background:#FFFFFF!important;border-color:#D7DDE3!important;color:var(--zp-text)!important}
 
 /* 浅色模式中的危险与错误状态采用深色语义色，确保浅底上可读 */
 :root[data-zp-theme="light"] .message.error,
@@ -282,8 +282,8 @@
    history/order_detail 等不加载该文件的页面底栏一直是黑条 */
 :root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav{background:#FFFFFF!important;border-top-color:#D7DDE3!important;box-shadow:0 -4px 18px rgba(20,30,40,.06)}
 :root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-item{color:#596674!important}
-:root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-item:active{background:#E8EDF1!important;color:#17202A!important}
-:root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-item[aria-current="page"]{color:#17202A!important}
+:root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-item:active{background:#E8EDF1!important;color:var(--zp-text)!important}
+:root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-item[aria-current="page"]{color:var(--zp-text)!important}
 /* 浅色下中间加号：圆形仍为主色底白图标，仅按压态与阴影适配（不加新强调色） */
 :root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-plus .bottom-nav-icon{box-shadow:0 8px 20px rgba(20,30,40,.22)!important}
 :root[data-zp-theme="light"] .zp-business-nav-page .bottom-nav-plus:active{background:transparent!important}
@@ -296,9 +296,14 @@
 }
 
 
-/* 全站危险操作按钮颜色标准化：与全站次按钮统一采用中性色，不以红色作为常规操作按钮底色。
-   深色：深灰底/灰边/浅字；浅色：浅灰底/浅灰边/深字。
-   历史页整行滑动动作条单独保持无边框实底，避免两端出现白边。
+/* 全站危险操作按钮唯一标准：中性底 + 红字（用户 2026-10 决策「中性底+红字」——
+   破坏性操作不用红底恐吓、也不延续灰字，与全站次按钮同底、仅文字取错误色）。
+   四令牌（--zp-secondary-bg 底 / --zp-line 边 / --zp-error 字 / --zp-secondary-active
+   按压）均带浅色覆盖值，一套规则双主题自适应，Phase 4 换色后自动跟随，
+   无需像旧版那样拆深浅两套 !important 特化。
+   历史页整行滑动动作条 .history-delete 显式排除：它是实底专用形态（带边框会与
+   行宽不齐、两端混绘出白边），颜色仍与本标准同族，见下方专用块；
+   .account-collapse-head 是折叠行非动作按钮，同样排除。
    仅调整颜色和边框，不改变尺寸、位置、文案及确认逻辑。 */
 button[class*="delete"]:not(.account-collapse-head):not(.history-delete),
 a[class*="delete"],
@@ -309,9 +314,9 @@ a[class*="danger"],
 .data-swipe-actions .data-swipe-delete,
 .page2-danger-btn,
 .invite-actions .small-action.danger {
-  background:#11171D!important;
-  border:1px solid #35404C!important;
-  color:#E8EDF2!important;
+  background:var(--zp-secondary-bg)!important;
+  border:1px solid var(--zp-line)!important;
+  color:var(--zp-error)!important;
   box-shadow:none!important;
 }
 button[class*="delete"]:not(.account-collapse-head):not(.history-delete):active,
@@ -323,55 +328,31 @@ a[class*="danger"]:active,
 .data-swipe-actions .data-swipe-delete:active,
 .page2-danger-btn:active,
 .invite-actions .small-action.danger:active {
-  background:#202B36!important;
-  border-color:#3A4652!important;
-  color:#FFFFFF!important;
+  background:var(--zp-secondary-active)!important;
+  border-color:var(--zp-line)!important;
+  color:var(--zp-error)!important;
 }
-:root[data-zp-theme="light"] button[class*="delete"]:not(.account-collapse-head):not(.history-delete),
-:root[data-zp-theme="light"] a[class*="delete"],
-:root[data-zp-theme="light"] button[class*="danger"]:not(.account-collapse-head),
-:root[data-zp-theme="light"] a[class*="danger"],
-:root[data-zp-theme="light"] .history-choice-delete,
-:root[data-zp-theme="light"] .history-dialog-actions .delete,
-:root[data-zp-theme="light"] .data-swipe-actions .data-swipe-delete,
-:root[data-zp-theme="light"] .page2-danger-btn,
-:root[data-zp-theme="light"] .invite-actions .small-action.danger {
-  background:#F0F2F4!important;
-  border:1px solid #D7DDE3!important;
-  color:#17202A!important;
-  box-shadow:none!important;
-}
-:root[data-zp-theme="light"] button[class*="delete"]:not(.account-collapse-head):not(.history-delete):active,
-:root[data-zp-theme="light"] a[class*="delete"]:active,
-:root[data-zp-theme="light"] button[class*="danger"]:not(.account-collapse-head):active,
-:root[data-zp-theme="light"] a[class*="danger"]:active,
-:root[data-zp-theme="light"] .history-choice-delete:active,
-:root[data-zp-theme="light"] .history-dialog-actions .delete:active,
-:root[data-zp-theme="light"] .data-swipe-actions .data-swipe-delete:active,
-:root[data-zp-theme="light"] .page2-danger-btn:active,
-:root[data-zp-theme="light"] .invite-actions .small-action.danger:active {
-  background:#E1E7EC!important;
-  border-color:#C9D1D9!important;
-  color:#17202A!important;
-}
-/* 历史页整行滑动删除：中性色实底且无边框，防止按钮两端混绘出白边。 */
+/* 历史页整行滑动删除：与全站危险按钮同色（中性底+红字），但保持实底无边框专用
+   形态——带边框会与行宽不齐，两端混绘出白边（透视+圆角直角混绘）。
+   位置/尺寸/圆角由 history-shell.css 定义（页面级 CSS 在本文件之后加载、
+   特异度相同，必须靠 :root 前缀提特异度才能覆盖其渐变底），此处只覆盖颜色。 */
 :root:not([data-zp-theme="light"]) .history-delete {
-  background:#11171D!important;
+  background:var(--zp-secondary-bg)!important;
   border:0!important;
-  color:#E8EDF2!important;
+  color:var(--zp-error)!important;
   box-shadow:none!important;
 }
 :root:not([data-zp-theme="light"]) .history-delete:active {
-  background:#202B36!important;
-  color:#FFFFFF!important;
+  background:var(--zp-secondary-active)!important;
+  color:var(--zp-error)!important;
 }
 :root[data-zp-theme="light"] .history-delete {
-  background:#F0F2F4!important;
+  background:var(--zp-secondary-bg)!important;
   border:0!important;
-  color:#17202A!important;
+  color:var(--zp-error)!important;
   box-shadow:none!important;
 }
 :root[data-zp-theme="light"] .history-delete:active {
-  background:#E1E7EC!important;
-  color:#17202A!important;
+  background:var(--zp-secondary-active)!important;
+  color:var(--zp-error)!important;
 }

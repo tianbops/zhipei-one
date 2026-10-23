@@ -96,7 +96,9 @@
 .appearance-font-control{display:grid;grid-template-columns:22px minmax(0,1fr) 26px 40px;align-items:center;gap:10px;margin-top:12px}
 .appearance-font-small{font-size:13px;color:var(--zp-muted)}
 .appearance-font-large{font-size:22px;color:var(--zp-text)}
-.appearance-font-control input[type=range]{width:100%;min-width:0;min-height:32px;margin:0;padding:0;background:transparent!important;accent-color:var(--zp-muted);border:0!important}
+/* 2026-10 触控靶区整改：32px → 48px（WCAG 2.5.5 / 安卓 48dp 建议线）。
+   滑块 thumb 垂直居中，视觉不变、触控区域达标。 */
+.appearance-font-control input[type=range]{width:100%;min-width:0;min-height:48px;margin:0;padding:0;background:transparent!important;accent-color:var(--zp-muted);border:0!important}
 .appearance-font-control output{font-size:12px;text-align:right;color:var(--zp-muted)}
 :root[data-zp-theme="light"] .appearance-theme-option{background:#F0F2F4;color:#46515D;border-color:#D7DDE3}
 :root[data-zp-theme="light"] .appearance-theme-option.is-selected{background:#E1E7EC;color:#17202A;border-color:#8793A0}
