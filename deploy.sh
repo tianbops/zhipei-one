@@ -22,9 +22,24 @@ stamp() {
   python3 scripts/bump_asset_versions.py || { echo "✗ 版本号刷新失败"; exit 1; }
 }
 
+# 安全护栏：secrets.json 一旦被 git 跟踪即视为密钥泄露前兆，阻断一切会触碰仓库/部署的操作。
+# 文件存在但未跟踪（.gitignore 已忽略）属正常临时态，仅提醒操作后删除。
+guard_secrets() {
+  if git ls-files --error-unmatch secrets.json >/dev/null 2>&1; then
+    echo "✗ 安全阻断：secrets.json 已被 git 跟踪，继续会把密钥提交进仓库！" >&2
+    echo "  请先停止跟踪并清理（切勿直接 commit）：" >&2
+    echo "    git rm --cached secrets.json && git commit -m 'security: 停止跟踪 secrets.json'" >&2
+    exit 1
+  fi
+  if [ -f secrets.json ]; then
+    echo "⚠ 提醒：当前目录存在 secrets.json（未被跟踪，安全），操作结束后务必删除：$ rm -f secrets.json"
+  fi
+}
+
 case "$MODE" in
 
   secrets)
+    guard_secrets
     echo "==> 导入密钥（读取 secrets.json）"
     if [ ! -f secrets.json ]; then
       echo "✗ 找不到 secrets.json，请先创建它（见部署指南第 7 步）"
@@ -36,6 +51,7 @@ case "$MODE" in
     ;;
 
   deploy)
+    guard_secrets
     echo "==> 部署到 Cloudflare Pages（项目：$PROJECT）"
     stamp
     $WRANGLER pages deploy . --project-name="$PROJECT"
@@ -44,6 +60,7 @@ case "$MODE" in
     ;;
 
   all)
+    guard_secrets
     echo "==> 导入密钥"
     [ -f secrets.json ] || { echo "✗ 找不到 secrets.json"; exit 1; }
     $WRANGLER pages secret bulk secrets.json --project-name="$PROJECT"
