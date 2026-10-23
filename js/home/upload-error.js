@@ -56,6 +56,7 @@ function showProcessingUI(){
   if(!processingPanel||!sourceMenu)return;
   if(overlay)overlay.classList.remove("processing-error-state");
   if(processingError)processingError.hidden=true;
+  if(processingErrorMessage)processingErrorMessage.textContent="";
   sourceMenu.hidden=true;processingPanel.hidden=false;
   processingCancelled=false;
   if(processingCancelBtn){processingCancelBtn.hidden=true;processingCancelBtn.disabled=false;}

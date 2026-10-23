@@ -140,7 +140,7 @@
       </div>
       <div class="upload-processing-error" id="uploadProcessingError" hidden aria-live="assertive">
         <div class="processing-error-title">处理失败</div>
-        <div class="processing-error-message" id="processingErrorMessage">PROCESS_STREAM_INTERRUPTED</div>
+        <div class="processing-error-message" id="processingErrorMessage"></div>
         <button id="processingRetry" class="processing-retry-btn" type="button">请重试</button>
       </div>      <div class="upload-processing" id="uploadProcessing" hidden aria-live="polite">
         <div class="processing-title">客官不要急，正在努力中… <span id="processingPercent" aria-hidden="true">0%</span></div>
@@ -160,7 +160,7 @@
   <input id="documentInput" type="file" accept="application/pdf,.pdf" hidden>
 </div>
 </main>
-<script src="/js/home/core.js?v=92d7a0ed"></script><script src="/js/home/upload-progress.js?v=8fc1af0d"></script><script src="/js/home/upload-error.js?v=6197f74d"></script><script src="/js/home/upload-sheet.js?v=f3956ff9"></script><script src="/js/home/upload-process.js?v=bfb6b5ce"></script><script src="/js/home/today.js?v=0c5c1828"></script><script src="/js/home/back.js?v=6a695967"></script>
+<script src="/js/home/core.js?v=92d7a0ed"></script><script src="/js/home/upload-progress.js?v=7b75f8bf"></script><script src="/js/home/upload-error.js?v=7ce5bca1"></script><script src="/js/home/upload-sheet.js?v=f3956ff9"></script><script src="/js/home/upload-process.js?v=bfb6b5ce"></script><script src="/js/home/today.js?v=0c5c1828"></script><script src="/js/home/back.js?v=6a695967"></script>
 <script src="/js/home-monthly.js?v=fb3e1725"></script>
 <script>
 (()=>{const d=document.getElementById("todayDate");if(d){const f=new Intl.DateTimeFormat("zh-CN",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit",weekday:"short"});d.textContent=f.format(new Date()).replaceAll("/","-")}})();

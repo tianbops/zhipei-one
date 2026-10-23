@@ -129,6 +129,10 @@ function resetProcessingUI(){
   if(!processingPanel||!sourceMenu)return;
   if(overlay)overlay.classList.remove("processing-error-state");
   if(processingError)processingError.hidden=true;
+  // 隐藏的同时清空文案：仅 hidden 会把上一次失败的错误码/提示留在 DOM 里，
+  // 读屏工具与 DOM 检索仍可读到（2026-10-24 线上核查发现）。
+  if(processingErrorMessage)processingErrorMessage.textContent="";
+  if(processingRetry)processingRetry.textContent="请重试";
   sourceMenu.hidden=false;processingPanel.hidden=true;
   resetProcessingProgress();
 }
