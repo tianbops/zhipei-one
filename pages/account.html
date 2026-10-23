@@ -60,7 +60,10 @@
 .acct-glyph{font-size:15px;font-weight:700;letter-spacing:-1px}
 .acct-row-label{flex:none}
 .acct-row-value{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;color:var(--zp-muted,var(--zp-muted));font-size:14px}
-.acct-arrow{flex:none;width:16px;height:16px;fill:none;stroke:var(--zp-muted,var(--zp-muted));stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.acct-arrow{flex:none;width:16px;height:16px;fill:none;stroke:var(--zp-muted,var(--zp-muted));stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .18s ease}
+/* 展开态箭头旋转 90°（与「字体大小」一致）；手风琴收起后由 aria-expanded 自动复位 */
+.acct-row[aria-expanded="true"] .acct-arrow{transform:rotate(90deg)}
+@media(prefers-reduced-motion:reduce){.acct-arrow{transition:none}}
 
 /* --- 主题分段选择器（行内右侧，参考胶囊分段样式） ---
    容器按内容收紧：flex:none 不再横向撑满整行，margin-left:auto 右对齐，
@@ -361,15 +364,28 @@
 
 <script>
 const $=id=>document.getElementById(id);
-function toggle(toggle,body){
+/* 手风琴：同一时刻只展开一个面板。
+   group 传入全部可折叠项的 [toggle, body] 列表；展开其中一项时自动收起其余项。 */
+function toggle(toggle,body,group){
  toggle?.addEventListener("click",()=>{
-  const open=body.hidden;body.hidden=!open;toggle.setAttribute("aria-expanded",String(open));
+  const open=body.hidden;
+  if(open&&group){
+   group.forEach(([t,b])=>{
+    if(t===toggle||!b)return;
+    if(!b.hidden){b.hidden=true;t?.setAttribute("aria-expanded","false");}
+   });
+  }
+  body.hidden=!open;toggle.setAttribute("aria-expanded",String(open));
  });
 }
-toggle($("usernameToggle"),$("usernameBody"));
-toggle($("passwordToggle"),$("passwordBody"));
-toggle($("dangerToggle"),$("dangerBody"));
-toggle($("fontSizeToggle"),$("fontSizePanel"));
+/* 可折叠项登记表：修改用户名 / 修改密码 / 字体大小 / 注销账号 —— 互斥展开 */
+const accordions=[
+ [$("usernameToggle"),$("usernameBody")],
+ [$("passwordToggle"),$("passwordBody")],
+ [$("fontSizeToggle"),$("fontSizePanel")],
+ [$("dangerToggle"),$("dangerBody")],
+];
+accordions.forEach(([t,b])=>toggle(t,b,accordions));
 
 const themeOptions=[...document.querySelectorAll("[data-theme-choice]")];
 function renderAppearance(){
