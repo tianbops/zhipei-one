@@ -14,7 +14,7 @@ assert.match(login,/sessionStorage\.removeItem\("zpExitAdmin"\);sessionStorage\.
 assert.match(index,/\/js\/login\.js\?v=cd42b1e7/);
 assert.match(boot,/addEventListener\("pagehide",\(\)=>document\.documentElement\.removeAttribute\("data-zp-admin-authorized"\)\)/);
 assert.match(boot,/addEventListener\("pageshow",ev=>\{if\(!ev\.persisted\)return;document\.documentElement\.removeAttribute\("data-zp-admin-authorized"\);load\(\)\}\)/);
-assert.match(admin,/\/css\/admin-base\.css\?v=5a9c924a/);
+assert.match(admin,/\/css\/admin-base\.css\?v=5a5eb986/);
 assert.match(admin,/\/js\/admin\/boot\.js\?v=b67b4328/);
-assert.match(sw,/const VERSION = "zp-pwa-129"/);
+assert.match(sw,/const VERSION = "zp-pwa-130"/);
 console.log("管理员/普通用户会话隔离静态回归：全部通过");
