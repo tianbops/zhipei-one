@@ -133,3 +133,21 @@ select option{background:var(--zp-secondary-bg);color:var(--zp-text)}
 html:not([data-zp-admin-authorized="1"]) body>.shell{visibility:hidden}
 html:not([data-zp-admin-authorized="1"]) body::before{content:"正在验证登录状态…";position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--zp-bg);color:var(--zp-muted);z-index:9999}
 html[data-zp-admin-authorized="1"] body::before{display:none}
+
+/* 诊断页选择控件：表单面板与系统下拉选项跟随全局主题，避免浅色模式仍显示白字。
+   使用现有 UI 令牌，不影响选择值、查询参数或业务逻辑。 */
+.diag-filters select,
+#learnStoreSelect,
+#learnReasonType{
+  color-scheme:inherit;
+  color:var(--zp-text);
+  background-color:var(--zp-surface);
+  border:1px solid var(--zp-line);
+  border-radius:var(--ui-control-radius,11px);
+}
+.diag-filters select option,
+#learnStoreSelect option,
+#learnReasonType option{
+  color:var(--zp-text);
+  background-color:var(--zp-surface);
+}
