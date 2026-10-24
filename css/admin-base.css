@@ -146,7 +146,7 @@ html[data-zp-theme="light"] select,html[data-zp-theme="light"] input[type="date"
 .dialog .zp-admin-picker{position:relative}
 .dialog .zp-picker-trigger{width:100%;min-height:48px;padding:0 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;font:inherit;font-size:16px;color:var(--zp-text);background:var(--panel);border:1px solid var(--zp-line);border-radius:11px}
 .dialog .zp-picker-trigger span{color:var(--muted);font-size:20px}
-.dialog .zp-picker-options{position:absolute;left:0;right:0;top:calc(100% + 5px);z-index:5;padding:5px;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 28px var(--zp-shadow-md)}
+.dialog .zp-picker-options{position:absolute;left:0;right:0;top:calc(100% + 5px);z-index:5;padding:5px;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--zp-shadow-md)}
 .dialog .zp-picker-options[hidden]{display:none!important}
 .dialog .zp-picker-options [role="option"]{display:block;width:100%;min-height:44px;padding:0 12px;text-align:left;font:inherit;font-size:15px;color:var(--zp-text);background:transparent;border:0;border-radius:8px}
 .dialog .zp-picker-options [role="option"][aria-selected="true"]{background:var(--zp-secondary-active);font-weight:700}
