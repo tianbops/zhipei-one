@@ -46,7 +46,7 @@ async function learnIsolate(){
   const reasonType=($("learnReasonType")?.value||"").trim();
   const reasonNote=($("learnReasonNote")?.value||"").trim();
   const reason=[reasonType,reasonNote].filter(Boolean).join("：");
-  const selected=$("learnStoreSelect")?.selectedOptions?.[0]?.textContent||storeId;
+  const selected=manual?storeId:($("learnStoreSelect")?.selectedOptions?.[0]?.textContent||storeId);
   if(!confirm("确认隔离该全局学习记录？\n"+selected+"\nstoreId："+storeId+"\n原因："+(reason||"未填写")+"\n隔离会停止该记录参与后续自动匹配，可通过“恢复”撤销。"))return;
   try{
     await api("/api/admin/global-learning",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"isolate",storeId,reason})});
