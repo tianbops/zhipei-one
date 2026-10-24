@@ -150,7 +150,15 @@
   window.zpHandleBack=async function(){
     if(await zpCloseTopLayer())return "handled";
     if(zpIsWorkspaceRoot){
-      if(zpExitArmed)return "exit"; // 第二次返回：确认退出应用，调用方必须执行 zpDoExit()
+      // 管理员工作区的最终返回点是登录页，不是业务首页或直接退出应用。
+      // 先注销服务端会话，再清理本地角色标记；manual=1 防止登录页自动把旧会话送回管理端。
+      if(zpZone==="admin"){
+        try{await Promise.race([fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"}),new Promise(resolve=>setTimeout(resolve,2500))])}catch{}
+        try{sessionStorage.removeItem("zpAuth");sessionStorage.removeItem("zpRole");sessionStorage.removeItem("zpExitAdmin");sessionStorage.removeItem("zpAutoHop")}catch{}
+        location.replace("/?reason=logout&manual=1");
+        return "leave";
+      }
+      if(zpExitArmed)return "exit"; // 业务工作区根第二次返回：确认退出应用，调用方必须执行 zpDoExit()
       zpExitArmed=true;
       try{window.zpToast?window.zpToast("再按一次退出","info"):0}catch{}
       clearTimeout(zpExitTimer);

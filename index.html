@@ -29,7 +29,10 @@
  try{sessionStorage.removeItem("zpRole")}catch(e){}
  // 守卫把未登录用户引流到本页时附带的 reason：给出明确引导，而不是停在空登录框
  var _reason=null;try{_reason=new URLSearchParams(location.search).get("reason")}catch(e){}
- if(_reason){var _lm=document.getElementById("loginMessage");if(_lm){_lm.textContent=_reason==="expired"?"登录已过期，请重新登录":_reason==="reauth"?"安全设置已更新，请重新登录":"请先登录后访问";_lm.style.color="var(--zp-warning)";}}
+ if(_reason){var _lm=document.getElementById("loginMessage");if(_lm){_lm.textContent=_reason==="expired"?"登录已过期，请重新登录":_reason==="reauth"?"安全设置已更新，请重新登录":_reason==="logout"?"已退出登录，请重新登录":"请先登录后访问";_lm.style.color="var(--zp-warning)";}}
+ // 显式退出流必须停留在登录页；即使上游会话注销延迟，也不能自动跳回管理端。
+ var _manualLogin=false;try{_manualLogin=new URLSearchParams(location.search).get("manual")==="1"}catch(e){}
+ if(_manualLogin)return;
  var navEntry=(performance.getEntriesByType&&performance.getEntriesByType("navigation")[0])||null;
  if(navEntry&&navEntry.type==="back_forward")return;
  var now=Date.now(),hop=null;

@@ -22,7 +22,7 @@ export const INLINE_SCRIPT_HASHES = [
   "'sha256-fmSxi6o0X0L18UHDMnuUmLsD6zBhC+okAzUDoP1axbc='",
   "'sha256-k+Sfp/w/V937mjbCK6g0p+ekciQu/+tZ7slaOd+C9K8='",
   "'sha256-vg4zcO/PWYJRpe2qI8rwNf3wpqBQ/IJxB1fyaLxnMqI='",
-  "'sha256-wD7gF6kH1PuUKAZzbay5cr1F8/e/r0R2Uv6O1xlYfKY='",
+  "'sha256-xkGY/kabEmNT9pjCFsPXBzogEMvIcErz1gxVeReSAx4='",
   "'sha256-zbuCwJsCrV/haN2wi+T5550L0MaACsf4FBjSJFIVoyY='",
 ];
 
