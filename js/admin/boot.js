@@ -15,7 +15,7 @@ async function load(){
     // 未登录：清跨区退出标记，避免遗留标记在后续业务页误触发 history.back。
     try{sessionStorage.removeItem("zpExitAdmin")}catch(e){}
     // 401（会话失效）：清登录标记并直接回登录页，避免停留在报错界面
-    if(e&&e.code==="HTTP_401"&&window.zpAuthFail){window.zpAuthFail("expired");return;}
+    if(e&&e.code==="HTTP_401"){try{sessionStorage.removeItem("zpAuth");sessionStorage.removeItem("zpRole");sessionStorage.removeItem("zpExitAdmin");sessionStorage.removeItem("zpAutoHop")}catch{}if(window.zpAuthFail){window.zpAuthFail("expired");return;}location.replace("/?reason=expired&manual=1");return;}
     setTimeout(()=>location.replace("/"),1200);
     return;
   }
@@ -32,13 +32,14 @@ async function load(){
     // （在 PWA 历史栈 >1 的真实环境必现）。普通用户本就不需要跨区退出逻辑。
     try{sessionStorage.removeItem("zpExitAdmin")}catch(e){}
     // 明确本会话属于业务区，避免业务页门禁把司机误判成管理员又弹回 /admin
-    try{sessionStorage.setItem("zpRole","user")}catch(e){}
-    setTimeout(()=>location.replace("/home?v="+Date.now()),1200);
+    try{sessionStorage.setItem("zpAuth","1");sessionStorage.setItem("zpRole","user");sessionStorage.removeItem("zpExitAdmin");sessionStorage.removeItem("zpAutoHop")}catch(e){}
+    location.replace("/home?v="+Date.now());
     return;
   }
   S.me=m.user;
-  // 兜底：确认是管理员则固化本会话归属管理区（登录页已写，此处覆盖异常残留）
-  try{sessionStorage.setItem("zpRole","admin")}catch(e){}
+  // 只有服务端明确确认管理员后才允许显示管理工作区。
+  document.documentElement.setAttribute("data-zp-admin-authorized","1");
+  try{sessionStorage.setItem("zpRole","admin");sessionStorage.setItem("zpAuth","1")}catch(e){}
   $("who").innerHTML='<span class="role">管理员</span><span class="uname">'+esc(m.user.username)+'</span>';
   $("menuUsername").textContent=m.user.username;
   try{
@@ -56,6 +57,10 @@ async function load(){
     A.renderUsers();A.renderRoutes();A.renderRequests();A.renderInvites();renderOverview();
   }
 }$("search").oninput=A.renderUsers;document.addEventListener("click",e=>{if(!e.target.closest(".row,.route,.dialog"))closeSwipes()});document.querySelectorAll(".page").forEach(p=>p.addEventListener("scroll",closeSwipes,{passive:true}));$("addRoute").onclick=A.addRoute;$("menuBtn").onclick=()=>{const mb=$("menuBg");mb.hidden?A.openMenu():A.hideMenu()};$("menuBg").addEventListener("click",e=>{if(e.target===$("menuBg"))A.hideMenu()});document.addEventListener("keydown",e=>{if(e.key==="Escape")A.hideMenu()});/* popstate 已移交 ui-unified.js 中央控制器 zpHandleBack() */$("addInvite").onclick=A.addInvite;$("editUser").onclick=A.editUser;$("editPass").onclick=A.editPass;$("reset").onclick=A.resetData;$("diagQuery").onclick=A.renderDiagnostics;$("diagRefresh").onclick=A.renderDiagnostics;$("perfRefresh").onclick=A.renderPerfReport;
-$("perfCopy").onclick=async()=>{const text=window.__zpPerfCopyText||"智配One 性能诊断报告\n尚无数据，请先刷新性能报告。";try{const ta=document.createElement("textarea");ta.value=text;ta.setAttribute("readonly","");ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();const ok=document.execCommand("copy");ta.remove();if(!ok)throw Error("copy failed");toast("诊断报告已复制，可直接粘贴发送")}catch(e){toast("复制失败，请刷新页面后重试")}};$("learnQuery")&&($("learnQuery").onclick=A.renderLearningIsolation);$("learnRefresh").onclick=A.renderLearningIsolation;$("learnIsolate").onclick=A.learnIsolate;$("logout").onclick=async()=>{A.hideMenu();if(!(await zpConfirm("退出登录","确定要退出当前管理员账号吗？","退出")))return;await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"});location.replace("/")};document.querySelectorAll(".nav-item").forEach(b=>b.onclick=()=>page(Number(b.dataset.i)));load();
+$("perfCopy").onclick=async()=>{const text=window.__zpPerfCopyText||"智配One 性能诊断报告\n尚无数据，请先刷新性能报告。";try{const ta=document.createElement("textarea");ta.value=text;ta.setAttribute("readonly","");ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();const ok=document.execCommand("copy");ta.remove();if(!ok)throw Error("copy failed");toast("诊断报告已复制，可直接粘贴发送")}catch(e){toast("复制失败，请刷新页面后重试")}};$("learnQuery")&&($("learnQuery").onclick=A.renderLearningIsolation);$("learnRefresh").onclick=A.renderLearningIsolation;$("learnIsolate").onclick=A.learnIsolate;$("logout").onclick=async()=>{A.hideMenu();if(!(await zpConfirm("退出登录","确定要退出当前管理员账号吗？","退出")))return;try{await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"})}catch(e){}finally{try{sessionStorage.removeItem("zpAuth");sessionStorage.removeItem("zpRole");sessionStorage.removeItem("zpExitAdmin");sessionStorage.removeItem("zpAutoHop")}catch(e){}location.replace("/?reason=logout&manual=1")}};document.querySelectorAll(".nav-item").forEach(b=>b.onclick=()=>page(Number(b.dataset.i)));
+  // BFCache 进入快照前先撤销可见授权；恢复时必须重新向服务端核验当前 Cookie 角色。
+  window.addEventListener("pagehide",()=>document.documentElement.removeAttribute("data-zp-admin-authorized"));
+  window.addEventListener("pageshow",ev=>{if(!ev.persisted)return;document.documentElement.removeAttribute("data-zp-admin-authorized");load()});
+  load();
 A.load=load;
 })(window.ZPAdmin);

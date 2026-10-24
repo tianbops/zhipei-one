@@ -18,6 +18,8 @@ form?.addEventListener("submit",async e=>{e.preventDefault();message.textContent
   const d=await r.json().catch(()=>({}));if(!r.ok){const code=d.code||("HTTP_"+r.status);throw new Error("["+code+"] "+(d.error||"登录失败"))}
   const _role=d.user&&d.user.role;
   const _isAdmin=_role==="system_admin"||_role==="admin";
+  // 登录账号切换时清理上一工作区的退出/自动跳转标记，再写入新身份。
+  try{sessionStorage.removeItem("zpExitAdmin");sessionStorage.removeItem("zpAutoHop")}catch(e){}
   // 记录本会话所属工作区：业务页据此拒绝管理员会话停留（两个板块互不串线）
   try{window.zpSetRole?window.zpSetRole(_role):sessionStorage.setItem("zpRole",_isAdmin?"admin":"user")}catch(e){}
   // 同步写入登录态标记：各业务页头部守卫据此即时放行，未登录则直接跳登录页（无需先渲染再跳转）
