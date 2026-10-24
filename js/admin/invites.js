@@ -67,8 +67,26 @@ function addInvite(){
     const trigger=group.querySelector(".zp-picker-trigger"),menu=group.querySelector(".zp-picker-options"),value=group.querySelector("input[type=hidden]");
     const shut=()=>{menu.hidden=true;trigger.setAttribute("aria-expanded","false")};
     trigger.addEventListener("click",()=>{const opening=menu.hidden;db.querySelectorAll(".zp-picker-options").forEach(m=>m.hidden=true);db.querySelectorAll(".zp-picker-trigger").forEach(b=>b.setAttribute("aria-expanded","false"));menu.hidden=!opening;trigger.setAttribute("aria-expanded",String(opening));if(opening){const selected=menu.querySelector('[aria-selected="true"]');if(selected)selected.focus()}});
-    menu.querySelectorAll('[role="option"]').forEach(option=>option.addEventListener("click",()=>{value.value=option.dataset.value;trigger.firstChild.textContent=option.textContent;menu.querySelectorAll('[role="option"]').forEach(o=>o.setAttribute("aria-selected",String(o===option)));shut();trigger.focus()}));
-    group.addEventListener("keydown",e=>{if(e.key==="Escape"&&!menu.hidden){shut();trigger.focus()}});
+    const options=()=>[...menu.querySelectorAll('[role="option"]')];
+    const selectOption=option=>{value.value=option.dataset.value;trigger.firstChild.textContent=option.textContent;options().forEach(o=>o.setAttribute("aria-selected",String(o===option)));shut();trigger.focus()};
+    options().forEach(option=>option.addEventListener("click",()=>selectOption(option)));
+    trigger.addEventListener("keydown",e=>{
+      if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();if(menu.hidden)trigger.click();const items=options();if(items.length)items[e.key==="ArrowDown"?0:items.length-1].focus()}
+      else if(e.key==="Escape"&&!menu.hidden){e.preventDefault();shut()}
+    });
+    group.addEventListener("keydown",e=>{
+      if(menu.hidden)return;
+      const items=options(),index=items.indexOf(document.activeElement);
+      let next=-1;
+      if(e.key==="Escape"){e.preventDefault();shut();trigger.focus();return}
+      if(e.key==="ArrowDown")next=(index+1)%items.length;
+      else if(e.key==="ArrowUp")next=(index-1+items.length)%items.length;
+      else if(e.key==="Home")next=0;
+      else if(e.key==="End")next=items.length-1;
+      else if(e.key==="Tab"){shut();return}
+      else if(e.key==="Enter"||e.key===" "){if(index>=0){e.preventDefault();selectOption(items[index])}return}
+      if(next>=0){e.preventDefault();items[next].focus()}
+    });
   });
 }
 A.renderInvites=renderInvites;
