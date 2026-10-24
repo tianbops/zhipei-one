@@ -9,7 +9,7 @@
  *   - 图片/字体       ：stale-while-revalidate（内容基本不变，秒开优先）
  * 资产缓存键用完整 URL（含 ?v=）精确匹配；页面缓存键用 pathname 规整（忽略 ?from 等查询）。
  */
-const VERSION = "zp-pwa-127";
+const VERSION = "zp-pwa-130";
 const STATIC_CACHE = VERSION + "-static";
 const PAGES_CACHE = VERSION + "-pages";
 const OFFLINE_URL = "/offline";
@@ -32,7 +32,7 @@ const PRECACHE = [
   "/assets/delivery-route.webp?v=32331a42",
   "/assets/icons/icon-192.png?v=e16a8e10",
   "/assets/logo.webp?v=bd681172",
-  "/css/admin-base.css?v=96dc0ea2",
+  "/css/admin-base.css?v=5a5eb986",
   "/css/admin-forms.css?v=63640ddb",
   "/css/admin-overlay.css?v=14bf1db5",
   "/css/admin-perf.css?v=b62b874c",
@@ -59,8 +59,8 @@ const PRECACHE = [
   "/js/admin/boot.js?v=b67b4328",
   "/js/admin/core.js?v=4cfb8bfe",
   "/js/admin/diagnostics.js?v=5cc4e646",
-  "/js/admin/invites.js?v=e5e96c83",
-  "/js/admin/learning.js?v=3f9439ac",
+  "/js/admin/invites.js?v=9be15299",
+  "/js/admin/learning.js?v=7feba306",
   "/js/admin/perf.js?v=500ca9af",
   "/js/admin/requests.js?v=836029f1",
   "/js/admin/routes.js?v=c3c6dcc5",

@@ -138,6 +138,16 @@ html[data-zp-admin-authorized="1"] body::before{display:none}
 #diagRoute,#learnStoreSelect,#learnReasonType{color:var(--zp-text);color-scheme:inherit}
 #diagRoute:focus-visible,#learnStoreSelect:focus-visible,#learnReasonType:focus-visible{outline:2px solid var(--zp-focus-ring);outline-offset:2px}
 
-/* 原生下拉弹层在 Android 深色模式下依赖 color-scheme；显式跟随当前应用主题，避免门店列表白底黑字。 */
-html[data-zp-theme="dark"] #diagRoute,html[data-zp-theme="dark"] #learnStoreSelect,html[data-zp-theme="dark"] #learnReasonType{color-scheme:dark}
-html[data-zp-theme="light"] #diagRoute,html[data-zp-theme="light"] #learnStoreSelect,html[data-zp-theme="light"] #learnReasonType{color-scheme:light}
+/* Android 原生表单弹层：所有原生下拉与日期/时间控件显式跟随应用主题，而不只覆盖诊断页三个选择框。 */
+html[data-zp-theme="dark"] select,html[data-zp-theme="dark"] input[type="date"],html[data-zp-theme="dark"] input[type="time"],html[data-zp-theme="dark"] input[type="datetime-local"],html[data-zp-theme="dark"] input[type="month"],html[data-zp-theme="dark"] input[type="week"]{color-scheme:dark}
+html[data-zp-theme="light"] select,html[data-zp-theme="light"] input[type="date"],html[data-zp-theme="light"] input[type="time"],html[data-zp-theme="light"] input[type="datetime-local"],html[data-zp-theme="light"] input[type="month"],html[data-zp-theme="light"] input[type="week"]{color-scheme:light}
+
+/* 邀请码弹窗主题化选择器：不调用 Android 原生 select 弹层，选项继承全局主题令牌。 */
+.dialog .zp-admin-picker{position:relative}
+.dialog .zp-picker-trigger{width:100%;min-height:48px;padding:0 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;font:inherit;font-size:16px;color:var(--zp-text);background:var(--panel);border:1px solid var(--zp-line);border-radius:11px}
+.dialog .zp-picker-trigger span{color:var(--muted);font-size:20px}
+.dialog .zp-picker-options{position:absolute;left:0;right:0;top:calc(100% + 5px);z-index:5;padding:5px;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--zp-shadow-md)}
+.dialog .zp-picker-options[hidden]{display:none!important}
+.dialog .zp-picker-options [role="option"]{display:block;width:100%;min-height:44px;padding:0 12px;text-align:left;font:inherit;font-size:15px;color:var(--zp-text);background:transparent;border:0;border-radius:8px}
+.dialog .zp-picker-options [role="option"][aria-selected="true"]{background:var(--zp-secondary-active);font-weight:700}
+.dialog .zp-picker-trigger:focus-visible,.dialog .zp-picker-options [role="option"]:focus-visible{outline:2px solid var(--zp-focus-ring);outline-offset:2px}
