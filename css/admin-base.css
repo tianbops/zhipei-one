@@ -137,3 +137,7 @@ html[data-zp-admin-authorized="1"] body::before{display:none}
 /* 诊断页原生选择器：选择弹层跟随根节点主题色彩方案，表面与文字使用全局令牌。 */
 #diagRoute,#learnStoreSelect,#learnReasonType{color:var(--zp-text);color-scheme:inherit}
 #diagRoute:focus-visible,#learnStoreSelect:focus-visible,#learnReasonType:focus-visible{outline:2px solid var(--zp-focus-ring);outline-offset:2px}
+
+/* 原生下拉弹层在 Android 深色模式下依赖 color-scheme；显式跟随当前应用主题，避免门店列表白底黑字。 */
+html[data-zp-theme="dark"] #diagRoute,html[data-zp-theme="dark"] #learnStoreSelect,html[data-zp-theme="dark"] #learnReasonType{color-scheme:dark}
+html[data-zp-theme="light"] #diagRoute,html[data-zp-theme="light"] #learnStoreSelect,html[data-zp-theme="light"] #learnReasonType{color-scheme:light}
