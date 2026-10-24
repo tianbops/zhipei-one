@@ -10,7 +10,7 @@
 
 set -euo pipefail
 
-PROJECT="${ZP_PROJECT:-zhipei-one}"
+PROJECT="${ZP_PROJECT:-tianyou-zhipei}"
 MODE="${1:-deploy}"
 WRANGLER="npx wrangler@latest"
 
