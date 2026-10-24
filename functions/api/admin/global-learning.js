@@ -5,6 +5,21 @@ import {isSystemAdmin} from "../_permissions.js";
 import {command} from "../_redis.js";
 import {Budget,hscanBudgeted,SUBREQUEST_LIMIT} from "../_redis-budget.js";
 
+/** 列出现有全局学习记录供管理员选择；只读，不改变学习状态。 */
+async function listLearningStores(env,{limit=200}={}){
+ const size=Math.min(200,Math.max(1,Number(limit)||200));
+ const budget=new Budget(SUBREQUEST_LIMIT);
+ const {entries,complete}=await hscanBudgeted(env,"zp:global:learning:records",budget,{count:200});
+ const records=[];
+ for(const [storeId,raw] of entries){
+  let rec;try{rec=JSON.parse(raw||"null")}catch{rec=null}
+  if(!rec||typeof rec!=="object"||!String(rec.storeId||storeId).trim())continue;
+  records.push({storeId:String(rec.storeId||storeId),standardName:String(rec.standardName||rec.originalName||""),status:String(rec.status||"")});
+ }
+ records.sort((a,b)=>a.standardName.localeCompare(b.standardName,"zh-CN")||a.storeId.localeCompare(b.storeId));
+ return{records:records.slice(0,size),count:Math.min(records.length,size),partial:!complete||records.length>size};
+}
+
 /** 列出被隔离（QUARANTINED）的全局学习记录，供管理员人工处理。 */
 async function listQuarantined(env,{limit=100}={}){
  const size=Math.min(200,Math.max(1,Number(limit)||100));
@@ -24,6 +39,7 @@ export async function onRequestGet({request,env}){
  const action=String(url.searchParams.get("action")||"").trim();
  try{
   if(action==="quarantined")return json({success:true,...await listQuarantined(env,{limit:Number(url.searchParams.get("limit")||"100")})});
+  if(action==="stores")return json({success:true,...await listLearningStores(env,{limit:Number(url.searchParams.get("limit")||"200")})});
   const limit=Math.min(200,Math.max(1,Number(url.searchParams.get("limit")||"100")));
   const cursor=String(url.searchParams.get("cursor")||"0");
   const result=await listGlobalConflicts(env,{limit,cursor});

@@ -12,7 +12,7 @@
 |---|---|---|
 | POST | `/api/account-settings` | — |
 | POST | `/api/admin/bootstrap` | — |
-| GET / POST | `/api/admin/global-learning` | 列出被隔离（QUARANTINED）的全局学习记录，供管理员人工处理。 |
+| GET / POST | `/api/admin/global-learning` | 列出现有全局学习记录供管理员选择；只读，不改变学习状态。 |
 | POST | `/api/admin/manage` | — |
 | POST | `/api/admin/reset` | — |
 | GET / POST | `/api/admin/route-requests` | — |
