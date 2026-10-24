@@ -146,6 +146,13 @@
       const media=window.matchMedia("(prefers-color-scheme: light)");
       const onChange=()=>{if(window.zpGetAppearanceTheme()==="system")applyTheme("system")};
       media.addEventListener?media.addEventListener("change",onChange):media.addListener?.(onChange);
+      // 布局断点切换（屏幕旋转/窗口缩放跨过 @media）会改变固定 px 字号的基准；
+      // 若用户已开启非 100% 字号缩放，需重算基准，否则缩放值会停留在旧断点基准上。
+      ["(max-width:430px)","(max-width:380px)","(max-width:360px)"].forEach(q=>{
+        const mq=window.matchMedia(q);
+        const onLayoutChange=()=>{if(textScaleActive){resetTextScale();scanText()}};
+        mq.addEventListener?mq.addEventListener("change",onLayoutChange):mq.addListener?.(onLayoutChange);
+      });
     }
   })();
 })();

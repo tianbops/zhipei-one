@@ -90,7 +90,19 @@
       const previousOverflow=document.body.style.overflow;
       document.body.style.overflow="hidden";
       let done=false;
-      const onKey=e=>{if(e.key==="Escape"){e.preventDefault();finish(false)}};
+      const onKey=e=>{
+        if(e.key==="Escape"){e.preventDefault();finish(false);return}
+        // 焦点陷阱：对话框内 Tab/Shift+Tab 循环，键盘焦点不逃出遮罩
+        if(e.key==="Tab"){
+          const f=box.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])');
+          const list=Array.from(f).filter(el=>!el.disabled&&el.offsetParent!==null);
+          if(list.length){
+            const first=list[0],last=list[list.length-1];
+            if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
+            else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
+          }
+        }
+      };
       const finish=v=>{if(done)return;done=true;box.hidden=true;ok.onclick=null;cancel.onclick=null;box.onclick=null;document.removeEventListener("keydown",onKey);document.body.style.overflow=previousOverflow;resolve(v)};
       // 共享桥：android 返回键（back.js）与 Esc 走同一个 finish，
       // 否则关了框但滚动没解锁、Promise 永不 resolve。

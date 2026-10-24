@@ -8,8 +8,8 @@
 :root[data-zp-theme="light"] .history-trash-purge{background:#FBEAEA!important;border-color:#E3B6B6!important;color:#B23B3B!important}
 :root[data-zp-theme="light"] .history-trash-purge:active{background:#F3D6D6!important}
 :root[data-zp-theme="light"] .history-export-row span{color:#17202A!important}
-:root[data-zp-theme="light"] .history-export-row select{background:#FFFFFF!important;color:#17202A!important;border-color:#C9D1D9!important}
-:root[data-zp-theme="light"] .history-lookup-row input{background:#FFFFFF!important;color:#17202A!important;border-color:#C9D1D9!important}
+:root[data-zp-theme="light"] .history-export-row select{background:var(--zp-surface)!important;color:#17202A!important;border-color:#C9D1D9!important}
+:root[data-zp-theme="light"] .history-lookup-row input{background:var(--zp-surface)!important;color:#17202A!important;border-color:#C9D1D9!important}
 :root[data-zp-theme="light"] .history-lookup-row input::placeholder{color:#8793A0!important}
 :root[data-zp-theme="light"] .history-lookup-row button{background:#F0F2F4!important;border-color:#D7DDE3!important;color:#17202A!important}
 :root[data-zp-theme="light"] .history-lookup-row button:active{background:#E8EDF1!important}
@@ -18,14 +18,14 @@
 :root[data-zp-theme="light"] .history-lookup-line span{color:#596674!important}
 :root[data-zp-theme="light"] .history-lookup-line b{color:#17202A!important}
 :root[data-zp-theme="light"] .history-lookup-stores strong{color:#46515D!important}
-:root[data-zp-theme="light"] .history-lookup-store{background:#FFFFFF!important;border-color:#D7DDE3!important}
+:root[data-zp-theme="light"] .history-lookup-store{background:var(--zp-surface)!important;border-color:#D7DDE3!important}
 :root[data-zp-theme="light"] .history-lookup-store span{color:#17202A!important}
 :root[data-zp-theme="light"] .history-lookup-store small{color:#596674!important}
 /* 对话框面板与操作按钮浅色覆盖（顺带修好既有删除确认弹窗） */
-:root[data-zp-theme="light"] .history-dialog-panel{background:#FFFFFF!important;border-color:#D7DDE3!important}
+:root[data-zp-theme="light"] .history-dialog-panel{background:var(--zp-surface)!important;border-color:#D7DDE3!important}
 :root[data-zp-theme="light"] .history-dialog-panel>strong{color:#17202A!important}
 :root[data-zp-theme="light"] .history-dialog-panel>p{color:#596674!important}
-:root[data-zp-theme="light"] .history-dialog-actions button{background:#FFFFFF!important;color:#17202A!important;border-color:#C9D1D9!important}
+:root[data-zp-theme="light"] .history-dialog-actions button{background:var(--zp-surface)!important;color:#17202A!important;border-color:#C9D1D9!important}
 :root[data-zp-theme="light"] .history-dialog-actions button:last-child{background:#F0F2F4!important;color:#17202A!important}
 :root[data-zp-theme="light"] .history-dialog-actions button:active{background:#E8EDF1!important}
 

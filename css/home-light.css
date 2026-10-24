@@ -31,7 +31,7 @@
 :root[data-zp-theme="light"] .source-option:focus-visible, :root[data-zp-theme="light"] .upload-cancel-btn:focus-visible, :root[data-zp-theme="light"] .processing-retry-btn:focus-visible, :root[data-zp-theme="light"] .processing-cancel-btn:focus-visible{outline-color:rgba(23,32,42,.35)}
 
 /* 浅色：月度统计卡（Smart Trend）——曲线与坐标在白卡上需换深色墨水 */
-:root[data-zp-theme="light"] .trend-card{background:#FFFFFF;border-color:#D7DDE3}
+:root[data-zp-theme="light"] .trend-card{background:var(--zp-surface);border-color:#D7DDE3}
 :root[data-zp-theme="light"] .trend-title{color:var(--zp-text)}
 :root[data-zp-theme="light"] .trend-year,
 :root[data-zp-theme="light"] .trend-year:active,
@@ -47,7 +47,7 @@
 :root[data-zp-theme="light"] .trend-grid{stroke:#D7DDE3}
 :root[data-zp-theme="light"] .trend-area{fill:var(--zp-primary)}
 :root[data-zp-theme="light"] .trend-line{stroke:var(--zp-primary)}
-:root[data-zp-theme="light"] .trend-point{fill:#FFFFFF;stroke:var(--zp-primary)}
+:root[data-zp-theme="light"] .trend-point{fill:var(--zp-surface);stroke:var(--zp-primary)}
 :root[data-zp-theme="light"] .trend-point.is-peak{fill:var(--zp-primary);stroke:var(--zp-primary)}
 :root[data-zp-theme="light"] .trend-year-bar{fill:#B7C3CE}
 :root[data-zp-theme="light"] .trend-year-bar.is-peak{fill:var(--zp-primary)}
@@ -56,7 +56,7 @@
 :root[data-zp-theme="light"] .trend-hint b{color:var(--zp-muted)}
 
 /* 浅色：上传来源弹层与识别处理态 */
-:root[data-zp-theme="light"] .upload-sheet{background:#FFFFFF;border-color:#D7DDE3;box-shadow:0 18px 46px rgba(20,30,40,.22)}
+:root[data-zp-theme="light"] .upload-sheet{background:var(--zp-surface);border-color:#D7DDE3;box-shadow:0 18px 46px rgba(20,30,40,.22)}
 :root[data-zp-theme="light"] .sheet-handle{background:rgba(20,30,40,.18)}
 :root[data-zp-theme="light"] .source-menu-title,
 :root[data-zp-theme="light"] .processing-title,
@@ -73,7 +73,7 @@
 :root[data-zp-theme="light"] .processing-progress-line{background:#D7DDE3}
 :root[data-zp-theme="light"] .processing-progress-line:before{background:#46515D}
 :root[data-zp-theme="light"] .processing-progress-line i{background:var(--zp-primary);box-shadow:0 0 0 2px rgba(20,30,40,.10)}
-:root[data-zp-theme="light"] .processing-retry-btn{background:var(--zp-primary);border-color:var(--zp-primary);color:#FFFFFF}
+:root[data-zp-theme="light"] .processing-retry-btn{background:var(--zp-primary);border-color:var(--zp-primary);color:var(--zp-on-primary)}
 :root[data-zp-theme="light"] .processing-retry-btn:active{background:#1D2A36}
 :root[data-zp-theme="light"] .processing-cancel-btn{background:#F0F2F4;border-color:#D7DDE3;color:var(--zp-muted)}
 :root[data-zp-theme="light"] .processing-cancel-btn:active{background:#E8EDF1;color:var(--zp-text)}

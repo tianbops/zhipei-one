@@ -1,6 +1,6 @@
 /* ---- 浅色补充：月份分组列表（此前整块沿用深色硬编码） ---- */
-:root[data-zp-theme="light"] .history-list{background:#FFFFFF;border-color:rgba(20,30,40,.12)}
-:root[data-zp-theme="light"] .history-month{background:#FFFFFF;border-bottom-color:rgba(20,30,40,.10)}
+:root[data-zp-theme="light"] .history-list{background:var(--zp-surface);border-color:rgba(20,30,40,.12)}
+:root[data-zp-theme="light"] .history-month{background:var(--zp-surface);border-bottom-color:rgba(20,30,40,.10)}
 :root[data-zp-theme="light"] .history-month-main{background:#F0F2F4}
 :root[data-zp-theme="light"] .history-month-main span{color:var(--zp-text)}
 :root[data-zp-theme="light"] .history-month-main small{color:var(--zp-muted)}
@@ -8,7 +8,7 @@
 :root[data-zp-theme="light"] .history-month-body,
 :root[data-zp-theme="light"] .history-swipe-row,
 :root[data-zp-theme="light"] .history-row-surface,
-:root[data-zp-theme="light"] .history-month-body .history-row-surface{background:#FFFFFF}
+:root[data-zp-theme="light"] .history-month-body .history-row-surface{background:var(--zp-surface)}
 :root[data-zp-theme="light"] .history-date-main span{color:var(--zp-text)}
 :root[data-zp-theme="light"] .history-date-main small{color:var(--zp-muted)}
 :root[data-zp-theme="light"] .history-date-main:active,
