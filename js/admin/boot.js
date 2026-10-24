@@ -32,7 +32,7 @@ async function load(){
     // （在 PWA 历史栈 >1 的真实环境必现）。普通用户本就不需要跨区退出逻辑。
     try{sessionStorage.removeItem("zpExitAdmin")}catch(e){}
     // 明确本会话属于业务区，避免业务页门禁把司机误判成管理员又弹回 /admin
-    try{sessionStorage.removeItem("zpAuth");sessionStorage.setItem("zpRole","user");sessionStorage.removeItem("zpExitAdmin");sessionStorage.removeItem("zpAutoHop")}catch(e){}
+    try{sessionStorage.setItem("zpAuth","1");sessionStorage.setItem("zpRole","user");sessionStorage.removeItem("zpExitAdmin");sessionStorage.removeItem("zpAutoHop")}catch(e){}
     location.replace("/home?v="+Date.now());
     return;
   }
