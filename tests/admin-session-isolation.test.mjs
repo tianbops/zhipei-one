@@ -15,6 +15,6 @@ assert.match(index,/\/js\/login\.js\?v=cd42b1e7/);
 assert.match(boot,/addEventListener\("pagehide",\(\)=>document\.documentElement\.removeAttribute\("data-zp-admin-authorized"\)\)/);
 assert.match(boot,/addEventListener\("pageshow",ev=>\{if\(!ev\.persisted\)return;document\.documentElement\.removeAttribute\("data-zp-admin-authorized"\);load\(\)\}\)/);
 assert.match(admin,/\/css\/admin-base\.css\?v=b8ed6bbe/);
-assert.match(admin,/\/js\/admin\/boot\.js\?v=1e1d78be/);
+assert.match(admin,/\/js\/admin\/boot\.js\?v=b67b4328/);
 assert.match(sw,/const VERSION = "zp-pwa-126"/);
 console.log("管理员/普通用户会话隔离静态回归：全部通过");
