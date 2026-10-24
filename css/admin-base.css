@@ -133,3 +133,7 @@ select option{background:var(--zp-secondary-bg);color:var(--zp-text)}
 html:not([data-zp-admin-authorized="1"]) body>.shell{visibility:hidden}
 html:not([data-zp-admin-authorized="1"]) body::before{content:"正在验证登录状态…";position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--zp-bg);color:var(--zp-muted);z-index:9999}
 html[data-zp-admin-authorized="1"] body::before{display:none}
+
+/* 诊断页原生选择器：选择弹层跟随根节点主题色彩方案，表面与文字使用全局令牌。 */
+#diagRoute,#learnStoreSelect,#learnReasonType{color:var(--zp-text);color-scheme:inherit}
+#diagRoute:focus-visible,#learnStoreSelect:focus-visible,#learnReasonType:focus-visible{outline:2px solid var(--zp-focus-ring);outline-offset:2px}
