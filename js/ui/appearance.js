@@ -115,6 +115,16 @@
     };
     let textObserver=null;
     let textScaleActive=false;
+    /* 全局字号同步给安卓壳：壳的 WebSettings.setTextZoom 被刻意锁死在 100%
+       （网页侧缩放若与 WebView 文字缩放叠乘会互相挤压布局），壳只按本值
+       缩放自身原生浮层（Toast 等）的文字；网页内文字由上方 scanText 负责。
+       浏览器/PWA 无此对象，静默跳过。 */
+    const notifyNativeFontScale=n=>{
+      try{
+        const native=window.ZhipeiNative;
+        if(native&&typeof native.setFontScale==="function")native.setFontScale(n);
+      }catch(e){}
+    };
     const applyScale=value=>{
       const n=Math.max(0.85,Math.min(1.3,Number(value)||1));
       root.style.setProperty("--zp-font-scale",String(n));
@@ -131,6 +141,7 @@
           textObserver.observe(document.body,{childList:true,subtree:true});
         }
       }
+      notifyNativeFontScale(n);
       document.dispatchEvent(new CustomEvent("zp:fontscalechange",{detail:{scale:n}}));
     };
     window.zpSetAppearanceTheme=theme=>{const v=validThemes.includes(theme)?theme:"system";try{localStorage.setItem(THEME_KEY,v)}catch{}applyTheme(v)};
