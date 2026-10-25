@@ -9,7 +9,7 @@
  *   - 图片/字体       ：stale-while-revalidate（内容基本不变，秒开优先）
  * 资产缓存键用完整 URL（含 ?v=）精确匹配；页面缓存键用 pathname 规整（忽略 ?from 等查询）。
  */
-const VERSION = "zp-pwa-130";
+const VERSION = "zp-pwa-131";
 const STATIC_CACHE = VERSION + "-static";
 const PAGES_CACHE = VERSION + "-pages";
 const OFFLINE_URL = "/offline";
@@ -33,11 +33,11 @@ const PRECACHE = [
   "/assets/icons/icon-192.png?v=e16a8e10",
   "/assets/logo.webp?v=bd681172",
   "/css/admin-base.css?v=5a5eb986",
-  "/css/admin-forms.css?v=63640ddb",
+  "/css/admin-forms.css?v=28b21210",
   "/css/admin-overlay.css?v=14bf1db5",
   "/css/admin-perf.css?v=b62b874c",
   "/css/app.css?v=f2f20c99",
-  "/css/business-pages.css?v=b13641fb",
+  "/css/business-pages.css?v=19a28a05",
   "/css/data.css?v=e2e22566",
   "/css/history-light.css?v=7efb3bff",
   "/css/history-list.css?v=fcbc0063",
@@ -55,6 +55,7 @@ const PRECACHE = [
   "/css/ui-overlay.css?v=4ce1c2cf",
   "/css/ui-shell.css?v=d7e34ce4",
   "/css/ui-theme.css?v=2bcd8baa",
+  "/css/zp-picker.css?v=00bf2a88",
   "/js/admin/account.js?v=9c4b58ce",
   "/js/admin/boot.js?v=b67b4328",
   "/js/admin/core.js?v=4cfb8bfe",
@@ -91,12 +92,13 @@ const PRECACHE = [
   "/js/perf-diagnostics.js?v=a2065bec",
   "/js/pwa.js?v=68dbac73",
   "/js/register.js?v=eafb4977",
-  "/js/ui/appearance.js?v=de578808",
+  "/js/ui/appearance.js?v=9e276eba",
   "/js/ui/back.js?v=47e6341f",
   "/js/ui/core.js?v=1c74a596",
   "/js/ui/feedback.js?v=f8da0256",
   "/js/ui/nav-prefetch.js?v=7c589b89",
   "/js/ui/nav.js?v=fee2f25c",
+  "/js/ui/zp-picker.js?v=30491de4",
   "/assets/icons/apple-touch-icon.png",
   "/assets/icons/icon-192.png",
   "/assets/icons/icon-512.png",
