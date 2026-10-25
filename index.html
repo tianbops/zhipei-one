@@ -38,6 +38,14 @@
  var now=Date.now(),hop=null;
  try{hop=JSON.parse(sessionStorage.getItem("zpAutoHop")||"null")}catch(e){}
  if(hop&&now-(hop.t||0)<10000&&(hop.n|0)>=3){try{sessionStorage.removeItem("zpAutoHop")}catch(e){}return}
+ /* 省掉「必然 401」的探测：本设备从未成功登录过（无 zpLastAuth）且本标签页也没有登录态
+    标记时，服务端不可能存在会话 cookie，这次 /api/me 只会拿回一个 401。
+    实测这类空探测占 /api/me 样本的一半以上（46/85），在跨境链路上每次白吃掉约 2s 与一次往返。
+    localStorage 不可读（隐私模式等）时按旧行为照常探测——绝不为了省请求把已登录的人挡在门外。 */
+ var _probe=false;
+ try{_probe=sessionStorage.getItem("zpAuth")==="1"}catch(e){}
+ if(!_probe){try{var _la=Number(localStorage.getItem("zpLastAuth")||0);_probe=_la>0&&now-_la<604800000}catch(e){_probe=true}}
+ if(!_probe)return;
  fetch("/api/me?autoMe="+now,{credentials:"same-origin",cache:"no-store"})
   .then(function(r){return r.ok?r.json():null})
   .then(function(d){
@@ -54,5 +62,5 @@
    location.replace(_rd&&_safe(_rd)?_rd:(_isAdmin?"/admin?v="+now:"/home?v="+now));
   }).catch(function(){});
 }catch(e){}})();
-</script><script src="/js/login.js?v=cd42b1e7"></script><script src="/js/pwa.js?v=68dbac73"></script>
+</script><script src="/js/login.js?v=daea0b15"></script><script src="/js/pwa.js?v=68dbac73"></script>
 </body></html>
