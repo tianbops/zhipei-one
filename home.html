@@ -166,7 +166,7 @@
 (()=>{const d=document.getElementById("todayDate");if(d){const f=new Intl.DateTimeFormat("zh-CN",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit",weekday:"short"});d.textContent=f.format(new Date()).replaceAll("/","-")}})();
 document.getElementById("logout")?.addEventListener("click",async()=>{const ok=window.zpConfirm?await window.zpConfirm("退出登录","确定要退出当前账号吗？","退出"):true;if(!ok)return;try{await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"})}finally{location.replace("/")}})
 </script>
-<script src="/js/ui/core.js?v=1c74a596"></script><script src="/js/ui/appearance.js?v=de578808"></script><script src="/js/ui/feedback.js?v=f8da0256"></script><script src="/js/ui/nav.js?v=fee2f25c"></script><script src="/js/ui/back.js?v=47e6341f"></script><script src="/js/ui/nav-prefetch.js?v=7c589b89"></script>
+<script src="/js/ui/core.js?v=1c74a596"></script><script src="/js/ui/appearance.js?v=9e276eba"></script><script src="/js/ui/feedback.js?v=f8da0256"></script><script src="/js/ui/nav.js?v=fee2f25c"></script><script src="/js/ui/back.js?v=47e6341f"></script><script src="/js/ui/nav-prefetch.js?v=7c589b89"></script>
 <script src="/js/pwa.js?v=68dbac73"></script>
 </body>
 </html>
