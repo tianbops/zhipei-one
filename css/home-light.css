@@ -1,10 +1,14 @@
 /* 浅色外观适配：首页固定导航与菜单交互
    （底栏颜色已于 Phase 4 收敛为 --zp-nav-* 令牌组，双主题自适应，此处不再覆盖） */
 /* 人物推车插画（assets/delivery-route.png）为深色主题绘制：白描线 + 蓝定位点。
-   浅色主题下白线在浅灰背景上几乎不可见——反相使线条变深，
-   hue-rotate(180deg) 把反相后的补色色相转回，蓝点保持蓝色。 */
+   2026-10-26 用户反馈「插图三处蓝色要用主题蓝」：原浅色方案对深色图整体
+   invert+hue-rotate+brightness 滤镜，蓝点色相被扭曲且 brightness 上限使
+   #1677FF 不可精确达到。改为预烘焙浅色专用图 delivery-route-light.webp
+   （深线稿观感不变，主蓝精确落位主题蓝），双 img 按主题切换，深色仍原图直出。 */
 :root[data-zp-theme="light"] .delivery-man{opacity:.55}
-:root[data-zp-theme="light"] .delivery-man img{filter:invert(1) hue-rotate(180deg) brightness(.92)}
+.delivery-man .delivery-img-light{display:none}
+:root[data-zp-theme="light"] .delivery-man .delivery-img-dark{display:none}
+:root[data-zp-theme="light"] .delivery-man .delivery-img-light{display:inline}
 
 /* 浅色外观适配补全：页面背景、品牌区、菜单、今日卡文字、功能按钮、
    门店清单、月度统计卡与上传弹层（此前仅覆盖底部导航，页面主体仍是深色） */
@@ -31,7 +35,9 @@
 :root[data-zp-theme="light"] .source-option:focus-visible, :root[data-zp-theme="light"] .upload-cancel-btn:focus-visible, :root[data-zp-theme="light"] .processing-retry-btn:focus-visible, :root[data-zp-theme="light"] .processing-cancel-btn:focus-visible{outline-color:rgba(23,32,42,.35)}
 
 /* 浅色：月度统计卡（Smart Trend）——曲线与坐标在白卡上需换深色墨水 */
-:root[data-zp-theme="light"] .trend-card{background:var(--zp-surface);border-color:#D7DDE3}
+/* 2026-10-26 用户反馈「月度统计背景与整体风格不合」：浅色下与今日配送卡（task-card，
+   --zp-card-translucent-2 底 + --zp-tint 边）统一，不再用纯白底单开一档 */
+:root[data-zp-theme="light"] .trend-card{background:var(--zp-card-translucent-2);border-color:var(--zp-tint)}
 :root[data-zp-theme="light"] .trend-title{color:var(--zp-text)}
 :root[data-zp-theme="light"] .trend-year,
 :root[data-zp-theme="light"] .trend-year:active,

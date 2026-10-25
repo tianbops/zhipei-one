@@ -9,7 +9,7 @@
  *   - 图片/字体       ：stale-while-revalidate（内容基本不变，秒开优先）
  * 资产缓存键用完整 URL（含 ?v=）精确匹配；页面缓存键用 pathname 规整（忽略 ?from 等查询）。
  */
-const VERSION = "zp-pwa-141";
+const VERSION = "zp-pwa-142";
 const STATIC_CACHE = VERSION + "-static";
 const PAGES_CACHE = VERSION + "-pages";
 const OFFLINE_URL = "/offline";
@@ -29,6 +29,7 @@ const PRECACHE = [
   "/pages/account",
   "/register",
   "/offline",
+  "/assets/delivery-route-light.webp?v=78d47d85",
   "/assets/delivery-route.webp?v=32331a42",
   "/assets/icons/apple-touch-icon.png?v=8f07ea01",
   "/assets/icons/icon-192.png?v=031c307a",
@@ -46,9 +47,9 @@ const PRECACHE = [
   "/css/history-overlay-light.css?v=a6af61b1",
   "/css/history-overlays.css?v=a43f1704",
   "/css/history-shell.css?v=ecfaec95",
-  "/css/home-base.css?v=1e11f161",
+  "/css/home-base.css?v=b975fbf9",
   "/css/home-dashboard.css?v=d6d260c3",
-  "/css/home-light.css?v=ff4e37c5",
+  "/css/home-light.css?v=34fddf8e",
   "/css/home-trend.css?v=f891f0bb",
   "/css/mobile-ui.css?v=3fff5e47",
   "/css/order_detail.css?v=bc7d2f5a",
