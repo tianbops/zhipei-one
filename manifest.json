@@ -13,9 +13,9 @@
   "theme_color": "#F6F7F9",
   "categories": ["productivity", "business"],
   "icons": [
-    { "src": "/assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/assets/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "/assets/icons/icon-192.png?v=031c307a", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/icons/icon-512.png?v=3e811117", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/icons/icon-maskable-512.png?v=b88eded2", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
     {
@@ -23,14 +23,14 @@
       "short_name": "上传运单",
       "description": "拍照或上传运单并开始处理",
       "url": "/home.html",
-      "icons": [{ "src": "/assets/icons/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/assets/icons/icon-192.png?v=031c307a", "sizes": "192x192" }]
     },
     {
       "name": "历史记录",
       "short_name": "历史记录",
       "description": "查询历史运单",
       "url": "/pages/history.html?from=home",
-      "icons": [{ "src": "/assets/icons/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/assets/icons/icon-192.png?v=031c307a", "sizes": "192x192" }]
     }
   ]
 }
