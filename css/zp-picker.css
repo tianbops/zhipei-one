@@ -1,0 +1,58 @@
+/* ===== 智配One 自建选择/日期弹层（zp-picker）
+   背景：Android WebView 的原生 <select> 下拉与日期对话框跟随「系统」字号，
+   不认 App 内「全局文字大小」滑杆，深色/浅色也要靠壳的 uiMode 兜底。
+   本组件把原生控件升级为页内底部弹层——弹层就是普通 HTML，
+   自动继承全局主题令牌（--zp-*）与字号缩放（appearance.js 的 scanText），
+   两条渲染路径（新老 WebView）表现一致。
+   用法：页面引入本 CSS + /js/ui/zp-picker.js，即自动升级全部 select/date。 */
+/* 原生控件退居数据源：绝对定位移出视口，不可见、不可交互、不占布局，
+   但保留 value/options/事件语义 */
+.zp-pk-src{position:absolute!important;left:-9999px!important;top:0!important;width:1px!important;height:1px!important;margin:0!important;padding:0!important;border:0!important;opacity:0!important;pointer-events:none!important}
+/* 触发按钮：接管原生控件的观感（select 的 inline 样式会被复制过来）。
+   高度用 min-height 而非 height：业务页面可用更高特异性的选择器覆盖（如 .page2-label button.zp-pk-trigger）。 */
+.zp-pk-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:48px;padding:0 10px;background:var(--zp-surface-2);border:1px solid var(--zp-line);border-radius:11px;color:var(--zp-text);font:inherit;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.zp-pk-trigger:focus-visible{outline:2px solid var(--zp-focus-ring);outline-offset:2px}
+.zp-pk-trigger:active{background:var(--zp-surface-3)}
+.zp-pk-value{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.zp-pk-value.zp-pk-ph{color:var(--zp-muted)}
+.zp-pk-caret{flex:none;color:var(--zp-muted);font-size:13px;line-height:1}
+/* 日期触发器默认弹性占位；admin 页另由 css/admin-forms.css 的 #diagDate 规则镜像（同值，ID 特异性更高） */
+.zp-pk-date-trigger{flex:1 1 150px;min-width:150px}
+/* 底部弹层 */
+.zp-pk-bg{position:fixed;inset:0;z-index:var(--ui-z-modal,1000);display:flex;align-items:flex-end;justify-content:center;background:var(--zp-card-translucent-2);padding:0}
+.zp-pk-sheet{position:relative;width:min(100%,560px);max-height:86dvh;display:flex;flex-direction:column;background:var(--zp-surface);border:1px solid var(--zp-line);border-radius:17px 17px 0 0;box-shadow:0 18px 50px var(--zp-shadow-lg);padding:8px 0 calc(10px + env(safe-area-inset-bottom));animation:zp-pk-up .18s ease}
+@keyframes zp-pk-up{from{transform:translateY(18px);opacity:.5}to{transform:none;opacity:1}}
+@media(prefers-reduced-motion:reduce){.zp-pk-sheet{animation:none}}
+.zp-pk-head{display:flex;align-items:center;gap:4px;padding:8px 52px 6px 12px}
+.zp-pk-title{flex:1;border:0;background:none;color:var(--zp-text);font-size:16px;font-weight:700;padding:6px 8px;border-radius:10px;cursor:pointer;text-align:center}
+.zp-pk-title:active{background:var(--zp-surface-2)}
+.zp-pk-close{position:absolute;top:12px;right:8px;width:44px;height:44px;flex:none;border:0;background:none;color:var(--zp-muted);font-size:16px;border-radius:10px;cursor:pointer}
+.zp-pk-close:active{background:var(--zp-surface-2)}
+.zp-pk-nav{width:44px;height:44px;flex:none;border:0;background:none;color:var(--zp-text);font-size:20px;line-height:1;border-radius:10px;cursor:pointer}
+.zp-pk-nav:active{background:var(--zp-surface-2)}
+/* 选项列表 */
+.zp-pk-list{overflow:auto;-webkit-overflow-scrolling:touch;padding:2px 8px 6px}
+.zp-pk-row{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:0 10px;background:none;border:0;border-radius:12px;color:var(--zp-text);font-size:16px;line-height:22px;text-align:left;cursor:pointer}
+.zp-pk-row:active{background:var(--zp-surface-2)}
+.zp-pk-row[aria-selected="true"]{background:var(--zp-surface-2)}
+.zp-pk-row:focus-visible{outline:2px solid var(--zp-focus-ring);outline-offset:-2px}
+.zp-pk-radio{flex:none;width:20px;height:20px;border:2px solid var(--zp-line);border-radius:50%}
+.zp-pk-row[aria-selected="true"] .zp-pk-radio{border-color:var(--zp-focus);background:radial-gradient(circle,var(--zp-focus) 0 4px,transparent 5px)}
+.zp-pk-row-label{flex:1;min-width:0}
+/* 日期网格 */
+.zp-pk-body{overflow:auto;min-height:0}
+.zp-pk-week{display:grid;grid-template-columns:repeat(7,1fr);padding:4px 14px 2px;color:var(--zp-muted);font-size:12px;text-align:center}
+.zp-pk-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;padding:2px 10px 6px}
+.zp-pk-cell{height:44px;border:0;background:none;border-radius:10px;color:var(--zp-text);font-size:15px;cursor:pointer}
+.zp-pk-cell:active{background:var(--zp-surface-2)}
+.zp-pk-cell[data-out="1"]{color:var(--zp-soft)}
+.zp-pk-cell[data-today="1"]{color:var(--zp-focus);font-weight:700}
+.zp-pk-cell[aria-selected="true"]{background:var(--zp-focus);color:var(--zp-on-primary);font-weight:700}
+.zp-pk-cell:focus-visible{outline:2px solid var(--zp-focus-ring);outline-offset:-2px}
+.zp-pk-datefoot{display:flex;justify-content:center;gap:10px;padding:4px 12px 6px}
+.zp-pk-today{min-height:44px;padding:0 18px;border:1px solid var(--zp-line);border-radius:10px;background:var(--zp-surface-2);color:var(--zp-text);font-size:14px;cursor:pointer}
+.zp-pk-today:active{background:var(--zp-surface-3)}
+/* 年/月快选面板 */
+.zp-pk-ymp{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:6px 12px 10px;max-height:42dvh;overflow:auto}
+.zp-pk-ymp .zp-pk-cell{height:46px;background:var(--zp-surface-2)}
+.zp-pk-ymp .zp-pk-cell[aria-selected="true"]{background:var(--zp-focus);color:var(--zp-on-primary)}
