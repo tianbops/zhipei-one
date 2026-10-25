@@ -55,9 +55,27 @@
     var d = parseISO(iso);
     return d ? fmtCN(d) : "";
   }
+  /* 触发器表面兜底样式（Android WebView <button> 原生绘制兼容，Node 可单测）：
+     线上实证——同页 select 触发器因 upgradeSelect 复制了原生控件的 inline
+     background 而显示正常；无 inline 样式的日期触发器在 App WebView 里
+     「白底白字」：该引擎对 <button> 的 UA 绘制（ButtonFace 白底 + 原生边框）
+     会盖过类规则里的 background/border，而 color 仍走作者样式（故白底白字）。
+     修复双保险：CSS 侧以 appearance:none 断原生绘制（见 css/zp-picker.css）；
+     JS 侧再把「级联本应解析出的表面声明」固化为 inline——用 var() 书写，
+     主题切换依旧动态生效（inline var() 随 html[data-zp-theme] 重新求值）。
+     入参：hasBg=触发器已带 inline 背景（不干预，尊重页面/复制来的样式）；
+     page2=触发器位于 .page2-label 内——业务页在那里以 --zp-card-translucent-2
+     定制触发器背景（css/business-pages.css），必须镜像同值，不得破坏页面级覆盖。
+     返回 CSS 文本；无需兜底时返回 null。 */
+  function triggerSurfaceStyle(hasBg, page2) {
+    if (hasBg) return null;
+    return "background:" + (page2 ? "var(--zp-card-translucent-2)" : "var(--zp-surface-2)") +
+      ";border:1px solid var(--zp-line);border-radius:11px;color:var(--zp-text)";
+  }
   var zpPickerCore = {
     WEEK: WEEK, pad2: pad2, clampScale: clampScale, toISO: toISO, parseISO: parseISO,
     monthMatrix: monthMatrix, fmtCN: fmtCN, selectLabel: selectLabel, dateLabel: dateLabel,
+    triggerSurfaceStyle: triggerSurfaceStyle,
   };
   globalThis.zpPickerCore = zpPickerCore;
 
@@ -66,6 +84,20 @@
 
   var OPEN_ATTR = "data-zp-pk-open";
   var current = null; /* 当前打开的弹层 { bg, restoreFocus } */
+
+  /* 把 triggerSurfaceStyle 的结论写到触发器 inline style 上（追加，不覆盖已有声明）。
+     调用时机（两个条件缺一不可）：
+     ① 复制完原生控件 inline 样式之后——hasBg 判断要能看到复制来的背景；
+     ② 触发器已 insertBefore 进文档之后——closest() 依赖祖先链，
+        未插入时永远判不出 .page2-label，会错误地套用通用表面色。 */
+  function applyTriggerSurface(trigger) {
+    var hasBg = !!trigger.style.background || !!trigger.style.backgroundColor;
+    var page2 = !!(trigger.closest && trigger.closest(".page2-label"));
+    var css = triggerSurfaceStyle(hasBg, page2);
+    if (!css) return;
+    var cur = trigger.getAttribute("style");
+    trigger.setAttribute("style", cur ? cur + ";" + css : css);
+  }
 
   function el(tag, cls, text) {
     var n = document.createElement(tag);
@@ -133,6 +165,9 @@
     trigger.appendChild(valueEl);
     trigger.appendChild(caret);
     select.parentNode.insertBefore(trigger, select);
+    /* WebView 兼容兜底：无 inline 背景的触发器补表面声明（.page2-label 内镜像页面定制值）。
+       必须在插入 DOM 之后调用——closest() 依赖祖先链，未插入时永远判不出 page2。 */
+    applyTriggerSurface(trigger);
     select.removeAttribute("style");
     select.classList.add("zp-pk-src");
     select.setAttribute("aria-hidden", "true");
@@ -190,6 +225,9 @@
     input.dataset.zpPk = "1";
     var trigger = el("button", "zp-pk-trigger zp-pk-date-trigger");
     trigger.type = "button";
+    /* 与 select 路径对齐：复制原生控件的行内样式（页面若给日期框设了 flex 占位等，
+       触发器顶替原位置时不丢布局）；随后按需补表面兜底（无 inline 背景时）。 */
+    if (input.getAttribute("style")) trigger.setAttribute("style", input.getAttribute("style"));
     trigger.setAttribute("aria-haspopup", "dialog");
     trigger.setAttribute("aria-label", input.getAttribute("aria-label") || "选择日期");
     var valueEl = el("span", "zp-pk-value");
@@ -198,6 +236,8 @@
     trigger.appendChild(valueEl);
     trigger.appendChild(caret);
     input.parentNode.insertBefore(trigger, input);
+    /* 兜底同样在插入 DOM 之后执行：closest() 依赖祖先链判断 .page2-label 定制背景 */
+    applyTriggerSurface(trigger);
     input.classList.add("zp-pk-src");
     input.setAttribute("aria-hidden", "true");
     input.tabIndex = -1;

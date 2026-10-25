@@ -2,7 +2,7 @@ import {json,body} from "./_json.js";
 import {currentUser} from "./_auth.js";
 import {get,set,newId,command} from "./_redis.js";
 import {Budget,SUBREQUEST_LIMIT,scanKeysBudgeted,smembersBatch,mgetBatchMap,throwBudgetExceeded} from "./_redis-budget.js";
-import {getRoute,saveRoute,routeId,cleanRouteName} from "./_route.js";
+import {getRoute,saveRoute,routeId,cleanRouteName,compareRouteName} from "./_route.js";
 import {isSystemAdmin} from "./_permissions.js";
 import {dailyWaybillKey} from "./_waybill-identity.js";
 import {guard} from "./_safe.js";
@@ -101,6 +101,11 @@ const key="zp:user:"+uid;await command(env,["EVAL","local raw=redis.call('GET',K
  const {map:baseMap,complete:baseComplete}=await mgetBatchMap(env,ids.map(id=>"zp:route:"+id+":base"),budget,{batch:100});
  if(!baseComplete)throwBudgetExceeded(budget.max,"routes-read-base");
 const routes=[];for(const id of ids){const r=routeById.get(id);const baseRaw=baseMap.get("zp:route:"+id+":base");let storeCount=0;try{const b=baseRaw?(typeof baseRaw==="string"?JSON.parse(baseRaw):baseRaw):null;storeCount=Array.isArray(b?.stores)?b.stores.length:0}catch{}routes.push({id:r.id,name:r.name,status:r.status||"active",driverUserId:r.driverUserId||null,deliveryUserId:r.deliveryUserId||null,storeCount})}
+ /* 线路列表统一按名称自然序升序（产品要求「线路排列，升序排列」：索引是创建追加序，
+    历史数据可能是任意序，展示层不依赖索引方向）。名称在建路时校验唯一，不会并列；
+    id 码点序仅作确定性兜底。所有消费方（管理端列表/诊断筛选、route_apply、
+    dispatch-bootstrap 聚合）经此同一出口，排序一次全覆盖。 */
+ routes.sort((a,b)=>compareRouteName(a.name,b.name)||compareRouteName(a.id,b.id));
  return {routes,repairs};
 }
 

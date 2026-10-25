@@ -144,10 +144,11 @@ html[data-zp-theme="light"] select,html[data-zp-theme="light"] input[type="date"
 
 /* 邀请码弹窗主题化选择器：不调用 Android 原生 select 弹层，选项继承全局主题令牌。 */
 .dialog .zp-admin-picker{position:relative}
-.dialog .zp-picker-trigger{width:100%;min-height:48px;padding:0 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;font:inherit;font-size:16px;color:var(--zp-text);background:var(--panel);border:1px solid var(--zp-line);border-radius:11px}
+/* appearance:none：与 zp-picker.css 同因——App WebView 对 button 的 UA 绘制会盖过类规则背景 */
+.dialog .zp-picker-trigger{width:100%;min-height:48px;padding:0 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;font:inherit;font-size:16px;color:var(--zp-text);background:var(--panel);border:1px solid var(--zp-line);border-radius:11px;-webkit-appearance:none;appearance:none}
 .dialog .zp-picker-trigger span{color:var(--muted);font-size:20px}
 .dialog .zp-picker-options{position:absolute;left:0;right:0;top:calc(100% + 5px);z-index:5;padding:5px;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--zp-shadow-md)}
 .dialog .zp-picker-options[hidden]{display:none!important}
-.dialog .zp-picker-options [role="option"]{display:block;width:100%;min-height:44px;padding:0 12px;text-align:left;font:inherit;font-size:15px;color:var(--zp-text);background:transparent;border:0;border-radius:8px}
+.dialog .zp-picker-options [role="option"]{display:block;width:100%;min-height:44px;padding:0 12px;text-align:left;font:inherit;font-size:15px;color:var(--zp-text);background:transparent;border:0;border-radius:8px;-webkit-appearance:none;appearance:none}
 .dialog .zp-picker-options [role="option"][aria-selected="true"]{background:var(--zp-secondary-active);font-weight:700}
 .dialog .zp-picker-trigger:focus-visible,.dialog .zp-picker-options [role="option"]:focus-visible{outline:2px solid var(--zp-focus-ring);outline-offset:2px}

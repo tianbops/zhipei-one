@@ -9,7 +9,7 @@
  *   - 图片/字体       ：stale-while-revalidate（内容基本不变，秒开优先）
  * 资产缓存键用完整 URL（含 ?v=）精确匹配；页面缓存键用 pathname 规整（忽略 ?from 等查询）。
  */
-const VERSION = "zp-pwa-131";
+const VERSION = "zp-pwa-133";
 const STATIC_CACHE = VERSION + "-static";
 const PAGES_CACHE = VERSION + "-pages";
 const OFFLINE_URL = "/offline";
@@ -32,7 +32,7 @@ const PRECACHE = [
   "/assets/delivery-route.webp?v=32331a42",
   "/assets/icons/icon-192.png?v=e16a8e10",
   "/assets/logo.webp?v=bd681172",
-  "/css/admin-base.css?v=5a5eb986",
+  "/css/admin-base.css?v=eae17f67",
   "/css/admin-forms.css?v=28b21210",
   "/css/admin-overlay.css?v=14bf1db5",
   "/css/admin-perf.css?v=b62b874c",
@@ -55,7 +55,7 @@ const PRECACHE = [
   "/css/ui-overlay.css?v=4ce1c2cf",
   "/css/ui-shell.css?v=d7e34ce4",
   "/css/ui-theme.css?v=2bcd8baa",
-  "/css/zp-picker.css?v=00bf2a88",
+  "/css/zp-picker.css?v=71fc7769",
   "/js/admin/account.js?v=9c4b58ce",
   "/js/admin/boot.js?v=b67b4328",
   "/js/admin/core.js?v=4cfb8bfe",
@@ -98,7 +98,7 @@ const PRECACHE = [
   "/js/ui/feedback.js?v=f8da0256",
   "/js/ui/nav-prefetch.js?v=7c589b89",
   "/js/ui/nav.js?v=fee2f25c",
-  "/js/ui/zp-picker.js?v=30491de4",
+  "/js/ui/zp-picker.js?v=78935f03",
   "/assets/icons/apple-touch-icon.png",
   "/assets/icons/icon-192.png",
   "/assets/icons/icon-512.png",

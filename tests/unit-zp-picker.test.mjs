@@ -15,6 +15,8 @@
  *   - monthMatrix：6×7 月矩阵（月初补位、跨月填充、天数正确性）
  *   - fmtCN/dateLabel：中文日期展示（含空值回落）
  *   - selectLabel：select 当前展示文本（选中项优先、首项回落、空选项）
+ *   - triggerSurfaceStyle：触发器表面兜底（WebView UA 绘制兼容；var() 动态令牌；
+ *     .page2-label 镜像页面定制背景）
  * DOM 装配部分由 e2e/集成场景覆盖，不进本单测。
  * ============================================================================
  */
@@ -152,4 +154,34 @@ test("selectLabel：选中项优先、首项回落、空选项安全", () => {
   );
   // 越界 selectedIndex 不得抛错
   assert.equal(core.selectLabel({ options: [{ text: "only" }], selectedIndex: 5 }), "only");
+});
+
+/* triggerSurfaceStyle：Android WebView <button> UA 绘制兼容兜底（线上日期触发器
+   「白底白字」事故的修复核心）。class 背景在该引擎会被 ButtonFace 白底盖过，
+   而复制了 inline background 的 select 触发器正常——故把级联本应解析出的表面
+   声明固化为 inline。必须用 var() 书写：主题切换（html[data-zp-theme]）时
+   inline 值随令牌重新求值，不会锁死旧主题色。 */
+test("triggerSurfaceStyle：已带 inline 背景时不干预", () => {
+  assert.equal(core.triggerSurfaceStyle(true, false), null);
+  assert.equal(core.triggerSurfaceStyle(true, true), null, "page2 内有背景同样不干预");
+});
+
+test("triggerSurfaceStyle：无背景时输出完整表面声明（var() 动态令牌）", () => {
+  const css = core.triggerSurfaceStyle(false, false);
+  assert.equal(
+    css,
+    "background:var(--zp-surface-2);border:1px solid var(--zp-line);border-radius:11px;color:var(--zp-text)"
+  );
+  // 必须覆盖 background/border/radius/color 四项：UA 绘制同时盖过背景与边框，
+  // 文字色虽走作者样式仍显式声明兜底；任一项缺失都算修复不完整。
+  for (const decl of ["background:var(--zp-surface-2)", "border:1px solid var(--zp-line)", "border-radius:11px", "color:var(--zp-text)"]) {
+    assert.ok(css.includes(decl), "缺少声明：" + decl);
+  }
+});
+
+test("triggerSurfaceStyle：.page2-label 内镜像页面定制背景，不破坏业务覆盖", () => {
+  const css = core.triggerSurfaceStyle(false, true);
+  assert.ok(css.startsWith("background:var(--zp-card-translucent-2);"), "须镜像 business-pages.css 的页面定制值");
+  assert.ok(!css.includes("--zp-surface-2"), "不得把页面定制背景改写为通用表面色");
+  assert.ok(css.includes("border:1px solid var(--zp-line)") && css.includes("color:var(--zp-text)"), "边框/文字色与通用路径一致");
 });

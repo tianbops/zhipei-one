@@ -8,11 +8,19 @@
 /* 原生控件退居数据源：绝对定位移出视口，不可见、不可交互、不占布局，
    但保留 value/options/事件语义 */
 .zp-pk-src{position:absolute!important;left:-9999px!important;top:0!important;width:1px!important;height:1px!important;margin:0!important;padding:0!important;border:0!important;opacity:0!important;pointer-events:none!important}
+/* 断 <button> 原生绘制：App WebView 对 button 的 UA 绘制（ButtonFace 白底 +
+   原生边框）会盖过类规则里的 background/border——线上日期触发器「白底白字」
+   即此症状（color 仍走作者样式，故文字是白的）。appearance:none 让作者样式
+   完全接管表面；对健康引擎无视觉差异（这些按钮本就自带完整表面声明）。 */
+.zp-pk-trigger,.zp-pk-cell,.zp-pk-row,.zp-pk-nav,.zp-pk-title,.zp-pk-close,.zp-pk-today{-webkit-appearance:none;appearance:none}
 /* 触发按钮：接管原生控件的观感（select 的 inline 样式会被复制过来）。
    高度用 min-height 而非 height：业务页面可用更高特异性的选择器覆盖（如 .page2-label button.zp-pk-trigger）。 */
 .zp-pk-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:48px;padding:0 10px;background:var(--zp-surface-2);border:1px solid var(--zp-line);border-radius:11px;color:var(--zp-text);font:inherit;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .zp-pk-trigger:focus-visible{outline:2px solid var(--zp-focus-ring);outline-offset:2px}
-.zp-pk-trigger:active{background:var(--zp-surface-3)}
+/* !important：触发器表面已被 JS 固化为 inline（WebView 兼容兜底，见 zp-picker.js
+   triggerSurfaceStyle/applyTriggerSurface），非 important 的伪类背景会被 inline
+   样式压制导致按压反馈失效；important 作者规则高于 inline 非 important 声明。 */
+.zp-pk-trigger:active{background:var(--zp-surface-3)!important}
 .zp-pk-value{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .zp-pk-value.zp-pk-ph{color:var(--zp-muted)}
 .zp-pk-caret{flex:none;color:var(--zp-muted);font-size:13px;line-height:1}
