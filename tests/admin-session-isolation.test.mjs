@@ -16,5 +16,7 @@ assert.match(boot,/addEventListener\("pagehide",\(\)=>document\.documentElement\
 assert.match(boot,/addEventListener\("pageshow",ev=>\{if\(!ev\.persisted\)return;document\.documentElement\.removeAttribute\("data-zp-admin-authorized"\);load\(\)\}\)/);
 assert.match(admin,/\/css\/admin-base\.css\?v=5a5eb986/);
 assert.match(admin,/\/js\/admin\/boot\.js\?v=b67b4328/);
-assert.match(sw,/const VERSION = "zp-pwa-130"/);
+// SW 版本号由 scripts/bump_asset_versions.py 每次刷新，只校验格式不写死数值，
+// 否则每 bump 一次本测试就红一次（模式与 sw-precache.test.mjs 保持一致）。
+assert.match(sw,/const VERSION = "zp-pwa-\d+";/);
 console.log("管理员/普通用户会话隔离静态回归：全部通过");
