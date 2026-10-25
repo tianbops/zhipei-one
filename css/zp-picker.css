@@ -54,8 +54,17 @@
 .zp-pk-cell{height:44px;border:0;background:none;border-radius:10px;color:var(--zp-text);font-size:15px;cursor:pointer}
 .zp-pk-cell:active{background:var(--zp-surface-2)}
 .zp-pk-cell[data-out="1"]{color:var(--zp-soft)}
-.zp-pk-cell[data-today="1"]{color:var(--zp-focus);font-weight:700}
-.zp-pk-cell[aria-selected="true"]{background:var(--zp-focus);color:var(--zp-on-primary);font-weight:700}
+/* 今日标记用 --zp-accent 而非 --zp-focus：后者是「键盘焦点环」令牌，深色主题被
+   覆盖为近白 #F1F5F9（与正文 --zp-text 同值），只靠加粗分不出今日；--zp-accent
+   双主题均为可读强调蓝（浅 #0958D9 / 深 #93C5FD），与正文和选中态都分得开。 */
+.zp-pk-cell[data-today="1"]{color:var(--zp-accent);font-weight:700}
+/* 选中格 = 项目「选中块」标配：--zp-line 底 + --zp-accent 字。这对令牌在
+   ui-base.css/ui-theme.css 成对定义，对比度经 AA 验证（浅 6.16:1 / 深 5.74:1，
+   见 --zp-accent 定义处注释）。
+   历史事故：曾误用 --zp-focus 作底色 + --zp-on-primary 作字色——--zp-focus 是
+   焦点环令牌，深色主题下为近白 #F1F5F9，配白字即成「白底白字」，线上反馈
+   「被选择日期看不清」（2026-10-25 真机截图实证：25 日格近白底白字不可读）。 */
+.zp-pk-cell[aria-selected="true"]{background:var(--zp-line);color:var(--zp-accent);font-weight:700}
 .zp-pk-cell:focus-visible{outline:2px solid var(--zp-focus-ring);outline-offset:-2px}
 .zp-pk-datefoot{display:flex;justify-content:center;gap:10px;padding:4px 12px 6px}
 .zp-pk-today{min-height:44px;padding:0 18px;border:1px solid var(--zp-line);border-radius:10px;background:var(--zp-surface-2);color:var(--zp-text);font-size:14px;cursor:pointer}
@@ -63,4 +72,6 @@
 /* 年/月快选面板 */
 .zp-pk-ymp{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:6px 12px 10px;max-height:42dvh;overflow:auto}
 .zp-pk-ymp .zp-pk-cell{height:46px;background:var(--zp-surface-2)}
-.zp-pk-ymp .zp-pk-cell[aria-selected="true"]{background:var(--zp-focus);color:var(--zp-on-primary)}
+/* 与日期网格同一「选中块」标配（--zp-line + --zp-accent）：年月面板全部格子
+   本就带 surface-2 底，选中态改由强调蓝粗体字承载主信号，底色同色系微染。 */
+.zp-pk-ymp .zp-pk-cell[aria-selected="true"]{background:var(--zp-line);color:var(--zp-accent)}
