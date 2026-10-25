@@ -5,7 +5,9 @@
 .page2-card{background:var(--zp-card-translucent);border:1px solid var(--zp-line);border-radius:16px;padding:16px;margin-bottom:10px}
 .page2-card h2{margin:0 0 8px;font-size:16px;line-height:22px}
 .page2-label{display:block;margin-top:13px;color:var(--zp-muted);font-size:13px}
-.page2-label select,.page2-label input,.page2-label textarea{display:block;width:100%;min-height:48px;margin-top:6px;padding:0 16px;border:1px solid var(--zp-line);border-radius:11px;background:var(--zp-card-translucent-2);color:var(--zp-text)}
+.page2-label select,.page2-label input,.page2-label textarea,.page2-label button.zp-pk-trigger{display:block;width:100%;min-height:48px;margin-top:6px;padding:0 16px;border:1px solid var(--zp-line);border-radius:11px;background:var(--zp-card-translucent-2);color:var(--zp-text)}
+/* zp-picker 触发器顶替原生 select：外观继承上述控件样式，内部仍需 flex 排布文字与箭头 */
+.page2-label button.zp-pk-trigger{display:flex}
 .page2-primary,.page2-secondary{width:100%;min-height:48px;margin-top:14px;border-radius:11px;font-size:15px}
 .page2-primary{border:1px solid var(--zp-primary);background:var(--zp-primary);color:var(--zp-on-primary)}
 .page2-secondary{border:1px solid var(--zp-line);background:var(--zp-card-translucent-2);color:var(--zp-text)}
@@ -23,7 +25,7 @@
 .route-apply-page .collapse-body{padding:0 14px 14px}
 .route-apply-page .collapse-body[hidden]{display:none}
 .route-apply-page .page2-label{margin-top:10px}
-.route-apply-page .page2-label select{min-height:var(--zp-control-height);margin-top:5px}
+.route-apply-page .page2-label select,.route-apply-page .page2-label button.zp-pk-trigger{min-height:var(--zp-control-height);margin-top:5px}
 .route-apply-page .primary-btn,.route-apply-page .secondary-btn{min-height:var(--zp-control-height)}
 @media(max-width:380px){.route-apply-page .page2-card{padding:12px}.route-apply-page .maintain-card{padding:0}.route-apply-page .collapse-head{min-height:46px;padding:0 12px}.route-apply-page .collapse-body{padding:0 12px 12px}}
 
