@@ -2,7 +2,7 @@ import {json,body} from "./_json.js";
 import {currentUser} from "./_auth.js";
 import {get,set,newId,command} from "./_redis.js";
 import {Budget,SUBREQUEST_LIMIT,scanKeysBudgeted,smembersBatch,mgetBatchMap,throwBudgetExceeded} from "./_redis-budget.js";
-import {getRoute,saveRoute,routeId,cleanRouteName,compareRouteName} from "./_route.js";
+import {saveRoute,routeId,cleanRouteName,compareRouteName} from "./_route.js";
 import {isSystemAdmin} from "./_permissions.js";
 import {dailyWaybillKey} from "./_waybill-identity.js";
 import {guard} from "./_safe.js";
@@ -73,21 +73,57 @@ export async function readRoutes(env,user){
  try{ids=await list(env)}catch{throw Object.assign(new Error("线路索引数据异常，请联系管理员处理"),{code:"ROUTES_INDEX_INVALID"})}
  const routeDataError=msg=>Object.assign(new Error(msg),{code:"ROUTE_DATA_INVALID"});
  const budget=new Budget(SUBREQUEST_LIMIT);
- const {map:routeMap,complete:routeComplete}=await mgetBatchMap(env,ids.map(id=>"zp:route:"+id),budget,{batch:100});
+ /* 主记录与 base 只依赖 ids、互不依赖 → 并行发起，省掉一次串行往返。
+    旧实现先读主记录、末尾再单独读 base，两次往返在同一条跨境 Redis 链路上叠加约 200ms。 */
+ const [mainRead,baseRead]=await Promise.all([
+  mgetBatchMap(env,ids.map(id=>"zp:route:"+id),budget,{batch:100}),
+  mgetBatchMap(env,ids.map(id=>"zp:route:"+id+":base"),budget,{batch:100})
+ ]);
+ const {map:routeMap,complete:routeComplete}=mainRead;
+ const {map:baseMap,complete:baseComplete}=baseRead;
  if(!routeComplete)throwBudgetExceeded(budget.max,"routes-read-main");
+ if(!baseComplete)throwBudgetExceeded(budget.max,"routes-read-base");
  const parseRoute=v=>{if(v==null)return null;try{return typeof v==="string"?JSON.parse(v):v}catch{return null}};
  const routeById=new Map();
 for(const id of ids)routeById.set(id,parseRoute(routeMap.get("zp:route:"+id)));
+ /* 巡检所需的「线路岗位占用者」用户记录：一次性 MGET 预取。
+    旧实现在路线循环里逐条 await get()，每条线路每个岗位各一次串行往返；
+    线路一多就是几十次来回（实测 2 条线路 / 4 个用户即多耗约 1.7s）。 */
+ const slotUserRaw=await (async()=>{
+  if(!isSystemAdmin(user))return ()=>null;
+  const uids=[];
+  for(const id of ids){const r=routeById.get(id);if(!r)continue;
+   if(typeof r.driverUserId==="string"&&r.driverUserId)uids.push(r.driverUserId);
+   if(typeof r.deliveryUserId==="string"&&r.deliveryUserId)uids.push(r.deliveryUserId)}
+  if(!uids.length)return ()=>null;
+  const {map:m}=await mgetBatchMap(env,[...new Set(uids)].map(uid=>"zp:user:"+uid),budget,{batch:100});
+  return uid=>m.get("zp:user:"+uid);
+ })();
 const repairs=[];
 for(const id of ids){if(typeof id!=="string"||!id.trim())throw routeDataError("线路索引包含无效数据，请联系管理员处理");const r=routeById.get(id);if(!r||r.id!==id||typeof r.name!=="string"||!r.name.trim()||!["active","disabled"].includes(r.status||"active"))throw routeDataError("线路数据异常，请联系管理员处理");if(r.driverUserId!=null&&typeof r.driverUserId!=="string")throw routeDataError("线路岗位数据异常，请联系管理员处理");if(r.deliveryUserId!=null&&typeof r.deliveryUserId!=="string")throw routeDataError("线路岗位数据异常，请联系管理员处理");
 // 全局绑定一致性巡检 + 自动修复属于运维动作，仅系统管理员触发；普通业务用户只读取线路，绝不改写他人数据（P1-03）
 if(isSystemAdmin(user)){
-for(const [duty,field] of [["driver","driverUserId"],["delivery","deliveryUserId"]]){const uid=r[field];if(!uid)continue;const rawUser=await get(env,"user:"+uid);let linked=null;try{linked=typeof rawUser==="string"?JSON.parse(rawUser):rawUser}catch{};const valid=!!linked&&linked.id===uid&&!isSystemAdmin(linked)&&!linked.disabled&&linked.boundRouteId===r.id&&linked.routeDuty===duty;if(!valid){const canRestore=!!linked&&linked.id===uid&&!linked.disabled&&!isSystemAdmin(linked)&&linked.boundRouteId===r.id&&linked.routeDuty===duty;if(!canRestore){const routeKey="zp:route:"+r.id;await command(env,["EVAL","local raw=redis.call('GET',KEYS[1]); if not raw then return 2 end; local r=cjson.decode(raw); if r.id~=ARGV[1] or r[ARGV[2]]~=ARGV[3] then return 3 end; r[ARGV[2]]=cjson.null; redis.call('SET',KEYS[1],cjson.encode(r)); return 1","1",routeKey,r.id,field,uid]);r[field]=null;repairs.push({routeId:r.id,duty,userId:uid,action:"clear_orphan_route_slot"})}}}}}
+for(const [duty,field] of [["driver","driverUserId"],["delivery","deliveryUserId"]]){const uid=r[field];if(!uid)continue;const rawUser=slotUserRaw(uid);let linked=null;try{linked=typeof rawUser==="string"?JSON.parse(rawUser):rawUser}catch{};const valid=!!linked&&linked.id===uid&&!isSystemAdmin(linked)&&!linked.disabled&&linked.boundRouteId===r.id&&linked.routeDuty===duty;if(!valid){const canRestore=!!linked&&linked.id===uid&&!linked.disabled&&!isSystemAdmin(linked)&&linked.boundRouteId===r.id&&linked.routeDuty===duty;if(!canRestore){const routeKey="zp:route:"+r.id;await command(env,["EVAL","local raw=redis.call('GET',KEYS[1]); if not raw then return 2 end; local r=cjson.decode(raw); if r.id~=ARGV[1] or r[ARGV[2]]~=ARGV[3] then return 3 end; r[ARGV[2]]=cjson.null; redis.call('SET',KEYS[1],cjson.encode(r)); return 1","1",routeKey,r.id,field,uid]);r[field]=null;repairs.push({routeId:r.id,duty,userId:uid,action:"clear_orphan_route_slot"})}}}}}
 if(isSystemAdmin(user)){
 const rawUsers=await get(env,"users:index");let userIds=[];if(rawUsers){try{const v=typeof rawUsers==="string"?JSON.parse(rawUsers):rawUsers;if(!Array.isArray(v)||v.some(x=>typeof x!=="string"||!x.trim()))throw 0;userIds=v}catch{throw Object.assign(new Error("用户索引数据异常，请联系管理员处理"),{code:"USER_INDEX_INVALID"})}}
-for(const uid of userIds){const raw=await get(env,"user:"+uid);let u=null;try{u=typeof raw==="string"?JSON.parse(raw):raw}catch{};if(!u||u.id!==uid)continue;if(!u.boundRouteId&&!u.routeDuty)continue;if(!u.boundRouteId||!["driver","delivery"].includes(u.routeDuty)){const key="zp:user:"+uid;await command(env,["EVAL","local raw=redis.call('GET',KEYS[1]); if not raw then return 2 end; local u=cjson.decode(raw); if u.id~=ARGV[1] then return 3 end; u.boundRouteId=cjson.null; u.routeDuty=cjson.null; u.sessionVersion=(u.sessionVersion or 1)+1; redis.call('SET',KEYS[1],cjson.encode(u)); return 1","1",key,uid]);repairs.push({userId:uid,action:"clear_invalid_user_binding"});continue}
-const rr=await getRoute(env,u.boundRouteId);if(!rr){const key="zp:user:"+uid;await command(env,["EVAL","local raw=redis.call('GET',KEYS[1]); if not raw then return 2 end; local u=cjson.decode(raw); if u.id~=ARGV[1] then return 3 end; u.boundRouteId=cjson.null; u.routeDuty=cjson.null; u.sessionVersion=(u.sessionVersion or 1)+1; redis.call('SET',KEYS[1],cjson.encode(u)); return 1","1",key,uid]);repairs.push({userId:uid,action:"clear_missing_route_binding"});continue}
-const field=u.routeDuty==="driver"?"driverUserId":"deliveryUserId";const occupant=rr[field];if(occupant===uid)continue;if(!occupant){const routeKey="zp:route:"+rr.id;await command(env,["EVAL","local raw=redis.call('GET',KEYS[1]); if not raw then return 2 end; local r=cjson.decode(raw); if r.id~=ARGV[1] or r[ARGV[2]]~=nil then return 3 end; r[ARGV[2]]=ARGV[3]; redis.call('SET',KEYS[1],cjson.encode(r)); return 1","1",routeKey,rr.id,field,uid]);repairs.push({routeId:rr.id,userId:uid,duty:u.routeDuty,action:"restore_route_slot"});continue}
+ /* 巡检用户记录：一次 MGET 取代逐条 GET；线路记录同样批量预取。
+    注意：boundRouteId 可能指向「不在索引里」的线路，此时必须真的去 Redis 读一次，
+    否则会把「线路记录仍在、只是索引缺失」误判成线路不存在而清掉用户绑定。
+    故对索引外的 id 单独补一次 MGET，判定语义与旧实现逐字一致。 */
+ const auditUserBatch=await mgetBatchMap(env,userIds.map(uid=>"zp:user:"+uid),budget,{batch:100});
+ if(!auditUserBatch.complete)throwBudgetExceeded(budget.max,"routes-audit-users");
+ const auditUserRaw=uid=>auditUserBatch.map.get("zp:user:"+uid);
+ const parseUser=v=>{if(v==null)return null;let o=null;try{o=typeof v==="string"?JSON.parse(v):v}catch{};return o};
+ const boundIds=[...new Set(userIds.map(uid=>{const u=parseUser(auditUserRaw(uid));return u&&u.id===uid&&u.boundRouteId?String(u.boundRouteId):null}).filter(Boolean))];
+ const outsideIndex=boundIds.filter(rid=>!routeById.has(rid));
+ const auditRouteBatch=outsideIndex.length?await mgetBatchMap(env,outsideIndex.map(rid=>"zp:route:"+rid),budget,{batch:100}):{map:new Map(),complete:true};
+ if(!auditRouteBatch.complete)throwBudgetExceeded(budget.max,"routes-audit-routes");
+ /* 索引内的线路复用已解析对象（与旧实现 getRoute 重读等价：下面的修复会同步改内存），
+    索引外的查补取结果；两者都保持「取不到即 null」。 */
+ const auditRoute=rid=>{if(routeById.has(rid))return routeById.get(rid);return parseRoute(auditRouteBatch.map.get("zp:route:"+rid))};
+for(const uid of userIds){const raw=auditUserRaw(uid);let u=null;try{u=typeof raw==="string"?JSON.parse(raw):raw}catch{};if(!u||u.id!==uid)continue;if(!u.boundRouteId&&!u.routeDuty)continue;if(!u.boundRouteId||!["driver","delivery"].includes(u.routeDuty)){const key="zp:user:"+uid;await command(env,["EVAL","local raw=redis.call('GET',KEYS[1]); if not raw then return 2 end; local u=cjson.decode(raw); if u.id~=ARGV[1] then return 3 end; u.boundRouteId=cjson.null; u.routeDuty=cjson.null; u.sessionVersion=(u.sessionVersion or 1)+1; redis.call('SET',KEYS[1],cjson.encode(u)); return 1","1",key,uid]);repairs.push({userId:uid,action:"clear_invalid_user_binding"});continue}
+const rr=auditRoute(u.boundRouteId);if(!rr){const key="zp:user:"+uid;await command(env,["EVAL","local raw=redis.call('GET',KEYS[1]); if not raw then return 2 end; local u=cjson.decode(raw); if u.id~=ARGV[1] then return 3 end; u.boundRouteId=cjson.null; u.routeDuty=cjson.null; u.sessionVersion=(u.sessionVersion or 1)+1; redis.call('SET',KEYS[1],cjson.encode(u)); return 1","1",key,uid]);repairs.push({userId:uid,action:"clear_missing_route_binding"});continue}
+const field=u.routeDuty==="driver"?"driverUserId":"deliveryUserId";const occupant=rr[field];if(occupant===uid)continue;if(!occupant){const routeKey="zp:route:"+rr.id;await command(env,["EVAL","local raw=redis.call('GET',KEYS[1]); if not raw then return 2 end; local r=cjson.decode(raw); if r.id~=ARGV[1] or r[ARGV[2]]~=nil then return 3 end; r[ARGV[2]]=ARGV[3]; redis.call('SET',KEYS[1],cjson.encode(r)); return 1","1",routeKey,rr.id,field,uid]);repairs.push({routeId:rr.id,userId:uid,duty:u.routeDuty,action:"restore_route_slot"});if(rr)rr[field]=uid;continue}
 // 两个用户同时声明同一岗位时，以线路当前占用者为准，清理冲突用户的绑定，避免任何窗口显示不同人员。
 const key="zp:user:"+uid;await command(env,["EVAL","local raw=redis.call('GET',KEYS[1]); if not raw then return 2 end; local u=cjson.decode(raw); if u.id~=ARGV[1] or u.boundRouteId~=ARGV[2] or u.routeDuty~=ARGV[3] then return 3 end; u.boundRouteId=cjson.null; u.routeDuty=cjson.null; u.sessionVersion=(u.sessionVersion or 1)+1; redis.call('SET',KEYS[1],cjson.encode(u)); return 1","1",key,uid,rr.id,u.routeDuty]);repairs.push({routeId:rr.id,userId:uid,duty:u.routeDuty,action:"clear_conflicting_user_binding",keptUserId:occupant})}
 }
@@ -98,8 +134,6 @@ const key="zp:user:"+uid;await command(env,["EVAL","local raw=redis.call('GET',K
   if(!fixedComplete)throwBudgetExceeded(budget.max,"routes-reread");
   for(const id of ids){const r2=parseRoute(fixedMap.get("zp:route:"+id));if(r2&&r2.id===id)routeById.set(id,r2)}
  }
- const {map:baseMap,complete:baseComplete}=await mgetBatchMap(env,ids.map(id=>"zp:route:"+id+":base"),budget,{batch:100});
- if(!baseComplete)throwBudgetExceeded(budget.max,"routes-read-base");
 const routes=[];for(const id of ids){const r=routeById.get(id);const baseRaw=baseMap.get("zp:route:"+id+":base");let storeCount=0;try{const b=baseRaw?(typeof baseRaw==="string"?JSON.parse(baseRaw):baseRaw):null;storeCount=Array.isArray(b?.stores)?b.stores.length:0}catch{}routes.push({id:r.id,name:r.name,status:r.status||"active",driverUserId:r.driverUserId||null,deliveryUserId:r.deliveryUserId||null,storeCount})}
  /* 线路列表统一按名称自然序升序（产品要求「线路排列，升序排列」：索引是创建追加序，
     历史数据可能是任意序，展示层不依赖索引方向）。名称在建路时校验唯一，不会并列；
