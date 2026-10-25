@@ -71,7 +71,6 @@ module.exports = [
     ignores: [
       "node_modules/**",
       "css/**",
-      "downloads/**",
       "docs/**",
       "*.min.js",
       "package-lock.json",

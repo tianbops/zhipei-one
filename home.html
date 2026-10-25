@@ -33,7 +33,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="智配One">
-<script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F6F7F9":"#121826");try{var zn=window.ZhipeiNative;if(zn&&zn.applyTheme)zn.applyTheme(r==="light"?"#F6F7F9":"#121826",r!=="light")}catch(e2){}}catch(e){}</script>
+<script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F6F7F9":"#121826");}catch(e){}</script>
 <link rel="stylesheet" href="/css/app.css?v=f2f20c99"><link rel="stylesheet" href="/css/ui-base.css?v=74d8975d"><link rel="stylesheet" href="/css/ui-overlay.css?v=4ce1c2cf"><link rel="stylesheet" href="/css/ui-theme.css?v=2bcd8baa"><link rel="stylesheet" href="/css/ui-shell.css?v=d7e34ce4">
 <link rel="stylesheet" href="/css/home-base.css?v=1e11f161"><link rel="stylesheet" href="/css/home-trend.css?v=f891f0bb"><link rel="stylesheet" href="/css/home-dashboard.css?v=d6d260c3"><link rel="stylesheet" href="/css/home-light.css?v=ff4e37c5">
 <script src="/js/perf-diagnostics.js?v=a2065bec"></script>
@@ -166,7 +166,7 @@
 (()=>{const d=document.getElementById("todayDate");if(d){const f=new Intl.DateTimeFormat("zh-CN",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit",weekday:"short"});d.textContent=f.format(new Date()).replaceAll("/","-")}})();
 document.getElementById("logout")?.addEventListener("click",async()=>{const ok=window.zpConfirm?await window.zpConfirm("退出登录","确定要退出当前账号吗？","退出"):true;if(!ok)return;try{await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"})}finally{location.replace("/")}})
 </script>
-<script src="/js/ui/core.js?v=1c74a596"></script><script src="/js/ui/appearance.js?v=9e276eba"></script><script src="/js/ui/feedback.js?v=f8da0256"></script><script src="/js/ui/nav.js?v=fee2f25c"></script><script src="/js/ui/back.js?v=47e6341f"></script><script src="/js/ui/nav-prefetch.js?v=7c589b89"></script>
+<script src="/js/ui/core.js?v=1c74a596"></script><script src="/js/ui/appearance.js?v=24eaa466"></script><script src="/js/ui/feedback.js?v=f8da0256"></script><script src="/js/ui/nav.js?v=fee2f25c"></script><script src="/js/ui/back.js?v=f7050b5c"></script><script src="/js/ui/nav-prefetch.js?v=7c589b89"></script>
 <script src="/js/pwa.js?v=68dbac73"></script>
 </body>
 </html>

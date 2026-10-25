@@ -8,12 +8,12 @@
  */
 export const INLINE_SCRIPT_HASHES = [
   "'sha256-6cZbWMQszjI/NJGFAo7bPl2caT4X97CIk4zJ+t3zZiM='",
-  "'sha256-BC43Ouv/SqBcuaDzc3Ne1sTTSaUOD43viNxt6Ouuqv4='",
+  "'sha256-DNlGkYrDCx/AfzEjsbdWJGh237CdEZ9iSdGvFqGSXIs='",
   "'sha256-EQJmSLoiJL+PQWC4gR5vK1m00IAIkOncgH8MBRcIFI8='",
   "'sha256-FtNCWvRQ8Fk17rFw1hKRlJwhHLDsg23OtAvJiOm2l7A='",
   "'sha256-Jbs9QYmHmBQ8pd9ra3wOoZWi3L60pBLYa9VnhLpLoXE='",
+  "'sha256-LUC8SL57zbxbUHkBBiL/QwMNt4CitRikBrWYyhhgu3o='",
   "'sha256-Olpv4WZyS2ww4ZTxshC1vGXZYa6gG40pXYAUgL+pvOM='",
-  "'sha256-UeNOW/++UJJxJTBJK2PwMCHT6vLz+0LRVDgSEDtnDes='",
   "'sha256-Ugr/ROWqz2c38q1IjBPexc6mwtLx8Ps2WXYPFdznT0U='",
   "'sha256-XA08JObdZbZVLasslDJ8CblQME6wINeX7rW15EbsqZw='",
   "'sha256-cf75Iui0OlJqDOCnnPHxROdfuSannIL1ZAs75ruJkis='",

@@ -65,7 +65,6 @@ for (const [file, needle] of getExpect) {
 const apiWrappers = [
   ["pages/account.html", "zpFetch(u,"],
   ["pages/account.html", 'zpFetch("/version.json?ts="+Date.now()'],
-  ["pages/account.html", 'zpFetch("/downloads/manifest.json?ts="+Date.now()'],
   ["pages/data.html", "zpFetch(u,"],
   ["pages/route_apply.html", "zpFetch(u,"],
   ["pages/dispatch.html", "zpFetch(url,"],

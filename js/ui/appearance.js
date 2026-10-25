@@ -40,22 +40,13 @@
       root.dataset.zpTheme=resolved;
       root.dataset.zpThemeChoice=chosen;
       const dark=resolved!=="light";
-      /* 壳底色与网页主题严格成对：深色 #121826 ↔ 浅色 #F6F7F9。
-         映射表是 meta theme-color 与安卓壳状态栏的共同真值来源
-         （浅色取映射值，深色取键本身），杜绝两处各写一半对不齐。 */
+      /* 主题底色严格成对：深色 #121826 ↔ 浅色 #F6F7F9。
+         映射表是 meta theme-color 的唯一真值来源（浅色取映射值，深色取键本身），
+         杜绝多处各写一半对不齐。 */
       const SHELL_BG={"#121826":"#F6F7F9"};
       const bg=dark?"#121826":SHELL_BG["#121826"];
       const meta=document.querySelector('meta[name="theme-color"]');
       if(meta)meta.setAttribute("content",bg);
-      // 安卓壳（Capacitor）状态栏同步：壳里此前是「透明状态栏 + 图标跟随系统深浅色」，
-      // 于是 App 深色外观 + 系统浅色模式（或反过来）时图标与底色同色，状态栏直接看不见。
-      // 这里把网页实际外观回传给壳，由壳把状态栏/导航栏底色设为不透明主题色、
-      // 图标明暗按底色取反，两个来源从此只有网页一个真值。浏览器/PWA 里没有该对象，
-      // 静默跳过即可（那条路径靠上面的 theme-color 生效）。
-      try{
-        const native=window.ZhipeiNative;
-        if(native&&typeof native.applyTheme==="function")native.applyTheme(bg,dark);
-      }catch(e){}
       document.dispatchEvent(new CustomEvent("zp:appearancechange",{detail:{theme:chosen,resolved}}));
     };
     // 全局字号缩放的目标标签：必须覆盖所有可能直接包裹文本的标签。
@@ -115,16 +106,6 @@
     };
     let textObserver=null;
     let textScaleActive=false;
-    /* 全局字号同步给安卓壳：壳的 WebSettings.setTextZoom 被刻意锁死在 100%
-       （网页侧缩放若与 WebView 文字缩放叠乘会互相挤压布局），壳只按本值
-       缩放自身原生浮层（Toast 等）的文字；网页内文字由上方 scanText 负责。
-       浏览器/PWA 无此对象，静默跳过。 */
-    const notifyNativeFontScale=n=>{
-      try{
-        const native=window.ZhipeiNative;
-        if(native&&typeof native.setFontScale==="function")native.setFontScale(n);
-      }catch(e){}
-    };
     const applyScale=value=>{
       const n=Math.max(0.85,Math.min(1.3,Number(value)||1));
       root.style.setProperty("--zp-font-scale",String(n));
@@ -141,7 +122,6 @@
           textObserver.observe(document.body,{childList:true,subtree:true});
         }
       }
-      notifyNativeFontScale(n);
       document.dispatchEvent(new CustomEvent("zp:fontscalechange",{detail:{scale:n}}));
     };
     window.zpSetAppearanceTheme=theme=>{const v=validThemes.includes(theme)?theme:"system";try{localStorage.setItem(THEME_KEY,v)}catch{}applyTheme(v)};

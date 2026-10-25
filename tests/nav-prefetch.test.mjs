@@ -51,9 +51,9 @@ console.log("【1】_headers 缓存策略");
   check(/immutable/.test(cssBlock) && /max-age=31536000/.test(cssBlock), "/css/* 仍 immutable-year");
 
   // 发版流水线写入的静态 JSON：无缓存规则时会每次回源（实测 52 字节要 3.0~3.5s）。
-  // 但 TTL 必须很短——它们是「发版后要立刻反映新值」的东西，
-  // 调大会让用户在新版本发布后仍读到旧版本号/旧 APK，所以用断言把 60s 锁死。
-  for (const f of ["/version.json", "/downloads/manifest.json"]) {
+  // 但 TTL 必须很短——它是「发版后要立刻反映新值」的东西，
+  // 调大会让用户在新版本发布后仍读到旧版本号，所以用断言把 60s 锁死。
+  for (const f of ["/version.json"]) {
     const b = rule(f);
     check(/max-age=60\b/.test(b) && /stale-while-revalidate=86400/.test(b),
       `${f}：max-age=60 + stale-while-revalidate=86400（省一次回源，发版至多陈旧 60s）`);

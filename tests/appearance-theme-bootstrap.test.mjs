@@ -174,18 +174,14 @@ assert.ok(
   "history.css 必须接管 .history-delete 专用样式"
 );
 
-// ============================ E. 壳色同步 ============================
-// 安卓壳状态栏同步：壳里曾把状态栏设为透明、图标跟随「系统」深浅色，
-// 于是 App 深色外观 + 系统浅色（或反之）时图标与底色同色，状态栏直接看不见。
-// 现在唯一真值是网页外观：网页必须把实际主题回传给壳（不透明主题底色 + 图标取反）。
+// ============================ E. 主题底色同步 ============================
+// 底色真值唯一：深色 #121826 ↔ 浅色 #F6F7F9，由映射表统一给出，杜绝多处各写一半对不齐。
 const unifiedJs = fs.readFileSync(path.join(root, "js/ui/appearance.js"), "utf8");
-assert.match(unifiedJs, /ZhipeiNative[\s\S]{0,200}applyTheme\(/,
-  "js/ui/appearance.js 必须在应用主题时把底色与深浅回传给安卓壳（ZhipeiNative.applyTheme）");
 assert.ok(/const\s+dark\s*=\s*resolved\s*!==\s*"light"/.test(unifiedJs) && unifiedJs.includes('"#121826":"#F6F7F9"'),
-  "回传给壳的底色必须与网页主题一致（深色 #121826 / 浅色 #F6F7F9）");
-// js/ui/appearance.js 在页面底部，App 内加载线上页面时可能晚于首帧，
-// 因此 <head> 里的内联主题脚本（比任何外链 JS 都早）也必须回传一次，否则浅色用户会先看到深色状态栏再跳变。
-// 2026-10-23：原 Group-B 五页（index/register/setup/offline/admin-bootstrap）只设属性不同步 meta/壳，
+  "主题底色必须与网页主题一致（深色 #121826 / 浅色 #F6F7F9）");
+// js/ui/appearance.js 在页面底部，加载线上页面时可能晚于首帧，
+// 因此 <head> 里的内联主题脚本（比任何外链 JS 都早）也必须同步一次，否则浅色用户会先看到深色再跳变。
+// 2026-10-23：原 Group-B 五页（index/register/setup/offline/admin-bootstrap）只设属性不同步 meta，
 // 是「meta theme-color 匹配漏洞」；基底反转为浅色默认后，全部页面必须统一同步。
 for (const file of themedPages) {
   const html = fs.readFileSync(file, "utf8");
@@ -195,8 +191,6 @@ for (const file of themedPages) {
     path.relative(root, file) + " 静态 meta theme-color 默认值必须为浅色 #F6F7F9（浅色为默认外观）");
   const firstCss = html.search(/<link\s+[^>]*rel=["']stylesheet["'][^>]*>/i);
   const early = html.slice(0, firstCss);
-  assert.ok(early.includes("ZhipeiNative"),
-    path.relative(root, file) + " 的首屏内联主题脚本必须同步安卓壳状态栏（避免首帧状态栏配色跳变）");
   assert.ok(early.includes("theme-color"),
     path.relative(root, file) + " 的首屏内联主题脚本必须同步 meta theme-color");
 }

@@ -27,7 +27,7 @@ import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
-const SKIP_DIRS = new Set(["node_modules", ".git", "downloads", "assets", "docs"]);
+const SKIP_DIRS = new Set(["node_modules", ".git", "assets", "docs"]);
 const EXTS = new Set([".js", ".cjs", ".mjs"]);
 
 function walk(dir, out = []) {

@@ -27,7 +27,7 @@
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png?v=8f07ea01">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="智配One"><script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F6F7F9":"#121826");try{var zn=window.ZhipeiNative;if(zn&&zn.applyTheme)zn.applyTheme(r==="light"?"#F6F7F9":"#121826",r!=="light")}catch(e2){}}catch(e){}</script>
+<meta name="apple-mobile-web-app-title" content="智配One"><script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F6F7F9":"#121826");}catch(e){}</script>
 <link rel="stylesheet" href="/css/app.css?v=f2f20c99"><link rel="stylesheet" href="/css/ui-base.css?v=74d8975d"><link rel="stylesheet" href="/css/ui-overlay.css?v=4ce1c2cf"><link rel="stylesheet" href="/css/ui-theme.css?v=2bcd8baa"><link rel="stylesheet" href="/css/ui-shell.css?v=d7e34ce4"><link rel="stylesheet" href="/css/mobile-ui.css?v=3fff5e47"><link rel="stylesheet" href="/css/business-pages.css?v=19a28a05">
 <style>
 /* ===== 账号设置页 2.0（2026-10-21 视觉重构）
@@ -263,9 +263,6 @@
     <div class="acct-row" role="group">
       <span class="acct-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2.5"></rect><path d="M10 7h4"></path></svg></span>
       <span id="installLabelBtn" class="acct-row-label" role="button" tabindex="0">下载应用</span>
-      <span class="about-row-actions">
-        <a id="installDlLink" class="about-link" hidden>最新安装包</a>
-      </span>
     </div>
     <div class="acct-row" role="group">
       <span class="acct-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18"></path></svg></span>
@@ -277,11 +274,6 @@
   </div>
   <div id="installGuide" class="install-guide" hidden>
     <ol id="installGuideSteps"></ol>
-    <div class="install-guide-fallback" id="installGuideFallback" hidden>
-      <p>当前 App 版本较旧，可能无法在应用内直接下载安装包。</p>
-      <p>请用手机浏览器打开网页端 <b>tianyou-zhipei.pages.dev</b>，进入「账号设置 → 下载应用」获取最新安装包。</p>
-      <button id="guideCopyBtn" class="install-guide-copy" type="button">复制网页端地址</button>
-    </div>
   </div>
 </section>
 
@@ -348,8 +340,6 @@
       <p class="acct-help-a">请联系下方反馈邮箱或你的线路管理员重置密码。</p>
       <p class="acct-help-q">数据存在哪里？</p>
       <p class="acct-help-a">云端加密存储，换设备登录同一账号即可同步。</p>
-      <p class="acct-help-q">如何更新 App？</p>
-      <p class="acct-help-a">账号设置 → 下载应用 → 最新安装包。</p>
       <p class="acct-help-q">运单识别不准？</p>
       <p class="acct-help-a">识别结果可能存在误差，务必人工核对，可手动修正后再使用。</p>
       <h3 class="acct-help-sub">反馈渠道</h3>
@@ -481,66 +471,24 @@ $("deleteConfirm").onclick=async()=>{
  }catch(e){show("deleteMessage",e);$("deleteConfirm").disabled=false}
 };
 
-/* 关于（成熟 App 范式 2.0）：品牌区版本 + 获取组（下载应用/网页端地址）+ 信息组（隐私/条款/帮助）。
-   - 版本号读 /version.json；最新安装包版本读 /downloads/manifest.json（发版零改动）
-   - 下载应用：点击触发 PWA 安装/引导；右侧「最新安装包 Vx.x.x」同域直链
-   - 网页端地址：点击复制官网 https://tianyou-zhipei.pages.dev
-   - 信息组暂为占位（真实页面待补） */
+ /* 关于（成熟 App 范式 2.0）：品牌区版本 + 获取组（添加到桌面/网页端地址）+ 信息组（隐私/条款/帮助）。
+    - 版本号读 /version.json（SW 保证永远最新）
+    - 添加到桌面：点击触发 PWA 安装/引导
+    - 网页端地址：点击复制官网 https://tianyou-zhipei.pages.dev
+    - 信息组暂为占位（真实页面待补） */
 (function(){
- const installDlLink=$("installDlLink"),guide=$("installGuide"),steps=$("installGuideSteps"),
+ const guide=$("installGuide"),steps=$("installGuideSteps"),
   webCopyBtn=$("webCopyBtn");
  if(!$("aboutVersion"))return;
  const installed=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
 
- /* 品牌区版本号：多端版本语义分层（App 壳版本 ≠ 网页实时版本）。
-    - 浏览器/桌面/微信/PWA：web 实时版本（version.json，SW 保证永远最新）→「版本 Vx.x.x」
-    - App 壳：APK 版本（ZhipeiNative.appVersion()，锁在安装包）→「App Vx.x.x」；
-      落后于最新版（version.json 与发版 tag 一致，即最新 APK 版本）时追加
-      「有新版本」徽标，点击直接下载（原生 DownloadManager 接管）。
-    - 老包无 appVersion 接口：降级为 web 版本显示（渐进增强，v1.0.12 起完整生效）。 */
+ /* 品牌区版本号：web 实时版本（version.json），SW 保证永远最新 →「版本 Vx.x.x」。
+    原生 App 项目已下线，不再区分 App 壳版本。 */
  (function(){
   const textEl=$("aboutVerText");if(!textEl)return;
-  function apkVersion(){
-   try{
-    if(window.ZhipeiNative&&window.ZhipeiNative.appVersion){
-     const v=window.ZhipeiNative.appVersion();
-     if(v&&/^\d+(\.\d+)*$/.test(String(v)))return String(v);
-    }
-   }catch(e){}
-   return null;
-  }
-  /* 点分版本号比较：a<b 返回 -1，相等 0，a>b 1 */
-  function compareVer(a,b){
-   const pa=String(a).split(".").map(n=>parseInt(n,10)||0);
-   const pb=String(b).split(".").map(n=>parseInt(n,10)||0);
-   const n=Math.max(pa.length,pb.length);
-   for(let i=0;i<n;i++){
-    const x=pa[i]||0,y=pb[i]||0;
-    if(x!==y)return x<y?-1:1;
-   }
-   return 0;
-  }
-  function render(webVer){
-   const apkV=apkVersion();
-   if(apkV){
-    textEl.textContent="App V"+apkV;
-    if(webVer&&compareVer(apkV,webVer)<0){
-     const badge=document.createElement("button");
-     badge.type="button";badge.className="acct-ver-badge";
-     badge.textContent="有新版本 V"+webVer;
-     badge.setAttribute("aria-label","有新版本 V"+webVer+"，点击下载安装包");
-     badge.addEventListener("click",()=>{
-      if(installDlLink&&installDlLink.getAttribute("href")){
-       installDlLink.click();
-       if(window.zpToast)window.zpToast("开始下载安装包…","info");
-      }else if(window.zpToast)window.zpToast("安装包信息加载中，请稍候","info");
-     });
-     textEl.after(badge);
-    }
-   }else{
+   function render(webVer){
     textEl.textContent=webVer?("版本 V"+webVer):"版本 网页版";
    }
-  }
   zpFetch("/version.json?ts="+Date.now(),{cache:"no-store"}).then(r=>r.json()).then(v=>{
    render(v&&v.version);
   }).catch(()=>{render(null)});
@@ -566,11 +514,8 @@ $("deleteConfirm").onclick=async()=>{
  }
  function copyWeb(){copyText(WEB_URL,"网页端地址已复制")}
  webCopyBtn.onclick=copyWeb;
-/* 旧壳兜底引导里的复制按钮：与「网页端地址 → 复制」同一逻辑 */
-const guideCopyBtn=$("guideCopyBtn");
-if(guideCopyBtn)guideCopyBtn.onclick=copyWeb;
 
- /* 下载应用：触发安装/引导；右侧最新安装包版本读 manifest */
+ /* 添加到桌面：触发 PWA 安装/引导 */
  function showSteps(list){
   steps.innerHTML="";
   list.forEach(t=>{const li=document.createElement("li");li.textContent=t;steps.appendChild(li)});
@@ -579,60 +524,16 @@ if(guideCopyBtn)guideCopyBtn.onclick=copyWeb;
  const ua=navigator.userAgent||"";
  const isWeChat=/MicroMessenger/i.test(ua);
  const isIOS=/iPad|iPhone|iPod/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
- const isAndroid=/Android/i.test(ua);
- // 智配One APK 壳（Capacitor WebView）：beforeinstallprompt 永不触发，
- // PWA 安装语义在这里无意义，点击「下载应用」应直接下 APK——由原生
- // DownloadManager 监听接管（见 repo-app MainActivity.setDownloadListener）。
- const isNativeApp=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());
- function setApk(file,ver){
-  installDlLink.href="/downloads/"+file;
-  installDlLink.setAttribute("download","zhipei-one-v"+(ver||"latest")+".apk");
-  installDlLink.textContent="最新安装包"+(ver?" V"+ver:"");
-  installDlLink.hidden=false;
- }
  const label=$("installLabelBtn");
- if(isIOS){
-  installDlLink.hidden=true;
- }else{
-  zpFetch("/downloads/manifest.json?ts="+Date.now(),{cache:"no-store"})
-   .then(r=>r.ok?r.json():null)
-   .then(m=>setApk((m&&m.file)||"zhipei-one-latest-release.apk",m&&m.version))
-   .catch(()=>{setApk("zhipei-one-latest-release.apk")});
- }
  if(!installed){
   let deferred=null;
   window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferred=e});
   const labelClick=()=>{
    guide.hidden=true;
-   const apkReady=!!(installDlLink&&installDlLink.getAttribute("href"));
    if(isWeChat){
     showSteps(["点右上角「···」","选「在浏览器中打开」","在浏览器中打开后再安装到桌面"]);
    }else if(isIOS){
     showSteps(["点底部「分享」按钮","选「添加到主屏幕」","点「添加」，之后从桌面打开"]);
-   }else if(isNativeApp){
-    /* 壳内：直接下载 APK，别再绕 PWA 引导（WebView 里也没有安装概念）。
-       优先走原生接口 ZhipeiNative.downloadApk()（V1.0.13 起提供）——程序化
-       click() 对 WebView onDownloadStart 的派发不可靠，原生直接 enqueue
-       DownloadManager 才是全版本可靠路径；老壳无此接口才降级 click()。 */
-    if(apkReady){
-     const nativeDl=window.ZhipeiNative&&typeof window.ZhipeiNative.downloadApk==="function";
-     if(nativeDl){
-      window.ZhipeiNative.downloadApk(installDlLink.href);
-      if(window.zpToast)window.zpToast("开始下载安装包…","info");
-     }else{
-      installDlLink.click();
-      if(window.zpToast)window.zpToast("开始下载安装包…","info");
-     }
-    }else if(window.zpToast)window.zpToast("安装包信息加载中，请稍候再试","info");
-    /* 旧壳兜底：appVersion 接口是 V1.0.12 才加的，没有它说明壳 ≤1.0.11——
-       其中 ≤1.0.10 的包没有原生下载监听，上面的 click() 不会触发任何下载
-       （用户反馈「点击下载没反应」即此）。展开引导让用户去浏览器自愈；
-       新壳（≥1.0.13 有 downloadApk 接口）下载已由原生接管，不展示引导。 */
-    if(!(window.ZhipeiNative&&typeof window.ZhipeiNative.appVersion==="function")){
-     guide.hidden=false;
-     const fb=$("installGuideFallback");
-     if(fb)fb.hidden=false;
-    }
    }else if(deferred){
     const ev=deferred;deferred=null;
     try{
@@ -641,12 +542,9 @@ if(guideCopyBtn)guideCopyBtn.onclick=copyWeb;
       if(r&&r.outcome==="accepted"){if(label)label.textContent="已添加到桌面";guide.hidden=true;if(window.zpToast)window.zpToast("已添加到桌面","success")}
      }).catch(()=>{});
     }catch(e){}
-   }else if(isAndroid&&apkReady){
-    /* 安卓浏览器但不满足 PWA 安装条件：安卓用户要的就是 APK，直接给 */
-    installDlLink.click();
-   }else{
-    if(window.zpToast)window.zpToast("如未自动安装，请点右侧「最新安装包」","info");
-   }
+    }else{
+     showSteps(["点浏览器菜单（右上角）","选「添加到主屏幕」或「安装应用」","确认后从桌面打开"]);
+    }
   };
   if(label){label.addEventListener("click",labelClick);label.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();labelClick()}});}
  }
@@ -688,6 +586,6 @@ if(t)t.addEventListener("click",()=>location.assign("/pages/terms"));
 })();
 
 load();
-</script><script src="/js/ui/core.js?v=1c74a596"></script><script src="/js/ui/appearance.js?v=9e276eba"></script><script src="/js/ui/feedback.js?v=f8da0256"></script><script src="/js/ui/nav.js?v=fee2f25c"></script><script src="/js/ui/back.js?v=47e6341f"></script><script src="/js/ui/nav-prefetch.js?v=7c589b89"></script>
+</script><script src="/js/ui/core.js?v=1c74a596"></script><script src="/js/ui/appearance.js?v=24eaa466"></script><script src="/js/ui/feedback.js?v=f8da0256"></script><script src="/js/ui/nav.js?v=fee2f25c"></script><script src="/js/ui/back.js?v=f7050b5c"></script><script src="/js/ui/nav-prefetch.js?v=7c589b89"></script>
 <script src="/js/pwa.js?v=68dbac73"></script>
 </body></html>

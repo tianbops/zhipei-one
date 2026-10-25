@@ -2,9 +2,8 @@
 node_modules/
 package-lock.json
 
-# 非 JS/TS 资产：手写 CSS 与下载产物不做格式化（避免大规模无意义 diff）
+# 非 JS/TS 资产：手写 CSS 与图片资产不做格式化（避免大规模无意义 diff）
 css/
-downloads/
 assets/
 
 # 生成或敏感目录
