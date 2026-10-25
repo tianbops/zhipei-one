@@ -588,10 +588,16 @@ body {
   box-sizing: border-box;
   margin: 0;
   padding: 0 16px;
-  border: 1px solid var(--zp-line);
+  /* 浅色基底输入对比度修复（2026-10-26 用户反馈「浅色输入框对比度太低」）：
+     原 var(--zp-line)#EEEEEE 边 + var(--zp-card-translucent-2)#F2F3F5 底，
+     边框与底色对比仅 1.07:1、与页面背景几乎无法区分；改为白底（--zp-surface）
+     + 专用边框令牌 --zp-input-line，与 #F6F7F9 页面背景拉开层次。
+     边框令牌定义见 ui-base.css（浅色）与 ui-theme.css（深色覆盖）；占位符
+     --zp-muted 见下方 ::placeholder 规则。 */
+  border: 1px solid var(--zp-input-line);
   border-radius: 13px;
   outline: none;
-  background: var(--zp-card-translucent-2);
+  background: var(--zp-surface);
   color: var(--zp-text);
   font: inherit;
   font-size: 16px;
@@ -599,8 +605,10 @@ body {
   appearance: none;
 }
 
+/* 原 var(--zp-soft)#999999 在浅色底上仅 2.6:1（WCAG AA 要求 4.5:1）；
+   --zp-muted 浅色 #666666 = 5.7:1 达标，深色自动取 #94A3B8 同样更清晰 */
 .login-field input::placeholder {
-  color: var(--zp-soft);
+  color: var(--zp-muted);
 }
 
 .login-field input:focus {

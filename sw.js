@@ -9,7 +9,7 @@
  *   - 图片/字体       ：stale-while-revalidate（内容基本不变，秒开优先）
  * 资产缓存键用完整 URL（含 ?v=）精确匹配；页面缓存键用 pathname 规整（忽略 ?from 等查询）。
  */
-const VERSION = "zp-pwa-138";
+const VERSION = "zp-pwa-141";
 const STATIC_CACHE = VERSION + "-static";
 const PAGES_CACHE = VERSION + "-pages";
 const OFFLINE_URL = "/offline";
@@ -37,7 +37,7 @@ const PRECACHE = [
   "/css/admin-forms.css?v=28b21210",
   "/css/admin-overlay.css?v=14bf1db5",
   "/css/admin-perf.css?v=b62b874c",
-  "/css/app.css?v=f2f20c99",
+  "/css/app.css?v=30c14b4f",
   "/css/business-pages.css?v=19a28a05",
   "/css/data.css?v=e2e22566",
   "/css/history-light.css?v=7efb3bff",
@@ -52,10 +52,10 @@ const PRECACHE = [
   "/css/home-trend.css?v=f891f0bb",
   "/css/mobile-ui.css?v=3fff5e47",
   "/css/order_detail.css?v=bc7d2f5a",
-  "/css/ui-base.css?v=74d8975d",
+  "/css/ui-base.css?v=2dd9bf80",
   "/css/ui-overlay.css?v=4ce1c2cf",
   "/css/ui-shell.css?v=d7e34ce4",
-  "/css/ui-theme.css?v=2bcd8baa",
+  "/css/ui-theme.css?v=90509d7b",
   "/css/zp-picker.css?v=b4e8856e",
   "/js/admin/account.js?v=9c4b58ce",
   "/js/admin/boot.js?v=b67b4328",

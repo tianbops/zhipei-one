@@ -27,6 +27,10 @@
   --zp-surface-2:#F2F3F5;
   --zp-surface-3:#E8EAED;
   --zp-line:#EEEEEE;
+  /* 登录输入框专用边框（2026-10-26 浅色对比度修复）：浅色默认边框需比 --zp-line
+     深一档才能与白底/浅灰页面背景拉开层次（原 #EEEEEE 边在白底上几乎隐形）；
+     深色覆盖见 ui-theme.css。取值刻意避开 retired 色板中的旧浅灰蓝灰族。 */
+  --zp-input-line:#C5CCD4;
   --zp-text:#111111;
   --zp-muted:#666666;
   --zp-soft:#999999;

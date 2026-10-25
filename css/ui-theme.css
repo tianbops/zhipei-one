@@ -12,6 +12,7 @@
   --zp-surface-2:#253345;
   --zp-surface-3:#334155;
   --zp-line:#334155;
+  --zp-input-line:var(--zp-line);
   --zp-text:#F1F5F9;
   --zp-muted:#94A3B8;
   --zp-soft:#64748B;
@@ -124,4 +125,16 @@ a[class*="danger"]:active,
   background:var(--zp-secondary-active)!important;
   border-color:var(--zp-line)!important;
   color:var(--zp-error)!important;
+}
+
+/* 登录输入框深色恢复：app.css 浅色基底已改为白底 + --zp-input-line 边（浅色对比度
+   修复，见该处注释）。深色下边框令牌 --zp-input-line 已覆盖为 --zp-line，无需重复；
+   此处仅恢复半透明底与聚焦实底，保持原深色观感。 */
+:root[data-zp-theme="dark"] .login-field input {
+  color-scheme: dark;
+  background: var(--zp-card-translucent-2);
+}
+:root[data-zp-theme="dark"] .login-field input:focus {
+  color-scheme: dark;
+  background: var(--zp-surface);
 }
