@@ -26,9 +26,9 @@
 | GET / POST / DELETE | `/api/history-trash` | — |
 | GET / POST | `/api/invite-codes` | — |
 | GET / POST | `/api/learning` | — |
-| POST | `/api/login` | 存量账号的机会性升级（P0-6 迁移策略） -------------------------------------------------------… |
+| POST | `/api/login` | POST /api/login —— 账号口令登录，成功后下发 7 天会话 Cookie（HttpOnly + SameSite=Lax + Secure… |
 | POST | `/api/logout` | — |
-| GET | `/api/me` | — |
+| GET | `/api/me` | GET /api/me —— 取当前登录用户（会话 Cookie 校验）。 未登录返回 401；页面靠它判断要不要跳登录页，管理端 boot 靠它确认 a… |
 | GET | `/api/redis-diag` | Redis 链路自检（临时诊断用）：确认 Cloudflare Pages 当前到底连的是哪个库、 Worker 落在哪个 PoP、Worker→Redi… |
 | POST | `/api/register` | — |
 | POST | `/api/route-binding` | — |

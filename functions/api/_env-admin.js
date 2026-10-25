@@ -49,15 +49,17 @@ end
 return 1
 `;
 
-// 登录路径调用：用户名命中环境变量管理员时，确保库里的管理员记录存在且密码哈希与环境变量一致。
-// 已就绪就一个字都不写（避免每次登录都浪费一次写往返）。
-export async function ensureEnvAdmin(env, username){
-  const cred = envAdminCredentials(env);
-  if (!cred) return null;
-  if (String(username ?? "").trim().toLowerCase() !== cred.username.toLowerCase()) return null;
-
+/**
+ * 「已拿到管理员记录」版本的播种判断（P2-12 登录并行化）
+ * ------------------------------------------------------------------
+ * 与 ensureEnvAdmin 的唯一区别是**不自己读库**：记录由调用方在并行批里顺手读回来，
+ * 这里只负责「要不要播种」。这样登录路径能把「读管理员」和「读用户名索引」合成一轮，
+ * 省下一次跨境往返（Workers→Upstash 中位 186ms）。
+ *
+ * @returns {string|null} 播种后写库的用户 JSON 字符串；已就绪返回 null
+ */
+export async function ensureEnvAdminFromRecord(env, cred, raw){
   const id = ENV_ADMIN_ID;
-  const raw = await get(env, "user:" + id);
   let current = null;
   try { current = raw ? (typeof raw === "string" ? JSON.parse(raw) : raw) : null; } catch { current = null; }
   if (
@@ -88,5 +90,16 @@ export async function ensureEnvAdmin(env, username){
     JSON.stringify(user),
     id,
   ]);
-  return id;
+  return JSON.stringify(user);
+}
+
+// 登录路径调用：用户名命中环境变量管理员时，确保库里的管理员记录存在且密码哈希与环境变量一致。
+// 已就绪就一个字都不写（避免每次登录都浪费一次写往返）。
+export async function ensureEnvAdmin(env, username){
+  const cred = envAdminCredentials(env);
+  if (!cred) return null;
+  if (String(username ?? "").trim().toLowerCase() !== cred.username.toLowerCase()) return null;
+  const raw = await get(env, "user:" + ENV_ADMIN_ID);
+  const written = await ensureEnvAdminFromRecord(env, cred, raw);
+  return written ? ENV_ADMIN_ID : null;
 }
