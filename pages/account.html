@@ -151,11 +151,12 @@
    点击直接触发 APK 下载（原生 DownloadManager 接管）。类名避开 danger/delete
    子串（全站危险按钮兜底规则红线）；#aboutVersion 锚定提升特异性，压过
    ui-unified.css 的全局 button 文字兜底（:root[data-zp-theme=light] button）。 */
-#aboutVersion .acct-ver-badge{margin-left:8px;padding:3px 10px;border:0;border-radius:999px;
-  background:var(--zp-primary);color:var(--zp-on-primary);
-  font-size:11px;font-weight:600;line-height:16px;cursor:pointer;white-space:nowrap;
-  vertical-align:middle;-webkit-tap-highlight-color:transparent}
-#aboutVersion .acct-ver-badge:active{opacity:.75}
+/* 有新版本：静态状态点「● 有新版本」（只提示，动作在下方下载行，避免双热区） */
+#aboutVersion .acct-ver-badge{margin-left:8px;display:inline-flex;align-items:center;gap:5px;
+  padding:0;border:0;background:none;color:var(--zp-primary);
+  font-size:12px;font-weight:600;line-height:16px;white-space:nowrap;vertical-align:middle;cursor:default}
+#aboutVersion .acct-ver-badge::before{content:"";width:6px;height:6px;border-radius:50%;
+  background:currentColor;flex:none}
 /* --- 关于：获取/信息卡片 + 版权 --- */
 .acct-about-copyright{margin:14px 0 4px;text-align:center;color:var(--zp-muted,var(--zp-muted));font-size:12px}
 .install-guide{margin:2px 0 12px}
@@ -175,6 +176,13 @@
 #installLabelBtn::after,.about-row-actions .about-link::after{content:"";position:absolute;inset:-14px -10px}
 .about-row-actions{display:flex;align-items:center;gap:16px;flex:none;margin-left:auto}
 .about-row-actions .about-link{padding:0;border:0;background:none;color:var(--zp-text,#fff);font-size:13px;text-decoration:underline;cursor:pointer}
+/* 下载应用行右侧动作文案：默认灰（acct-row-value 已给），有更新时主色强调 */
+.acct-install-action.is-update{color:var(--zp-primary);font-weight:600}
+/* 网页版「复制网址」小按钮 */
+.acct-mini-btn{padding:5px 12px;border:1px solid var(--zp-line);border-radius:999px;background:none;
+  color:var(--zp-text,#fff);font-size:13px;font-weight:500;line-height:18px;white-space:nowrap;cursor:pointer;
+  -webkit-tap-highlight-color:transparent}
+.acct-mini-btn:active{opacity:.6}
 
 @media(max-width:380px){
   .account-page{padding-left:12px;padding-right:12px}
@@ -255,24 +263,26 @@
 
 <div class="acct-about-hero">
   <p class="acct-about-name">智配One</p>
-  <p class="acct-about-ver" id="aboutVersion"><span id="aboutVerText">版本 网页版</span></p>
+  <p class="acct-about-ver" id="aboutVersion"><span id="aboutVerText">当前版本</span></p>
 </div>
 
 <section id="aboutCard" class="acct-card about-card" aria-label="获取">
   <div class="acct-rows">
-    <div class="acct-row" role="group">
+    <button class="acct-row" id="installRow" type="button">
       <span class="acct-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2.5"></rect><path d="M10 7h4"></path></svg></span>
-      <span id="installLabelBtn" class="acct-row-label" role="button" tabindex="0">下载应用</span>
-      <a id="installDlLink" class="about-link" hidden>最新安装包</a>
-    </div>
+      <span id="installLabelBtn" class="acct-row-label">下载应用</span>
+      <span id="installActionText" class="acct-row-value acct-install-action">下载</span>
+      <svg class="acct-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
+    </button>
     <div class="acct-row" role="group">
       <span class="acct-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18"></path></svg></span>
-      <span class="acct-row-label">网页端地址</span>
+      <span class="acct-row-label">网页版</span>
       <span class="about-row-actions">
-        <button id="webCopyBtn" class="about-link" type="button">复制</button>
+        <button id="webCopyBtn" class="acct-mini-btn" type="button">复制网址</button>
       </span>
     </div>
   </div>
+  <a id="installDlLink" hidden aria-hidden="true"></a>
   <div id="installGuide" class="install-guide" hidden>
     <ol id="installGuideSteps"></ol>
   </div>
@@ -480,8 +490,10 @@ $("deleteConfirm").onclick=async()=>{
     - 信息组暂为占位（真实页面待补） */
 (function(){
  const guide=$("installGuide"),steps=$("installGuideSteps"),
-  webCopyBtn=$("webCopyBtn"),installDlLink=$("installDlLink");
+  webCopyBtn=$("webCopyBtn"),installDlLink=$("installDlLink"),
+  installRow=$("installRow"),actionText=$("installActionText");
  if(!$("aboutVersion"))return;
+ function setAction(text,primary){if(!actionText)return;actionText.textContent=text;actionText.classList.toggle("is-update",!!primary);}
  const installed=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
  // App 壳（Capacitor WebView）注入了 ZhipeiNative.downloadApk：壳内点击「下载应用」直接下 APK，
  // 不再绕 PWA 引导（WebView 里没有安装概念）；浏览器/PWA 仍走安装引导。
@@ -512,21 +524,21 @@ $("deleteConfirm").onclick=async()=>{
   function render(webVer){
    const apkV=apkVersion();
    if(apkV){
-    textEl.textContent="App V"+apkV;
+    textEl.textContent="当前版本 V"+apkV;
     if(webVer&&compareVer(apkV,webVer)<0){
-     const badge=document.createElement("button");
-     badge.type="button";badge.className="acct-ver-badge";
-     badge.textContent="有新版本 V"+webVer;
-     badge.setAttribute("aria-label","有新版本 V"+webVer+"，点击下载安装包");
-     badge.addEventListener("click",()=>{
-      if(installDlLink&&installDlLink.getAttribute("href")){
-       triggerApk();
-      }else if(window.zpToast)window.zpToast("安装包信息加载中，请稍候","info");
-     });
+     // 「有新版本」只作状态提示（静态角标）；真正的更新动作在下方「下载应用」行
+     const badge=document.createElement("span");
+     badge.className="acct-ver-badge";
+     badge.textContent="有新版本";
+     badge.setAttribute("role","status");
      textEl.after(badge);
+     setAction("更新到 V"+webVer,true);
+    }else{
+     setAction("已是最新",false);
     }
    }else{
-    textEl.textContent=webVer?("版本 V"+webVer):"版本 网页版";
+    textEl.textContent=webVer?("当前版本 V"+webVer):"网页版";
+    // 浏览器环境动作文案由下方环境判定给出（安装到桌面/在浏览器打开等）
    }
   }
   zpFetch("/version.json?ts="+Date.now(),{cache:"no-store"}).then(r=>r.json()).then(v=>{
@@ -560,8 +572,6 @@ $("deleteConfirm").onclick=async()=>{
   if(!installDlLink)return;
   installDlLink.href="/downloads/"+file;
   installDlLink.setAttribute("download","zhipei-one-v"+(ver||"latest")+".apk");
-  installDlLink.textContent="最新安装包"+(ver?" V"+ver:"");
-  installDlLink.hidden=false;
  }
  function triggerApk(){
   if(!(installDlLink&&installDlLink.getAttribute("href"))){
@@ -572,7 +582,10 @@ $("deleteConfirm").onclick=async()=>{
    window.ZhipeiNative.downloadApk(installDlLink.href);
    if(window.zpToast)window.zpToast("开始下载安装包…","info");
   }else{
-   installDlLink.click();
+   const a=document.createElement("a");
+   a.href=installDlLink.href;
+   const dl=installDlLink.getAttribute("download");if(dl)a.download=dl;
+   a.rel="noopener";document.body.appendChild(a);a.click();a.remove();
    if(window.zpToast)window.zpToast("开始下载安装包…","info");
   }
  }
@@ -593,33 +606,36 @@ $("deleteConfirm").onclick=async()=>{
    .catch(()=>{setApk("zhipei-one-latest-release.apk")});
  }
  const label=$("installLabelBtn");
- if(!installed){
-  let deferred=null;
-  window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferred=e});
-  const labelClick=()=>{
-   guide.hidden=true;
-   if(isNativeApp){
-    triggerApk();
-   }else if(isWeChat){
-    showSteps(["点右上角「···」","选「在浏览器中打开」","在浏览器中打开后再安装到桌面"]);
-   }else if(isIOS){
-    showSteps(["点底部「分享」按钮","选「添加到主屏幕」","点「添加」，之后从桌面打开"]);
-   }else if(deferred){
-    const ev=deferred;deferred=null;
-    try{
-     ev.prompt();
-     Promise.resolve(ev.userChoice).then(r=>{
-      if(r&&r.outcome==="accepted"){if(label)label.textContent="已添加到桌面";guide.hidden=true;if(window.zpToast)window.zpToast("已添加到桌面","success")}
-     }).catch(()=>{});
-    }catch(e){}
-    }else{
-     showSteps(["点浏览器菜单（右上角）","选「添加到主屏幕」或「安装应用」","确认后从桌面打开"]);
-    }
-  };
-  if(label){label.addEventListener("click",labelClick);label.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();labelClick()}});}
- }
+ /* 右侧动作文案：按环境给定，与点击行为保持一致 */
+ if(isNativeApp){setAction("下载",false);}
+ else if(isWeChat){setAction("在浏览器打开",false);}
+ else if(isIOS){setAction("添加到主屏幕",false);}
+ else{setAction("安装到桌面",false);}
+ let deferred=null;
+ window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferred=e});
+ const installClick=()=>{
+  guide.hidden=true;
+  if(isNativeApp){triggerApk();return;}
+  if(installed)return; // PWA 已装：无需引导
+  if(isWeChat){
+   showSteps(["点右上角「···」","选「在浏览器中打开」","在浏览器中打开后再安装到桌面"]);
+  }else if(isIOS){
+   showSteps(["点底部「分享」按钮","选「添加到主屏幕」","点「添加」，之后从桌面打开"]);
+  }else if(deferred){
+   const ev=deferred;deferred=null;
+   try{
+    ev.prompt();
+    Promise.resolve(ev.userChoice).then(r=>{
+     if(r&&r.outcome==="accepted"){setAction("已添加",false);guide.hidden=true;if(window.zpToast)window.zpToast("已添加到桌面","success")}
+    }).catch(()=>{});
+   }catch(e){}
+  }else{
+   showSteps(["点浏览器菜单（右上角）","选「添加到主屏幕」或「安装应用」","确认后从桌面打开"]);
+  }
+ };
+ if(installRow)installRow.addEventListener("click",installClick);
  window.addEventListener("appinstalled",()=>{
-  if(label)label.textContent="已安装";guide.hidden=true;if(window.zpToast)window.zpToast("已添加到桌面","success");
+  setAction("已安装",false);guide.hidden=true;if(window.zpToast)window.zpToast("已添加到桌面","success");
  });
 
  /* 信息组：占位，待补真实页面 */

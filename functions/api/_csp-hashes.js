@@ -20,8 +20,8 @@ export const INLINE_SCRIPT_HASHES = [
   "'sha256-fmSxi6o0X0L18UHDMnuUmLsD6zBhC+okAzUDoP1axbc='",
   "'sha256-jhPDWuPumS5V2vvuv9wy+BT2a3c5LrheJOO9FLi4kyY='",
   "'sha256-k+Sfp/w/V937mjbCK6g0p+ekciQu/+tZ7slaOd+C9K8='",
+  "'sha256-lzHNHEmReezQNPOq7QkeafNJOKk5zW+Z1AdgJOqWCUs='",
   "'sha256-vg4zcO/PWYJRpe2qI8rwNf3wpqBQ/IJxB1fyaLxnMqI='",
-  "'sha256-wdspr4x6tCdswm7n/4qs9yfFqZi2TmF3XYVTQQ2SoMk='",
   "'sha256-zbuCwJsCrV/haN2wi+T5550L0MaACsf4FBjSJFIVoyY='",
 ];
 
