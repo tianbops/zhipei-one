@@ -56,6 +56,11 @@
 .waybill-text-input::placeholder{color:var(--zp-muted)}
 .waybill-text-input:focus{outline:none;border-color:var(--zp-primary)}
 .text-panel-meta{display:flex;align-items:center;justify-content:space-between;min-height:28px;color:var(--zp-muted);font-size:12px}
+.text-meta-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+/* 清空：仅在文本框有内容时出现（空面板不显示无效按钮，避免多一个灰按钮干扰） */
+.text-clear-btn{height:30px;padding:0 12px;border:1px solid var(--zp-tint);border-radius:9px;background:transparent;color:var(--zp-muted);font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.text-clear-btn:active{background:var(--zp-tint);color:var(--zp-text);transform:scale(.985)}
+.text-clear-btn[hidden]{display:none}
 .text-paste-btn{height:30px;padding:0 12px;border:1px solid var(--zp-tint);border-radius:9px;background:var(--zp-card-translucent);color:var(--zp-primary);font-size:12px;font-weight:650;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .text-paste-btn:active{background:var(--zp-primary);color:var(--zp-on-primary);transform:scale(.985)}
 .text-panel-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}

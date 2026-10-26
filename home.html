@@ -26,7 +26,7 @@
 <meta name="theme-color" content="#F6F7F9">
 <title>智配One</title>
 <link rel="manifest" href="/manifest.json">
-<link rel="stylesheet" href="/css/home.bundle.css?v=1f2722ef">
+<link rel="stylesheet" href="/css/home.bundle.css?v=9328fc75">
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png?v=25f1ad28">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -139,7 +139,10 @@
         <textarea id="waybillTextInput" class="waybill-text-input" rows="9" maxlength="50000" placeholder="每行一家门店，可直接粘贴运单文字"></textarea>
         <div class="text-panel-meta">
           <span id="textCharCount" aria-live="polite">0 字</span>
-          <button id="pasteFromClipboard" class="text-paste-btn" type="button">一键粘贴</button>
+          <span class="text-meta-actions">
+            <button id="clearWaybillText" class="text-clear-btn" type="button" aria-label="清空已输入内容" hidden>清空</button>
+            <button id="pasteFromClipboard" class="text-paste-btn" type="button">一键粘贴</button>
+          </span>
         </div>
         <div class="text-panel-actions">
           <button id="textPanelBack" class="upload-cancel-btn" type="button">返回</button>
@@ -169,7 +172,7 @@
 </div>
 </main>
 
-<script src="/js/home.bundle.js?v=a1830e57"></script>
+<script src="/js/home.bundle.js?v=dae20caa"></script>
 <script src="/js/perf-diagnostics.js?v=a2065bec"></script>
 </body>
 </html>

@@ -22,6 +22,7 @@ function openUpload(){
    失败可重试（RESUBMIT）时回到文本面板，已输入文字保留，改完直接重试。 */
 const textPanel=$("uploadTextPanel"),waybillTextInput=$("waybillTextInput"),
       textCharCount=$("textCharCount"),pasteFromClipboardBtn=$("pasteFromClipboard"),
+      clearTextBtn=$("clearWaybillText"),
       textPanelBackBtn=$("textPanelBack"),textPanelSubmitBtn=$("textPanelSubmit");
 function showTextPanel(){
   if(!textPanel||!sourceMenu)return;
@@ -34,8 +35,23 @@ function backToSourceMenu(){
   textPanel.hidden=true;sourceMenu.hidden=false;
 }
 if(waybillTextInput&&textCharCount){
-  const refreshCount=()=>{textCharCount.textContent=waybillTextInput.value.length+" 字"};
+  const refreshCount=()=>{
+    const n=waybillTextInput.value.length;
+    textCharCount.textContent=n+" 字";
+    // 「清空」仅在有内容时出现：空面板不放无效按钮
+    if(clearTextBtn)clearTextBtn.hidden=n===0;
+  };
   waybillTextInput.addEventListener("input",refreshCount);refreshCount();
+}
+/* 清空已输入文字（误贴/贴错时用）：清空后聚焦输入框，方便重新粘贴 */
+if(clearTextBtn&&waybillTextInput){
+  clearTextBtn.addEventListener("click",()=>{
+    if(!waybillTextInput.value)return;
+    waybillTextInput.value="";
+    waybillTextInput.dispatchEvent(new Event("input"));
+    waybillTextInput.focus();
+    if(window.zpToast)window.zpToast("已清空","success");
+  });
 }
 /* 在光标处插入文本（保留选择区，等价于用户手动粘贴的落点） */
 function insertWaybillText(text){
