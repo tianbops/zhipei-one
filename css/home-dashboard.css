@@ -36,24 +36,22 @@
   font-variant-numeric:tabular-nums;
   text-align:right;
 }
-/* 门店名：文字调大（15→17px）；长名不再省略号截断，改为可左滑横向滚动
-   查看全部文字（原生 touch 滚动；隐藏滚动条；overscroll-behavior-x 防滑到头
-   触发页面滚动链/历史回扫；发生滚动的手势浏览器会自动取消该行的点击跳转）。 */
+/* 门店名（15→17px）：长名最多 2 行 + 省略号。
+   原先「横向可滑动、隐藏滚动条」没有视觉提示，看起来像被切断（用户反馈像 bug），
+   且与运单详情/数据页的换行表现不一致；改为换行更易读。 */
 .today-store-name{
   min-width:0;
-  display:block;
-  overflow-x:auto;
-  overflow-y:hidden;
-  white-space:nowrap;
-  scrollbar-width:none;
-  overscroll-behavior-x:contain;
-  -webkit-overflow-scrolling:touch;
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  overflow:hidden;
+  white-space:normal;
+  overflow-wrap:anywhere;
   color:var(--zp-text);
   font-size:17px;
   line-height:24px;
   font-weight:550;
 }
-.today-store-name::-webkit-scrollbar{display:none}
 .today-store-empty{padding:18px 4px;color:var(--zp-muted);font-size:14px;text-align:center}
 /* 统计版块精简：压缩垂直占用（小标签行高/间距收窄），无统计项时整块不占位。 */
 .today-metrics{
