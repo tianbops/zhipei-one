@@ -91,8 +91,8 @@ const PRECACHE = [
   "/js/ui/nav-prefetch.js?v=7c589b89",
   "/js/ui/nav.js?v=fee2f25c",
   "/js/ui/zp-picker.js?v=78935f03",
-  "/css/home.bundle.css?v=80b482f3",
-  "/js/home.bundle.js?v=c2a78e0f",
+  "/css/home.bundle.css?v=adbce4a4",
+  "/js/home.bundle.js?v=cbf50b6c",
 ];
 /* PRECACHE-END */
 

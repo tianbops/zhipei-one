@@ -24,10 +24,11 @@ const root = fileURLToPath(new URL("..", import.meta.url));
 
 // 1) 模块 + 页面加载
 assert.ok(existsSync(`${root}js/offline-queue.js`), "缺少 js/offline-queue.js");
-for (const p of ["pages/history.html", "home.html"]) {
-  const html = readFileSync(`${root}${p}`, "utf8");
-  assert.ok(html.includes("/js/offline-queue.js?v="), `${p} 未加载 offline-queue.js`);
-}
+// history.html 仍独立加载 offline-queue.js；home.html 经 a4a26d96 合并入 home.bundle.js
+const historyHtml = readFileSync(`${root}pages/history.html`, "utf8");
+assert.ok(historyHtml.includes("/js/offline-queue.js?v="), "pages/history.html 未加载 offline-queue.js");
+const bundle = readFileSync(`${root}js/home.bundle.js`, "utf8");
+assert.ok(bundle.includes("zpOfflineQueue"), "home.bundle.js 未包含 offline-queue（home 页离线队列丢失）");
 
 // 2) history 接线（读 + 写）
 const data = readFileSync(`${root}js/history/data.js`, "utf8");

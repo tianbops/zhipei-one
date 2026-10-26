@@ -26,11 +26,10 @@ for (const n of NAMES) {
   assert.ok(readFileSync(p, "utf8").trim().length > 0, `组件为空：${n}`);
 }
 
-// 2) home.html 按序引用四组件
+// 2) home.html 引用合并后的 home.bundle.css（P1-1f 四组件经 a4a26d96 聚合入 bundle，源文件仍各自存在）
 const html = readFileSync(`${root}home.html`, "utf8");
-const refs = [...html.matchAll(/\/css\/(home-[a-z]+)\.css\?v=[0-9a-f]+/g)].map((m) => m[1]);
-assert.deepStrictEqual(refs, NAMES,
-  `home.html 的 home CSS 引用顺序必须是 ${NAMES.join("→")}（实际 ${refs.join("→")}）`);
+assert.ok(html.includes("/css/home.bundle.css?v="),
+  "home.html 的 home CSS 必须引用合并后的 /css/home.bundle.css");
 
 // 3) 每段代表选择器齐全（覆盖 base / trend / dashboard / light）
 const concat = NAMES.map((n) => readFileSync(`${root}css/${n}.css`, "utf8")).join("\n");
