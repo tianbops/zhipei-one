@@ -263,6 +263,7 @@
     <div class="acct-row" role="group">
       <span class="acct-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2.5"></rect><path d="M10 7h4"></path></svg></span>
       <span id="installLabelBtn" class="acct-row-label" role="button" tabindex="0">下载应用</span>
+      <a id="installDlLink" class="about-link" hidden>最新安装包</a>
     </div>
     <div class="acct-row" role="group">
       <span class="acct-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18"></path></svg></span>
@@ -471,24 +472,63 @@ $("deleteConfirm").onclick=async()=>{
  }catch(e){show("deleteMessage",e);$("deleteConfirm").disabled=false}
 };
 
- /* 关于（成熟 App 范式 2.0）：品牌区版本 + 获取组（添加到桌面/网页端地址）+ 信息组（隐私/条款/帮助）。
-    - 版本号读 /version.json（SW 保证永远最新）
-    - 添加到桌面：点击触发 PWA 安装/引导
+ /* 关于（成熟 App 范式 2.0）：品牌区版本 + 获取组（下载应用/网页端地址）+ 信息组（隐私/条款/帮助）。
+    - 版本号读 /version.json（SW 保证永远最新）；App 壳版本读 ZhipeiNative.appVersion()
+    - 下载应用：App 壳内直接走原生 ZhipeiNative.downloadApk() 下 APK；浏览器内走 PWA 安装引导
+    - 最新安装包直链读 /downloads/manifest.json（发版零改动）
     - 网页端地址：点击复制官网 https://tianyou-zhipei.pages.dev
     - 信息组暂为占位（真实页面待补） */
 (function(){
  const guide=$("installGuide"),steps=$("installGuideSteps"),
-  webCopyBtn=$("webCopyBtn");
+  webCopyBtn=$("webCopyBtn"),installDlLink=$("installDlLink");
  if(!$("aboutVersion"))return;
  const installed=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+ // App 壳（Capacitor WebView）注入了 ZhipeiNative.downloadApk：壳内点击「下载应用」直接下 APK，
+ // 不再绕 PWA 引导（WebView 里没有安装概念）；浏览器/PWA 仍走安装引导。
+ const isNativeApp=!!(window.ZhipeiNative&&typeof window.ZhipeiNative.downloadApk==="function");
 
- /* 品牌区版本号：web 实时版本（version.json），SW 保证永远最新 →「版本 Vx.x.x」。
-    原生 App 项目已下线，不再区分 App 壳版本。 */
+ /* 品牌区版本号：多端版本语义分层（App 壳版本 ≠ 网页实时版本）。
+    - 浏览器/PWA：web 实时版本（version.json，SW 保证永远最新）→「版本 Vx.x.x」
+    - App 壳：APK 版本（ZhipeiNative.appVersion()，锁在安装包）→「App Vx.x.x」；
+      落后于最新版时追加「有新版本」徽标，点击直接下 APK。 */
  (function(){
   const textEl=$("aboutVerText");if(!textEl)return;
-   function render(webVer){
+  function apkVersion(){
+   try{
+    if(window.ZhipeiNative&&window.ZhipeiNative.appVersion){
+     const v=window.ZhipeiNative.appVersion();
+     if(v&&/^\d+(\.\d+)*$/.test(String(v)))return String(v);
+    }
+   }catch(e){}
+   return null;
+  }
+  function compareVer(a,b){
+   const pa=String(a).split(".").map(n=>parseInt(n,10)||0);
+   const pb=String(b).split(".").map(n=>parseInt(n,10)||0);
+   const n=Math.max(pa.length,pb.length);
+   for(let i=0;i<n;i++){const x=pa[i]||0,y=pb[i]||0;if(x!==y)return x<y?-1:1;}
+   return 0;
+  }
+  function render(webVer){
+   const apkV=apkVersion();
+   if(apkV){
+    textEl.textContent="App V"+apkV;
+    if(webVer&&compareVer(apkV,webVer)<0){
+     const badge=document.createElement("button");
+     badge.type="button";badge.className="acct-ver-badge";
+     badge.textContent="有新版本 V"+webVer;
+     badge.setAttribute("aria-label","有新版本 V"+webVer+"，点击下载安装包");
+     badge.addEventListener("click",()=>{
+      if(installDlLink&&installDlLink.getAttribute("href")){
+       triggerApk();
+      }else if(window.zpToast)window.zpToast("安装包信息加载中，请稍候","info");
+     });
+     textEl.after(badge);
+    }
+   }else{
     textEl.textContent=webVer?("版本 V"+webVer):"版本 网页版";
    }
+  }
   zpFetch("/version.json?ts="+Date.now(),{cache:"no-store"}).then(r=>r.json()).then(v=>{
    render(v&&v.version);
   }).catch(()=>{render(null)});
@@ -515,6 +555,28 @@ $("deleteConfirm").onclick=async()=>{
  function copyWeb(){copyText(WEB_URL,"网页端地址已复制")}
  webCopyBtn.onclick=copyWeb;
 
+ /* 最新安装包直链：App 壳内触发原生下载，浏览器内作为直链下载。 */
+ function setApk(file,ver){
+  if(!installDlLink)return;
+  installDlLink.href="/downloads/"+file;
+  installDlLink.setAttribute("download","zhipei-one-v"+(ver||"latest")+".apk");
+  installDlLink.textContent="最新安装包"+(ver?" V"+ver:"");
+  installDlLink.hidden=false;
+ }
+ function triggerApk(){
+  if(!(installDlLink&&installDlLink.getAttribute("href"))){
+   if(window.zpToast)window.zpToast("安装包信息加载中，请稍候再试","info");
+   return;
+  }
+  if(isNativeApp){
+   window.ZhipeiNative.downloadApk(installDlLink.href);
+   if(window.zpToast)window.zpToast("开始下载安装包…","info");
+  }else{
+   installDlLink.click();
+   if(window.zpToast)window.zpToast("开始下载安装包…","info");
+  }
+ }
+
  /* 添加到桌面：触发 PWA 安装/引导 */
  function showSteps(list){
   steps.innerHTML="";
@@ -524,13 +586,21 @@ $("deleteConfirm").onclick=async()=>{
  const ua=navigator.userAgent||"";
  const isWeChat=/MicroMessenger/i.test(ua);
  const isIOS=/iPad|iPhone|iPod/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+ if(!isIOS&&installDlLink){
+  zpFetch("/downloads/manifest.json?ts="+Date.now(),{cache:"no-store"})
+   .then(r=>r.ok?r.json():null)
+   .then(m=>setApk((m&&m.file)||"zhipei-one-latest-release.apk",m&&m.version))
+   .catch(()=>{setApk("zhipei-one-latest-release.apk")});
+ }
  const label=$("installLabelBtn");
  if(!installed){
   let deferred=null;
   window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferred=e});
   const labelClick=()=>{
    guide.hidden=true;
-   if(isWeChat){
+   if(isNativeApp){
+    triggerApk();
+   }else if(isWeChat){
     showSteps(["点右上角「···」","选「在浏览器中打开」","在浏览器中打开后再安装到桌面"]);
    }else if(isIOS){
     showSteps(["点底部「分享」按钮","选「添加到主屏幕」","点「添加」，之后从桌面打开"]);
