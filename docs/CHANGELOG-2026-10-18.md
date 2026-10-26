@@ -452,5 +452,5 @@ GitHub Releases，本仓库 `downloads/` 只镜像最新包——发版时没同
 审计 P1「静态资源缓存双版本」**在远端属实**（本地树跑过 bump 故初判「未复现」——**本地绿 ≠ 远端绿**）。CI sw-precache 实证：`setup.html`、`admin-bootstrap.html`、`index.html`、`offline.html`、`register.html` 共 5 个 HTML 停在旧哈希 `a6382104`，而 css 本体与 sw.js PRECACHE 均已是 `a6a16363`——漏刷的页面其 CSS 会以错误版本键进 SW/浏览器缓存，用户拿旧样式。
 
 - 5 个文件逐个 diff 证实**仅差 `?v=` 一行**（0 个文件有其他内容差异，无覆盖风险）后推齐；
-- 线上 curl 复验：`https://zhipeione.ccwu.cc/` 已返回 `a6a16363`；
+- 线上 curl 复验（原自有域名已退役，统一入口为 `tianyou-zhipei.pages.dev`）：站点根路径已返回 `a6a16363`；
 - 教训（同 10-18 夜间第二次踩到）：bump 跑过 ≠ 远端推齐——**以 CI 的 sw-precache 跑绿为唯一标准**。
