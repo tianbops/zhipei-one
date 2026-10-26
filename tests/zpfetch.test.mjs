@@ -53,7 +53,7 @@ const getExpect = [
   ["js/history/overlay.js", 'zpFetch("/api/history-lookup?'],
   ["js/home/today.js", "zpFetch(url,"],
   ["js/home/upload-process.js", 'zpFetch("/api/dispatch",'],
-  ["js/home-monthly.js", 'zpFetch("/api/history?months=25",'],
+  ["js/home-monthly.js", 'zpFetch("/api/history?months=13",'],
   ["js/order_detail/load.js", "zpFetch(url,"],
   ["js/order_detail/load.js", "zpFetch('/api/base?routeId='"],
   // pwa.js 版本守卫：防御式 window.zpFetch || fetch，避免 fetch-retry 未就绪时拖垮守卫

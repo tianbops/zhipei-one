@@ -317,9 +317,9 @@
   /* ---------- 数据加载 ---------- */
   async function load(){
     try{
-      // 同比需要去年同月数据：默认历史窗口仅 13 个月（起于 11 个月前），不含去年同月，
-      // 故首页主动请求 25 个月窗口，保证当前及近 13 个月均可算同比（最早月份无去年同期时自然留空）。
-      const r=await zpFetch("/api/history?months=25",{credentials:"same-origin",cache:"no-store"});
+      // 后端把 months 钳制在 13（history.js:Math.min(13,…)），请求 25 实际仍只返回 13 个月窗口；
+      // 13 个月最早仅到 11 个月前，不含去年同月，同比恒为空。故按 13 如实请求（返回数据与原来一致）。
+      const r=await zpFetch("/api/history?months=13",{credentials:"same-origin",cache:"no-store"});
       if(!r.ok)return null;
       const d=await r.json().catch(()=>null);
       if(!d?.success||!Array.isArray(d.history))return null;
