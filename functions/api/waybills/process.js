@@ -92,24 +92,34 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
   if(!recognizedText){
     const ocrStarted=Date.now();const results=[];const totalFiles=Math.max(1,files.length);
     try{
-      for(let i=0;i<files.length;i++){
-        if(await stopIfClientCancelled("OCR"))return json({success:false,code:"PROCESS_CANCELLED",error:"已取消处理",message:"已取消处理",requestId,recoverable:true,action:"REPROCESS",hint:"本次处理已取消，请重新处理运单"});
-        const fileIndex=i+1;
-        emit(8+Math.round(((fileIndex-1)/totalFiles)*44),totalFiles>1?`正在识别第 ${fileIndex}/${totalFiles} 张截图…`:"运单已上传，正在排队识别…");
-        try{
-          const one=await recognizeImage(env,files[i],p=>{
+      /* 多图并发识别：原实现逐张串行 await，N 张截图≈N×单张耗时（实测单张约 7s）；
+         改为每批 2 张并发（OCR 服务有 QPS 限制，不一次全发），多图总耗时≈单张×批数。
+         单图时批大小=1，行为与原来完全一致。 */
+      const CONCURRENCY=files.length>1?2:1;
+      for(let start=0;start<files.length;start+=CONCURRENCY){
+        const batch=[];
+        for(let k=0;k<CONCURRENCY&&start+k<files.length;k++)batch.push(start+k);
+        const settled=await Promise.allSettled(batch.map(async i=>{
+          const fileIndex=i+1;
+          if(await stopIfClientCancelled("OCR")){const ce=new Error("cancelled");ce.code="PROCESS_CANCELLED";throw ce}
+          emit(8+Math.round((i/totalFiles)*44),totalFiles>1?`正在识别第 ${fileIndex}/${totalFiles} 张截图…`:"运单已上传，正在排队识别…");
+          return await recognizeImage(env,files[i],p=>{
             const v=Math.max(0,Math.min(100,Number(p)||0));
-            const base=8+((fileIndex-1)/totalFiles)*44;
+            const base=8+(i/totalFiles)*44;
             emit(Math.round(base+(v/100)*(44/totalFiles)),totalFiles>1?`正在识别第 ${fileIndex}/${totalFiles} 张截图…`:(v<=10?"运单已上传，正在排队识别…":"正在识别运单…"));
           },request?.signal);
-          results.push(one);
-        }catch(e){
+        }));
+        const failed=settled.find(x=>x.status==="rejected");
+        if(failed){
+          const e=failed.reason||{};
+          if(e.code==="PROCESS_CANCELLED")return json({success:false,code:"PROCESS_CANCELLED",error:"已取消处理",message:"已取消处理",requestId,recoverable:true,action:"REPROCESS",hint:"本次处理已取消，请重新处理运单"},499);
           const ocrCode=e.code||"OCR_FAILED";
           const ocrHint={OCR_TIMEOUT:"OCR识别超时，可重新上传运单重试",OCR_CANCELLED:"已取消识别，可重新上传运单",OCR_JOB_FAILED:"OCR识别失败，请上传更清晰的运单照片",OCR_EMPTY:"OCR未识别到文字，请上传更清晰的运单照片",OCR_RESULT_MISSING:"OCR结果缺失，请重新上传运单",OCR_RESULT_FETCH:"OCR结果读取失败，请重新上传运单",OCR_RESULT_TIMEOUT:"OCR结果读取超时，请重新上传运单",OCR_NETWORK_TIMEOUT:"OCR服务响应超时，请稍后重试",OCR_SUBMIT_FAILED:"OCR任务提交失败，请稍后重试",OCR_API:"OCR服务暂时不可用，请稍后重试",OCR_BAD_RESPONSE:"OCR服务返回异常，请稍后重试",OCR_AUTH:"OCR服务鉴权失败，请联系管理员",OCR_ENDPOINT:"OCR服务地址异常，请联系管理员"};
           const ocrStage=ocrCode==="OCR_TIMEOUT"?"TIMEOUT":(ocrCode==="OCR_CANCELLED"?"CANCELLED":"FAILED");
           const ocrRecoverable=ocrCode!=="OCR_NOT_CONFIGURED";
           return failProcess(ocrCode,e.message||"OCR识别失败",e.code==="OCR_NOT_CONFIGURED"?503:422,{stage:ocrStage,recoverable:ocrRecoverable,action:ocrRecoverable?"RETRY_OCR":null,hint:ocrHint[ocrCode]||"OCR识别失败，请稍后重试",jobId:e.jobId||null,detail:e.message||null,timing:{ocrSubmitMs:e.ocrSubmitMs,ocrStatusPollCount:e.ocrStatusPollCount,ocrStatusWaitMs:e.ocrStatusWaitMs,ocrStatusRequestMs:e.ocrStatusRequestMs,ocrResultFetchMs:e.ocrResultFetchMs,ocrResultFetchWaitMs:e.ocrResultFetchWaitMs,ocrResultFetchAttempts:e.ocrResultFetchAttempts}});
         }
+        for(const s of settled)results.push(s.value);
       }
       const imageTexts=results.map(x=>String(x.rawText||""));
       // 相邻截图可能包含上一张末尾的重复内容。按“前图尾部/后图头部”做保守重叠裁剪，

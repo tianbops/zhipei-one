@@ -45,6 +45,29 @@ async function processSelectedFiles(files, resumeRequestId){
   lastFailureSource="file";
   return processWaybill({files,resumeRequestId});
 }
+/* 上传前压缩：手机截图常见 2-5MB，跨境上传 + OCR 任务提交耗时占大头（实测单张
+   OCR 提交 3.8s）。长边压到 1600、JPEG 0.82 后体积通常降到 300-600KB，运单文字
+   仍然清晰；压完不比原图小、或不支持解码（HEIC 等）时一律回退原图，绝不阻断上传。 */
+async function compressImageForUpload(file,{maxSide=1600,quality=0.82}={}){
+  try{
+    if(!file||!/^image\//i.test(file.type||""))return file;
+    if(file.size<=420*1024)return file;
+    if(typeof createImageBitmap!=="function")return file;
+    const bmp=await createImageBitmap(file);
+    const scale=Math.min(1,maxSide/Math.max(bmp.width,bmp.height));
+    const w=Math.max(1,Math.round(bmp.width*scale)),h=Math.max(1,Math.round(bmp.height*scale));
+    if(scale>=1&&file.size<=900*1024){bmp.close&&bmp.close();return file}
+    const canvas=document.createElement("canvas");canvas.width=w;canvas.height=h;
+    const ctx=canvas.getContext("2d");
+    if(!ctx){bmp.close&&bmp.close();return file}
+    ctx.drawImage(bmp,0,0,w,h);bmp.close&&bmp.close();
+    const blob=await new Promise(res=>{try{canvas.toBlob(res,"image/jpeg",quality)}catch{res(null)}});
+    if(!blob||blob.size>=file.size)return file;
+    const name=(file.name||"image").replace(/\.[^.]+$/,"")+".jpg";
+    return new File([blob],name,{type:"image/jpeg",lastModified:Date.now()});
+  }catch{return file}
+}
+
 async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
   if(!Array.isArray(files))files=files?[files]:[];
   files=files.filter(Boolean);
@@ -65,7 +88,13 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
     showProcessingUI();
     document.querySelectorAll(".source-option").forEach(b=>b.disabled=true);
     const fd=new FormData();
-    files.forEach(file=>fd.append("file",file));
+    // 逐张压缩后再上传（串行处理，避免多张大图同时解码占满内存）
+    if(files.length){
+      setProcessingStage(files.length>1?`正在准备 ${files.length} 张截图…`:"正在准备运单图片…");
+      const prepared=[];
+      for(const f of files)prepared.push(await compressImageForUpload(f));
+      prepared.forEach(file=>fd.append("file",file));
+    }
     if(rawText)fd.append("rawText",rawText);
     fd.append("fileCount",String(files.length));
     fd.append("routeId",processingRouteIdLocal);
