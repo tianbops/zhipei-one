@@ -6,7 +6,7 @@
 **统一响应格式**：`{ success: boolean, error?: string, code?: string }`（失败时 `success:false`）。
 鉴权走 `credentials: "same-origin"` 的会话 Cookie；写操作（POST/PUT/DELETE）前端默认不做自动重试。
 
-**端点数：28**
+**端点数：29**
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
@@ -17,6 +17,7 @@
 | POST | `/api/admin/reset` | — |
 | GET / POST | `/api/admin/route-requests` | — |
 | GET / POST | `/api/admin/users` | — |
+| POST | `/api/admin/waybill-recalc` | — |
 | GET / PUT | `/api/base` | — |
 | GET / POST | `/api/bootstrap` | — |
 | GET / POST | `/api/dispatch` | — |
