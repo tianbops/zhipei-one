@@ -141,4 +141,43 @@ const has = (list, kw) => list.some(n => n.includes(kw));
   console.log("✅ 重复粘贴时表头逐处清洗，门店不丢");
 }
 
+// --- 6) 截图 UI 噪声（状态栏/导航栏）必须剥离，且不误伤真实店名 ---
+{
+  const noisy = "06:05 5G85 < X 运单列表 江北区鸿恩寺客服中心（2026）";
+  const r = extract(noisy);
+  const list = names(r.stores || []);
+  assert.equal(list.length, 1, `应只识别出 1 家门店，实际：${JSON.stringify(list)}`);
+  assert.ok(!/06:05|5G|运单列表/.test(list[0]), `噪声未清理：${list[0]}`);
+  assert.ok(list[0].includes("鸿恩寺客服中心"), `门店名丢失：${list[0]}`);
+
+  // 真实店名不得被误伤（24h 开头 / 数字开头但后接汉字）
+  for (const keep of ["24h天友便利重庆渝中店", "07号仓库直营店"]) {
+    const k = names(extract(keep).stores || []);
+    assert.equal(k[0], keep, `真实店名被误改：${JSON.stringify(keep)} → ${JSON.stringify(k[0])}`);
+  }
+  console.log("✅ 截图 UI 噪声剥离正确，真实店名不受影响");
+}
+
+// --- 7) 图片顺序不可靠时必须按「含表头」校正首图 ---
+{
+  // 故意把中段图放在第一位（实测用户相册多选顺序出现过该情况）
+  const r = mergeStoreEdges([IMG2, IMG1, IMG3]);
+  const list = names(r.stores || []);
+  assert.ok(list[0] && list[0].includes("温馨家园"), `首图判错，首条应为首家门店，实际：${list[0]}`);
+  assert.ok(!list.some(n => /运单列表|运输日期|车牌号|06:05|5G/.test(n)),
+    `残留表头/状态栏脏名：${list.filter(n => /运单列表|运输日期|车牌号|06:05|5G/.test(n)).join(" | ")}`);
+  assert.ok(has(list, "半山华府店"), "重叠区门店不得丢失");
+  assert.ok(has(list, "钱大妈半山华府店"), "末图门店不得丢失");
+  console.log("✅ 含表头的图自动判为首图，脏名清零且不丢门店");
+}
+
+// --- 8) 待定门店可按「丢弃」剔除（确认接口出口存在）---
+{
+  const fs = await import("node:fs");
+  const be = fs.readFileSync(new URL("../functions/api/waybills/confirm.js", import.meta.url), "utf8");
+  assert.ok(/discard/.test(be), "后端未支持 discard 动作");
+  assert.ok(/discarded/.test(be), "后端未统计丢弃数量");
+  console.log("✅ 确认接口保留「丢弃」出口");
+}
+
 console.log("\n✅ waybill-multi-image 全部通过");

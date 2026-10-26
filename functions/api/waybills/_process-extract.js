@@ -65,6 +65,21 @@ export function extract(rawText){
     "车辆","车号","日期","时间","数量","件数","合计","小计","序号","备注"
   ]);
 
+  /* 截图 UI 噪声清洗：手机截图会带状态栏（06:05 / 5G / 85）、导航栏（< X 运单列表）、
+     底部导航（首页/历史/线路/我的）。OCR 会把这些和门店名连成一条（实测
+     「06:05 5G85 < X 运单列表 江北区鸿恩寺客服中心（2026）」→ 无候选、卡待定）。
+     只剥离**开头**的噪声 token，遇到第一个正常字符即停止；对真实门店名零影响
+     （如 24h 开头不会被误删：要求 2-3 位数字后必须是空白或结尾）。 */
+  const stripUiNoise=s=>{
+    let t=String(s||"");
+    for(let i=0;i<8;i++){
+      const before=t;
+      t=t.replace(/^\s*(?:\d{1,2}:\d{2}|5G|4G|LTE|WiFi|\d{2,3}(?=\s|$)|[<>×✕✖X]|运单列表|订单列表|首页|历史|线路|我的|返回|关闭|更多|[\s·•|])+/i,"").trim();
+      if(t===before)break;
+    }
+    return t;
+  };
+
   const addRouteText=text=>{
     const hasWaybillCode=/\bZW\d{8}[A-Z0-9]+\b/i.test(text);
     const parts=clean(text).split(/\s*(?:-\s*>|→|＞)\s*/).map(cleanStoreName).filter(Boolean);
@@ -84,7 +99,9 @@ export function extract(rawText){
          此处把**每一处**表头块替换为换行，再按换行拆成多个门店候选，逐个走原有识别逻辑。 */
       const noHeader=String(part).replace(/(?:运单列表|订单列表|运输日期)[\s\S]*\(\s*\d+(?:\.\d+)?\s*%\s*\)/g,"\n");
       const segments=noHeader.split(/\r?\n+/).map(x=>x.trim()).filter(Boolean);
-      for(const seg of (segments.length?segments:[part])){
+      for(const rawSeg of (segments.length?segments:[part])){
+        const seg=stripUiNoise(rawSeg);
+        if(!seg)continue;
         const idm=seg.match(/\b(?:JM|A|Q)[\p{Pd}_ ]?\d{3,12}\b/i);
         const storeId=idm?idm[0].replace(/[\p{Pd} ]/gu,"").toUpperCase():null;
         const rawName=cleanStoreName(seg);

@@ -355,6 +355,11 @@ export function matchStores(items, baseStores) {
     // 不能把 B 继续标成 matched，否则后续标准化 name 会一样并被 dedupe 吞掉。
     // 保留 B 为待定，交人工确认；绝不自动丢失门店。
     if (targetStoreId && prior && prior.identityKey !== rawIdentityKey) {
+      // 容错：两条原始识别仅差极小（≥0.95，如多图/重复粘贴造成的断行、空格、标点差异）
+      // 时，判定为“同一门店的重复识别”，落到下面正常 matched 流程由 dedupe 合并；
+      // 差异明显才保持待定，避免把两家不同门店误合并。
+      const sameStoreSim = editSim(normalizeForMatch(prior.rawName || ""), normalizeForMatch(rawName));
+      if (sameStoreSim < 0.95) {
       return {
         ...item,
         rawName,
@@ -389,6 +394,7 @@ export function matchStores(items, baseStores) {
           storeId: targetStoreId,
         },
       };
+      }
     }
 
     if (targetStoreId) {

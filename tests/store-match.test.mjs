@@ -84,6 +84,20 @@ MATCH_CASES.forEach(([raw, expect, note], i) => {
 const sameWaybillAliases = matchStores([{ rawName: "华润万家（龙华店）" }, { rawName: "龙华华润万家" }], base);
 t("同一运单不同识别文本不被静默合并", sameWaybillAliases[1].pending && sameWaybillAliases[1].matchDiagnostics?.reason === "STORE_ID_COLLISION");
 
+/* 同一家店被 OCR 出两条仅细微差异的文本（断行/空格/标点）：应视为重复识别，
+   由 dedupe 合并，不得判为身份冲突卡待定（实测「II类天友生活花 卉东路店」vs
+   「II类天友生活花卉东路店」曾因断行空格被判 COLLISION → 运单卡 PLANNED）。 */
+const microDiffBase = [{ storeId: "S_X", name: "II类天友生活花卉东路店", routeOrder: 1 }];
+const microDiff = matchStores([{ rawName: "II类天友生活花 卉东路店" }, { rawName: "II类天友生活花卉东路店" }], microDiffBase);
+t("同店微差（断行空格）不判冲突", !microDiff[0].pending && !microDiff[1].pending && microDiff[0].storeId === "S_X" && microDiff[1].storeId === "S_X",
+  "实际 " + JSON.stringify(microDiff.map(r => ({ p: r.pending, id: r.storeId }))));
+
+/* 但名称实质不同（仅编码相同）时必须仍判冲突，绝不自动合并 */
+const realDiffBase = [{ storeId: "A02230", name: "渝北A02230谊品生鲜温馨家园南门店", routeOrder: 1 }];
+const realDiff = matchStores([{ rawName: "渝北A02230谊品生鲜温馨家园南门店" }, { rawName: "渝北A02230谊品生鲜北国风光店" }], realDiffBase);
+t("名称实质不同仍判冲突（安全边界）", realDiff[1].pending && realDiff[1].matchDiagnostics?.reason === "STORE_ID_COLLISION",
+  "实际 " + JSON.stringify({ p: realDiff[1].pending, reason: realDiff[1].matchDiagnostics?.reason }));
+
 /* ============ 3. 格式差异不应计为"更正" ============ */
 MATCH_CASES.forEach(([raw, , note], i) => {
   if (/括号|间隔号|空格/.test(note)) {

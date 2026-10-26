@@ -22,14 +22,23 @@ import { extract } from "./_process-extract.js";
 
 export function mergeStoreEdges(imageTexts, extractFn = extract) {
   if (!Array.isArray(imageTexts) || imageTexts.length < 2) return { stores: null, edgeTrimmed: 0 };
+  /* 顺序校正：必须让「含表头（运输日期/车牌号/承运订单/总数量）」的那张当首图。
+     相册多选顺序不可靠（实测出现过用户先选 06:05 中段图，导致首图判错：
+     首图的第一条被误保留（状态栏+标题+门店），而真正首图的表头+首家门店
+     反被当作“非首图第一条”丢弃 → 既留脏名又丢门店）。 */
+  const isHeader = t => /运输日期|车牌号|承运订单|总数量\s*\d/.test(String(t || ""));
+  const ordered = imageTexts
+    .map((t, i) => ({ t, i }))
+    .sort((a, b) => (isHeader(b.t) ? 1 : 0) - (isHeader(a.t) ? 1 : 0) || a.i - b.i)
+    .map(x => x.t);
   const merged = [];
   let edgeTrimmed = 0;
-  for (let idx = 0; idx < imageTexts.length; idx++) {
-    const one = extractFn(String(imageTexts[idx] || ""));
+  for (let idx = 0; idx < ordered.length; idx++) {
+    const one = extractFn(String(ordered[idx] || ""));
     let stores = (one && one.stores) || [];
     if (!stores.length) continue;
     if (idx > 0) { stores = stores.slice(1); edgeTrimmed++; }                     // 顶部残条
-    if (idx < imageTexts.length - 1 && stores.length) { stores = stores.slice(0, -1); edgeTrimmed++; } // 底部残条
+    if (idx < ordered.length - 1 && stores.length) { stores = stores.slice(0, -1); edgeTrimmed++; } // 底部残条
     for (const s of stores) merged.push(s);
   }
   return { stores: merged.length ? merged : null, edgeTrimmed };
