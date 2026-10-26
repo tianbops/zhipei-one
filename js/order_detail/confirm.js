@@ -98,6 +98,11 @@ function openConfirm(){
    const add=document.createElement('button');add.type='button';add.className='choice-btn';add.textContent='新增：'+(x.rawName||x.name||'该门店');
    add.onclick=()=>{selected.set(i,{action:'new',standardName:x.rawName||x.name});clearChoice();add.classList.add('selected');updateSubmit()};
    choices.appendChild(add);
+   // 丢弃：该条目不是门店（运单号表格等 OCR 噪声、或拍错的残条）。
+   // 此前只能「新增/合并」，遇到噪声会被迫建一个假门店或错误合并，只能取消整单。
+   const drop=document.createElement('button');drop.type='button';drop.className='choice-btn';drop.textContent='丢弃（不是门店）';
+   drop.onclick=()=>{selected.set(i,{action:'discard'});clearChoice();drop.classList.add('selected');updateSubmit();if(window.zpToast)window.zpToast('已标记为丢弃，提交后不会生成门店','info')};
+   choices.appendChild(drop);
    if(!isTempRoute){choices.appendChild(pickBtn);box.appendChild(pickWrap)}
    box.appendChild(choices);list.appendChild(box);
    // 有唯一且高分建议时预选，用户只需确认；多个候选时不预选，强制人工判断

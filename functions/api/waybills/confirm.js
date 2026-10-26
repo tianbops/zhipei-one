@@ -91,7 +91,7 @@ export async function onRequestPost({request,env}){
   for(const c of confirmations){
     const index=Number(c?.index);if(!Number.isInteger(index)||!pendingIndexes.has(index))continue;
     if(submittedIndexes.has(index))return json({success:false,code:"CONFIRMATION_DUPLICATE_INDEX",error:"同一待定门店不能重复确认"},400);
-    const action=clean(c?.action);if(action!=="merge"&&action!=="new")return json({success:false,code:"CONFIRMATION_ACTION_INVALID",error:"待定门店必须选择合并或新增"},400);
+    const action=clean(c?.action);if(action!=="merge"&&action!=="new"&&action!=="discard")return json({success:false,code:"CONFIRMATION_ACTION_INVALID",error:"待定门店必须选择合并、新增或丢弃"},400);
     submittedIndexes.add(index);
   }
   if(submittedIndexes.size!==pendingIndexes.size)return json({success:false,code:"CONFIRMATIONS_INCOMPLETE",error:"请完成全部待定门店选择"},400);
@@ -102,13 +102,16 @@ export async function onRequestPost({request,env}){
   if(!isTempRoute(order.routeId)){routeBaseLock={key:"route:"+order.routeId+":base-confirm-lock",token:newId()};const baseLocked=await command(env,["SET","zp:"+routeBaseLock.key,routeBaseLock.token,"NX","EX","120"]);if(baseLocked!=="OK"){await releaseLock(env,waybillLock);waybillLock=null;await releaseLock(env,requestLock);requestLock=null;routeBaseLock=null;return json({success:false,code:"BASE_UPDATE_BUSY",error:"该线路数据资料正在被其他确认操作更新，请稍后重试"},409)}}
   const stores=[...(order.stores||[])];
   const base=isTempRoute(order.routeId)?{routeId:order.routeId,version:1,stores:[]}:await loadBase(env,order.routeId);
-  const learned=[];
+  const learned=[];const discarded=new Set();
   for(const c of confirmations){
     const index=Number(c.index);if(!Number.isInteger(index)||index<0||index>=stores.length)continue;
     const item=stores[index];if(!item.pending&&!clean(c.storeId))continue;
     const rawName=clean(item.rawName||item.name);let target=null;
     const requestedId=clean(c.storeId);
     const action=clean(c.action)||"merge";
+    // 丢弃：该条目不是门店（运单号表格等 OCR 噪声、或拍错的残条），确认时直接剔除，
+    // 既不合并进已有门店，也不新建门店。此前只能 merge/new，遇到噪声会被迫污染数据。
+    if(action==="discard"){discarded.add(index);continue;}
     if(action!=="merge"&&action!=="new")continue;
     if(action==="merge"&&requestedId)target=base.stores.find(s=>clean(s.storeId)===requestedId)||null;
     if(action==="merge"&&!target)target=base.stores.find(s=>normalized(s.name)===normalized(c.standardName||"")||normalized(s.originalName)===normalized(c.standardName||""))||null;
@@ -154,8 +157,10 @@ export async function onRequestPost({request,env}){
     learned.push({storeId,rawName,standardName:clean(target?.name)||item.name,originalName:item.originalName,navigation:target?.navigation||null,routeId:order.routeId,learningEventId:newId()});
   }
 
+  // 被丢弃的条目不参与后续去重/排序/落库（剔除发生在确认阶段，数据不留残条）
+  const keptStores=discarded.size?stores.filter((_,i)=>!discarded.has(i)):stores;
   const seen=new Set();const deduped=[];let merged=0;
-  for(const item of stores){const key=item.storeId?"id:"+item.storeId:"pending:"+normalized(item.rawName);if(seen.has(key)){merged++;continue}seen.add(key);deduped.push(item)}
+  for(const item of keptStores){const key=item.storeId?"id:"+item.storeId:"pending:"+normalized(item.rawName);if(seen.has(key)){merged++;continue}seen.add(key);deduped.push(item)}
   // 确认发生在“规划完成”之后：不能因为门店身份确认而重新套用基准库 routeOrder。
   // 当前数组本身就是本次规划后的实际顺序：保留已有 routeOrder；
   // 缺失顺序的新增/异常门店按其在当前运单中的原位置追加编号，绝不拿基准库顺序插队。
@@ -170,7 +175,7 @@ export async function onRequestPost({request,env}){
   // 指纹失漏回收：确认会把待定门店补齐，指纹必然漂移；旧键会在删除本单后变成悬空指纹键。
   // 必须在 order.stores 被 finalStores 覆盖**之前**记下旧指纹。参见 retireStaleFingerprintKey 注释。
   const prevFingerprint=clean(order.businessFingerprint);
-  order.stores=finalStores;order.stage=pending?"PLANNED":"CONFIRMED";order.summary={...(order.summary||{}),total:finalStores.length,matched:finalStores.length-pending,pending,correction:finalStores.filter(s=>s.correction).length,merged:(order.summary?.merged||0)+merged,newStores:finalStores.filter(s=>s.matchMethod==="confirmed-new").length};
+  order.stores=finalStores;order.stage=pending?"PLANNED":"CONFIRMED";order.summary={...(order.summary||{}),total:finalStores.length,matched:finalStores.length-pending,pending,correction:finalStores.filter(s=>s.correction).length,merged:(order.summary?.merged||0)+merged,newStores:finalStores.filter(s=>s.matchMethod==="confirmed-new").length,discarded:(Number(order.summary?.discarded)||0)+discarded.size};
   const confirmedNow=new Date().toISOString();if(pending===0){order.confirmedAt=confirmedNow;order.confirmedBy=user.id;}else{order.lastConfirmedAt=confirmedNow;order.lastConfirmedBy=user.id;}order.confirmRequestId=confirmRequestId||null;
   if(learned.length&&!isTempRoute(order.routeId)){base.version=(Number(base.version)||1)+1;base.updatedAt=new Date().toISOString();base.updatedBy=user.id}
   order.businessFingerprint=await businessFingerprint(order);
