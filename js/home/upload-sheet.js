@@ -16,7 +16,8 @@ const textPanel=$("uploadTextPanel"),waybillTextInput=$("waybillTextInput"),
 function showTextPanel(){
   if(!textPanel||!sourceMenu)return;
   sourceMenu.hidden=true;textPanel.hidden=false;
-  if(waybillTextInput)waybillTextInput.focus();
+  // 打开面板不自动聚焦：本面板以「一键粘贴」为主操作，避免未点粘贴就先弹出输入法；
+  // 需要手动输入时用户点一下文本框，键盘自然弹出。
 }
 function backToSourceMenu(){
   if(!textPanel||!sourceMenu)return;
@@ -26,20 +27,53 @@ if(waybillTextInput&&textCharCount){
   const refreshCount=()=>{textCharCount.textContent=waybillTextInput.value.length+" 字"};
   waybillTextInput.addEventListener("input",refreshCount);refreshCount();
 }
+/* 在光标处插入文本（保留选择区，等价于用户手动粘贴的落点） */
+function insertWaybillText(text){
+  const start=waybillTextInput.selectionStart??waybillTextInput.value.length,end=waybillTextInput.selectionEnd??start;
+  waybillTextInput.setRangeText(text,start,end,"end");
+  waybillTextInput.dispatchEvent(new Event("input"));
+}
+/* 降级路径：借原生粘贴，把剪贴板内容直接粘进真实输入框（等价于用户手动粘贴）。
+   微信/安卓 WebView、Firefox 常可用此路，而 navigator.clipboard.readText 反而缺失；
+   被浏览器策略拦截时返回 false（什么都不做），交由调用方提示长按手动粘贴。 */
+function tryExecCommandPaste(){
+  return new Promise((resolve)=>{
+    const before=waybillTextInput.value;
+    let pasted=false;
+    const onPaste=()=>{pasted=true};
+    waybillTextInput.addEventListener("paste",onPaste);
+    waybillTextInput.focus();
+    let ok=false;try{ok=document.execCommand("paste")}catch(e){}
+    setTimeout(()=>{
+      waybillTextInput.removeEventListener("paste",onPaste);
+      resolve(!!(ok&&(pasted||waybillTextInput.value!==before)));
+    },60);
+  });
+}
 if(pasteFromClipboardBtn&&waybillTextInput){
   pasteFromClipboardBtn.addEventListener("click",async()=>{
-    // 读剪贴板需要授权：拒绝或不支持时降级为聚焦输入框，由用户长按手动粘贴
+    const original=pasteFromClipboardBtn.textContent;
+    pasteFromClipboardBtn.disabled=true;pasteFromClipboardBtn.textContent="读取中…";
     try{
-      if(!navigator.clipboard||!navigator.clipboard.readText)throw new Error("unsupported");
-      const text=await navigator.clipboard.readText();
-      if(!text){try{window.zpToast?.("剪贴板是空的","info")}catch{}return}
-      const start=waybillTextInput.selectionStart??waybillTextInput.value.length,end=waybillTextInput.selectionEnd??start;
-      waybillTextInput.setRangeText(text,start,end,"end");
-      waybillTextInput.dispatchEvent(new Event("input"));
+      // 1) 首选异步 Clipboard API（桌面 Chrome/Edge、已授权 WebView 可直接读到）
+      if(navigator.clipboard&&navigator.clipboard.readText){
+        try{
+          const text=await navigator.clipboard.readText();
+          if(!text){try{window.zpToast?.("剪贴板是空的","info")}catch{}return}
+          insertWaybillText(text); // 成功即粘入，不再强制聚焦（避免无谓弹出输入法）
+          return;
+        }catch(e){/* 权限拒绝/页面未聚焦 → 继续降级 */}
+      }
+      // 2) 降级：execCommand 原生粘贴到真实输入框
+      if(await tryExecCommandPaste()){waybillTextInput.dispatchEvent(new Event("input"));return}
+      // 3) 环境无法程序化读取剪贴板：明确提示 + 聚焦，方便用户长按粘贴
+      try{window.zpToast?.("未能读取剪贴板，请长按下方输入框粘贴","info")}catch{}
       waybillTextInput.focus();
     }catch{
-      try{window.zpToast?.("请在输入框长按粘贴","info")}catch{}
-      waybillTextInput?.focus();
+      try{window.zpToast?.("粘贴失败，请长按下方输入框粘贴","info")}catch{}
+      waybillTextInput.focus();
+    }finally{
+      pasteFromClipboardBtn.disabled=false;pasteFromClipboardBtn.textContent=original;
     }
   });
 }
