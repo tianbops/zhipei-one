@@ -35,7 +35,10 @@ async function historyGet({request,env}){
   // DELETE 路径不使用此参数，维持 env 默认窗口，避免客户端扩大可删除范围。
   const searchQuery=clean(url.searchParams.get("q")).normalize("NFKC").toLocaleLowerCase("zh-CN");
   const monthsN=monthsParam?Math.max(1,Math.min(13,Math.floor(Number(monthsParam)||3))):(searchQuery?3:env?.WAYBILL_HISTORY_MONTHS);
-  const range=historyRange(todayCN(),monthsN);phaseStart=performance.now();const enrich=await enrichFactory(env,routeId);mark("history-route",phaseStart);
+  // 性能：enrichFactory 仅在 date 详情分支用到（默认概览/搜索分支都不用），
+  // 原先无条件在公共路径算一次 = 每次概览白白多 1 次 Redis 往返（~190ms）。
+  // 下面各分支按需再取，概览/搜索路径直接省掉这一步。
+  const range=historyRange(todayCN(),monthsN);
   if(date){
    if(!validDate(date))return respond({success:false,code:"DATE_INVALID",error:"日期无效"},400);
    if(!inRange(date,range))return respond({success:false,code:"DATE_OUT_OF_RANGE",error:"日期不在历史查询范围内"},400);
@@ -47,6 +50,7 @@ async function historyGet({request,env}){
     if(e?.code==="WAYBILL_HISTORY_STALE_INDEX")return respond({success:false,code:"WAYBILL_HISTORY_STALE_INDEX",error:"历史运单索引与运单数据不一致，请稍后重试",date,missingCount:e.missingCount},503);
     throw e;
    }
+   phaseStart=performance.now();const enrich=await enrichFactory(env,routeId);mark("history-route",phaseStart);
    phaseStart=performance.now();const enriched=[];for(const w of waybills)enriched.push(await enrich(w));mark("history-detail-enrich",phaseStart);
    return respond({success:true,routeId,date,waybills:enriched,count:enriched.length,waybillIds:enriched.map(w=>w.id),hasMultiple:enriched.length>1});
   }

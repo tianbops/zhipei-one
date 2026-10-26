@@ -95,9 +95,11 @@ export async function readDayAggregates(env,{user,routeId,entries,budget=null}){
  const strictOwner=String(env?.WAYBILL_STRICT_OWNER||"")==="1";
  // 1) 索引 SMEMBERS：取每日运单 id（不含完整体，廉价）
  const idsByDate=new Map();
- for(let i=0;i<entries.length;i+=50){
+ // 分批取大（50→200）：pipeline 每次本就是 1 次 HTTPS 往返，批越大往返越少。
+ // 13 个月(~390 天)从 ~8 次 SMEMBERS pipeline 降到 ~2 次，聚合阶段耗时约减半。
+ for(let i=0;i<entries.length;i+=200){
   if(budget&&!budget.take(1))throwBudgetExceeded(budget.max,"history-read-dates-ids");
-  const chunk=entries.slice(i,i+50);
+  const chunk=entries.slice(i,i+200);
   const results=await pipeline(env,chunk.map(x=>["SMEMBERS",waybillIndexKey(x.routeId,x.date)]));
   for(let j=0;j<chunk.length;j++){const ids=Array.isArray(results?.[j])?results[j].map(clean).filter(Boolean):[];idsByDate.set(chunk[j].date,ids);}
  }
@@ -105,9 +107,9 @@ export async function readDayAggregates(env,{user,routeId,entries,budget=null}){
  const metaByDate=new Map();
  {
   const metaKeys=entries.map(e=>dayMetaKey(e.routeId,e.date));
-  for(let i=0;i<metaKeys.length;i+=100){
+  for(let i=0;i<metaKeys.length;i+=200){
    if(budget&&!budget.take(1))throwBudgetExceeded(budget.max,"history-read-meta");
-   const chunk=metaKeys.slice(i,i+100);
+   const chunk=metaKeys.slice(i,i+200);
    const raws=await command(env,["MGET",...chunk]);
    for(let j=0;j<chunk.length;j++){const o=parseMeta(raws?.[j]);if(o)metaByDate.set(chunk[j],o);}
   }
