@@ -31,10 +31,18 @@ const PAGES = [
 ];
 for (const p of PAGES) {
   const html = read(p);
-  assert.ok(
-    html.includes("/js/fetch-retry.js?v="),
-    `${p} 未加载 /js/fetch-retry.js（zpFetch 来源缺失，GET 重试会失效）`
-  );
+  if (p === "home.html") {
+    // a4a26d96 将 fetch-retry 合并入 home.bundle.js（其余页面仍独立加载）
+    assert.ok(
+      read("js/home.bundle.js").includes("window.zpFetch"),
+      "home.bundle.js 未包含 fetch-retry（home 页 zpFetch 来源缺失，GET 重试会失效）"
+    );
+  } else {
+    assert.ok(
+      html.includes("/js/fetch-retry.js?v="),
+      `${p} 未加载 /js/fetch-retry.js（zpFetch 来源缺失，GET 重试会失效）`
+    );
+  }
 }
 
 // ---------- 2) 只读 GET 端点已迁到 zpFetch ----------
