@@ -1018,7 +1018,7 @@ loadHome();
   }
   const daysInMonth=ym=>{const [y,m]=ym.split("-").map(Number);return new Date(Date.UTC(y,m,0)).getUTCDate();};
   const label=ym=>{const [y,m]=ym.split("-").map(Number);return y+"年"+m+"月";};
-  const esc=v=>String(v==null?"":v).replace(/[&<>"]/g,"");
+  const esc=v=>String(v==null?"":v).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   const smoothPath=pts=>{
     if(!pts.length)return "";
     if(pts.length===1)return "M "+pts[0][0]+" "+pts[0][1];
