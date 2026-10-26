@@ -45,5 +45,54 @@
     return s;
   };
 
+  /* ===== 模态焦点管理（P3 对话框焦点陷阱）=====
+     对话框（aria-modal）打开后，Tab/Shift+Tab 应在层内循环，键盘焦点不逃出遮罩。
+     决策拆成纯函数（便于单测），DOM 装配留给调用方（back.js 的 ESC/Tab 分发器）。
+
+     收集容器内可聚焦元素：跳过 disabled、tabindex="-1"、隐藏祖先、aria-hidden 与不可见项。 */
+  UI.focusables=function(root){
+    if(!root||typeof root.querySelectorAll!=="function")return [];
+    const sel='a[href],button,input,select,textarea,[tabindex]';
+    const out=[];
+    Array.prototype.forEach.call(root.querySelectorAll(sel),el=>{
+      if(!el||el.disabled)return;
+      if(el.getAttribute&&el.getAttribute("tabindex")==="-1")return;
+      if(el.closest&&el.closest("[hidden]"))return;
+      if(el.getAttribute&&el.getAttribute("aria-hidden")==="true")return;
+      // offsetParent 对 position:fixed 元素恒为 null，故同时看 getClientRects
+      const visible=(el.offsetParent!=null)||(typeof el.getClientRects==="function"&&el.getClientRects().length>0);
+      if(!visible)return;
+      out.push(el);
+    });
+    return out;
+  };
+
+  /* 焦点陷阱的纯决策：给定可聚焦元素列表、当前焦点元素与 Shift 状态，
+     返回应获得焦点的元素；返回 null 表示本次不干预（焦点在层内中间，照常移动）。 */
+  UI.trapFocusTarget=function(list,active,shiftKey){
+    if(!list||!list.length)return null;
+    const first=list[0],last=list[list.length-1];
+    if(shiftKey)return active===first?last:null;
+    return active===last?first:null;
+  };
+
+  /* 把焦点锁在容器内：Tab/Shift+Tab 在首尾循环。返回是否发生了焦点搬运。
+     焦点已逸出容器（如切到隐藏面板后浏览器把焦点落在 body）时，Tab 把它拉回层内首/尾，
+     否则焦点会从文档开头继续走，直接跳出弹层。 */
+  UI.trapTab=function(root,e){
+    if(!root||!e)return false;
+    const list=UI.focusables(root);
+    if(!list.length)return false;
+    const active=(typeof document!=="undefined")?document.activeElement:null;
+    const inside=!!(active&&root.contains&&root.contains(active));
+    let target=null;
+    if(!inside)target=e.shiftKey?list[list.length-1]:list[0];
+    else target=UI.trapFocusTarget(list,active,!!e.shiftKey);
+    if(!target)return false;
+    if(typeof e.preventDefault==="function")e.preventDefault();
+    try{target.focus()}catch(_){}
+    return true;
+  };
+
   window.__zpUi=UI;
 })();

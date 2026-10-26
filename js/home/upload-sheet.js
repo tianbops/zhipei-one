@@ -3,9 +3,19 @@
 function closeUpload(){
   if(processingFile)return;
   if(overlay){overlay.hidden=true;overlay.setAttribute("aria-hidden","true");document.body.classList.remove("sheet-open");resetProcessingUI()}
+  // 焦点归还触发按钮：弹层是 aria-modal，关闭后焦点必须回到原处，
+  // 否则键盘用户会掉回文档开头（焦点陷阱只管层内，不管层外归还）。
+  try{const trig=$("uploadAction");if(trig&&typeof trig.focus==="function")trig.focus()}catch(_){}
 }
 function openUpload(){
   if(overlay){resetProcessingUI();overlay.hidden=false;overlay.setAttribute("aria-hidden","false");document.body.classList.add("sheet-open")}
+  // 焦点入层：落在层内第一个可聚焦元素上（按钮而非输入框，不会误弹输入法）。
+  try{
+    const UI=window.__zpUi;
+    const sheet=overlay&&overlay.querySelector(".upload-sheet");
+    const list=UI&&UI.focusables?UI.focusables(sheet):[];
+    if(list&&list.length)list[0].focus();
+  }catch(_){}
 }
 /* ===== 粘贴文本录入（2026-10-26）：来源菜单第 4 项，切换文本面板 =====
    文本提交后走 processPastedText → 后端 rawText 直录管线（跳过 OCR）。

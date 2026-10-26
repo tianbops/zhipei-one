@@ -38,4 +38,8 @@ overlayPanel.addEventListener("click",async e=>{const t=e.target;if(t.id==="hist
 document.getElementById("historyTrashBtn")?.addEventListener("click",()=>renderTrash().catch(e=>toast(e.message||"回收站打开失败")));
 document.getElementById("historyExportBtn")?.addEventListener("click",renderExport);
 document.getElementById("historyLookupBtn")?.addEventListener("click",renderLookup);
-(window.zpBackHooks=window.zpBackHooks||[]).push({rank:5,probe:()=>overlay,close:()=>{closeOverlay();return true}});
+/* 返回层级：客户快查/回收站/导出 浮层。
+   rank 6：必须大于确认框的 rank 5——否则两者同级时按注册顺序（页面脚本先于
+   ui/back.js 注册）浮层会抢先被消费，导致「彻底删除」确认框叠在浮层上时，
+   返回键/ESC 关掉的是浮层、确认框却留在屏幕上（层级错位）。 */
+(window.zpBackHooks=window.zpBackHooks||[]).push({rank:6,probe:()=>overlay,trap:()=>overlayPanel,close:()=>{closeOverlay();return true}});

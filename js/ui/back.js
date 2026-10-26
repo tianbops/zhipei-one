@@ -147,6 +147,43 @@
     return false;
   }
 
+  // 自上而下找出最上层可见弹层（ESC/Tab 分发器用）。返回 null 表示当前没有弹层。
+  function zpTopHook(){
+    for(const h of zpSortedHooks()){
+      let el=null;try{el=h.probe()}catch{continue}
+      if(!el||!zpIsVisible(el))continue;
+      return h;
+    }
+    return null;
+  }
+  window.zpCloseTopLayer=zpCloseTopLayer;
+
+  /* ===== ESC 关闭 + Tab 焦点陷阱（与 Android 返回键共用同一分层阶梯）=====
+     - ESC：只关闭最上层的页面内弹层；当前没有弹层时什么都不做——不退出应用、不导航，
+       与系统返回键「越界退出」的语义刻意区分开。
+     - Tab：把焦点锁在最上层弹层内（容器由该层的 hook.trap 提供）。自带陷阱的层
+       （如确认框 zpConfirm）不提供 trap，沿用它自己的实现。
+     ⚠ ESC 必须与 Android 返回键走同一套 rank 阶梯，否则两层弹层叠放时会出现
+       「ESC 关掉下层、上层还挂着」的错位（历史浮层与确认框曾因此互相抢层级）。 */
+  document.addEventListener("keydown",async e=>{
+    if(e.key==="Escape"){
+      if(e.defaultPrevented)return; // 上层组件已自行处理（如 zp-picker 在捕获阶段拦截）
+      const top=zpTopHook();
+      if(!top)return;               // 无弹层：ESC 不越界退出
+      e.preventDefault();           // 同步阻止默认行为（须在事件派发结束前）
+      await zpCloseTopLayer();
+      return;
+    }
+    if(e.key!=="Tab")return;
+    const h=zpTopHook();
+    if(!h||typeof h.trap!=="function")return;
+    let root=null;try{root=h.trap()}catch{return}
+    if(!root)return;
+    const UI=window.__zpUi||{};
+    if(typeof UI.trapTab!=="function")return;
+    UI.trapTab(root,e);
+  });
+
   window.zpHandleBack=async function(){
     if(await zpCloseTopLayer())return "handled";
     if(zpIsWorkspaceRoot){

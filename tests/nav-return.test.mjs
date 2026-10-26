@@ -123,15 +123,50 @@ function makeEnv() {
   env.document = {
     body: { style: {} },
     confirmEl: null,
+    activeElement: null,
+    listeners: {},
     querySelector: (sel) => (sel === "#zpUiLayer .zp-confirm" ? env.document.confirmEl : null),
+    // back.js 注册了 ESC/Tab 分发器（document 级 keydown 监听），假 DOM 必须能接住，
+    // 否则加载即抛 "addEventListener is not a function"（真实浏览器恒有）。
+    addEventListener(type, fn) {
+      (env.document.listeners[type] = env.document.listeners[type] || []).push(fn);
+    },
+    removeEventListener(type, fn) {
+      const a = env.document.listeners[type] || [];
+      const i = a.indexOf(fn);
+      if (i >= 0) a.splice(i, 1);
+    },
   };
   const getComputedStyle = () => ({ display: "flex", visibility: "visible", opacity: "1" });
   installCore(env.window, env.document, { pathname: "/", search: "" });
   env.engine = new Function("window", "document", "getComputedStyle",
     "const UI=window.__zpUi;const sharedState=UI.state||{};" + LADDER_BODY +
-    "\nreturn {close:zpCloseTopLayer};")(env.window, env.document, getComputedStyle);
+    "\nreturn {close:zpCloseTopLayer, top:zpTopHook};")(env.window, env.document, getComputedStyle);
+  /* 模拟一次 keydown 分发，返回是否调用了 preventDefault */
+  env.fire = async (key, opts = {}) => {
+    const handler = (env.document.listeners.keydown || [])[0];
+    if (!handler) return false;
+    let prevented = false;
+    const ev = {
+      key,
+      defaultPrevented: !!opts.defaultPrevented,
+      shiftKey: !!opts.shiftKey,
+      preventDefault() { prevented = true; ev.defaultPrevented = true; },
+    };
+    await handler(ev);
+    return prevented;
+  };
   return env;
 }
+/** 可聚焦假元素：够 core.js 的 UI.focusables 判定使用 */
+const focusableEl = (over) => Object.assign({
+  disabled: false, focused: false,
+  getAttribute: () => null,
+  closest: () => null,
+  offsetParent: {},
+  getClientRects: () => [0],
+  focus() { this.focused = true; },
+}, over || {});
 const fakeEl = (over) => Object.assign({
   hidden: false, style: {}, closest: () => null,
   getBoundingClientRect: () => ({ width: 200, height: 200 }),
@@ -231,6 +266,74 @@ await (async () => {
 })();
 
 
+/* ---------- 切片二之二：ESC 关闭 + Tab 焦点陷阱（P3 对话框焦点陷阱）---------- */
+console.log("\n五、ESC 关闭与 Tab 焦点陷阱（6 条）");
+await (async () => {
+  // ① ESC 只关最上层弹层
+  {
+    const env = makeEnv(); let cp = false, cd = false;
+    const picker = fakeEl(), dialog = fakeEl();
+    env.window.zpBackHooks.push(
+      { rank: 10, probe: () => picker, close: () => { picker.hidden = true; cp = true; return true; } },
+      { rank: 10, probe: () => dialog, close: () => { dialog.hidden = true; cd = true; return true; } });
+    const prevented = await env.fire("Escape");
+    t("ESC：只关最上层弹层，不误关下层", cp && !cd && prevented, "picker=" + cp + " dialog=" + cd);
+    console.log((cp && !cd ? "✅ " : "❌ ") + "ESC：一次只关闭最上层弹层");
+  }
+  // ② 当前无弹层 → ESC 不越界退出（与系统返回键「越界退出」刻意区分）
+  {
+    const env = makeEnv();
+    env.window.zpBackHooks.push({ rank: 10, probe: () => null, close: () => true });
+    const prevented = await env.fire("Escape");
+    t("ESC：无弹层时不越界退出", prevented === false);
+    console.log((prevented === false ? "✅ " : "❌ ") + "ESC：没有弹层时不退出应用、不导航");
+  }
+  // ③ 确认框（rank5）叠在页面浮层（rank6）之上 → ESC 先关确认框
+  {
+    const env = makeEnv(); const confirm = fakeEl(); env.document.confirmEl = confirm;
+    let panelClosed = false; const panel = fakeEl();
+    env.window.zpBackHooks.push({ rank: 6, probe: () => panel, close: () => { panelClosed = true; return true; } });
+    env.window.__zpUi.state.confirmDismisser = () => { confirm.hidden = true; };
+    await env.fire("Escape");
+    t("ESC：确认框优先于下层浮层", confirm.hidden === true && !panelClosed,
+      "confirm.hidden=" + confirm.hidden + " panel=" + panelClosed);
+    console.log((confirm.hidden && !panelClosed ? "✅ " : "❌ ") + "ESC：确认框在最上层时先关确认框");
+  }
+  // ④ 上层组件已自行处理（defaultPrevented）→ 不再重复关闭下层
+  {
+    const env = makeEnv(); let closed = false; const sheet = fakeEl();
+    env.window.zpBackHooks.push({ rank: 10, probe: () => sheet, close: () => { closed = true; return true; } });
+    await env.fire("Escape", { defaultPrevented: true });
+    t("ESC：上层已处理时不重复关闭", closed === false);
+    console.log((closed === false ? "✅ " : "❌ ") + "ESC：上层组件已处理时不再叠加关闭");
+  }
+  // ⑤ Tab：焦点锁在最上层弹层内（末项 → 首项）
+  {
+    const env = makeEnv();
+    const a = focusableEl(), b = focusableEl();
+    const container = { querySelectorAll: () => [a, b], contains: (n) => n === a || n === b };
+    const sheet = fakeEl();
+    env.window.zpBackHooks.push({ rank: 10, probe: () => sheet, trap: () => container, close: () => true });
+    env.document.activeElement = b;
+    const prevented = await env.fire("Tab");
+    t("Tab：焦点在最上层弹层内循环", a.focused === true && prevented === true);
+    console.log((a.focused ? "✅ " : "❌ ") + "Tab：焦点在弹层内首尾循环");
+  }
+  // ⑥ Tab：焦点逸出层外时拉回层内
+  {
+    const env = makeEnv();
+    const a = focusableEl(), b = focusableEl();
+    const container = { querySelectorAll: () => [a, b], contains: (n) => n === a || n === b };
+    const sheet = fakeEl();
+    env.window.zpBackHooks.push({ rank: 10, probe: () => sheet, trap: () => container, close: () => true });
+    env.document.activeElement = null;
+    await env.fire("Tab");
+    t("Tab：焦点逸出层外时拉回层内", a.focused === true);
+    console.log((a.focused ? "✅ " : "❌ ") + "Tab：焦点逸出弹层时拉回弹层内");
+  }
+})();
+
+
 /* ---------- 切片三：线路页原始弹层返回钩子 ---------- */
 const DISPATCH_SRC = readFileSync(fileURLToPath(new URL("../pages/dispatch.html", import.meta.url)), "utf8");
 {
@@ -274,7 +377,13 @@ const HISTORY_SRC = ["core.js", "render.js", "data.js", "overlay.js"]
   const picker = /rank\s*:\s*10\s*,\s*probe\s*:\s*\(\)\s*=>\s*picker/.test(historyHooks);
   const dialog = /rank\s*:\s*10\s*,\s*probe\s*:\s*\(\)\s*=>\s*dialog/.test(historyHooks);
   const swipe = /rank\s*:\s*40\s*,\s*probe\s*:\s*\(\)\s*=>\s*document\.querySelector\("\.history-swipe-row\.swiped"\)/.test(historyHooks);
-  const overlayHook = /rank\s*:\s*5\s*,\s*probe\s*:\s*\(\)\s*=>\s*overlay/.test(HISTORY_SRC);
+  // 浮层优先级用「意图」表达，不绑死魔法数字：
+  //   rank 越大越晚关闭。它必须早于页面级弹层（rank 10 的选择器/确认框）关闭，
+  //   但必须晚于通用确认框（rank 5）——两者同级时按注册顺序浮层会抢先，
+  //   导致「彻底删除」确认框叠在浮层上时返回键关掉的是浮层、确认框留在屏上。
+  const overlayRankMatch = /rank\s*:\s*(\d+)\s*,\s*probe\s*:\s*\(\)\s*=>\s*overlay/.exec(HISTORY_SRC);
+  const overlayRank = overlayRankMatch ? Number(overlayRankMatch[1]) : null;
+  const overlayHook = overlayRank !== null && overlayRank > 5 && overlayRank < 10;
   t("历史页：日历选择器注册返回钩子", picker);
   t("历史页：删除确认框注册返回钩子", dialog);
   t("历史页：左滑展开行最后关闭", swipe);
