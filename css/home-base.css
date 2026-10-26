@@ -37,7 +37,8 @@
 .sheet-handle{width:34px;height:4px;margin:0 auto 16px;border-radius:4px;background:var(--zp-tint-strong)}
 .upload-source-menu{margin:0;padding:0;background:transparent}
 .source-menu-title{height:28px;line-height:28px;margin:0 0 20px;color:var(--zp-text);text-align:center;font-size:20px;font-weight:700}
-.source-menu-options{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+/* 2026-10-26 新增「粘贴文本」录入：来源入口从 3 列改 2×2，每格更宽容纳四项文案 */
+.source-menu-options{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .source-option{height:auto;min-height:72px;padding:9px 0;border:1px solid var(--zp-tint);border-radius:12px;background:var(--zp-card-translucent);color:var(--zp-text);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .source-option:active{background:var(--zp-primary);color:var(--zp-on-primary);transform:scale(.985)}
 .source-icon{width:24px;height:24px;display:flex;align-items:center;justify-content:center}
@@ -45,6 +46,22 @@
 .source-option strong{font-size:13px;font-weight:600;line-height:18px}
 .upload-cancel-btn{width:100%;height:48px;min-height:48px;margin-top:12px;border:1px solid var(--zp-tint);border-radius:12px;background:var(--zp-card-translucent);color:var(--zp-muted);font-size:14px;font-weight:650;-webkit-tap-highlight-color:transparent}
 .upload-cancel-btn:active{background:var(--zp-primary);color:var(--zp-on-primary);transform:scale(.985)}
+
+/* 粘贴文本录入面板：与来源菜单同一容器风格，纯令牌配色（组件层零字面量） */
+.upload-text-panel{margin:0;padding:0;background:transparent}
+.upload-text-panel[hidden]{display:none}
+.waybill-text-input{display:block;width:100%;box-sizing:border-box;min-height:180px;margin:0 0 8px;padding:12px 14px;border:1px solid var(--zp-input-line);border-radius:12px;background:var(--zp-surface);color:var(--zp-text);font:inherit;font-size:15px;line-height:22px;resize:vertical;-webkit-tap-highlight-color:transparent}
+.waybill-text-input::placeholder{color:var(--zp-muted)}
+.waybill-text-input:focus{outline:none;border-color:var(--zp-primary)}
+.text-panel-meta{display:flex;align-items:center;justify-content:space-between;min-height:28px;color:var(--zp-muted);font-size:12px}
+.text-paste-btn{height:30px;padding:0 12px;border:1px solid var(--zp-tint);border-radius:9px;background:var(--zp-card-translucent);color:var(--zp-primary);font-size:12px;font-weight:650;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.text-paste-btn:active{background:var(--zp-primary);color:var(--zp-on-primary);transform:scale(.985)}
+.text-panel-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.text-panel-actions .upload-cancel-btn{margin-top:0}
+.text-submit-btn{height:48px;min-height:48px;border:1px solid var(--zp-primary);border-radius:12px;background:var(--zp-primary);color:var(--zp-on-primary);font-size:14px;font-weight:650;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.text-submit-btn:active{transform:scale(.985)}
+.text-submit-btn:disabled{opacity:.5}
+.text-submit-btn:focus,.text-paste-btn:focus,.waybill-text-input:focus-visible{outline:2px solid var(--zp-focus-ring);outline-offset:2px}
 .upload-processing{padding:8px 2px 6px}
 .upload-processing[hidden],.upload-processing-error[hidden]{display:none}
 .processing-title{color:var(--zp-text);text-align:center;font-size:16px;font-weight:700;line-height:28px}

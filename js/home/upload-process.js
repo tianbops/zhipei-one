@@ -15,6 +15,8 @@ async function ensureDispatchRoute(){
 }
 
 function chooseFile(source){
+  // text 来源没有文件控件：弹层切换到文本面板由 upload-sheet.js 的面板逻辑处理
+  if(source==="text")return;
   const input=source==="camera"?$("cameraInput"):source==="photo"?$("photoInput"):$("documentInput");
   if(!input)return;
   input.value="";
@@ -28,10 +30,25 @@ window.zpIsProcessing=()=>!!processingFile||!!processingController;
 let lastProcessingFile=null;   // 兼容旧状态；处理结束后立即清空，不用于图片重试
 let lastFailureAction=null;    // 最近一次失败的处理动作（action）；null 表示不可重试，按钮作关闭用
 let lastFailureRequestId=null; // 最近一次失败的处理票据 requestId（RETRY_SAVE 仅重保存时回传后端 resume）
+// 文本直录入口：后端 /api/waybills/process 原生支持 rawText 字段——
+// 有文字即整段跳过 OCR，直接进「提取 → 匹配 → 去重 → 规划 → 校验 → 落库」，与 OCR 文本同一条管线。
+async function processPastedText(text){
+  const raw=String(text??"").trim();
+  if(processingFile)return;
+  if(!raw){try{window.zpToast?.("请先粘贴运单文本","info")}catch{}return}
+  if(raw.length>50000){try{window.zpToast?.("文本过长，请分次录入","info")}catch{}return}
+  lastFailureSource="text";
+  return processWaybill({rawText:raw});
+}
+let lastFailureSource="file";   // 最近一次失败的录入方式：file（选文件）或 text（粘贴文本），驱动重试回位
 async function processSelectedFiles(files, resumeRequestId){
+  lastFailureSource="file";
+  return processWaybill({files,resumeRequestId});
+}
+async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
   if(!Array.isArray(files))files=files?[files]:[];
   files=files.filter(Boolean);
-  if((!files.length&&!resumeRequestId)||processingFile)return;
+  if((!files.length&&!rawText&&!resumeRequestId)||processingFile)return;
   processingFile=true;
   lastProcessingFile=null;
   const controller=new AbortController();
@@ -49,6 +66,7 @@ async function processSelectedFiles(files, resumeRequestId){
     document.querySelectorAll(".source-option").forEach(b=>b.disabled=true);
     const fd=new FormData();
     files.forEach(file=>fd.append("file",file));
+    if(rawText)fd.append("rawText",rawText);
     fd.append("fileCount",String(files.length));
     fd.append("routeId",processingRouteIdLocal);
     fd.append("processingRouteId",processingRouteIdLocal);
@@ -132,8 +150,9 @@ async function processSelectedFiles(files, resumeRequestId){
     processingFile=false;
     const wasCancelled=processingCancelled;
     processingController=null;
-    // 释放前端对原图 File 对象的引用；历史记录只保留业务结果，不保留图片。
+    // 释放前端对原图 File 对象的引用；历史记录只保留业务结果，不保留图片/文本。
     files.length=0;
+    rawText="";
     lastProcessingFile=null;
     ["cameraInput","photoInput","documentInput"].forEach(id=>{const input=$(id);if(input)input.value="";});
     if(wasCancelled){

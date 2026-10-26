@@ -57,7 +57,9 @@ function showProcessingUI(){
   if(overlay)overlay.classList.remove("processing-error-state");
   if(processingError)processingError.hidden=true;
   if(processingErrorMessage)processingErrorMessage.textContent="";
-  sourceMenu.hidden=true;processingPanel.hidden=false;
+  sourceMenu.hidden=true;
+  if(uploadTextPanelEl)uploadTextPanelEl.hidden=true;   // 文本面板与来源菜单互斥，处理期一并隐藏
+  processingPanel.hidden=false;
   processingCancelled=false;
   if(processingCancelBtn){processingCancelBtn.hidden=true;processingCancelBtn.disabled=false;}
   setProcessingStage(STAGE_DEFAULT);

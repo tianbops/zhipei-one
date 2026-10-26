@@ -3,6 +3,7 @@
 
 const processingPanel=$("uploadProcessing"),processingError=$("uploadProcessingError"),processingErrorMessage=$("processingErrorMessage"),processingRetry=$("processingRetry"),sourceMenu=$("uploadSourceMenu"),processingPercent=$("processingPercent"),processingProgress=$("processingProgressDot");
 const processingStageEl=$("processingStage"),processingElapsedEl=$("processingElapsed"),processingCancelBtn=$("processingCancel");
+const uploadTextPanelEl=$("uploadTextPanel"),waybillTextInputEl=$("waybillTextInput");
 let processingProgressValue=0;
 let processingProgressTarget=0;
 let processingProgressFrame=0;
@@ -133,6 +134,8 @@ function resetProcessingUI(){
   // 读屏工具与 DOM 检索仍可读到（2026-10-24 线上核查发现）。
   if(processingErrorMessage)processingErrorMessage.textContent="";
   if(processingRetry)processingRetry.textContent="请重试";
-  sourceMenu.hidden=false;processingPanel.hidden=true;
+  sourceMenu.hidden=false;
+  if(uploadTextPanelEl)uploadTextPanelEl.hidden=true;   // 复位回来源菜单（文本重试回位由 retry 分支再切回文本面板）
+  processingPanel.hidden=true;
   resetProcessingProgress();
 }

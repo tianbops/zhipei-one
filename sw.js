@@ -9,7 +9,7 @@
  *   - 图片/字体       ：stale-while-revalidate（内容基本不变，秒开优先）
  * 资产缓存键用完整 URL（含 ?v=）精确匹配；页面缓存键用 pathname 规整（忽略 ?from 等查询）。
  */
-const VERSION = "zp-pwa-142";
+const VERSION = "zp-pwa-144";
 const STATIC_CACHE = VERSION + "-static";
 const PAGES_CACHE = VERSION + "-pages";
 const OFFLINE_URL = "/offline";
@@ -47,7 +47,7 @@ const PRECACHE = [
   "/css/history-overlay-light.css?v=a6af61b1",
   "/css/history-overlays.css?v=a43f1704",
   "/css/history-shell.css?v=ecfaec95",
-  "/css/home-base.css?v=b975fbf9",
+  "/css/home-base.css?v=a9fa1102",
   "/css/home-dashboard.css?v=d6d260c3",
   "/css/home-light.css?v=34fddf8e",
   "/css/home-trend.css?v=f891f0bb",
@@ -79,10 +79,10 @@ const PRECACHE = [
   "/js/home/back.js?v=6a695967",
   "/js/home/core.js?v=92d7a0ed",
   "/js/home/today.js?v=0c5c1828",
-  "/js/home/upload-error.js?v=7ce5bca1",
-  "/js/home/upload-process.js?v=bfb6b5ce",
-  "/js/home/upload-progress.js?v=7b75f8bf",
-  "/js/home/upload-sheet.js?v=f3956ff9",
+  "/js/home/upload-error.js?v=5107e229",
+  "/js/home/upload-process.js?v=ba955b06",
+  "/js/home/upload-progress.js?v=ae39dc50",
+  "/js/home/upload-sheet.js?v=245641af",
   "/js/login.js?v=daea0b15",
   "/js/offline-queue.js?v=c255ca1f",
   "/js/order_detail/boot.js?v=76efb5ed",
