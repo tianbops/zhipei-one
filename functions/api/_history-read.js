@@ -93,27 +93,30 @@ export async function readDateWaybillsBatch(env,user,entries,budget=null){
 // 过滤读体，保证与单日详情口径一致，且绝不回写 meta（避免污染后续非严格读取）。
 export async function readDayAggregates(env,{user,routeId,entries,budget=null}){
  const strictOwner=String(env?.WAYBILL_STRICT_OWNER||"")==="1";
- // 1) 索引 SMEMBERS：取每日运单 id（不含完整体，廉价）
+ // 1) 索引 SMEMBERS（取每日运单 id，廉价）与 2) 每日汇总 meta（MGET）**互不依赖**：
+ //    meta key 直接由 entries 派生，无需等 SMEMBERS 结果。故两段并发执行，
+ //    把原本「SMEMBERS 全部串行完 → 再 MGET 全部串行」压缩为一段并发（墙钟 ≈ 单次 RTT）。
+ //    分批再取大（200→500），13 个月(~390 天)每段各只需 1 次往返。
  const idsByDate=new Map();
- // 分批取大（50→200）：pipeline 每次本就是 1 次 HTTPS 往返，批越大往返越少。
- // 13 个月(~390 天)从 ~8 次 SMEMBERS pipeline 降到 ~2 次，聚合阶段耗时约减半。
- for(let i=0;i<entries.length;i+=200){
-  if(budget&&!budget.take(1))throwBudgetExceeded(budget.max,"history-read-dates-ids");
-  const chunk=entries.slice(i,i+200);
-  const results=await pipeline(env,chunk.map(x=>["SMEMBERS",waybillIndexKey(x.routeId,x.date)]));
-  for(let j=0;j<chunk.length;j++){const ids=Array.isArray(results?.[j])?results[j].map(clean).filter(Boolean):[];idsByDate.set(chunk[j].date,ids);}
- }
- // 2) 每日汇总键 meta（批量 MGET）
  const metaByDate=new Map();
- {
+ const loadIds=async()=>{
+  for(let i=0;i<entries.length;i+=500){
+   if(budget&&!budget.take(1))throwBudgetExceeded(budget.max,"history-read-dates-ids");
+   const chunk=entries.slice(i,i+500);
+   const results=await pipeline(env,chunk.map(x=>["SMEMBERS",waybillIndexKey(x.routeId,x.date)]));
+   for(let j=0;j<chunk.length;j++){const ids=Array.isArray(results?.[j])?results[j].map(clean).filter(Boolean):[];idsByDate.set(chunk[j].date,ids);}
+  }
+ };
+ const loadMeta=async()=>{
   const metaKeys=entries.map(e=>dayMetaKey(e.routeId,e.date));
-  for(let i=0;i<metaKeys.length;i+=200){
+  for(let i=0;i<metaKeys.length;i+=500){
    if(budget&&!budget.take(1))throwBudgetExceeded(budget.max,"history-read-meta");
-   const chunk=metaKeys.slice(i,i+200);
+   const chunk=metaKeys.slice(i,i+500);
    const raws=await command(env,["MGET",...chunk]);
    for(let j=0;j<chunk.length;j++){const o=parseMeta(raws?.[j]);if(o)metaByDate.set(chunk[j],o);}
   }
- }
+ };
+ await Promise.all([loadIds(),loadMeta()]);
  // 3) 有 meta 且非严格 → 直接用（rollup 快路）；严格模式不信 meta，其余天按 legacy 批量读体
  const dates=[];const legacy=[];
  for(const entry of entries){
