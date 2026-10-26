@@ -31,7 +31,8 @@ export async function onRequestPost({ request, env }) {
   const apply = input?.apply === true;
   if (!waybillId) return json({ success: false, code: "WAYBILL_ID_REQUIRED", error: "缺少运单ID" }, 400);
 
-  const raw = await get(env, "zp:waybill:" + waybillId);
+  // 注意：get() 内部会加 PREFIX("zp:")，此处不能再带前缀（否则变成 zp:zp:waybill:*）
+  const raw = await get(env, "waybill:" + waybillId);
   if (!raw) return json({ success: false, code: "WAYBILL_NOT_FOUND", error: "运单不存在" }, 404);
   let order;
   try { order = typeof raw === "string" ? JSON.parse(raw) : raw; } catch {
