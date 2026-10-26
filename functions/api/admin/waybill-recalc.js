@@ -86,7 +86,20 @@ export async function onRequestPost({ request, env }) {
   };
 
   if (!apply) {
-    return json({ success: true, dryRun: true, waybillId, before: { ...before, stores: before.stores.slice(0, 6) }, after: { ...after, stores: after.stores.slice(0, 6) } });
+    const arrow = rawText.search(/\s*(?:->|→|＞)\s*/);
+    const pcts = [...String(rawText).matchAll(/\(?\s*\d+(?:\.\d+)?\s*%\s*\)?/g)].map(m => ({ i: m.index, t: m[0] }));
+    return json({
+      success: true, dryRun: true, waybillId,
+      before: { ...before, stores: before.stores.slice(0, 6) },
+      after: { ...after, stores: after.stores.slice(0, 6) },
+      rawProbe: {
+        length: String(rawText).length,
+        lines: String(rawText).split(/\r?\n/).length,
+        firstArrowAt: arrow,
+        percentMatches: pcts.slice(0, 5),
+        head: String(rawText).slice(0, 260),
+      },
+    });
   }
 
   // ---- 写库（可回滚）----
