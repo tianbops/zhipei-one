@@ -1805,7 +1805,7 @@ main.zp-shell.dispatch-page .zp-scroll{padding-top:0}
 .today-summary{display:flex;align-items:baseline;gap:9px;white-space:nowrap;line-height:29px}
 .today-summary strong{color:var(--zp-text);font-size:20px;line-height:29px;font-weight:600}
 .today-summary span{font-size:16px;line-height:29px;color:var(--zp-muted)}
-.delivery-man{width:84px;height:60px;display:flex;align-items:flex-end;justify-content:flex-end;opacity:.4;transform:translateY(8px)}
+.delivery-man{width:84px;height:60px;display:flex;align-items:flex-end;justify-content:flex-end;opacity:.9;transform:translateY(8px)}
 .delivery-man img{width:100%;height:100%;object-fit:contain}
 /* radius 14→12（方案第十三章 10–12）。padding 0 48px 保持不动：
    它是 width:100% + justify-content:center 的居中大按钮，48px 只用于限制内容最大宽度，
@@ -1880,7 +1880,7 @@ main.zp-shell.dispatch-page .zp-scroll{padding-top:0}
  .task-title{font-size:20px;line-height:26px}
  .task-date{font-size:16px;line-height:23px}
  .today-summary strong{font-size:19px}.today-summary span{font-size:15px}
- .delivery-man{width:64px;height:46px;opacity:.4;transform:translateY(8px)}
+ .delivery-man{width:64px;height:46px;opacity:.9;transform:translateY(8px)}
  .upload-sheet{width:min(90vw,340px);padding:20px 17px 18px}
  .source-menu-title{font-size:19px;margin-bottom:18px}
  .source-menu-options{gap:7px}
@@ -2125,7 +2125,7 @@ body.sheet-open .bottom-nav{z-index:1001 !important}
    invert+hue-rotate+brightness 滤镜，蓝点色相被扭曲且 brightness 上限使
    #1677FF 不可精确达到。改为预烘焙浅色专用图 delivery-route-light.webp
    （深线稿观感不变，主蓝精确落位主题蓝），双 img 按主题切换，深色仍原图直出。 */
-:root[data-zp-theme="light"] .delivery-man{opacity:.55}
+:root[data-zp-theme="light"] .delivery-man{opacity:.9}
 .delivery-man .delivery-img-light{display:none}
 :root[data-zp-theme="light"] .delivery-man .delivery-img-dark{display:none}
 :root[data-zp-theme="light"] .delivery-man .delivery-img-light{display:inline}

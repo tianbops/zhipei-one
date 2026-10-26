@@ -5,7 +5,7 @@
    invert+hue-rotate+brightness 滤镜，蓝点色相被扭曲且 brightness 上限使
    #1677FF 不可精确达到。改为预烘焙浅色专用图 delivery-route-light.webp
    （深线稿观感不变，主蓝精确落位主题蓝），双 img 按主题切换，深色仍原图直出。 */
-:root[data-zp-theme="light"] .delivery-man{opacity:.55}
+:root[data-zp-theme="light"] .delivery-man{opacity:.9}
 .delivery-man .delivery-img-light{display:none}
 :root[data-zp-theme="light"] .delivery-man .delivery-img-dark{display:none}
 :root[data-zp-theme="light"] .delivery-man .delivery-img-light{display:inline}
