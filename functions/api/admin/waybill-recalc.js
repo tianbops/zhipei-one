@@ -9,6 +9,10 @@
      - 只覆盖 stores / stage / summary / diagnostics 等派生字段，id、rawText、date、
        vehicle、requestId、createdAt 等原始字段一律不动；
      - 写后重算当日汇总（门店数/重量变化必须同步 meta）。
+   另支持 mode="delete"：删除**指定单张**运单（用于清理测试单/重复上传造成的重复运单，
+   避免当日家数与重量被重复累加）。
+   删除同样先备份（保留 30 天）、同时移除历史索引成员、删除后重算当日汇总；
+   不做批量、不可撤销（可从 backupKey 手工恢复）。
    只处理单张运单，不提供批量入口（批量需另行评估）。
 */
 import { json, body } from "../_json.js";
@@ -29,7 +33,10 @@ export async function onRequestPost({ request, env }) {
   const input = await body(request);
   const waybillId = String(input?.waybillId || "").trim();
   const apply = input?.apply === true;
+  const mode = String(input?.mode || "recalc").trim();
   if (!waybillId) return json({ success: false, code: "WAYBILL_ID_REQUIRED", error: "缺少运单ID" }, 400);
+  if (mode !== "recalc" && mode !== "delete")
+    return json({ success: false, code: "MODE_INVALID", error: "mode 仅支持 recalc / delete" }, 400);
 
   // 注意：get() 内部会加 PREFIX("zp:")，此处不能再带前缀（否则变成 zp:zp:waybill:*）
   const raw = await get(env, "waybill:" + waybillId);
@@ -39,6 +46,55 @@ export async function onRequestPost({ request, env }) {
     return json({ success: false, code: "WAYBILL_BAD_JSON", error: "运单数据格式异常" }, 500);
   }
   if (!order || typeof order !== "object") return json({ success: false, code: "WAYBILL_BAD_DATA", error: "运单数据异常" }, 500);
+
+  /* ---------------- 删除模式（清理测试单/重复运单） ---------------- */
+  if (mode === "delete") {
+    const routeId = String(order.routeId || "");
+    const date = String(order.date || "");
+    if (!apply) {
+      return json({
+        success: true, dryRun: true, mode: "delete", waybillId,
+        willDelete: {
+          routeId, date,
+          stage: order.stage || null,
+          total: Array.isArray(order.stores) ? order.stores.length : 0,
+          pending: Number(order.summary?.pending) || 0,
+          totalWeight: order.totalWeight ?? null,
+          createdAt: order.createdAt || null,
+        },
+        hint: "确认删除请传 apply=true；删除前会自动备份（保留 30 天）",
+      });
+    }
+    const ts0 = new Date().toISOString().replace(/[:.]/g, "-");
+    const backupKey = "zp:waybill:" + waybillId + ":backup:" + ts0;
+    try {
+      await command(env, ["SET", backupKey, typeof raw === "string" ? raw : JSON.stringify(raw), "EX", String(30 * 24 * 3600)]);
+    } catch (e) {
+      return json({ success: false, code: "BACKUP_FAILED", error: "备份失败，已中止（未删除）", detail: String(e?.message || e) }, 500);
+    }
+    try {
+      await command(env, ["DEL", "zp:waybill:" + waybillId]);
+    } catch (e) {
+      return json({ success: false, code: "DELETE_FAILED", error: "删除运单失败（原记录已备份）", backupKey, detail: String(e?.message || e) }, 500);
+    }
+    // 历史索引成员（zp:route:{routeId}:waybills:{date} 是 SET，成员为运单ID）
+    if (routeId && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      try { await command(env, ["SREM", "zp:route:" + routeId + ":waybills:" + date, waybillId]); } catch { /* 索引可由一致性扫描补 */ }
+    }
+    let meta = null;
+    if (routeId && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      try { meta = await recomputeDayMeta(env, routeId, date); } catch { /* meta 可稍后重算 */ }
+    }
+    return json({
+      success: true, dryRun: false, mode: "delete", waybillId, backupKey, meta,
+      deleted: {
+        stage: order.stage || null,
+        total: Array.isArray(order.stores) ? order.stores.length : 0,
+        pending: Number(order.summary?.pending) || 0,
+      },
+      hint: "如需恢复：把 backupKey 的内容 SET 回 zp:waybill:" + waybillId + "，并 SADD 回历史索引",
+    });
+  }
 
   const baseRaw = await get(env, "route:" + order.routeId + ":base");
   let baseStores = [];
