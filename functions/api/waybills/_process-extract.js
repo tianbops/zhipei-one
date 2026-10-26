@@ -78,14 +78,22 @@ export function extract(rawText){
         else if(tailIdx===0)part="";
         part=part.replace(/\s+\d{5,}(?:\s+\d{5,})*\s*$/g,"").trim();
       }
-      const idm=part.match(/\b(?:JM|A|Q)[\p{Pd}_ ]?\d{3,12}\b/i);
-      const storeId=idm?idm[0].replace(/[\p{Pd} ]/gu,"").toUpperCase():null;
-      const rawName=cleanStoreName(part);
-      const name=cleanStoreName(part.replace(/\b(?:JM|A|Q)[\p{Pd}_ ]?\d{3,12}\b/i,""));
-      // 噪声剔除：清掉数字与空白后若正好是表头词（如运单号表格残留），不作为门店
-      const noiseKey=clean(name).replace(/[\d\s]+/g,"");
-      if(NOISE_WORDS.has(noiseKey))continue;
-      if(name.length>=2&&/[\u4e00-\u9fa5A-Za-z]/.test(name))stores.push({rawName, name, sourceLine:text, storeId});
+      /* 表头块清洗：多张截图内容重复粘贴时，表头可能夹在门店之间（例如
+         「A店 运单列表 运输日期 … 总数量129|…(7.52%) B店」），只在开头截一次处理不到，
+         会把表头与两侧门店粘成一条超长脏名（进而在匹配阶段与其他条目身份冲突、卡待定）。
+         此处把**每一处**表头块替换为换行，再按换行拆成多个门店候选，逐个走原有识别逻辑。 */
+      const noHeader=String(part).replace(/(?:运单列表|订单列表|运输日期)[\s\S]*\(\s*\d+(?:\.\d+)?\s*%\s*\)/g,"\n");
+      const segments=noHeader.split(/\r?\n+/).map(x=>x.trim()).filter(Boolean);
+      for(const seg of (segments.length?segments:[part])){
+        const idm=seg.match(/\b(?:JM|A|Q)[\p{Pd}_ ]?\d{3,12}\b/i);
+        const storeId=idm?idm[0].replace(/[\p{Pd} ]/gu,"").toUpperCase():null;
+        const rawName=cleanStoreName(seg);
+        const name=cleanStoreName(seg.replace(/\b(?:JM|A|Q)[\p{Pd}_ ]?\d{3,12}\b/i,""));
+        // 噪声剔除：清掉数字与空白后若正好是表头词（如运单号表格残留），不作为门店
+        const noiseKey=clean(name).replace(/[\d\s]+/g,"");
+        if(NOISE_WORDS.has(noiseKey))continue;
+        if(name.length>=2&&/[\u4e00-\u9fa5A-Za-z]/.test(name))stores.push({rawName, name, sourceLine:text, storeId});
+      }
     }
   };
 
@@ -94,8 +102,11 @@ export function extract(rawText){
     let routeText=full;
     const percentMatches=[...full.matchAll(/\(?\s*\d+(?:\.\d+)?\s*%\s*\)?/g)];
     if(percentMatches.length){
-      const last=percentMatches[percentMatches.length-1];
-      if(last.index<firstArrow)routeText=full.slice(last.index+last[0].length);
+      // 只认「第一个箭头之前」的最后一个百分比：重复粘贴时会存在后段的百分比，
+      // 若取全局最后一个会出现 last.index > firstArrow，导致表头截断失效。
+      const before=percentMatches.filter(m=>m.index<firstArrow);
+      const last=before[before.length-1];
+      if(last)routeText=full.slice(last.index+last[0].length);
     }
     addRouteText(routeText);
   }else{
