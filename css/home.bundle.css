@@ -1793,7 +1793,7 @@ main.zp-shell.dispatch-page .zp-scroll{padding-top:0}
 .task-card{position:relative;overflow:hidden;margin-top:14px;padding:14px;min-height:0;background:var(--zp-card-translucent-2);border:1px solid var(--zp-tint);border-radius:16px;box-shadow:0 12px 30px var(--zp-shadow-md)}
 .task-title{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:21px;line-height:28px;font-weight:700}
 .task-name{display:flex;align-items:center;gap:9px;min-width:0;white-space:nowrap}
-.task-date{margin:0;text-align:right;white-space:nowrap;color:var(--zp-muted);font-size:15px;line-height:23px;font-weight:500}
+.task-date{margin:0;min-width:112px;text-align:center;white-space:nowrap;color:var(--zp-muted);font-size:15px;line-height:23px;font-weight:500}
 /* 2026-10-26 用户反馈：今日配送旁的圆形状态徽章采用主题蓝（双主题经令牌自适应，
    浅色 #1677FF / 深色 #3B82F6），文字改 --zp-on-primary 白字保证蓝底可读 */
 .status-dot{width:26px;height:26px;min-width:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:var(--zp-primary);color:var(--zp-on-primary);border:1px solid var(--zp-tint-strong);font:650 11px/26px Arial,"Microsoft YaHei",sans-serif}
@@ -1805,7 +1805,9 @@ main.zp-shell.dispatch-page .zp-scroll{padding-top:0}
 .today-summary{display:flex;align-items:baseline;gap:9px;white-space:nowrap;line-height:29px}
 .today-summary strong{color:var(--zp-text);font-size:20px;line-height:29px;font-weight:600}
 .today-summary span{font-size:16px;line-height:29px;color:var(--zp-muted)}
-.delivery-man{width:84px;height:60px;display:flex;align-items:flex-end;justify-content:flex-end;opacity:.9;transform:translateY(8px)}
+/* 插画容器与日期等宽(112px)且内容居中：容器右边界与日期右边界一致，
+   两者宽度相同 → 插画水平中心恒等于日期中心（用户要求：对齐日期中心下方） */
+.delivery-man{width:112px;height:60px;display:flex;align-items:flex-end;justify-content:center;opacity:.9;transform:translateY(8px)}
 .delivery-man img{width:100%;height:100%;object-fit:contain}
 /* radius 14→12（方案第十三章 10–12）。padding 0 48px 保持不动：
    它是 width:100% + justify-content:center 的居中大按钮，48px 只用于限制内容最大宽度，
@@ -1880,7 +1882,7 @@ main.zp-shell.dispatch-page .zp-scroll{padding-top:0}
  .task-title{font-size:20px;line-height:26px}
  .task-date{font-size:16px;line-height:23px}
  .today-summary strong{font-size:19px}.today-summary span{font-size:15px}
- .delivery-man{width:64px;height:46px;opacity:.9;transform:translateY(8px)}
+ .delivery-man{width:112px;height:46px;opacity:.9;transform:translateY(8px)}
  .upload-sheet{width:min(90vw,340px);padding:20px 17px 18px}
  .source-menu-title{font-size:19px;margin-bottom:18px}
  .source-menu-options{gap:7px}
