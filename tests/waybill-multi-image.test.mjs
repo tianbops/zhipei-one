@@ -6,6 +6,7 @@
    衔接处有重叠门店（完整版在相邻图里），因此剔除边界残条不丢数据。 */
 import assert from "node:assert/strict";
 import { mergeStoreEdges } from "../functions/api/waybills/_process-multimage.js";
+import { extract } from "../functions/api/waybills/_process-extract.js";
 
 const HEADER = [
   "运单列表", "运输日期", "2026-10-27", "车牌号", "渝DK7692",
@@ -121,6 +122,23 @@ const has = (list, kw) => list.some(n => n.includes(kw));
   assert.equal(r.stores, null);
   assert.equal(r.edgeTrimmed, 0);
   console.log("✅ 空文本安全");
+}
+
+// --- 5) 重复粘贴（两段都含表头）：表头必须被逐处清洗，不得粘进门店名 ---
+{
+  const seg = HEADER + "\n" + [
+    "渝北A02230谊品生鲜温馨家园南门店",
+    "特渠部重庆市卫生健康委员会（临时)",
+    "江北亿达鲜半山华府店（客百年）"
+  ].join(" -> ");
+  // 粘贴两遍：两段表头 + 两段路线（生产单 d4e2c65a 的真实形态）
+  const r = extract(seg + "\n" + seg);
+  const list = (r.stores || []).map(x => String(x.name || ""));
+  const dirty = list.filter(n => /运单列表|运输日期|总数量|车牌号|承运订单/.test(n));
+  assert.equal(dirty.length, 0, `表头不得粘进门店名：${dirty.join(" | ")}`);
+  assert.ok(list.some(n => n.includes("温馨家园南门店")), "首家门店必须保留");
+  assert.ok(list.some(n => n.includes("半山华府店")), "末家门店必须保留");
+  console.log("✅ 重复粘贴时表头逐处清洗，门店不丢");
 }
 
 console.log("\n✅ waybill-multi-image 全部通过");
