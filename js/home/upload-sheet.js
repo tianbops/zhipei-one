@@ -65,7 +65,26 @@ if(pasteFromClipboardBtn&&waybillTextInput){
     const original=pasteFromClipboardBtn.textContent;
     pasteFromClipboardBtn.disabled=true;pasteFromClipboardBtn.textContent="读取中…";
     try{
-      // 1) 首选异步 Clipboard API（桌面 Chrome/Edge、已授权 WebView 可直接读到）
+      // 0) 首选原生壳桥接（App 内）：壳直接读系统剪贴板，是国产 WebView /
+      //    系统内置浏览器里唯一稳定的通道（navigator.clipboard 在那里常被拒）。
+      //    三态约定（与壳 MainActivity.getClipboardText 对齐）：
+      //      非空字符串 = 剪贴板文本 → 直接粘入；
+      //      ""         = 剪贴板里没有文字（空剪贴板/复制的是图片等）→ 权威结论，不降级；
+      //      null/无桥 = 读取失败或不在 App 内 → 继续走下面的 Web 链路。
+      let nativeText=null,nativeChecked=false;
+      try{
+        const nat=window.ZhipeiNative;
+        if(nat&&typeof nat.getClipboardText==="function"){
+          nativeChecked=true;
+          nativeText=nat.getClipboardText();
+        }
+      }catch(e){nativeText=null}
+      if(nativeChecked&&typeof nativeText==="string"){
+        if(nativeText){insertWaybillText(nativeText);return}
+        try{window.zpToast?.("剪贴板里没有文字","info")}catch{}
+        return;
+      }
+      // 1) 异步 Clipboard API（桌面 Chrome/Edge、已授权 WebView 可直接读到）
       if(navigator.clipboard&&navigator.clipboard.readText){
         try{
           const text=await navigator.clipboard.readText();
