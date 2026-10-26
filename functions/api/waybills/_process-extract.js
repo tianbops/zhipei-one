@@ -55,18 +55,36 @@ export function extract(rawText){
     .replace(waybillTail,"")
     .trim();
 
+  /* 噪声词表：运单截图末尾常有「运单号 01897 01898 …」这类表格，末尾数字已被
+     hasWaybillCode 分支清掉，但残留的表头文字（如「运单号」）会被当成门店名。
+     判定保守：仅在清除数字与空白后与噪声词【完全相等】时才剔除，绝不前缀/包含匹配，
+     避免误伤真实门店名（如含「车」字的店名）。 */
+  const NOISE_WORDS=new Set([
+    "运单号","运单列表","订单列表","运输日期","承运订单","总数量","总重量","总体积",
+    "额定载重","额定装载","额定体积","主司机","司机","送货员","车牌号","车牌",
+    "车辆","车号","日期","时间","数量","件数","合计","小计","序号","备注"
+  ]);
+
   const addRouteText=text=>{
     const hasWaybillCode=/\bZW\d{8}[A-Z0-9]+\b/i.test(text);
     const parts=clean(text).split(/\s*(?:-\s*>|→|＞)\s*/).map(cleanStoreName).filter(Boolean);
     for(let partIndex=0;partIndex<parts.length;partIndex++){
       let part=parts[partIndex];
       if(hasWaybillCode&&partIndex===parts.length-1){
+        // 运单号表格（无箭头，紧跟在最后一家门店之后）：先整块截掉表头词及其后内容，
+        // 再清残留数字串。否则「最后一家门店 + 运单号」会粘成一条脏门店名。
+        const tailIdx=part.search(/运单号|运单列表|订单列表/);
+        if(tailIdx>0)part=part.slice(0,tailIdx).trim();
+        else if(tailIdx===0)part="";
         part=part.replace(/\s+\d{5,}(?:\s+\d{5,})*\s*$/g,"").trim();
       }
       const idm=part.match(/\b(?:JM|A|Q)[\p{Pd}_ ]?\d{3,12}\b/i);
       const storeId=idm?idm[0].replace(/[\p{Pd} ]/gu,"").toUpperCase():null;
       const rawName=cleanStoreName(part);
       const name=cleanStoreName(part.replace(/\b(?:JM|A|Q)[\p{Pd}_ ]?\d{3,12}\b/i,""));
+      // 噪声剔除：清掉数字与空白后若正好是表头词（如运单号表格残留），不作为门店
+      const noiseKey=clean(name).replace(/[\d\s]+/g,"");
+      if(NOISE_WORDS.has(noiseKey))continue;
       if(name.length>=2&&/[\u4e00-\u9fa5A-Za-z]/.test(name))stores.push({rawName, name, sourceLine:text, storeId});
     }
   };
