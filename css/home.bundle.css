@@ -1,0 +1,2207 @@
+:root {
+  font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background: var(--zp-bg);
+  color: var(--zp-text);
+  /* 以下 5 个无前缀变量（--bg/--card/--card2/--line/--muted）为历史遗留写法，现全部转为指向 ui-base.css 的 --zp-* 单一真相源；--soft 为死定义已于 Commit 4B 删除（admin.html 走内联 --soft:#7F8A95）。
+      之所以放在 app.css 而由别名指向别处：本文件未被 admin.html 加载，
+      若把权威定义写在本层，管理员端会取到未定义值。详见 ui-base.css 顶部注释。 */
+  --bg: var(--zp-bg);
+  --card: var(--zp-card-translucent);
+  --card2: var(--zp-card-translucent-2);
+  --line: var(--zp-line);
+  --muted: var(--zp-muted);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--zp-text);
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.shell {
+  width: min(100% - 28px,560px);
+  margin: auto;
+  padding: 14px 0 40px;
+}
+
+/* 阶段 6 · 5A：移除遗留 .topbar 死规则（无任何 HTML 使用裸 .topbar）。
+   标准 Header 钩子 .topbar 现统一定义于 css/ui-unified.css（权威层）。详见资产审计台账第二十四章。 */
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 12px;
+  box-shadow: none;
+}
+
+.card h2 {
+  margin: 0 0 10px;
+  font-size: 17px;
+  line-height: 24px;
+}
+
+.message {
+  min-height: 20px;
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.message.error {
+  color: var(--zp-error);
+}
+
+.route-card {
+  padding: 16px;
+}
+
+.primary-btn,.grid a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 11px;
+  background: var(--zp-primary);
+  color: var(--zp-on-primary);
+  text-align: center;
+  font-size: 15px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.primary-btn {
+  margin-top: 12px;
+}
+
+.primary-btn:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.grid a {
+  background: var(--zp-card-translucent-2);
+  border: 1px solid var(--line);
+}
+
+/* font-size 22→20。两点必须说清：
+   1. 这里的字号是字符图标（☰）的大小，不是文字标签大小。方案第十三章有两条字号标准
+      —— 文字 14–16px、icon 18–20px，3A 的审计把两者混为一谈才误判成「font 22 违规」。
+      按 icon 标准取区间上限 20px，变化最小且达标。
+   2. 本规则当前**没有任何页面元素引用**：全站实际用的是 home.css 的 .home-menu-button，
+      且它渲染的是 22×22 的 svg 而非字符。也就是说这次改动不产生任何视觉变化，
+      属于死代码。真正的清理（连同 .data-page-back 那条被 font-size:0 盖掉的 30px）
+      归入阶段 10 CSS 清理，本轮不动结构。 */
+
+.store-list {
+  margin-top: 4px;
+}
+
+.store-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 9px 2px;
+  border-bottom: 1px solid var(--zp-tint);
+  font-size: 14px;
+}
+
+.store-row:last-child {
+  border-bottom: 0;
+}
+
+.store-row small {
+  flex: none;
+  color: var(--zp-muted);
+  font-size: 11px;
+}
+
+.store-nav {
+  color: var(--zp-text);
+  text-decoration: none;
+}
+
+.store-nav:active {
+  text-decoration: underline;
+}
+
+.summary {
+  margin: 0;
+  color: var(--zp-muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.confirm-panel {
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid var(--zp-line);
+  border-radius: 12px;
+  background: var(--card2);
+}
+
+.pending-box {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--zp-tint);
+}
+
+.pending-box:first-child {
+  padding-top: 0;
+}
+
+.pending-box:last-child {
+  border-bottom: 0;
+}
+
+.pending-title {
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.candidate-list {
+  display: grid;
+  gap: 7px;
+}
+
+.choice-btn {
+  width: 100%;
+  padding: 11px 12px;
+  background: var(--card);
+  border: 1px solid var(--zp-line);
+  border-radius: 9px;
+  color: var(--zp-text);
+  text-align: left;
+  font-size: 13px;
+}
+
+.choice-btn.selected {
+  border-color: var(--zp-muted);
+  background: var(--zp-card-translucent);
+}
+
+.secondary-btn {
+  width: 100%;
+  border: 1px solid var(--zp-line);
+  background: var(--zp-card-translucent-2);
+  color: var(--zp-text);
+}
+
+.confirm-submit {
+  width: 100%;
+  margin-top: 0;
+}
+
+.confirm-submit:disabled {
+  opacity: .5;
+}
+
+.diagnostics {
+  display: none;
+  margin-top: 14px;
+  padding: 12px;
+  white-space: pre-wrap;
+  overflow: auto;
+  max-height: 420px;
+  border: 1px solid var(--zp-line);
+  border-radius: 10px;
+  background: var(--zp-bg);
+  color: var(--zp-muted);
+  font-size: 12px;
+}
+
+.auth-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: var(--bg);
+}
+
+.auth-card {
+  width: min(100%,430px);
+  padding: 32px 28px 28px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: none;
+}
+
+.auth-card h1 {
+  text-align: center;
+  margin: 0;
+  font-size: 26px;
+  line-height: 1.25;
+}
+
+.auth-card>p {
+  text-align: center;
+  margin: 7px 0 24px;
+  color: var(--zp-muted);
+  font-size: 13px;
+}
+
+.auth-card form {
+  margin: 0;
+}
+
+.auth-card label {
+  display: block;
+  margin: 0 0 15px;
+  color: var(--zp-muted);
+  font-size: 14px;
+}
+
+.auth-card input {
+  height: 50px;
+  margin-top: 7px;
+  padding: 0 16px;
+  font-size: 16px;
+  outline: none;
+}
+
+.auth-card input:focus {
+  border-color: var(--zp-focus-ring);
+}
+
+.auth-card .message {
+  min-height: 22px;
+  margin: 2px 0 9px;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.auth-card button {
+  height: 50px;
+  padding: 0 16px;
+  font-size: 16px;
+}
+
+.auth-card>p:last-child {
+  margin: 20px 0 0;
+}
+
+.auth-card a {
+  color: var(--zp-muted);
+  text-decoration: none;
+}
+
+@media (max-width:380px) {
+  .shell {
+    width: min(100% - 22px,560px);
+  }
+
+  .pipeline {
+    gap: 3px;
+    font-size: 11px;
+  }
+
+  .pipeline span {
+    padding: 5px 5px;
+  }
+}
+
+@media (max-height:600px) {
+  .auth-shell {
+    align-items: flex-start;
+    padding-top: 18px;
+  }
+
+  .auth-card {
+    padding-top: 22px;
+  }
+
+  .auth-card>p {
+    margin-bottom: 18px;
+  }
+}
+
+.account-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 48px;
+  border-bottom: 1px solid var(--zp-tint);
+}
+
+.account-row:last-child {
+  border-bottom: 0;
+}
+
+.account-row span {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.account-row strong {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--zp-text);
+  word-break: break-all;
+  text-align: right;
+}
+
+.account-logout {
+  width: 100%;
+  height: 48px;
+  border-radius: 12px;
+}
+
+.data-help {
+  margin: 10px 0 0;
+  color: var(--zp-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.data-import {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: var(--zp-scrim-dialog);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.data-import-panel {
+  width: min(100%,620px);
+  max-height: 90vh;
+  overflow: auto;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.data-import-panel h3 {
+  margin: 0 0 12px;
+  font-size: 17px;
+}
+
+.data-file {
+  width: 100%;
+  margin: 8px 0 12px;
+  color: var(--zp-text);
+}
+
+.data-textarea {
+  width: 100%;
+  min-height: 280px;
+  box-sizing: border-box;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--zp-bg);
+  color: var(--zp-text);
+  padding: 12px;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.data-preview {
+  margin-top: 10px;
+}
+
+.data-import-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.data-import-actions button {
+  height: var(--zp-control-height);
+  border: 1px solid var(--zp-line);
+  border-radius: 10px;
+  background: var(--zp-card-translucent-2);
+  color: var(--zp-text);
+  font-size: 15px;
+}
+
+.data-import-actions #importSave {
+  background: var(--zp-primary);
+}
+
+.request-row {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--zp-tint);
+  font-size: 14px;
+  line-height: 21px;
+}
+
+.request-row:last-child {
+  border-bottom: 0;
+}
+
+/* 行内小按钮：radius 8→10、font 12→14、padding 5px 8px→8px 16px。
+   它是「没有显式 height、高度由 padding+font 撑出来」的那类按钮，
+   实测高度仅约 27px —— 3A 只统计显式 min-height/height，把它整条漏掉了
+   （已在 css-button-resolve.cjs 补隐式高度估算才暴露出来）。
+   补到 8px 16px 后约 36px，仍不足 48px：再往上撑会顶破 .request-row 的单行布局，
+   故留到 Row 阶段（方案第十五章）连同行高一起处理，此处不硬凑数值。 */
+.request-row button {
+  border: 1px solid var(--zp-line);
+  border-radius: 10px;
+  background: var(--zp-card-translucent-2);
+  color: var(--zp-text);
+  padding: 8px 16px;
+  font-size: 14px;
+}
+
+.request-row div {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.login-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: clamp(48px, 9vh, 96px) 24px calc(20px + env(safe-area-inset-bottom));
+  background: transparent;
+}
+
+.login-card {
+  width: min(100%,380px);
+  box-sizing: border-box;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.login-brand {
+  text-align: left;
+  margin: 0 0 30px;
+}
+
+.login-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-bottom: 38px;
+}
+
+.login-brand-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  flex: 0 0 auto;
+  border: 1px solid var(--zp-tint-strong);
+  border-radius: 15px;
+  /* 徽章底色始终为 logo 原图底色（令牌 --zp-logo-plate）：logo 含白色描边，
+     白底（浅色外观）下描边会消失，故不随外观翻转 */
+  background: var(--zp-logo-plate);
+}
+
+.login-logo {
+  display: block;
+  width: 38px;
+  height: auto;
+  object-fit: contain;
+}
+
+.login-brand-name {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: .01em;
+  color: var(--zp-text);
+}
+
+.login-eyebrow {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+}
+
+.login-headline {
+  margin: 0 0 12px;
+  color: var(--zp-text);
+  font-size: 31px;
+  line-height: 1.32;
+  font-weight: 700;
+  letter-spacing: .01em;
+}
+
+.login-sub {
+  margin: 0 0 32px;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.login-form {
+  margin: 0;
+}
+
+.login-field {
+  display: block;
+  margin: 0 0 15px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.login-field span {
+  display: block;
+  margin-bottom: 7px;
+}
+
+.login-field input {
+  display: block;
+  width: 100%;
+  height: 54px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 16px;
+  /* 浅色基底输入对比度修复（2026-10-26 用户反馈「浅色输入框对比度太低」）：
+     原 var(--zp-line)#EEEEEE 边 + var(--zp-card-translucent-2)#F2F3F5 底，
+     边框与底色对比仅 1.07:1、与页面背景几乎无法区分；改为白底（--zp-surface）
+     + 专用边框令牌 --zp-input-line，与 #F6F7F9 页面背景拉开层次。
+     边框令牌定义见 ui-base.css（浅色）与 ui-theme.css（深色覆盖）；占位符
+     --zp-muted 见下方 ::placeholder 规则。 */
+  border: 1px solid var(--zp-input-line);
+  border-radius: 13px;
+  outline: none;
+  background: var(--zp-surface);
+  color: var(--zp-text);
+  font: inherit;
+  font-size: 16px;
+  line-height: 54px;
+  appearance: none;
+}
+
+/* 原 var(--zp-soft)#999999 在浅色底上仅 2.6:1（WCAG AA 要求 4.5:1）；
+   --zp-muted 浅色 #666666 = 5.7:1 达标，深色自动取 #94A3B8 同样更清晰 */
+.login-field input::placeholder {
+  color: var(--zp-muted);
+}
+
+.login-field input:focus {
+  border-color: var(--zp-focus-ring);
+  background: var(--zp-surface);
+}
+
+.login-message {
+  min-height: 20px;
+  margin: 0 0 7px;
+  /* 死规则：ui-overlay.css 的 .login-message 同选择器且后加载，实际取 var(--zp-error)；
+     此处对齐令牌，消除字面量分叉（浅色由 ui-theme 的 .login-message 补丁覆盖） */
+  color: var(--zp-error);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.login-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 54px;
+  margin: 0;
+  border: 0;
+  border-radius: 14px;
+  background: var(--zp-primary);
+  color: var(--zp-on-primary);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.login-submit:active {
+  /* 死规则：ui-overlay.css 的 .login-submit:active:not(:disabled) 特异度更高，
+     实际取 var(--zp-primary-active)；此处对齐令牌，消除字面量分叉 */
+  background: var(--zp-primary-active);
+}
+
+.login-submit:disabled {
+  opacity: .5;
+  cursor: default;
+}
+
+.login-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 19px;
+  flex-wrap: wrap;
+}
+
+.login-links a {
+  color: var(--zp-text);
+  font-size: 13px;
+  text-decoration: none;
+  /* 热区扩展：inline 垂直 padding 不占布局；水平用负 margin 抵消，视觉不变 */
+  padding: 14px 8px;
+  margin: -14px -8px;
+}
+
+.login-links .register-hint {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.login-links span:not(.register-hint) {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  /* 链接间圆点分隔符：取弱化色（--zp-soft）而非 --zp-muted——
+     圆点必须弱于次级文字，深色下才能保持「装饰」而非「文本」的视觉层级 */
+  background: var(--zp-soft);
+}
+
+.login-links a:active {
+  color: var(--zp-text);
+}
+
+@media (max-width:380px) {
+  .login-shell {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .login-brand-row {
+    margin-bottom: 30px;
+  }
+
+  .login-brand-badge {
+    width: 48px;
+    height: 48px;
+    border-radius: 13px;
+  }
+
+  .login-logo {
+    width: 34px;
+  }
+
+  .login-headline {
+    font-size: 28px;
+  }
+}
+
+@media (max-height:620px) {
+  .login-shell {
+    align-items: flex-start;
+    padding-top: 16px;
+  }
+
+  .login-brand-row {
+    margin-bottom: 20px;
+  }
+
+  .login-brand {
+    margin-bottom: 18px;
+  }
+
+  .login-sub {
+    margin-bottom: 20px;
+  }
+}
+
+/* 智配One · 全局 UI 统一层 2.1
+   只负责视觉、层级、触控与反馈，不承载任何业务规则。 */
+:root{
+  /* WebView 控件配色穿透：显式声明浅色（Phase 4 起浅色为默认外观），否则表单控件/滚动条
+     保持系统配色，深色页面里出现「白底黑字滚动条」（历史教训）。深色由 ui-theme.css 的
+     :root[data-zp-theme="dark"] 以更高特异度覆盖为 dark。 */
+  color-scheme:light;
+  /* ===== 全局设计 Token · 单一真相源（Commit 2A / Phase 4 基底反转） =====
+     背景：历史上并存三套割裂的变量 —— app.css 的无前缀版（--bg/--card/--card2/--line/--muted；--soft 已于 Commit 4B 删除）、
+           mobile-ui.css 的 --zp-* 版、本文件的 --ui-* 版，同一语义写三遍，改主题必须改三处。
+     做法：将取值完全一致的语义统一收敛到 --zp-* 名下，放在本 :root。
+           之所以选本文件作为权威层，是因为它是**唯一被全部页面加载**的 CSS
+           （ui-unified.css 覆盖 14/14；app.css 缺 admin.html；mobile-ui.css 仅覆盖 7/14）。
+     兼容：旧变量名一律保留为别名指向新 token，任何既有 var(...) 的解析结果逐字节不变。
+
+     Phase 4（2026-10-23 基底反转）：默认 :root 由深色纪元翻为**浅色用户 spec**
+     （#F6F7F9 底 / #FFFFFF 面 / #111111 字 / #1677FF 主色），深色全套值移至
+     ui-theme.css 的 :root[data-zp-theme="dark"]，双主题共用同一套令牌名。
+
+     已消解的历史待决策项：
+       ◆ danger 双值共役：原 --zp-danger（#FFB4AB）与 --ui-danger（#FF8278）并存且异值，
+         现已统一 —— --ui-danger/--ui-danger-soft 降为 --zp-danger/--zp-danger-soft 的别名，
+         mobile-ui.css 的重复 :root 定义一并删除（Big Bang 换色天然消解「合并改外观」顾虑）。 */
+  /* ===== 页面 / 表面 / 文字（浅色 spec · Uber 风格中性灰阶）===== */
+  --zp-bg:#F6F7F9;
+  --zp-surface:#FFFFFF;
+  --zp-surface-2:#F2F3F5;
+  --zp-surface-3:#E8EAED;
+  --zp-line:#EEEEEE;
+  /* 登录输入框专用边框（2026-10-26 浅色对比度修复）：浅色默认边框需比 --zp-line
+     深一档才能与白底/浅灰页面背景拉开层次（原 #EEEEEE 边在白底上几乎隐形）；
+     深色覆盖见 ui-theme.css。取值刻意避开 retired 色板中的旧浅灰蓝灰族。 */
+  --zp-input-line:#C5CCD4;
+  --zp-text:#111111;
+  --zp-muted:#666666;
+  --zp-soft:#999999;
+  --zp-radius:14px;
+  /* 顶部安全区兜底：env() 在部分 WebView（如旧版 Capacitor 壳 / 异常上报）返回 0 时，
+     用 32px 兜底避免内容被状态栏压住；正常环境 env() 取到真实状态栏高度时取较大值。
+     与安卓壳端 MainActivity 的 WebView 边距修复互补（嵌套关系，不会双重叠加）。 */
+  --zp-safe-top: max(env(safe-area-inset-top, 0px), 32px);
+  /* 骨架微光条（加载占位）双外观 token：order_detail / home / data 三处
+     页面级骨架共用同一取值。浅色外观为浅灰微光；深色外观在 ui-theme.css 的
+     :root[data-zp-theme="dark"] 覆盖为 slate 族微光。 */
+  --zp-sk-a:#E9ECEF;
+  --zp-sk-b:#F3F5F7;
+  /* ===== 全局按钮标准 · 分段式动作按钮（单一真相源）=====
+     基准度量取自「外观模式」选项组（跟随系统/深色/浅色）与「线路切换」等
+     行内动作按钮，两类按钮历史上各自起值（高 40/42、圆角 10/12、宽度
+     自适应 vs 三等分），表现为跨页按钮胖瘦不一。现统一为：
+       高度 48（Android 触控靶区标准；2026-10-24 由 44 提级）/ 圆角 12 /
+       字号 13·600 / 边框 1px / 水平内边距 8px
+       段宽按钮（选项组内）= calc((容器宽 - 2*间隙)/3)
+     新增同类按钮一律沿用本 token，禁止在页面级 CSS 另起度量。 */
+  --zp-seg-btn-h:48px;
+  --zp-seg-btn-radius:12px;
+  --zp-seg-btn-pad:0 8px;
+  --zp-seg-btn-font:13px;
+  --zp-seg-btn-gap:8px;
+  /* ===== 主按钮（浅色 spec：品牌蓝底白字）=====
+     --zp-primary 是按钮「底色」：浅色模式=品牌蓝 #1677FF，深色模式=亮蓝 #3B82F6；
+     --zp-on-primary 是按钮上的「文字/图标色」，与底色反相。 */
+  --zp-primary:#1677FF;
+  --zp-on-primary:#FFFFFF;
+  /* 次按钮（描边 / 幽灵按钮） */
+  --zp-secondary-bg:#F2F3F5;
+  --zp-secondary-border:#D0D5DD;
+  --zp-secondary-text:#111111;
+  /* 禁用态 */
+  --zp-disabled-bg:#F2F3F5;
+  --zp-disabled-text:#B5BCC4;
+  /* 浮层遮罩（弹窗 / 底部面板上方的半透明黑幕） */
+  --zp-scrim:rgba(0,0,0,.45);
+  /* 键盘 / 焦点可见环 */
+  --zp-focus:#1677FF;
+  /* 交互态：hover（悬停）、active（按压）——主色 hover/active 取 Ant 色阶
+     （#4096FF 提亮 / #0958D9 压深），与 #1677FF 同族。 */
+  --zp-primary-hover:#4096FF;
+  --zp-primary-active:#0958D9;
+  /* 选中态强调色（主题蓝）：用于「已选中」文字/图标着色。
+     取 --zp-primary-active 同值（#0958D9），因其与白底选中块对比度 6.16:1，
+     满足 WCAG AA 正文级可读性（--zp-primary #1677FF 在白底仅 4.10:1，不达标）。 */
+  --zp-accent:#0958D9;
+  --zp-secondary-hover:#EAECEF;
+  --zp-secondary-active:#E0E3E8;
+  /* 半透明 / 不透明卡片底色（保留两种用途，取值随主题翻转） */
+  --zp-card-translucent:rgba(255,255,255,.82);
+  --zp-card-translucent-2:rgba(242,243,245,.88);
+  --zp-card:var(--zp-surface);
+  /* 列表分隔线（方案第十五章 Row，统一为 .10 单一来源） */
+  --zp-divider:rgba(0,0,0,.10);
+  /* ===== 功能状态色（成功 / 警告 / 错误 / 提示）=====
+     -strong 用于边框 / 图标 / 危险操作；-soft 用于底色微染；
+     --zp-danger 专用于「错误正文」（浅色用深红保对比度、深色用浅红），随主题翻转。 */
+  --zp-success:#00B42A;
+  --zp-success-soft:rgba(0,180,42,.10);
+  --zp-warning:#FF7D00;
+  --zp-warning-soft:rgba(255,125,0,.10);
+  --zp-error:#F53F3F;
+  --zp-error-soft:rgba(245,63,63,.10);
+  --zp-danger:#D4380D;
+  --zp-danger-soft:rgba(212,56,13,.08);
+  --zp-info:#1677FF;
+  --zp-info-soft:rgba(22,119,255,.10);
+
+  /* ===== 视觉整改 Phase 1 新增令牌（Phase 4 已给出浅色取值）=====
+     原「深色纪元字面量 + 浅色补丁覆盖」双轨制废止：此后全站只改本 :root
+     与 ui-theme.css 的 :root[data-zp-theme="dark"] 两处，组件层零直写。 */
+  /* 品牌底板：登录页 brand badge / 底部导航的近黑底，logo 含白色描边，
+     浅色下不能翻白（描边会消失），故双主题同值——命名令牌白名单，
+     禁止组件层直写字面量（appearance-theme-bootstrap 断言在册）。 */
+  --zp-logo-plate:#05070A;
+  /* 底部一级导航（品牌导航条）令牌组：浅色=白底深字、深色=近黑底浅字。
+     与 --zp-logo-plate 区分：logo-plate 是 logo/徽章底板（双主题同值近黑），
+     导航条底色随主题翻转，故独立成组——避免「近黑底 + 随主题翻转的文字令牌」
+     在黑底上出现深字不可读（Phase 4 拆补丁时暴露过的对比度缺陷）。 */
+  --zp-nav-bg:#FFFFFF;
+  --zp-nav-text:#666666;
+  --zp-nav-text-active:#111111;
+  --zp-nav-active-bg:#F2F3F5;
+  /* 中性微染：弱描边/分隔线（原 .075/.07/.065 三档归一为 .05 浅色 / .07 深色）；
+     -strong 为强调描边（登录徽章边框 .10 / .16）。 */
+  --zp-tint:rgba(0,0,0,.05);
+  --zp-tint-strong:rgba(0,0,0,.10);
+  /* 模态遮罩：业务弹窗/二次确认（原 .58 与 .62 两档归一为 .40 浅色 / .58 深色）。 */
+  --zp-scrim-dialog:rgba(15,23,42,.40);
+  /* 投影：--zp-shadow 为通用单档（用户 spec），sm/md/lg/menu 为分档——
+     sm 凸起元素（底栏加号）/ md 悬浮元素（FAB、Toast）/ lg 模态面板 /
+     menu 下拉菜单；浅色用低 alpha 冷灰，深色用高 alpha 纯黑。 */
+  --zp-shadow:0 2px 8px rgba(0,0,0,.06);
+  --zp-shadow-sm:0 2px 8px rgba(0,0,0,.06);
+  --zp-shadow-md:0 4px 16px rgba(0,0,0,.08);
+  --zp-shadow-lg:0 8px 24px rgba(0,0,0,.10);
+  --zp-shadow-menu:0 6px 20px rgba(0,0,0,.08);
+  /* 焦点体系：ring 为 focus-visible 描边（浅色取中性深灰 #666666）；
+     glow 为输入聚焦光晕（主色 15% 微染）。 */
+  --zp-focus-ring:#666666;
+  --zp-focus-glow:0 0 0 3px rgba(22,119,255,.15);
+  /* 状态微染表面：Toast 成功/错误底色与错误描边（浅色取同族浅底）。 */
+  --zp-success-surface:#E9F7EF;
+  --zp-error-surface:#FDECEA;
+  --zp-error-surface-strong:#F5B7B1;
+  /* 危险按钮悬停/按压微染：替代 color-mix()（WebView 兼容地板禁用了它），
+     按 --zp-error 现值 #F53F3F 预计算 18%/28% 两档静态值。 */
+  --zp-error-soft-hover:rgba(245,63,63,.18);
+  --zp-error-soft-active:rgba(245,63,63,.28);
+
+  /* ===== 间距与控件尺寸（方案第九 / 十一 / 十二章） =====
+     取值取自当前代码的实际分布，不是凭空定的理想值，避免引入尺寸跳变：
+       header-height 54px —— 现有值为 42/48/52/54/56，取方案第十一章推荐的标准值。
+         注意：矮屏 @media(max-height:700px) 的压缩态属响应式特例，不套用此变量。
+       control-height 48px —— Android 最小可靠触控靶区。现有取值从 40 到 44 不等，
+         全部低于该标准，故本轮是「只放大不缩小」的单向收敛（见 css-touch-audit.cjs）。 */
+  --zp-header-height:54px;
+  --zp-control-height:48px;
+  --zp-space-4:16px;
+
+  --ui-bg:var(--zp-bg);
+  --ui-surface:var(--zp-surface);
+  --ui-surface-2:var(--zp-surface-2);
+  --ui-surface-3:var(--zp-surface-3);
+  --ui-line:var(--zp-line);
+  --ui-text:var(--zp-text);
+  --ui-muted:var(--zp-muted);
+  --ui-soft:var(--zp-soft);
+  --ui-radius:var(--zp-radius);
+  /* danger 双值共役已消解（Phase 4）：原独立取值 #FF8278 与 mobile-ui 的 #FFB4AB
+     统一收敛到 --zp-danger（浅色 #D4380D 深红正文 / 深色 #FCA5A5 浅红正文），
+     此处降为别名，既有 var(--ui-danger) 引用点零改动跟随主题。 */
+  --ui-danger:var(--zp-danger);
+  --ui-danger-soft:var(--zp-danger-soft);
+  --ui-dialog-radius:18px;
+  --ui-control-radius:11px;
+
+  /* ===== 全局层级体系 3.0 =====
+     目的：任何"后打开的弹窗都在上层"，Toast 永远可见，确认框永远盖不住。
+     约定：同一层级内的元素不得互相覆盖；跨层级严格递进。
+     规则：页面内所有 position:fixed / absolute + z-index 一律引用下列变量，禁止硬编码。 */
+  --ui-z-topbar:10;        /* 顶栏：页面顶部固定栏 */
+  --ui-z-float:90;         /* 悬浮操作：快速滚动、悬浮按钮（不遮挡弹窗） */
+  --ui-z-menu:200;         /* 菜单浮层：下拉菜单、页面菜单、选择器（非模态） */
+  --ui-z-modal:1000;       /* 模态第 1 层：业务弹窗（导入/订单/历史/账号/上传） */
+  --ui-z-modal-stack:1100; /* 模态第 2 层：模态之上再弹（历史选择器等） */
+  --ui-z-modal-top:1200;   /* 模态第 3 层：最终确认（删除等破坏性操作） */
+  --ui-z-toast:2000;       /* 全局提示：Toast / 气泡反馈（永远最上） */
+}
+html,body{background:var(--ui-bg);color:var(--ui-text)}
+button,a,input,select,textarea{font-family:inherit}
+button,a{-webkit-tap-highlight-color:transparent}
+button:active{transform:translateY(0)}
+/* 细节微调（不改全局设计语言）：
+   1) 移除所有可点元素的原生点击高亮，统一触控反馈（含 div 型行/卡片，此前只对 button/a 生效）；
+   2) 首帧后开启颜色/背景/边框/阴影/不透明度的短过渡，让主题切换与状态变化更顺滑；
+   3) 关键按钮按压时轻微缩放，点按手感一致。
+   用 :where() 把覆盖特异性降到 0，确保各组件自带 transition（悬浮滚动、入场动画等）不被覆盖；
+   首帧开关由 js/ui-unified.js 的 zp-ui-ready 类控制，初始渲染不闪。 */
+*{ -webkit-tap-highlight-color:transparent; -webkit-touch-callout:none }
+.zp-ui-ready :where(*):not(:where(svg,svg *)){
+  transition:background-color .22s ease,border-color .22s ease,color .22s ease,box-shadow .2s ease,opacity .2s ease;
+}
+.zp-ui-ready :where(button,a,[role="button"],.data-action-btn,.account-logout,.login-submit,.trend-year,.trend-metric-btn,.source-option,.choice-btn){
+  transition:background-color .22s ease,border-color .22s ease,color .22s ease,box-shadow .2s ease,opacity .2s ease,transform .1s ease;
+}
+.zp-ui-ready :where(.data-action-btn,.account-logout,.login-submit,.trend-year,.trend-metric-btn,.source-option,.choice-btn):active{
+  transform:scale(.98);
+}
+@media (prefers-reduced-motion:reduce){
+  .zp-ui-ready :where(*){transition:none!important}
+  .zp-ui-ready :where(.data-action-btn,.account-logout,.login-submit,.trend-year,.trend-metric-btn,.source-option,.choice-btn):active{transform:none}
+}
+/* hidden 属性必须始终生效，且优先级高于所有遮罩层 display 规则。
+   用 !important + 属性选择器双写，确保任何后出现的 !important 规则都无法覆盖它。
+   背景：弹窗遮罩统一使用 display:flex!important 后，与 [hidden] 权重相同，
+   若顺序靠后会导致 hidden 失效、弹窗无法关闭。此处以 [hidden][hidden] 提升权重。 */
+[hidden],
+[hidden][hidden]{display:none!important}
+
+/* 页面层级：页面 > 卡片 > 次级区域，避免无意义的多层嵌套视觉 */
+.card,.page2-card,.data-route-card,.data-list-card,.task-card{
+  border-color:var(--zp-tint);
+  box-shadow:none;
+}
+.card,.page2-card{border-radius:var(--ui-radius)}
+.confirm-panel,.pending-box{background:var(--ui-surface-2);border-color:var(--zp-tint)}
+
+/* 顶部栏统一：标准 Header 钩子 .topbar（阶段 6 · 5A）
+   布局由各页旧类规则承载（保留差异：dispatch 白字标题 / data 头 padding / history 占位 /
+   order 按钮返回 #backBtn / home flex 无返回），.topbar 仅提供统一钩子 + 共享三栏排版 +
+   标题字重。不在此设 margin-bottom（dispatch/data 头间距由各自规则控制，避免零回归外的位移）。
+   详见资产审计台账第二十四章。 */
+.topbar{
+  display:grid;
+  grid-template-columns:var(--zp-control-height) 1fr var(--zp-control-height);
+  align-items:center;
+  min-height:var(--zp-header-height);
+  position:relative;
+}
+.topbar strong,.order-title{font-weight:650}
+/* 统一返回钩子 .app-back（阶段 6 · 5A）：link 型返回键统一为 48px 触控靶区；
+   order 页返回为 <button id="backBtn>（由 ID 接线，不在此类）。 */
+.app-back{
+  width:var(--zp-control-height);
+  height:var(--zp-control-height);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border:0;
+  border-radius:12px;
+  background:transparent;
+  color:var(--ui-muted);
+  text-decoration:none;
+  font-size:0;
+  box-sizing:border-box;
+}
+.app-back svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+/* 按压反馈：原 rgba(20,28,37,.80) 覆于页面底色合成约 (18,24,32)；
+   取 --zp-card-translucent（合成约 (23,23,23)，亚感知）而非 -2 变体
+   （合成恰为页面底色，按压反馈会被抹平）。浅色下随令牌翻为微妙提亮。 */
+.app-back:active{background:var(--zp-card-translucent);color:var(--zp-text)}
+
+/* 菜单统一为单层浮层 */
+.data-page-menu, .order-menu{
+  border:1px solid var(--ui-line);
+  border-radius:12px;
+  background:var(--ui-surface);
+  box-shadow:var(--zp-shadow-menu);
+  overflow:hidden;
+}
+/* 菜单面板内的条目本身就是点击目标，不是「列表里的文字」，按第十三章必须 ≥48。
+   注意：本条是跨页面的兜底值，data.css / order_detail.css 里还有同选择器的后续定义，
+   后者会覆盖这里 —— 已一并收敛，改动是否真的生效以 css-button-resolve.cjs 的页面级结果为准。 */
+.data-page-menu button, .order-menu button{
+  min-height:var(--zp-control-height);
+}
+.menu-divider{background:var(--zp-tint)}
+
+/* 统一按钮语义：主操作右侧、取消/次要操作左侧 */
+.data-import-actions,.history-dialog-actions,.order-dialog-actions,.account-dialog-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.data-import-actions button,.history-dialog-actions button,.order-dialog-actions button,.account-dialog-actions button{
+  min-height:var(--zp-control-height);
+  border-radius:var(--ui-control-radius);
+  font-size:14px;
+  font-weight:550;
+}
+.data-import-actions button:first-child,.history-dialog-actions button:first-child,.order-dialog-actions button:first-child,.account-dialog-actions button:first-child{
+  background:var(--ui-surface-2);
+  border:1px solid var(--zp-line);
+  color:var(--zp-text);
+}
+.data-import-actions button:last-child,.history-dialog-actions button:last-child,.order-dialog-actions button:last-child,.account-dialog-actions button:last-child{
+  background:var(--ui-surface-3);
+  border:1px solid var(--zp-line);
+  color:var(--zp-text);
+}
+
+/* 统一模态层：只保留一层遮罩 + 一个内容面板 */
+.order-dialog,.history-dialog,.data-import,.upload-overlay{
+  background:var(--zp-scrim-dialog)!important;
+}
+.order-dialog-panel,.history-dialog-panel,.data-import-panel,.account-dialog,.upload-sheet{
+  background:var(--ui-surface);
+  border:1px solid var(--ui-line);
+  border-radius:var(--ui-dialog-radius);
+  box-shadow:var(--zp-shadow-lg);
+}
+.order-dialog-panel,.history-dialog-panel,.data-import-panel,.account-dialog{
+  max-width:398px;
+}
+.order-dialog-head,.data-import-head{
+  min-height:40px;
+}
+.order-dialog-head strong,.data-import-head h3,.history-dialog-panel>strong,.account-dialog h2{
+  font-size:17px;
+  line-height:24px;
+  font-weight:650;
+}
+.order-dialog-panel>p,.history-dialog-panel>p,.account-dialog>p{
+  color:var(--ui-muted);
+}
+
+/* 二次确认：不再使用大图标/装饰层，突出标题、风险说明、操作 */
+.page2-danger-btn,.data-swipe-delete{color:var(--ui-danger)!important}
+
+/* 上传/处理：同一面板内切换内容，不叠加第二个面板 */
+.upload-sheet{overflow:hidden}
+.upload-source-menu,.upload-processing{background:transparent}
+.sheet-handle{opacity:.8}
+
+/* 表单统一：标签、输入、错误信息节奏一致 */
+input,select,textarea{
+  border-radius:var(--ui-control-radius)!important;
+}
+/* 跨页容器 / 行 / 对话框的令牌基座（Phase 4）：
+   原由 ui-theme 浅色补丁逐条 :root 前缀覆盖，基底反转后收敛到全局层，
+   双主题自适应；页面级文件（admin-base / business-pages）保留几何与布局，
+   同特异度后加载赢、取值同为令牌零漂移。 */
+.dispatch-page,.account-page{background:var(--zp-bg)}
+.row{background:var(--zp-surface-2)}
+.dialog{background:var(--zp-card)}
+.message,.login-message{line-height:20px}
+.message.error,.login-message[role=alert]{color:var(--zp-error)}
+
+/* Toast/轻反馈：用于成功、复制、保存等非破坏性反馈 */
+.ui-toast{
+  position:fixed;
+  left:50%;
+  bottom:calc(24px + env(safe-area-inset-bottom));
+  z-index:400;
+  max-width:calc(100vw - 32px);
+  padding:10px 14px;
+  border:1px solid var(--ui-line);
+  border-radius:10px;
+  background:var(--ui-surface);
+  color:var(--zp-text);
+  font-size:13px;
+  line-height:18px;
+  text-align:center;
+  box-shadow:var(--zp-shadow-md);
+  transform:translate(-50%,10px);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .18s ease,transform .18s ease;
+}
+.ui-toast.show{opacity:1;transform:translate(-50%,0)}
+.ui-toast.success{background:var(--zp-success-surface)}
+.ui-toast.error{background:var(--zp-error-surface);border-color:var(--zp-error-surface-strong)}
+
+/* 状态文字与列表节奏统一 */
+.empty,.dispatch-empty,.dispatch-message,.history-state{
+  color:var(--ui-soft);
+}
+.store-row,.account-row,.request-row{
+  border-bottom-color:var(--zp-tint);
+}
+
+/* 小屏：进一步减少外层留白，不缩小触控目标 */
+@media(max-width:380px){
+  .order-dialog,.history-dialog,.data-import,.upload-overlay{padding:14px}
+  .order-dialog-panel,.history-dialog-panel,.data-import-panel,.account-dialog{border-radius:16px}
+}
+@media(prefers-reduced-motion:reduce){
+  .ui-toast{transition:none}
+}
+
+/* 全局二次确认弹窗 */
+.zp-confirm{position:fixed;top:0;right:0;bottom:0;left:0;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;padding:18px;background:var(--zp-scrim-dialog)}
+.zp-confirm[hidden]{display:none}
+.zp-confirm-panel{width:min(100%,360px);padding:20px 18px 16px;border:1px solid var(--ui-line);border-radius:18px;background:var(--ui-surface);box-shadow:var(--zp-shadow-lg)}
+.zp-confirm-panel h3{margin:0;color:var(--zp-text);font-size:17px;line-height:24px;font-weight:650}
+.zp-confirm-panel p{margin:8px 0 0;color:var(--ui-muted);font-size:13px;line-height:20px;word-break:break-word}
+.zp-confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+.zp-confirm-actions button{min-height:var(--zp-control-height);border-radius:11px;font-size:14px;font-weight:550}
+.zp-confirm-actions button:first-child{border:1px solid var(--zp-line);background:var(--zp-card-translucent-2);color:var(--zp-text)}
+.zp-confirm-actions button:last-child{border:1px solid var(--zp-line);background:var(--zp-card-translucent);color:var(--zp-text)}
+
+/* Android 移动端文字规范 2.4
+   仅调整文字尺寸与行高，不改变业务规则、数据结构、交互逻辑或页面布局。
+   目标层级：页面标题 20px / 区块标题 18px / 正文 16px / 辅助 15px / 元信息 14px。 */
+.topbar strong,.account-page .topbar h1,.route-apply-page .topbar h1,.data-page .topbar h1,.dispatch-page .topbar h1,.order-title{font-size:20px!important;line-height:26px!important}
+.card h2, .page2-card h2, .section-title, .data-route-title h2{font-size:18px!important;line-height:24px!important}
+.data-import-actions button,.history-dialog-actions button,.order-dialog-actions button,.account-dialog-actions button,.zp-confirm-actions button{font-size:16px!important;line-height:22px!important}
+.order-dialog-head strong,.data-import-head h3,.history-dialog-panel>strong,.account-dialog h2,.zp-confirm-panel h3{font-size:18px!important;line-height:24px!important}
+.order-dialog-panel>p,.history-dialog-panel>p,.account-dialog>p,.zp-confirm-panel p{font-size:15px!important;line-height:22px!important}
+.ui-toast{font-size:15px!important;line-height:21px!important}
+.empty,.dispatch-empty,.dispatch-message,.history-state{font-size:15px!important;line-height:22px!important}
+
+/* Modal positioning 2.5
+   所有业务弹窗统一居中显示；菜单、Toast、悬浮操作不属于模态弹窗，不参与居中规则。 */
+.order-dialog,
+.history-dialog,
+.history-picker,
+.data-import,
+.upload-overlay{
+  align-items:center!important;
+  justify-content:center!important;
+}
+.order-dialog-panel,
+.history-dialog-panel,
+.history-picker-panel,
+.data-import-panel,
+.account-dialog,
+.upload-sheet{
+  margin:0 auto!important;
+  border-radius:18px!important;
+  max-height:min(88vh,760px);max-height:min(88dvh,760px);
+}
+.upload-sheet{
+  width:min(100%,390px)!important;
+  padding:20px 18px calc(18px + env(safe-area-inset-bottom))!important;
+}
+@media(max-width:380px){
+  .order-dialog,
+  .history-dialog,
+  .history-picker,
+  .data-import,
+  .upload-overlay{padding:14px!important}
+  .order-dialog-panel,
+  .history-dialog-panel,
+  .history-picker-panel,
+  .data-import-panel,
+  .account-dialog,
+  .upload-sheet{border-radius:16px!important}
+}
+
+
+/* 全局快速滚动箭头已下线（产品决策）：不再注入 ↑/↓ 悬浮按钮。 */
+
+
+/* 全局密码显隐 2.7：所有密码输入统一使用小眼睛，空值时隐藏，输入后即时出现。 */
+.zp-password-control{
+  position:relative;display:flex;align-items:center;width:100%;min-height:48px;
+  border:1px solid var(--zp-line);border-radius:11px;background:var(--zp-card-translucent-2);
+  transition:border-color .16s ease,box-shadow .16s ease;
+}
+.zp-password-control:focus-within{border-color:var(--zp-focus-ring);box-shadow:var(--zp-focus-glow)}
+.zp-password-control input[type="password"],
+.zp-password-control input[type="text"]{
+  display:block;flex:1;min-width:0;width:100%;height:48px!important;min-height:48px!important;
+  margin:0!important;padding:0 48px 0 12px!important;border:0!important;border-radius:10px!important;
+  outline:none!important;box-shadow:none!important;background:transparent!important;color:var(--zp-text);
+  font-size:16px;line-height:22px;letter-spacing:.01em;
+}
+.zp-password-control input::placeholder{color:var(--zp-soft)}
+.zp-password-eye{
+  position:absolute;right:4px;top:50%;transform:translateY(-50%);
+  display:flex;align-items:center;justify-content:center;width:38px;height:38px;
+  padding:0;border:0;border-radius:9px;background:transparent;color:var(--zp-muted);
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+.zp-password-eye svg{display:block;width:19px;height:19px;pointer-events:none}
+.zp-password-eye:active{background:var(--zp-primary);color:var(--zp-on-primary)}
+.zp-password-eye[hidden]{display:none!important}
+.field .zp-password-control{margin-top:0}
+.page2-label>.zp-password-control{margin-top:6px}
+.reset-password-field>label{display:block;margin:0 0 8px;color:var(--zp-text);font-size:14px;line-height:20px;font-weight:600}
+.reset-password-field{margin-top:16px}
+@media(max-width:380px){.zp-password-eye{right:3px;width:36px;height:36px}}
+
+
+/* ================================================================
+ * 全局层级体系 3.0 · 落地规则
+ * ----------------------------------------------------------------
+ * 上面的变量只是"声明"，这里是"执行"：把所有既有的层级硬编码
+ * 统一收口到变量上，使多层弹窗拥有确定且可预测的叠放秩序。
+ *
+ * 解决的问题：
+ *   1) 原首页上传层 z-index:999 高于 Toast(400) 与确认框(500)，
+ *      导致上传过程中弹出的确认框被遮挡、用户看不到按钮；
+ *   2) 业务弹窗原分散在 100/120 两个值上，5 个弹窗抢同一层，
+ *      叠放顺序取决于 CSS 加载顺序，不可控。
+ *
+ * 层级顺序（由低到高）：
+ *   内容 1 → 顶栏 10 → 悬浮 90 → 菜单 200
+ *   → 模态一层 1000 → 模态二层 1100 → 模态三层 1200 → 提示 2000
+ * ================================================================ */
+
+/* --- 模态第 1 层：所有业务弹窗归于同一层 --- */
+.order-dialog,
+.history-dialog,
+.data-import,
+.upload-overlay{
+  z-index:var(--ui-z-modal)!important;
+}
+
+/* --- 模态第 2 层：在弹窗之上再开的浮层 --- */
+.history-picker{
+  z-index:var(--ui-z-modal-stack)!important;
+}
+
+/* --- 模态第 3 层：最终确认（破坏性操作） --- */
+.zp-confirm{
+  z-index:var(--ui-z-modal-top)!important;
+}
+
+/* --- 全局提示：永远在最上层，不被任何弹窗遮挡 --- */
+.ui-toast,
+.data-feedback{
+  z-index:var(--ui-z-toast)!important;
+}
+
+/* --- 菜单浮层：非模态，低于一切弹窗 --- */
+.data-page-menu, .order-menu{
+  z-index:var(--ui-z-menu)!important;
+}
+
+/* --- 悬浮操作：位于内容之上、弹窗之下（快速滚动箭头已下线） --- */
+.order-pending-fab{
+  z-index:var(--ui-z-float)!important;
+}
+
+/* --- 顶栏 --- */
+.home-app .topbar,
+.order-shell .topbar{
+  z-index:var(--ui-z-topbar)!important;
+}
+
+
+/* ================================================================
+ * 弹窗样式收敛 4.0 · 单一来源
+ * ----------------------------------------------------------------
+ * 背景：同一弹窗曾散落在 2~4 个文件重复定义，且样式互相矛盾
+ *       （例：.data-import 在 app.css 居中、在 data.css 底部弹出），
+ *       最终靠"后面再补一条覆盖"打补丁，改一处不起作用。
+ * 处理：以下弹窗的"遮罩层 + 面板"统一由本处定义，各页面 CSS
+ *       不再重复定义这些属性，只保留页面特有的内部布局。
+ *
+ * 统一后所有业务弹窗行为一致：
+ *   遮罩 var(--zp-scrim-dialog) · 居中显示 · 面板 18px 圆角
+ *
+ * ⚠ 数据中心（data.html）：弹窗外观与本文件 2.1/2.5 节的统一规则保持
+ *   原版完全一致（原版即由本文件接管遮罩与面板：居中模态、398px 上限、
+ *   18px 圆角）。css/data.css 只保留内部布局 + dvh 兜底 + 入场动效。
+ *   本节（4.0）不得对 .data-import 追加 display 等强覆盖规则 ——
+ *   data.html 用内联 style="display:none" 控制开关，任何 display!important
+ *   都会让弹窗常驻展开、挡住整个页面（2026-10-03 已修复的缺陷）。
+ * ================================================================ */
+
+/* --- 统一遮罩层 --- */
+.order-dialog,
+.history-dialog,
+.history-picker,
+.upload-overlay{
+  position:fixed!important;
+  top:0!important;right:0!important;bottom:0!important;left:0!important;inset:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:12px!important;
+  background:var(--zp-scrim-dialog)!important;
+}
+
+/* --- 统一面板 ---
+   所有业务弹窗面板统一为 398px 宽（与上方 2.1 节 max-width 一致）。
+   滚动策略保持各页原有行为：面板整体滚动（overflow:auto），
+   订单确认弹窗的"头部固定+内容区滚动"由 order_detail.css 页面级定义。 */
+.order-dialog-panel,
+.history-dialog-panel,
+.history-picker-panel,
+.account-dialog,
+.upload-sheet{
+  width:min(100%,398px);
+  max-height:min(88vh,760px);max-height:min(88dvh,760px);
+  overflow:auto;
+  margin:0 auto;
+  padding:18px;
+  border:1px solid var(--ui-line);
+  border-radius:var(--ui-dialog-radius);
+  background:var(--ui-surface);
+  box-shadow:var(--zp-shadow-lg);
+}
+
+/* --- 统一次级按钮（取消类）--- */
+.order-dialog-actions,
+.history-dialog-actions,
+.account-dialog-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:14px;
+}
+/* 与第 121 行的五元组是同一批按钮的两次定义（后者覆盖前者），
+   两处都已收敛到 --zp-control-height。只改一处会被另一处盖回去 ——
+   Commit 2B 在 history.css 已踩过这个坑，所以本轮以 css-button-resolve.cjs
+   的「页面最终生效值」为准，不逐行数改了几处。 */
+.order-dialog-actions button,
+.history-dialog-actions button,
+.account-dialog-actions button{
+  min-height:var(--zp-control-height);
+  border:1px solid var(--zp-line);
+  border-radius:var(--ui-control-radius);
+  background:var(--ui-surface-2);
+  color:var(--zp-text);
+  font-size:16px;
+  font-weight:550;
+}
+.order-dialog-actions button:last-child,
+.history-dialog-actions button:last-child,
+.account-dialog-actions button:last-child{
+  border-color:var(--zp-line);
+  background:var(--ui-surface-3);
+  color:var(--zp-text);
+}
+
+
+/* ================================================================
+ * 视觉细节收敛 5.0 · 同类同形
+ * ----------------------------------------------------------------
+ * 巡检发现的问题（均为"同类元素在不同页面长得不一样"）：
+ *   1) 主按钮三处三种底色：#26313C(app) / #26313C(同) / #2E3B47(business)；
+ *   2) 主按钮三处三种圆角：11px(app) / 11px(同) / 12px(部分页面)；
+ *   3) 空状态三套内边距：28px 12px / 28px 10px / 30px 10px / 22px 16px；
+ *   4) 焦点可见环只有部分页面有（业务页有，登录页无）；
+ *   5) 状态类 .dispatch-* 在 ui-unified 中声明但页面用局部 \3c style> 重复实现。
+ *
+ * 角色色约定（核对此前渲染结果后确认保持不变）：
+ *   错误文字 = #FFB4AB（浅红，正文可读优先）；危险操作 = #FF8278（深红，警示优先）。
+ *
+ * 处理原则：只统一"同类元素的形状与色值"，不改任何布局尺寸与业务逻辑。
+ * 所有规则置于文件末尾，保证覆盖此前同名声明；不增加 !important，
+ * 以便页面级"确有需要"的差异化仍可通过更高优先级表达。
+ * ================================================================ */
+
+/* --- 5.1 主按钮：Uber 招牌反色（深色白底黑字 / 浅色黑底白字） --- */
+.primary-btn,
+.login-submit,
+.page2-primary,
+.confirm-submit{
+  background:var(--zp-primary);
+  border:1px solid var(--zp-primary);
+  border-radius:var(--ui-control-radius);
+  color:var(--zp-on-primary);
+  font-weight:650;
+  transition:background .15s ease,transform .12s ease;
+}
+.primary-btn:hover:not(:disabled),
+.login-submit:hover:not(:disabled),
+.page2-primary:hover:not(:disabled),
+.confirm-submit:hover:not(:disabled){
+  background:var(--zp-primary-hover);
+  border-color:var(--zp-primary-hover);
+}
+.primary-btn:active:not(:disabled),
+.login-submit:active:not(:disabled),
+.page2-primary:active:not(:disabled),
+.confirm-submit:active:not(:disabled){
+  background:var(--zp-primary-active);
+  border-color:var(--zp-primary-active);
+  transform:scale(.985);
+}
+
+/* --- 5.2 次按钮：描边 / 幽灵（与背景分离，靠边框与文字色区分层级） --- */
+.secondary-btn,
+.page2-secondary{
+  background:var(--zp-secondary-bg);
+  border:1px solid var(--zp-secondary-border);
+  border-radius:var(--ui-control-radius);
+  color:var(--zp-secondary-text);
+  font-weight:600;
+  transition:background .15s ease,transform .12s ease;
+}
+.secondary-btn:hover:not(:disabled),
+.page2-secondary:hover:not(:disabled){
+  background:var(--zp-secondary-hover);
+}
+.secondary-btn:active:not(:disabled),
+.page2-secondary:active:not(:disabled){
+  background:var(--zp-secondary-active);
+  transform:scale(.985);
+}
+
+/* --- 5.3 危险按钮：统一危险色（错误正文用 --zp-error，随主题翻转保证对比度） --- */
+.page2-danger-btn,
+.page2-danger{
+  color:var(--zp-error);
+}
+.page2-danger-btn{
+  border-color:var(--zp-error);
+  background:var(--zp-error-soft);
+}
+.page2-danger-btn:hover:not(:disabled){
+  /* 原 color-mix(in srgb,var(--zp-error) 18%,transparent)：WebView 兼容地板禁用
+     color-mix，改用按深色纪元 --zp-error 预计算的静态微染令牌（Phase 4 可给浅色值） */
+  background:var(--zp-error-soft-hover);
+}
+.page2-danger-btn:active:not(:disabled){
+  background:var(--zp-error-soft-active);
+  transform:scale(.985);
+}
+
+/* --- 5.4 错误文案：统一为可读性更好的语义红（深色更亮 / 浅色更深） --- */
+.message.error,
+.login-message,
+.login-message[role=alert],
+.processing-error-message{
+  color:var(--zp-error);
+}
+
+/* --- 5.5 空状态 / 状态文字：统一内边距与居中节奏 ---
+   注意：history-state 在 history.css 里被定义了两次（22px 16px 与 18px 8px），
+   此处收口为同一个值，消除"改一处不生效"。 */
+.empty,
+.data-empty,
+.history-state,
+.dispatch-empty,
+.dispatch-message{
+  padding:28px 12px;
+  text-align:center;
+  color:var(--ui-soft);
+}
+
+/* --- 5.6 焦点可见环：全站统一（键盘/外接设备可访问性） --- */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible{
+  outline:2px solid var(--zp-focus);
+  outline-offset:2px;
+}
+
+/* --- 5.7 禁用态：统一配色与光标 --- */
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled,
+[disabled]{
+  cursor:default;
+}
+.primary-btn:disabled,
+.login-submit:disabled,
+.page2-primary:disabled,
+.page2-secondary:disabled,
+.secondary-btn:disabled,
+.confirm-submit:disabled{
+  background:var(--zp-disabled-bg);
+  border-color:var(--zp-disabled-bg);
+  color:var(--zp-disabled-text);
+  opacity:1;
+}
+
+/* --- 5.8 加载态：全站 spinner / 进度条统一用主色与中性灰 --- */
+.loading{
+  color:var(--zp-muted);
+}
+
+/* --- 5.8 小标签 / 状态胶囊：同圆角、同行高 --- */
+
+/* UI 2.6：页面进入动效统一——
+   所有业务页加载时统一 fade + 6px 上移（120ms），消除「页面突然换掉」的生硬感。
+   仅作用于各页 <main> 主壳；dialog/picker/sheet 是 <main> 的兄弟节点，不受影响。
+   尊重系统的「减少动态效果」偏好（mobile-ui.css 的 reduce-motion 媒体查询会将其压到 ~0ms）。
+   ⚠ 禁止加 animation-fill-mode:both/forwards：动画结束后残留的恒等 transform
+   会让 <main> 常驻成为 position:fixed 后代的包含块 + stacking context，
+   把 main 内部的弹窗/反馈条（如 data 页的 .data-import、#dataFeedback）钉进
+   main 的层级与文档坐标——表现为弹窗跑到文档中部、遮罩不满屏、
+   body 级悬浮元素（z 90）反而盖住 z 1000 的弹窗。 */
+@keyframes zpPageEnter{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.home-app,.shell,.login-shell,.auth-shell,.page2,.order-shell,.history-shell,.dispatch-page,.route-apply-page,.zp-offline{animation:zpPageEnter .12s ease-out}
+
+/* UI 2.6：弹窗/选择框统一进入动效——
+   遮罩淡现 + 面板轻微上移（16px / 160ms），替代「啪地出现」。
+   普通业务弹窗不再使用 backdrop blur（稳、硬朗）。 */
+@keyframes zpModalIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes zpModalFade{from{opacity:0}to{opacity:1}}
+.order-dialog:not([hidden]),.history-dialog:not([hidden]),.history-picker:not([hidden]),.zp-confirm:not([hidden]){animation:zpModalFade .16s ease-out}
+.order-dialog-panel,.history-dialog-panel,.history-picker-panel,.zp-confirm-panel{animation:zpModalIn .16s ease-out}
+
+/* 菜单轻入场：opacity + 轻微上移，弱化 Web Dropdown 观感（全站通用） */
+
+/* 业务端一级导航：所有业务页面统一常驻，避免页面各自维护不同版本。
+   该类由 js/ui-unified.js 在业务页 body 上添加（原误置于 JS 文件内导致整文件语法错误，
+   现回归此处）。 */
+.zp-business-nav-page{padding-bottom:0!important;overflow-x:hidden}
+.zp-business-nav-page .bottom-nav{
+  position:fixed!important;left:50%!important;right:auto!important;bottom:0!important;z-index:40!important;
+  width:min(100%,430px)!important;min-height:64px!important;
+  padding:6px 8px calc(6px + env(safe-area-inset-bottom))!important;
+  transform:translateX(-50%)!important;
+  display:grid!important;grid-template-columns:repeat(5,1fr)!important;gap:4px!important;
+  background:var(--zp-nav-bg)!important;border-top:1px solid var(--zp-line)!important;
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+}
+.zp-business-nav-page .bottom-nav-item{
+  min-width:0!important;min-height:52px!important;border:0!important;border-radius:10px!important;
+  background:transparent!important;color:var(--zp-nav-text)!important;text-decoration:none!important;
+  display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;
+  gap:3px!important;font-size:12px!important;line-height:17px!important;font-weight:600!important;
+  -webkit-tap-highlight-color:transparent;
+}
+.zp-business-nav-page .bottom-nav-item:active{background:var(--zp-nav-active-bg)!important;color:var(--zp-nav-text-active)!important}
+.zp-business-nav-page .bottom-nav-icon{width:22px!important;height:22px!important;display:flex!important;align-items:center!important;justify-content:center!important}
+.zp-business-nav-page .bottom-nav-icon svg{width:21px!important;height:21px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important}
+/* 选中态仅主色文字/图标，无背景块（与首页底栏口径一致） */
+.zp-business-nav-page .bottom-nav-item[aria-current="page"]{color:var(--zp-primary)!important;background:transparent!important}
+/* 中间上传加号（底栏 5 位改版）：无文字标签的凸起圆形按钮。
+   圆形由 .bottom-nav-icon 承载，上移凸出导航条；底色沿用唯一主色 --zp-primary，
+   白 + 图标，按压提亮——不引入新的强调色。 */
+.zp-business-nav-page .bottom-nav-plus .bottom-nav-icon{
+  width:52px!important;height:52px!important;border-radius:50%!important;
+  background:var(--zp-primary)!important;color:var(--zp-on-primary)!important;
+  transform:translateY(-16px)!important;
+  box-shadow:var(--zp-shadow-sm)!important;
+}
+.zp-business-nav-page .bottom-nav-plus .bottom-nav-icon svg{width:24px!important;height:24px!important;stroke-width:2.2!important}
+.zp-business-nav-page .bottom-nav-plus:active{background:transparent!important}
+.zp-business-nav-page .bottom-nav-plus:active .bottom-nav-icon{filter:brightness(1.15)!important}
+/* 底部让位已废弃（2026-10-18）：zp-shell / order-shell 均为 overflow:hidden 的 flex 外壳，
+   main 不再滚动，旧 82px 让位只会把滚动容器底边抬到导航横线上方 ~18px，
+   形成常驻黑色死区（任何滚动位置下内容都被悬空裁切）。
+   让位职责由各滚动容器自身 padding-bottom（72px + 安全区 = 导航 64px + 8px 呼吸位）接管。 */
+.zp-business-nav-page main{padding-bottom:0!important}
+@media(max-width:430px){
+  .zp-business-nav-page .bottom-nav{width:100%!important}
+}
+@media(max-width:380px){
+  .zp-business-nav-page .bottom-nav{padding-left:6px!important;padding-right:6px!important}
+}
+
+
+/* ===== 用户外观偏好：深色主题 · 全局令牌覆盖 =====
+   Phase 4（2026-10-23 基底反转）：浅色为用户 spec 默认值，全部令牌住在
+   ui-base.css 的 :root；本文件只承载深色覆盖与全站按钮标准。
+   历史「浅色补丁层」（59 条 :root[data-zp-theme="light"] .xxx 规则）已删除——
+   基底反转为浅色后补丁再无必要，且逐条 color-scheme 断言（appearance-theme-
+   bootstrap B 组）要求非 dark :root 块不得残留。 */
+:root[data-zp-theme="dark"]{
+  color-scheme:dark;
+  /* ===== 页面 / 表面 / 文字（深色 spec · slate 族）===== */
+  --zp-bg:#121826;
+  --zp-surface:#1E293B;
+  --zp-surface-2:#253345;
+  --zp-surface-3:#334155;
+  --zp-line:#334155;
+  --zp-input-line:var(--zp-line);
+  --zp-text:#F1F5F9;
+  --zp-muted:#94A3B8;
+  --zp-soft:#64748B;
+  /* 骨架微光条深色化：slate 族同梯度微光 */
+  --zp-sk-a:#1E293B;
+  --zp-sk-b:#253345;
+  /* ===== 主按钮（深色 spec：亮蓝底白字）===== */
+  --zp-primary:#3B82F6;
+  --zp-on-primary:#FFFFFF;
+  --zp-secondary-bg:#253345;
+  --zp-secondary-border:#475569;
+  --zp-secondary-text:#F1F5F9;
+  --zp-disabled-bg:#253345;
+  --zp-disabled-text:#64748B;
+  --zp-scrim:rgba(2,6,23,.72);
+  --zp-focus:#F1F5F9;
+  --zp-primary-hover:#60A5FA;
+  --zp-primary-active:#2563EB;
+  /* 选中态强调色（主题蓝）：用于「已选中」文字/图标着色。
+     深色主题的选中块底为 --zp-line(#334155)，需比 --zp-primary 更亮一档才够对比度：
+     #60A5FA 在该底色上仅 4.07:1（不达 AA），故取 #93C5FD（5.74:1）。 */
+  --zp-accent:#93C5FD;
+  --zp-secondary-hover:#2A3A4F;
+  --zp-secondary-active:#334155;
+  --zp-card-translucent:rgba(30,41,59,.82);
+  --zp-card-translucent-2:rgba(18,24,38,.88);
+  --zp-divider:rgba(255,255,255,.10);
+  /* ===== 功能状态色（深色 spec：提亮保对比度）===== */
+  --zp-success:#22C55E;
+  --zp-success-soft:rgba(34,197,94,.14);
+  --zp-warning:#FB923C;
+  --zp-warning-soft:rgba(251,146,60,.14);
+  --zp-error:#EF4444;
+  --zp-error-soft:rgba(239,68,68,.14);
+  --zp-danger:#FCA5A5;
+  --zp-danger-soft:rgba(252,165,165,.12);
+  --zp-info:#60A5FA;
+  --zp-info-soft:rgba(96,165,250,.14);
+  /* 底部一级导航：深色=近黑底（logo-plate）+ 浅字 */
+  --zp-nav-bg:var(--zp-logo-plate);
+  --zp-nav-text:#94A3B8;
+  --zp-nav-text-active:#F1F5F9;
+  --zp-nav-active-bg:rgba(255,255,255,.08);
+  /* ===== Phase 1 令牌的深色取值 ===== */
+  --zp-tint:rgba(255,255,255,.07);
+  --zp-tint-strong:rgba(255,255,255,.16);
+  --zp-scrim-dialog:rgba(2,6,23,.58);
+  --zp-shadow:0 2px 8px rgba(0,0,0,.25);
+  --zp-shadow-sm:0 8px 20px rgba(0,0,0,.45);
+  --zp-shadow-md:0 10px 28px rgba(0,0,0,.35);
+  --zp-shadow-lg:0 18px 50px rgba(0,0,0,.45);
+  --zp-shadow-menu:0 14px 34px rgba(0,0,0,.34);
+  --zp-focus-ring:#94A3B8;
+  --zp-focus-glow:0 0 0 3px rgba(148,163,184,.18);
+  --zp-success-surface:#152A1E;
+  --zp-error-surface:#3B1D24;
+  --zp-error-surface-strong:#5C2B31;
+  --zp-error-soft-hover:rgba(239,68,68,.18);
+  --zp-error-soft-active:rgba(239,68,68,.28);
+}
+
+/* 首屏 placeholder 透明度：部分 WebView 默认给 placeholder 加半透明，
+   统一拉满保证弱化文字可读（原浅色补丁中的非颜色声明，提升为双主题基座）。 */
+input::placeholder,
+textarea::placeholder {
+  opacity: 1;
+}
+
+/* 禁用态：破坏性动作按钮禁用时整体弱化、光标禁示；
+   双主题通用（原浅色补丁规则去前缀，深色下同样生效）。 */
+button[class*="delete"]:not(.account-collapse-head):disabled,
+button[class*="danger"]:not(.account-collapse-head):disabled,
+.history-choice-delete:disabled {
+  opacity:.55;
+  cursor:not-allowed;
+}
+
+
+/* 全站危险操作按钮唯一标准：中性底 + 红字（用户 2026-10 决策「中性底+红字」——
+   破坏性操作不用红底恐吓、也不延续灰字，与全站次按钮同底、仅文字取错误色）。
+   四令牌（--zp-secondary-bg 底 / --zp-line 边 / --zp-error 字 / --zp-secondary-active
+   按压）双主题各有一套值，一套规则自动自适应，无需拆深浅两套 !important 特化。
+   历史页整行滑动动作条 .history-delete 显式排除：它是实底专用形态（带边框会与
+   行宽不齐、两端混绘出白边），颜色与本标准同族，基座见 history-shell.css；
+   .account-collapse-head 是折叠行非动作按钮，同样排除。
+   仅调整颜色和边框，不改变尺寸、位置、文案及确认逻辑。 */
+button[class*="delete"]:not(.account-collapse-head):not(.history-delete),
+a[class*="delete"],
+button[class*="danger"]:not(.account-collapse-head),
+a[class*="danger"],
+.history-choice-delete,
+.history-dialog-actions .delete,
+.data-swipe-actions .data-swipe-delete,
+.page2-danger-btn,
+.invite-actions .small-action.danger {
+  background:var(--zp-secondary-bg)!important;
+  border:1px solid var(--zp-line)!important;
+  color:var(--zp-error)!important;
+  box-shadow:none!important;
+}
+button[class*="delete"]:not(.account-collapse-head):not(.history-delete):active,
+a[class*="delete"]:active,
+button[class*="danger"]:not(.account-collapse-head):active,
+a[class*="danger"]:active,
+.history-choice-delete:active,
+.history-dialog-actions .delete:active,
+.data-swipe-actions .data-swipe-delete:active,
+.page2-danger-btn:active,
+.invite-actions .small-action.danger:active {
+  background:var(--zp-secondary-active)!important;
+  border-color:var(--zp-line)!important;
+  color:var(--zp-error)!important;
+}
+
+/* 登录输入框深色恢复：app.css 浅色基底已改为白底 + --zp-input-line 边（浅色对比度
+   修复，见该处注释）。深色下边框令牌 --zp-input-line 已覆盖为 --zp-line，无需重复；
+   此处仅恢复半透明底与聚焦实底，保持原深色观感。 */
+:root[data-zp-theme="dark"] .login-field input {
+  color-scheme: dark;
+  background: var(--zp-card-translucent-2);
+}
+:root[data-zp-theme="dark"] .login-field input:focus {
+  color-scheme: dark;
+  background: var(--zp-surface);
+}
+
+/* ============================================================
+   统一应用外壳 zp-shell（阶段 7 · 抖动修复 / 全局统一 UI）
+   ------------------------------------------------------------
+   问题：各页原用 position:sticky;top:0 固定顶栏，在 Android WebView
+   惯性滚动时会随滚动上下抖动（sticky 重绘 jank）。order-shell 早已采用
+   flex 列 + 内部滚动容器的方案（顶栏作为不参与滚动的 flex 子项），零抖动。
+   本段把该方案提升为「全局统一外壳」，所有业务页 <main> 加 .zp-shell，
+   内容包进 .zp-scroll，顶栏彻底静止。
+
+   main.zp-shell 用 (元素+类)=0,1,1 的特异性，压过 .home-app / .shell /
+   .page2 / .dispatch-page 等容器类（均 0,1,0），因此 padding/width/height
+   等冲突项一律以本规则为准，无需逐个页面覆盖。
+   ============================================================ */
+main.zp-shell{
+  width:100%;
+  max-width:var(--zp-shell-max,520px);
+  height:100vh;            /* 旧内核回退 */
+  height:100dvh;
+  margin:0 auto;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  position:relative;
+  background:var(--zp-bg);
+  padding-top:0;           /* 抵消 .shell/.page2/.home-app 的上下 padding，
+                             左右 padding 保留（仍来自各容器类），保证内容/顶栏对齐 */
+  padding-bottom:0;
+}
+/* 顶栏：不再 sticky/fixed，作为不滚动的 flex 子项，绝无抖动；
+   左右缩进由外壳的 padding 提供，这里只补顶部安全区与底色。 */
+/* 顶栏统一规范（单一来源）：安全区只在此声明一次，覆盖全部外壳
+   （zp-shell 与 order-shell 等）。各页旧类仅保留布局差异，不再重复声明安全区。 */
+main > .topbar{
+  flex:0 0 auto;
+  position:static;
+  z-index:100;
+  padding-top:var(--zp-safe-top);
+  min-height:var(--zp-header-height);
+  background:var(--zp-bg);
+}
+/* 内部唯一滚动容器：flex:1 撑满剩余高度，min-height:0 是 flex 列中
+   能正确收缩并出现滚动条的关键。 */
+.zp-scroll{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-y:contain;
+  /* 顶部留 14px 与顶栏间距；底部 72px 让出常驻导航（64px 高 + 8px 呼吸位）。
+     旧值 84px 会在滚动到底时于横线上方多留 20px 空档。 */
+  padding:14px 0 calc(72px + env(safe-area-inset-bottom));
+}
+/* 全局隐藏滚动条（移动端成熟做法，对标 iOS 原生应用）：
+   滚动与惯性完全不变，位置反馈由手势/边缘效应承担；常驻滚动条属桌面
+   习惯，在 WebView 下会沿内容右缘形成一条深色竖线，影响视觉。 */
+*{scrollbar-width:none}
+*::-webkit-scrollbar{display:none;width:0;height:0}
+/* 线路页：首项 dispatch-intro 自带 18px 上间距，避免与 .zp-scroll 的 14px 叠加 */
+main.zp-shell.dispatch-page .zp-scroll{padding-top:0}
+
+/* 智配One · 首页移动端 UI */
+/* 板块宽度对齐全局：与线路页 / 历史页同用 --zp-space-4（16px）。
+   原为 14px 历史遗留值，比全局窄 2px，跨页切换时板块宽度会跳。 */
+.home-app{width:min(100%,430px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:var(--zp-space-4,16px) var(--zp-space-4,16px) calc(24px + env(safe-area-inset-bottom));background:var(--zp-bg)}
+.home-app .topbar{display:flex;justify-content:space-between;align-items:center;z-index:100;margin-bottom:8px}
+.home-brand{display:flex;flex-direction:column;line-height:1.2}
+.home-brand strong{font-size:19px;font-weight:700;letter-spacing:.5px;color:var(--zp-text)}
+.home-brand span{margin-top:2px;font-size:11px;color:var(--zp-muted);letter-spacing:1.5px}
+.menu-item-icon{width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;color:var(--zp-muted)}
+.menu-item-icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.menu-divider{height:1px;margin:5px 7px;background:var(--zp-tint)}
+
+.task-card{position:relative;overflow:hidden;margin-top:14px;padding:14px;min-height:0;background:var(--zp-card-translucent-2);border:1px solid var(--zp-tint);border-radius:16px;box-shadow:0 12px 30px var(--zp-shadow-md)}
+.task-title{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:21px;line-height:28px;font-weight:700}
+.task-name{display:flex;align-items:center;gap:9px;min-width:0;white-space:nowrap}
+.task-date{margin:0;text-align:right;white-space:nowrap;color:var(--zp-muted);font-size:15px;line-height:23px;font-weight:500}
+/* 2026-10-26 用户反馈：今日配送旁的圆形状态徽章采用主题蓝（双主题经令牌自适应，
+   浅色 #1677FF / 深色 #3B82F6），文字改 --zp-on-primary 白字保证蓝底可读 */
+.status-dot{width:26px;height:26px;min-width:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:var(--zp-primary);color:var(--zp-on-primary);border:1px solid var(--zp-tint-strong);font:650 11px/26px Arial,"Microsoft YaHei",sans-serif}
+.status-dot[hidden]{display:none}
+.today-summary .sub-badge{display:inline;color:var(--zp-text);font:600 14px/29px "Microsoft YaHei",sans-serif;white-space:nowrap}
+.today-summary .sub-badge[hidden]{display:none}
+.task-main{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:8px;margin-top:9px}
+.task-info{min-width:0;color:var(--zp-muted);font-size:15px;line-height:27px}
+.today-summary{display:flex;align-items:baseline;gap:9px;white-space:nowrap;line-height:29px}
+.today-summary strong{color:var(--zp-text);font-size:20px;line-height:29px;font-weight:600}
+.today-summary span{font-size:16px;line-height:29px;color:var(--zp-muted)}
+.delivery-man{width:84px;height:60px;display:flex;align-items:flex-end;justify-content:flex-end;opacity:.4;transform:translateY(8px)}
+.delivery-man img{width:100%;height:100%;object-fit:contain}
+/* radius 14→12（方案第十三章 10–12）。padding 0 48px 保持不动：
+   它是 width:100% + justify-content:center 的居中大按钮，48px 只用于限制内容最大宽度，
+   实际内容远不满宽，改成 16 不会带来任何视觉差异，纯粹是无收益的改动。
+   padX 48 本身也满足「≥16」，并不违规。 */
+
+.upload-overlay:not([hidden]){display:flex;animation:zpModalFade .16s ease-out}
+.upload-sheet{width:min(100%,390px);max-width:390px;margin:0 auto;padding:20px 18px calc(18px + env(safe-area-inset-bottom));border-radius:20px 20px 16px 16px;background:var(--zp-card-translucent-2);border:1px solid var(--zp-line);box-shadow:0 18px 46px var(--zp-shadow-lg);animation:zpModalIn .16s ease-out}
+.sheet-handle{width:34px;height:4px;margin:0 auto 16px;border-radius:4px;background:var(--zp-tint-strong)}
+.upload-source-menu{margin:0;padding:0;background:transparent}
+.source-menu-title{height:28px;line-height:28px;margin:0 0 20px;color:var(--zp-text);text-align:center;font-size:20px;font-weight:700}
+/* 2026-10-26 新增「粘贴文本」录入：来源入口从 3 列改 2×2，每格更宽容纳四项文案 */
+.source-menu-options{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.source-option{height:auto;min-height:72px;padding:9px 0;border:1px solid var(--zp-tint);border-radius:12px;background:var(--zp-card-translucent);color:var(--zp-text);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.source-option:active{background:var(--zp-primary);color:var(--zp-on-primary);transform:scale(.985)}
+.source-icon{width:24px;height:24px;display:flex;align-items:center;justify-content:center}
+.source-icon svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.source-option strong{font-size:13px;font-weight:600;line-height:18px}
+.upload-cancel-btn{width:100%;height:48px;min-height:48px;margin-top:12px;border:1px solid var(--zp-tint);border-radius:12px;background:var(--zp-card-translucent);color:var(--zp-muted);font-size:14px;font-weight:650;-webkit-tap-highlight-color:transparent}
+.upload-cancel-btn:active{background:var(--zp-primary);color:var(--zp-on-primary);transform:scale(.985)}
+
+/* 粘贴文本录入面板：与来源菜单同一容器风格，纯令牌配色（组件层零字面量） */
+.upload-text-panel{margin:0;padding:0;background:transparent}
+.upload-text-panel[hidden]{display:none}
+.waybill-text-input{display:block;width:100%;box-sizing:border-box;min-height:180px;margin:0 0 8px;padding:12px 14px;border:1px solid var(--zp-input-line);border-radius:12px;background:var(--zp-surface);color:var(--zp-text);font:inherit;font-size:15px;line-height:22px;resize:vertical;-webkit-tap-highlight-color:transparent}
+.waybill-text-input::placeholder{color:var(--zp-muted)}
+.waybill-text-input:focus{outline:none;border-color:var(--zp-primary)}
+.text-panel-meta{display:flex;align-items:center;justify-content:space-between;min-height:28px;color:var(--zp-muted);font-size:12px}
+.text-paste-btn{height:30px;padding:0 12px;border:1px solid var(--zp-tint);border-radius:9px;background:var(--zp-card-translucent);color:var(--zp-primary);font-size:12px;font-weight:650;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.text-paste-btn:active{background:var(--zp-primary);color:var(--zp-on-primary);transform:scale(.985)}
+.text-panel-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.text-panel-actions .upload-cancel-btn{margin-top:0}
+.text-submit-btn{height:48px;min-height:48px;border:1px solid var(--zp-primary);border-radius:12px;background:var(--zp-primary);color:var(--zp-on-primary);font-size:14px;font-weight:650;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.text-submit-btn:active{transform:scale(.985)}
+.text-submit-btn:disabled{opacity:.5}
+.text-submit-btn:focus,.text-paste-btn:focus,.waybill-text-input:focus-visible{outline:2px solid var(--zp-focus-ring);outline-offset:2px}
+.upload-processing{padding:8px 2px 6px}
+.upload-processing[hidden],.upload-processing-error[hidden]{display:none}
+.processing-title{color:var(--zp-text);text-align:center;font-size:16px;font-weight:700;line-height:28px}
+#processingPercent{display:inline-block;margin-left:4px;font-variant-numeric:tabular-nums;color:var(--zp-muted);font-weight:650}
+.processing-progress{position:relative;width:100%;height:22px;margin:22px 0 5px}
+.processing-progress-line{position:absolute;left:0;right:0;top:10px;height:2px;border-radius:2px;background:var(--zp-line);display:block}
+.processing-progress-line:before{content:"";position:absolute;left:0;top:0;width:var(--progress,0%);height:2px;border-radius:2px;background:var(--zp-muted)}
+.processing-progress-line i{position:absolute;left:var(--progress,0%);top:50%;width:10px;height:10px;margin:-4px 0 0 -5px;border-radius:50%;background:var(--zp-text);box-shadow:0 0 0 2px var(--zp-tint)}
+.processing-error-title{color:var(--zp-text);text-align:center;font-size:19px;font-weight:700;line-height:28px}
+.processing-error-message{margin-top:10px;color:var(--zp-muted);text-align:center;font-size:15px;line-height:23px;word-break:break-word}
+.processing-retry-btn{display:block;width:100%;height:48px;min-height:48px;margin-top:20px;border:1px solid var(--zp-primary);border-radius:12px;background:var(--zp-primary);color:var(--zp-on-primary);font-size:15px;font-weight:650;-webkit-tap-highlight-color:transparent}
+.processing-retry-btn:active{background:var(--zp-line);transform:scale(.985)}
+/* 等待期信息层：阶段文案 + 已用时，让"干等"变成"有进度可看" */
+.processing-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px}
+.processing-stage{min-width:0;overflow:hidden;color:var(--zp-muted);text-align:left;font-size:14px;line-height:20px;text-overflow:ellipsis;white-space:nowrap}
+.processing-elapsed{flex:none;color:var(--zp-muted);font-size:13px;line-height:20px;font-variant-numeric:tabular-nums}
+.processing-cancel-btn{display:block;width:100%;min-height:var(--zp-control-height);margin-top:12px;border:1px solid var(--zp-line);border-radius:12px;background:var(--zp-card-translucent-2);color:var(--zp-muted);font-size:15px;font-weight:650;-webkit-tap-highlight-color:transparent}
+.processing-cancel-btn[hidden]{display:none}
+.processing-cancel-btn:active{background:var(--zp-card-translucent);color:var(--zp-text)}
+/* 停滞但存活：进度条叠加流动微光，表示"服务端仍在运行"而非卡死。
+   仅在收到心跳（证明连接存活）且久无新进度时启用，不伪造百分比。 */
+.processing-progress.is-stalled .processing-progress-line:before{
+  background:linear-gradient(90deg,var(--zp-muted) 0%,var(--zp-text) 50%,var(--zp-muted) 100%);
+  background-size:200% 100%;
+  animation:zp-progress-flow 2.2s linear infinite;
+}
+@keyframes zp-progress-flow{from{background-position:200% 0}to{background-position:0 0}}
+@media(prefers-reduced-motion:reduce){
+  .processing-progress.is-stalled .processing-progress-line:before{animation:none}
+}
+.source-option:focus, .upload-cancel-btn:focus, .processing-retry-btn:focus, .processing-cancel-btn:focus{outline:none;box-shadow:none}
+.source-option:focus-visible, .upload-cancel-btn:focus-visible, .processing-retry-btn:focus-visible, .processing-cancel-btn:focus-visible{outline:2px solid var(--zp-focus-ring);outline-offset:2px}
+@media(max-width:380px){
+ /* 左右内缩不再收紧到 12px：与全局 --zp-space-4 保持同一档，跨页一致 */
+ .task-card{margin-top:14px;padding:13px 14px 12px;border-radius:16px}
+ .task-title{font-size:20px;line-height:26px}
+ .task-date{font-size:16px;line-height:23px}
+ .today-summary strong{font-size:19px}.today-summary span{font-size:15px}
+ .delivery-man{width:64px;height:46px;opacity:.4;transform:translateY(8px)}
+ .upload-sheet{width:min(90vw,340px);padding:20px 17px 18px}
+ .source-menu-title{font-size:19px;margin-bottom:18px}
+ .source-menu-options{gap:7px}
+ .source-option{height:auto;min-height:62px}
+ .processing-title{font-size:17px}.processing-progress{margin-top:20px}
+ .processing-error-title{font-size:18px}.processing-error-message{font-size:13px}
+}
+
+/* 当前线路显示 */
+/* 菜单项直接以用户名作主标题：左对齐、与菜单文字同色，撑满剩余宽度，
+   超长省略号截断，不换行 */
+
+/* Final Android typography normalization: size/line-height only */
+.home-brand strong{font-size:20px;line-height:26px;letter-spacing:.5px}
+.home-brand span{font-size:12px;line-height:18px}
+.task-title{font-size:16.5px;line-height:22px}
+.task-date{font-size:15px;line-height:22px}
+.task-info{font-size:16px;line-height:23px}
+.today-summary strong{font-size:20px;line-height:27px}
+.today-summary span{font-size:16px;line-height:23px}
+.source-menu-title{font-size:18px;line-height:24px}
+.processing-title{font-size:18px;line-height:26px}
+.processing-error-title{font-size:18px;line-height:24px}
+.processing-error-message{font-size:16px;line-height:23px}
+.processing-retry-btn{font-size:16px;line-height:22px}
+
+/* 加载占位优化：菜单「当前线路」空值期间显示骨架微光条，替代「—」横线闪现 */
+
+/* 上传入口「文件」按钮副标题：明确此入口用于 PDF 运单，
+   避免与「拍摄/相册」的图片入口混淆 */
+.source-option small{font-size:10px;line-height:14px;color:var(--zp-muted);font-weight:500}
+
+/* 首页菜单轻入场：opacity + 轻微上移，弱化「Web Dropdown」观感 */
+
+
+/* ===== 配送趋势 · Smart Trend：工业物流终端风（无渐变/发光/玻璃拟态） ===== */
+.trend-card{
+  margin-top:10px;
+  touch-action:pan-y;   /* 纵向可滚动，横向手势留给 JS 切月 */
+  padding:12px 13px 11px;
+  border:1px solid var(--zp-surface-3);border-radius:14px;background:var(--zp-card-translucent-2);overflow:hidden;
+}
+.trend-card.is-in{animation:trendIn .22s ease-out}
+@keyframes trendIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.trend-head{display:flex;flex-direction:column;gap:7px}
+.trend-title-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.trend-controls{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.trend-title{margin:0;font-size:15px;line-height:21px;color:var(--zp-text);font-weight:650;letter-spacing:.5px}
+.trend-year{
+  appearance:none;margin:0;padding:5px 10px;border:1px solid var(--zp-line);border-radius:999px;
+  background:var(--zp-card-translucent);color:var(--zp-muted);font-size:12px;line-height:16px;cursor:pointer;white-space:nowrap;
+  transition:background .15s,color .15s,border-color .15s;
+}
+.trend-year:active,.trend-year.is-active{background:var(--zp-card-translucent);color:var(--zp-text);border-color:var(--zp-line)}
+.trend-month-row{display:flex;align-items:center;justify-content:center;gap:14px}
+.trend-nav{
+  width:30px;height:30px;min-width:30px;padding:0;border:0;border-radius:9px;background:transparent;
+  color:var(--zp-muted);font-size:22px;line-height:1;font-weight:400;
+  display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;
+}
+.trend-nav:active{background:var(--zp-primary);color:var(--zp-on-primary)}
+.trend-nav:disabled{opacity:.2;pointer-events:none}
+/* 移动端 48px 可点性下限：按钮本体保持紧凑观感（30px 胶囊），透明伪元素把热区扩到 48px
+   （四周 -9px）。2026-10-24 由 44px 下限提级到 Android 标准 48px。 */
+.trend-nav,.trend-metric-btn,.trend-year{position:relative}
+.trend-nav::after,.trend-metric-btn::after,.trend-year::after{content:"";position:absolute;inset:-9px}
+.trend-month{color:var(--zp-muted);font-size:12px;line-height:18px;font-variant-numeric:tabular-nums;letter-spacing:.5px;will-change:transform}
+.trend-metric{display:flex;gap:6px}
+.trend-metric-btn{appearance:none;border:1px solid var(--zp-line);background:var(--zp-surface-2);color:var(--zp-muted);font-size:12px;line-height:18px;padding:5px 11px;border-radius:999px;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.trend-metric-btn.is-active{background:var(--zp-primary);color:var(--zp-on-primary);border-color:var(--zp-primary);font-weight:600}
+.trend-metric-btn:active{transform:translateY(.5px)}
+/* 底排：配送汇总（9 单 / 6.98 t）居左，环比提示居右，同排显示省一行高度 */
+.trend-bottom-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:1px}
+.trend-summary{display:flex;gap:12px;align-items:baseline;min-width:0}
+.trend-stat{display:flex;align-items:baseline;gap:2px;color:var(--zp-muted);font-size:10px;line-height:15px}
+.trend-stat b{color:var(--zp-text);font-size:15px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:.5px}
+.trend-stat i{font-style:normal;color:var(--zp-muted);font-size:9px}
+.trend-delta{margin-left:4px;font-size:9px;font-style:normal;font-variant-numeric:tabular-nums}
+.trend-delta.is-up{color:var(--zp-success)}
+.trend-delta.is-down{color:var(--zp-error)}
+.trend-chart-wrap{height:80px;margin:7px -2px 0;will-change:transform,opacity;touch-action:pan-y}
+.trend-chart{width:100%;height:100%;display:block;overflow:visible}
+.trend-grid{fill:none;stroke:var(--zp-surface-3);stroke-width:1;stroke-dasharray:2 5}
+.trend-area{fill:var(--zp-text);fill-opacity:.05;stroke:none}
+.trend-line{fill:none;stroke:var(--zp-text);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.trend-point{fill:var(--zp-surface-2);stroke:var(--zp-text);stroke-width:1.5;cursor:pointer;transition:r .15s}
+.trend-point.is-peak{fill:var(--zp-text);stroke:var(--zp-text);stroke-width:1.5}
+.trend-point:focus{outline:none}
+.trend-point:focus-visible{stroke:var(--zp-focus-ring);stroke-width:2.5}
+.trend-year-bar{fill:var(--zp-line)}
+.trend-year-bar.is-peak{fill:var(--zp-text)}
+.trend-axis{height:15px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 3px;color:var(--zp-muted);font-size:9px;line-height:13px;font-variant-numeric:tabular-nums}
+.trend-hint{min-height:0;margin-top:0;flex:none;color:var(--zp-muted);font-size:9px;line-height:14px;text-align:right}
+.trend-hint b{color:var(--zp-muted);font-weight:600;font-variant-numeric:tabular-nums}
+@media(prefers-reduced-motion:reduce){
+  .trend-card.is-in{animation:none}
+  .trend-chart-wrap{transition:none!important}
+}
+@media(max-width:380px){
+  .trend-card{padding:12px 11px 10px}
+  .trend-title{font-size:16px}
+  .trend-chart-wrap{height:76px}
+  .trend-stat b{font-size:14px}
+  .trend-summary{gap:10px}
+}
+
+
+/* ===== 首页新版信息架构：今日工作台 + 底部四入口 ===== */
+.home-app{padding-bottom:calc(78px + env(safe-area-inset-bottom))}
+.home-app .topbar{justify-content:flex-start}
+.task-card{padding-bottom:14px}
+.today-store-list{
+  margin-top:12px;
+  /* 固定展示约 6 家（行高 44px × 6 = 264px）：其余门店在窗内滚动
+     （overscroll-behavior 防滚动穿透），月度统计稳定回到首屏。 */
+  max-height:264px;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  border-top:1px solid var(--zp-tint);
+  scrollbar-width:none;
+}
+.today-store-list::-webkit-scrollbar{display:none}
+.today-store-row{
+  min-height:44px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  /* 整体左移：去掉左侧留白（原 4px），门店名起点更靠左，可多显示约半个字 */
+  padding:0 4px 0 0;
+  border-bottom:1px solid var(--zp-tint);
+  color:var(--zp-text);
+  text-decoration:none;
+  -webkit-tap-highlight-color:transparent;
+}
+.today-store-row:active{background:var(--zp-tint)}
+.today-store-index{
+  width:22px;
+  min-width:22px;
+  color:var(--zp-muted);
+  font-size:15px;
+  line-height:20px;
+  font-variant-numeric:tabular-nums;
+  text-align:right;
+}
+/* 门店名：文字调大（15→17px）；长名不再省略号截断，改为可左滑横向滚动
+   查看全部文字（原生 touch 滚动；隐藏滚动条；overscroll-behavior-x 防滑到头
+   触发页面滚动链/历史回扫；发生滚动的手势浏览器会自动取消该行的点击跳转）。 */
+.today-store-name{
+  min-width:0;
+  display:block;
+  overflow-x:auto;
+  overflow-y:hidden;
+  white-space:nowrap;
+  scrollbar-width:none;
+  overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;
+  color:var(--zp-text);
+  font-size:17px;
+  line-height:24px;
+  font-weight:550;
+}
+.today-store-name::-webkit-scrollbar{display:none}
+.today-store-empty{padding:18px 4px;color:var(--zp-muted);font-size:14px;text-align:center}
+/* 统计版块精简：压缩垂直占用（小标签行高/间距收窄），无统计项时整块不占位。 */
+.today-metrics{
+  display:flex;
+  flex-wrap:wrap;
+  gap:4px 10px;
+  margin-top:6px;
+  padding-top:6px;
+  border-top:1px solid var(--zp-tint);
+}
+.today-metrics:empty{display:none}
+.today-metrics span{color:var(--zp-muted);font-size:12px;line-height:18px}
+.bottom-nav{
+  position:fixed;
+  left:50%;
+  bottom:0;
+  z-index:30;
+  width:min(100%,430px);
+  min-height:64px;
+  padding:6px 8px calc(6px + env(safe-area-inset-bottom));
+  transform:translateX(-50%);
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:4px;
+  background:var(--zp-nav-bg);
+  border-top:1px solid var(--zp-line);
+}
+.bottom-nav-item{
+  min-width:0;
+  min-height:52px;
+  border:0;
+  border-radius:10px;
+  background:transparent;
+  color:var(--zp-nav-text);
+  text-decoration:none;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  font-size:12px;
+  line-height:17px;
+  font-weight:600;
+  -webkit-tap-highlight-color:transparent;
+}
+.bottom-nav-item:active{background:var(--zp-nav-active-bg);color:var(--zp-nav-text-active)}
+.bottom-nav-icon{width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+.bottom-nav-icon svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+/* 选中态只改文字/图标颜色（2026-10-24 用户定稿）：不加背景块、不改字重，
+   与未选中态仅靠 主色 ↔ 中性灰 的色差区分，保持底栏干净 */
+.bottom-nav-item[aria-current="page"]{color:var(--zp-primary)}
+/* 中间上传加号：无文字标签的凸起圆形按钮（首页静态导航版；
+   业务页生效值由 ui-unified.css 的 !important 规则统一，此处保持一致） */
+.bottom-nav-plus .bottom-nav-icon{
+  width:52px;height:52px;border-radius:50%;
+  background:var(--zp-primary);color:var(--zp-on-primary);
+  transform:translateY(-16px);
+  box-shadow:0 8px 20px var(--zp-shadow-sm);
+}
+.bottom-nav-plus .bottom-nav-icon svg{width:24px;height:24px;stroke-width:2.2}
+.bottom-nav-plus:active{background:transparent}
+.bottom-nav-plus:active .bottom-nav-icon{filter:brightness(1.15)}
+@media(max-width:380px){
+ .home-app{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+ .today-store-list{max-height:252px}   /* 行高 42px × 6 = 252px，固定展示 6 家 */
+ .today-store-row{min-height:44px}
+ .today-store-name{font-size:16px}
+ .bottom-nav{padding-left:6px;padding-right:6px}
+}
+
+/* 上传弹窗开启（body.sheet-open）时，底部导航浮于遮罩(--ui-z-modal:1000)之上，
+   使「上传」按钮可再次点击将其关闭——实现首页上传按钮 toggle 回首页态。
+   子页面无 #uploadArea/openUpload，不会出现 sheet-open，故此规则仅作用于首页。 */
+body.sheet-open .bottom-nav{z-index:1001 !important}
+
+
+/* 浅色外观适配：首页固定导航与菜单交互
+   （底栏颜色已于 Phase 4 收敛为 --zp-nav-* 令牌组，双主题自适应，此处不再覆盖） */
+/* 人物推车插画（assets/delivery-route.png）为深色主题绘制：白描线 + 蓝定位点。
+   2026-10-26 用户反馈「插图三处蓝色要用主题蓝」：原浅色方案对深色图整体
+   invert+hue-rotate+brightness 滤镜，蓝点色相被扭曲且 brightness 上限使
+   #1677FF 不可精确达到。改为预烘焙浅色专用图 delivery-route-light.webp
+   （深线稿观感不变，主蓝精确落位主题蓝），双 img 按主题切换，深色仍原图直出。 */
+:root[data-zp-theme="light"] .delivery-man{opacity:.55}
+.delivery-man .delivery-img-light{display:none}
+:root[data-zp-theme="light"] .delivery-man .delivery-img-dark{display:none}
+:root[data-zp-theme="light"] .delivery-man .delivery-img-light{display:inline}
+
+/* 浅色外观适配补全：页面背景、品牌区、菜单、今日卡文字、功能按钮、
+   门店清单、月度统计卡与上传弹层（此前仅覆盖底部导航，页面主体仍是深色） */
+:root[data-zp-theme="light"] .home-app{background:var(--zp-bg)}
+:root[data-zp-theme="light"] .home-brand strong{color:var(--zp-text)}
+:root[data-zp-theme="light"] .home-brand span{color:#59636E}
+:root[data-zp-theme="light"] .home-brand span{color:#59636E}
+:root[data-zp-theme="light"] .menu-item-icon{color:var(--zp-muted)}
+:root[data-zp-theme="light"] .menu-divider{background:rgba(20,30,40,.10)}
+:root[data-zp-theme="light"] .task-card{box-shadow:0 8px 24px rgba(20,30,40,.08)}
+:root[data-zp-theme="light"] .task-date,
+:root[data-zp-theme="light"] .task-info,
+:root[data-zp-theme="light"] .today-store-index,
+:root[data-zp-theme="light"] .today-store-empty,
+:root[data-zp-theme="light"] .today-metrics span{color:var(--zp-soft)}
+:root[data-zp-theme="light"] .today-summary strong{color:var(--zp-text)}
+:root[data-zp-theme="light"] .today-summary span,
+:root[data-zp-theme="light"] .today-summary .sub-badge{color:var(--zp-muted)}
+:root[data-zp-theme="light"] .today-store-list,
+:root[data-zp-theme="light"] .today-metrics{border-top-color:rgba(20,30,40,.10)}
+:root[data-zp-theme="light"] .today-store-row{color:var(--zp-text);border-bottom-color:rgba(20,30,40,.08)}
+:root[data-zp-theme="light"] .today-store-row:active{background:#EDF1F5}
+:root[data-zp-theme="light"] .today-store-name{color:var(--zp-text)}
+:root[data-zp-theme="light"] .source-option:focus-visible, :root[data-zp-theme="light"] .upload-cancel-btn:focus-visible, :root[data-zp-theme="light"] .processing-retry-btn:focus-visible, :root[data-zp-theme="light"] .processing-cancel-btn:focus-visible{outline-color:rgba(23,32,42,.35)}
+
+/* 浅色：月度统计卡（Smart Trend）——曲线与坐标在白卡上需换深色墨水 */
+/* 2026-10-26 用户反馈「月度统计背景与整体风格不合」：浅色下与今日配送卡（task-card，
+   --zp-card-translucent-2 底 + --zp-tint 边）统一，不再用纯白底单开一档 */
+:root[data-zp-theme="light"] .trend-card{background:var(--zp-card-translucent-2);border-color:var(--zp-tint)}
+:root[data-zp-theme="light"] .trend-title{color:var(--zp-text)}
+:root[data-zp-theme="light"] .trend-year,
+:root[data-zp-theme="light"] .trend-year:active,
+:root[data-zp-theme="light"] .trend-year.is-active{background:#E1E7EC;color:var(--zp-text);border-color:#8793A0}
+:root[data-zp-theme="light"] .trend-nav{color:var(--zp-muted)}
+:root[data-zp-theme="light"] .trend-nav:active{background:#E8EDF1;color:var(--zp-text)}
+:root[data-zp-theme="light"] .trend-month{color:#46515D}
+:root[data-zp-theme="light"] .trend-stat{color:var(--zp-muted)}
+:root[data-zp-theme="light"] .trend-stat b{color:var(--zp-text)}
+:root[data-zp-theme="light"] .trend-stat i{color:var(--zp-soft)}
+:root[data-zp-theme="light"] .trend-delta.is-up{color:#2E7D4F}
+:root[data-zp-theme="light"] .trend-delta.is-down{color:#B4472F}
+:root[data-zp-theme="light"] .trend-grid{stroke:#D7DDE3}
+:root[data-zp-theme="light"] .trend-area{fill:var(--zp-primary)}
+:root[data-zp-theme="light"] .trend-line{stroke:var(--zp-primary)}
+:root[data-zp-theme="light"] .trend-point{fill:var(--zp-surface);stroke:var(--zp-primary)}
+:root[data-zp-theme="light"] .trend-point.is-peak{fill:var(--zp-primary);stroke:var(--zp-primary)}
+:root[data-zp-theme="light"] .trend-year-bar{fill:#B7C3CE}
+:root[data-zp-theme="light"] .trend-year-bar.is-peak{fill:var(--zp-primary)}
+:root[data-zp-theme="light"] .trend-axis{color:#66717D}
+:root[data-zp-theme="light"] .trend-hint{color:var(--zp-soft)}
+:root[data-zp-theme="light"] .trend-hint b{color:var(--zp-muted)}
+
+/* 浅色：上传来源弹层与识别处理态 */
+:root[data-zp-theme="light"] .upload-sheet{background:var(--zp-surface);border-color:#D7DDE3;box-shadow:0 18px 46px rgba(20,30,40,.22)}
+:root[data-zp-theme="light"] .sheet-handle{background:rgba(20,30,40,.18)}
+:root[data-zp-theme="light"] .source-menu-title,
+:root[data-zp-theme="light"] .processing-title,
+:root[data-zp-theme="light"] .processing-error-title{color:var(--zp-text)}
+:root[data-zp-theme="light"] .source-option{background:#F0F2F4;border-color:#D7DDE3;color:var(--zp-text)}
+:root[data-zp-theme="light"] .source-option:active{background:#E8EDF1}
+:root[data-zp-theme="light"] .source-option small{color:var(--zp-soft)}
+:root[data-zp-theme="light"] .upload-cancel-btn{background:#F0F2F4;border-color:#D7DDE3;color:var(--zp-muted)}
+:root[data-zp-theme="light"] .upload-cancel-btn:active{background:#E8EDF1;color:var(--zp-text)}
+:root[data-zp-theme="light"] #processingPercent,
+:root[data-zp-theme="light"] .processing-error-message,
+:root[data-zp-theme="light"] .processing-stage{color:var(--zp-muted)}
+:root[data-zp-theme="light"] .processing-elapsed{color:var(--zp-soft)}
+:root[data-zp-theme="light"] .processing-progress-line{background:#D7DDE3}
+:root[data-zp-theme="light"] .processing-progress-line:before{background:#46515D}
+:root[data-zp-theme="light"] .processing-progress-line i{background:var(--zp-primary);box-shadow:0 0 0 2px rgba(20,30,40,.10)}
+:root[data-zp-theme="light"] .processing-retry-btn{background:var(--zp-primary);border-color:var(--zp-primary);color:var(--zp-on-primary)}
+:root[data-zp-theme="light"] .processing-retry-btn:active{background:#1D2A36}
+:root[data-zp-theme="light"] .processing-cancel-btn{background:#F0F2F4;border-color:#D7DDE3;color:var(--zp-muted)}
+:root[data-zp-theme="light"] .processing-cancel-btn:active{background:#E8EDF1;color:var(--zp-text)}

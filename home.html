@@ -2,8 +2,7 @@
 <html lang="zh-CN">
 <head>
 <script src="/js/error-guard.js?v=f695272a"></script>
-<script src="/js/fetch-retry.js?v=73861cd4"></script>
-<script src="/js/offline-queue.js?v=c255ca1f"></script>
+
 <script>
 (function(){
   function goLogin(){
@@ -22,21 +21,19 @@
 })();
 </script>
 
-
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#F6F7F9">
 <title>智配One</title>
 <link rel="manifest" href="/manifest.json">
+<link rel="stylesheet" href="/css/home.bundle.css?v=80b482f3">
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png?v=8f07ea01">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="智配One">
 <script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F6F7F9":"#121826");}catch(e){}</script>
-<link rel="stylesheet" href="/css/app.css?v=30c14b4f"><link rel="stylesheet" href="/css/ui-base.css?v=2dd9bf80"><link rel="stylesheet" href="/css/ui-overlay.css?v=4ce1c2cf"><link rel="stylesheet" href="/css/ui-theme.css?v=90509d7b"><link rel="stylesheet" href="/css/ui-shell.css?v=d7e34ce4">
-<link rel="stylesheet" href="/css/home-base.css?v=a9fa1102"><link rel="stylesheet" href="/css/home-trend.css?v=f891f0bb"><link rel="stylesheet" href="/css/home-dashboard.css?v=d6d260c3"><link rel="stylesheet" href="/css/home-light.css?v=34fddf8e">
-<script src="/js/perf-diagnostics.js?v=a2065bec"></script>
+
 </head>
 <body>
 <main class="home-app zp-shell">
@@ -88,7 +85,6 @@
     </a>
   </nav>
 
-
   <section class="trend-card" id="trendCard" aria-labelledby="trendTitle" hidden>
     <div class="trend-head">
       <div class="trend-title-row">
@@ -124,7 +120,6 @@
       <div id="trendHint" class="trend-hint" aria-live="polite"></div>
     </div>
   </section>
-
 
   <div id="uploadArea" class="upload-overlay" hidden aria-hidden="true">
     <div class="upload-sheet" role="dialog" aria-modal="true" aria-labelledby="uploadTitle">
@@ -173,13 +168,7 @@
   <input id="documentInput" type="file" accept="application/pdf,.pdf" hidden>
 </div>
 </main>
-<script src="/js/home/core.js?v=92d7a0ed"></script><script src="/js/home/upload-progress.js?v=ae39dc50"></script><script src="/js/home/upload-error.js?v=5107e229"></script><script src="/js/home/upload-sheet.js?v=b92e313e"></script><script src="/js/home/upload-process.js?v=ba955b06"></script><script src="/js/home/today.js?v=0c5c1828"></script><script src="/js/home/back.js?v=fe2c5965"></script>
-<script src="/js/home-monthly.js?v=fb3e1725"></script>
-<script>
-(()=>{const d=document.getElementById("todayDate");if(d){const f=new Intl.DateTimeFormat("zh-CN",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit",weekday:"short"});d.textContent=f.format(new Date()).replaceAll("/","-")}})();
-document.getElementById("logout")?.addEventListener("click",async()=>{const ok=window.zpConfirm?await window.zpConfirm("退出登录","确定要退出当前账号吗？","退出"):true;if(!ok)return;try{await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"})}finally{location.replace("/")}})
-</script>
-<script src="/js/ui/core.js?v=7c4e2f82"></script><script src="/js/ui/appearance.js?v=24eaa466"></script><script src="/js/ui/feedback.js?v=f8da0256"></script><script src="/js/ui/nav.js?v=fee2f25c"></script><script src="/js/ui/back.js?v=9b2ca493"></script><script src="/js/ui/nav-prefetch.js?v=7c589b89"></script>
-<script src="/js/pwa.js?v=68dbac73"></script>
+
+<script src="/js/home.bundle.js?v=c2a78e0f"></script>
 </body>
 </html>
