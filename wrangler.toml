@@ -8,12 +8,11 @@ bucket_name = "zhipei-one-files"
 
 # D1 数据库绑定（Upstash Redis 替代层）
 # 【切换开关】当前保持注释：无 env.DB 时 functions/api/_redis.js 自动回退 Upstash，生产行为不变。
-# 切换步骤（详见 Upstash-to-D1迁移方案.md 第八章）：
-#   1) npx wrangler d1 create zhipei-one
-#   2) 取消下方注释并把返回的 uuid 填到 database_id
-#   3) npx wrangler d1 execute zhipei-one --file=migrations/0001_init_kv.sql --remote
-#   4) 维护窗口内：export → verify → load → deploy → 开写
+# 数据库已创建：zhipei-one（database_id 见下）。启用切换前必须先完成：
+#   1) 建表：npx wrangler d1 execute zhipei-one --file=migrations/0001_init_kv.sql --remote
+#   2) 数据搬迁（维护窗口）：export → verify → load → deploy → 开写
+# 详见 Upstash-to-D1迁移方案.md 第八章。
 # [[d1_databases]]
 # binding = "DB"
 # database_name = "zhipei-one"
-# database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+# database_id = "1f54575a-c467-4b8e-be0a-e5437ed79464"
