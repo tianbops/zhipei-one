@@ -5,10 +5,14 @@
    历史数据里已出现过同一天 3 张完全重复的运单（67 家 vs 实际 22 家）。
 
    取代规则（保守，避免误删真实数据）：
-     同一线路 + 同一日期 + **同一车辆** + 门店集合高度重叠
-     重叠度 = |交集| / |较大集合|      （用较大集合做分母）
+     同一线路 + 同一日期 + **同一车辆** + 门店集合高度重叠，命中任一即取代：
+       ① 旧单门店集合是新单的**子集**（旧单只是同一份清单的不完整拍摄；
+          覆盖「先传 5 家 → 再传全 22 家」，否则残单会一直留在当日统计里）
+       ② 重叠度 = |交集| / |较大集合| ≥ 0.6
+     取舍方向性（故意不对称）：
        - 旧 22 家、新 22 家（同样的门店）        → 1.00 → 取代
        - 旧 18 家（漏拍）、新 22 家（补全）      → 0.82 → 取代
+       - 旧 5 家（漏拍）、新 22 家（补全）       → 子集 → 取代
        - 旧 22 家、新 5 家（只补拍了一小段）     → 0.23 → **不取代**（不能拿残单覆盖全单）
        - 旧 10 家、新 10 家（同车第二趟不同门店）→ 0.00 → **不取代**
      车辆任一方缺失时一律不取代（信息不足，宁可留两张人工看）。
@@ -46,6 +50,15 @@ export function storeOverlap(a, b) {
   return inter / big.size;
 }
 
+/** a 是否是 b 的子集（a 的每一家门店都出现在 b 里）。 */
+export function isSubsetOf(a, b) {
+  const A = a instanceof Set ? a : new Set(a || []);
+  const B = b instanceof Set ? b : new Set(b || []);
+  if (!A.size || !B.size) return false;
+  for (const x of A) if (!B.has(x)) return false;
+  return true;
+}
+
 /** 车辆一致性。任一方缺失即视为不可判定（返回 false，保守不取代）。 */
 export function sameVehicle(a, b) {
   const va = normalizeForMatch((a && a.vehicle) || "");
@@ -72,11 +85,21 @@ export function pickSupersededCandidates(newOrder, others, { threshold = SUPERSE
     if (String(o.historyStatus || "") === "SUPERSEDED") continue;
     if (!READABLE_STAGES.includes(String(o.stage || ""))) continue;
     if (!sameVehicle(newOrder, o)) continue;
-    const ov = storeOverlap(newSet, storeNameSet(o));
-    if (ov >= threshold) {
+    const oldSet = storeNameSet(o);
+    if (!oldSet.size) continue;
+    /* 两条判据（不对称，故意如此）：
+       1) 旧单门店集合是新单的子集 → 旧单只是"同一份清单的不完整拍摄"，取代它。
+          覆盖「先传 5 家（漏拍）→ 再传全 22 家」，否则残单会永远留在当日统计里。
+       2) 重叠度 ≥ 阈值（较大集合做分母）→ 明显是同一份清单，取代。
+       注意方向性：新单是旧单的子集时（先传全、后只传一小段）**不取代**，
+       绝不能用残单覆盖完整的旧单（会丢门店 → 漏送）。 */
+    const subset = isSubsetOf(oldSet, newSet);
+    const ov = storeOverlap(newSet, oldSet);
+    if (subset || ov >= threshold) {
       out.push({
         id: String(o.id),
         overlap: Number(ov.toFixed(3)),
+        subset,
         total: Array.isArray(o.stores) ? o.stores.length : 0,
         stage: String(o.stage || ""),
       });

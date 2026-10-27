@@ -7,7 +7,7 @@
 */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { storeNameSet, storeOverlap, sameVehicle, pickSupersededCandidates, SUPERSEDE_THRESHOLD } from "../functions/api/waybills/_process-supersede.js";
+import { storeNameSet, storeOverlap, isSubsetOf, sameVehicle, pickSupersededCandidates, SUPERSEDE_THRESHOLD } from "../functions/api/waybills/_process-supersede.js";
 
 const ROOT = new URL("../", import.meta.url);
 const read = (p) => readFileSync(new URL(p, ROOT), "utf8");
@@ -86,7 +86,14 @@ const newOrder = { id: "NEW1", routeId: ROUTE, date: DATE, vehicle: VEH, stage: 
   const multi = pickSupersededCandidates(newOrder, [same, incomplete]);
   assert.equal(multi.length, 2, "多张重复旧单应全部取代");
   assert.ok(multi.every((x) => x.overlap >= SUPERSEDE_THRESHOLD));
-  console.log("✅ 重传/补全场景正确取代（含多张）");
+
+  // 先传 5 家（漏拍）→ 再传全 22 家：残单是子集，必须被取代，否则永远留在统计里
+  const tinyOld = { id: "OLD3", routeId: ROUTE, date: DATE, vehicle: VEH, stage: "CONFIRMED", stores: mkStores(FULL.slice(0, 5)) };
+  const picked = pickSupersededCandidates(newOrder, [tinyOld]);
+  assert.equal(picked.length, 1, "先传残单再传全单时，残单必须被取代");
+  assert.equal(picked[0].subset, true, "应标记为子集取代");
+  assert.ok(picked[0].overlap < SUPERSEDE_THRESHOLD, "该场景重叠度本身低于阈值（靠子集规则命中）");
+  console.log("✅ 重传/补全/先残后全 均能正确取代（含多张）");
 }
 
 /* ============ 4. 绝不取代的场景（安全边界） ============ */
@@ -102,6 +109,12 @@ const newOrder = { id: "NEW1", routeId: ROUTE, date: DATE, vehicle: VEH, stage: 
     0,
     "残单不能覆盖全单（否则丢门店）"
   );
+
+  // 反向：旧单完整（22），新单只补拍了一小段（3 家）→ 旧单不是新单的子集，
+  // 重叠度 3/22=0.14 < 0.6 → 绝不取代（否则丢 19 家门店 → 漏送）
+  const partialNew = { id: "NEW2", routeId: ROUTE, date: DATE, vehicle: VEH, stage: "CONFIRMED", stores: mkStores(FULL.slice(0, 3)) };
+  assert.equal(pickSupersededCandidates(partialNew, [base]).length, 0, "新单是旧单子集时不得取代完整旧单");
+  assert.equal(isSubsetOf(storeNameSet(base), storeNameSet(partialNew)), false, "旧单不应被判为残单子集");
 
   const otherTrip = {
     id: "OLDT", routeId: ROUTE, date: DATE, vehicle: VEH, stage: "CONFIRMED",
