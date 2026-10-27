@@ -1,6 +1,16 @@
 name: Production smoke check
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "version.json"
+      - "downloads/**"
+      - "css/**"
+      - "js/**"
+      - "functions/**"
+      - ".github/workflows/production-smoke.yml"
   schedule:
     - cron: "17 */6 * * *"
   pull_request:
@@ -10,14 +20,17 @@ on:
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 4
     steps:
-      - name: Check production homepage and referenced assets
+      - uses: actions/checkout@v4
+      - name: Check production homepage, version, assets and APK
         env:
           BASE_URL: https://tianyou-zhipei.pages.dev
         run: |
           node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
           const base = process.env.BASE_URL;
+          const expectedVersion = JSON.parse(await readFile('version.json', 'utf8')).version;
           const fail = (message) => { console.error(`FAIL: ${message}`); process.exitCode = 1; };
           const fetchChecked = async (url) => {
             const response = await fetch(url, { redirect: 'follow', signal: AbortSignal.timeout(15000) });
@@ -25,7 +38,29 @@ jobs:
             return response;
           };
           try {
-            const pageResponse = await fetchChecked(base + '/');
+            let versionData, manifest;
+            let lastError;
+            for (let attempt = 1; attempt <= 18; attempt++) {
+              try {
+                const [versionResponse, manifestResponse] = await Promise.all([
+                  fetchChecked(new URL('/version.json?smoke=' + Date.now(), base)),
+                  fetchChecked(new URL('/downloads/manifest.json?smoke=' + Date.now(), base))
+                ]);
+                versionData = await versionResponse.json();
+                manifest = await manifestResponse.json();
+                if (versionData.version === expectedVersion && manifest.version === expectedVersion) break;
+                lastError = new Error(`Production version mismatch; expected ${expectedVersion}, got version.json=${versionData.version}, manifest=${manifest.version}`);
+              } catch (error) { lastError = error; }
+              if (attempt === 18) throw lastError || new Error('Production version check timed out');
+              await new Promise(resolve => setTimeout(resolve, 5000));
+            }
+            if (versionData.version !== expectedVersion || manifest.version !== expectedVersion) {
+              throw new Error(`Production version mismatch; expected ${expectedVersion}, got version.json=${versionData.version}, manifest=${manifest.version}`);
+            }
+            if (!manifest.file || !Number.isSafeInteger(manifest.size) || manifest.size <= 0) {
+              throw new Error('Download manifest is missing a valid APK filename or size');
+            }
+            const pageResponse = await fetchChecked(new URL('/', base));
             if (new URL(pageResponse.url).protocol !== 'https:') throw new Error('Homepage did not remain on HTTPS');
             const html = await pageResponse.text();
             if (!/<title>[^<]*智配One/i.test(html)) throw new Error('Expected 智配One page title was not found');
@@ -37,10 +72,15 @@ jobs:
               .slice(0, 8);
             if (refs.length === 0) throw new Error('No local CSS/JS assets were found in homepage HTML');
             for (const path of refs) {
-              const response = await fetchChecked(new URL(path, base).toString());
+              const response = await fetchChecked(new URL(path, base));
               console.log(`OK ${response.status} ${path}`);
             }
-            console.log(`OK production homepage: ${pageResponse.status}; checked ${refs.length} local CSS/JS assets`);
+            const apkResponse = await fetchChecked(new URL('/downloads/' + encodeURIComponent(manifest.file), base));
+            const apkBytes = await apkResponse.arrayBuffer();
+            if (apkBytes.byteLength !== manifest.size) {
+              throw new Error(`APK size mismatch: manifest=${manifest.size}, downloaded=${apkBytes.byteLength}`);
+            }
+            console.log(`OK production version ${expectedVersion}; homepage ${pageResponse.status}; ${refs.length} local CSS/JS assets; APK ${manifest.file} size=${apkBytes.byteLength}`);
           } catch (error) {
             fail(error instanceof Error ? error.message : String(error));
           }
