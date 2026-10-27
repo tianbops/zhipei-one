@@ -10,7 +10,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "22" # sw-precache.test.mjs 用 node:fs 的 globSync（Node>=22），与本地验证工具链一致
+          # 固定与本地验证工具链一致的精确版本：V8 覆盖数据的分支计数随 Node 小版本
+          # 漂移，会让覆盖率棘轮（83/65/83/83）在 CI 上产生 ±0.1% 级扰动而误红。
+          node-version: "22.13.1"
       - run: npm install --no-audit --no-fund
       - run: npm run test:node
       # D1 存储引擎离线测试（node:sqlite 充当 D1 形状适配器）：命令面 / 事务 / TTL /
