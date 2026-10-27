@@ -61,6 +61,24 @@ jobs:
             if (!manifest.file || !Number.isSafeInteger(manifest.size) || manifest.size <= 0) {
               throw new Error('Download manifest is missing a valid APK filename or size');
             }
+            const healthResponse = await fetchChecked(new URL('/api/health', base));
+            const health = await healthResponse.json();
+            if (health.success !== true || health.service !== '智配One' || health.status !== 'ok') {
+              throw new Error('Production health endpoint returned an unexpected payload');
+            }
+            console.log('OK production health endpoint');
+
+            // Read-only permission probe: do not send credentials or mutate production data.
+            const adminResponse = await fetch(new URL('/api/admin/users', base), {
+              redirect: 'follow',
+              signal: AbortSignal.timeout(15000),
+              headers: { accept: 'application/json' }
+            });
+            if (adminResponse.status !== 403) {
+              throw new Error(`Unauthenticated admin API should return 403, got HTTP ${adminResponse.status}`);
+            }
+            console.log('OK unauthenticated admin API denied (HTTP 403)');
+
             const pageResponse = await fetchChecked(new URL('/', base));
             if (new URL(pageResponse.url).protocol !== 'https:') throw new Error('Homepage did not remain on HTTPS');
             const html = await pageResponse.text();
