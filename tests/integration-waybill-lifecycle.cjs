@@ -70,7 +70,7 @@ async function toJson(resp) {
 
   const indexKey = (date) => "zp:route:" + ROUTE + ":waybills:" + date;
   const rawTextA = `运输日期 ${TODAY}\n车牌号 粤B12345\n总重量 1.5吨\n谊品生鲜温馨家园南门店 -> 华润万家梅林店 -> 沃尔玛深南店`;
-  const rawTextB = `运输日期 ${TODAY}\n车牌号 粤B12345\n总重量 1.5吨\n谊品生鲜温馨家园南门店 -> 华润万家梅林店 -> 沃尔玛深南店 -> 天虹商场龙华店`;
+  const rawTextB = `运输日期 ${TODAY}\n车牌号 粤B88888\n总重量 1.5吨\n谊品生鲜温馨家园南门店 -> 华润万家梅林店 -> 沃尔玛深南店 -> 天虹商场龙华店`;
   const rawTextC = `运输日期 ${TOMORROW}\n车牌号 粤B12345\n总重量 1.5吨\n谊品生鲜温馨家园南门店 -> 华润万家梅林店 -> 沃尔玛深南店 -> 天虹商场龙华店`;
 
   // ===================================================================
@@ -226,6 +226,22 @@ async function toJson(resp) {
     for (const m of members) if (!read("waybill:" + m)) allConsistent = false;
   }
   check("所有索引成员均有主记录（无孤儿索引）", allConsistent);
+
+  // ===================================================================
+  console.log("\n【阶段11】同日取代真实生效（MGET 前缀修复后行为回归）— 同车门店超集取代旧单");
+  // B2 与 A 同车同重量，门店为 A 的超集（补拍多了天虹）→ 按「重传即替换」语义取代 A。
+  // 注意与阶段5 的 B（粤B88888，不同车，独立单）互不干扰。
+  const rawTextB2 = `运输日期 ${TODAY}\n车牌号 粤B12345\n总重量 1.5吨\n谊品生鲜温馨家园南门店 -> 华润万家梅林店 -> 沃尔玛深南店 -> 天虹商场龙华店`;
+  const fdB2 = new FormData();
+  fdB2.append("routeId", ROUTE);
+  fdB2.append("rawText", rawTextB2);
+  resp = await processMod.onRequestPost({request: postFormReq("https://app.local/api/waybills/process", TOKEN, fdB2), env});
+  let B2 = await toJson(resp);
+  check("B2 处理成功", B2.success === true);
+  check("B2 取代了旧单 A（同车门店超集）", Array.isArray(B2.superseded) && B2.superseded.some(s => s.id === idA), "superseded=" + JSON.stringify((B2.superseded || []).map(s => s.id)));
+  check("A 已从当日索引移除", !red.sets.get(indexKey(TODAY))?.has(idA));
+  check("B2 已进入当日索引", red.sets.get(indexKey(TODAY))?.has(B2.waybill?.id));
+  check("当日索引收敛为 3 张（B/E/B2）", red.sets.get(indexKey(TODAY))?.size === 3, "size=" + red.sets.get(indexKey(TODAY))?.size);
 
   // ===================================================================
   console.log(`\n==== 汇总：通过 ${pass} / 失败 ${fail} ====`);
