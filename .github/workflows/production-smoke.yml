@@ -29,6 +29,7 @@ jobs:
         run: |
           node --input-type=module <<'NODE'
           import { readFile } from 'node:fs/promises';
+          import { createHash } from 'node:crypto';
           const base = process.env.BASE_URL;
           const expectedVersion = JSON.parse(await readFile('version.json', 'utf8')).version;
           const fail = (message) => { console.error(`FAIL: ${message}`); process.exitCode = 1; };
@@ -80,7 +81,16 @@ jobs:
             if (apkBytes.byteLength !== manifest.size) {
               throw new Error(`APK size mismatch: manifest=${manifest.size}, downloaded=${apkBytes.byteLength}`);
             }
-            console.log(`OK production version ${expectedVersion}; homepage ${pageResponse.status}; ${refs.length} local CSS/JS assets; APK ${manifest.file} size=${apkBytes.byteLength}`);
+            const releaseUrl = `https://github.com/tianbops/zhipei/releases/download/v${expectedVersion}/zhipei-one-${expectedVersion}-release.apk`;
+            const releaseResponse = await fetchChecked(releaseUrl);
+            const releaseBytes = await releaseResponse.arrayBuffer();
+            const sha256 = bytes => createHash('sha256').update(Buffer.from(bytes)).digest('hex');
+            const productionHash = sha256(apkBytes);
+            const releaseHash = sha256(releaseBytes);
+            if (productionHash !== releaseHash) {
+              throw new Error(`APK SHA-256 mismatch: production=${productionHash}, Android release=${releaseHash}`);
+            }
+            console.log(`OK production version ${expectedVersion}; homepage ${pageResponse.status}; ${refs.length} local CSS/JS assets; APK size=${apkBytes.byteLength}; SHA-256 matches Android release (${productionHash})`);
           } catch (error) {
             fail(error instanceof Error ? error.message : String(error));
           }
