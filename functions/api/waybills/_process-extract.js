@@ -102,6 +102,10 @@ export function extract(rawText){
       for(const rawSeg of (segments.length?segments:[part])){
         const seg=stripUiNoise(rawSeg);
         if(!seg)continue;
+        /* 纯字母数字且很短 → 截图状态栏残留（实测单图上传时 "5G 85" 被 OCR 拼成
+           "G5G85" 逃过前缀剥离，被当成门店）。真实门店名必含中文，故「短 + 无中文 +
+           含数字」直接丢弃；纯英文名（如 KFC / Starbucks）不含数字，不受影响。 */
+        if(seg.length<=8&&!/[\u4e00-\u9fa5]/.test(seg)&&/\d/.test(seg))continue;
         const idm=seg.match(/\b(?:JM|A|Q)[\p{Pd}_ ]?\d{3,12}\b/i);
         const storeId=idm?idm[0].replace(/[\p{Pd} ]/gu,"").toUpperCase():null;
         const rawName=cleanStoreName(seg);

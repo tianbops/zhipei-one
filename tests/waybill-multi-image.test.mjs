@@ -155,6 +155,15 @@ const has = (list, kw) => list.some(n => n.includes(kw));
     const k = names(extract(keep).stores || []);
     assert.equal(k[0], keep, `真实店名被误改：${JSON.stringify(keep)} → ${JSON.stringify(k[0])}`);
   }
+  // 状态栏信号被 OCR 拼成 "G5G85"（"5G 85"），逃过前缀剥离 —— 短、无中文、含数字 → 丢弃
+  const g5 = names(extract("06:05\nG5G85\n< X\n运单列表\n江北区鸿恩寺客服中心(2026）").stores || []);
+  assert.equal(g5.length, 1, `状态栏残串应被丢弃，实际：${JSON.stringify(g5)}`);
+  assert.ok(g5[0].includes("鸿恩寺客服中心"), `门店名丢失：${g5[0]}`);
+
+  // 纯英文短名（无数字）不得被误杀
+  const en = names(extract("KFC -> Starbucks Coffee 重庆店").stores || []);
+  assert.equal(en.length, 2, `纯英文短名不得被丢弃，实际：${JSON.stringify(en)}`);
+
   console.log("✅ 截图 UI 噪声剥离正确，真实店名不受影响");
 }
 
