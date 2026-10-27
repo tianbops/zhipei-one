@@ -160,7 +160,10 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
         try{window.zpToast?.("当日该车辆、门店及重量一致的运单已存在，已为你打开已有运单","info")}catch{}
         location.replace("/pages/order_detail?id="+detailId+"&source=process&dedupe=1");
       }else{
-        location.replace("/pages/order_detail?id="+detailId+"&source=process&from=process");
+        // 同日同车辆、门店高度重叠的旧单已在后端被取代（重传即替换），
+        // 把数量带到详情页提示一次，让用户知道统计已回到单张口径。
+        const supN=Array.isArray(result.superseded)?result.superseded.length:0;
+        location.replace("/pages/order_detail?id="+detailId+"&source=process&from=process"+(supN?"&superseded="+supN:""));
       }
     }catch(e){
       if(e?.name==="AbortError"){

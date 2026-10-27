@@ -27,7 +27,38 @@ import {waybillIndexKey,number,todayCN} from "./_process-common.js";
 import {extract} from "./_process-extract.js";
 import {baseIdentityNames,splitByRouteBase,validateResult,dedupe,plan} from "./_process-plan.js";
 import {mergeStoreEdges} from "./_process-multimage.js";
+import {pickSupersededCandidates,applySupersede} from "./_process-supersede.js";
 import {recordWaybillLifecycle} from "./_process-persist.js";
+
+/* 同日同线路「重传即替换」：找出同车辆、门店高度重叠的旧单并原子取代，
+   返回实际被取代的列表（供响应与事件留痕）。
+   读取受统一 Redis 预算保护——预算不足时跳过取代（不影响本次保存成功），
+   宁可暂时多一张旧单，也不能因清理而让保存失败。 */
+async function supersedeSameDay(env,order,indexKey){
+  try{
+    const members=await command(env,["SMEMBERS",indexKey]);
+    const ids=Array.isArray(members)
+      ?[...new Set(members.map(String).filter(Boolean))].filter(id=>id!==order.id)
+      :[];
+    if(!ids.length)return[];
+    const budget=new Budget();
+    const read=await mgetBatchMap(env,ids,budget,{batch:100});
+    if(!read.complete)return[];
+    const others=[];
+    for(const id of ids){
+      const raw=read.map.get("zp:waybill:"+id);
+      if(!raw)continue;
+      try{others.push(typeof raw==="string"?JSON.parse(raw):raw)}catch{/* 坏数据跳过 */}
+    }
+    const candidates=pickSupersededCandidates(order,others);
+    if(!candidates.length)return[];
+    const done=await applySupersede(env,order,candidates);
+    for(const d of done){
+      try{await appendWaybillEvent(env,d.id,{event:"WAYBILL_SUPERSEDED",stage:"SAVED",requestId:order.requestId,supersededBy:order.id,overlap:d.overlap,total:d.total});}catch{/* best-effort */}
+    }
+    return done;
+  }catch{return[]}
+}
 
 async function base(env,id){const raw=await get(env,"route:"+id+":base");if(!raw)throw Object.assign(new Error("线路数据资料尚未建立"),{code:"BASE_NOT_FOUND"});let x;try{x=typeof raw==="string"?JSON.parse(raw):raw}catch{throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"})}if(!x||!Array.isArray(x.stores))throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"});return x.stores}
 
@@ -288,10 +319,18 @@ async function saveWaybill(order, requestId, resumed){
     if(reason==="VERIFY_DAILY"||reason==="VERIFY_FINGERPRINT") return failProcess("WAYBILL_DEDUPE_CORRUPT","去重索引与运单身份不一致，请稍后重试",409,{recoverable:true,action:"RETRY_SAVE",hint:"发现旧去重索引异常，已安全隔离，请重试保存",order});
   }
   if(reason==="NEW"){
+    /* 同日同线路、同车辆、门店高度重叠的旧单 → 自动取代（重传即替换）。
+       避免"补拍/纠正"重复上传导致当日家数与重量被累加（实测出现过同一天 3 张
+       完全重复运单：67 家 vs 实际 22 家）。判定与动作见 _process-supersede.js：
+       只用「交集/较大集合」而非内嵌度，故"只补拍了一小段"不会覆盖全单，
+       同车第二趟（不同门店）也不会被误删。
+       取代后再重算当日汇总，统计立即回到单张口径。 */
+    const superseded=await supersedeSameDay(env,order,indexKey);
+    if(superseded.length)emit(99,`已替换当日同车辆旧运单 ${superseded.length} 张`);
     emit(100,"处理完成");
     if(resumed){ try { await appendWaybillEvent(env, order.id, {event:"WAYBILL_RESUMED_SAVE",stage:"SAVED",requestId,id:order.id,qualityLevel:order.quality?.level,qualityFlags:order.quality?.flags||[]}); } catch { /* best-effort */ } }
     else { await recordWaybillLifecycle(env, order, {requestId, rawExtractCount, extractCount:order.summary?.extractCount, recoveredCount:order.summary?.recoveredCount, matched, pending, d}); }
-    await touchMeta(); await finishProc(env, requestId, order.id); return json({success:true,waybill:order,pipeline:order.pipeline,summary:order.summary,indexSync:"OK",quality,requestId});
+    await touchMeta(); await finishProc(env, requestId, order.id); return json({success:true,waybill:order,pipeline:order.pipeline,summary:order.summary,indexSync:"OK",quality,superseded,requestId});
   }
   const existingRaw=await command(env,["GET","zp:waybill:"+savedId]);
   if(existingRaw){
