@@ -93,6 +93,8 @@ export class D1Backend {
     const ctx = {
       db,
       // ---- 内部（供 tx flush 与 RENAME 的原样 upsert；EVAL 处理器不使用） ----
+      // overlay 只读视图（pipeline 分组读用它判断段内是否有缓冲写的键）
+      __pending: pending,
       async __flush() {
         if (!pending.size) return;
         const stmts = [];
@@ -386,7 +388,7 @@ export class D1Backend {
       },
       async mget(keys) {
         if (!keys.length) return [];
-        // overlay 优先，其余键走一次 IN 查询
+        // overlay 优先，其余键走 IN 查询。D1 单查询绑定参数上限 100 → 按 90 分块。
         const rest = [];
         const map = new Map();
         for (const k of keys) {
@@ -394,9 +396,11 @@ export class D1Backend {
           if (p) map.set(k, p.op === "del" ? null : p.value);
           else rest.push(k);
         }
-        if (rest.length) {
-          const placeholders = rest.map(() => "?").join(",");
-          const rows = await db.prepare(`SELECT key,value,type,expires_at FROM kv WHERE key IN (${placeholders})`).bind(...rest).all();
+        const CHUNK = 90;
+        for (let i = 0; i < rest.length; i += CHUNK) {
+          const chunk = rest.slice(i, i + CHUNK);
+          const placeholders = chunk.map(() => "?").join(",");
+          const rows = await db.prepare(`SELECT key,value,type,expires_at FROM kv WHERE key IN (${placeholders})`).bind(...chunk).all();
           for (const r of rows.results || []) {
             if (r.expires_at != null && Number(r.expires_at) <= nowSec()) continue;
             map.set(r.key, r.value);
@@ -407,13 +411,28 @@ export class D1Backend {
       async scan(pattern, count = 500, cursor = "0") {
         // 支持游标分页（offset 式），与 Redis SCAN 的「分多次取完」语义对齐，
         // 避免单次 LIMIT 截断导致大键空间下漏键。返回 [nextCursor, keys]。
-        // overlay 合并：剔除本事务待删键；追加本事务新写且匹配模式的键。
-        const like = globToLike(pattern);
+        // 注意：D1 的 LIKE 模式上限 50 字节，而本项目键前缀（zp:route:<uuid>:waybills:*）
+        // 普遍 58+ 字节——不能用 LIKE。改「最长无通配前缀」做范围扫描（key >= prefix AND key < next），
+        // 再用 JS likeTest 按完整 glob 过滤；游标基于过滤前行数，对 "prefix*" 类模式（本项目全部场景）
+        // 过滤是恒等变换，分页语义精确。
+        let star = 0;
+        while (star < pattern.length && pattern[star] !== "*" && pattern[star] !== "?") star++;
+        const prefix = pattern.slice(0, star);
         const offset = Math.max(0, parseInt(cursor, 10) || 0);
-        const rows = await db
-          .prepare("SELECT key FROM kv WHERE key LIKE ? ESCAPE '\\' ORDER BY key LIMIT ? OFFSET ?")
-          .bind(like, Number(count) + 1, offset)
-          .all();
+        let rows;
+        if (prefix) {
+          const last = prefix.charCodeAt(prefix.length - 1);
+          const hi = prefix.slice(0, -1) + String.fromCharCode(last + 1);
+          rows = await db
+            .prepare("SELECT key FROM kv WHERE key >= ? AND key < ? ORDER BY key LIMIT ? OFFSET ?")
+            .bind(prefix, hi, Number(count) + 1, offset)
+            .all();
+        } else {
+          rows = await db
+            .prepare("SELECT key FROM kv ORDER BY key LIMIT ? OFFSET ?")
+            .bind(Number(count) + 1, offset)
+            .all();
+        }
         const all = rows.results || [];
         const page = all.slice(0, count).map((r) => r.key);
         const nextCursor = all.length > count ? String(offset + count) : "0";
@@ -428,7 +447,9 @@ export class D1Backend {
             if (p.op === "set" && !have.has(k) && likeTest(k, pattern)) filtered.push(k);
           }
         }
-        return [nextCursor, filtered];
+        // 非 "prefix*" 模式（含内部通配）在 SQL 层只按前缀截取，这里按完整 glob 精确过滤
+        const result = pattern === prefix + "*" || prefix === pattern ? filtered : filtered.filter((k) => likeTest(k, pattern));
+        return [nextCursor, result];
       },
     };
     return ctx;
@@ -576,13 +597,89 @@ export class D1Backend {
     }
   }
 
-  /** pipeline：多条命令按序执行，全部写经 batch 原子提交，返回逐条结果数组。 */
+  /**
+   * pipeline：多条命令按序执行，全部写经 batch 原子提交，返回逐条结果数组。
+   * D1 适配：每条 SQL 查询都计入 Worker 的查询配额（免费版 50/调用），而业务侧
+   * 存在「pipeline 90+ 条 SMEMBERS」的合法用法（历史概览）——逐条执行必然超限。
+   * 因此把**连续同类的单键读命令**合并为一次 db.batch()（配额按 1 计），
+   * 其余命令仍逐条走 execCommand（写命令的写仍经 overlay 在结束时一次 batch 落库）。
+   */
   async pipeline(commands) {
     return this.tx(async (ctx) => {
-      const out = [];
-      for (const parts of commands) {
-        const cmd = String(parts[0] || "").toUpperCase();
-        out.push(await this.execCommand(ctx, parts, cmd));
+      const out = new Array(commands.length);
+      const READ_SQL = "SELECT key,value,type,expires_at FROM kv WHERE key=? AND (expires_at IS NULL OR expires_at>?)";
+      // 连续同类单键读的分组定义：命令名 → 行结果映射
+      const GROUPS = {
+        GET: (row) => (row ? row.value : null),
+        TYPE: (row) => (row ? row.type : "none"),
+        EXISTS: (row) => (row ? 1 : 0),
+        TTL: (row) => {
+          if (!row) return -2;
+          if (row.expires_at == null) return -1;
+          return Math.max(0, Number(row.expires_at) - nowSec());
+        },
+        SMEMBERS: (row) => {
+          if (!row || row.type !== T_SET) return [];
+          try { const v = JSON.parse(row.value); return Array.isArray(v) ? v : []; } catch { return []; }
+        },
+        SCARD: (row) => {
+          if (!row || row.type !== T_SET) return 0;
+          try { return JSON.parse(row.value).length; } catch { return 0; }
+        },
+        HGETALL: (row) => {
+          if (!row || row.type !== T_HASH) return [];
+          try {
+            const obj = JSON.parse(row.value); const flat = [];
+            for (const k of Object.keys(obj)) flat.push(k, obj[k]);
+            return flat;
+          } catch { return []; }
+        },
+        HLEN: (row) => {
+          if (!row || row.type !== T_HASH) return 0;
+          try { return Object.keys(JSON.parse(row.value)).length; } catch { return 0; }
+        },
+        LLEN: (row) => {
+          if (!row || row.type !== T_LIST) return 0;
+          try { return JSON.parse(row.value).length; } catch { return 0; }
+        },
+      };
+      let i = 0;
+      while (i < commands.length) {
+        const cmd = String(commands[i][0] || "").toUpperCase();
+        // 同类单键读连续段：先看 overlay（段内有缓冲写的键必须逐条回退 execCommand 语义）
+        if (GROUPS[cmd] && commands[i].length === 2) {
+          let j = i;
+          while (j < commands.length && String(commands[j][0] || "").toUpperCase() === cmd && commands[j].length === 2 && !ctx.__pending.has(commands[j][1])) j++;
+          if (j === i) { // 段首键在 overlay（本 pipeline 先写后读）：回退逐条语义，保证 i 前进
+            out[i] = await this.execCommand(ctx, commands[i], cmd);
+            i++;
+            continue;
+          }
+          const keys = commands.slice(i, j).map((c) => String(c[1]));
+          const now = nowSec();
+          // overlay 命中的键单独取；其余键进一次 batch（配额 1）
+          const results = new Array(keys.length);
+          const need = [];
+          for (let k = 0; k < keys.length; k++) {
+            const p = ctx.__pending.get(keys[k]);
+            if (p) results[k] = p.op === "del" ? GROUPS[cmd](null) : GROUPS[cmd]({ key: keys[k], value: p.value, type: p.type, expires_at: p.expires_at });
+            else need.push(k);
+          }
+          if (need.length) {
+            const stmts = need.map((k) => this.db.prepare(READ_SQL).bind(keys[k], now));
+            const resp = await this.db.batch(stmts);
+            for (let n = 0; n < need.length; n++) {
+              const rows = resp[n]?.results || [];
+              results[need[n]] = GROUPS[cmd](rows[0] || null);
+            }
+          }
+          for (let k = 0; k < keys.length; k++) out[i + k] = results[k];
+          i = j;
+          continue;
+        }
+        const c = String(commands[i][0] || "").toUpperCase();
+        out[i] = await this.execCommand(ctx, commands[i], c);
+        i++;
       }
       return out;
     });

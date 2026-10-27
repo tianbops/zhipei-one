@@ -46,12 +46,17 @@ class SqliteAdapter {
   constructor(raw) { this._raw = raw; }
   prepare(sql) { return new Stmt(this, sql); }
   exec(sql) { this._raw.exec(sql); }
-  // D1 batch：原子执行一批语句（这里用本地事务模拟真实 D1 的原子性语义）
+  // D1 batch：原子执行一批语句（这里用本地事务模拟真实 D1 的原子性语义）。
+  // 真实 D1 对 SELECT 返回 {results:[...]}、对写语句返回 {meta:{changes}}——按此形状回填。
   async batch(stmts) {
     this._raw.exec("BEGIN");
     try {
       const results = [];
-      for (const s of stmts) results.push(s.run());
+      for (const s of stmts) {
+        const prepared = this._raw.prepare(s.sql);
+        const isRead = /^\s*(SELECT|WITH)\b/i.test(s.sql);
+        results.push(isRead ? { results: prepared.all(...s.params) } : { meta: { changes: prepared.run(...s.params).changes } });
+      }
       this._raw.exec("COMMIT");
       return results;
     } catch (e) {
@@ -509,6 +514,78 @@ async function testExtraBranches() {
   eq(await c("HGET", hk2, "home|page-load|2xx|phase:other:count"), null, "非 history-* phase 名不写 phase 字段");
 }
 
+// ============ 12) D1 运行时硬限制适配（线上 2026-10-27 实战教训） ============
+// D1：查询/调用配额 50（免费）、LIKE 模式 ≤50 字节、单查询绑定参数 ≤100；
+// node:sqlite 均无此限制，离线测试必须显式覆盖这三个场景防回归。
+async function testD1Limits() {
+  console.log("\n[12] D1 运行时硬限制适配（长前缀 SCAN / >90 键 MGET / pipeline 同类读分组）");
+  const { backend } = makeEngine();
+  const c = (...p) => backend.command(p);
+  // 长前缀（58 字节，超 LIKE 50B 上限）下的 SCAN：历史索引真实场景
+  const routeId = "route_" + "a".repeat(8) + "d8f845e78221628bac1a6630";
+  const prefix = "zp:route:" + routeId + ":waybills:";
+  ok(prefix.length > 50, "前置确认：前缀长度 " + prefix.length + " 字节确超 D1 LIKE 上限（构造有效）");
+  for (const d of ["2026-10-21", "2026-10-25", "2026-10-27"]) {
+    await c("SADD", prefix + d, "w1", "w2");
+    await c("SET", prefix + d + ":meta", "{}");
+  }
+  await c("SADD", "zp:route:other:waybills:2026-10-27", "w9"); // 不应被误捞
+  const [cur1, keys1] = await c("SCAN", "0", "MATCH", prefix + "*", "COUNT", "500");
+  eq(cur1, "0", "长前缀 SCAN 单页扫完游标归零");
+  eq(keys1.length, 6, "长前缀 SCAN 命中 6 键（3 索引 + 3 meta），不串其他线路");
+  ok(keys1.every((k) => k.startsWith(prefix)), "长前缀 SCAN 结果全部匹配前缀");
+  // 游标分页
+  const [cur2, page1] = await c("SCAN", "0", "MATCH", prefix + "*", "COUNT", "2");
+  const [cur3, page2] = await c("SCAN", cur2, "MATCH", prefix + "*", "COUNT", "2");
+  ok(page1.length === 2 && page2.length >= 1, "长前缀 SCAN 分页返回（2+2）");
+  // >90 键 MGET 分块（D1 单查询绑定参数 ≤100）
+  const manyKeys = [];
+  for (let i = 0; i < 120; i++) { const k = "zp:bulk:" + String(i).padStart(3, "0"); manyKeys.push(k); await c("SET", k, "v" + i); }
+  const mv = await c("MGET", ...manyKeys);
+  eq(mv.length, 120, "MGET 120 键返回 120 结果");
+  eq(mv[0], "v0", "MGET 分块首值正确");
+  eq(mv[119], "v119", "MGET 分块尾值正确");
+  // 中间夹缺失键 + 分块边界（第 91 个键跨块）：结果与输入同序、缺失为 null
+  const mixed = [...manyKeys.slice(0, 90), "zp:bulk:missing", manyKeys[90]];
+  const mmv = await c("MGET", ...mixed);
+  eq(mmv.length, 92, "MGET 混合缺失键返回同序等长结果");
+  eq(mmv[89], "v89", "MGET 块边界前正确");
+  eq(mmv[90], null, "MGET 缺失键为 null");
+  eq(mmv[91], "v90", "MGET 块边界后正确");
+  // pipeline 同类读分组（SMEMBERS ×3 连续段 → 1 次 batch，结果逐条正确）
+  const s1 = "zp:pl:set1", s2 = "zp:pl:set2", s3 = "zp:pl:set3";
+  await c("SADD", s1, "a", "b");
+  await c("SADD", s2, "c");
+  const pr = await backend.pipeline([
+    ["SMEMBERS", s1],
+    ["SMEMBERS", s2],
+    ["SMEMBERS", s3],
+    ["GET", "zp:bulk:000"],
+    ["SMEMBERS", s1],
+  ]);
+  eq(pr[0].length, 2, "pipeline 分组 SMEMBERS[0] 两个成员");
+  eq(pr[1], ["c"], "pipeline 分组 SMEMBERS[1] 一个成员");
+  eq(pr[2], [], "pipeline 分组 SMEMBERS[2] 空集");
+  eq(pr[3], "v0", "pipeline 混入 GET 正常");
+  eq(pr[4].length, 2, "pipeline 分组后再次 SMEMBERS 正常");
+  // 分组读与 overlay 写混用：段前有缓冲写时不得误读旧值
+  const pr2 = await backend.pipeline([
+    ["SET", "zp:pl:mix", "newv"],
+    ["GET", "zp:pl:mix"],
+    ["GET", "zp:bulk:001"],
+  ]);
+  eq(pr2[0], "OK", "pipeline 写成功");
+  eq(pr2[1], "newv", "同 pipeline 内先写后读读到新值（overlay）");
+  eq(pr2[2], "v1", "pipeline 混合读写其余键正常");
+  eq(await c("GET", "zp:pl:mix"), "newv", "pipeline 写已落库");
+  // HGETALL / TYPE / TTL 分组
+  await c("HSET", "zp:pl:h", "f", "1");
+  const pr3 = await backend.pipeline([["HGETALL", "zp:pl:h"], ["TYPE", "zp:pl:h"], ["TYPE", "zp:pl:none"]]);
+  eq(pr3[0], ["f", "1"], "pipeline 分组 HGETALL");
+  eq(pr3[1], "hash", "pipeline 分组 TYPE");
+  eq(pr3[2], "none", "pipeline 分组 TYPE 不存在键");
+}
+
 // ============ 主流程 ============
 (async () => {
   console.log("=== D1 引擎离线测试 ===");
@@ -524,6 +601,7 @@ async function testExtraBranches() {
   await testConcurrency();
   await testRenameTypePing();
   await testExtraBranches();
+  await testD1Limits();
 
   console.log(`\n=== 结果：通过 ${pass} 项，失败 ${fail} 项 ===`);
   if (fail > 0) {
