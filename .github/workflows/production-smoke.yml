@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "index.html"
+      - "*.html"
       - "version.json"
       - "downloads/**"
       - "css/**"
