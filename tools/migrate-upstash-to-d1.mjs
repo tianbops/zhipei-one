@@ -113,23 +113,24 @@ async function exportAll({ out, scanCount = 2000 }) {
 }
 
 // ============ 批大小常量 ============
-const BATCH_SIZE = 500;
+const BATCH_SIZE = 20; // D1 单语句有大小上限（SQLITE_TOOBIG），多语句合并文本需保持小批次
 
 // ============ SQL 转义 ============
 function sqlStr(s) {
   // SQLite 字符串字面量：单引号加倍即可（无需转义反斜杠）。
   return "'" + String(s).replace(/'/g, "''") + "'";
 }
-function buildSql(records, batchSize = BATCH_SIZE) {
+function buildSql(records, batchSize = BATCH_SIZE, wrapTx = false) {
   const chunks = [];
   for (let i = 0; i < records.length; i += batchSize) {
     const slice = records.slice(i, i + batchSize);
-    let sql = "BEGIN;\n";
+    let sql = "";
+    if (wrapTx) sql += "BEGIN;\n";
     for (const r of slice) {
       const exp = r.expires_at == null ? "NULL" : String(r.expires_at);
       sql += `INSERT OR REPLACE INTO kv(key,value,type,expires_at) VALUES(${sqlStr(r.key)},${sqlStr(r.value)},${sqlStr(r.type)},${exp});\n`;
     }
-    sql += "COMMIT;\n";
+    if (wrapTx) sql += "COMMIT;\n";
     chunks.push(sql);
   }
   return chunks;
@@ -152,25 +153,40 @@ function loadViaWrangler(records) {
 }
 
 // ============ 加载：D1 HTTP API ============
+// 用绑定参数逐条写入：D1 单 SQL 语句有 100KB 上限（SQLITE_TOOBIG），而运单备份等
+// 大值可达 100KB+；绑定参数单独传输（上限 2MB）可绕开。INSERT OR REPLACE 幂等，
+// 并发 CONC 提速，失败可整跑重放。
+const API_CONC = 8;
 async function loadViaApi(records) {
   if (!CF_API_TOKEN || !CF_ACCOUNT_ID || !DATABASE_ID)
     throw new Error("走 API 模式需要 CF_API_TOKEN / CF_ACCOUNT_ID / DATABASE_ID");
-  const chunks = buildSql(records);
+  const url = `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/d1/database/${DATABASE_ID}/query`;
+  const sql = "INSERT OR REPLACE INTO kv(key,value,type,expires_at) VALUES(?,?,?,?)";
+  let cursor = 0;
   let written = 0;
-  for (let i = 0; i < chunks.length; i++) {
-    const sql = chunks[i];
-    const sliceCount = Math.min(BATCH_SIZE, records.length - i * BATCH_SIZE);
-    const url = `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/d1/database/${DATABASE_ID}/query`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { Authorization: "Bearer " + CF_API_TOKEN, "Content-Type": "application/json" },
-      body: JSON.stringify({ sql }),
-    });
-    const data = await res.json();
-    if (!data.success) throw new Error("D1_API_ERROR:" + JSON.stringify(data.errors || data));
-    written += sliceCount;
+  let failed = null;
+  async function worker() {
+    while (!failed) {
+      const i = cursor++;
+      if (i >= records.length) return;
+      const r = records[i];
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { Authorization: "Bearer " + CF_API_TOKEN, "Content-Type": "application/json" },
+        body: JSON.stringify({ sql, params: [r.key, r.value, r.type, r.expires_at == null ? null : r.expires_at] }),
+      });
+      const data = await res.json().catch(() => ({ success: false, errors: [{ message: "HTTP " + res.status + " 非 JSON 响应" }] }));
+      if (!data.success) {
+        failed = `D1_API_ERROR 第 ${i + 1} 条 (key=${r.key}): ` + JSON.stringify(data.errors || data);
+        return;
+      }
+      written++;
+      if (written % 200 === 0) console.log(`  ...已写入 ${written}/${records.length}`);
+    }
   }
-  console.log(`✓ 通过 D1 API 写入 ${written} 行（${chunks.length} 批次）。`);
+  await Promise.all(Array.from({ length: Math.min(API_CONC, records.length) }, worker));
+  if (failed) throw new Error(failed);
+  console.log(`✓ 通过 D1 API 写入 ${written} 行（绑定参数逐条，并发 ${API_CONC}）。`);
 }
 
 // ============ 本地端到端校验（verify，无需真实 D1 / wrangler） ============
