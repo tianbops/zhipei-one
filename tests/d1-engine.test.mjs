@@ -456,6 +456,46 @@ async function testRenameTypePing() {
   eq(await c("LRANGE", "rn:ld", "0", "-1"), ["e1", "e2"], "RENAME 后 list 元素保持");
 }
 
+// ============ 11) 补充分支覆盖：DECR/DECRBY、EXPIRE miss、UNIMPLEMENTED_EVAL、perf 限流分支 ============
+async function testExtraBranches() {
+  console.log("\n[11] 补充分支（DECR/DECRBY、EXPIRE miss、UNIMPLEMENTED_EVAL、perf 限流）");
+  const { backend } = makeEngine();
+  const c = (...p) => backend.command(p);
+
+  // DECR / DECRBY（incrby 负向分支）
+  eq(await c("DECR", "dc:a"), -1, "DECR 初值=-1");
+  eq(await c("DECR", "dc:a"), -2, "DECR 再减=-2");
+  eq(await c("DECRBY", "dc:b", 5), -5, "DECRBY 新键=-5");
+  await c("SET", "dc:c", "10");
+  eq(await c("DECRBY", "dc:c", 3), 7, "DECRBY 已有值 10-3=7");
+
+  // EXPIRE 不存在键 → 0（expire miss 分支）
+  eq(await c("EXPIRE", "dc:missing", "60"), 0, "EXPIRE 不存在键返回 0");
+
+  // 未注册 EVAL → UNIMPLEMENTED_EVAL（含归一化脚本摘要，供补表定位）
+  let unimpl = null;
+  try { await c("EVAL", 'return redis.call("GET","no-such-script-for-registry")', "1", "k"); }
+  catch (e) { unimpl = e; }
+  ok(unimpl && (unimpl.code === "UNIMPLEMENTED_EVAL" || unimpl.message === "UNIMPLEMENTED_EVAL"), "未注册 EVAL 抛 UNIMPLEMENTED_EVAL");
+  ok(unimpl && typeof unimpl.script === "string" && unimpl.script.length > 0, "错误携带归一化脚本摘要（err.script）");
+
+  // perf #53 限流分支：rateKey 预置 3001 → INCR 后 3002 > 3000 → 返回 -1（不写聚合）
+  const hk = "zp:perf:hour:LIMIT", rk = "zp:perf:ingest-rate:LIMIT";
+  await c("SET", rk, "3001");
+  const ev = ["home", "page-load", "2xx", "100", "50", "1", "", ""];
+  eq(await c("EVAL", registryScript((k) => k.includes("HINCRBYFLOAT")), "2", hk, rk, ...ev), -1, "rate>3000 → 返回 -1（限流）");
+  eq(await c("EXISTS", hk), 0, "限流时聚合 hash 未写入");
+
+  // perf #53 分支：hasServer=0 → 无 server_* 字段；非法 phase 名 → 不写 phase 字段
+  const hk2 = "zp:perf:hour:B2", rk2 = "zp:perf:ingest-rate:B2";
+  const ev2 = ["home", "page-load", "2xx", "80", "0", "0", JSON.stringify({ "history-UPPER": 50, "other": 1 }), ""];
+  eq(await c("EVAL", registryScript((k) => k.includes("HINCRBYFLOAT")), "2", hk2, rk2, ...ev2), 1, "perf 正常上报返回 1");
+  eq(await c("HGET", hk2, "home|page-load|2xx|count"), "1", "主 count 写入");
+  eq(await c("HGET", hk2, "home|page-load|2xx|server_count"), null, "hasServer=0 不写 server_count");
+  eq(await c("HGET", hk2, "home|page-load|2xx|phase:history-UPPER:count"), null, "非法 phase 名（大写）不写 phase 字段");
+  eq(await c("HGET", hk2, "home|page-load|2xx|phase:other:count"), null, "非 history-* phase 名不写 phase 字段");
+}
+
 // ============ 主流程 ============
 (async () => {
   console.log("=== D1 引擎离线测试 ===");
@@ -470,6 +510,7 @@ async function testRenameTypePing() {
   await testPipelineRollback();
   await testConcurrency();
   await testRenameTypePing();
+  await testExtraBranches();
 
   console.log(`\n=== 结果：通过 ${pass} 项，失败 ${fail} 项 ===`);
   if (fail > 0) {

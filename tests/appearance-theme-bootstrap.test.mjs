@@ -27,7 +27,7 @@ const root = process.cwd();
 const htmlFiles = [];
 function walk(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name === ".git" || entry.name === "node_modules" || entry.name === "tests") continue;
+    if (entry.name === ".git" || entry.name === "node_modules" || entry.name === "tests" || entry.name === "coverage") continue;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) walk(full);
     else if (entry.isFile() && entry.name.endsWith(".html")) htmlFiles.push(full);
