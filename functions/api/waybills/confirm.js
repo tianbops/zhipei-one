@@ -7,6 +7,7 @@ import {findGlobalMatches,learnGlobal} from "../_global-learning.js";
 import {businessFingerprint,dailyWaybillKey} from "../_waybill-identity.js";
 import {recomputeDayMeta} from "./_waybill-meta.js";
 import {appendWaybillEvent} from "./_waybill-events.js";
+import {degraded} from "../_degrade.js";
 
 const clean=v=>String(v??"").trim();
 const normalized=v=>clean(v).replace(/[\u3000\s]+/g,"").replace(/[（）()【】\[\]{}<>《》“”"'‘’]/g,"").replace(/[·•、,，。；;:：!！?？\-_—]/g,"").replace(/Ⅱl|Il|II|ⅱ/gi,"II").toLowerCase();
@@ -59,7 +60,7 @@ async function retryLearningRepairs(env,waybillId,userId){
   let processed=0;
   for(const [field,item] of entries){
    if(processed>=MAX_REPAIRS)break;
-   try{await learnGlobal(env,{...item,routeId:item.routeId,waybillId,userId:item.userId||userId});await command(env,["HDEL","zp:"+key,field]);processed++;}catch{}
+   try{await learnGlobal(env,{...item,routeId:item.routeId,waybillId,userId:item.userId||userId});await command(env,["HDEL","zp:"+key,field]);processed++;}catch(e){degraded("learning.repair-replay-failed",e,{waybillId:clean(waybillId),field:String(field).slice(0,120)})}
   }
   const remaining=Number(await command(env,["HLEN","zp:"+key]))||0;
   if(remaining===0)await command(env,["DEL","zp:"+key]);
@@ -69,9 +70,13 @@ async function retryLearningRepairs(env,waybillId,userId){
 }
 // 释放分布式锁：仅在当前令牌与持锁令牌一致时删除，避免误删他人锁。
 // 此前 confirm.js 多处调用 releaseLock 却未定义，导致每次成功确认在收尾阶段抛 ReferenceError 返回 500。
-async function releaseLock(env,lock){
+export async function releaseLock(env,lock){
   if(!lock)return;
-  try{const cur=await get(env,lock.key);if(cur===lock.token)await command(env,["DEL","zp:"+lock.key])}catch{}
+  try{const cur=await get(env,lock.key);if(cur===lock.token)await command(env,["DEL","zp:"+lock.key])}catch(e){
+   // 释放失败原为静默吞掉。锁未释放会让后续请求一直阻塞到 TTL 才自动解开，
+   // 期间用户只能重复"正在处理请重试"，而日志里查不到任何原因。这里只上报，不改行为。
+   degraded("lock.release-failed", e, {key:String(lock?.key||"").slice(0,120)});
+  }
 }
 
 export async function onRequestPost({request,env}){
@@ -82,7 +87,7 @@ export async function onRequestPost({request,env}){
   const user=gate.user;const input=await body(request);const waybillId=clean(input.waybillId);if(!waybillId)return json({success:false,code:"WAYBILL_ID_REQUIRED",error:"缺少运单ID"},400);
   order=await load(env,waybillId);if(!order)return json({success:false,code:"WAYBILL_NOT_FOUND",error:"运单不存在"},404);
   if(!canConfirmWaybill(user,order))return json({success:false,code:"BASE_MAINTENANCE_FORBIDDEN",error:"无权确认并维护该线路数据资料"},403);
-  if(order.stage==="CONFIRMED"){const indexKey=/^\d{4}-\d{2}-\d{2}$/.test(clean(order.date))?waybillIndexKey(order.routeId,clean(order.date)):"";if(indexKey){await command(env,["SADD",indexKey,waybillId]);try{await recomputeDayMeta(env,order.routeId,clean(order.date))}catch{}}const learning=await retryLearningRepairs(env,waybillId,user.id);return json({success:true,waybill:order,learning:learning==="RECORDED"?"ALREADY_CONFIRMED":"DEFERRED"});}
+  if(order.stage==="CONFIRMED"){const indexKey=/^\d{4}-\d{2}-\d{2}$/.test(clean(order.date))?waybillIndexKey(order.routeId,clean(order.date)):"";if(indexKey){await command(env,["SADD",indexKey,waybillId]);try{await recomputeDayMeta(env,order.routeId,clean(order.date))}catch(e){degraded("stats.daymeta-recompute-failed",e,{routeId:clean(order.routeId),date:clean(order.date)})}}const learning=await retryLearningRepairs(env,waybillId,user.id);return json({success:true,waybill:order,learning:learning==="RECORDED"?"ALREADY_CONFIRMED":"DEFERRED"});}
   if(!Array.isArray(input.confirmations))return json({success:false,code:"CONFIRMATIONS_REQUIRED",error:"确认项目必须是数组"},400);
 
   const confirmations=input.confirmations;
@@ -192,7 +197,7 @@ export async function onRequestPost({request,env}){
   const commitResult=await command(env,["EVAL",commitScript,"7","zp:waybill:"+order.id,"zp:"+doneKey,"zp:waybill:"+order.id+":learning-repair","zp:route:"+order.routeId+":base",indexKey||"zp:waybills:noop","zp:waybill:fingerprint:"+order.businessFingerprint,"zp:waybill:dedupe:"+nextDailyDedupeKey,JSON.stringify(order),JSON.stringify(learningEntries),basePayload,indexKey?"1":"",confirmedNow,order.businessFingerprint,nextDailyDedupeKey]);
   if(Number(commitResult)===3){const committed=await load(env,waybillId);if(!committed)throw Object.assign(new Error("运单不存在"),{code:"WAYBILL_NOT_FOUND"});order=committed;let learning=await retryLearningRepairs(env,waybillId,user.id);try{await appendWaybillEvent(env,waybillId,{event:"WAYBILL_ALREADY_CONFIRMED",stage:"CONFIRM",requestId:order.requestId||null,userId:user.id});}catch{}if(routeBaseLock){await releaseLock(env,routeBaseLock);routeBaseLock=null}await releaseLock(env,waybillLock);waybillLock=null;await releaseLock(env,requestLock);requestLock=null;return json({success:true,waybill:order,learning:learning==="RECORDED"?"ALREADY_CONFIRMED":"DEFERRED"});}  if(Number(commitResult)!==1)throw new Error("WAYBILL_COMMIT_FAILED");
   // 方案C rollup：确认提交成功（运单进入索引）后重算当日汇总键（best-effort）
-  try{await recomputeDayMeta(env,order.routeId,clean(order.date))}catch{}
+  try{await recomputeDayMeta(env,order.routeId,clean(order.date))}catch(e){degraded("stats.daymeta-recompute-failed",e,{routeId:clean(order.routeId),date:clean(order.date)})}
   // 指纹漂移回收：只在提交成功后执行——提交失败时保留原状，仍可安全重试。详见 retireStaleFingerprintKey 注释。
   const retiredFp=await retireStaleFingerprintKey(env,{prevFingerprint,nextFingerprint:order.businessFingerprint,ownerId:order.id});
   // 旧 daily dedupe key 只允许 CAS 删除，避免旧键已经被其他运单复用时误删。
@@ -211,7 +216,7 @@ export async function onRequestPost({request,env}){
   await releaseLock(env,requestLock);requestLock=null;
   return json({success:true,waybill:order,learning:learningStatus,indexSync});
  }catch(e){
-  try{if(routeBaseLock)await releaseLock(env,routeBaseLock);if(waybillLock)await releaseLock(env,waybillLock);if(requestLock)await releaseLock(env,requestLock);}catch{}
+  try{if(routeBaseLock)await releaseLock(env,routeBaseLock);if(waybillLock)await releaseLock(env,waybillLock);if(requestLock)await releaseLock(env,requestLock);}catch(e){degraded("lock.release-failed-on-error",e,{})}
   return json({success:false,code:e?.code||"CONFIRM_INTERNAL_ERROR",error:e?.message||"确认待定门店失败",recoverable:true,action:"RETRY_LATER",hint:"确认失败，请稍后重试"},500);
  }
 }

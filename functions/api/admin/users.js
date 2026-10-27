@@ -5,6 +5,7 @@ import {Budget,scanKeysBudgeted,mgetBatchMap,throwBudgetExceeded,SUBREQUEST_LIMI
 import {atomicBind,atomicUnbind} from "../_binding.js";
 import {getRoute} from "../_route.js";
 import {isSystemAdmin} from "../_permissions.js";
+import {degraded} from "../_degrade.js";
 async function read(env,id){const raw=await get(env,"user:"+id);if(!raw)return null;try{return typeof raw==="string"?JSON.parse(raw):raw}catch{return null}}
 // 批量路径的解析助手：与 read() 同语义（坏数据视为缺失，交由调用方报 USER_DATA_INVALID）
 function parseUser(raw){if(raw===null||raw===undefined)return null;if(typeof raw==="object")return raw;try{return JSON.parse(raw)}catch{return null}}
@@ -28,7 +29,8 @@ export async function cleanupUserSessions(env,userId){
   // 截断（iterCap / 预算 / 键数上限）显式上报 complete，复用删除路径的 503 重试语义，绝不静默漏清
   return {deleted, complete: scanOk && delOk};
 }
-async function cleanupUserRequests(env,userId){
+// 导出以便集成测试直接打真实路径（此前同类测试是"复刻同形态代码"，覆盖率报告揪出后才修正）
+export async function cleanupUserRequests(env,userId){
  const budget=new Budget(SUBREQUEST_LIMIT);let removed=0;
  for(let attempt=0;attempt<3;attempt++){
   if(!budget.take(1))throwBudgetExceeded(budget.max,"cleanup-user-requests-index");
@@ -40,7 +42,7 @@ async function cleanupUserRequests(env,userId){
   if(!complete)throwBudgetExceeded(budget.max,"cleanup-user-requests-read");
   const keep=[],deleteKeys=[];
   for(const rid of requestIds){
-   let q=null;try{const item=map.get("zp:route-request:"+rid);q=typeof item==="string"?JSON.parse(item):item}catch{}
+   let q=null;try{const item=map.get("zp:route-request:"+rid);q=typeof item==="string"?JSON.parse(item):item}catch(e){degraded("admin.route-request-unparsable",e,{rid:String(rid).slice(0,120)})}
    if(q?.userId===userId)deleteKeys.push("zp:route-request:"+rid);else keep.push(rid);
   }
   if(deleteKeys.length){if(!budget.take(1))throwBudgetExceeded(budget.max,"cleanup-user-requests-delete");await command(env,["DEL",...deleteKeys]);removed+=deleteKeys.length}

@@ -23,6 +23,12 @@ build/
 .DS_Store
 Thumbs.db
 
+# 生产数据转储（严禁入库）：migrate-upstash-to-d1.mjs 的 export/load/verify 产物，
+# 内含用户密码哈希、会话令牌、邀请码与真实运单（门店名/地址/电话），一次 git add -A 即永久泄露。
+tools/.upstash-dump.json
+tools/*.dump.json
+*.upstash-dump.json
+
 # 依赖锁文件与覆盖率产物：仓库约定不跟踪锁文件；coverage/ 为 c8 本地度量产物
 package-lock.json
 coverage/

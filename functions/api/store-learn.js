@@ -5,6 +5,7 @@ import {canMaintainRoute} from "./_permissions.js";
 import {learnGlobal} from "./_global-learning.js";
 import {formatCompareKey} from "./waybills/_store-match.js";
 import {getRoute} from "./_route.js";
+import {degraded} from "./_degrade.js";
 
 async function base(env,id){
  const raw=await get(env,"route:"+id+":base");
@@ -15,7 +16,7 @@ async function base(env,id){
 }
 const clean=x=>String(x??"").trim().slice(0,100);
 
-async function retryRouteLearningRepairs(env,routeId){
+export async function retryRouteLearningRepairs(env,routeId){
  const key="zp:route:"+routeId+":learning-repair";
  const invalidKey=key+":invalid";
  const MAX_REPAIRS=3;
@@ -28,7 +29,12 @@ async function retryRouteLearningRepairs(env,routeId){
    await command(env,["HSET",invalidKey,field,JSON.stringify({status:"INVALID",field,raw:value,markedAt:new Date().toISOString()})]);
    await command(env,["HDEL",key,field]);processed++;continue;
   }
-  try{await learnGlobal(env,item);await command(env,["HDEL",key,field]);processed++;}catch{}
+  try{await learnGlobal(env,item);await command(env,["HDEL",key,field]);processed++;}catch(e){
+   // 原为静默吞掉。学习数据是门店匹配质量的核心资产，重放失败若不落痕，
+   // 匹配率会长期缓慢劣化且无人察觉。此处不改变控制流（仍走下一条），只上报。
+   // 已被隔离到 :invalid 的坏数据不计入告警；这里只告警"本应成功却失败"的情况。
+   degraded("learning.repair-replay-failed", e, {routeId, field:String(field).slice(0,120)});
+  }
  }
  const remaining=Number(await command(env,["HLEN",key]))||0;
  if(remaining===0)await command(env,["DEL",key]);

@@ -5,6 +5,7 @@ import {canUseRoute} from "../_permissions.js";
 import {canReadWaybill} from "../_waybill-acl.js";
 import {getRoute} from "../_route.js";
 import {guard} from "../_safe.js";
+import {degraded} from "../_degrade.js";
 
 const clean=v=>String(v??"").trim();
 const todayCN=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
@@ -17,7 +18,6 @@ async function latestGet({request,env}){
  const user=await currentUser(request,env);if(!user)return json({success:false,error:"未登录"},401);
  if(user.role==="admin"||!canUseRoute(user))return json({success:false,error:"无权查看配送业务"},403);
  const url=new URL(request.url),id=clean(url.searchParams.get("id")),confirmedOnly=url.searchParams.get("confirmed")==="1",routeId=clean(user.dispatchRouteId||user.boundRouteId);
- if(!routeId)return json({success:true,waybill:null});
  if(!routeId)return json({success:true,waybill:null});
  // 弱网口径（2026-10-20 实测：重庆 → Cloudflare LAX → Upstash，见 /api/redis-diag）：
  // Worker→Redis **单次**往返中位 186ms。原先 getRoute（取线路名）、SMEMBERS（今日索引）、
@@ -41,7 +41,7 @@ async function latestGet({request,env}){
    const parsed=typeof rawBase==="string"?JSON.parse(rawBase):rawBase;
    const baseStores=Array.isArray(parsed?.stores)?parsed.stores:[];
    const byId=new Map(baseStores.map(s=>[clean(s?.storeId),s]).filter(x=>x[0]));
-   const baseKey=v=>clean(v).normalize("NFKC").replace(/s+/g,"").replace(/[，。；;：:、（）()【】[]{}<>《》“”"'‘’]/g,"").toLowerCase();
+   const baseKey=v=>clean(v).normalize("NFKC").replace(/\s+/g,"").replace(/[，。；;：:、（）()【】\[\]{}<>《》“”"'‘’]/g,"").toLowerCase();
    const byName=new Map();
    for(const bs of baseStores)for(const field of [bs?.name,bs?.originalName,...(Array.isArray(bs?.aliases)?bs.aliases:[])]){
     const key=baseKey(field);if(key&&!byName.has(key))byName.set(key,bs);
@@ -85,7 +85,11 @@ async function latestGet({request,env}){
  try{
   const result=await command(env,["MGET",...ids.map(x=>"zp:waybill:"+x)]);
   if(Array.isArray(result))rawList=result;
- }catch{}
+ }catch(e){
+  // 原为静默吞掉。首次批量读（MGET）整体失败后会退到 pipeline 逐条读，
+  // 若 pipeline 也失败才真正报错；这里给首次失败留痕，便于区分"偶发抖动"与"配额/链路持续故障"。
+  degraded("waybill.latest-mget-failed",e,{routeId,today,count:ids.length});
+ }
  if(rawList.length!==ids.length){
   try{
    const result=await pipeline(env,ids.map(id=>["GET","zp:waybill:"+id]));

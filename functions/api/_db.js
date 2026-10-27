@@ -23,6 +23,8 @@
  * 注意：所有键都已由调用方带 "zp:" 前缀（command 收到的就是全限定键），本层原样存储。
  */
 
+import { degraded } from "./_degrade.js";
+
 // ============ 类型常量 ============
 const T_STRING = "string";
 const T_HASH = "hash";
@@ -57,8 +59,134 @@ async function rawGet(db, key) {
 }
 
 export class D1Backend {
-  constructor(db) {
-    this.db = db;
+  constructor(db, options) {
+    this.quota = {
+      // statements：独立语句数（**不含**已进 batch 的语句，它们在 batch 提交时被抵扣）
+      // batches：batch 次数（D1 按 1 次查询计）
+      // consumed = statements + batches ≈ D1 侧真实配额消耗
+      statements: 0,
+      batches: 0,
+      // Cloudflare D1 免费版：单次 Worker 调用最多 50 条查询（batch 内多条按 1 计）。
+      // 2026-10-27 上线首日就踩到过：历史概览路径 ~100 查询导致首页统计板块直接消失。
+      // 那次是靠事后线上现象才定位到，代价太大；这里改成**事前可观测**。
+      WARN_AT: (options && options.warnAt) || 35,   // 70%，提前预警
+      CRIT_AT: (options && options.critAt) || 45,   // 90%，接近触顶
+      // tag -> 已上报过（**作用域内**去重，见 __resetQuota：随每次外层调用清零）
+      alerted: {},
+    };
+    // 调用作用域深度：>0 表示当前处在某次 command/tx/pipeline 调用内。
+    this.__scopeDepth = 0;
+    this.db = this.__counting(db);
+  }
+
+  /**
+   * 配额计数的**口径边界**。
+   *
+   * 教训（2026-10-28 复盘，务必记住）：
+   *   这里最初把 quota 当作「实例级 = 单次 Worker 调用」来用，理由是 _redis.js 里
+   *   `if (!env.__zpD1) env.__zpD1 = createD1Backend(env)` 把后端缓存在 env 上。
+   *   但**那个前提是错的**：Cloudflare 官方文档明确写着
+   *     "a single Workers instance may handle multiple requests ... Cloudflare
+   *      recommends you do not use or mutate global state."
+   *   env 上的缓存在同一 isolate 生命周期内会跨请求命中（这正是它作为缓存惯用法的全部意义），
+   *   所以实例级计数会**单调累积**，且 alerted 是一次性锁存 ——
+   *   组合效果是：isolate 存活期内只告警一次，此后**永久沉默**，护栏彻底哑火。
+   *
+   * 修正：把口径改为确定边界 —— **一次最外层 Redis 层调用**（command/tx/pipeline）。
+   *   · command()/pipeline() 都委托给 tx()，嵌套调用靠深度保护不会被误清零；
+   *   · D1 的 50 查询限额按 Worker invocation 计，而历史上真实踩到的那次
+   *     （2026-10-27 首页统计板块消失）正是**单次 pipeline 内膨胀到 ~100 条**，
+   *     所以「每次 Redis 层调用」这个口径能覆盖真实故障形态；
+   *   · 代价：同一个请求内多次 command 累加的场景不会在这里体现 ——
+   *     那种情况 D1 会直接抛错并写 ERROR 日志，仍有别的手段兜住。
+   * 宁可用一个口径明确、不会哑火的近似值，也不要一个依赖错误假设的"精确值"。
+   */
+  __resetQuota() {
+    this.quota.statements = 0;
+    this.quota.batches = 0;
+    this.quota.alerted = {};
+  }
+
+  __beginScope() {
+    this.__scopeDepth = (this.__scopeDepth || 0) + 1;
+    if (this.__scopeDepth === 1) this.__resetQuota();
+  }
+
+  __endScope() {
+    this.__scopeDepth = Math.max(0, (this.__scopeDepth || 0) - 1);
+  }
+
+  /**
+   * 给注入的 db 包一层计数代理：其余代码零改动即可统计每次 prepare/batch。
+   *
+   * 为什么计数是实例级：这里只做**旁路累加**，边界由 tx() 的调用作用域给出（见 __resetQuota）。
+   * 实例本身必须保持"无跨请求语义"——任何依赖 env 生命周期的假设都不能成立。
+   *
+   * 注意：只做旁路统计，**绝不拦截、绝不改行为**；代理本身出任何问题都退化为"（不计数）"。
+   */
+  __counting(db) {
+    if (!db || typeof db !== "object") return db;
+    const self = this;
+    try {
+      return new Proxy(db, {
+        get(target, prop, receiver) {
+          if (prop === "prepare") {
+            return (sql) => {
+              self.__tick("statements");
+              return target.prepare(sql);
+            };
+          }
+          if (prop === "batch") {
+            return (stmts) => {
+              // 【口径修正】batch 内的每条语句在 prepare 时已经各计了一次 statements，
+              // 但 D1 侧一次 batch 只算 1 次查询配额。若不在提交时抵扣，一次含 10 条
+              // 写入的事务会被计成 11 —— 高估一个数量级，告警线形同虚设
+              // （真实验证：写 10 个键 → 抵扣前报 11，D1 实际消耗 1）。
+              const n = Array.isArray(stmts) ? stmts.length : 0;
+              self.quota.statements = Math.max(0, self.quota.statements - n);
+              self.__tick("batches");
+              return target.batch(stmts);
+            };
+          }
+          const v = Reflect.get(target, prop, target);
+          return typeof v === "function" ? v.bind(target) : v;
+        },
+      });
+    } catch {
+      // 代理不可用（极少见）时宁可不计数，也不能让存储层失效
+      return db;
+    }
+  }
+
+  /**
+   * 累加计数并在跨过阈值时上报一次。
+   * 口径说明： consumed = statements + batches 近似 D1 的查询配额消耗
+   * （batch 内多条语句在 D1 侧按 1 次查询计，故此处用 batches 而非其内部语句数）。
+   */
+  __tick(kind) {
+    if (kind === "statements") this.quota.statements += 1;
+    else this.quota.batches += 1;
+    const used = this.quota.statements + this.quota.batches;
+    if (used >= this.quota.CRIT_AT) this.__alert("crit", used);
+    else if (used >= this.quota.WARN_AT) this.__alert("warn", used);
+  }
+
+  __alert(level, used) {
+    const tag = level === "crit" ? "d1.quota-critical" : "d1.quota-warning";
+    if (this.quota.alerted[tag]) return;
+    this.quota.alerted[tag] = true;
+    // 动态引入避免 _db.js 承担额外耦合；失败也无所谓（纯观测）
+    try {
+      // eslint-disable-next-line no-undef
+      degraded(tag, new Error(`D1 查询配额接近上限：已用 ${used}（告警线 ${this.quota.WARN_AT} / 危险线 ${this.quota.CRIT_AT}，免费版上限 50）`), {
+        used,
+        statements: this.quota.statements,
+        batches: this.quota.batches,
+        limit: 50,
+      });
+    } catch {
+      /* 观测不许影响存储层 */
+    }
   }
 
   /**
@@ -66,10 +194,18 @@ export class D1Backend {
    * fn 抛错时 overlay 从未落库，等价于 ROLLBACK。
    */
   async tx(fn) {
-    const ctx = this.makeCtx();
-    const result = await fn(ctx);
-    await ctx.__flush();
-    return result;
+    // 配额口径边界：只有最外层调用重置，嵌套（command→tx、事务套事务）不会被清零
+    this.__beginScope();
+    try {
+      // makeCtx 也放进 try：它若抛出（极端情况）必须同样归还作用域，
+      // 否则 __scopeDepth 永久 >0，之后**所有**调用都不再重置计数，护栏再次哑火。
+      const ctx = this.makeCtx();
+      const result = await fn(ctx);
+      await ctx.__flush();
+      return result;
+    } finally {
+      this.__endScope();
+    }
   }
 
   /** 构造本命令的读写上下文（读透 overlay；写进 overlay，由 __flush 原子提交）。 */

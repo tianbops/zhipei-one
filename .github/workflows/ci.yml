@@ -8,6 +8,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # checkout 默认 fetch-depth: 1（浅克隆），会导致 scripts/check-naming.mjs
+          # 读不到足够历史而**降级为提示** —— 硬门禁形同虚设。这里必须取完整历史。
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           # 固定与本地验证工具链一致的精确版本：V8 覆盖数据的分支计数随 Node 小版本
@@ -21,3 +25,7 @@ jobs:
       # 覆盖率棘轮：c8 --check-coverage 四阈值（statements/branches/functions/lines），
       # 低于阈值即 fail；阈值只升不降，调整须同步 tests/coverage-thresholds.test.mjs 的 RATCHET_FLOOR
       - run: npm run coverage
+      # 命名一致性护栏（仓库名 / package.json / wrangler / manifest / Android applicationId 五域对照）。
+      # 该脚本此前从未被任何自动化调用过，只是孤立的 npm script；依赖 fetch-depth: 0 的完整历史
+      # 才不会降级为「提示」。2026-10-28 起纳入 CI。
+      - run: npm run check:naming
