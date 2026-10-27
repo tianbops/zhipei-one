@@ -46,6 +46,19 @@ class SqliteAdapter {
   constructor(raw) { this._raw = raw; }
   prepare(sql) { return new Stmt(this, sql); }
   exec(sql) { this._raw.exec(sql); }
+  // D1 batch：原子执行一批语句（这里用本地事务模拟真实 D1 的原子性语义）
+  async batch(stmts) {
+    this._raw.exec("BEGIN");
+    try {
+      const results = [];
+      for (const s of stmts) results.push(s.run());
+      this._raw.exec("COMMIT");
+      return results;
+    } catch (e) {
+      try { this._raw.exec("ROLLBACK"); } catch {}
+      throw e;
+    }
+  }
 }
 
 function makeEngine() {
