@@ -57,7 +57,7 @@ async function supersedeSameDay(env,order,indexKey){
       try{await appendWaybillEvent(env,d.id,{event:"WAYBILL_SUPERSEDED",stage:"SAVED",requestId:order.requestId,supersededBy:order.id,overlap:d.overlap,total:d.total});}catch{/* best-effort */}
     }
     return done;
-  }catch{return[]}
+  }catch(e){console.error("[supersede]",e&&e.message);return[{_catch:true}];}
 }
 
 async function base(env,id){const raw=await get(env,"route:"+id+":base");if(!raw)throw Object.assign(new Error("线路数据资料尚未建立"),{code:"BASE_NOT_FOUND"});let x;try{x=typeof raw==="string"?JSON.parse(raw):raw}catch{throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"})}if(!x||!Array.isArray(x.stores))throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"});return x.stores}
@@ -327,6 +327,7 @@ async function saveWaybill(order, requestId, resumed){
        取代后再重算当日汇总，统计立即回到单张口径。 */
     const superseded=await supersedeSameDay(env,order,indexKey);
     if(superseded.length)emit(99,`已替换当日同车辆旧运单 ${superseded.length} 张`);
+    emit(97,`SUPERSEDE_PROBE candidates=${superseded.length}${superseded[0]&&superseded[0]._catch?" catch=1":" catch=0"}`);
     emit(100,"处理完成");
     if(resumed){ try { await appendWaybillEvent(env, order.id, {event:"WAYBILL_RESUMED_SAVE",stage:"SAVED",requestId,id:order.id,qualityLevel:order.quality?.level,qualityFlags:order.quality?.flags||[]}); } catch { /* best-effort */ } }
     else { await recordWaybillLifecycle(env, order, {requestId, rawExtractCount, extractCount:order.summary?.extractCount, recoveredCount:order.summary?.recoveredCount, matched, pending, d}); }
