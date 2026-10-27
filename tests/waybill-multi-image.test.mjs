@@ -298,6 +298,25 @@ const isKnownStore = n => knownKeys.has(formatCompareKey(n));
   console.log("✅ 重复拍末图时完整门店不丢");
 }
 
+// --- 7g) 已知边界：差 1 字的极端截断宁留勿删；无 base 时证据规则独立生效 ---
+{
+  // 差 1 字：残条「…贸易有限公」与完整名仅差「司」，diff=1 < 阈值 2 → 保守保留，
+  // 交给后续相似度匹配兜底（宁可多一个待定，也不误删真店）。
+  const C = ["到家主城-江北区鸿恩寺客服中心（2026）", "渝北中景隆(重庆)贸易有限公"].join(" -> ");
+  const D = ["渝北中景隆(重庆)贸易有限公司", "渝北Q398重庆沁园餐饮管理有限公司松石支路二店"].join(" -> ");
+  const r1 = mergeStoreEdges([C, D], extract, { isKnownStore });
+  assert.ok(names(r1.stores || []).some(n => n.includes("贸易有限公")), "差1字残条宁留勿删（交匹配兜底）");
+
+  // 无 base（不传 predicate，对应临时线路/全局学习）：证据规则仍独立生效——
+  // 残条有「以它开头的更长门店名」且无完整副本 → 仍剔除；末店保留。
+  const img3NoTable = ["贤加盟重庆彭成商贸有限公司", "II类天友生活花卉东路店", "渝北中景隆(重庆）贸易有限公司",
+    "江北钱大妈半山华府店", "渝北Q398重庆沁园餐饮管理有限公司松石支路二店"].join(" -> ");
+  const r2 = mergeStoreEdges([IMG2, img3NoTable], extract);
+  assert.ok(!names(r2.stores || []).some(n => n.trim() === "渝北中"), "无基准时真残条仍按证据剔除");
+  assert.ok(names(r2.stores || []).some(n => n.includes("松石支路二店")), "无基准时末店保留");
+  console.log("✅ 差1字残条宁留勿删；无 base 时证据规则独立生效");
+}
+
 // --- 8) 待定门店可按「丢弃」剔除（确认接口出口存在）---
 {
   const fs = await import("node:fs");

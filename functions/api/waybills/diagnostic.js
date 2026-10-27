@@ -7,6 +7,8 @@ import {getProc, failProc, effectiveStage} from "./_waybill-proc.js";
 import {scanConsistency,repairConsistency} from "./_consistency.js";
 import {rebuildAllMeta} from "./_waybill-meta.js";
 import {computeStats} from "./_stats.js";
+import {formatCompareKey} from "./_store-match.js";
+import {Budget,scanKeysBudgeted,mgetBatchMap} from "../_redis-budget.js";
 import {guard} from "../_safe.js";
 
 const clean=v=>String(v??"").trim();
@@ -66,6 +68,49 @@ async function diagnosticGet({request,env}){
     if(isAdmin&&!routeId&&!all)return json({success:false,error:"管理员诊断需指定 routeId 或 all=1"},400);
     const report=await scanConsistency(env,{routeId:all?null:routeId,all});
     return json({success:true,scope:all?"ALL":routeId,...report});
+  }
+  // 基准库歧义巡检（只读）：检测某线路基准库里「归一化后同名、却指向不同 storeId」的门店对。
+  // 这类同名冲突会让匹配引擎把精确匹配降级为待定（markUnique 置 null），不误合并但增加人工确认。
+  // 罗马数字坍缩（Ⅱ/Ⅲ→II）可能放大此类冲突，本巡检用于尽早发现并提示线路维护者修正基准库。
+  if(wantCheck==="base-ambiguity"){
+    if(!isAdmin)return json({success:false,error:"仅管理员可执行基准库歧义巡检"},403);
+    const all=clean(url.searchParams.get("all"))==="1";
+    const rid=clean(url.searchParams.get("routeId"));
+    if(!rid&&!all)return json({success:false,error:"管理员巡检需指定 routeId 或 all=1"},400);
+    const budget=new Budget();
+    let baseKeys=[],degraded=false;
+    if(all){
+      const s=await scanKeysBudgeted(env,"zp:route:*:base",budget,{count:500,cap:5000});
+      baseKeys=s.keys;if(!s.complete)degraded=true;
+    }else{
+      baseKeys=["zp:route:"+rid+":base"];
+    }
+    const read=await mgetBatchMap(env,baseKeys,budget,{batch:50});
+    if(!read.complete)degraded=true;
+    // 与匹配引擎 markUnique 同口径：name / originalName / aliases 各自取「•·」首段后做格式归一。
+    const identityKey=v=>formatCompareKey(clean(v).split(/\s*[•·]\s*/)[0].trim());
+    const scanned={routes:0,stores:0};
+    const conflicts=[];
+    for(const key of baseKeys){
+      const raw=read.map.get(key);if(!raw)continue;
+      let base;try{base=typeof raw==="string"?JSON.parse(raw):raw}catch{continue}
+      if(!base||!Array.isArray(base.stores))continue;
+      scanned.routes++;
+      const ridX=key.slice("zp:route:".length,-":base".length);
+      const byKey=new Map();
+      for(const st of base.stores){
+        scanned.stores++;
+        const fields=[st?.name,st?.originalName,...(Array.isArray(st?.aliases)?st.aliases:[])];
+        for(const field of fields){
+          const k=identityKey(field);
+          if(!k)continue;
+          if(!byKey.has(k))byKey.set(k,new Set());
+          byKey.get(k).add(clean(st.storeId)||"(无storeId)");
+        }
+      }
+      for(const [k,ids] of byKey)if(ids.size>=2)conflicts.push({routeId:ridX,key:k,storeIds:[...ids]});
+    }
+    return json({success:true,scope:all?"ALL":rid,scanned,conflictCount:conflicts.length,conflicts:conflicts.slice(0,200),degraded});
   }
   // 运营统计（1.3）：只读聚合健康度（待定率 / 低置信率 / OCR 超时失败率 / 确认率 / 质量门分布），支撑长期稳定运行。
   const wantStats=clean(url.searchParams.get("stats"));
