@@ -186,7 +186,18 @@ const newOrder = { id: "NEW1", routeId: ROUTE, date: DATE, vehicle: VEH, stage: 
   // 预算保护：读取失败时跳过取代，不影响保存
   assert.ok(/read\.complete/.test(proc), "批量读取应受预算保护");
   assert.ok(/catch\{return\[\]\}/.test(proc), "取代异常不得影响主流程");
-  console.log("✅ 接入点、原子性、留痕与预算保护齐备");
+
+  // 根因守卫：mgetBatchMap 必须传「完整 Redis 键」（zp:waybill: 前缀）。
+  // SMEMBERS 拿到的是裸 id，若直接传裸 id，MGET 全落空 → others 恒空 → 取代永不触发。
+  assert.ok(
+    proc.includes('mgetBatchMap(env,ids.map(id=>"zp:waybill:"+id)'),
+    "取代读取必须补 zp:waybill: 前缀（线上旧残单未被清理的根因）"
+  );
+  assert.ok(
+    !proc.includes('mgetBatchMap(env,ids,budget'),
+    "process.js 不得再以裸 id 调 mgetBatchMap（supersede 与去重兜底扫描均已修复）"
+  );
+  console.log("✅ 接入点、原子性、留痕、预算保护与键前缀齐备");
 }
 
 console.log("\n✅ waybill-supersede 全部通过");

@@ -42,7 +42,10 @@ async function supersedeSameDay(env,order,indexKey){
       :[];
     if(!ids.length)return[];
     const budget=new Budget();
-    const read=await mgetBatchMap(env,ids,budget,{batch:100});
+    // 注意：mgetBatchMap 的入参是**完整 Redis 键**（与 routes.js / _history-read.js / _waybill-meta.js
+    // 等调用方一致），SMEMBERS 拿到的只是裸 id，必须补上 zp:waybill: 前缀，否则 MGET 全落空，
+    // others 恒为空 → 取代永远不触发（线上旧残单未被清理的根因）。
+    const read=await mgetBatchMap(env,ids.map(id=>"zp:waybill:"+id),budget,{batch:100});
     if(!read.complete)return[];
     const others=[];
     for(const id of ids){
@@ -250,7 +253,7 @@ async function saveWaybill(order, requestId, resumed){
     // 历史旧运单可能没有 dedupeKey。兜底仍需检查业务签名，但禁止逐单 GET：
     // 一次 MGET 批量读取，并受统一 Redis 预算保护；预算不足时宁可让保存可重试，也不能冒险继续并可能产生重复单。
     const budget=new Budget();
-    const read=await mgetBatchMap(env,ids,budget,{batch:100});
+    const read=await mgetBatchMap(env,ids.map(id=>"zp:waybill:"+id),budget,{batch:100});
     if(!read.complete){
       return failProcess("WAYBILL_DEDUPE_SCAN_BUDGET","历史去重校验达到资源预算，请稍后重试保存",503,{recoverable:true,action:"RETRY_SAVE",hint:"历史去重校验资源不足，请重试保存",budgetUsed:budget.used,budgetMax:budget.max});
     }
