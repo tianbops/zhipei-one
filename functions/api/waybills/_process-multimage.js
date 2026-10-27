@@ -79,17 +79,24 @@ export function mergeStoreEdges(imageTexts, extractFn = extract, { isKnownStore 
   };
   const merged = [];
   let edgeTrimmed = 0;
-  /* 末图依据存在（有图含运单号表格）时图序可靠：非末图一律位置式剔除末条
-     （该条必是底部残条或重叠区完整副本，绝无丢失风险）；同时证据式判定对
-     所有图生效——末图自身的残条、以及没有运单号表格（图序不可靠）时，靠证据兜底。 */
+  /* 底部残条删除 = 证据规则（所有图生效）+ 位置式兜底（仅图序可靠时）。
+     证据规则：有「以它开头的更长门店名」且无完整副本 → 残条。
+     位置式兜底：有运单号表格（末图依据）时，非末图的末条几乎必是残条；但
+       - 只在「有基准库可查」（isKnownStore 为函数）时才启用——否则会误删
+         临时线路/全局学习场景的完整末店；
+       - 且绝不删基准库完整门店（重复拍末图时，前一张的末条是完整门店，
+         位置式兜底若不加这道闸会把它与后一张的顶部重叠副本一起删掉 → 丢店）。 */
   const hasTailMarker = ordered.some(t => isTail(t));
+  const hasBase = typeof isKnownStore === "function";
   for (let idx = 0; idx < perImage.length; idx++) {
     let stores = perImage[idx];
     if (!stores.length) continue;
     if (idx > 0) { stores = stores.slice(1); edgeTrimmed++; }                     // 顶部残条
     const last = stores[stores.length - 1];
-    const positional = hasTailMarker && idx < perImage.length - 1;
-    if (stores.length && (positional || isBottomResidue(last && (last.rawName || last.name)))) {
+    const lastKey = last && (last.rawName || last.name);
+    const positional = hasTailMarker && hasBase && idx < perImage.length - 1
+      && !isKnownStore(lastKey);
+    if (stores.length && (positional || isBottomResidue(lastKey))) {
       stores = stores.slice(0, -1); edgeTrimmed++;                                // 底部残条
     }
     for (const s of stores) merged.push(s);

@@ -62,6 +62,35 @@ const IMG3 = [
 const names = stores => stores.map(s => String(s.name || ""));
 const has = (list, kw) => list.some(n => n.includes(kw));
 
+// 基准库完整门店判定（模拟生产 process.js 传入的 isKnownStore）。
+// 残条（缺前缀“江北区鸿恩寺客服中心（2026)” / 缺后缀“…（客”“渝北中”等）不在其中。
+const BASE_NAMES = [
+  "渝北A02230谊品生鲜温馨家园南门店",
+  "特渠部重庆市卫生健康委员会（临时)",
+  "特渠部重庆市卫生健康委员会",
+  "到家主城-江北区鸿恩寺客服中心（2026)",
+  "到家主城-江北区加州客服中心（2026)",
+  "江北亿达鲜观府国际店(客百年)",
+  "江北亿达鲜半山华府店（客百年）",
+  "江北亿达鲜御龙天峰(客百年)",
+  "江北重庆三峡融资担保集团有限公司",
+  "天友加盟农垦大厦店",
+  "江北Q784华唐立交店",
+  "江北JM03115-谊品生鲜重庆御龙天峰店",
+  "天友24h重庆海浚酒店管理有限公司",
+  "天友加盟韩志贤加盟重庆彭成商贸有限公司",
+  "II类天友生活花卉东路店",
+  "江北JM03022谊品生鲜重庆北国风光店",
+  "渝北中景隆(重庆）贸易有限公司",
+  "江北重庆彩食鲜供应链发展有限公司（重庆中法供水有限公司花园新村)",
+  "江北胡汪经销商(重庆胡建镜好食品有限公司）",
+  "江北A02175谊品生鲜锦绣北滨路店",
+  "江北钱大妈半山华府店",
+  "渝北Q398重庆沁园餐饮管理有限公司松石支路二店",
+];
+const knownKeys = new Set(BASE_NAMES.map(formatCompareKey));
+const isKnownStore = n => knownKeys.has(formatCompareKey(n));
+
 // --- 1) 单图：不适用，行为不变 ---
 {
   const r = mergeStoreEdges([IMG1]);
@@ -106,7 +135,9 @@ const has = (list, kw) => list.some(n => n.includes(kw));
 
 // --- 3) 两张图场景 ---
 {
-  const r = mergeStoreEdges([IMG1, IMG3]);
+  // 生产真实形态：有基准库 predicate；仅首图+末图（中间图缺失）时，
+  // 首图残条在末图无完整副本，靠位置式兜底（图序可靠 + 非基准库门店）剔除。
+  const r = mergeStoreEdges([IMG1, IMG3], extract, { isKnownStore });
   assert.ok(r.stores && r.stores.length > 0);
   const list = names(r.stores);
   assert.ok(!list.some(n => n.endsWith("（客")), "两张图时首图末尾残条应剔除");
@@ -251,6 +282,20 @@ const has = (list, kw) => list.some(n => n.includes(kw));
   assert.ok(!m[0].pending, `「IⅡ类…」应直接匹配基准门店，实际 pending=${m[0].pending}`);
   assert.equal(m[0].storeId, "store_ii", "应命中基准库「II类…」门店");
   console.log("✅ IⅡ/Ⅲ/Il/ll 与 II 视为同一家门店，直接匹配不再卡待定");
+}
+
+// --- 7f) 重复拍末图（两张都含运单号表格）时不得丢完整门店 ---
+// 用户可能对列表末尾+表格拍两次：前一张的末条是完整门店，后一张首条是它的
+// 重叠副本。位置式兜底必须避开基准库完整门店，否则会与顶部规则一起把该店删光。
+{
+  const A = ["到家主城-江北区鸿恩寺客服中心（2026）", "江北亿达鲜半山华府店（客百年）", "渝北中景隆(重庆）贸易有限公司"].join(" -> ") + "\n运单号\nZW20261027CZZC01914 01897";
+  const B = ["渝北中景隆(重庆）贸易有限公司", "江北重庆彩食鲜供应链发展有限公司（重庆中法供水有限公司花园新村)", "渝北Q398重庆沁园餐饮管理有限公司松石支路二店"].join(" -> ") + "\n运单号\nZW20261027CZZC01913 01896";
+  const r = mergeStoreEdges([A, B], extract, { isKnownStore });
+  const list = names(r.stores || []);
+  assert.ok(has(list, "中景隆"), "重复末图时前一张的完整末店不得被删");
+  assert.ok(has(list, "松石支路二店"), "末店必须保留");
+  assert.ok(!list.some(n => n.trim() === "渝北中"), "真残条仍应剔除");
+  console.log("✅ 重复拍末图时完整门店不丢");
 }
 
 // --- 8) 待定门店可按「丢弃」剔除（确认接口出口存在）---
