@@ -7,7 +7,7 @@
 */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { storeNameSet, storeOverlap, isSubsetOf, sameVehicle, pickSupersededCandidates, SUPERSEDE_THRESHOLD } from "../functions/api/waybills/_process-supersede.js";
+import { storeNameSet, storeOverlap, isSubsetOf, sameVehicle, vehiclePlate, pickSupersededCandidates, SUPERSEDE_THRESHOLD } from "../functions/api/waybills/_process-supersede.js";
 
 const ROOT = new URL("../", import.meta.url);
 const read = (p) => readFileSync(new URL(p, ROOT), "utf8");
@@ -127,11 +127,19 @@ const newOrder = { id: "NEW1", routeId: ROUTE, date: DATE, vehicle: VEH, stage: 
   assert.equal(pickSupersededCandidates(newOrder, [{ ...base, routeId: "route_other" }]).length, 0, "不同线路不得取代");
   assert.equal(pickSupersededCandidates(newOrder, [{ ...base, historyStatus: "SUPERSEDED" }]).length, 0, "已取代的单不重复处理");
   assert.equal(pickSupersededCandidates(newOrder, [{ ...base, stage: "DRAFT" }]).length, 0, "不可读阶段不得取代");
-  assert.equal(pickSupersededCandidates(newOrder, [{ ...base, vehicle: null }]).length, 0, "车辆缺失时不得取代（信息不足）");
+  // 不同"有效车牌"才排除；车牌不可信时交给门店集合判定
+  assert.equal(pickSupersededCandidates(newOrder, [{ ...base, vehicle: "渝A00001" }]).length, 0, "两台不同车（车牌均可信）不得取代");
+  assert.equal(pickSupersededCandidates(newOrder, [{ ...base, vehicle: "北JM03022" }]).length, 1,
+    "车牌被 OCR 污染（北JM03022，单图抬头截断所致）时不得据此排除，仍应取代");
+  assert.equal(pickSupersededCandidates(newOrder, [{ ...base, vehicle: null }]).length, 1,
+    "车牌缺失但门店集合一致 → 仍应取代（信息不足时不拿车牌当排除依据）");
   assert.equal(pickSupersededCandidates(newOrder, [{ ...base, id: "NEW1" }]).length, 0, "不得取代自己");
 
   assert.equal(sameVehicle({ vehicle: VEH }, { vehicle: VEH.toLowerCase() }), true, "车辆比较应归一化");
-  assert.equal(sameVehicle({ vehicle: null }, { vehicle: null }), false, "双方缺失时保守返回 false");
+  assert.equal(vehiclePlate("北JM03022"), "", "非省份简称开头不是可信车牌");
+  assert.equal(vehiclePlate("渝DK7692"), "渝DK7692", "标准车牌应能识别");
+  assert.equal(vehiclePlate("车辆 渝DK7692"), "渝DK7692", "带前缀文字仍能提取车牌");
+  assert.equal(sameVehicle({ vehicle: null }, { vehicle: null }), true, "双方缺失时不据车牌排除");
   console.log("✅ 安全边界全部守住（残单/第二趟/异车/异日/异线路/已取代/阶段不符/缺车辆）");
 }
 

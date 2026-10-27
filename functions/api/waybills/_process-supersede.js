@@ -59,12 +59,29 @@ export function isSubsetOf(a, b) {
   return true;
 }
 
-/** 车辆一致性。任一方缺失即视为不可判定（返回 false，保守不取代）。 */
+/* 中国车牌（省份简称 + 字母 + 5 位字母数字）。
+   实测坑：单张截图的抬头被截断时，OCR 会把门店名里的片段当车牌
+   （"北JM03022"），若直接按字符串比较车辆，会把同一张运单判成"不同车辆"，
+   导致重复单永远不被取代。 */
+const PLATE_RE = /[京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新][A-Z][A-Z0-9]{5}/;
+
+/** 提取可信车牌；识别不出返回空串。 */
+export function vehiclePlate(v) {
+  const s = String(v == null ? "" : v).toUpperCase().replace(/[^A-Z0-9\u4e00-\u9fa5]/g, "");
+  const m = s.match(PLATE_RE);
+  return m ? m[0] : "";
+}
+
+/**
+ * 车辆一致性。
+ * 双方都能识别出可信车牌 → 必须相同；
+ * 任一方车牌不可信（缺失/被 OCR 污染）→ 不据车牌排除，交由门店集合判定。
+ */
 export function sameVehicle(a, b) {
-  const va = normalizeForMatch((a && a.vehicle) || "");
-  const vb = normalizeForMatch((b && b.vehicle) || "");
-  if (!va || !vb) return false;
-  return va === vb;
+  const pa = vehiclePlate(a && a.vehicle);
+  const pb = vehiclePlate(b && b.vehicle);
+  if (pa && pb) return pa === pb;
+  return true;
 }
 
 /**
