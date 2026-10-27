@@ -13,6 +13,9 @@ jobs:
           node-version: "22" # sw-precache.test.mjs 用 node:fs 的 globSync（Node>=22），与本地验证工具链一致
       - run: npm install --no-audit --no-fund
       - run: npm run test:node
+      # D1 存储引擎离线测试（node:sqlite 充当 D1 形状适配器）：命令面 / 事务 / TTL /
+      # EVAL 注册表覆盖（37 脚本全命中）/ delete_route+409 回归 / perf 聚合 / pipeline 回滚 / 并发排队
+      - run: npm run test:d1
       # 覆盖率棘轮：c8 --check-coverage 四阈值（statements/branches/functions/lines），
       # 低于阈值即 fail；阈值只升不降，调整须同步 tests/coverage-thresholds.test.mjs 的 RATCHET_FLOOR
       - run: npm run coverage
