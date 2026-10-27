@@ -165,11 +165,35 @@ export const onRequestPost=guard(async ({request,env})=>{const user=await curren
 // 旧实现 uidArg=2+i / jsonArg=2+bound.length+i 整体错位 1，导致 ARGV[2] 既被当作新索引又被当作
 // 首个用户 id，且 routeDuty 校验拿到的永远是清空后的 null —— 任何带绑定用户的线路删除都 return 5 → 409。
 const args=[rid,JSON.stringify(routeIds.filter(v=>v!==rid)),...bound.map(v=>v.id),...bound.map(v=>v.duty),...bound.map(v=>JSON.stringify({...v.user,boundRouteId:null,routeDuty:null,sessionVersion:(v.user.sessionVersion??1)+1}))];
-let script="local boundCount=#KEYS-3; local raw=redis.call('GET',KEYS[1]); local ri=redis.call('GET',KEYS[2]); if not raw or not ri then return 2 end; local r=cjson.decode(raw); local ids=cjson.decode(ri); if r.id~=ARGV[1] or type(ids)~='table' then return 3 end;";
-for(let i=0;i<bound.length;i++){const k=4+i;const idArg=3+i;const dutyArg=3+bound.length+i;script+=`local raw${i}=redis.call('GET',KEYS[${k}]); if not raw${i} then return 4 end; local ok${i},u${i}=pcall(cjson.decode,raw${i}); if not ok${i} or type(u${i})~='table' or u${i}.id~=ARGV[${idArg}] or u${i}.boundRouteId~=ARGV[1] or u${i}.routeDuty~=ARGV[${dutyArg}] then return 5 end; `}
-script+=`redis.call('SET',KEYS[2],ARGV[2]);`;
-for(let i=0;i<bound.length;i++){const k=3+i;const jsonArg=3+2*bound.length+i;script+=`redis.call('SET',KEYS[${k}],ARGV[${jsonArg}]);`;}
-script+="redis.call('DEL',KEYS[1]); redis.call('DEL',KEYS[3]); return 1";
+// 固定 Lua + 内部 for 循环：文本恒定，不随绑定用户数变化，D1 与 Upstash 双路一致（EVAL 注册表 #47）。
+// KEYS=[routeKey, routesIndex, baseKey, ...userKeys]，ARGV=[rid, newIndex, ...userIds, ...userDutys, ...userJSONs]，布局与旧实现完全一致。
+const script=`local rid=ARGV[1]
+local newIndex=ARGV[2]
+local boundCount=#KEYS-3
+local raw=redis.call('GET',KEYS[1])
+local ri=redis.call('GET',KEYS[2])
+if not raw or not ri then return 2 end
+local r=cjson.decode(raw)
+local ids=cjson.decode(ri)
+if r.id~=rid or type(ids)~='table' then return 3 end
+for i=0,boundCount-1 do
+  local k=4+i
+  local idArg=3+i
+  local dutyArg=3+boundCount+i
+  local uraw=redis.call('GET',KEYS[k])
+  if not uraw then return 4 end
+  local ok,u=pcall(cjson.decode,uraw)
+  if not ok or type(u)~='table' or u.id~=ARGV[idArg] or u.boundRouteId~=rid or u.routeDuty~=ARGV[dutyArg] then return 5 end
+end
+redis.call('SET',KEYS[2],newIndex)
+for i=0,boundCount-1 do
+  local k=4+i
+  local jsonArg=3+2*boundCount+i
+  redis.call('SET',KEYS[k],ARGV[jsonArg])
+end
+redis.call('DEL',KEYS[1])
+redis.call('DEL',KEYS[3])
+return 1`;
 // 先清理子键（申请 / 运单）：任一步预算耗尽或 SCAN 截断都会抛错，线路主记录保持不删，绝不谎报 success（P1-01/P1-07）
 const requestDeleted=await cleanupRouteRequests(env,rid);
 const waybillDeleted=await cleanupRouteWaybills(env,rid);

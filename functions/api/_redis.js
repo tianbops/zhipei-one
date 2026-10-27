@@ -1,7 +1,22 @@
 const COOKIE="zp_session";const PREFIX="zp:";
 function redis(env){return env?.UPSTASH_REDIS_REST_URL&&env?.UPSTASH_REDIS_REST_TOKEN?{url:env.UPSTASH_REDIS_REST_URL,token:env.UPSTASH_REDIS_REST_TOKEN}:null}
-export async function command(env,parts){const r=redis(env);if(!r)throw new Error("REDIS_NOT_CONFIGURED");const response=await fetch(r.url,{method:"POST",headers:{Authorization:"Bearer "+r.token,"Content-Type":"application/json"},body:JSON.stringify(parts)});if(!response.ok){const detail=await response.text().catch(()=> "");throw new Error("REDIS_ERROR"+(detail?":"+detail.slice(0,240):""));}const data=await response.json();return data.result}
-export async function pipeline(env,commands){const r=redis(env);if(!r)throw new Error("REDIS_NOT_CONFIGURED");if(!Array.isArray(commands)||!commands.length)return[];const response=await fetch(r.url.replace(/\/$/,"")+"/pipeline",{method:"POST",headers:{Authorization:"Bearer "+r.token,"Content-Type":"application/json"},body:JSON.stringify(commands)});if(!response.ok){const detail=await response.text().catch(()=> "");throw new Error("REDIS_PIPELINE_ERROR"+(detail?":"+detail.slice(0,240):""));}const data=await response.json();return Array.isArray(data)?data.map(x=>x?.result):[]}
+
+// D1 后端优先：配置了 env.DB（Cloudflare D1 绑定）即走 D1，否则回退 Upstash（兼容旧部署）。
+import { createD1Backend } from "./_db.js";
+function d1Backend(env){
+  if(!env||!env.DB) return null;
+  if(!env.__zpD1) env.__zpD1 = createD1Backend(env);
+  return env.__zpD1;
+}
+
+export async function command(env,parts){
+  const d1=d1Backend(env);
+  if(d1) return d1.command(parts);
+  const r=redis(env);if(!r)throw new Error("REDIS_NOT_CONFIGURED");const response=await fetch(r.url,{method:"POST",headers:{Authorization:"Bearer "+r.token,"Content-Type":"application/json"},body:JSON.stringify(parts)});if(!response.ok){const detail=await response.text().catch(()=> "");throw new Error("REDIS_ERROR"+(detail?":"+detail.slice(0,240):""));}const data=await response.json();return data.result}
+export async function pipeline(env,commands){
+  const d1=d1Backend(env);
+  if(d1) return d1.pipeline(commands);
+  const r=redis(env);if(!r)throw new Error("REDIS_NOT_CONFIGURED");if(!Array.isArray(commands)||!commands.length)return[];const response=await fetch(r.url.replace(/\/$/,"")+"/pipeline",{method:"POST",headers:{Authorization:"Bearer "+r.token,"Content-Type":"application/json"},body:JSON.stringify(commands)});if(!response.ok){const detail=await response.text().catch(()=> "");throw new Error("REDIS_PIPELINE_ERROR"+(detail?":"+detail.slice(0,240):""));}const data=await response.json();return Array.isArray(data)?data.map(x=>x?.result):[]}
 export async function get(env,key){return command(env,["GET",PREFIX+key])}
 export async function set(env,key,value){return command(env,["SET",PREFIX+key,typeof value==="string"?value:JSON.stringify(value)])}
 // 带 TTL 的写入（P2-11）：服务端键必须与 Cookie 的 Max-Age 同寿命。

@@ -18,6 +18,7 @@
     "test:admin-fifthpage": "node tests/integration-admin-fifthpage.cjs",
     "test:confirm-rematch": "node tests/integration-confirm-learning-rematch.cjs",
     "test:syntax": "node tests/js-syntax.test.mjs",
+    "test:d1": "node tests/d1-engine.test.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
