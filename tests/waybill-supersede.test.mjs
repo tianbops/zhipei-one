@@ -7,7 +7,7 @@
 */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { storeNameSet, storeOverlap, isSubsetOf, sameVehicle, vehiclePlate, pickSupersededCandidates, SUPERSEDE_THRESHOLD } from "../functions/api/waybills/_process-supersede.js";
+import { storeNameSet, storeOverlap, storeCoverage, isSubsetOf, sameVehicle, vehiclePlate, pickSupersededCandidates, SUPERSEDE_THRESHOLD } from "../functions/api/waybills/_process-supersede.js";
 
 const ROOT = new URL("../", import.meta.url);
 const read = (p) => readFileSync(new URL(p, ROOT), "utf8");
@@ -45,26 +45,35 @@ const FULL = [
 
 const newOrder = { id: "NEW1", routeId: ROUTE, date: DATE, vehicle: VEH, stage: "CONFIRMED", stores: mkStores(FULL) };
 
-/* ============ 1. 重叠度口径 ============ */
+/* ============ 1. 覆盖率 / 重叠度 口径 ============ */
 {
+  // storeOverlap（参考指标，不作主判定）：交集 / 较大集合
   const A = storeNameSet({ stores: mkStores(FULL) });
-  const B = storeNameSet({ stores: mkStores(FULL) });
-  assert.equal(storeOverlap(A, B), 1, "同一门店集合重叠度应为 1");
-
-  // 旧单漏拍 4 家（是新单的子集）：18/22
-  const missing = storeNameSet({ stores: mkStores(FULL.slice(0, 18)) });
+  assert.equal(storeOverlap(A, A), 1, "同一门店集合重叠度应为 1");
+  const missing = storeNameSet({ stores: mkStores(FULL.slice(0, 18)) }); // 漏拍4家，是新单子集
   const ov = storeOverlap(storeNameSet({ stores: mkStores(FULL) }), missing);
-  assert.ok(Math.abs(ov - 18 / 22) < 1e-9, `子集场景应为 18/22，实际 ${ov}`);
-  assert.ok(ov >= SUPERSEDE_THRESHOLD, "补全场景应达到取代阈值");
-
-  // 新单只补拍了一小段（新单是旧单的子集）：5/22 —— 绝不能用残单覆盖全单
+  assert.ok(Math.abs(ov - 18 / 22) < 1e-9, `子集场景 storeOverlap 应为 18/22，实际 ${ov}`);
   const partial = storeNameSet({ stores: mkStores(FULL.slice(0, 5)) });
   const ov2 = storeOverlap(partial, storeNameSet({ stores: mkStores(FULL) }));
-  assert.ok(Math.abs(ov2 - 5 / 22) < 1e-9, `残单场景应为 5/22，实际 ${ov2}`);
-  assert.ok(ov2 < SUPERSEDE_THRESHOLD, "残单不应达到取代阈值（分母用较大集合）");
-
+  assert.ok(Math.abs(ov2 - 5 / 22) < 1e-9, `残单场景 storeOverlap 应为 5/22，实际 ${ov2}`);
   assert.equal(storeOverlap(new Set(), new Set()), 0, "空集合重叠度应为 0");
-  console.log("✅ 重叠度口径正确（较大集合做分母，残单不会覆盖全单）");
+
+  // storeCoverage（主判定指标）：|旧∩新| / |旧|
+  assert.equal(storeCoverage(A, A), 1, "完全相同覆盖率应为 1");
+
+  // 旧 15 家（13 真门店 + 2 条 OCR 噪声），新 22 家 → 覆盖 13/15=0.867 → 取代（修复点）
+  const oldNoisy = mkStores(FULL.slice(0, 13).concat(["g5g85 06:05", "渝北中"]));
+  const cov1 = storeCoverage(storeNameSet({ stores: oldNoisy }), storeNameSet({ stores: mkStores(FULL) }));
+  assert.ok(Math.abs(cov1 - 13 / 15) < 1e-9, `带噪声旧单覆盖率应为 13/15，实际 ${cov1}`);
+  assert.ok(cov1 >= SUPERSEDE_THRESHOLD, "带噪声旧单应达到覆盖率阈值（这是修复点）");
+
+  // 残单反向：旧 22 全、新 5 家 → 覆盖 5/22=0.227 < 0.7 → 绝不取代
+  const cov2 = storeCoverage(storeNameSet({ stores: mkStores(FULL) }), storeNameSet({ stores: mkStores(FULL.slice(0, 5)) }));
+  assert.ok(Math.abs(cov2 - 5 / 22) < 1e-9, `残单场景覆盖率应为 5/22，实际 ${cov2}`);
+  assert.ok(cov2 < SUPERSEDE_THRESHOLD, "残单（新单只拍一段）覆盖率低，绝不取代");
+
+  assert.equal(storeCoverage(new Set(), new Set()), 0, "空集合覆盖率应为 0");
+  console.log("✅ 覆盖率口径正确（分母是旧单；残单不会覆盖全单，带噪声旧单仍被取代）");
 }
 
 /* ============ 2. 归一化：标点/空格差异视为同一门店 ============ */
@@ -91,9 +100,17 @@ const newOrder = { id: "NEW1", routeId: ROUTE, date: DATE, vehicle: VEH, stage: 
   const tinyOld = { id: "OLD3", routeId: ROUTE, date: DATE, vehicle: VEH, stage: "CONFIRMED", stores: mkStores(FULL.slice(0, 5)) };
   const picked = pickSupersededCandidates(newOrder, [tinyOld]);
   assert.equal(picked.length, 1, "先传残单再传全单时，残单必须被取代");
-  assert.equal(picked[0].subset, true, "应标记为子集取代");
-  assert.ok(picked[0].overlap < SUPERSEDE_THRESHOLD, "该场景重叠度本身低于阈值（靠子集规则命中）");
-  console.log("✅ 重传/补全/先残后全 均能正确取代（含多张）");
+  assert.equal(picked[0].subset, true, "应标记为子集取代（覆盖率同样为 1.0）");
+
+  // 真实修复点：旧 15 家（13 真门店 + 2 条 OCR 噪声），新 22 家
+  // 覆盖率 13/15=0.867 ≥ 0.7 取代；有噪声故非严格子集，靠覆盖率口径命中
+  const noisyOld = { id: "OLD4", routeId: ROUTE, date: DATE, vehicle: VEH, stage: "PLANNED",
+    stores: mkStores(FULL.slice(0, 13).concat(["g5g85 06:05", "渝北中"])) };
+  const picked2 = pickSupersededCandidates(newOrder, [noisyOld]);
+  assert.equal(picked2.length, 1, "带噪声的不完整旧单必须被全单取代（修复点）");
+  assert.ok(picked2[0].overlap >= SUPERSEDE_THRESHOLD, "该场景覆盖率应达标");
+  assert.equal(picked2[0].subset, false, "有噪声故非严格子集，靠覆盖率口径命中");
+  console.log("✅ 重传/补全/先残后全/带噪声旧单 均能正确取代（含多张）");
 }
 
 /* ============ 4. 绝不取代的场景（安全边界） ============ */

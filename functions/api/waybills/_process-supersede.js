@@ -7,15 +7,19 @@
    取代规则（保守，避免误删真实数据）：
      同一线路 + 同一日期 + **同一车辆** + 门店集合高度重叠，命中任一即取代：
        ① 旧单门店集合是新单的**子集**（旧单只是同一份清单的不完整拍摄；
-          覆盖「先传 5 家 → 再传全 22 家」，否则残单会一直留在当日统计里）
-       ② 重叠度 = |交集| / |较大集合| ≥ 0.6
-     取舍方向性（故意不对称）：
-       - 旧 22 家、新 22 家（同样的门店）        → 1.00 → 取代
-       - 旧 18 家（漏拍）、新 22 家（补全）      → 0.82 → 取代
-       - 旧 5 家（漏拍）、新 22 家（补全）       → 子集 → 取代
-       - 旧 22 家、新 5 家（只补拍了一小段）     → 0.23 → **不取代**（不能拿残单覆盖全单）
-       - 旧 10 家、新 10 家（同车第二趟不同门店）→ 0.00 → **不取代**
-     车辆任一方缺失时一律不取代（信息不足，宁可留两张人工看）。
+          覆盖「先传 5 家 → 再传全 22 家」）；
+       ② 覆盖率 = |旧∩新| / |旧| ≥ 0.7（旧单绝大多数门店都出现在新单里，
+          说明旧单是同一份清单的不完整/重复拍摄，应由新单取代）。
+          覆盖「先传 15 家、再传全 22 家（各漏拍/重拍几张）」：13/15=0.87 → 取代。
+     取舍方向性（故意不对称，分母是 |旧|）：
+       - 旧 22 家、新 22 家（同样门店）            → 覆盖 1.00 → 取代
+       - 旧 18 家（漏拍）、新 22 家（补全）        → 覆盖 1.00（子集）→ 取代
+       - 旧 5 家（漏拍）、新 22 家（补全）         → 覆盖 1.00（子集）→ 取代
+       - 旧 15 家、新 22 家（各漏拍/重拍几张）     → 覆盖 0.87 → 取代
+       - 旧 22 家、新 5 家（只补拍了一小段）       → 覆盖 0.23 → **不取代**（防丢门店漏送）
+       - 旧 10 家、新 10 家（同车第二趟不同门店）  → 覆盖 0.00 → **不取代**
+     车辆任一方车牌不可信（缺失/被 OCR 污染）时，不据车牌排除，交由门店集合判定；
+     双方都有可信且不同的车牌时，严格排除（同一天同线路多车分送不会被误合并）。
 
    取代动作（Lua 原子）：historyStatus=SUPERSEDED + supersededBy/At/Reason、
    移出历史索引（SREM）、清理指向该单的当日去重键，保证后续统计与去重不再命中它。
@@ -23,8 +27,10 @@
 import { command } from "../_redis.js";
 import { normalizeForMatch } from "./_store-match-normalize.js";
 
-/** 取代判定阈值：较大集合被覆盖的比例 */
-export const SUPERSEDE_THRESHOLD = 0.6;
+/** 取代判定阈值：旧单门店被新单覆盖的比例 */
+export const SUPERSEDE_COVERAGE = 0.7;
+/** 兼容旧命名 */
+export const SUPERSEDE_THRESHOLD = SUPERSEDE_COVERAGE;
 
 /** 运单的可读阶段（与 _waybill-meta.js 的 isReadable 保持一致） */
 const READABLE_STAGES = ["PLANNED", "CONFIRMED"];
@@ -39,7 +45,7 @@ export function storeNameSet(order) {
   return set;
 }
 
-/** 重叠度 = 交集 / 较大集合大小（0~1）。两个空集合视为 0。 */
+/** 重叠度 = 交集 / 较大集合大小（0~1）。两个空集合视为 0。保留作参考指标。 */
 export function storeOverlap(a, b) {
   const A = a instanceof Set ? a : new Set(a || []);
   const B = b instanceof Set ? b : new Set(b || []);
@@ -48,6 +54,27 @@ export function storeOverlap(a, b) {
   let inter = 0;
   for (const x of small) if (big.has(x)) inter++;
   return inter / big.size;
+}
+
+/**
+ * 旧单被新单覆盖的比例 = |旧∩新| / |旧|。
+ * 这是取代判定的主指标：只要「旧单的门店基本都出现在新单里」，就说明旧单只是
+ * 同一份清单的不完整拍摄（漏拍/断行/少传一张），应由新单取代。
+ *
+ * 为什么不用「交集/较大集合」：实测旧 15 家（含 2 条噪声/截断）、新 22 家，
+ * 真正重合 13 家 → 交集/较大 = 0.591 差一点没过阈值，但按覆盖口径 13/15=0.867
+ * 明确属于"旧单不完整"，应当取代。
+ *
+ * 方向性由分母是 |旧| 保证：新单只是旧单的一小部分时（如只补拍一段），
+ * 覆盖率会很低，绝不会用残单覆盖完整旧单。
+ */
+export function storeCoverage(oldSet, newSet) {
+  const O = oldSet instanceof Set ? oldSet : new Set(oldSet || []);
+  const N = newSet instanceof Set ? newSet : new Set(newSet || []);
+  if (!O.size) return 0;
+  let inter = 0;
+  for (const x of O) if (N.has(x)) inter++;
+  return inter / O.size;
 }
 
 /** a 是否是 b 的子集（a 的每一家门店都出现在 b 里）。 */
@@ -107,15 +134,17 @@ export function pickSupersededCandidates(newOrder, others, { threshold = SUPERSE
     /* 两条判据（不对称，故意如此）：
        1) 旧单门店集合是新单的子集 → 旧单只是"同一份清单的不完整拍摄"，取代它。
           覆盖「先传 5 家（漏拍）→ 再传全 22 家」，否则残单会永远留在当日统计里。
-       2) 重叠度 ≥ 阈值（较大集合做分母）→ 明显是同一份清单，取代。
-       注意方向性：新单是旧单的子集时（先传全、后只传一小段）**不取代**，
-       绝不能用残单覆盖完整的旧单（会丢门店 → 漏送）。 */
+       2) 覆盖率 ≥ 阈值（|旧∩新| / |旧|，分母用旧单）：旧单绝大多数门店都出现在
+          新单里 → 旧单是同一份清单的不完整/重复拍摄，由新单取代。
+          实测旧 15 家（含 2 条噪声/截断）、新 22 家、重合 13 家 → 13/15=0.87 明确取代。
+       注意方向性：分母是 |旧|，所以"新单只是旧单的一小段"（先传全、后只传一小段）
+       时覆盖率会很低，绝不取代，绝不能用残单覆盖完整的旧单（会丢门店 → 漏送）。 */
     const subset = isSubsetOf(oldSet, newSet);
-    const ov = storeOverlap(newSet, oldSet);
-    if (subset || ov >= threshold) {
+    const cov = storeCoverage(oldSet, newSet);
+    if (subset || cov >= threshold) {
       out.push({
         id: String(o.id),
-        overlap: Number(ov.toFixed(3)),
+        overlap: Number(cov.toFixed(3)),
         subset,
         total: Array.isArray(o.stores) ? o.stores.length : 0,
         stage: String(o.stage || ""),
