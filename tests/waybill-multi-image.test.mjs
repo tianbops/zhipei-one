@@ -7,6 +7,7 @@
 import assert from "node:assert/strict";
 import { mergeStoreEdges } from "../functions/api/waybills/_process-multimage.js";
 import { extract } from "../functions/api/waybills/_process-extract.js";
+import { formatCompareKey, normalizeForMatch, matchStores } from "../functions/api/waybills/_store-match.js";
 
 const HEADER = [
   "运单列表", "运输日期", "2026-10-27", "车牌号", "渝DK7692",
@@ -178,6 +179,78 @@ const has = (list, kw) => list.some(n => n.includes(kw));
   assert.ok(has(list, "半山华府店"), "重叠区门店不得丢失");
   assert.ok(has(list, "钱大妈半山华府店"), "末图门店不得丢失");
   console.log("✅ 含表头的图自动判为首图，脏名清零且不丢门店");
+}
+
+// --- 7b) 中段图与末图顺序颠倒（2026-10-27 线上实测故障）---
+// 用户相册多选顺序 [首图, 末图, 中段图]：只按表头校正首图时，中段图被当成末图，
+// 其底部残条“渝北中”逃过裁剪卡进待定。修复 = ① 运单号表格判末图 ② 底部残条按证据裁剪。
+{
+  const r = mergeStoreEdges([IMG1, IMG3, IMG2]);
+  const list = names(r.stores || []);
+  assert.ok(!list.some(n => n.trim() === "渝北中"),
+    `顺序颠倒时底部残条“渝北中”仍应剔除：${JSON.stringify(list.filter(n => n.trim() === "渝北中"))}`);
+  assert.ok(!list.some(n => n.endsWith("（客")), "首图底部残条应剔除");
+  assert.ok(has(list, "松石支路二店"), "末图完整末店不得因顺序颠倒被误删");
+  assert.ok(has(list, "中景隆"), "完整的“渝北中景隆”必须保留");
+  assert.ok(has(list, "韩志贤加盟重庆彭成商贸"), "完整版门店不得丢失");
+  console.log("✅ 中段/末图顺序颠倒时，残条仍被剔除且完整门店不丢");
+}
+
+// --- 7c) 运单号表格（ZW…）是末图依据：含表格的图必须排到最后 ---
+{
+  // IMG3 含 ZW 运单号表格 → 无论上传顺序如何都应排末位
+  const r = mergeStoreEdges([IMG1, IMG3, IMG2]);
+  const list = names(r.stores || []);
+  assert.ok(list[0].includes("温馨家园"), "表头图仍应判为首图");
+  // 修正排序后即真实拍摄顺序：中段图底部残条位置式剔除即可命中
+  assert.ok(!list.some(n => n.trim() === "渝北中"), "排序修正后“渝北中”应被剔除");
+  assert.ok(has(list, "松石支路二店"), "真实末店必须保留");
+  console.log("✅ 运单号表格自动判为末图，顺序还原正确");
+}
+
+// --- 7d) 底部残条安全阀：基准库真实门店（前缀关系的两家真店）不得误删 ---
+// 基准库同时存在「特渠部重庆市卫生健康委员会」与「…（临时）」，前者天然是后者
+// 的前缀；若前者恰在某张图末尾，绝不能被当成后者的残条删掉。
+// 真实滚动场景：完整真店在下一张图的重叠区必有完整副本（identical≥2 → 保留）。
+{
+  const imgShort = "到家主城-江北区鸿恩寺客服中心（2026） -> 特渠部重庆市卫生健康委员会";
+  // 下一张图以重叠的完整副本开头（真实滚动必然如此）
+  const imgTemp = "特渠部重庆市卫生健康委员会 -> 特渠部重庆市卫生健康委员会（临时） -> 渝北A02230谊品生鲜温馨家园南门店";
+  const known = name => /卫生健康委员会/.test(String(name || "")) || /鸿恩寺|温馨家园/.test(String(name || ""));
+  // 无基准（不传 predicate）：靠「重叠区完整副本」证据保住真店
+  const r0 = mergeStoreEdges([imgShort, imgTemp]);
+  assert.ok(names(r0.stores || []).some(n => n.includes("卫生健康委员会") && !n.includes("临时")),
+    "无基准时真店名不得被当残条删除");
+  // 有基准（predicate 命中）：双保险
+  const r1 = mergeStoreEdges([imgShort, imgTemp], extract, { isKnownStore: known });
+  assert.ok(names(r1.stores || []).some(n => n.includes("卫生健康委员会") && !n.includes("临时")),
+    "基准库完整门店不得被当残条删除");
+  // 对照组：无末图依据（图序不可靠）时，真残条「渝北中」按证据仍被剔除
+  const img3NoTable = ["贤加盟重庆彭成商贸有限公司", "II类天友生活花卉东路店", "渝北中景隆(重庆）贸易有限公司",
+    "江北钱大妈半山华府店", "渝北Q398重庆沁园餐饮管理有限公司松石支路二店"].join(" -> ");
+  const r2 = mergeStoreEdges([IMG2, img3NoTable], extract, { isKnownStore: known });
+  assert.ok(!names(r2.stores || []).some(n => n.trim() === "渝北中"), "有基准时真残条仍应剔除");
+  assert.ok(names(r2.stores || []).some(n => n.includes("松石支路二店")), "末图完整末店应保留");
+  console.log("✅ 基准库真店（前缀关系）不被误删，真残条仍剔除");
+}
+
+// --- 7e) 罗马数字序号 OCR 误读：文字全同、仅符号差异必须视为同一家门店 ---
+// 线上实测：OCR 把「II类」读成「IⅡ类」（NFKC 分解后 III≠II）→ 相似度 94% 卡待定，
+// 且与重叠区的完整版无法去重。
+{
+  const A = "II类天友生活花卉东路店";
+  const B = "IⅡ类天友生活花 卉东路店";   // 实际 OCR 输出（I + Ⅱ）
+  const C = "Ⅲ类天友生活花卉东路店";     // Ⅱ 误读成 Ⅲ
+  assert.equal(formatCompareKey(B), formatCompareKey(A), `formatCompareKey 未坍缩：${formatCompareKey(B)}`);
+  assert.equal(formatCompareKey(C), formatCompareKey(A), `formatCompareKey 未坍缩：${formatCompareKey(C)}`);
+  assert.equal(normalizeForMatch(B), normalizeForMatch(A), "normalizeForMatch 未坍缩");
+  // 匹配引擎：B 应 data-exact 命中基准库 A（而非 94% 相似度卡待定）
+  const base = [{ storeId: "store_ii", name: A }];
+  const m = matchStores([{ rawName: B, name: B, sourceLine: B }], base);
+  assert.equal(m.length, 1);
+  assert.ok(!m[0].pending, `「IⅡ类…」应直接匹配基准门店，实际 pending=${m[0].pending}`);
+  assert.equal(m[0].storeId, "store_ii", "应命中基准库「II类…」门店");
+  console.log("✅ IⅡ/Ⅲ/Il/ll 与 II 视为同一家门店，直接匹配不再卡待定");
 }
 
 // --- 8) 待定门店可按「丢弃」剔除（确认接口出口存在）---

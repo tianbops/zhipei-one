@@ -9,36 +9,89 @@
    “缺前缀的假门店”或与完整版并存造成重复。
 
    规则：
-     - 非首图：丢弃第一条（顶部残条）
-     - 非末图：丢弃最后一条（底部残条）
-     - 末图末尾：保留
+     - 非首图：丢弃第一条（顶部残条；首图由「含表头」校正保证）
+     - 每一张图的最后一条：仅当**证据**表明它是底部残条才丢弃（见下）
    重复合并与顺序规划交由后续 DEDUPE / PLAN 处理，本函数不做去重与排序。
+
+   底部残条为何按证据判定、而非按图序位置：
+     相册多选顺序不可靠，「含表头当首图」校正只保证第一张，其余图的先后仍可能
+     颠倒（实测：中段图被当成末图，其底部残条“渝北中”逃过裁剪，卡进待定确认；
+     而真正的末图反被当成中段，完整的末家门店差点被位置式规则误删）。
+     残条的证据：它是一条**更长沙店名的前缀截断**——另一张图里存在某门店名，
+     归一化后以它开头且明显更长；并且这个截断名没有在任何图里以完整形态出现
+     （重叠区会有一模一样的完整副本，identical≥2 → 是完整真店，保留）。
+     安全阀：isKnownStore(name) 为真（基准库完整门店，如“特渠部…委员会”与
+     “特渠部…委员会（临时）”本就是前缀关系的两家真店）→ 绝不当作残条。
 
    @param {string[]} imageTexts 逐张截图的 OCR 文本（按上传顺序）
    @param {Function} extractFn 提取函数（默认 extract），便于测试注入
+   @param {{isKnownStore?:Function}} opts isKnownStore(name)=>bool：基准库完整门店判定
    @returns {{stores:(Array|null), edgeTrimmed:number}} stores 为 null 表示不适用（单图）
 */
 import { extract } from "./_process-extract.js";
+import { formatCompareKey } from "./_store-match.js";
 
-export function mergeStoreEdges(imageTexts, extractFn = extract) {
+export function mergeStoreEdges(imageTexts, extractFn = extract, { isKnownStore = null } = {}) {
   if (!Array.isArray(imageTexts) || imageTexts.length < 2) return { stores: null, edgeTrimmed: 0 };
-  /* 顺序校正：必须让「含表头（运输日期/车牌号/承运订单/总数量）」的那张当首图。
-     相册多选顺序不可靠（实测出现过用户先选 06:05 中段图，导致首图判错：
-     首图的第一条被误保留（状态栏+标题+门店），而真正首图的表头+首家门店
-     反被当作“非首图第一条”丢弃 → 既留脏名又丢门店）。 */
+  /* 顺序校正（两级依据）：
+     ① 「含表头（运输日期/车牌号/承运订单/总数量）」的当首图——相册多选顺序不可靠
+       （实测出现过用户先选 06:05 中段图，导致首图判错：首图的第一条被误保留
+       （状态栏+标题+门店），而真正首图的表头+首家门店反被当作“非首图第一条”
+       丢弃 → 既留脏名又丢门店）。
+     ② 「含运单号表格（ZW…编号网格）」的当末图——该表格只出现在路线列表末尾之后，
+       用户只有滚到列表最后才拍得到（实测多张运单末图均为“路线行+运单号表格”）。
+       没有它时，中段图与末图的先后无法判别（实测顺序颠倒导致中段图底部残条
+       “渝北中”逃过裁剪卡进待定）。 */
   const isHeader = t => /运输日期|车牌号|承运订单|总数量\s*\d/.test(String(t || ""));
+  const isTail = t => /\bZW\d{8}[A-Z0-9]+\b/i.test(String(t || ""));
+  const rank = t => isHeader(t) ? 0 : (isTail(t) ? 2 : 1);
   const ordered = imageTexts
     .map((t, i) => ({ t, i }))
-    .sort((a, b) => (isHeader(b.t) ? 1 : 0) - (isHeader(a.t) ? 1 : 0) || a.i - b.i)
+    .sort((a, b) => rank(a.t) - rank(b.t) || a.i - b.i)
     .map(x => x.t);
+  const perImage = ordered.map(t => {
+    const one = extractFn(String(t || ""));
+    return (one && one.stores) || [];
+  });
+  /* 底部残条证据：全量条目的归一化名中，是否存在「以它开头且明显更长」的版本，
+     且它自身没有以完整形态出现在任何图里（重叠区会有一模一样的完整副本）。 */
+  const allKeys = [];
+  for (const stores of perImage) {
+    for (const s of stores) {
+      const k = formatCompareKey((s && (s.rawName || s.name)) || "");
+      if (k) allKeys.push(k);
+    }
+  }
+  const isBottomResidue = name => {
+    const k = formatCompareKey(name || "");
+    if (!k) return false;
+    if (typeof isKnownStore === "function" && isKnownStore(name)) return false;
+    let identical = 0;
+    let extended = false;
+    for (const n of allKeys) {
+      if (n === k) identical++;
+      else if (n.startsWith(k) && n.length - k.length >= 2) extended = true;
+    }
+    /* 证据安全性：若它是完整真店，下一张图的重叠区必有完整副本（identical≥2 → 保留）；
+       「有延长版 + 无完整副本」只有截断才同时满足。基准库 predicate 在此之上再兜一层
+       （防同名前缀关系的真店对，如 特渠部…委员会 / 特渠部…委员会（临时））。 */
+    return extended && identical <= 1;
+  };
   const merged = [];
   let edgeTrimmed = 0;
-  for (let idx = 0; idx < ordered.length; idx++) {
-    const one = extractFn(String(ordered[idx] || ""));
-    let stores = (one && one.stores) || [];
+  /* 末图依据存在（有图含运单号表格）时图序可靠：非末图一律位置式剔除末条
+     （该条必是底部残条或重叠区完整副本，绝无丢失风险）；同时证据式判定对
+     所有图生效——末图自身的残条、以及没有运单号表格（图序不可靠）时，靠证据兜底。 */
+  const hasTailMarker = ordered.some(t => isTail(t));
+  for (let idx = 0; idx < perImage.length; idx++) {
+    let stores = perImage[idx];
     if (!stores.length) continue;
     if (idx > 0) { stores = stores.slice(1); edgeTrimmed++; }                     // 顶部残条
-    if (idx < ordered.length - 1 && stores.length) { stores = stores.slice(0, -1); edgeTrimmed++; } // 底部残条
+    const last = stores[stores.length - 1];
+    const positional = hasTailMarker && idx < perImage.length - 1;
+    if (stores.length && (positional || isBottomResidue(last && (last.rawName || last.name)))) {
+      stores = stores.slice(0, -1); edgeTrimmed++;                                // 底部残条
+    }
     for (const s of stores) merged.push(s);
   }
   return { stores: merged.length ? merged : null, edgeTrimmed };

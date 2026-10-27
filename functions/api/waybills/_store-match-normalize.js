@@ -15,10 +15,16 @@ export const clean = v => String(v ?? "").trim();
 
 export const formatCompareKey = v => {
   let s = clean(v);
+  /* 罗马数字字符（Ⅰ-Ⅻ / ⅰ-ⅾ）先统一改写成 "II" 再做兼容分解。
+     实测 OCR 把「II类天友生活花卉东路店」读成 IⅡ / Ⅲ / Il / ll 等形态：
+     NFKC 会把它们分解成长短不一的 I 串（Ⅲ→III、IⅡ→III），与基准名 II
+     永不相等 → 相似度 94% 卡待定、且与重叠区的完整版无法去重。
+     门店文字完全相同、仅序号符号识别差异时必须视为同一家。 */
+  s = s.replace(/[\u2160-\u217F]/g, "II");
   try { s = s.normalize("NFKC"); } catch {}
   return s
     .replace(/[\s\p{Z}\p{Cf}\p{P}\p{S}]+/gu, "")
-    .replace(/Ⅱl|Il|II|ⅱ/gi, "II")
+    .replace(/[Il]{2,4}/gi, "II")
     .toLowerCase();
 };
 
@@ -34,13 +40,15 @@ export const businessStoreCode = v => {
 /** 基础归一：全角半角、空白（含 OCR 断行 \n、制表符）、括号、标点、罗马数字 */
 export const normalizeForMatch = v => {
   let s = clean(v);
+  /* 与 formatCompareKey 同口径：罗马数字/ I·l 连串统一坍缩为 "II"，
+     避免「文字全同、仅序号符号 OCR 差异」的门店在评分时被判成不同门店。 */
+  s = s.replace(/[\u2160-\u217F]/g, "II");
   try { s = s.normalize("NFKC"); } catch {}
   return s
     .replace(/[\s\p{Z}\p{Cf}]+/gu, "")
     .replace(/[（）()【】\[\]{}<>《》「」『』""''‘’]/g, "")
     .replace(/[·•、,，。；;:：!！?？\-_—~～|/\\]/g, "")
-    .replace(/Ⅱ|ⅱ/gi, "II")
-    .replace(/Ⅲ|ⅲ/gi, "III")
+    .replace(/[Il]{2,4}/gi, "II")
     .toLowerCase();
 };
 

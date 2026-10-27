@@ -203,7 +203,12 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
        - 末图末尾完整，保留。
      单图或纯文本直录场景完全走原逻辑，行为不变。 */
   const imgTexts=(ocr&&Array.isArray(ocr.imageTexts))?ocr.imageTexts:[];
-  const edge=mergeStoreEdges(imgTexts);
+  /* 底部残条按证据判定需要「是否基准库完整门店」：基准库里存在真实的前缀关系
+     门店（特渠部重庆市卫生健康委员会 / 特渠部重庆市卫生健康委员会（临时）），
+     没有这层证据会把前者误当残条删掉 → 丢门店漏送。 */
+  const baseKeys=new Set();
+  for(const bs of baseStores)for(const nm of baseIdentityNames(bs))baseKeys.add(formatCompareKey(nm));
+  const edge=mergeStoreEdges(imgTexts,extract,{isKnownStore:name=>baseKeys.has(formatCompareKey(name))});
   let edgeTrimmed=edge.edgeTrimmed;
   if(edge.stores)extracted.stores=edge.stores;
   const rawExtractCount=extracted.stores.length;extracted.stores=splitByRouteBase(extracted.stores,baseStores);const splitExtractCount=extracted.stores.length;const recoveredCount=Math.max(0,splitExtractCount-rawExtractCount);const extractMs=Date.now()-extractedStarted;emit(66,`已提取 ${extracted.stores.length} 家门店`);if(!extracted.stores.length)return failProcess("EXTRACT_EMPTY","未提取到门店，请检查运单内容",422,{recoverable:true,action:"RESUBMIT",hint:"未从运单中提取到门店，请检查运单图片清晰度后重新上传"});
