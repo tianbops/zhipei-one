@@ -30,7 +30,7 @@
 /* 左滑操作：删除动作始终位于内容层后方，仅在左滑露出。 */
 #routes .route{overflow:hidden}
 #routes .route-delete{right:-74px;top:0;height:100%;min-height:54px;margin:0;padding:0;width:74px;border:0;border-radius:0;background:var(--zp-error-surface);color:var(--zp-danger);z-index:1;pointer-events:none}
-#routes .route-content{position:relative;z-index:2;background:var(--card);transform:translateX(0)}
+#routes .route-content{position:relative;z-index:2;background:var(--zp-bg);transform:translateX(0)}
 #routes .route.open .route-content{transform:translateX(-74px)}
 #routes .route.open .route-delete{pointer-events:auto}
 /* 管理员用户/线路左滑 3.2：移除无意义箭头；线路删除按钮仅在左滑后露出。 */
@@ -44,7 +44,7 @@
   pointer-events:none!important;transition:none!important
 }
 #routes .route-content{
-  position:relative;z-index:2;background:var(--card);
+  position:relative;z-index:2;background:var(--zp-bg);
   transform:translateX(0)!important;transition:transform .18s ease
 }
 #routes .route.open .route-content{transform:translateX(-74px)!important}

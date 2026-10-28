@@ -16,7 +16,7 @@
 .admin-nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;gap:2px;padding:6px 6px calc(8px + env(safe-area-inset-bottom));background:var(--zp-nav-bg);max-width:680px;margin:0 auto}
 .admin-nav .nav-item{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:46px;border:0;border-radius:12px;background:transparent;color:var(--muted);font-size:12px;font-weight:600}
 .admin-nav .nav-item svg{width:22px;height:22px;display:block;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.admin-nav .nav-item.active{background:var(--card);color:var(--zp-primary)}
+.admin-nav .nav-item.active{background:transparent;color:var(--zp-primary)}
 .viewport{margin-top:14px}.title{display:flex;align-items:center;justify-content:space-between;min-height:30px;margin-bottom:9px;font-size:16px;font-weight:700}
 .add{width:34px;height:34px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--zp-text);font-size:20px;line-height:1}
 .search{margin-bottom:8px}.search input{width:100%;padding:0 12px;color:var(--zp-text)}
@@ -80,7 +80,7 @@ select option{background:var(--zp-secondary-bg);color:var(--zp-text)}
    改为「稍重的纯色遮罩 + 原有投影」保持视觉层次，弹窗内容本身不受任何影响。 */
 .dialog-bg{position:fixed;inset:0;z-index:var(--ui-z-modal,1000);display:flex;align-items:center;justify-content:center;padding:18px;background:var(--zp-card-translucent-2)}
 .dialog-bg[hidden]{display:none!important}
-.dialog{width:min(100%,380px);max-height:88dvh;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:17px;padding:18px;box-shadow:0 18px 50px var(--zp-shadow-lg)}
+.dialog{width:min(100%,380px);max-height:88dvh;overflow:auto;background:var(--zp-card-translucent-2);border:1px solid var(--line);border-radius:17px;padding:18px;box-shadow:0 18px 50px var(--zp-shadow-lg)}
 /* 弹窗内表单控件通栏：下拉框/输入框不再窄条贴左，与弹窗同宽，观感整齐 */
 /* 统一尺寸/字号/边框/padding：font-size>=16px 防安卓聚焦自动放大视口（此前 13.3px 导致聚焦的框明显变大） */
 .dialog .field input,.dialog .field select{width:100%;height:48px;padding:0 12px;font-size:16px;line-height:normal;text-align:center;text-align-last:center;border:1px solid var(--zp-line);border-radius:11px;appearance:none;-webkit-appearance:none}

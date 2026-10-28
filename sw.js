@@ -9,7 +9,7 @@
  *   - 图片/字体       ：stale-while-revalidate（内容基本不变，秒开优先）
  * 资产缓存键用完整 URL（含 ?v=）精确匹配；页面缓存键用 pathname 规整（忽略 ?from 等查询）。
  */
-const VERSION = "zp-pwa-173";
+const VERSION = "zp-pwa-174";
 const STATIC_CACHE = VERSION + "-static";
 const PAGES_CACHE = VERSION + "-pages";
 const OFFLINE_URL = "/offline";
@@ -33,10 +33,10 @@ const PRECACHE = [
   "/assets/delivery-route.webp?v=b872c885",
   "/assets/icons/apple-touch-icon.png?v=25f1ad28",
   "/assets/icons/icon-192.png?v=4d3f7fd9",
-  "/css/admin-base.css?v=6b8f9d0d",
-  "/css/admin-forms.css?v=28b21210",
+  "/css/admin-base.css?v=a89ecd91",
+  "/css/admin-forms.css?v=21b43bb9",
   "/css/admin-overlay.css?v=14bf1db5",
-  "/css/admin-perf.css?v=b62b874c",
+  "/css/admin-perf.css?v=f0576a16",
   "/css/app.css?v=c8dcd848",
   "/css/business-pages.css?v=55b389bf",
   "/css/data.css?v=b7b6c4f4",
