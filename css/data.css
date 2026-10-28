@@ -228,7 +228,8 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-alias-chip .data-alias-del{appearance:none;border:none;background:transparent;color:var(--zp-muted);font-size:16px;line-height:1;cursor:pointer;padding:0 2px;flex:0 0 auto}
 .data-alias-chip .data-alias-del:hover{color:var(--zp-error)}
 .data-alias-add{display:flex;gap:8px;margin-top:8px}
-.data-alias-input{flex:1 1 auto;min-width:0}
-.data-alias-add .data-action-btn{height:var(--zp-control-height);border:1px solid var(--zp-line);border-radius:10px;background:var(--zp-card-translucent-2);color:var(--zp-text);font-size:14px;padding:0 16px;flex:0 0 auto}
+.data-alias-input{flex:1 1 auto;min-width:0;width:auto}
+.data-alias-add .data-action-btn{width:auto;height:var(--zp-control-height);border:1px solid var(--zp-line);border-radius:10px;background:var(--zp-card-translucent-2);color:var(--zp-text);font-size:14px;padding:0 16px;flex:0 0 auto}
+.data-aliases-empty{color:var(--zp-muted);font-size:12px;padding:2px 0}
 :root[data-zp-theme="light"] .data-alias-chip{background:#FFFFFF;border-color:#D7DDE3}
 :root[data-zp-theme="light"] .data-alias-add .data-action-btn{background:#FFFFFF;border-color:#D7DDE3}
