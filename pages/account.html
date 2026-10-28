@@ -21,7 +21,7 @@
 })();
 </script>
 
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>账号设置 · 智配One</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>设置 · 智配One</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#F6F7F9"><script defer src="/js/theme-sync.js?v=25db6e33"></script>
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png?v=25f1ad28">
@@ -30,17 +30,15 @@
 <meta name="apple-mobile-web-app-title" content="智配One"><script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F6F7F9":"#121826");}catch(e){}</script>
 <link rel="stylesheet" href="/css/app.css?v=c8dcd848"><link rel="stylesheet" href="/css/ui-base.css?v=b828739b"><link rel="stylesheet" href="/css/ui-overlay.css?v=7612d542"><link rel="stylesheet" href="/css/ui-theme.css?v=54df0f20"><link rel="stylesheet" href="/css/ui-shell.css?v=d7e34ce4"><link rel="stylesheet" href="/css/mobile-ui.css?v=b2dd17f4"><link rel="stylesheet" href="/css/business-pages.css?v=55b389bf">
 <style>
-/* ===== 账号设置页 2.0（2026-10-21 视觉重构）
+/* ===== 设置页 2.0（2026-10-21 视觉重构；2026-10-28 标题与分组层级调整）
    设计语言对齐成熟 App「我的」页：浅灰底 + 白色圆角卡片 + 图标行 + 分段主题选择器，
    深浅双主题全部走 --zp-* 令牌；全部功能 ID 不变，仅换壳。 ===== */
 
-/* --- 头像 hero --- */
-.acct-hero{display:flex;flex-direction:column;align-items:center;gap:12px;padding:22px 0 6px}
-.acct-avatar{width:92px;height:92px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  background:var(--zp-surface-2,var(--zp-surface-2));border:1px solid var(--zp-line,var(--zp-line));
-  color:var(--zp-text,#fff);font-size:40px;font-weight:700;line-height:1;user-select:none}
-:root[data-zp-theme="dark"] .acct-avatar{background:var(--zp-surface-2);border-color:var(--zp-line);color:#FFFFFF}
-.acct-hero-sub{margin:0;color:var(--zp-muted,var(--zp-muted));font-size:13px}
+/* --- 头像 hero：已移除（2026-10-28）
+   原为「居中大圆圈首字母 + 智配One 账号」两行。大圆圈占掉首屏近 1/3，
+   且与下方分组标题重复表达层级。现改为与「外观」同款的分组标题（.acct-group-label），
+   账号区直接从标题开始。.acct-hero / .acct-avatar / .acct-hero-sub 一并删除，
+   不留无引用的死样式。 --- */
 
 /* --- 分组小标题（卡片外灰色 label） --- */
 .acct-group-label{margin:18px 2px 8px;color:var(--zp-muted,var(--zp-muted));font-size:13px;line-height:18px}
@@ -144,8 +142,11 @@
 .acct-destroy-link[hidden]{display:none}
 
 /* --- 关于：品牌区（一排左右，左名称右版本，与卡片列表左右语言一致） --- */
-.acct-about-hero{display:flex;flex-direction:row;align-items:baseline;justify-content:space-between;gap:8px;padding:10px 2px 4px}
-.acct-about-name{margin:0;color:var(--zp-text,#fff);font-size:16px;font-weight:700}
+/* 「智配One + 当前版本」这一行：与卡片外分组标题（账号 / 外观 / 关于）同字号、
+   同色、同左缩进，作为分组标题而不是独立大标题；右侧版本号仍贴右。 */
+.acct-about-hero{display:flex;flex-direction:row;align-items:baseline;justify-content:space-between;gap:8px;
+  margin:18px 2px 8px;padding:0}
+.acct-about-name{margin:0;color:var(--zp-muted);font-size:13px;line-height:18px;font-weight:700}
 .acct-about-ver{margin:0;color:var(--zp-muted,var(--zp-muted));font-size:12px}
 /* App 端壳版本落后于最新版时的更新徽标：主色胶囊（沿用唯一主色 --zp-primary），
    点击直接触发 APK 下载（原生 DownloadManager 接管）。类名避开 danger/delete
@@ -184,6 +185,11 @@
   -webkit-tap-highlight-color:transparent}
 .acct-mini-btn:active{opacity:.6}
 
+/* 底部留白：注销账号是页面最后一项。通用 .zp-scroll 只留 72px（底栏 64px + 8px），
+   而底栏中间的「+」向上突出约 28px，会与注销文字几乎贴在一起。
+   账号页单独加到底部 112px，让最后一项与「+」之间保留明显呼吸距离。 */
+.account-page .zp-scroll{padding-bottom:calc(112px + env(safe-area-inset-bottom))}
+
 @media(max-width:380px){
   .account-page{padding-left:12px;padding-right:12px}
   .acct-card{padding-left:12px;padding-right:12px}
@@ -192,15 +198,11 @@
 </style><script src="/js/perf-diagnostics.js?v=a2065bec"></script>
 </head>
 <body><main class="page2 account-page zp-shell">
-<header class="topbar"><a class="app-back" href="/home" aria-label="返回"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><h1>账号设置</h1><span></span></header>
+<header class="topbar"><a class="app-back" href="/home" aria-label="返回"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><h1>设置</h1><span></span></header>
 
 <div class="zp-scroll">
 
-<div class="acct-hero">
-  <div class="acct-avatar" id="avatarChar" aria-hidden="true">·</div>
-  <p class="acct-hero-sub">智配One 账号</p>
-</div>
-
+<h2 class="acct-group-label">账号</h2>
 <section class="acct-card" aria-label="账号">
   <div class="acct-rows">
     <div class="acct-row" role="group">
@@ -288,6 +290,7 @@
   </div>
 </section>
 
+<h2 class="acct-group-label">关于</h2>
 <section class="acct-card about-card" aria-label="信息">
   <div class="acct-rows">
     <button class="acct-row" id="privacyLink" type="button">
@@ -431,7 +434,6 @@ async function load(){
  try{
   const x=await api("/api/me"),me=x.user||{};
   $("username").textContent=me.username||"—";
-  $("avatarChar").textContent=(me.username||"·").charAt(0).toUpperCase();
   $("newUsername").placeholder="当前："+(me.username||"—");
   if(me.role==="system_admin"||me.role==="admin")$("dangerToggle").hidden=true;
  }catch(e){if(e&&e.code==="HTTP_401"&&window.zpAuthFail){window.zpAuthFail("expired");return}show("message",e)}
