@@ -10,7 +10,7 @@
 .order-menu-route{display:flex;align-items:center;background:var(--zp-surface-3);font-weight:650}
 .order-menu button{display:flex;align-items:center}
 .order-menu button:active{background:var(--zp-primary);color:var(--zp-on-primary)}.order-menu .logout{color:var(--ui-danger);border-bottom:0}
-.order-summary-card,.order-route-card{background:var(--zp-card-translucent);border:1px solid var(--zp-line);border-radius:16px;box-shadow:none}
+.order-summary-card,.order-route-card{background:var(--zp-card-translucent-2);border:1px solid var(--zp-tint);border-radius:16px;box-shadow:none}
 .order-summary-card{padding:14px 15px 13px;flex:0 0 auto;margin-bottom:10px}
 .order-date{text-align:center;font-size:14px;line-height:22px;color:var(--zp-text);font-weight:650}
 .order-summary-main{display:flex;align-items:baseline;justify-content:center;gap:3px;margin-top:5px;font-size:22px;line-height:30px;font-weight:700;letter-spacing:.1px}

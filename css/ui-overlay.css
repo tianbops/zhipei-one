@@ -319,7 +319,8 @@ textarea:disabled,
   padding:6px 8px calc(6px + env(safe-area-inset-bottom))!important;
   transform:translateX(-50%)!important;
   display:grid!important;grid-template-columns:repeat(5,1fr)!important;gap:4px!important;
-  background:var(--zp-nav-bg)!important;border-top:1px solid var(--zp-line)!important;
+  background:var(--zp-nav-bg)!important;
+  /* 2026-10-28 用户要求：去掉底栏上沿横线，与首页口径一致 */
   backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
 }
 .zp-business-nav-page .bottom-nav-item{

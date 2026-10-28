@@ -2,7 +2,7 @@
 .page2{width:min(100%,430px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:max(14px,var(--zp-safe-top)) 16px calc(30px + env(safe-area-inset-bottom))}
 .account-page .topbar,.route-apply-page .topbar{margin-bottom:8px;z-index:100;background:var(--zp-bg)}
 .account-page .topbar h1,.route-apply-page .topbar h1{margin:0;text-align:center;font-weight:700}
-.page2-card{background:var(--zp-card-translucent);border:1px solid var(--zp-line);border-radius:16px;padding:16px;margin-bottom:10px}
+.page2-card{background:var(--zp-card-translucent-2);border:1px solid var(--zp-tint);border-radius:16px;padding:16px;margin-bottom:10px}
 .page2-card h2{margin:0 0 8px;font-size:16px;line-height:22px}
 .page2-label{display:block;margin-top:13px;color:var(--zp-muted);font-size:13px}
 .page2-label select,.page2-label input,.page2-label textarea,.page2-label button.zp-pk-trigger{display:block;width:100%;min-height:48px;margin-top:6px;padding:0 16px;border:1px solid var(--zp-line);border-radius:11px;background:var(--zp-card-translucent-2);color:var(--zp-text)}
