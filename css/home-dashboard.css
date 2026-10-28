@@ -2,6 +2,10 @@
 .home-app{padding-bottom:calc(78px + env(safe-area-inset-bottom))}
 .home-app .topbar{justify-content:flex-start}
 .task-card{padding-bottom:14px}
+/* 2026-10-29：顶栏下方已经有 .zp-scroll 的 14px padding，卡片这里再写 margin-top:14px
+   等于叠成 28px，加上顶栏 8px，首页顶部到卡片之间空出 36px —— 用户反馈「页面顶高，
+   矮点」。去掉这层重复，只保留一层 14px 间距（降级为整页滚动时同样只有一层）。 */
+main.home-app .task-card{margin-top:0}
 .today-store-list{
   margin-top:12px;
   /* 固定展示约 6 家（行高 44px × 6 = 264px）：其余门店在窗内滚动

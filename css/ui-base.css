@@ -155,7 +155,9 @@
          注意：矮屏 @media(max-height:700px) 的压缩态属响应式特例，不套用此变量。
        control-height 48px —— Android 最小可靠触控靶区。现有取值从 40 到 44 不等，
          全部低于该标准，故本轮是「只放大不缩小」的单向收敛（见 css-touch-audit.cjs）。 */
-  --zp-header-height:54px;
+  /* 2026-10-29：顶栏高度下限 54→48，配合首页品牌区收行高。
+     各页 44px 按钮行 + 8px 呼吸位 = 52px，仍高于此下限，不会被裁。 */
+  --zp-header-height:48px;
   --zp-control-height:48px;
   --zp-space-4:16px;
 
@@ -488,9 +490,9 @@ input,select,textarea{
 /* ===== App 壳内顶部呼吸位（2026-10-29） =====
    用户反馈：App 里「智配One」距安卓状态栏仍偏大，参照系统导航栏的紧凑度再收一档。
    安卓壳已通过 WebView 外边距让开状态栏（MainActivity.applyInsetsMargins），
-   页面里的 padding 与状态栏不重叠，因此可以压到 12px；Web 端没有这层让位，
+   页面里的 padding 与状态栏不重叠，因此可以压到 8px；Web 端没有这层让位，
    保留 24px，免得标题贴住浏览器视口顶。
    标记由 js/theme-sync.js 在首帧前打到 <html data-zp-native="1">（同步加载）。
    注意：这里不带 env()，因为壳内状态栏已由原生让开；若带 env 且其为 0，
    max() 会退回一个更大的值，等于没改。 */
-html[data-zp-native="1"]{--zp-safe-top:12px}
+html[data-zp-native="1"]{--zp-safe-top:8px}

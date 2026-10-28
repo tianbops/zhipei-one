@@ -2,7 +2,10 @@
 /* 板块宽度对齐全局：与线路页 / 历史页同用 --zp-space-4（16px）。
    原为 14px 历史遗留值，比全局窄 2px，跨页切换时板块宽度会跳。 */
 .home-app{width:min(100%,430px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:var(--zp-space-4,16px) var(--zp-space-4,16px) calc(24px + env(safe-area-inset-bottom));background:var(--zp-bg)}
-.home-app .topbar{display:flex;justify-content:space-between;align-items:center;z-index:100;margin-bottom:8px}
+/* 2026-10-29：顶栏自身的纵向留白与下方间距都已收敛。
+   原 margin-bottom:8px 与 .zp-scroll 的 14px padding 叠加成 22px，比其他页面
+   多留 8px（其他页只有 14px），首页内容整体被压低；这里去掉重复的一层。 */
+.home-app .topbar{display:flex;justify-content:space-between;align-items:center;z-index:100;margin-bottom:0}
 .home-brand{display:flex;flex-direction:column;line-height:1.2}
 .home-brand strong{font-size:19px;font-weight:700;letter-spacing:.5px;color:var(--zp-text)}
 .home-brand span{margin-top:2px;font-size:11px;color:var(--zp-muted);letter-spacing:1.5px}
@@ -121,8 +124,14 @@
    超长省略号截断，不换行 */
 
 /* Final Android typography normalization: size/line-height only */
-.home-brand strong{font-size:20px;line-height:26px;letter-spacing:.5px}
-.home-brand span{font-size:12px;line-height:18px}
+/* 2026-10-29 用户反馈「顶栏高度矮点」：两行品牌区原 46px（26 + 2 + 18）。
+   字号不变（20/11 已在可读下限，再缩就成小字），只收行高：
+   标题 26→24、副标 18→14，品牌区 46→40，顶栏 54→48（App 内）。 */
+.home-brand strong{font-size:20px;line-height:24px;letter-spacing:.5px}
+.home-brand span{font-size:11px;line-height:14px}
+/* 全局 .topbar strong 用 !important 锁定 20/26（各页标题行高），普通声明压不过，
+   品牌区要收行高必须同样带 !important；只作用于首页品牌，其他页标题不受影响。 */
+.home-app .home-brand strong{line-height:24px!important}
 .task-title{font-size:16.5px;line-height:22px}
 .task-date{font-size:15px;line-height:22px}
 .task-info{font-size:16px;line-height:23px}

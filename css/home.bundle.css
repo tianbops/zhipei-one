@@ -890,7 +890,9 @@ body {
          注意：矮屏 @media(max-height:700px) 的压缩态属响应式特例，不套用此变量。
        control-height 48px —— Android 最小可靠触控靶区。现有取值从 40 到 44 不等，
          全部低于该标准，故本轮是「只放大不缩小」的单向收敛（见 css-touch-audit.cjs）。 */
-  --zp-header-height:54px;
+  /* 2026-10-29：顶栏高度下限 54→48，配合首页品牌区收行高。
+     各页 44px 按钮行 + 8px 呼吸位 = 52px，仍高于此下限，不会被裁。 */
+  --zp-header-height:48px;
   --zp-control-height:48px;
   --zp-space-4:16px;
 
@@ -1223,12 +1225,12 @@ input,select,textarea{
 /* ===== App 壳内顶部呼吸位（2026-10-29） =====
    用户反馈：App 里「智配One」距安卓状态栏仍偏大，参照系统导航栏的紧凑度再收一档。
    安卓壳已通过 WebView 外边距让开状态栏（MainActivity.applyInsetsMargins），
-   页面里的 padding 与状态栏不重叠，因此可以压到 12px；Web 端没有这层让位，
+   页面里的 padding 与状态栏不重叠，因此可以压到 8px；Web 端没有这层让位，
    保留 24px，免得标题贴住浏览器视口顶。
    标记由 js/theme-sync.js 在首帧前打到 <html data-zp-native="1">（同步加载）。
    注意：这里不带 env()，因为壳内状态栏已由原生让开；若带 env 且其为 0，
    max() 会退回一个更大的值，等于没改。 */
-html[data-zp-native="1"]{--zp-safe-top:12px}
+html[data-zp-native="1"]{--zp-safe-top:8px}
 
 /* ================================================================
  * 全局层级体系 3.0 · 落地规则
@@ -1773,6 +1775,16 @@ main > .topbar{
   min-height:var(--zp-header-height);
   background:var(--zp-bg);
 }
+/* 顶栏内的圆形按钮：48 → 44。48 是为「页面内主按钮」定的，顶栏里它决定了整条
+   顶栏的高度（8px 呼吸位 + 48 = 56px）。44 仍是触摸最小推荐值，不牺牲可点性，
+   换来顶栏 56 → 52px，与首页 48px 的差距从 8px 收到 4px。 */
+main > .topbar .app-back,
+main > .topbar .data-page-menu-btn{
+  width:44px;
+  height:44px;
+  min-width:44px;
+  min-height:44px;
+}
 /* 内部唯一滚动容器：flex:1 撑满剩余高度，min-height:0 是 flex 列中
    能正确收缩并出现滚动条的关键。 */
 .zp-scroll{
@@ -1797,7 +1809,10 @@ main.zp-shell.dispatch-page .zp-scroll{padding-top:0}
 /* 板块宽度对齐全局：与线路页 / 历史页同用 --zp-space-4（16px）。
    原为 14px 历史遗留值，比全局窄 2px，跨页切换时板块宽度会跳。 */
 .home-app{width:min(100%,430px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:var(--zp-space-4,16px) var(--zp-space-4,16px) calc(24px + env(safe-area-inset-bottom));background:var(--zp-bg)}
-.home-app .topbar{display:flex;justify-content:space-between;align-items:center;z-index:100;margin-bottom:8px}
+/* 2026-10-29：顶栏自身的纵向留白与下方间距都已收敛。
+   原 margin-bottom:8px 与 .zp-scroll 的 14px padding 叠加成 22px，比其他页面
+   多留 8px（其他页只有 14px），首页内容整体被压低；这里去掉重复的一层。 */
+.home-app .topbar{display:flex;justify-content:space-between;align-items:center;z-index:100;margin-bottom:0}
 .home-brand{display:flex;flex-direction:column;line-height:1.2}
 .home-brand strong{font-size:19px;font-weight:700;letter-spacing:.5px;color:var(--zp-text)}
 .home-brand span{margin-top:2px;font-size:11px;color:var(--zp-muted);letter-spacing:1.5px}
@@ -1916,8 +1931,14 @@ main.zp-shell.dispatch-page .zp-scroll{padding-top:0}
    超长省略号截断，不换行 */
 
 /* Final Android typography normalization: size/line-height only */
-.home-brand strong{font-size:20px;line-height:26px;letter-spacing:.5px}
-.home-brand span{font-size:12px;line-height:18px}
+/* 2026-10-29 用户反馈「顶栏高度矮点」：两行品牌区原 46px（26 + 2 + 18）。
+   字号不变（20/11 已在可读下限，再缩就成小字），只收行高：
+   标题 26→24、副标 18→14，品牌区 46→40，顶栏 54→48（App 内）。 */
+.home-brand strong{font-size:20px;line-height:24px;letter-spacing:.5px}
+.home-brand span{font-size:11px;line-height:14px}
+/* 全局 .topbar strong 用 !important 锁定 20/26（各页标题行高），普通声明压不过，
+   品牌区要收行高必须同样带 !important；只作用于首页品牌，其他页标题不受影响。 */
+.home-app .home-brand strong{line-height:24px!important}
 .task-title{font-size:16.5px;line-height:22px}
 .task-date{font-size:15px;line-height:22px}
 .task-info{font-size:16px;line-height:23px}
@@ -2014,6 +2035,10 @@ main.zp-shell.dispatch-page .zp-scroll{padding-top:0}
 .home-app{padding-bottom:calc(78px + env(safe-area-inset-bottom))}
 .home-app .topbar{justify-content:flex-start}
 .task-card{padding-bottom:14px}
+/* 2026-10-29：顶栏下方已经有 .zp-scroll 的 14px padding，卡片这里再写 margin-top:14px
+   等于叠成 28px，加上顶栏 8px，首页顶部到卡片之间空出 36px —— 用户反馈「页面顶高，
+   矮点」。去掉这层重复，只保留一层 14px 间距（降级为整页滚动时同样只有一层）。 */
+main.home-app .task-card{margin-top:0}
 .today-store-list{
   margin-top:12px;
   /* 固定展示约 6 家（行高 44px × 6 = 264px）：其余门店在窗内滚动

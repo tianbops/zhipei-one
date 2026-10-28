@@ -38,6 +38,16 @@ main > .topbar{
   min-height:var(--zp-header-height);
   background:var(--zp-bg);
 }
+/* 顶栏内的圆形按钮：48 → 44。48 是为「页面内主按钮」定的，顶栏里它决定了整条
+   顶栏的高度（8px 呼吸位 + 48 = 56px）。44 仍是触摸最小推荐值，不牺牲可点性，
+   换来顶栏 56 → 52px，与首页 48px 的差距从 8px 收到 4px。 */
+main > .topbar .app-back,
+main > .topbar .data-page-menu-btn{
+  width:44px;
+  height:44px;
+  min-width:44px;
+  min-height:44px;
+}
 /* 内部唯一滚动容器：flex:1 撑满剩余高度，min-height:0 是 flex 列中
    能正确收缩并出现滚动条的关键。 */
 .zp-scroll{
