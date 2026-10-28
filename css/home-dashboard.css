@@ -179,11 +179,12 @@ main.home-app.is-keyboard .today-store-list,
 main.home-app.is-overflow .today-store-list{flex:none;max-height:264px}
 
 /* 门店列表底部渐隐：仅「可滚且未到底」时出现（js/home/fit.js 加 .can-scroll）。
-   全站隐藏滚动条后，列表是否还能往下滚没有任何视觉提示，靠这 18px 渐隐示意；
+   2026-10-29：列表改为「填满可用高度」后，底部必然露出半行，故渐隐从 18px 加到 26px，
+   让被切的那行自然淡出（而不是硬切断），同时充当「还能往下滚」的提示；
    滚到底自动移除，避免最后一行永久变淡。 */
 main.home-app .today-store-list.can-scroll{
-  -webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 18px),transparent);
-  mask-image:linear-gradient(to bottom,#000 calc(100% - 18px),transparent);
+  -webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 26px),transparent);
+  mask-image:linear-gradient(to bottom,#000 calc(100% - 26px),transparent);
 }
 /* 空态（今日暂无配送门店）：在整块列表区垂直居中，而不是贴着分隔线孤零零一行 */
 main.home-app .today-store-list.is-empty{display:flex;align-items:center;justify-content:center}

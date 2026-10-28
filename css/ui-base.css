@@ -36,9 +36,14 @@
   --zp-soft:#999999;
   --zp-radius:14px;
   /* 顶部安全区兜底：env() 在部分 WebView（如旧版 Capacitor 壳 / 异常上报）返回 0 时，
-     用 32px 兜底避免内容被状态栏压住；正常环境 env() 取到真实状态栏高度时取较大值。
-     与安卓壳端 MainActivity 的 WebView 边距修复互补（嵌套关系，不会双重叠加）。 */
-  --zp-safe-top: max(env(safe-area-inset-top, 0px), 32px);
+     兜底一个最小呼吸位，避免内容被状态栏压住；正常环境 env() 取到真实状态栏高度时取较大值。
+     与安卓壳端 MainActivity 的 WebView 边距修复互补（嵌套关系，不会双重叠加）。
+
+     2026-10-29：32px → 24px。用户反馈「首页标题离顶部太远，想上移一点，但状态栏
+     要保持正常距离」。关键事实：安卓壳已用 WebView 外边距让开状态栏（applyInsetsMargins），
+     页面内这 24px 是纯呼吸位，与状态栏不重叠；压到 24 不会顶到状态栏，只是把整块标题
+     上提 8px。仅在 env() 返回 0 的环境生效；iOS PWA / 新壳拿到真实 inset 时仍取 env 值。 */
+  --zp-safe-top: max(env(safe-area-inset-top, 0px), 24px);
   /* 骨架微光条（加载占位）双外观 token：order_detail / home / data 三处
      页面级骨架共用同一取值。浅色外观为浅灰微光；深色外观在 ui-theme.css 的
      :root[data-zp-theme="dark"] 覆盖为 slate 族微光。 */
