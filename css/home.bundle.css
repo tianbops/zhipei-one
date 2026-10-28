@@ -845,11 +845,10 @@ body {
      浅色下不能翻白（描边会消失），故双主题同值——命名令牌白名单，
      禁止组件层直写字面量（appearance-theme-bootstrap 断言在册）。 */
   --zp-logo-plate:#05070A;
-  /* 底部一级导航（品牌导航条）令牌组：浅色=白底深字、深色=近黑底浅字。
-     与 --zp-logo-plate 区分：logo-plate 是 logo/徽章底板（双主题同值近黑），
-     导航条底色随主题翻转，故独立成组——避免「近黑底 + 随主题翻转的文字令牌」
-     在黑底上出现深字不可读（Phase 4 拆补丁时暴露过的对比度缺陷）。 */
-  --zp-nav-bg:#FFFFFF;
+  /* 底部一级导航（品牌导航条）令牌组：底色跟随页面背景（2026-10-28 用户定稿：
+     底栏与页面同色融为一体，不用独立色块，也不加分隔横线）。
+     文字仍按主题取中性/主色，保证同色底上的可读性。 */
+  --zp-nav-bg:var(--zp-bg);
   --zp-nav-text:#666666;
   --zp-nav-text-active:#111111;
   --zp-nav-active-bg:#F2F3F5;
@@ -1631,8 +1630,8 @@ textarea:disabled,
   --zp-danger-soft:rgba(252,165,165,.12);
   --zp-info:#60A5FA;
   --zp-info-soft:rgba(96,165,250,.14);
-  /* 底部一级导航：深色=近黑底（logo-plate）+ 浅字 */
-  --zp-nav-bg:var(--zp-logo-plate);
+  /* 底部一级导航：底色跟随页面背景（2026-10-28 用户定稿：不用近黑色块） */
+  --zp-nav-bg:var(--zp-bg);
   --zp-nav-text:#94A3B8;
   --zp-nav-text-active:#F1F5F9;
   --zp-nav-active-bg:rgba(255,255,255,.08);
