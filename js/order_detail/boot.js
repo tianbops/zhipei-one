@@ -22,7 +22,7 @@ if($('shareBtn'))$('shareBtn').onclick=async()=>{
  const text=lines.join('\n');
  try{if(navigator.share)await navigator.share({title:'当日运单',text});else{await navigator.clipboard?.writeText(text);zpToast('已复制运单清单','success')}}catch{}
 };
-if($('logoutBtn'))$('logoutBtn').onclick=async()=>{setMenu(false);if(!(await zpConfirm('退出登录','确定退出当前账号吗？')))return;try{await fetch('/api/logout',{method:'POST',credentials:'same-origin',cache:'no-store'})}finally{location.replace('/')}};
+if($('logoutBtn'))$('logoutBtn').onclick=async()=>{setMenu(false);if(!(await zpConfirm('退出登录','确定退出当前账号吗？')))return;try{await fetch('/api/logout',{method:'POST',credentials:'same-origin',cache:'no-store'})}finally{try{localStorage.removeItem('zpLastAuth');localStorage.removeItem('zpLastRole')}catch(e){}location.replace('/')}};
 if($('closeConfirm'))$('closeConfirm').onclick=()=>$('confirmDialog').hidden=true;
 if($('cancelConfirm'))$('cancelConfirm').onclick=()=>$('confirmDialog').hidden=true;
 $('confirmDialog')?.addEventListener('click',e=>{if(e.target===$('confirmDialog'))$('confirmDialog').hidden=true});

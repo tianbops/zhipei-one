@@ -192,6 +192,7 @@
       if(zpZone==="admin"){
         try{await Promise.race([fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"}),new Promise(resolve=>setTimeout(resolve,2500))])}catch{}
         try{sessionStorage.removeItem("zpAuth");sessionStorage.removeItem("zpRole");sessionStorage.removeItem("zpExitAdmin");sessionStorage.removeItem("zpAutoHop")}catch{}
+        try{localStorage.removeItem("zpLastAuth");localStorage.removeItem("zpLastRole")}catch{}
         location.replace("/?reason=logout&manual=1");
         return "leave";
       }
@@ -266,7 +267,7 @@
   window.zpAuthOK=function(){try{sessionStorage.setItem("zpAuth","1")}catch(e){}};
   window.zpAuthClear=function(){try{sessionStorage.removeItem("zpAuth")}catch(e){}};
   // 会话失效（401）兜底：清标记并回登录页。供各页 /api/me 失败时调用。
-  window.zpAuthFail=function(reason){try{sessionStorage.removeItem("zpAuth")}catch(e){}try{location.replace("/?reason="+(reason||"expired"))}catch(e){}};
+  window.zpAuthFail=function(reason){try{sessionStorage.removeItem("zpAuth")}catch(e){}try{localStorage.removeItem("zpLastAuth");localStorage.removeItem("zpLastRole")}catch(e){}try{location.replace("/?reason="+(reason||"expired"))}catch(e){}};
   function zpIsAdminSession(){
     try{return sessionStorage.getItem("zpRole")==="admin"}catch{return false}
   }

@@ -1361,7 +1361,7 @@ loadHome();
 ;
 
 (()=>{const d=document.getElementById("todayDate");if(d){const f=new Intl.DateTimeFormat("zh-CN",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit",weekday:"short"});d.textContent=f.format(new Date()).replaceAll("/","-")}})();
-document.getElementById("logout")?.addEventListener("click",async()=>{const ok=window.zpConfirm?await window.zpConfirm("退出登录","确定要退出当前账号吗？","退出"):true;if(!ok)return;try{await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"})}finally{location.replace("/")}})
+document.getElementById("logout")?.addEventListener("click",async()=>{const ok=window.zpConfirm?await window.zpConfirm("退出登录","确定要退出当前账号吗？","退出"):true;if(!ok)return;try{await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"})}finally{try{localStorage.removeItem("zpLastAuth");localStorage.removeItem("zpLastRole")}catch(e){}location.replace("/")}})
 
 ;
 /* 智配One · UI 内核（原 js/ui-unified.js 拆分 · 1/6）
@@ -2020,6 +2020,7 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
       if(zpZone==="admin"){
         try{await Promise.race([fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"}),new Promise(resolve=>setTimeout(resolve,2500))])}catch{}
         try{sessionStorage.removeItem("zpAuth");sessionStorage.removeItem("zpRole");sessionStorage.removeItem("zpExitAdmin");sessionStorage.removeItem("zpAutoHop")}catch{}
+        try{localStorage.removeItem("zpLastAuth");localStorage.removeItem("zpLastRole")}catch{}
         location.replace("/?reason=logout&manual=1");
         return "leave";
       }
@@ -2094,7 +2095,7 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
   window.zpAuthOK=function(){try{sessionStorage.setItem("zpAuth","1")}catch(e){}};
   window.zpAuthClear=function(){try{sessionStorage.removeItem("zpAuth")}catch(e){}};
   // 会话失效（401）兜底：清标记并回登录页。供各页 /api/me 失败时调用。
-  window.zpAuthFail=function(reason){try{sessionStorage.removeItem("zpAuth")}catch(e){}try{location.replace("/?reason="+(reason||"expired"))}catch(e){}};
+  window.zpAuthFail=function(reason){try{sessionStorage.removeItem("zpAuth")}catch(e){}try{localStorage.removeItem("zpLastAuth");localStorage.removeItem("zpLastRole")}catch(e){}try{location.replace("/?reason="+(reason||"expired"))}catch(e){}};
   function zpIsAdminSession(){
     try{return sessionStorage.getItem("zpRole")==="admin"}catch{return false}
   }

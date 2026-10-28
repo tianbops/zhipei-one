@@ -1,12 +1,34 @@
 <!doctype html><html lang="zh-CN"><head>
-<script defer src="/js/error-guard.js?v=f695272a"></script><script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F6F7F9":"#121826");}catch(e){}</script><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>智配One · 登录</title>
+<script defer src="/js/error-guard.js?v=f695272a"></script><script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F6F7F9":"#121826");}catch(e){}</script><script>
+/* 启动期同步路由（国民级直达）：在登录卡片绘制前就决定是否直达目标页，
+   彻底消除「先闪登录页、再跳首页」。规则：
+   - manual=1 / reason=过期或重认证 / 浏览器回退(back_forward)：不拦截，停在登录页。
+   - 本设备近 90 天内有成功登录痕迹(zpLastAuth) → 按本地记录角色乐观 replace 到
+     /home 或 /admin；联网后由目标页 bootstrap 校验，401 才回登录页，绝不死循环。
+   - 否则不拦截，交给下方 body 内 /api/me 在线探测（覆盖「本地无痕迹但服务端有有效会话」）。 */
+(function(){try{
+ var _sp=new URLSearchParams(location.search);
+ if(_sp.get("manual")==="1")return;
+ if(_sp.get("reason"))return;
+ var _ne=(performance.getEntriesByType&&performance.getEntriesByType("navigation")[0])||null;
+ if(_ne&&_ne.type==="back_forward")return;
+ var now=Date.now();
+ var _la=Number(localStorage.getItem("zpLastAuth")||0);
+ if(_la>0&&now-_la<7776000000){
+  var _lr=localStorage.getItem("zpLastRole");
+  try{sessionStorage.setItem("zpAuth","1")}catch(e){}
+  try{document.documentElement.setAttribute("data-zp-boot","hop")}catch(e){}
+  location.replace(_lr==="admin"?("/admin?v="+now):("/home?v="+now));
+ }
+}catch(e){}})();
+</script><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>智配One · 登录</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#F6F7F9">
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png?v=25f1ad28">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="智配One"><link rel="stylesheet" href="/css/app.css?v=30c14b4f"><link rel="stylesheet" href="/css/ui-base.css?v=2dd9bf80"><link rel="stylesheet" href="/css/ui-overlay.css?v=4ce1c2cf"><link rel="stylesheet" href="/css/ui-theme.css?v=90509d7b"><link rel="stylesheet" href="/css/ui-shell.css?v=d7e34ce4"><style>.password-field{position:relative}.password-field input{padding-right:52px}.password-toggle{position:absolute;right:6px;bottom:0;width:40px;height:48px;padding:0;border:0;background:transparent;color:var(--zp-muted);display:flex;align-items:center;justify-content:center;cursor:pointer}.password-toggle:hover{color:var(--zp-text)}.password-toggle svg{width:20px;height:20px;pointer-events:none}</style><script defer src="/js/perf-diagnostics.js?v=a2065bec"></script>
+<meta name="apple-mobile-web-app-title" content="智配One"><link rel="stylesheet" href="/css/app.css?v=30c14b4f"><link rel="stylesheet" href="/css/ui-base.css?v=2dd9bf80"><link rel="stylesheet" href="/css/ui-overlay.css?v=4ce1c2cf"><link rel="stylesheet" href="/css/ui-theme.css?v=90509d7b"><link rel="stylesheet" href="/css/ui-shell.css?v=d7e34ce4"><style>.password-field{position:relative}.password-field input{padding-right:52px}.password-toggle{position:absolute;right:6px;bottom:0;width:40px;height:48px;padding:0;border:0;background:transparent;color:var(--zp-muted);display:flex;align-items:center;justify-content:center;cursor:pointer}.password-toggle:hover{color:var(--zp-text)}.password-toggle svg{width:20px;height:20px;pointer-events:none}html[data-zp-boot="hop"] .login-shell{display:none!important}</style><script defer src="/js/perf-diagnostics.js?v=a2065bec"></script>
 </head><body><main class="login-shell"><section class="login-card" aria-label="登录"><div class="login-brand"><div class="login-brand-row"><span class="login-brand-name">智配One</span></div><div class="login-eyebrow">SMART DELIVERY OPS</div><h1 class="login-headline">每一件货物，都有自己的线路。</h1><p class="login-sub">登录后，继续今天的配送与回单。</p></div><form id="loginForm" class="login-form"><label class="login-field"><span>账号</span><input id="username" autocomplete="username" placeholder="请输入账号" required></label><label class="login-field password-field"><span>密码</span><input id="password" type="password" autocomplete="current-password" placeholder="请输入密码" required><button type="button" class="password-toggle" data-password-toggle="password" aria-label="显示密码" aria-pressed="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.2 12s3.2-5 9.8-5 9.8 5 9.8 5-3.2 5-9.8 5-9.8-5-9.8-5Z"/><circle cx="12" cy="12" r="2.5"/></svg></button></label><div id="loginMessage" class="login-message" role="alert"></div><button id="loginButton" class="login-submit" type="submit">登录</button></form><div class="login-links"><span class="register-hint">没有账号？</span><a href="/register">注册</a></div></section></main><script>
 /* PWA 配套：会话仍有效时直达目标页。
    否则从桌面图标每次打开都停在登录页，需要再点一次登录。
