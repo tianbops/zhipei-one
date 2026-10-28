@@ -890,9 +890,10 @@ body {
          注意：矮屏 @media(max-height:700px) 的压缩态属响应式特例，不套用此变量。
        control-height 48px —— Android 最小可靠触控靶区。现有取值从 40 到 44 不等，
          全部低于该标准，故本轮是「只放大不缩小」的单向收敛（见 css-touch-audit.cjs）。 */
-  /* 2026-10-29：顶栏高度下限 54→48，配合首页品牌区收行高。
-     各页 44px 按钮行 + 8px 呼吸位 = 52px，仍高于此下限，不会被裁。 */
-  --zp-header-height:48px;
+  /* 2026-10-29：顶栏高度统一为 50px（用户指定）。
+     内容实际高度：首页品牌区 42 + 8 = 50；其他页按钮行 42 + 8 = 50。
+     这里既是下限也是「目标值」—— 内容低于它时补足到 50，保证各页顶栏等高。 */
+  --zp-header-height:50px;
   --zp-control-height:48px;
   --zp-space-4:16px;
 
@@ -1809,10 +1810,10 @@ main.zp-shell.dispatch-page .zp-scroll{padding-top:0}
 /* 板块宽度对齐全局：与线路页 / 历史页同用 --zp-space-4（16px）。
    原为 14px 历史遗留值，比全局窄 2px，跨页切换时板块宽度会跳。 */
 .home-app{width:min(100%,430px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:var(--zp-space-4,16px) var(--zp-space-4,16px) calc(24px + env(safe-area-inset-bottom));background:var(--zp-bg)}
-/* 2026-10-29：顶栏自身的纵向留白与下方间距都已收敛。
-   原 margin-bottom:8px 与 .zp-scroll 的 14px padding 叠加成 22px，比其他页面
-   多留 8px（其他页只有 14px），首页内容整体被压低；这里去掉重复的一层。 */
-.home-app .topbar{display:flex;justify-content:space-between;align-items:center;z-index:100;margin-bottom:0}
+/* 2026-10-29：顶栏与「今日配送」之间保留一点距离感。
+   间距 = 这里的 6px + .zp-scroll 的 14px = 20px（原来 8+14=22，几乎没变），
+   只把多余的一层收掉 2px，不做大幅调整。 */
+.home-app .topbar{display:flex;justify-content:space-between;align-items:center;z-index:100;margin-bottom:6px}
 .home-brand{display:flex;flex-direction:column;line-height:1.2}
 .home-brand strong{font-size:19px;font-weight:700;letter-spacing:.5px;color:var(--zp-text)}
 .home-brand span{margin-top:2px;font-size:11px;color:var(--zp-muted);letter-spacing:1.5px}
@@ -1931,11 +1932,10 @@ main.zp-shell.dispatch-page .zp-scroll{padding-top:0}
    超长省略号截断，不换行 */
 
 /* Final Android typography normalization: size/line-height only */
-/* 2026-10-29 用户反馈「顶栏高度矮点」：两行品牌区原 46px（26 + 2 + 18）。
-   字号不变（20/11 已在可读下限，再缩就成小字），只收行高：
-   标题 26→24、副标 18→14，品牌区 46→40，顶栏 54→48（App 内）。 */
+/* 2026-10-29 顶栏定高 50px：品牌区 42（标题 24 + 间距 2 + 副标 16）+ 8px 呼吸位。
+   字号不动（20/11 已在可读下限），只调行高；副标行高 16 也让两行之间松一点。 */
 .home-brand strong{font-size:20px;line-height:24px;letter-spacing:.5px}
-.home-brand span{font-size:11px;line-height:14px}
+.home-brand span{font-size:11px;line-height:16px}
 /* 全局 .topbar strong 用 !important 锁定 20/26（各页标题行高），普通声明压不过，
    品牌区要收行高必须同样带 !important；只作用于首页品牌，其他页标题不受影响。 */
 .home-app .home-brand strong{line-height:24px!important}
