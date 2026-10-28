@@ -30,6 +30,7 @@ const JS_SOURCES = [
   "js/fetch-retry.js",
   "js/offline-queue.js",
   "js/home/core.js",
+  "js/home/fit.js",
   "js/home/upload-progress.js",
   "js/home/upload-error.js",
   "js/home/upload-sheet.js",

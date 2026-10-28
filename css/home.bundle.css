@@ -2125,6 +2125,60 @@ main.zp-shell.dispatch-page .zp-scroll{padding-top:0}
 body.sheet-open .bottom-nav{z-index:1001 !important}
 
 
+/* ===== 一屏定盘（2026-10-29） =====
+   用户反馈：首页两张卡会随页面一起上下滑动，位置不稳定。
+   规则只有一条链：顶栏/底栏恒定 → 趋势卡定高 → 今日配送卡吃掉剩余高度
+   → 门店列表在卡片内部滚动。变化量只来自「可见行数」，
+   字号 / 行高 / 左右边距 / 圆角一律不缩（可读性与跨页一致性红线）。
+   降级：高度不够时（小屏、横屏、分屏、系统大字号、键盘弹起）自动回到整页滚动，
+   宁可让页面滚，也不把卡片压扁 —— 压扁会裁字，比滚动更糟。 */
+main.home-app .zp-scroll{
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  /* 底栏 fixed 覆盖在滚动区之上，必须留出 66px + 呼吸位，否则趋势卡被遮 */
+  padding-bottom:calc(72px + env(safe-area-inset-bottom));
+}
+main.home-app .task-card{
+  flex:1 1 auto;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+}
+main.home-app .today-store-list{
+  flex:1 1 auto;
+  /* 88px = 2 行（44×2）：低于「2 行」说明真的没空间了，交给降级规则 */
+  min-height:88px;
+  max-height:none;
+}
+main.home-app .trend-card{flex:0 0 auto}
+
+/* 降级 A：横屏 / 极矮视口（分屏、小窗、老机型）→ 整页滚动，卡片自然高度 */
+@media (max-height:599px),(orientation:landscape){
+  main.home-app .zp-scroll{display:block;overflow-y:auto}
+  main.home-app .task-card{display:block}
+  main.home-app .today-store-list{flex:none;max-height:264px}
+}
+
+/* 降级 B：键盘弹起 / 内容溢出（JS 判定，见 js/home/fit.js）
+   键盘把可视区压矮时若继续锁死布局，卡片会被压成一条，故同样回退整页滚动。 */
+main.home-app.is-keyboard .zp-scroll,
+main.home-app.is-overflow .zp-scroll{display:block;overflow-y:auto}
+main.home-app.is-keyboard .task-card,
+main.home-app.is-overflow .task-card{display:block}
+main.home-app.is-keyboard .today-store-list,
+main.home-app.is-overflow .today-store-list{flex:none;max-height:264px}
+
+/* 门店列表底部渐隐：仅「可滚且未到底」时出现（js/home/fit.js 加 .can-scroll）。
+   全站隐藏滚动条后，列表是否还能往下滚没有任何视觉提示，靠这 18px 渐隐示意；
+   滚到底自动移除，避免最后一行永久变淡。 */
+main.home-app .today-store-list.can-scroll{
+  -webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 18px),transparent);
+  mask-image:linear-gradient(to bottom,#000 calc(100% - 18px),transparent);
+}
+/* 空态（今日暂无配送门店）：在整块列表区垂直居中，而不是贴着分隔线孤零零一行 */
+main.home-app .today-store-list.is-empty{display:flex;align-items:center;justify-content:center}
+
 /* 浅色外观适配：首页固定导航与菜单交互
    （底栏颜色已于 Phase 4 收敛为 --zp-nav-* 令牌组，双主题自适应，此处不再覆盖） */
 /* 人物推车插画（assets/delivery-route.png）为深色主题绘制：白描线 + 蓝定位点。
