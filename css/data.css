@@ -222,3 +222,13 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 :root[data-zp-theme="light"] .data-store-index,:root[data-zp-theme="light"] .data-list-count,:root[data-zp-theme="light"] .data-store-meta{color:#59636E}
 :root[data-zp-theme="light"] .data-route-kicker{color:#59636E}
 .data-store-name{padding:11px 0;margin:-11px 0}
+/* 别名管理（2026-10-28）：编辑门店弹窗的别名增删 UI */
+.data-aliases{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
+.data-alias-chip{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:6px 10px;border:1px solid var(--zp-line);border-radius:999px;background:var(--zp-surface-2);color:var(--zp-text);font-size:13px;line-height:18px;white-space:pre-wrap;word-break:break-word}
+.data-alias-chip .data-alias-del{appearance:none;border:none;background:transparent;color:var(--zp-muted);font-size:16px;line-height:1;cursor:pointer;padding:0 2px;flex:0 0 auto}
+.data-alias-chip .data-alias-del:hover{color:var(--zp-error)}
+.data-alias-add{display:flex;gap:8px;margin-top:8px}
+.data-alias-input{flex:1 1 auto;min-width:0}
+.data-alias-add .data-action-btn{height:var(--zp-control-height);border:1px solid var(--zp-line);border-radius:10px;background:var(--zp-card-translucent-2);color:var(--zp-text);font-size:14px;padding:0 16px;flex:0 0 auto}
+:root[data-zp-theme="light"] .data-alias-chip{background:#FFFFFF;border-color:#D7DDE3}
+:root[data-zp-theme="light"] .data-alias-add .data-action-btn{background:#FFFFFF;border-color:#D7DDE3}
