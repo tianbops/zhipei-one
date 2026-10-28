@@ -39,8 +39,10 @@
   transition:transform .2s cubic-bezier(.2,.8,.2,1);
   /* 不透明！此前 var(--zp-card-translucent-2) 的 18% 透明度会让下层的红色删除按钮透出来，
      用户「没滑动却看得见删除按钮」即由此而来。取色 = 该半透明色叠加后的实际观感值，
-     改动零视觉差异。 */
-  background:var(--zp-surface-2);
+     改动零视觉差异。
+     2026-10-28 板块统一：取 --zp-bg（= --zp-card-translucent-2 叠加页面背景后的实色），
+     与线路页等其它板块同色，仍保持不透明。 */
+  background:var(--zp-bg);
   will-change:transform;
 }
 .history-swipe-row.swiped .history-row-surface{
@@ -142,7 +144,7 @@
   background:var(--zp-card-translucent-2);
 }
 .history-month.expanded .history-month-body{display:block}
-.history-month-body .history-row-surface{background:var(--zp-surface-2)}
+.history-month-body .history-row-surface{background:var(--zp-bg)}
 .history-month-body .history-swipe-row{
   border-bottom:1px solid var(--zp-tint);
 }

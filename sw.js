@@ -9,7 +9,7 @@
  *   - 图片/字体       ：stale-while-revalidate（内容基本不变，秒开优先）
  * 资产缓存键用完整 URL（含 ?v=）精确匹配；页面缓存键用 pathname 规整（忽略 ?from 等查询）。
  */
-const VERSION = "zp-pwa-172";
+const VERSION = "zp-pwa-173";
 const STATIC_CACHE = VERSION + "-static";
 const PAGES_CACHE = VERSION + "-pages";
 const OFFLINE_URL = "/offline";
@@ -37,19 +37,19 @@ const PRECACHE = [
   "/css/admin-forms.css?v=28b21210",
   "/css/admin-overlay.css?v=14bf1db5",
   "/css/admin-perf.css?v=b62b874c",
-  "/css/app.css?v=30c14b4f",
-  "/css/business-pages.css?v=1b5aa6a7",
+  "/css/app.css?v=c8dcd848",
+  "/css/business-pages.css?v=55b389bf",
   "/css/data.css?v=b7b6c4f4",
-  "/css/history-light.css?v=7efb3bff",
-  "/css/history-list.css?v=fcbc0063",
+  "/css/history-light.css?v=e4dae671",
+  "/css/history-list.css?v=172d059a",
   "/css/history-nav.css?v=ad188e37",
   "/css/history-overlay-light.css?v=a6af61b1",
   "/css/history-overlays.css?v=a43f1704",
-  "/css/history-shell.css?v=ecfaec95",
-  "/css/home.bundle.css?v=36a60012",
-  "/css/mobile-ui.css?v=3fff5e47",
-  "/css/order_detail.css?v=2f79a570",
-  "/css/ui-base.css?v=1cc06fe2",
+  "/css/history-shell.css?v=4f399c87",
+  "/css/home.bundle.css?v=dc371fd2",
+  "/css/mobile-ui.css?v=b2dd17f4",
+  "/css/order_detail.css?v=f06278f3",
+  "/css/ui-base.css?v=b828739b",
   "/css/ui-overlay.css?v=7612d542",
   "/css/ui-shell.css?v=d7e34ce4",
   "/css/ui-theme.css?v=54df0f20",

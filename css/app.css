@@ -38,8 +38,8 @@ body {
    标准 Header 钩子 .topbar 现统一定义于 css/ui-unified.css（权威层）。详见资产审计台账第二十四章。 */
 
 .card {
-  background: var(--card);
-  border: 1px solid var(--line);
+  background: var(--zp-card-translucent-2);
+  border: 1px solid var(--zp-tint);
   border-radius: 16px;
   padding: 18px;
   margin-bottom: 12px;

@@ -338,8 +338,8 @@ input,select,textarea{
    双主题自适应；页面级文件（admin-base / business-pages）保留几何与布局，
    同特异度后加载赢、取值同为令牌零漂移。 */
 .dispatch-page,.account-page{background:var(--zp-bg)}
-.row{background:var(--zp-surface-2)}
-.dialog{background:var(--zp-card)}
+.row{background:var(--zp-card-translucent-2)}
+.dialog{background:var(--zp-card-translucent-2)}
 .message,.login-message{line-height:20px}
 .message.error,.login-message[role=alert]{color:var(--zp-error)}
 

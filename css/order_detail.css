@@ -271,7 +271,7 @@
   padding:15px 16px 14px;
   margin-bottom:12px;
   border-radius:16px;
-  background:var(--zp-card-translucent);
+  background:var(--zp-card-translucent-2);
   border:1px solid var(--zp-tint);
 }
 .order-date{
@@ -440,7 +440,7 @@
 /* 浅色外观适配补全：顶部汇总卡、门店清单、图标按钮、历史回填选择与
    悬浮按钮（此前汇总卡在浅色下仍是深色块、正文白字不可读） */
 :root[data-zp-theme="light"] .order-summary-card,
-:root[data-zp-theme="light"] .order-route-card{background:#FFFFFF;border-color:#D7DDE3;box-shadow:0 8px 24px rgba(20,30,40,.08)}
+:root[data-zp-theme="light"] .order-route-card{background:var(--zp-card-translucent-2);border-color:var(--zp-tint);box-shadow:none}
 :root[data-zp-theme="light"] .order-shell.history-multi .order-route-card{border-color:#D7DDE3}
 :root[data-zp-theme="light"] .order-date,
 :root[data-zp-theme="light"] .order-route-name,

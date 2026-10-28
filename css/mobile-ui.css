@@ -21,8 +21,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 }
 /* 阶段 6 · 5A：移除遗留 .topbar 死规则（无 HTML 用裸 .topbar）；.topbar/.app-back 现定义于 css/ui-unified.css。 */
 .card{
-  background:var(--zp-surface);
-  border:1px solid var(--zp-line);
+  background:var(--zp-card-translucent-2);
+  border:1px solid var(--zp-tint);
   border-radius:var(--zp-radius);
   padding:16px;
   margin-bottom:10px;

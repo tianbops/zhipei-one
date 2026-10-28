@@ -53,7 +53,7 @@ main.history-shell{
 .history-month-main{
   min-height:58px;
   padding:0 16px;
-  background:var(--zp-card-translucent);
+  background:var(--zp-card-translucent-2);
 }
 .history-month-main span{
   font-size:17px;
@@ -97,10 +97,10 @@ main.history-shell{
 }
 .history-row-surface{
   min-height:54px;
-  background:var(--zp-surface-2);
+  background:var(--zp-bg);
 }
 .history-month-body .history-row-surface{
-  background:var(--zp-surface-2);
+  background:var(--zp-bg);
 }
 .history-date-main{
   min-height:54px;
