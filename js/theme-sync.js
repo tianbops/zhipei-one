@@ -1,11 +1,13 @@
 /* 智配One · 状态栏 / 主题色同步
  * ------------------------------------------------------------------
- * 背景：Android 壳的状态栏底色由宿主（原生层）控制，Web 侧只有两条通道能影响它：
- *   1) <meta name="theme-color">：PWA standalone、Chrome/Custom Tabs、以及部分 WebView 壳
- *      会读这个值给状态栏上色；
+ * 背景：Android 壳的状态栏底色由宿主（原生层）控制，Web 侧有三条通道能影响它：
+ *   1) window.ZhipeiNative.applyTheme(color, darkBg)：智配One 壳自带的自定义
+ *      JS 接口（MainActivity.NativeChrome），直接设状态栏/导航栏底色与图标明暗，
+ *      并把 WebView、DecorView 背景一起染色。这是 App 内的唯一有效通道。
  *   2) Capacitor StatusBar 插件（壳内已安装时）：可直接改原生状态栏底色。
+ *   3) <meta name="theme-color">：PWA standalone、Chrome/Custom Tabs 用。
  *
- * 本文件在主题确定后同步这两条通道，并在用户切换深/浅主题时跟随变化
+ * 本文件在主题确定后同步这三条通道，并在用户切换深/浅主题时跟随变化
  * （监听 <html data-zp-theme> 属性变化）。
  *
  * 两套主题都同时设「图标明暗 + 底色」：
@@ -39,6 +41,20 @@
   }
 
   function syncNative(theme, color) {
+    var dark = theme === "dark";
+    /* ① 智配One 壳的自定义桥：applyTheme(色值, 是否深色底)。
+       壳里 applyChrome() 会一次性完成状态栏/导航栏底色、图标明暗、WebView 与
+       DecorView 背景染色，所以这里是 App 内最直接也最完整的一条通道。
+       必须在 StatusBar 插件之前尝试：壳并未安装 @capacitor/status-bar，
+       只走插件分支的话 App 内会完全没有效果（线上深色状态栏一直不跟随的根因）。 */
+    try {
+      var nat = window.ZhipeiNative;
+      if (nat && typeof nat.applyTheme === "function") {
+        nat.applyTheme(color, dark);
+        return;
+      }
+    } catch (e) {}
+    /* ② Capacitor StatusBar 插件（壳若将来安装则自动接管） */
     try {
       var sb = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.StatusBar;
       if (!sb) return;
