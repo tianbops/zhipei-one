@@ -2147,14 +2147,20 @@ main.home-app .task-card{
 }
 main.home-app .today-store-list{
   flex:1 1 auto;
-  /* 88px = 2 行（44×2）：低于「2 行」说明真的没空间了，交给降级规则 */
-  min-height:88px;
+  /* 176px = 4 行（44×4）：一屏锁定的最低门槛。低于 4 行时不再压缩列表，
+     而是由这条 min-height 把滚动区撑破，交给下面的降级规则整页滚动。
+     用户明确要求：小屏宁可整屏滚，也不要压成 2 行。 */
+  min-height:176px;
   max-height:none;
 }
 main.home-app .trend-card{flex:0 0 auto}
 
-/* 降级 A：横屏 / 极矮视口（分屏、小窗、老机型）→ 整页滚动，卡片自然高度 */
-@media (max-height:599px),(orientation:landscape){
+/* 降级 A：横屏 / 矮屏（分屏、小窗、老机型）→ 整页滚动，卡片保持自然高度。
+   门槛 760px：低于此高度锁死只能显示 3 行（门店名两行时行高 49px），
+   而整页滚时卡片是自然高度、能显示 5 行 —— 宁可让页面滚，也不把列表压到 3 行。
+   760 以上锁定时，最少也能完整显示 4 行。
+   用户明确要求：小屏宁可整屏滚，也不压。 */
+@media (max-height:759px),(orientation:landscape){
   main.home-app .zp-scroll{display:block;overflow-y:auto}
   main.home-app .task-card{display:block}
   main.home-app .today-store-list{flex:none;max-height:264px}

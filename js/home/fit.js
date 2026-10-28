@@ -18,13 +18,18 @@
   var list = document.getElementById("todayStoreList");
   if (!scroller || !list) return;
 
-  var MIN_LIST_H = 86;   /* 88px 减去 2px 亚像素误差 */
+  /* 4 行（44×4=176）是「一屏锁定」的最低门槛，与 CSS 的 min-height 同源。
+     低于 4 行不再压缩列表，改为整页滚动 —— 用户明确要求小屏宁可滚、不要压。 */
+  var MIN_LIST_H = 172;
   var lost = false;      /* 已降级：不再自动恢复，等视口变化重测 */
   var raf = 0;
 
   function clearSnap() {
     list.style.flex = "";
     list.style.height = "";
+    /* CSS 的 min-height:176px 会压过 inline height（min-height 优先级更高），
+       吸附时必须一并清掉，否则「吸附到整行」永远不生效。 */
+    list.style.minHeight = "";
   }
 
   /* 把列表高度吸附到「完整行」的累计高度。
@@ -50,6 +55,7 @@
     if (used >= avail - 0.5) return;                /* 刚好整行，不用吸 */
 
     list.style.flex = "0 0 auto";
+    list.style.minHeight = "0";
     list.style.height = Math.ceil(used) + "px";
     syncFade();
   }
@@ -76,6 +82,9 @@
     if (overflowed || listTooShort) {
       root.classList.add("is-overflow");
       lost = true;
+      /* 降级后列表回到「卡内 6 行 + 内滚」，同样会露出半行，
+         这里继续吸附一次，避免长门店名被拦腰切断。 */
+      snapList();
       syncFade();
       return;
     }
