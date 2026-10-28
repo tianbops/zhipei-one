@@ -20,6 +20,22 @@
   "use strict";
   var COLORS = { dark: "#121826", light: "#F6F7F9" };
 
+  /* App 壳标记：安卓壳用 WebView 外边距把状态栏区域整体让开（MainActivity
+     .applyInsetsMargins），所以页面内的顶部 padding 与状态栏并不重叠，可以压到很小
+     （参照系统导航栏的 12dp 口径）。Web 端没有这层让位，仍需 24px 免得标题贴屏幕顶，
+     故用属性区分环境，而不是把全局值一刀切小。
+
+     必须在首帧前打标，否则会看到「标题先低后高」跳一下 —— 本脚本因此由 defer 改为
+     同步加载（各页 head）。桥由壳在页面脚本前注入，这里一定能读到。 */
+  try {
+    var nat0 = window.ZhipeiNative;
+    var cap = window.Capacitor;
+    if ((nat0 && typeof nat0.applyTheme === "function") ||
+        (cap && typeof cap.isNativePlatform === "function" && cap.isNativePlatform())) {
+      document.documentElement.setAttribute("data-zp-native", "1");
+    }
+  } catch (e) {}
+
   function currentTheme() {
     var t = document.documentElement.getAttribute("data-zp-theme");
     if (t === "dark" || t === "light") return t;

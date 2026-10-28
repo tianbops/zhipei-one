@@ -9,7 +9,7 @@
  *   - 图片/字体       ：stale-while-revalidate（内容基本不变，秒开优先）
  * 资产缓存键用完整 URL（含 ?v=）精确匹配；页面缓存键用 pathname 规整（忽略 ?from 等查询）。
  */
-const VERSION = "zp-pwa-184";
+const VERSION = "zp-pwa-186";
 const STATIC_CACHE = VERSION + "-static";
 const PAGES_CACHE = VERSION + "-pages";
 const OFFLINE_URL = "/offline";
@@ -46,10 +46,10 @@ const PRECACHE = [
   "/css/history-overlay-light.css?v=a6af61b1",
   "/css/history-overlays.css?v=a43f1704",
   "/css/history-shell.css?v=4f399c87",
-  "/css/home.bundle.css?v=2828ff56",
+  "/css/home.bundle.css?v=323c0958",
   "/css/mobile-ui.css?v=b2dd17f4",
   "/css/order_detail.css?v=f06278f3",
-  "/css/ui-base.css?v=c7917851",
+  "/css/ui-base.css?v=752ad607",
   "/css/ui-overlay.css?v=7612d542",
   "/css/ui-shell.css?v=d7e34ce4",
   "/css/ui-theme.css?v=54df0f20",
@@ -83,7 +83,7 @@ const PRECACHE = [
   "/js/perf-diagnostics.js?v=a2065bec",
   "/js/pwa.js?v=68dbac73",
   "/js/register.js?v=eafb4977",
-  "/js/theme-sync.js?v=25db6e33",
+  "/js/theme-sync.js?v=2c1a5bbc",
   "/js/ui/appearance.js?v=24eaa466",
   "/js/ui/back.js?v=870088ec",
   "/js/ui/core.js?v=7c4e2f82",
