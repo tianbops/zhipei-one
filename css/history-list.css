@@ -143,9 +143,13 @@ main.history-shell{
   transform:translate3d(-84px,0,0);
 }
 
-/* 月份之间增加清晰但克制的呼吸感 */
+/* 月份之间增加清晰但克制的呼吸感。
+   2026-10-28 板块统一：原来用 --zp-logo-plate（近黑 #05070A）做 6px 分隔条，
+   全站底色统一到 --zp-bg 后这条近黑带被衬成突兀的黑块（截图即为该问题）。
+   改为页面底色：保留 6px 分组间距，但不再出现异色横条；
+   浅色主题下同样自动隐形（原值双主题同为近黑，浅色下更刺眼）。 */
 .history-month + .history-month{
-  border-top:6px solid var(--zp-logo-plate);
+  border-top:6px solid var(--zp-bg);
 }
 
 /* 日历/确认弹窗保持与全局 Android 2.0 视觉一致 */
