@@ -82,7 +82,7 @@ const req = (p, token, body) => ({
 
   // ============ 【P2-11】session 键 TTL：与 Cookie 同寿命 ============
   console.log("【P2-11】登录写入的 session 键带 TTL，不再永久驻留");
-  check("SESSION_TTL_SECONDS = 604800（7 天，与 Cookie Max-Age 一致）", redisMod.SESSION_TTL_SECONDS === 604800, "ttl=" + redisMod.SESSION_TTL_SECONDS);
+  check("SESSION_TTL_SECONDS = 7776000（90 天滑动续期窗口，与 Cookie Max-Age 一致）", redisMod.SESSION_TTL_SECONDS === 7776000, "ttl=" + redisMod.SESSION_TTL_SECONDS);
   await setkv("user:loginP2", { id: "loginP2", username: "loginp2", role: "user", passwordHash: await loginMod.hash("secret123"), sessionVersion: 1 });
   await setkv("user:index:loginp2", "loginP2");
 
@@ -96,13 +96,13 @@ const req = (p, token, body) => ({
   const token = m ? decodeURIComponent(m[1]) : "";
   check("下发 session Cookie", !!token, "cookie=" + cookie.slice(0, 60));
   const ttl = Number(await red.command(["TTL", "zp:session:" + token]));
-  check("session 键带 TTL 且≈7 天（不再永久驻留）", ttl > 604000 && ttl <= 604800, "ttl=" + ttl + "秒");
+  check("session 键带 TTL 且≈90 天（不再永久驻留）", ttl > 7775000 && ttl <= 7776000, "ttl=" + ttl + "秒");
   // Cookie 的 Max-Age 与 Redis TTL 必须一致
   const maxAge = Number((cookie.match(/Max-Age=(\d+)/) || [])[1]);
   check("Cookie Max-Age 与 Redis TTL 严格一致（同寿命，不会单边失效）", maxAge === ttl, "cookie=" + maxAge + " redis=" + ttl);
 
   // 推进假时钟越过 TTL → session 应自动失效
-  red.advance(604801 * 1000);
+  red.advance(7776001 * 1000);
   const gone = await red.command(["GET", "zp:session:" + token]);
   check("越过 TTL 后 session 自动过期（根治键空间无界增长）", gone === null, "value=" + gone);
   const expiredAuth = await loginMod.onRequestPost({ request: req("/api/login", "", { username: "loginp2", password: "wrongpw" }), env });

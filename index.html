@@ -60,7 +60,20 @@
    var _rd=null;try{_rd=new URLSearchParams(location.search).get("redirect")}catch(e){}
    var _safe=function(x){return x&&x.charAt(0)==="/"&&x.indexOf("://")<0&&!/^\/(index|register|setup|admin-bootstrap|offline)/.test(x)};
    location.replace(_rd&&_safe(_rd)?_rd:(_isAdmin?"/admin?v="+now:"/home?v="+now));
-  }).catch(function(){});
+  }).catch(function(){
+   /* 离线/弱网分支：本地有近期会话痕迹（90 天内成功登录过）则乐观直达首页，
+      联网后由首页 /api/home-bootstrap 校验；会话失效（401）才回登录页，
+      不会卡在登录框、也不会闪登录页。按 localStorage 记录的角色进入正确端，
+      避免管理员离线误进司机首页后卡在「管理员不参与业务调度」。 */
+   try{
+    var _la=Number(localStorage.getItem("zpLastAuth")||0);
+    if(_la>0&&now-_la<7776000000){
+     var _lr=localStorage.getItem("zpLastRole");
+     try{sessionStorage.setItem("zpAuth","1")}catch(e){}
+     location.replace(_lr==="admin"?"/admin?v="+now:"/home?v="+now);
+    }
+   }catch(e){}
+  });
 }catch(e){}})();
-</script><script src="/js/login.js?v=daea0b15"></script><script src="/js/pwa.js?v=68dbac73"></script>
+</script><script src="/js/login.js?v=55c0f0f1"></script><script src="/js/pwa.js?v=68dbac73"></script>
 </body></html>

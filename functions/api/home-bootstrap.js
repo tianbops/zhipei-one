@@ -1,5 +1,5 @@
 import {json} from "./_json.js";
-import {currentUser} from "./_auth.js";
+import {currentUser, refreshSession} from "./_auth.js";
 import {canUseRoute} from "./_permissions.js";
 import {resolveDispatchRoute} from "./dispatch.js";
 import {guard} from "./_safe.js";
@@ -14,6 +14,8 @@ async function bootstrapGet({request,env}){
  if(!user)return json({success:false,error:"未登录"},401);
  if(!canUseRoute(user))return json({success:false,error:"管理员不参与业务调度"},403);
  const dispatchRoute=await resolveDispatchRoute(env,user);
+ // 滑动续期：首页首屏鉴权实际走本接口（乐观直达会跳过 /api/me），必须由这里续期并刷新 Cookie Max-Age
+ const sc=await refreshSession(request,env);
  return json({success:true,dispatchRoute,user:{
   id:user.id,
   username:user.username,
@@ -23,6 +25,6 @@ async function bootstrapGet({request,env}){
   routeDuty:user.routeDuty||null,
   dispatchRouteId:user.dispatchRouteId||null,
   disabled:!!user.disabled
- }});
+ }},200,sc?{"set-cookie":sc}:undefined);
 }
 export const onRequestGet=guard(bootstrapGet,"HOME_BOOTSTRAP_FAILED");

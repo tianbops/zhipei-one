@@ -1,12 +1,14 @@
 import {json} from "./_json.js";
 import {guard} from "./_safe.js";
-import {currentUser} from "./_auth.js";
+import {currentUser, refreshSession} from "./_auth.js";
 // guard：给响应补 Server-Timing: app;dur=<ms> 与 X-ZP-Request-Id。
 // /api/me 是每次进页面都要打的接口，诊断面板里它的服务端耗时一直是空的（没上报计时头），
 // 只能看到「客户端 2s、服务端未知」，分不清是后端慢还是网络慢。包一层不影响任何业务返回。
 const handleMe=guard(async ({request,env})=>{
  const user=await currentUser(request,env);
  if(!user)return json({success:false,error:"未登录"},401);
+ // 滑动续期：每次成功校验都把会话续到 90 天后，并刷新浏览器 Cookie Max-Age（否则客户端 Cookie 仍按首次 7 天倒计时，服务端续期无效）
+ const sc=await refreshSession(request,env);
  return json({success:true,user:{
   id:user.id,
   username:user.username,
@@ -16,7 +18,7 @@ const handleMe=guard(async ({request,env})=>{
   routeDuty:user.routeDuty||null,
   dispatchRouteId:user.dispatchRouteId||null,
   disabled:!!user.disabled
- }});
+ }},200,sc?{"set-cookie":sc}:undefined);
 },"ACCOUNT_ME_FAILED");
 
 /**

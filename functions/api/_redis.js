@@ -25,5 +25,5 @@ export async function set(env,key,value){return command(env,["SET",PREFIX+key,ty
 // TTL 非法（非正数/NaN）直接抛错，绝不静默改写成 1 秒 —— 那会让调用方以为设了长 TTL 却拿到短会话。
 export async function setEx(env,key,value,ttlSeconds){const t=Number(ttlSeconds);if(!Number.isFinite(t)||t<1)throw new Error("SETEX_TTL_INVALID");return command(env,["SET",PREFIX+key,typeof value==="string"?value:JSON.stringify(value),"EX",String(Math.floor(t))])}
 export async function del(env,key){return command(env,["DEL",PREFIX+key])}
-export const SESSION_TTL_SECONDS=604800;   // 7 天，与 sessionCookie 默认 Max-Age 严格一致
+export const SESSION_TTL_SECONDS=7776000;   // 90 天：滑动续期窗口。活跃用户每次打开 App（/api/me、/api/home-bootstrap 心跳）续到 90 天后，接近永久免登；仅 90 天完全不打开才过期重登。与 sessionCookie 默认 Max-Age 严格同寿。
 export function cookieName(){return COOKIE}export function sessionCookie(token,maxAge=SESSION_TTL_SECONDS){return COOKIE+"="+encodeURIComponent(token)+"; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age="+maxAge}export function clearSessionCookie(){return COOKIE+"=; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=0"}export function newId(){return crypto.randomUUID()}

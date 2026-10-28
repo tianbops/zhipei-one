@@ -1,4 +1,4 @@
-import {command} from "./_redis.js";
+import {command, setEx, sessionCookie, SESSION_TTL_SECONDS} from "./_redis.js";
 
 /* 会话鉴权：将原先两个串行 Redis REST 往返合并为一个 Lua 往返。
  * 原链路每个受保护 API 都先 GET session，再解析 userId，最后 GET user；
@@ -48,4 +48,20 @@ function readSession(request){
 }
 export function requireUser(request,env){
  return currentUser(request,env).then(user=>{if(!user) throw Object.assign(new Error("UNAUTHORIZED"),{status:401});return user});
+}
+
+/**
+ * 滑动续期：在读得有效会话的前提下，把服务端 session TTL 续到 SESSION_TTL_SECONDS（90 天），
+ * 并返回刷新后的会话 Cookie（Max-Age 同步到 90 天）。仅有效会话执行，无效/缺失会话返回 null
+ * （绝不写 Cookie，也不会把过期会话复活）。
+ * 调用方（/api/me、/api/home-bootstrap）把返回值作为响应的 set-cookie 注入，
+ * 否则浏览器 Cookie 仍按首次下发的 7 天 Max-Age 倒计时，到时丢弃 Cookie，服务端续期形同虚设。
+ */
+export async function refreshSession(request, env){
+ const token=readSession(request);
+ if(!token) return null;
+ const raw=await command(env,["GET","zp:session:"+token]);
+ if(!raw) return null;
+ await setEx(env,"session:"+token,raw,SESSION_TTL_SECONDS);
+ return sessionCookie(token);
 }

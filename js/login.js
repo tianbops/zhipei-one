@@ -25,7 +25,7 @@ form?.addEventListener("submit",async e=>{e.preventDefault();message.textContent
   // 同步写入登录态标记：各业务页头部守卫据此即时放行，未登录则直接跳登录页（无需先渲染再跳转）
   try{sessionStorage.setItem("zpAuth","1")}catch(e){}
   /* 记下「本设备成功登录过」：登录页据此判断是否存在会话 cookie 的可能，避免发必然 401 的探测 */
-  try{localStorage.setItem("zpLastAuth",String(Date.now()))}catch(e){}
+  try{localStorage.setItem("zpLastAuth",String(Date.now()));localStorage.setItem("zpLastRole",String(_role||"user"))}catch(e){}
   // 登录后回到意图页（深链/被守卫拦截的页面）；无则按角色进入首页
   var _rd=null;try{_rd=new URLSearchParams(location.search).get("redirect")}catch(e){}
   var _safe=function(u){return u&&u.charAt(0)==="/"&&u.indexOf("://")<0&&!/^\/(index|register|setup|admin-bootstrap|offline)/.test(u)};
