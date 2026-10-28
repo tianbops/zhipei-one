@@ -29,7 +29,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="智配One"><script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F6F7F9":"#121826");}catch(e){}</script>
-<link rel="stylesheet" href="/css/app.css?v=30c14b4f"><link rel="stylesheet" href="/css/ui-base.css?v=2dd9bf80"><link rel="stylesheet" href="/css/ui-overlay.css?v=4ce1c2cf"><link rel="stylesheet" href="/css/ui-theme.css?v=90509d7b"><link rel="stylesheet" href="/css/ui-shell.css?v=d7e34ce4"><link rel="stylesheet" href="/css/mobile-ui.css?v=3fff5e47"><link rel="stylesheet" href="/css/business-pages.css?v=19a28a05"><link rel="stylesheet" href="/css/data.css?v=30bfe9c2"></head>
+<link rel="stylesheet" href="/css/app.css?v=30c14b4f"><link rel="stylesheet" href="/css/ui-base.css?v=2dd9bf80"><link rel="stylesheet" href="/css/ui-overlay.css?v=4ce1c2cf"><link rel="stylesheet" href="/css/ui-theme.css?v=90509d7b"><link rel="stylesheet" href="/css/ui-shell.css?v=d7e34ce4"><link rel="stylesheet" href="/css/mobile-ui.css?v=3fff5e47"><link rel="stylesheet" href="/css/business-pages.css?v=19a28a05"><link rel="stylesheet" href="/css/data.css?v=d6390635"></head>
 <body><main class="page2 data-page zp-shell">
 <header class="topbar"><a class="app-back" href="/home" aria-label="返回"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><h1>数据资料</h1><button id="pageMenuBtn" class="data-page-menu-btn" type="button" aria-label="打开菜单">☰</button></header>
 <div class="zp-scroll">
@@ -49,7 +49,7 @@
 </div>
 </section>
 <div id="dataFeedback" class="data-feedback" hidden></div><section class="page2-card data-list-card"><div class="data-list-head"><span class="data-list-title">门店资料</span><span id="storeCount" class="data-list-count"></span></div><div id="stores" class="data-store-list">加载中…</div></section>
-<div id="editBox" class="data-import data-editor" style="display:none"><div class="data-import-panel data-editor-panel"><div class="data-import-head"><h3 id="editTitle">编辑门店</h3><button id="editClose" class="data-import-close" type="button" aria-label="关闭">×</button></div><label class="data-field"><span>排列序号</span><input id="editOrder" class="data-input" type="number" min="1" step="1" inputmode="numeric" placeholder="例如 1"><small id="editOrderHint" class="data-field-hint"></small></label><label class="data-field"><span>门店名称</span><input id="editName" class="data-input" type="text" maxlength="120"></label><label class="data-field"><span>导航地址</span><input id="editNavigation" class="data-input" type="url" placeholder="https://..."></label><label class="data-field"><span>备注</span><textarea id="editNote" class="data-textarea data-note" placeholder="可选"></textarea></label><label class="data-field"><span>别名（学习自动添加，可手动删除或追加）</span><div id="editAliases" class="data-aliases"></div><div class="data-alias-add"><input id="editAliasInput" class="data-input data-alias-input" type="text" maxlength="120" placeholder="输入别名后点“添加”"><button id="editAliasAdd" type="button" class="data-action-btn">添加</button></div></label><div id="editError" class="data-help data-preview"></div><div class="data-import-actions"><button id="editCancel" type="button">取消</button><button id="editSave" type="button">保存</button></div></div></div>
+<div id="editBox" class="data-import data-editor" style="display:none"><div class="data-import-panel data-editor-panel"><div class="data-import-head"><h3 id="editTitle">编辑门店</h3><button id="editClose" class="data-import-close" type="button" aria-label="关闭">×</button></div><label class="data-field"><span>排列序号</span><input id="editOrder" class="data-input" type="number" min="1" step="1" inputmode="numeric" placeholder="例如 1"><small id="editOrderHint" class="data-field-hint"></small></label><label class="data-field"><span>门店名称</span><input id="editName" class="data-input" type="text" maxlength="120"></label><label class="data-field"><span>导航地址</span><input id="editNavigation" class="data-input" type="url" placeholder="https://..."></label><label class="data-field"><span>备注</span><textarea id="editNote" rows="1" class="data-textarea data-note" placeholder="可选"></textarea></label><label class="data-field"><span>别名（学习自动添加，可手动删除或追加）</span><div id="editAliases" class="data-aliases"></div><div class="data-alias-add"><input id="editAliasInput" class="data-input data-alias-input" type="text" maxlength="120" placeholder="输入别名后点“添加”"><button id="editAliasAdd" type="button" class="data-action-btn">添加</button></div></label><div id="editError" class="data-help data-preview"></div><div class="data-import-actions"><button id="editCancel" type="button">取消</button><button id="editSave" type="button">保存</button></div></div></div>
 <div id="replaceBox" class="data-import" style="display:none"><div class="data-import-panel">
 <div class="data-import-head"><h3>批量替换</h3><button id="replaceClose" class="data-import-close" type="button" aria-label="关闭">×</button></div>
 <p class="data-help">用新的完整门店资料替换当前线路显示的资料。确认提交前，不会修改服务器中的正式数据。</p>
@@ -67,7 +67,7 @@
 <p class="data-help">新增一家门店到当前资料的末尾。追加内容先保存在页面，确认无误后再提交更新。</p>
 <label class="data-field"><span>排列序号</span><input id="appendOrder" class="data-input" type="number" min="1" step="1" inputmode="numeric" placeholder="例如 1"><small id="appendOrderHint" class="data-field-hint"></small></label><label class="data-field"><span>门店名称</span><input id="appendName" class="data-input" type="text" maxlength="120"></label>
 <label class="data-field"><span>导航地址</span><input id="appendNavigation" class="data-input" type="url" placeholder="https://..."></label>
-<label class="data-field"><span>备注</span><textarea id="appendNote" class="data-textarea data-note" placeholder="可选"></textarea></label>
+<label class="data-field"><span>备注</span><textarea id="appendNote" rows="1" class="data-textarea data-note" placeholder="可选"></textarea></label>
 <div id="appendError" class="data-help data-preview"></div>
 <div class="data-import-actions"><button id="appendCancel" type="button">取消</button><button id="appendApply" type="button">追加</button></div>
 </div></div>
@@ -171,7 +171,7 @@ function openEditor(index=-1){
  updateOrderHint();
  $("editName").value=s.name||s.originalName||"";
  $("editNavigation").value=s.navigation||"";
- $("editNote").value=s.note||"";
+ $("editNote").value=s.note||"";autoGrow($("editNote"));
  editAliases=Array.isArray(s.aliases)?s.aliases.map(x=>String(x).trim()).filter(Boolean):[];renderEditAliases();
  $("editError").textContent="";
  showPanel("editBox");
@@ -209,9 +209,12 @@ function addEditAlias(){
  if(editAliases.some(x=>String(x).trim()===v)){$("editAliasInput").value="";return}
  editAliases.push(v);$("editAliasInput").value="";renderEditAliases();
 }
+function autoGrow(el){if(!el)return;el.style.height="auto";el.style.height=el.scrollHeight+"px"}
 $("editAliases").addEventListener("click",e=>{const del=e.target.closest("[data-alias-index]");if(del){const i=Number(del.dataset.aliasIndex);if(Number.isInteger(i)&&i>=0&&i<editAliases.length){editAliases.splice(i,1);renderEditAliases()}}});
 $("editAliasAdd").onclick=addEditAlias;
 $("editAliasInput").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();addEditAlias()}});
+$("editNote").addEventListener("input",e=>autoGrow(e.target));
+$("appendNote").addEventListener("input",e=>autoGrow(e.target));
 async function askConfirm(title,message,okText="确定"){
  if(confirming)return false;
  confirming=true;
@@ -253,7 +256,7 @@ document.addEventListener("keydown",e=>{
 });
 
 function openReplace(){$("replaceText").value="";$("replaceFile").value="";$("replacePreview").textContent="";showPanel("replaceBox")}
-function openAppend(){$("appendOrder").value=stores.length+1;$("appendOrderHint").textContent="默认追加到第 "+(stores.length+1)+" 位";$("appendName").value="";$("appendNavigation").value="";$("appendNote").value="";$("appendError").textContent="";showPanel("appendBox");setTimeout(()=>$("appendOrder").focus(),0)}
+function openAppend(){$("appendOrder").value=stores.length+1;$("appendOrderHint").textContent="默认追加到第 "+(stores.length+1)+" 位";$("appendName").value="";$("appendNavigation").value="";$("appendNote").value="";autoGrow($("appendNote"));$("appendError").textContent="";showPanel("appendBox");setTimeout(()=>$("appendOrder").focus(),0)}
 function showRestore(){ $("restorePreview").textContent="等待选择数据文件"; showPanel("restoreBox") }
 function prepareReplace(){
  const p=parseImport($("replaceText").value);

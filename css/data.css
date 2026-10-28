@@ -55,7 +55,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-field>span{display:block;margin-bottom:6px;color:var(--zp-muted);font-size:14px;line-height:20px}
 .data-input{display:block;width:100%;height:var(--zp-control-height);box-sizing:border-box;border:1px solid var(--zp-line);border-radius:10px;background:var(--zp-surface-2);color:var(--zp-text);padding:0 16px;font:inherit;font-size:14px;outline:none}
 .data-input:focus,.data-note:focus{border-color:var(--zp-muted)}
-.data-note{min-height:100px;margin-top:0}
+.data-note{min-height:0;margin-top:0;resize:none;overflow:hidden;padding:10px 14px;line-height:1.6}
 
 .data-store-name-line{display:flex;align-items:flex-start;gap:8px;min-width:0}
 .data-store-name-line .data-store-name{flex:1;min-width:0}
