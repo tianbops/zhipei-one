@@ -246,7 +246,7 @@ body {
 .auth-card h1 {
   text-align: center;
   margin: 0;
-  font-size: 26px;
+  font-size: var(--zp-fs-26);
   line-height: 1.25;
 }
 
@@ -300,17 +300,6 @@ body {
 .auth-card a {
   color: var(--zp-muted);
   text-decoration: none;
-}
-
-@media (max-width:380px) {
-  .pipeline {
-    gap: 3px;
-    font-size:var(--zp-fs-11);
-  }
-
-  .pipeline span {
-    padding: 5px 5px;
-  }
 }
 
 @media (max-height:600px) {
@@ -514,7 +503,7 @@ body {
 .login-headline {
   margin: 0 0 12px;
   color: var(--zp-text);
-  font-size: 31px;
+  font-size: var(--zp-fs-31);
   line-height: 1.32;
   font-weight:var(--zp-fw-bold);
   letter-spacing: .01em;
@@ -662,7 +651,7 @@ body {
   }
 
   .login-headline {
-    font-size: 28px;
+    font-size: var(--zp-fs-28);
   }
 }
 
@@ -909,6 +898,10 @@ body {
   --zp-fs-16:16px;
   --zp-fs-18:18px;
   --zp-fs-20:20px;
+  --zp-fs-22:22px; /* 展示大数字（概览数值/运单摘要），全站统一，禁止散落 22px */
+  --zp-fs-26:26px; /* 鉴权卡片标题（.auth-card h1） */
+  --zp-fs-28:28px; /* 登录主标题（.login-headline） */
+  --zp-fs-31:31px; /* 登录主标题大字号变体 */
   /* 字重：历史 550/650 归入 500/600 —— 中文字体通常只有 400/700 两档实际字重，
      550/650 会被就近渲染，写出来只制造「两套值」的错觉，归并零视觉代价。 */
   --zp-fw-regular:400;
@@ -926,9 +919,12 @@ body {
      card 用于卡片与列表容器，dialog 用于弹层，pill 用于胶囊。
      弹层取 18 而非 20：现状 17/18/19 三档，18 是众数，归一只需 ±1px（A① 口径）。 */
   --zp-r-mini:10px;
+  --zp-r-handle:4px; /* 进度条 / 抽屉拖拽手柄等细条 */
+  --zp-r-chip:6px;   /* 状态胶囊 / 小标签 */
   --zp-r-control:12px;
   --zp-r-card:16px;
   --zp-r-dialog:18px;
+  --zp-r-sheet:20px; /* 底部抽屉顶部大圆角 */
   --zp-r-pill:999px;
   /* 间距：4 的倍数，唯一节奏 */
   --zp-sp-1:4px;
@@ -1344,17 +1340,12 @@ html[data-zp-native="1"]{--zp-safe-top:8px}
   cursor:pointer;-webkit-tap-highlight-color:transparent;
   transition:background-color .16s ease,border-color .16s ease,color .16s ease,opacity .16s ease;
 }
-.zp-btn--primary{background:var(--zp-primary);border-color:var(--zp-primary);color:var(--zp-on-primary)}
 .zp-btn--secondary{background:var(--zp-surface-2);border-color:var(--zp-line);color:var(--zp-text)}
-.zp-btn--ghost{background:transparent;border-color:transparent;color:var(--zp-primary)}
-/* 破坏性动作：中性底 + 红字（与 ui-theme.css 的全站危险按钮标准同口径） */
-.zp-btn--danger{background:var(--zp-secondary-bg);border-color:var(--zp-line);color:var(--zp-error)}
 .zp-btn--block{width:100%}
 /* 迷你档：行内动作、列表行右侧、菜单项，圆角退一档到 --zp-r-mini */
 .zp-btn--mini{min-height:34px;padding:0 var(--zp-sp-3);border-radius:var(--zp-r-mini);font-size:var(--zp-fs-13)}
 .zp-btn--icon{width:var(--zp-control-height);min-height:var(--zp-control-height);padding:0;border-color:transparent;background:transparent;color:var(--zp-muted)}
 .zp-btn:active{background-color:var(--zp-secondary-active)}
-.zp-btn--primary:active{background-color:var(--zp-primary-active);border-color:var(--zp-primary-active)}
 .zp-btn:disabled,.zp-btn[aria-disabled="true"]{opacity:.55;cursor:not-allowed;transform:none}
 
 /* ===== 密码框（含显隐按钮）原语 =====

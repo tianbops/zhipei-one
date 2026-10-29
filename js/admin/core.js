@@ -3,8 +3,6 @@
  * 以 window.ZPAdmin 作为唯一共享命名空间，供后续 admin/*.js 模块取用。
  */
 (function(){
-window.__adminBootStarted=Date.now();
-window.__adminBootStarted=Date.now();
 const $=id=>document.getElementById(id),S={page:0,users:[],routes:[],requests:[],invites:[],me:null},esc=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));const rn=v=>{const s=String(v??"").trim();if(!s)return"";if(window.zpRouteName)return window.zpRouteName(s)||s;if(/号线$/.test(s))return s;if(/^(\d+)号$/.test(s))return s.replace("号","")+"号线";if(/^\d+路$/.test(s))return s.replace("路","")+"号线";if(/^\d+$/.test(s))return s+"号线";return s};/* 全局标准：线路名文本统一「X号线」 */// 读请求走 window.zpFetch（P0-8：5xx/429/网络中断自动退避重试）。
 // 只有 GET 走重试——写操作重放一次就是一次重复业务，所以 POST 保持原来的单次语义。
 async function api(u,o={}){

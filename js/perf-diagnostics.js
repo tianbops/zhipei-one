@@ -80,7 +80,6 @@
   window.addEventListener("load",function(){
     var duration=nav?Math.max(nav.loadEventEnd,nav.domContentLoadedEventEnd,nav.responseEnd):performance.now()-started;
     push("page-load",200,duration,null);
-    if(debug)window.__zpPerfReportNow=function(){return {page:page,elapsedMs:Math.round((performance.now()-started)*10)/10,queuedEvents:rows.slice(),sentBatches:sent}};
     setTimeout(flush,3000);
   },{once:true});
   window.addEventListener("pagehide",flush);

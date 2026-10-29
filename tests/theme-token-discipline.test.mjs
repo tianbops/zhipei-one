@@ -129,6 +129,22 @@ for (const f of AUTH_FILES) {
   }
 }
 
+// ④⑤ 纪律用的白名单：从权威 :root 动态提取 --zp-fs-* / --zp-r-* 的取值。
+//   组件层若写死 font-size / border-radius 的 px 字面量，其值必须落在对应取值集内
+//   （即「恰好等于某令牌取值」才放行），否则视为绕过令牌的分叉、应改为 var(--zp-*)。
+const FS_VALUES = new Set();
+const R_VALUES = new Set();
+for (const f of AUTH_FILES) {
+  const css = fs.readFileSync(path.join(root, f), "utf8");
+  for (const block of rootBlocks(css)) {
+    for (const decl of block.body.split(";")) {
+      const m = decl.match(/--zp-(fs|r)-[\w-]+\s*:\s*(.+)$/);
+      if (!m) continue;
+      (m[1] === "fs" ? FS_VALUES : R_VALUES).add(m[2].trim());
+    }
+  }
+}
+
 // ---------------------------------------------------------------------------
 // ② 退休色板：旧设计（深色 Uber 中性 + admin 蓝灰 + 旧浅色蓝灰 + 旧状态色族）
 //    冻结快照——2026-10-23 重建时从旧代码库机械导出（组件层字面量 ∪ 令牌值，
@@ -338,4 +354,54 @@ assert.equal(v1.length, 0, "组件层存在 " + v1.length + " 处字面量重复
 assert.equal(v2.length, 0, "旧设计退休色板复现 " + v2.length + " 处（见上清单）");
 assert.equal(colorMix.length, 0, "存在 " + colorMix.length + " 处 color-mix()，违反安卓 WebView 兼容地板");
 assert.equal(inlineLightPatches.length, 0, "页面内联 <style> 残留 " + inlineLightPatches.length + " 处浅色补丁（基底反转为浅色后应删除，见上清单）");
-console.log("\n主题 Token 纪律检查通过：组件层零字面量绕过、退休色板零复现、无 color-mix()、无内联浅色补丁");
+
+// ---------------------------------------------------------------------------
+// ④⑤ 字号 / 圆角纪律（2026-10-29 扩展）：组件层不得写死 font-size / border-radius 的
+//     px 字面量，除非其值恰为某 --zp-fs-* / --zp-r-* 令牌的取值（从 :root 动态取得）。
+//     把「统一设计语言」护栏从颜色扩展到尺寸，杜绝「换条选择器、换个马甲」的分叉。
+//     home 系列（home.bundle.css 及喂它的 home-trend/home-base 源）由 build-home-bundle
+//     统一打包，本轮不重打包，故从 ④⑤ 扫描豁免，留待 home 专项统一收口。
+// ---------------------------------------------------------------------------
+const FS_RE = /\bfont-size\s*:\s*([0-9.]+)px\b/gi;
+const R_RE = /\bborder-radius\s*:\s*([0-9.]+)px\b/gi;
+const HOME_CSS = new Set(["css/home.bundle.css", "css/home-trend.css", "css/home-base.css"]);
+function scanSizes(file, text, re, allowed, opts = {}) {
+  const { skip = [], only = null } = opts;
+  const consider = idx => !inRanges(idx, skip) && (!only || inRanges(idx, only));
+  const out = [];
+  for (const m of text.matchAll(re)) {
+    if (!consider(m.index)) continue;
+    if (allowed.has(m[1] + "px")) continue; // 恰好等于某令牌取值 -> 放行
+    out.push({ file, value: m[1] + "px", idx: m.index });
+  }
+  return out;
+}
+const fsV = [], rV = [];
+for (const f of cssFiles) {
+  if (HOME_CSS.has(f)) continue;
+  const text = cssScannable(fs.readFileSync(path.join(root, f), "utf8"));
+  fsV.push(...withLines(f, text, scanSizes(f, text, FS_RE, FS_VALUES, { skip: rootRanges(text) })));
+  rV.push(...withLines(f, text, scanSizes(f, text, R_RE, R_VALUES, { skip: rootRanges(text) })));
+}
+for (const h of htmlFiles) {
+  const text = htmlScannable(fs.readFileSync(path.join(root, h), "utf8"));
+  fsV.push(...withLines(h, text, scanSizes(h, text, FS_RE, FS_VALUES, { only: htmlStyleRanges(text) })));
+  rV.push(...withLines(h, text, scanSizes(h, text, R_RE, R_VALUES, { only: htmlStyleRanges(text) })));
+}
+if (fsV.length) report("④ 组件层写死 font-size 字面量（应改 var(--zp-fs-*)）", fsV);
+if (rV.length) report("⑤ 组件层写死 border-radius 字面量（应改 var(--zp-r-*)）", rV);
+assert.equal(fsV.length, 0, "组件层存在 " + fsV.length + " 处写死 font-size 字面量（见上清单）");
+assert.equal(rV.length, 0, "组件层存在 " + rV.length + " 处写死 border-radius 字面量（见上清单）");
+
+// 投毒验证：散落字号/圆角字面量必须被拦截；令牌取值必须放行（撤销后复绿）
+{
+  const fake = ".poison{font-size:99px;border-radius:77px}";
+  const fHit = scanSizes("poison.css", fake, FS_RE, FS_VALUES);
+  const rHit = scanSizes("poison.css", fake, R_RE, R_VALUES);
+  assert.equal(fHit.length, 1, "投毒：font-size 散落字面量应被拦截");
+  assert.equal(rHit.length, 1, "投毒：border-radius 散落字面量应被拦截");
+  assert.ok(!FS_VALUES.has("99px"), "投毒：99px 不应在字号令牌集");
+  assert.ok(R_VALUES.has("999px"), "圆角令牌集应含 pill 999px（令牌取值放行）");
+}
+
+console.log("\n主题 Token 纪律检查通过：组件层零字面量绕过、退休色板零复现、无 color-mix()、无内联浅色补丁；字号/圆角零散落字面量（④⑤）、投毒验证通过");

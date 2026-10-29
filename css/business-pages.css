@@ -61,7 +61,7 @@
 
 /* 线路选择页
    ------------------------------------------------------------------
-   2026-10-29 UI 专项整治「收编」批次：原 pages/dispatch.html 内联 <style>（110 行）
+   2026-10-29 UI 专项整治「收编」批次：原 pages/dispatch.html 内联 style（110 行）
    与本节早期的 8 条规则**存在同名重复定义**（.dispatch-section / -title / -empty
    各写两遍，实际生效的总是后加载的那份）。此处合并为唯一来源：
      · .dispatch-page 保留早期的 width/min-height/margin（内联没有这三项），
@@ -83,7 +83,7 @@
 .dispatch-section-title{margin:0 0 8px;font-size:var(--zp-fs-13);line-height:20px;color:var(--zp-muted);font-weight:var(--zp-fw-semibold)}
 .dispatch-current{background:var(--zp-card-translucent-2);border:1px solid var(--zp-tint);border-radius:var(--zp-r-card);padding:14px 16px;box-shadow:0 12px 30px var(--zp-shadow-md)}
 .dispatch-current-row{display:flex;align-items:center;gap:var(--zp-seg-btn-gap)}.dispatch-current-name{flex:none}.dispatch-current-status{flex:0 1 auto;min-width:0}
-.dispatch-current-name{font-size:22px;font-weight:var(--zp-fw-bold);line-height:1;color:var(--zp-text)}
+.dispatch-current-name{font-size:var(--zp-fs-22);font-weight:var(--zp-fw-bold);line-height:1;color:var(--zp-text)}
 .dispatch-current-status{font-size:var(--zp-fs-12);color:var(--zp-muted);display:flex;align-items:baseline;gap:2px}
 .dispatch-current-count{margin-left:4px;font-size:var(--zp-fs-12);color:var(--zp-muted);font-weight:var(--zp-fw-semibold)}
 .dispatch-switch{margin-left:auto;flex:none;width:calc((100% - 2*var(--zp-seg-btn-gap))/3);min-width:72px;min-height:var(--zp-seg-btn-h);padding:var(--zp-seg-btn-pad,0 8px);border:1px solid var(--zp-tint-strong);border-radius:var(--zp-seg-btn-radius);background:var(--zp-primary);color:var(--zp-on-primary);font-size:var(--zp-seg-btn-font);font-weight:var(--zp-fw-semibold)}
@@ -102,8 +102,8 @@
 .dispatch-retry:active{opacity:.82}
 .dispatch-sheet-backdrop{position:fixed;inset:0;z-index:50;display:none;place-items:end center;background:var(--zp-scrim);padding:0}
 .dispatch-sheet-backdrop.open{display:grid}
-.dispatch-sheet{width:100%;max-width:480px;padding:12px 16px calc(18px + env(safe-area-inset-bottom));background:var(--zp-surface-2);border-top:1px solid var(--zp-line);border-radius:20px 20px 0 0;box-shadow:0 -12px 36px var(--zp-shadow-md)}
-.dispatch-sheet-handle{width:34px;height:4px;margin:1px auto 14px;border-radius:4px;background:var(--zp-muted)}
+.dispatch-sheet{width:100%;max-width:480px;padding:12px 16px calc(18px + env(safe-area-inset-bottom));background:var(--zp-surface-2);border-top:1px solid var(--zp-line);border-radius:var(--zp-r-sheet) var(--zp-r-sheet) 0 0;box-shadow:0 -12px 36px var(--zp-shadow-md)}
+.dispatch-sheet-handle{width:34px;height:4px;margin:1px auto 14px;border-radius:var(--zp-r-handle);background:var(--zp-muted)}
 .dispatch-sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .dispatch-sheet h3{margin:0;font-size:var(--zp-fs-18)}
 .dispatch-sheet-confirm{height:36px;padding:0 14px;border:1px solid var(--zp-line);border-radius:var(--zp-r-dialog);background:var(--zp-secondary-active);color:var(--zp-text);font-size:var(--zp-fs-13);font-weight:var(--zp-fw-semibold)}

@@ -13,7 +13,7 @@
 .order-summary-card,.order-route-card{background:var(--zp-card-translucent-2);border:1px solid var(--zp-tint);border-radius:var(--zp-r-card);box-shadow:none}
 .order-summary-card{padding:14px 15px 13px;flex:0 0 auto;margin-bottom:10px}
 .order-date{text-align:center;font-size:var(--zp-fs-14);line-height:22px;color:var(--zp-text);font-weight:var(--zp-fw-semibold)}
-.order-summary-main{display:flex;align-items:baseline;justify-content:center;gap:3px;margin-top:5px;font-size:22px;line-height:30px;font-weight:var(--zp-fw-bold);letter-spacing:.1px}
+.order-summary-main{display:flex;align-items:baseline;justify-content:center;gap:3px;margin-top:5px;font-size:var(--zp-fs-22);line-height:30px;font-weight:var(--zp-fw-bold);letter-spacing:.1px}
 .order-summary-main span:nth-child(2),.order-summary-main span:nth-child(5){font-size:var(--zp-fs-14);color:var(--zp-muted);font-weight:var(--zp-fw-medium)}
 .order-summary-main b{font-size:var(--zp-fs-16);color:var(--zp-muted);font-weight:var(--zp-fw-medium);margin:0 2px}
 .order-metrics{margin-top:8px;display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap;color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:18px}
@@ -40,7 +40,7 @@
 .order-store-name.nav:visited{color:var(--zp-text)!important;text-decoration:none!important}.order-store-name.nav:active{opacity:.65}
 .order-store-note-inline{margin-left:5px;color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:20px;font-weight:var(--zp-fw-medium);white-space:normal}
 .order-store-note{margin-top:3px;color:var(--zp-soft);font-size:var(--zp-fs-11);line-height:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.order-store-status{display:inline-flex;margin-left:6px;padding:1px 5px;border-radius:5px;background:var(--zp-line);color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:16px;vertical-align:2px;font-weight:var(--zp-fw-semibold)}
+.order-store-status{display:inline-flex;margin-left:6px;padding:1px 5px;border-radius:var(--zp-r-chip);background:var(--zp-line);color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:16px;vertical-align:2px;font-weight:var(--zp-fw-semibold)}
 .order-store-status.pending{background:var(--zp-warning-soft);color:var(--zp-warning)}
 /* 空态统一走 css/ui-base.css 的 .zp-empty（本文件不再定义）。 */
 
@@ -79,7 +79,7 @@
 .order-dialog-actions{display:flex;flex:0 0 auto;gap:8px;padding:12px 14px;border-top:1px solid var(--zp-tint)}
 .order-dialog-actions button{flex:1;height:var(--zp-control-height);border-radius:var(--zp-r-control);border:0;font-size:var(--zp-fs-14);font-weight:var(--zp-fw-semibold)}
 .order-dialog-actions .secondary-btn{background:var(--zp-card-translucent-2);color:var(--zp-text);border:1px solid var(--zp-line)}.order-dialog-actions .primary-btn{background:var(--zp-primary);color:var(--zp-on-primary);border:0}.order-dialog-actions .primary-btn:disabled{opacity:.45}
-@media(max-width:430px){.order-shell{padding-left:10px;padding-right:10px}.order-summary-main{font-size:22px}.order-route-card{padding-left:10px;padding-right:10px}}
+@media(max-width:430px){.order-shell{padding-left:10px;padding-right:10px}.order-summary-main{font-size:var(--zp-fs-22)}.order-route-card{padding-left:10px;padding-right:10px}}
 @media(max-height:700px){.order-shell{padding-top:6px}.order-shell .topbar{min-height:48px;flex-basis:auto;margin-bottom:6px}.order-icon-btn{width:48px;height:48px}.order-summary-card{padding:10px 12px;margin-bottom:8px}.order-summary-main{margin-top:2px}.order-metrics{margin-top:5px}.order-route-card{padding-top:10px}.order-store-item{padding-top:8px;padding-bottom:8px;min-height:52px}}
 
 .order-pending-fab{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:40;height:44px;padding:0 18px;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-primary);color:var(--zp-on-primary);font-size:var(--zp-fs-13);font-weight:var(--zp-fw-bold);box-shadow:0 10px 28px var(--zp-shadow-md)}.order-pending-fab:active{transform:translateX(-50%) scale(.98)}
@@ -88,7 +88,7 @@
 .order-history-choice:last-child{margin-bottom:0}
 .order-history-choice:active{background:var(--zp-primary);color:var(--zp-on-primary);transform:scale(.995)}
 .history-choice-main{grid-area:main;color:var(--zp-text);font-size:var(--zp-fs-13);line-height:19px;font-weight:var(--zp-fw-semibold)}
-.history-choice-status{grid-area:status;align-self:center;justify-self:end;padding:4px 7px;border-radius:7px;background:var(--zp-primary);color:var(--zp-on-primary);font-size:var(--zp-fs-11);line-height:16px;font-weight:var(--zp-fw-semibold);white-space:nowrap}
+.history-choice-status{grid-area:status;align-self:center;justify-self:end;padding:4px 7px;border-radius:var(--zp-r-chip);background:var(--zp-primary);color:var(--zp-on-primary);font-size:var(--zp-fs-11);line-height:16px;font-weight:var(--zp-fw-semibold);white-space:nowrap}
 .order-pending-fab{height:46px;padding:0 20px;border-radius:var(--zp-r-control);background:var(--zp-card-translucent);color:var(--zp-text);border:1px solid var(--zp-muted);box-shadow:0 10px 30px var(--zp-shadow-md);font-size:var(--zp-fs-14)}
 .order-pending-fab:active{background:var(--zp-primary);color:var(--zp-on-primary)}
 
@@ -112,7 +112,7 @@
 
 
 /* 历史详情：明确提示当天存在多次派送 */
-.order-shell.history-multi .order-summary-main{font-size:22px}
+.order-shell.history-multi .order-summary-main{font-size:var(--zp-fs-22)}
 .order-shell.history-multi .order-summary-main span:nth-child(2){font-size:var(--zp-fs-14);color:var(--zp-muted);font-weight:var(--zp-fw-semibold)}
 .order-shell.history-multi .order-route-card{border-color:var(--zp-line)}
 
@@ -221,7 +221,7 @@
 .order-title{font-size:var(--zp-fs-20);line-height:26px}
 .order-menu button,.order-menu-route{font-size:var(--zp-fs-16);line-height:22px}
 .order-date{font-size:var(--zp-fs-16);line-height:23px}
-.order-summary-main{font-size:22px;line-height:28px}
+.order-summary-main{font-size:var(--zp-fs-22);line-height:28px}
 .order-summary-main span:nth-child(2),.order-summary-main span:nth-child(5){font-size:var(--zp-fs-15);line-height:20px}
 .order-summary-main b{font-size:var(--zp-fs-18);line-height:22px}
 .order-metrics{font-size:var(--zp-fs-14);line-height:20px}
@@ -287,7 +287,7 @@
   gap:0;
   margin-top:5px;
   white-space:nowrap;
-  font-size:22px;
+  font-size:var(--zp-fs-22);
   line-height:30px;
   font-weight:var(--zp-fw-bold);
 }
@@ -417,7 +417,7 @@
   display:inline-block;
   width:52px;
   height:20px;
-  border-radius:7px;
+  border-radius:var(--zp-r-chip);
   vertical-align:middle;
   background:linear-gradient(90deg,var(--zp-sk-a) 25%,var(--zp-sk-b) 50%,var(--zp-sk-a) 75%);
   background-size:200% 100%;

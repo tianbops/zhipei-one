@@ -126,12 +126,8 @@
     return e;
   }
 
-  // 测试与线上排查用：暴露策略常量，便于断言"弱网阈值没被偷偷改松"
+  // 统一出口：把重试封装挂到 window.zpFetch（测试按字符串守卫此行）
   var api = zpFetch;
-  api.policy = DEFAULT;
-  api.netHint = netHint;
-  api.safeToRetry = safeToRetry;
-  api.worthRetrying = worthRetrying;
   window.zpFetch = api;
 })();
 

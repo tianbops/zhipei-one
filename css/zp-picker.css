@@ -28,7 +28,7 @@
 .zp-pk-date-trigger{flex:1 1 150px;min-width:150px}
 /* 底部弹层 */
 .zp-pk-bg{position:fixed;inset:0;z-index:var(--ui-z-modal,1000);display:flex;align-items:flex-end;justify-content:center;background:var(--zp-card-translucent-2);padding:0}
-.zp-pk-sheet{position:relative;width:min(100%,560px);max-height:86dvh;display:flex;flex-direction:column;background:var(--zp-surface);border:1px solid var(--zp-line);border-radius:17px 17px 0 0;box-shadow:0 18px 50px var(--zp-shadow-lg);padding:8px 0 calc(10px + env(safe-area-inset-bottom));animation:zp-pk-up .18s ease}
+.zp-pk-sheet{position:relative;width:min(100%,560px);max-height:86dvh;display:flex;flex-direction:column;background:var(--zp-surface);border:1px solid var(--zp-line);border-radius:var(--zp-r-sheet) var(--zp-r-sheet) 0 0;box-shadow:0 18px 50px var(--zp-shadow-lg);padding:8px 0 calc(10px + env(safe-area-inset-bottom));animation:zp-pk-up .18s ease}
 @keyframes zp-pk-up{from{transform:translateY(18px);opacity:.5}to{transform:none;opacity:1}}
 @media(prefers-reduced-motion:reduce){.zp-pk-sheet{animation:none}}
 .zp-pk-head{display:flex;align-items:center;gap:4px;padding:8px 52px 6px 12px}

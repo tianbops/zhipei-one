@@ -176,7 +176,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
   display:inline-block;
   width:34px;
   height:12px;
-  border-radius:6px;
+  border-radius:var(--zp-r-chip);
   vertical-align:middle;
   background:linear-gradient(90deg,var(--zp-sk-a) 25%,var(--zp-sk-b) 50%,var(--zp-sk-a) 75%);
   background-size:200% 100%;

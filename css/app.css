@@ -246,7 +246,7 @@ body {
 .auth-card h1 {
   text-align: center;
   margin: 0;
-  font-size: 26px;
+  font-size: var(--zp-fs-26);
   line-height: 1.25;
 }
 
@@ -300,17 +300,6 @@ body {
 .auth-card a {
   color: var(--zp-muted);
   text-decoration: none;
-}
-
-@media (max-width:380px) {
-  .pipeline {
-    gap: 3px;
-    font-size:var(--zp-fs-11);
-  }
-
-  .pipeline span {
-    padding: 5px 5px;
-  }
 }
 
 @media (max-height:600px) {
@@ -514,7 +503,7 @@ body {
 .login-headline {
   margin: 0 0 12px;
   color: var(--zp-text);
-  font-size: 31px;
+  font-size: var(--zp-fs-31);
   line-height: 1.32;
   font-weight:var(--zp-fw-bold);
   letter-spacing: .01em;
@@ -662,7 +651,7 @@ body {
   }
 
   .login-headline {
-    font-size: 28px;
+    font-size: var(--zp-fs-28);
   }
 }
 

@@ -154,17 +154,4 @@
       });
     } catch (e) { /* 忽略 */ }
   });
-
-  /* 供调试/后续上报使用 */
-  window.zpErrors = {
-    list: function () {
-      try {
-        var raw = localStorage.getItem(RING_KEY);
-        return raw ? JSON.parse(raw) : [];
-      } catch (e) { return []; }
-    },
-    clear: function () {
-      try { localStorage.removeItem(RING_KEY); } catch (e) { /* 忽略 */ }
-    }
-  };
 })();

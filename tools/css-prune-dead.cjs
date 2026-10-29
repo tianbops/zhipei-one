@@ -43,6 +43,7 @@ const DEAD = new Set([
   "data-float-up", "data-float-down",
   "route-meta", "page2-panel",
   "account-install-btn", "account-install-card", "account-install-main",
+  "pipeline",
 ]);
 
 const CLASS_RE = /\.([A-Za-z0-9_-]+)/g;
