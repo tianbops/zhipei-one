@@ -1,13 +1,7 @@
 /* css/admin-overlay.css —— 覆盖层：居中确认模态 zp-confirm 与用户行细节
  * 拆分自 admin.html（原内联 <style> 第 3 段），规则顺序原样保留，层叠结果不变。
  */
-/* 管理员页面与全局 UI 统一层：左滑用户行不显示多余方向箭头。 */
-#users .row .arrow,
-#users .row .content::after,
-#users .row .main::after{
-  display:none!important;
-  content:none!important;
-}
+/* 用户行箭头隐藏由 css/admin-base.css「用户行左滑排版」统一声明，本文件不再重复。 */
 
 /* 管理员退出确认：zpConfirm 居中模态（遮罩/面板/按钮/双主题）已由全局单一来源
    css/ui-base.css(.zp-confirm 第 323-338 行) + css/ui-theme.css(浅色覆盖 第 70/203-209 行)

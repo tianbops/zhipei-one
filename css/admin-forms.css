@@ -1,19 +1,19 @@
 /* css/admin-forms.css —— 表单与抽屉：密码框/用户名框、字段提示、系统设置菜单、弹窗变体
  * 拆分自 admin.html（原内联 <style> 第 2 段），规则顺序原样保留，层叠结果不变。
+ *
+ * 2026-10-29：本文件原有 54 条 !important，全是「先写一版、再写一版用 !important 压过去」
+ * 留下的。逐条用计算属性对拍（管理端 4 个界面态 × 412/380 两个宽度 × 31 项属性，
+ * 改动前后差异 0 项）后全部去掉，改为：能靠选择器说清的就写清（.username-dialog
+ * .username-control input 对 .dialog .field input），说不到的靠加载顺序 ——
+ * 本文件与 admin-overlay / admin-perf / zp-picker 都必须在 admin-base 之后加载，
+ * 这正是 admin.html 里既有的顺序，改顺序前先跑一遍上面那套对拍。
  */
-/* 管理员密码输入框 3.4：强化输入区域、焦点状态与密码显隐操作。 */
+/* 管理员密码输入框：容器与显隐按钮由 js/ui/feedback.js 生成 .zp-password-control
+   （样式在 css/ui-base.css，全站一份）。原 .reset-password-control 一套是改版前的
+   旧容器，标记里已不存在、从未匹配到元素，2026-10-29 删除。此处只保留字段标签与下间距。 */
 .reset-password-field{margin-top:16px}
 .reset-password-field>label{display:block;margin:0 0 8px;color:var(--zp-text);font-size:var(--zp-fs-14);line-height:20px;font-weight:var(--zp-fw-semibold)}
-.reset-password-control{position:relative;display:flex;align-items:center;min-height:62px;border:1px solid var(--zp-input-line);border-radius:var(--zp-r-control);background:var(--zp-input-bg);transition:border-color .16s ease,box-shadow .16s ease}
-.reset-password-control:focus-within{border-color:var(--zp-input-focus);box-shadow:0 0 0 3px var(--zp-focus-glow)}
-.reset-password-control input{flex:1;min-width:0;width:100%;height:50px!important;padding:0 10px 0 14px!important;border:0!important;border-radius:var(--zp-r-control);background:transparent!important;color:var(--zp-text);font-size:var(--zp-fs-16);line-height:22px;letter-spacing:.02em;outline:none!important;box-shadow:none!important}
-.reset-password-control input::placeholder{color:var(--zp-input-placeholder);letter-spacing:0}
-/* 2026-10 触控靶区整改：36px → 48px（WCAG 2.5.5 / 安卓 48dp 建议线），
-   容器 min-height 同步 52 → 62（48 + 上下 7px 呼吸位）。 */
-.reset-password-control button{flex:0 0 auto;min-width:54px;height:48px;margin:0 7px;padding:0 9px;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-secondary-bg);color:var(--zp-text);font-size:var(--zp-fs-13);line-height:20px;font-weight:var(--zp-fw-semibold)}
-.reset-password-control button:active{background:var(--zp-secondary-active)}
 .field-hint{margin-top:7px;color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:18px}
-@media(max-width:380px){.reset-password-control input{font-size:var(--zp-fs-16)}.reset-password-control button{min-width:50px;margin-right:6px}}
 /* 管理员用户管理 3.1：搜索图标置于输入框右侧；用户信息左右对齐。 */
 .search{position:relative;display:block}
 .search>span{position:absolute;right:12px;top:50%;z-index:2;transform:translateY(-50%);margin:0;color:var(--zp-soft);font-size:var(--zp-fs-20);line-height:1;pointer-events:none}
@@ -23,28 +23,30 @@
 .diag-filters input{padding-right:10px}
 #diagDate,.zp-pk-date-trigger{flex:1 1 150px;min-width:150px}
 #users .row .content{align-items:center}
-#users .row .main{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-width:0}
+#users .row .main{display:flex;align-items:center;justify-content:space-between;width:100%;min-width:0}
 #users .row .main strong{flex:1;min-width:0}
 #users .row .main .meta{flex:0 0 auto;white-space:nowrap;text-align:right}
 /* 管理员用户/线路左滑：单一来源（2026-10-29 合并）。
-   此前同一套规则写了两遍 —— 上面一段无 !important 的「首版」，下面一段 3.2 版
-   把每个属性重写一遍并全部加 !important。同特异性下后者本来就赢，!important
+   此前同一套规则写了两遍 —— 上面一段无  的「首版」，下面一段 3.2 版
+   把每个属性重写一遍并全部加 。同特异性下后者本来就赢，
    只是让「改首版」彻底变成无效劳动。旧段已删，保留实际生效的 3.2 取值。
-   用户行末尾箭头由文件下方的 #users .row .arrow / ::after 统一隐藏。 */
+   用户行末尾箭头由文件下方的 #users .row .arrow / ::after 统一隐藏。
+   2026-10-29 二次收编：既然此处已是唯一来源，19 条  失去「压过首版」的
+   理由，一并去掉。实测开合两态 30 项计算属性逐项一致（无其它规则竞争这些属性）。 */
 #routes .route{position:relative;overflow:hidden}
 #routes .route-delete{
-  right:-74px!important;top:0!important;bottom:0!important;
-  width:74px!important;height:100%!important;min-height:54px!important;
-  margin:0!important;padding:0!important;border:0!important;border-radius:0!important;
-  background:var(--zp-secondary-bg)!important;color:var(--zp-error)!important;z-index:1!important;
-  pointer-events:none!important;transition:none!important
+  right:-74px;top:0;bottom:0;
+  width:74px;height:100%;min-height:54px;
+  margin:0;padding:0;border:0;border-radius:0;
+  background:var(--zp-secondary-bg);color:var(--zp-error);z-index:1;
+  pointer-events:none;transition:none
 }
 #routes .route-content{
   position:relative;z-index:2;background:var(--zp-bg);
-  transform:translateX(0)!important;transition:transform .18s ease
+  transform:translateX(0);transition:transform .18s ease
 }
-#routes .route.open .route-content{transform:translateX(-74px)!important}
-#routes .route.open .route-delete{right:0!important;pointer-events:auto!important}
+#routes .route.open .route-content{transform:translateX(-74px)}
+#routes .route.open .route-delete{right:0;pointer-events:auto}
 #routes .route .person .small-action{z-index:3}
 /* 线路左滑删除 4.0：线路行独立手势层，避免管理员分页横滑控制器抢占触摸事件。 */
 #routes .route{
@@ -62,21 +64,21 @@
    此前 pointer-events:none 让整层对点击穿透，"点空白收起"的监听永远
    收不到事件（2026-10-04 修复）。外观仍为全透明，不加暗色遮罩。 */
 .menu-bg{
-  position:fixed!important;inset:0!important;z-index:var(--ui-z-modal-stack,1100)!important;
-  display:block!important;padding:0!important;
-  background:transparent!important;backdrop-filter:none!important;
-  -webkit-backdrop-filter:none!important;
+  position:fixed;inset:0;z-index:var(--ui-z-modal-stack,1100);
+  display:block;padding:0;
+  background:transparent;backdrop-filter:none;
+  -webkit-backdrop-filter:none;
   cursor:default
 }
-.menu-bg[hidden]{display:none!important}
+.menu-bg[hidden]{display:none}
 .menu-bg>.dialog{
   position:fixed;top:calc(var(--zp-safe-top) + 62px);
   right:max(12px,calc((100vw - 680px)/2 + 14px));
-  width:208px!important;max-height:min(72dvh,560px);
-  overflow:auto;padding:6px!important;
-  border:1px solid var(--zp-line)!important;border-radius:var(--zp-r-dialog)!important;
-  background:var(--zp-surface)!important;
-  box-shadow:0 10px 24px var(--zp-shadow-md)!important;
+  width:208px;max-height:min(72dvh,560px);
+  overflow:auto;padding:6px;
+  border:1px solid var(--zp-line);border-radius:var(--zp-r-dialog);
+  background:var(--zp-surface);
+  box-shadow:0 10px 24px var(--zp-shadow-md);
   animation:admin-menu-in .14s ease-out;
   pointer-events:auto
 }
@@ -84,8 +86,8 @@
    退出登录前有分隔线、退出项红色 */
 .menu-bg .setting{
   display:flex;align-items:center;gap:11px;width:100%;
-  min-height:48px;padding:0 12px!important;
-  border:0!important;border-radius:var(--zp-r-control);
+  min-height:48px;padding:0 12px;
+  border:0;border-radius:var(--zp-r-control);
   color:var(--zp-text);font-size:var(--zp-fs-14);line-height:20px;font-weight:var(--zp-fw-semibold);
   background:transparent;text-align:left;cursor:pointer
 }
@@ -102,7 +104,7 @@
   to{opacity:1;transform:translateY(0) scale(1)}
 }
 @media(max-width:380px){
-  .menu-bg>.dialog{right:12px;width:min(220px,calc(100vw - 24px))!important}
+  .menu-bg>.dialog{right:12px;width:min(220px,calc(100vw - 24px))}
 }
 
 /* ===== 收口：系统菜单配色全面改吃主题变量 =====
@@ -141,20 +143,15 @@
 .username-field>label{display:block;margin:0 0 8px;color:var(--zp-text);font-size:var(--zp-fs-14);line-height:20px;font-weight:var(--zp-fw-semibold)}
 .username-control{display:flex;align-items:center;min-height:52px;border:1px solid var(--zp-input-line);border-radius:var(--zp-r-control);background:var(--zp-input-bg);transition:border-color .16s ease,box-shadow .16s ease}
 .username-control:focus-within{border-color:var(--zp-input-focus);box-shadow:0 0 0 3px var(--zp-focus-glow)}
-.username-control input{display:block;flex:1;min-width:0;width:100%;height:50px!important;margin:0!important;padding:0 14px!important;border:0!important;border-radius:var(--zp-r-control);background:transparent!important;color:var(--zp-text);font-size:var(--zp-fs-16);line-height:22px;letter-spacing:.01em;outline:none!important;box-shadow:none!important}
-.username-control input::placeholder{color:var(--zp-input-placeholder);letter-spacing:0}
+.username-dialog .username-control input{display:block;flex:1;min-width:0;width:100%;height:50px;margin:0;padding:0 14px;border:0;border-radius:var(--zp-r-control);background:transparent;color:var(--zp-text);font-size:var(--zp-fs-16);letter-spacing:.01em;outline:none;box-shadow:none}
+.username-dialog .username-control input::placeholder{color:var(--zp-input-placeholder);letter-spacing:0}
 .username-field .field-hint{margin-top:8px}
 
-/* 管理员用户管理 3.7：左滑已表达操作方向，禁止用户行末尾出现装饰箭头。 */
-#users .row .arrow,#users .row .content::after,#users .row .main::after{display:none!important;content:none!important}
-#users .row .content{padding-left:13px!important;padding-right:13px!important}
-#users .row .main{width:100%;margin:0;justify-content:space-between}
-#users .row .main strong{flex:1 1 auto;min-width:0;text-align:left}
-#users .row .main .meta{flex:0 0 auto;margin-left:12px;text-align:right}
+/* 用户行箭头隐藏、行内间距由 css/admin-base.css「用户行左滑排版」单一声明，本文件不再重复。 */
 
 /* 管理员用户名弹窗：单一来源（2026-10-29 合并）。
    此前本文件有**两套** .username-dialog>.dialog —— 3.7 紧凑版在文件中部，
-   3.9 展开版在文件末尾，后者用 5 个 !important 逐个覆盖前者的 margin/gap，
+   3.9 展开版在文件末尾，后者用 5 个  逐个覆盖前者的 margin/gap，
    而 width / border-radius 又只有前者有。改一处必须先搞清楚哪几条还活着。
    现合并为一段：取 3.9 的垂直节奏（22/20/20、标题 18/26、说明 14/21 左对齐），
    补回 3.7 独有的 width / border-radius / 按钮字号。 */
