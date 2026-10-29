@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 4
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Check production homepage, version, assets and APK
         env:
           BASE_URL: https://tianyou-zhipei.pages.dev
