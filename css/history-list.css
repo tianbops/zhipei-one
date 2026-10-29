@@ -29,20 +29,17 @@ main.history-shell{
 /* 浅色主题 .card 通配规则（白底+阴影）会盖过 .history-card 的透明背景，
    导致历史查询页顶部出现一块带阴影的白色方块。此处显式压回无卡片样式。 */
 :root[data-zp-theme="light"] .history-card{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important}
-:root[data-zp-theme="light"] .zp-btn--secondary{background:rgba(0,0,0,.04);color:var(--zp-text);border-color:var(--zp-line)}
-/* 左右缩进统一交给 main.history-shell，浅色不再另加 8px（会与全局错位） */
-:root[data-zp-theme="light"] .history-divider{border-top-color:var(--zp-divider)}
 .history-state{
   min-height:20px;
   padding:18px 0;
   color:var(--zp-muted);
-  font-size:14px;
+  font-size:var(--zp-fs-14);
   line-height:20px;
 }
 .history-list{
   width:100%;
   border:1px solid var(--zp-tint);
-  border-radius:17px;
+  border-radius:var(--zp-r-card);
   overflow:hidden;
   background:var(--zp-card-translucent-2);
 }
@@ -59,16 +56,16 @@ main.history-shell{
   background:var(--zp-card-translucent-2);
 }
 .history-month-main span{
-  font-size:17px;
+  font-size:var(--zp-fs-16);
   line-height:24px;
-  font-weight:650;
+  font-weight:var(--zp-fw-semibold);
   letter-spacing:.1px;
 }
 .history-month-main small{
   margin-left:auto;
   padding-right:4px;
   color:var(--zp-muted);
-  font-size:14px;
+  font-size:var(--zp-fs-14);
   line-height:20px;
   font-weight:450;
 }
@@ -112,14 +109,14 @@ main.history-shell{
 }
 .history-date-main span{
   color:var(--zp-text);
-  font-size:16px;
+  font-size:var(--zp-fs-16);
   line-height:22px;
-  font-weight:500;
+  font-weight:var(--zp-fw-medium);
 }
 .history-date-main small{
   margin-left:auto;
   color:var(--zp-muted);
-  font-size:14px;
+  font-size:var(--zp-fs-14);
   line-height:20px;
   font-weight:450;
 }
@@ -129,17 +126,17 @@ main.history-shell{
 }
 .history-count-highlight{
   color:var(--zp-text);
-  font-size:14px;
+  font-size:var(--zp-fs-14);
   line-height:20px;
-  font-weight:750;
+  font-weight:var(--zp-fw-bold);
 }
 .history-delete{
   width:84px;
   background:var(--zp-secondary-bg);
   color:var(--zp-error);
-  font-size:12px;
+  font-size:var(--zp-fs-12);
   line-height:16px;
-  font-weight:600;
+  font-weight:var(--zp-fw-semibold);
   letter-spacing:1px;
 }
 .history-swipe-row.swiped .history-row-surface{
@@ -158,20 +155,20 @@ main.history-shell{
 /* 日历/确认弹窗保持与全局 Android 2.0 视觉一致 */
 .history-picker-panel,
 .history-dialog-panel{
-  border-radius:18px;
+  border-radius:var(--zp-r-dialog);
 }
 .history-picker-close,
 .history-dialog-actions button{
-  font-size:16px;
+  font-size:var(--zp-fs-16);
   line-height:22px;
 }
 
 @media(max-width:380px){
   .history-month-main{padding-left:14px;padding-right:14px}
   .history-date-main{padding-left:28px;padding-right:14px}
-  .history-month-main span{font-size:16px}
+  .history-month-main span{font-size:var(--zp-fs-16)}
   .history-month-main small,
-  .history-date-main small{font-size:13px}
+  .history-date-main small{font-size:var(--zp-fs-13)}
   .history-delete{width:80px}
   .history-swipe-row.swiped .history-row-surface{
     transform:translate3d(-80px,0,0);

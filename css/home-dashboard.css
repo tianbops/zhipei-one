@@ -35,7 +35,7 @@ main.home-app .task-card{margin-top:0}
   width:22px;
   min-width:22px;
   color:var(--zp-muted);
-  font-size:15px;
+  font-size:var(--zp-fs-15);
   line-height:20px;
   font-variant-numeric:tabular-nums;
   text-align:right;
@@ -52,11 +52,11 @@ main.home-app .task-card{margin-top:0}
   white-space:normal;
   overflow-wrap:anywhere;
   color:var(--zp-text);
-  font-size:17px;
+  font-size:var(--zp-fs-16);
   line-height:24px;
-  font-weight:550;
+  font-weight:var(--zp-fw-medium);
 }
-.today-store-empty{padding:18px 4px;color:var(--zp-muted);font-size:14px;text-align:center}
+.today-store-empty{padding:18px 4px;color:var(--zp-muted);font-size:var(--zp-fs-14);text-align:center}
 /* 统计版块精简：压缩垂直占用（小标签行高/间距收窄），无统计项时整块不占位。 */
 .today-metrics{
   display:flex;
@@ -67,7 +67,7 @@ main.home-app .task-card{margin-top:0}
   border-top:1px solid var(--zp-tint);
 }
 .today-metrics:empty{display:none}
-.today-metrics span{color:var(--zp-muted);font-size:12px;line-height:18px}
+.today-metrics span{color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:18px}
 .bottom-nav{
   position:fixed;
   left:50%;
@@ -87,7 +87,7 @@ main.home-app .task-card{margin-top:0}
   min-width:0;
   min-height:52px;
   border:0;
-  border-radius:10px;
+  border-radius:var(--zp-r-card);
   background:transparent;
   color:var(--zp-nav-text);
   text-decoration:none;
@@ -96,9 +96,9 @@ main.home-app .task-card{margin-top:0}
   align-items:center;
   justify-content:center;
   gap:3px;
-  font-size:12px;
+  font-size:var(--zp-fs-12);
   line-height:17px;
-  font-weight:600;
+  font-weight:var(--zp-fw-semibold);
   -webkit-tap-highlight-color:transparent;
 }
 .bottom-nav-item:active{background:var(--zp-nav-active-bg);color:var(--zp-nav-text-active)}
@@ -122,7 +122,7 @@ main.home-app .task-card{margin-top:0}
  .home-app{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
  .today-store-list{max-height:252px}   /* 行高 42px × 6 = 252px，固定展示 6 家 */
  .today-store-row{min-height:44px}
- .today-store-name{font-size:16px}
+ .today-store-name{font-size:var(--zp-fs-16)}
  .bottom-nav{padding-left:6px;padding-right:6px}
 }
 

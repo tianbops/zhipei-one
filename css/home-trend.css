@@ -3,24 +3,26 @@
   margin-top:10px;
   touch-action:pan-y;   /* 纵向可滚动，横向手势留给 JS 切月 */
   padding:12px 13px 11px;
-  border:1px solid var(--zp-surface-3);border-radius:14px;background:var(--zp-card-translucent-2);overflow:hidden;
+  border:1px solid var(--zp-surface-3);border-radius:var(--zp-r-card);background:var(--zp-card-translucent-2);overflow:hidden;
 }
 .trend-card.is-in{animation:trendIn .22s ease-out}
 @keyframes trendIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .trend-head{display:flex;flex-direction:column;gap:7px}
 .trend-title-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .trend-controls{display:flex;align-items:center;gap:8px;flex-shrink:0}
-.trend-title{margin:0;font-size:15px;line-height:21px;color:var(--zp-text);font-weight:650;letter-spacing:.5px}
+.trend-title{margin:0;font-size:var(--zp-fs-15);line-height:21px;color:var(--zp-text);font-weight:var(--zp-fw-semibold);letter-spacing:.5px}
 .trend-year{
-  appearance:none;margin:0;padding:5px 10px;border:1px solid var(--zp-line);border-radius:999px;
-  background:var(--zp-card-translucent);color:var(--zp-muted);font-size:12px;line-height:16px;cursor:pointer;white-space:nowrap;
+  appearance:none;margin:0;padding:5px 10px;border:1px solid var(--zp-line);border-radius:var(--zp-r-pill);
+  background:var(--zp-surface-2);color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:16px;cursor:pointer;white-space:nowrap;
   transition:background .15s,color .15s,border-color .15s;
 }
-.trend-year:active,.trend-year.is-active{background:var(--zp-card-translucent);color:var(--zp-text);border-color:var(--zp-line)}
+/* 选中态用 --zp-surface-3（浅色 #E8EAED / 深色 #334155）：原 --zp-card-translucent
+   在浅色下是 82% 白，叠在近白卡片上完全看不出选中，等于没有状态。 */
+.trend-year:active,.trend-year.is-active{background:var(--zp-surface-3);color:var(--zp-text);border-color:var(--zp-line)}
 .trend-month-row{display:flex;align-items:center;justify-content:center;gap:14px}
 .trend-nav{
-  width:30px;height:30px;min-width:30px;padding:0;border:0;border-radius:9px;background:transparent;
-  color:var(--zp-muted);font-size:22px;line-height:1;font-weight:400;
+  width:30px;height:30px;min-width:30px;padding:0;border:0;border-radius:var(--zp-r-mini);background:transparent;
+  color:var(--zp-muted);font-size:22px;line-height:1;font-weight:var(--zp-fw-regular);
   display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;
 }
 .trend-nav:active{background:var(--zp-primary);color:var(--zp-on-primary)}
@@ -29,43 +31,43 @@
    （四周 -9px）。2026-10-24 由 44px 下限提级到 Android 标准 48px。 */
 .trend-nav,.trend-metric-btn,.trend-year{position:relative}
 .trend-nav::after,.trend-metric-btn::after,.trend-year::after{content:"";position:absolute;inset:-9px}
-.trend-month{color:var(--zp-muted);font-size:12px;line-height:18px;font-variant-numeric:tabular-nums;letter-spacing:.5px;will-change:transform}
+.trend-month{color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:18px;font-variant-numeric:tabular-nums;letter-spacing:.5px;will-change:transform}
 .trend-metric{display:flex;gap:6px}
-.trend-metric-btn{appearance:none;border:1px solid var(--zp-line);background:var(--zp-surface-2);color:var(--zp-muted);font-size:12px;line-height:18px;padding:5px 11px;border-radius:999px;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
-.trend-metric-btn.is-active{background:var(--zp-primary);color:var(--zp-on-primary);border-color:var(--zp-primary);font-weight:600}
+.trend-metric-btn{appearance:none;border:1px solid var(--zp-line);background:var(--zp-surface-3);color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:18px;padding:5px 11px;border-radius:var(--zp-r-pill);cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.trend-metric-btn.is-active{background:var(--zp-primary);color:var(--zp-on-primary);border-color:var(--zp-primary);font-weight:var(--zp-fw-semibold)}
 .trend-metric-btn:active{transform:translateY(.5px)}
 /* 底排：配送汇总（9 单 / 6.98 t）居左，环比提示居右，同排显示省一行高度 */
 .trend-bottom-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:1px}
 .trend-summary{display:flex;gap:12px;align-items:baseline;min-width:0}
-.trend-stat{display:flex;align-items:baseline;gap:2px;color:var(--zp-muted);font-size:10px;line-height:15px}
-.trend-stat b{color:var(--zp-text);font-size:15px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:.5px}
-.trend-stat i{font-style:normal;color:var(--zp-muted);font-size:9px}
-.trend-delta{margin-left:4px;font-size:9px;font-style:normal;font-variant-numeric:tabular-nums}
+.trend-stat{display:flex;align-items:baseline;gap:2px;color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:15px}
+.trend-stat b{color:var(--zp-text);font-size:var(--zp-fs-15);font-weight:var(--zp-fw-semibold);font-variant-numeric:tabular-nums;letter-spacing:.5px}
+.trend-stat i{font-style:normal;color:var(--zp-muted);font-size:var(--zp-fs-11)}
+.trend-delta{margin-left:4px;font-size:var(--zp-fs-11);font-style:normal;font-variant-numeric:tabular-nums}
 .trend-delta.is-up{color:var(--zp-success)}
 .trend-delta.is-down{color:var(--zp-error)}
 .trend-chart-wrap{height:80px;margin:7px -2px 0;will-change:transform,opacity;touch-action:pan-y}
 .trend-chart{width:100%;height:100%;display:block;overflow:visible}
 .trend-grid{fill:none;stroke:var(--zp-surface-3);stroke-width:1;stroke-dasharray:2 5}
-.trend-area{fill:var(--zp-text);fill-opacity:.05;stroke:none}
-.trend-line{fill:none;stroke:var(--zp-text);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.trend-point{fill:var(--zp-surface-2);stroke:var(--zp-text);stroke-width:1.5;cursor:pointer;transition:r .15s}
-.trend-point.is-peak{fill:var(--zp-text);stroke:var(--zp-text);stroke-width:1.5}
+.trend-area{fill:var(--zp-primary);fill-opacity:.10;stroke:none}
+.trend-line{fill:none;stroke:var(--zp-primary);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.trend-point{fill:var(--zp-surface);stroke:var(--zp-primary);stroke-width:1.5;cursor:pointer;transition:r .15s}
+.trend-point.is-peak{fill:var(--zp-primary);stroke:var(--zp-primary);stroke-width:1.5}
 .trend-point:focus{outline:none}
 .trend-point:focus-visible{stroke:var(--zp-focus-ring);stroke-width:2.5}
-.trend-year-bar{fill:var(--zp-line)}
-.trend-year-bar.is-peak{fill:var(--zp-text)}
-.trend-axis{height:15px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 3px;color:var(--zp-muted);font-size:9px;line-height:13px;font-variant-numeric:tabular-nums}
-.trend-hint{min-height:0;margin-top:0;flex:none;color:var(--zp-muted);font-size:9px;line-height:14px;text-align:right}
-.trend-hint b{color:var(--zp-muted);font-weight:600;font-variant-numeric:tabular-nums}
+.trend-year-bar{fill:var(--zp-tint-strong)}
+.trend-year-bar.is-peak{fill:var(--zp-primary)}
+.trend-axis{height:15px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 3px;color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:13px;font-variant-numeric:tabular-nums}
+.trend-hint{min-height:0;margin-top:0;flex:none;color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:14px;text-align:right}
+.trend-hint b{color:var(--zp-muted);font-weight:var(--zp-fw-semibold);font-variant-numeric:tabular-nums}
 @media(prefers-reduced-motion:reduce){
   .trend-card.is-in{animation:none}
   .trend-chart-wrap{transition:none!important}
 }
 @media(max-width:380px){
   .trend-card{padding:12px 11px 10px}
-  .trend-title{font-size:16px}
+  .trend-title{font-size:var(--zp-fs-16)}
   .trend-chart-wrap{height:76px}
-  .trend-stat b{font-size:14px}
+  .trend-stat b{font-size:var(--zp-fs-14)}
   .trend-summary{gap:10px}
 }
 

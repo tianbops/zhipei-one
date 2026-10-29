@@ -27,21 +27,26 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   padding:16px;
   margin-bottom:10px;
 }
-.card h2{font-size:18px;line-height:24px}
+.card h2{font-size:var(--zp-fs-18);line-height:24px}
 .primary-btn,.secondary-btn,.grid a{
   min-height:48px;
-  border-radius:11px;
+  border-radius:var(--zp-r-control);
 }
+/* 输入框全站兜底（2026-10-29 基线 3.0 校正）：
+   原值「--zp-surface-2 底 + --zp-line 边」在浅色页面上几乎隐形（#F2F3F5 底 /
+   #EEEEEE 边 vs #F6F7F9 页面底），各页因此各自加纯白底 + #C9D1D9 的浅色补丁，
+   形成「一个输入框两套规格」。现统一为令牌口径：白底 + --zp-input-line 边，
+   与登录框（唯一做过对比度修复的输入框）同源，页面级补丁因此可整条删除。 */
 input,select,textarea{
-  border-color:var(--zp-line)!important;
-  background:var(--zp-surface-2)!important;
+  border-color:var(--zp-input-line)!important;
+  background:var(--zp-surface)!important;
   color:var(--zp-text)!important;
 }
 input,select{min-height:48px}
 select{padding-inline:12px}
-label{display:block;color:var(--zp-muted);font-size:13px;line-height:20px}
+label{display:block;color:var(--zp-muted);font-size:var(--zp-fs-13);line-height:20px}
 label+label{margin-top:13px}
-.message{font-size:13px}
+.message{font-size:var(--zp-fs-13)}
 .message.error{color:var(--zp-danger)}
 .empty{padding:28px 12px;text-align:center;color:var(--zp-soft)}
 [disabled]{cursor:default!important}
@@ -55,5 +60,5 @@ button:disabled,select:disabled,input:disabled{opacity:.45}
 }
 /* Android typography normalization: size/line-height only */
 /* .topbar strong 已由 ui-unified.css 统一（阶段 6 · 5A 移除遗留 .topbar strong） */
-.card h2{font-size:18px;line-height:24px}
-.primary-btn,.secondary-btn,.grid a{font-size:16px;line-height:22px}
+.card h2{font-size:var(--zp-fs-18);line-height:24px}
+.primary-btn,.secondary-btn,.grid a{font-size:var(--zp-fs-16);line-height:22px}

@@ -28,7 +28,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="智配One"><script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F6F7F9":"#121826");}catch(e){}</script><script src="/js/theme-sync.js?v=2c1a5bbc"></script>
-<link rel="stylesheet" href="/css/app.css?v=c8dcd848"><link rel="stylesheet" href="/css/ui-base.css?v=62e23650"><link rel="stylesheet" href="/css/ui-overlay.css?v=7612d542"><link rel="stylesheet" href="/css/ui-theme.css?v=54df0f20"><link rel="stylesheet" href="/css/ui-shell.css?v=61229677"><link rel="stylesheet" href="/css/mobile-ui.css?v=b2dd17f4"><link rel="stylesheet" href="/css/business-pages.css?v=015b92e3">
+<link rel="stylesheet" href="/css/app.css?v=e7614cfc"><link rel="stylesheet" href="/css/ui-base.css?v=41b3ce3e"><link rel="stylesheet" href="/css/ui-overlay.css?v=e3320930"><link rel="stylesheet" href="/css/ui-theme.css?v=ebe9cf62"><link rel="stylesheet" href="/css/ui-shell.css?v=61229677"><link rel="stylesheet" href="/css/mobile-ui.css?v=ea7345fd"><link rel="stylesheet" href="/css/business-pages.css?v=c15f980a">
 <style>
 /* ===== 设置页 2.0（2026-10-21 视觉重构；2026-10-28 标题与分组层级调整）
    设计语言对齐成熟 App「我的」页：浅灰底 + 白色圆角卡片 + 图标行 + 分段主题选择器，
@@ -41,25 +41,25 @@
    不留无引用的死样式。 --- */
 
 /* --- 分组小标题（卡片外灰色 label） --- */
-.acct-group-label{margin:18px 2px 8px;color:var(--zp-muted,var(--zp-muted));font-size:13px;line-height:18px}
+.acct-group-label{margin:18px 2px 8px;color:var(--zp-muted,var(--zp-muted));font-size:var(--zp-fs-13);line-height:18px}
   /* 2026-10-29 顶栏下方统一 20px：首个分组标题不再额外顶 18px */
   .account-page .zp-scroll>.acct-group-label:first-child{margin-top:0}
 
 /* --- 卡片与行 --- */
-.acct-card{background:var(--zp-card-translucent-2);border:1px solid var(--zp-tint);border-radius:16px;padding:4px 16px;margin:0 0 10px}
+.acct-card{background:var(--zp-card-translucent-2);border:1px solid var(--zp-tint);border-radius:var(--zp-r-card);padding:4px 16px;margin:0 0 10px}
 :root[data-zp-theme="dark"] .acct-card{background:var(--zp-card-translucent-2);border-color:var(--zp-tint)}
 .acct-rows{display:flex;flex-direction:column}
 .acct-row{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:0;border:0;background:none;
-  color:var(--zp-text,#fff);font-size:15px;text-align:left;cursor:pointer;border-bottom:1px solid var(--zp-line,var(--zp-line))}
+  color:var(--zp-text,#fff);font-size:var(--zp-fs-15);text-align:left;cursor:pointer;border-bottom:1px solid var(--zp-line,var(--zp-line))}
 :root[data-zp-theme="dark"] .acct-row{border-bottom-color:var(--zp-surface-2)}
 .acct-rows .acct-row:last-child{border-bottom:0}
 .acct-row:active{opacity:.6}
 .acct-row[role="group"]{cursor:default}
 .acct-row-icon{flex:none;width:22px;height:22px;display:flex;align-items:center;justify-content:center;color:var(--zp-muted,var(--zp-muted))}
 .acct-row-icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.acct-glyph{font-size:15px;font-weight:700;letter-spacing:-1px}
+.acct-glyph{font-size:var(--zp-fs-15);font-weight:var(--zp-fw-bold);letter-spacing:-1px}
 .acct-row-label{flex:none}
-.acct-row-value{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;color:var(--zp-muted,var(--zp-muted));font-size:14px}
+.acct-row-value{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;color:var(--zp-muted,var(--zp-muted));font-size:var(--zp-fs-14)}
 .acct-arrow{flex:none;width:16px;height:16px;fill:none;stroke:var(--zp-muted,var(--zp-muted));stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .18s ease}
 /* 展开态箭头旋转 90°（与「字体大小」一致）；手风琴收起后由 aria-expanded 自动复位 */
 .acct-row[aria-expanded="true"] .acct-arrow{transform:rotate(90deg)}
@@ -76,12 +76,12 @@
 /* 视觉高度按文字收紧：14px 文字 + 32px 按钮高，替代原先过高的 48px；
    触控热区不缩水 —— 用 ::after 把可点区域仍撑到 48px 高（视觉轻、触控不缩水）。 */
 .account-page .acct-seg .appearance-theme-option{position:relative;min-height:32px;padding:0 10px;border:0;border-radius:0;background:none;
-  color:var(--zp-muted,var(--zp-muted));font-size:14px;line-height:1.4;font-weight:600;box-shadow:none;transition:color .16s ease}
+  color:var(--zp-muted,var(--zp-muted));font-size:var(--zp-fs-14);line-height:1.4;font-weight:var(--zp-fw-semibold);box-shadow:none;transition:color .16s ease}
 .account-page .acct-seg .appearance-theme-option::after{content:"";position:absolute;left:-1px;right:-1px;top:50%;transform:translateY(-50%);height:48px}
 /* 末项贴齐卡片右内边，与「tian860 / 已是最新」等值列同一竖线；热区右移补偿 */
 .account-page .acct-seg .appearance-theme-option:last-child{padding-right:0}
 .account-page .acct-seg .appearance-theme-option:last-child::after{right:-11px}
-.account-page .acct-seg .appearance-theme-option.is-selected{background:none;box-shadow:none;color:var(--zp-accent);font-weight:700}
+.account-page .acct-seg .appearance-theme-option.is-selected{background:none;box-shadow:none;color:var(--zp-accent);font-weight:var(--zp-fw-bold)}
 .account-page .acct-seg .appearance-theme-option:active{opacity:.55}
 @media(prefers-reduced-motion:reduce){.account-page .acct-seg .appearance-theme-option{transition:none}}
 
@@ -89,7 +89,7 @@
 .acct-font-row{display:flex;align-items:center;gap:12px;min-height:56px}
 .acct-font-slider{flex:1;display:flex;align-items:center;gap:8px;min-width:0}
 .acct-font-slider input[type="range"]{flex:1;min-width:0;accent-color:var(--zp-text)}
-.acct-font-value{flex:none;min-width:34px;text-align:right;color:var(--zp-muted,var(--zp-muted));font-size:13px}
+.acct-font-value{flex:none;min-width:34px;text-align:right;color:var(--zp-muted,var(--zp-muted));font-size:var(--zp-fs-13)}
 
 /* --- 字体大小：默认折叠为一行「字体大小 ›」，点开才露出滑块，避免误触 --- */
 .acct-font-trigger{display:flex;align-items:center;gap:10px;width:100%;min-height:56px;padding:0;background:none;border:0;color:var(--zp-text);font:inherit;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
@@ -105,23 +105,23 @@
 .acct-body .page2-primary,.acct-body .page2-secondary{margin-top:12px}
 .acct-body .message{margin:8px 0 0}
 .acct-danger-card{border-color:var(--zp-error-soft-active)}
-.acct-danger-card .account-danger-box strong,.acct-danger-card .account-delete-confirm strong{display:block;margin:10px 0 6px;font-size:15px}
-.acct-danger-card .account-danger-box p,.acct-danger-card .account-delete-confirm p{margin:0;color:var(--zp-muted,var(--zp-muted));font-size:13px;line-height:20px}
+.acct-danger-card .account-danger-box strong,.acct-danger-card .account-delete-confirm strong{display:block;margin:10px 0 6px;font-size:var(--zp-fs-15)}
+.acct-danger-card .account-danger-box p,.acct-danger-card .account-delete-confirm p{margin:0;color:var(--zp-muted,var(--zp-muted));font-size:var(--zp-fs-13);line-height:20px}
 .account-dialog-actions{display:flex;gap:10px}
 .account-dialog-actions .page2-secondary,.account-dialog-actions .page2-danger-btn{flex:1;margin-top:12px}
 
 /* --- 退出登录：卡片式中性按钮 --- */
 .account-page .account-logout-section{margin:18px 0 0;padding:0}
 .account-page .account-logout-section .account-logout{width:100%;min-height:var(--zp-control-height,48px);margin:0;
-  border:1px solid var(--zp-line,var(--zp-line));border-radius:16px;background:var(--zp-card,#FFFFFF);
-  color:var(--zp-text);font-size:15px;font-weight:600}
+  border:1px solid var(--zp-line,var(--zp-line));border-radius:var(--zp-r-card);background:var(--zp-card,#FFFFFF);
+  color:var(--zp-text);font-size:var(--zp-fs-15);font-weight:var(--zp-fw-semibold)}
 :root[data-zp-theme="dark"] .account-page .account-logout-section .account-logout{background:var(--zp-card-translucent);border-color:var(--zp-line);color:#FFFFFF}
 .account-page .account-logout-section .message{margin:10px 2px 0;text-align:center}
 
 /* --- 底部注销账号：无边框红色文字链接（与参考图一致） --- */
 .acct-destroy-link{display:block;margin:16px auto 0;padding:12px 24px;border:0;background:none;
-  color:var(--zp-error);font-size:15px;font-weight:400;cursor:pointer}
-:root[data-zp-theme="dark"] .acct-destroy-link{color:var(--ui-danger)}
+  color:var(--zp-error);font-size:var(--zp-fs-15);font-weight:var(--zp-fw-regular);cursor:pointer}
+:root[data-zp-theme="dark"] .acct-destroy-link{color:var(--zp-danger)}
 .acct-destroy-link:active{opacity:.6}
 
 /* --- 帮助反馈弹层：底部卡片式，返回键经 zpRegisterBackHook 优先关闭 --- */
@@ -129,21 +129,21 @@
   padding:18px 14px calc(18px + env(safe-area-inset-bottom,0px));background:var(--zp-scrim-dialog)}
 .acct-help-layer[hidden]{display:none}
 .acct-help-panel{width:100%;max-width:480px;max-height:82vh;display:flex;flex-direction:column;overflow:hidden;
-  border-radius:20px;background:var(--zp-card,#FFFFFF);box-shadow:0 18px 50px var(--zp-shadow-md)}
+  border-radius:var(--zp-r-dialog);background:var(--zp-card,#FFFFFF);box-shadow:0 18px 50px var(--zp-shadow-md)}
 .acct-help-head{display:flex;align-items:center;justify-content:space-between;flex:none;
   padding:16px 16px 10px;border-bottom:1px solid var(--zp-line,var(--zp-line))}
-.acct-help-head h2{margin:0;color:var(--zp-text,#fff);font-size:17px;font-weight:700}
-.acct-help-close{width:36px;height:36px;padding:0;border:0;border-radius:999px;background:none;
+.acct-help-head h2{margin:0;color:var(--zp-text,#fff);font-size:var(--zp-fs-16);font-weight:var(--zp-fw-bold)}
+.acct-help-close{width:36px;height:36px;padding:0;border:0;border-radius:var(--zp-r-pill);background:none;
   color:var(--zp-muted,var(--zp-muted));cursor:pointer}
 .acct-help-close svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
 .acct-help-close:active{opacity:.6}
 .acct-help-body{overflow-y:auto;padding:6px 16px 18px;-webkit-overflow-scrolling:touch}
-.acct-help-sub{margin:14px 0 8px;color:var(--zp-text,#fff);font-size:14px;font-weight:700}
-.acct-help-q{margin:10px 0 2px;color:var(--zp-text,#fff);font-size:14px;font-weight:600;line-height:20px}
-.acct-help-a{margin:0;color:var(--zp-muted,var(--zp-muted));font-size:13px;line-height:20px}
-#helpMailBtn{margin-top:10px;padding:10px 18px;min-height:44px;border:0;border-radius:999px;
+.acct-help-sub{margin:14px 0 8px;color:var(--zp-text,#fff);font-size:var(--zp-fs-14);font-weight:var(--zp-fw-bold)}
+.acct-help-q{margin:10px 0 2px;color:var(--zp-text,#fff);font-size:var(--zp-fs-14);font-weight:var(--zp-fw-semibold);line-height:20px}
+.acct-help-a{margin:0;color:var(--zp-muted,var(--zp-muted));font-size:var(--zp-fs-13);line-height:20px}
+#helpMailBtn{margin-top:10px;padding:10px 18px;min-height:44px;border:0;border-radius:var(--zp-r-pill);
   background:var(--zp-primary);color:var(--zp-on-primary);
-  font-size:14px;font-weight:600;cursor:pointer}
+  font-size:var(--zp-fs-14);font-weight:var(--zp-fw-semibold);cursor:pointer}
 #helpMailBtn:active{opacity:.75}
 .acct-destroy-link[hidden]{display:none}
 
@@ -152,8 +152,8 @@
    同色、同左缩进，作为分组标题而不是独立大标题；右侧版本号仍贴右。 */
 .acct-about-hero{display:flex;flex-direction:row;align-items:baseline;justify-content:space-between;gap:8px;
   margin:18px 2px 8px;padding:0}
-.acct-about-name{margin:0;color:var(--zp-muted);font-size:13px;line-height:18px;font-weight:700}
-.acct-about-ver{margin:0;color:var(--zp-muted,var(--zp-muted));font-size:12px}
+.acct-about-name{margin:0;color:var(--zp-muted);font-size:var(--zp-fs-13);line-height:18px;font-weight:var(--zp-fw-bold)}
+.acct-about-ver{margin:0;color:var(--zp-muted,var(--zp-muted));font-size:var(--zp-fs-12)}
 /* App 端壳版本落后于最新版时的更新徽标：主色胶囊（沿用唯一主色 --zp-primary），
    点击直接触发 APK 下载（原生 DownloadManager 接管）。类名避开 danger/delete
    子串（全站危险按钮兜底规则红线）；#aboutVersion 锚定提升特异性，压过
@@ -161,33 +161,33 @@
 /* 有新版本：静态状态点「● 有新版本」（只提示，动作在下方下载行，避免双热区） */
 #aboutVersion .acct-ver-badge{margin-left:8px;display:inline-flex;align-items:center;gap:5px;
   padding:0;border:0;background:none;color:var(--zp-primary);
-  font-size:12px;font-weight:600;line-height:16px;white-space:nowrap;vertical-align:middle;cursor:default}
+  font-size:var(--zp-fs-12);font-weight:var(--zp-fw-semibold);line-height:16px;white-space:nowrap;vertical-align:middle;cursor:default}
 #aboutVersion .acct-ver-badge::before{content:"";width:6px;height:6px;border-radius:50%;
   background:currentColor;flex:none}
 /* --- 关于：获取/信息卡片 + 版权 --- */
-.acct-about-copyright{margin:14px 0 4px;text-align:center;color:var(--zp-muted,var(--zp-muted));font-size:12px}
+.acct-about-copyright{margin:14px 0 4px;text-align:center;color:var(--zp-muted,var(--zp-muted));font-size:var(--zp-fs-12)}
 .install-guide{margin:2px 0 12px}
-.install-guide ol{margin:0;padding-left:20px;color:var(--zp-muted,var(--zp-muted));font-size:13px;line-height:22px}
+.install-guide ol{margin:0;padding-left:20px;color:var(--zp-muted,var(--zp-muted));font-size:var(--zp-fs-13);line-height:22px}
 /* 旧壳兜底引导：≤1.0.11 的 APK 壳没有原生下载监听，App 内点下载无反应，
    引导用户去浏览器打开网页端地址自愈（新壳 ≥1.0.12 不展示） */
-.install-guide-fallback{margin:8px 0 0;padding:12px 14px;border-radius:12px;
-  background:var(--zp-bg,var(--zp-text));color:var(--zp-text,#fff);font-size:13px;line-height:20px}
+.install-guide-fallback{margin:8px 0 0;padding:12px 14px;border-radius:var(--zp-r-control);
+  background:var(--zp-bg,var(--zp-text));color:var(--zp-text,#fff);font-size:var(--zp-fs-13);line-height:20px}
 .install-guide-fallback p{margin:0 0 4px}
-.install-guide-fallback b{font-weight:600}
-.install-guide-copy{margin-top:8px;padding:8px 16px;min-height:36px;border:0;border-radius:999px;
+.install-guide-fallback b{font-weight:var(--zp-fw-semibold)}
+.install-guide-copy{margin-top:8px;padding:8px 16px;min-height:36px;border:0;border-radius:var(--zp-r-pill);
   background:var(--zp-primary);color:var(--zp-on-primary);
-  font-size:13px;font-weight:600;cursor:pointer}
+  font-size:var(--zp-fs-13);font-weight:var(--zp-fw-semibold);cursor:pointer}
 .install-guide-copy:active{opacity:.75}
 /* 小链接热区透明扩展至 ≥44px（保持早前可达性巡检结论） */
 #installLabelBtn,.about-row-actions .about-link{position:relative}
 #installLabelBtn::after,.about-row-actions .about-link::after{content:"";position:absolute;inset:-14px -10px}
 .about-row-actions{display:flex;align-items:center;gap:16px;flex:none;margin-left:auto}
-.about-row-actions .about-link{padding:0;border:0;background:none;color:var(--zp-text,#fff);font-size:13px;text-decoration:underline;cursor:pointer}
+.about-row-actions .about-link{padding:0;border:0;background:none;color:var(--zp-text,#fff);font-size:var(--zp-fs-13);text-decoration:underline;cursor:pointer}
 /* 下载应用行右侧动作文案：默认灰（acct-row-value 已给），有更新时主色强调 */
-.acct-install-action.is-update{color:var(--zp-primary);font-weight:600}
+.acct-install-action.is-update{color:var(--zp-primary);font-weight:var(--zp-fw-semibold)}
 /* 网页版「复制网址」小按钮 */
-.acct-mini-btn{padding:5px 12px;border:1px solid var(--zp-line);border-radius:999px;background:none;
-  color:var(--zp-text,#fff);font-size:13px;font-weight:500;line-height:18px;white-space:nowrap;cursor:pointer;
+.acct-mini-btn{padding:5px 12px;border:1px solid var(--zp-line);border-radius:var(--zp-r-pill);background:none;
+  color:var(--zp-text,#fff);font-size:var(--zp-fs-13);font-weight:var(--zp-fw-medium);line-height:18px;white-space:nowrap;cursor:pointer;
   -webkit-tap-highlight-color:transparent}
 .acct-mini-btn:active{opacity:.6}
 

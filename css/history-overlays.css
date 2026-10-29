@@ -1,18 +1,6 @@
-/* 工具栏 / 操作按钮统一语义体系（P0-3）：基于 --zp-* token；P1 提升为全局 .zp-btn 组件 */
-.zp-btn{
-  display:inline-flex;align-items:center;justify-content:center;
-  height:var(--zp-control-height);
-  padding:0 var(--zp-space-4);
-  border:1px solid transparent;
-  border-radius:var(--zp-radius);
-  font-size:15px;font-weight:550;line-height:1;
-  cursor:pointer;
-  transition:background .15s,color .15s,border-color .15s;
-  -webkit-tap-highlight-color:transparent;
-}
-.zp-btn--secondary{background:var(--zp-tint);color:var(--zp-text);border-color:var(--zp-line)}
-.zp-btn:active{filter:brightness(.94)}
-.zp-btn:disabled{opacity:.5;cursor:default}
+/* 工具栏 / 操作按钮：.zp-btn 家族已提升为全局原语（css/ui-base.css 末尾），
+   本文件不再重复定义，避免同一组件两套度量（旧值 15px/550/圆角 14）。 */
+
 
 /* 信息架构分组（P0-1） */
 .history-divider{border:0;border-top:1px solid var(--zp-divider);margin:14px 0}
@@ -21,11 +9,11 @@
 .history-actions-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 /* 选择日期：quiet 操作行（与线路功能入口同语言：图标+文字+箭头），
    替代原孤立幽灵文字按钮，使其融进卡片列表节奏 */
-.history-secondary-row{padding:0 0 4px}
+.history-secondary-row{padding:2px 0 10px}
 
 /* 浮层通用提示与空态 */
-.history-overlay-hint{margin:10px 0 16px;color:var(--zp-muted);font-size:13px;line-height:20px}
-.history-overlay-empty{margin:8px 0 4px;padding:14px;text-align:center;color:var(--zp-muted);font-size:13px;background:var(--zp-card-translucent-2);border:1px solid var(--zp-tint);border-radius:12px}
+.history-overlay-hint{margin:10px 0 16px;color:var(--zp-muted);font-size:var(--zp-fs-13);line-height:20px}
+.history-overlay-empty{margin:8px 0 4px;padding:14px;text-align:center;color:var(--zp-muted);font-size:var(--zp-fs-13);background:var(--zp-card-translucent-2);border:1px solid var(--zp-tint);border-radius:var(--zp-r-control)}
 
 /* 回收站 */
 .history-trash-item{
@@ -38,17 +26,17 @@
 }
 .history-trash-item:last-of-type{border-bottom:0}
 .history-trash-meta{display:flex;flex-direction:column;gap:3px;min-width:0}
-.history-trash-meta strong{font-size:14px;font-weight:600;color:var(--zp-text)}
-.history-trash-meta span{font-size:12px;color:var(--zp-muted)}
-.history-trash-meta small{font-size:11px;color:var(--zp-muted)}
+.history-trash-meta strong{font-size:var(--zp-fs-14);font-weight:var(--zp-fw-semibold);color:var(--zp-text)}
+.history-trash-meta span{font-size:var(--zp-fs-12);color:var(--zp-muted)}
+.history-trash-meta small{font-size:var(--zp-fs-11);color:var(--zp-muted)}
 .history-trash-item .history-dialog-actions{flex:0 0 auto;gap:8px}
 .history-trash-restore,
 .history-trash-purge{
   flex:0 0 auto!important;
   height:34px!important;
   padding:0 12px!important;
-  font-size:13px!important;
-  border-radius:9px!important;
+  font-size:var(--zp-fs-13)!important;
+  border-radius:var(--zp-r-mini)!important;
 }
 .history-trash-purge{
   background:var(--zp-error-soft-active)!important;
@@ -58,32 +46,43 @@
 
 /* 导出 */
 .history-export-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px}
-.history-export-row span{font-size:15px;color:var(--zp-text);font-weight:550}
+.history-export-row span{font-size:var(--zp-fs-15);color:var(--zp-text);font-weight:var(--zp-fw-medium)}
 .history-export-row select{
   min-width:0;height:48px;flex:1;max-width:200px;padding:0 10px;
-  border:1px solid var(--zp-line);border-radius:11px;background:var(--zp-surface-2);color:var(--zp-text);font-size:14px;
+  border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-surface-2);color:var(--zp-text);font-size:var(--zp-fs-14);
 }
 
 /* 客户快查 */
 .history-lookup-row{display:flex;gap:8px;margin:0 0 12px}
 .history-lookup-row input{
   flex:1;min-width:0;height:48px;padding:0 12px;
-  border:1px solid var(--zp-line);border-radius:11px;background:var(--zp-surface-2);color:var(--zp-text);font-size:14px;
+  border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-surface-2);color:var(--zp-text);font-size:var(--zp-fs-14);
 }
 .history-lookup-row input::placeholder{color:var(--zp-muted)}
 .history-lookup-row button{
   flex:0 0 auto;height:48px;padding:0 18px;
-  border:1px solid var(--zp-primary);border-radius:11px;background:var(--zp-primary);color:var(--zp-on-primary);font-size:15px;font-weight:600;
+  border:1px solid var(--zp-primary);border-radius:var(--zp-r-control);background:var(--zp-primary);color:var(--zp-on-primary);font-size:var(--zp-fs-15);font-weight:var(--zp-fw-semibold);
 }
 .history-lookup-result{min-height:20px}
-.history-lookup-card{margin:6px 0 0;padding:14px;border:1px solid var(--zp-tint);border-radius:12px;background:var(--zp-card-translucent-2)}
+.history-lookup-card{margin:6px 0 0;padding:14px;border:1px solid var(--zp-tint);border-radius:var(--zp-r-card);background:var(--zp-card-translucent-2)}
 .history-lookup-line{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--zp-tint)}
 .history-lookup-line:last-of-type{border-bottom:0}
-.history-lookup-line span{font-size:13px;color:var(--zp-muted)}
-.history-lookup-line b{font-size:14px;font-weight:600;color:var(--zp-text);text-align:right}
+.history-lookup-line span{font-size:var(--zp-fs-13);color:var(--zp-muted)}
+.history-lookup-line b{font-size:var(--zp-fs-14);font-weight:var(--zp-fw-semibold);color:var(--zp-text);text-align:right}
 .history-lookup-stores{margin:10px 0 0}
-.history-lookup-stores strong{display:block;margin:0 0 8px;font-size:13px;color:var(--zp-muted)}
-.history-lookup-store{display:flex;flex-direction:column;gap:2px;padding:8px 10px;margin:0 0 6px;background:var(--zp-card-translucent-2);border:1px solid var(--zp-tint);border-radius:10px}
-.history-lookup-store span{font-size:14px;font-weight:600;color:var(--zp-text)}
-.history-lookup-store small{font-size:12px;color:var(--zp-muted);line-height:18px}
+.history-lookup-stores strong{display:block;margin:0 0 8px;font-size:var(--zp-fs-13);color:var(--zp-muted)}
+.history-lookup-store{display:flex;flex-direction:column;gap:2px;padding:8px 10px;margin:0 0 6px;background:var(--zp-card-translucent-2);border:1px solid var(--zp-tint);border-radius:var(--zp-r-mini)}
+.history-lookup-store span{font-size:var(--zp-fs-14);font-weight:var(--zp-fw-semibold);color:var(--zp-text)}
+.history-lookup-store small{font-size:var(--zp-fs-12);color:var(--zp-muted);line-height:18px}
 
+
+/* 日期入口（原 css/history-overlay-light.css，2026-10-29 合流）：
+   该文件曾叫「浅色覆盖」，但浅色补丁已在整治中全部删除，只剩这两条布局规则，
+   文件名与内容不再相符，故并入本文件；样式本身未改。 */
+.history-date-button{
+  display:flex;align-items:center;justify-content:center;gap:9px;
+  width:100%;min-height:48px;padding:0 16px;
+  font-size:var(--zp-fs-15);line-height:20px;font-weight:var(--zp-fw-semibold);
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+.history-date-button svg{width:20px;height:20px;flex:none}

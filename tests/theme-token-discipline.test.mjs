@@ -37,7 +37,13 @@ const root = process.cwd();
 // ---------------------------------------------------------------------------
 const stripComments = css => css.replace(/\/\*[\s\S]*?\*\//g, "");
 
-/** 定位全部 :root / :root[data-zp-theme="..."] / :root.theme-* 块的字符区间 */
+/** 定位全部 :root / :root[data-zp-theme="..."] / :root.theme-* 块的字符区间
+ *  2026-10-29 修洞：原实现只按 `:root...` 前缀找 `{`，把
+ *  `:root[data-zp-theme="light"] .history-list{...}` 这类**组件规则**也当成令牌块
+ *  整段跳过——浅色补丁里 200+ 处冷灰蓝字面量（#F0F2F4 / #D7DDE3 / #46515D）
+ *  因此长期躲过检查，形成「同一页面两套浅色」。现在只认选择器全部为
+ *  :root / :root[attr] / :root.theme-x 的纯令牌块，带后代选择器的一律不跳过。 */
+const PURE_ROOT_SEL = /^:root(?:\[[^\]]*\])?(?:\.theme-[a-z]+)?$/;
 function rootRanges(css) {
   css = stripComments(css);
   const ranges = [];
@@ -46,6 +52,13 @@ function rootRanges(css) {
   while ((m = re.exec(css))) {
     const i = css.indexOf("{", m.index + m[0].length - 1);
     if (i < 0) continue;
+    // 选择器文本 = 上一个 } 之后到 { 之前；不是纯令牌选择器就跳过（继续往后找）
+    const selStart = css.lastIndexOf("}", i - 1) + 1;
+    const selText = css.slice(selStart, i).trim();
+    const parts = selText.split(",").map(s => s.trim()).filter(Boolean);
+    if (!parts.length || !parts.every(p => PURE_ROOT_SEL.test(p))) {
+      continue; // re.lastIndex 已前移，下一轮继续扫
+    }
     let depth = 0, j = i;
     for (; j < css.length; j++) {
       if (css[j] === "{") depth++;

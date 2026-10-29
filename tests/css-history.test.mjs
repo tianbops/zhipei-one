@@ -2,13 +2,15 @@
  * history CSS 组件化守卫（node tests/css-history.test.mjs）
  * --------------------------------------------------------------
  * 守护 P1-1f 的拆分结果：css/history.css（694 行）按连续顺序切分为
- *   history-shell → history-list → history-nav → history-light
- *   → history-overlays → history-overlay-light
+ *   history-shell → history-list → history-nav → history-overlays
+ * 2026-10-29 UI 专项整治：history-light / history-overlay-light 两个「浅色覆盖」
+ * 文件的补丁（约 60 条冷灰蓝字面量）全部删除，前者已空、后者只剩两条布局规则
+ * 并已并入 history-overlays，故组件数由 6 降为 4，守卫同步收敛。
  * 守卫固守：
- *   1) 六组件文件均存在、非空；
- *   2) history.html 按序引用全部六组件（顺序即层叠顺序）；
- *   3) 每段的代表选择器都在拼接结果中（无段落丢失，含浅色覆盖）；
- *   4) 六组件顺序拼接经 PostCSS 解析无语法错误。
+ *   1) 四组件文件均存在、非空；
+ *   2) history.html 按序引用全部四组件（顺序即层叠顺序）；
+ *   3) 每段的代表选择器都在拼接结果中（无段落丢失）；
+ *   4) 四组件顺序拼接经 PostCSS 解析无语法错误。
  * 说明：原文件本身对同一选择器多次重定义（如 .history-state / .history-list 的 UI 2.3 重写），
  *      故跨文件同名选择器是预期的层叠覆盖，非错误；等价性由拆分脚本逐字节断言保证。
  */
@@ -18,7 +20,7 @@ import assert from "node:assert/strict";
 import postcss from "postcss";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
-const NAMES = ["history-shell", "history-list", "history-nav", "history-light", "history-overlays", "history-overlay-light"];
+const NAMES = ["history-shell", "history-list", "history-nav", "history-overlays"];
 
 // 1) 文件存在 + 非空
 for (const n of NAMES) {
@@ -27,7 +29,7 @@ for (const n of NAMES) {
   assert.ok(readFileSync(p, "utf8").trim().length > 0, `组件为空：${n}`);
 }
 
-// 2) history.html 按序引用六组件
+// 2) history.html 按序引用四组件
 const html = readFileSync(`${root}pages/history.html`, "utf8");
 const refs = [...html.matchAll(/\/css\/(history-[a-z-]+)\.css\?v=[0-9a-f]+/g)].map((m) => m[1]);
 assert.deepStrictEqual(refs, NAMES,
@@ -44,11 +46,9 @@ const reps = [
   ".history-count-highlight{",             // shell：同日多次派送高亮
   ".history-list{",                        // list：UI 2.3 成熟列表重写
   ".history-shell .app-back{",             // nav：返回键统一
-  ':root[data-zp-theme="light"] .history-list{', // light：浅色月份分组
-  ".zp-btn{",                              // overlays：全局按钮组件
   ".history-trash-item{",                  // overlays：回收站
-  ".history-date-button{",                 // overlay-light：日期入口强化
-  ':root[data-zp-theme="light"] .history-dialog-panel{', // overlay-light：浅色对话框
+  ".history-date-button{",                 // overlays：日期入口（原 overlay-light 合流）
+  ".history-lookup-card{",                 // overlays：客户快查结果卡
 ];
 for (const sel of reps) {
   assert.ok(concat.includes(sel), `拆分后缺失代表选择器（段落丢失）：${sel}`);
@@ -64,4 +64,4 @@ try {
 }
 assert.ok(parsed, "history 六组件顺序拼接必须是合法 CSS（拆分无语法裂痕）");
 
-console.log("history CSS 组件化守卫：通过（6 组件 / 页面顺序 / 关键选择器齐全 / PostCSS 解析无误）");
+console.log("history CSS 组件化守卫：通过（4 组件 / 页面顺序 / 关键选择器齐全 / PostCSS 解析无误）");

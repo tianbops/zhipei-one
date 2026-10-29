@@ -27,7 +27,7 @@ const WRITE = process.argv.includes("--write");
 const CSS_FILES = [
   "css/app.css", "css/ui-base.css", "css/ui-overlay.css", "css/ui-theme.css", "css/ui-shell.css",
   "css/mobile-ui.css", "css/home-base.css", "css/home-trend.css", "css/home-dashboard.css", "css/home-light.css",
-  "css/business-pages.css", "css/data.css", "css/history-shell.css", "css/history-list.css", "css/history-nav.css", "css/history-light.css", "css/history-overlays.css", "css/history-overlay-light.css", "css/order_detail.css",
+  "css/business-pages.css", "css/data.css", "css/history-shell.css", "css/history-list.css", "css/history-nav.css", "css/history-overlays.css", "css/order_detail.css",
 ];
 
 // 已人工核实：业务 HTML/JS 中零引用（静态引用 + 动态拼接均已排查）

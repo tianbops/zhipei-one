@@ -98,7 +98,9 @@ button[class*="danger"]:not(.account-collapse-head):disabled,
    历史页整行滑动动作条 .history-delete 显式排除：它是实底专用形态（带边框会与
    行宽不齐、两端混绘出白边），颜色与本标准同族，基座见 history-shell.css；
    .account-collapse-head 是折叠行非动作按钮，同样排除。
-   仅调整颜色和边框，不改变尺寸、位置、文案及确认逻辑。 */
+   2026-10-29：四条 !important 已撤除 —— 各页面级 danger 规则（账号注销、管理端滑出删除、
+   运单删除、数据左滑删除）本轮已把取值对齐到同一组令牌，不再需要靠优先级压平；
+   保留 !important 只会让「下一处新增按钮为什么变样」再次变成黑盒。 */
 button[class*="delete"]:not(.account-collapse-head):not(.history-delete),
 a[class*="delete"],
 button[class*="danger"]:not(.account-collapse-head),
@@ -108,10 +110,10 @@ a[class*="danger"],
 .data-swipe-actions .data-swipe-delete,
 .page2-danger-btn,
 .invite-actions .small-action.danger {
-  background:var(--zp-secondary-bg)!important;
-  border:1px solid var(--zp-line)!important;
-  color:var(--zp-error)!important;
-  box-shadow:none!important;
+  background:var(--zp-secondary-bg);
+  border:1px solid var(--zp-line);
+  color:var(--zp-error);
+  box-shadow:none;
 }
 button[class*="delete"]:not(.account-collapse-head):not(.history-delete):active,
 a[class*="delete"]:active,
@@ -122,9 +124,9 @@ a[class*="danger"]:active,
 .data-swipe-actions .data-swipe-delete:active,
 .page2-danger-btn:active,
 .invite-actions .small-action.danger:active {
-  background:var(--zp-secondary-active)!important;
-  border-color:var(--zp-line)!important;
-  color:var(--zp-error)!important;
+  background:var(--zp-secondary-active);
+  border-color:var(--zp-line);
+  color:var(--zp-error);
 }
 
 /* 登录输入框深色恢复：app.css 浅色基底已改为白底 + --zp-input-line 边（浅色对比度

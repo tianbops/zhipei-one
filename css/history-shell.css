@@ -1,21 +1,21 @@
 /* 智配One · 历史查询 · Android 2.0 */
 .history-shell{padding-bottom:0}
 .history-shell .topbar{margin-bottom:6px;z-index:100;background:var(--zp-bg)}
-.history-shell .topbar>strong{text-align:center;font-size:20px;line-height:26px;font-weight:700}
+.history-shell .topbar>strong{text-align:center;font-size:var(--zp-fs-20);line-height:26px;font-weight:var(--zp-fw-bold)}
 
 .history-card{
   padding:0;
   overflow:hidden;
   background:var(--zp-card-translucent-2);
   border-color:var(--zp-tint);
-  border-radius:18px;
+  border-radius:var(--zp-r-card);
 }
 
 .history-state{
   min-height:20px;
   padding:22px 16px;
   color:var(--zp-muted);
-  font-size:13px;
+  font-size:var(--zp-fs-13);
   line-height:20px;
   text-align:center;
 }
@@ -72,14 +72,14 @@
   margin:0;
   padding:0;
   border:0;
-  border-radius:12px;
+  border-radius:var(--zp-r-control);
   /* 全站危险按钮标准「中性底+红字」的实底专用形态（Phase 4）：
      与次按钮同底 var(--zp-secondary-bg)、文字取错误色 var(--zp-error)，
      双主题自动跟随；按压态与次按钮按压同令牌。 */
   background:var(--zp-secondary-bg);
   color:var(--zp-error);
-  font-size:12px;
-  font-weight:600;
+  font-size:var(--zp-fs-12);
+  font-weight:var(--zp-fw-semibold);
   letter-spacing:1px;
   box-shadow:none;
   outline:none;
@@ -107,16 +107,16 @@
   -webkit-tap-highlight-color:transparent;
 }
 .history-month-main span{
-  font-size:16px;
+  font-size:var(--zp-fs-16);
   line-height:22px;
-  font-weight:650;
+  font-weight:var(--zp-fw-semibold);
 }
 .history-month-main small,
 .history-date-main small{
   flex:none;
   margin-left:12px;
   color:var(--zp-muted);
-  font-size:12px;
+  font-size:var(--zp-fs-12);
   line-height:20px;
   font-variant-numeric:tabular-nums;
   letter-spacing:.3px;
@@ -155,12 +155,12 @@
   padding-left:30px;
 }
 .history-date-main span{
-  font-size:14px;
+  font-size:var(--zp-fs-14);
   line-height:20px;
-  font-weight:500;
+  font-weight:var(--zp-fw-medium);
   color:var(--zp-text);
 }
-.history-date-main small{font-size:12px}
+.history-date-main small{font-size:var(--zp-fs-12)}
 .history-date-main:active,
 .history-month-main:active{background:var(--zp-card-translucent)}
 
@@ -180,7 +180,7 @@
   padding:17px 16px 15px;
   background:var(--zp-card-translucent);
   border:1px solid var(--zp-line);
-  border-radius:18px;
+  border-radius:var(--zp-r-dialog);
   box-shadow:0 18px 50px var(--zp-shadow-lg);
 }
 /* 月份/日期选择器的左右翻页箭头：格子与按钮必须同步放大。
@@ -193,16 +193,16 @@
   align-items:center;
   text-align:center;
 }
-.history-picker-head strong{font-size:16px;line-height:22px;font-weight:650}
+.history-picker-head strong{font-size:var(--zp-fs-16);line-height:22px;font-weight:var(--zp-fw-semibold)}
 /* font-size 24→20：翻页箭头 ‹ › 是字符图标，适用 icon 18–20px 标准（非文字 14–16px）。 */
 .history-picker-head button{
   width:var(--zp-control-height);
   height:var(--zp-control-height);
   border:0;
-  border-radius:10px;
+  border-radius:var(--zp-r-control);
   background:var(--zp-card-translucent-2);
   color:var(--zp-text);
-  font-size:20px;
+  font-size:var(--zp-fs-20);
   line-height:1;
 }
 .history-picker-head button:active{background:var(--zp-primary);color:var(--zp-on-primary)}
@@ -216,7 +216,7 @@
 .history-calendar-week{
   margin:15px 0 7px;
   color:var(--zp-muted);
-  font-size:11px;
+  font-size:var(--zp-fs-11);
   line-height:18px;
   text-align:center;
 }
@@ -225,11 +225,11 @@
 .history-calendar-day{
   height:36px;
   border:0;
-  border-radius:9px;
+  border-radius:var(--zp-r-mini);
   background:var(--zp-card-translucent-2);
   color:var(--zp-muted);
-  font-size:13px;
-  font-weight:500;
+  font-size:var(--zp-fs-13);
+  font-weight:var(--zp-fw-medium);
 }
 .history-calendar-day.has-data{
   background:var(--zp-primary);
@@ -240,7 +240,7 @@
 .history-picker-panel p{
   margin:12px 2px 10px;
   color:var(--zp-muted);
-  font-size:11px;
+  font-size:var(--zp-fs-11);
   line-height:17px;
   text-align:center;
 }
@@ -248,11 +248,11 @@
   width:100%;
   height:44px;
   border:1px solid var(--zp-line);
-  border-radius:11px;
+  border-radius:var(--zp-r-dialog);
   background:var(--zp-card-translucent-2);
   color:var(--zp-text);
-  font-size:14px;
-  font-weight:550;
+  font-size:var(--zp-fs-14);
+  font-weight:var(--zp-fw-medium);
 }
 .history-picker-close:active{background:var(--zp-primary);color:var(--zp-on-primary)}
 
@@ -272,19 +272,19 @@
   padding:20px;
   background:var(--zp-card-translucent);
   border:1px solid var(--zp-line);
-  border-radius:18px;
+  border-radius:var(--zp-r-dialog);
   box-shadow:0 18px 50px var(--zp-shadow-lg);
 }
 .history-dialog-panel>strong{
   display:block;
-  font-size:17px;
+  font-size:var(--zp-fs-16);
   line-height:24px;
-  font-weight:650;
+  font-weight:var(--zp-fw-semibold);
 }
 .history-dialog-panel>p{
   margin:10px 0 18px;
   color:var(--zp-muted);
-  font-size:14px;
+  font-size:var(--zp-fs-14);
   line-height:21px;
 }
 .history-dialog-actions{
@@ -295,11 +295,11 @@
   flex:1;
   height:var(--zp-control-height);
   border:1px solid var(--zp-line);
-  border-radius:11px;
+  border-radius:var(--zp-r-control);
   background:var(--zp-card-translucent-2);
   color:var(--zp-text);
-  font-size:15px;
-  font-weight:550;
+  font-size:var(--zp-fs-15);
+  font-weight:var(--zp-fw-medium);
 }
 .history-dialog-actions button:last-child{
   background:var(--zp-primary);
@@ -314,13 +314,13 @@
 @media(max-width:380px){
   .history-month-main,.history-date-main{padding-right:14px}
   .history-date-main{padding-left:27px}
-  .history-month-main span{font-size:15px}
-  .history-month-main small,.history-date-main small{font-size:11px}
+  .history-month-main span{font-size:var(--zp-fs-15)}
+  .history-month-main small,.history-date-main small{font-size:var(--zp-fs-11)}
   .history-delete{width:80px}
   .history-swipe-row.swiped .history-row-surface{transform:translate3d(-80px,0,0)}
   .history-calendar-grid{min-height:232px}
 }
 
 /* 同日多次派送：仅高亮次数数字 */
-.history-count-highlight{color:var(--zp-text);font-size:13px;font-weight:750;letter-spacing:.1px}
+.history-count-highlight{color:var(--zp-text);font-size:var(--zp-fs-13);font-weight:var(--zp-fw-bold);letter-spacing:.1px}
 

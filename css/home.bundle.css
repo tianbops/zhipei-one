@@ -2,14 +2,10 @@
   font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   background: var(--zp-bg);
   color: var(--zp-text);
-  /* 以下 5 个无前缀变量（--bg/--card/--card2/--line/--muted）为历史遗留写法，现全部转为指向 ui-base.css 的 --zp-* 单一真相源；--soft 为死定义已于 Commit 4B 删除（admin.html 走内联 --soft:#7F8A95）。
-      之所以放在 app.css 而由别名指向别处：本文件未被 admin.html 加载，
-      若把权威定义写在本层，管理员端会取到未定义值。详见 ui-base.css 顶部注释。 */
-  --bg: var(--zp-bg);
-  --card: var(--zp-card-translucent);
-  --card2: var(--zp-card-translucent-2);
-  --line: var(--zp-line);
-  --muted: var(--zp-muted);
+  /* 2026-10-29：无前缀别名（--bg/--card/--card2/--line/--muted）已迁到
+     css/ui-base.css 的 :root —— 本文件不被 admin.html 加载，别名留在这里等于
+     管理端取到未定义值（实测 admin-base.css 有 26 处引用全部落空）。
+     全站引用点已改为 --zp-*，此处不再保留重复定义。 */
 }
 
 * {
@@ -17,12 +13,12 @@
 }
 
 html {
-  background: var(--bg);
+  background: var(--zp-bg);
 }
 
 body {
   margin: 0;
-  background: var(--bg);
+  background: var(--zp-bg);
   color: var(--zp-text);
   min-height: 100vh;
   min-height: 100dvh;
@@ -40,7 +36,7 @@ body {
 .card {
   background: var(--zp-card-translucent-2);
   border: 1px solid var(--zp-tint);
-  border-radius: 16px;
+  border-radius:var(--zp-r-card);
   padding: 18px;
   margin-bottom: 12px;
   box-shadow: none;
@@ -48,15 +44,15 @@ body {
 
 .card h2 {
   margin: 0 0 10px;
-  font-size: 17px;
+  font-size:var(--zp-fs-16);
   line-height: 24px;
 }
 
 .message {
   min-height: 20px;
   margin: 8px 0 0;
-  color: var(--muted);
-  font-size: 13px;
+  color: var(--zp-muted);
+  font-size:var(--zp-fs-13);
   line-height: 20px;
 }
 
@@ -76,11 +72,11 @@ body {
   min-height: 48px;
   padding: 0 16px;
   border: 0;
-  border-radius: 11px;
+  border-radius:var(--zp-r-control);
   background: var(--zp-primary);
   color: var(--zp-on-primary);
   text-align: center;
-  font-size: 15px;
+  font-size:var(--zp-fs-15);
   text-decoration: none;
   cursor: pointer;
 }
@@ -102,7 +98,7 @@ body {
 
 .grid a {
   background: var(--zp-card-translucent-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--zp-line);
 }
 
 /* font-size 22→20。两点必须说清：
@@ -126,7 +122,7 @@ body {
   min-height: 48px;
   padding: 9px 2px;
   border-bottom: 1px solid var(--zp-tint);
-  font-size: 14px;
+  font-size:var(--zp-fs-14);
 }
 
 .store-row:last-child {
@@ -136,7 +132,7 @@ body {
 .store-row small {
   flex: none;
   color: var(--zp-muted);
-  font-size: 11px;
+  font-size:var(--zp-fs-11);
 }
 
 .store-nav {
@@ -151,7 +147,7 @@ body {
 .summary {
   margin: 0;
   color: var(--zp-muted);
-  font-size: 13px;
+  font-size:var(--zp-fs-13);
   line-height: 20px;
 }
 
@@ -159,8 +155,8 @@ body {
   margin-top: 14px;
   padding: 12px;
   border: 1px solid var(--zp-line);
-  border-radius: 12px;
-  background: var(--card2);
+  border-radius:var(--zp-r-dialog);
+  background: var(--zp-card-translucent-2);
 }
 
 .pending-box {
@@ -178,8 +174,8 @@ body {
 
 .pending-title {
   margin-bottom: 6px;
-  font-weight: 600;
-  font-size: 14px;
+  font-weight:var(--zp-fw-semibold);
+  font-size:var(--zp-fs-14);
 }
 
 .candidate-list {
@@ -190,12 +186,12 @@ body {
 .choice-btn {
   width: 100%;
   padding: 11px 12px;
-  background: var(--card);
+  background: var(--zp-card);
   border: 1px solid var(--zp-line);
-  border-radius: 9px;
+  border-radius:var(--zp-r-control);
   color: var(--zp-text);
   text-align: left;
-  font-size: 13px;
+  font-size:var(--zp-fs-13);
 }
 
 .choice-btn.selected {
@@ -227,10 +223,10 @@ body {
   overflow: auto;
   max-height: 420px;
   border: 1px solid var(--zp-line);
-  border-radius: 10px;
+  border-radius:var(--zp-r-mini);
   background: var(--zp-bg);
   color: var(--zp-muted);
-  font-size: 12px;
+  font-size:var(--zp-fs-12);
 }
 
 .auth-shell {
@@ -240,15 +236,15 @@ body {
   align-items: center;
   justify-content: center;
   padding: 24px 16px;
-  background: var(--bg);
+  background: var(--zp-bg);
 }
 
 .auth-card {
   width: min(100%,430px);
   padding: 32px 28px 28px;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 18px;
+  background: var(--zp-card);
+  border: 1px solid var(--zp-line);
+  border-radius:var(--zp-r-card);
   box-shadow: none;
 }
 
@@ -263,7 +259,7 @@ body {
   text-align: center;
   margin: 7px 0 24px;
   color: var(--zp-muted);
-  font-size: 13px;
+  font-size:var(--zp-fs-13);
 }
 
 .auth-card form {
@@ -274,14 +270,14 @@ body {
   display: block;
   margin: 0 0 15px;
   color: var(--zp-muted);
-  font-size: 14px;
+  font-size:var(--zp-fs-14);
 }
 
 .auth-card input {
   height: 50px;
   margin-top: 7px;
   padding: 0 16px;
-  font-size: 16px;
+  font-size:var(--zp-fs-16);
   outline: none;
 }
 
@@ -292,14 +288,14 @@ body {
 .auth-card .message {
   min-height: 22px;
   margin: 2px 0 9px;
-  font-size: 14px;
+  font-size:var(--zp-fs-14);
   line-height: 20px;
 }
 
 .auth-card button {
   height: 50px;
   padding: 0 16px;
-  font-size: 16px;
+  font-size:var(--zp-fs-16);
 }
 
 .auth-card>p:last-child {
@@ -318,7 +314,7 @@ body {
 
   .pipeline {
     gap: 3px;
-    font-size: 11px;
+    font-size:var(--zp-fs-11);
   }
 
   .pipeline span {
@@ -355,13 +351,13 @@ body {
 }
 
 .account-row span {
-  color: var(--muted);
-  font-size: 14px;
+  color: var(--zp-muted);
+  font-size:var(--zp-fs-14);
 }
 
 .account-row strong {
-  font-size: 15px;
-  font-weight: 500;
+  font-size:var(--zp-fs-15);
+  font-weight:var(--zp-fw-medium);
   color: var(--zp-text);
   word-break: break-all;
   text-align: right;
@@ -370,13 +366,13 @@ body {
 .account-logout {
   width: 100%;
   height: 48px;
-  border-radius: 12px;
+  border-radius:var(--zp-r-control);
 }
 
 .data-help {
   margin: 10px 0 0;
   color: var(--zp-muted);
-  font-size: 13px;
+  font-size:var(--zp-fs-13);
   line-height: 1.6;
 }
 
@@ -395,15 +391,15 @@ body {
   width: min(100%,620px);
   max-height: 90vh;
   overflow: auto;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 16px;
+  background: var(--zp-card);
+  border: 1px solid var(--zp-line);
+  border-radius:var(--zp-r-dialog);
   padding: 18px;
 }
 
 .data-import-panel h3 {
   margin: 0 0 12px;
-  font-size: 17px;
+  font-size:var(--zp-fs-16);
 }
 
 .data-file {
@@ -416,12 +412,12 @@ body {
   width: 100%;
   min-height: 280px;
   box-sizing: border-box;
-  border: 1px solid var(--line);
-  border-radius: 12px;
+  border: 1px solid var(--zp-line);
+  border-radius:var(--zp-r-control);
   background: var(--zp-bg);
   color: var(--zp-text);
   padding: 12px;
-  font-size: 15px;
+  font-size:var(--zp-fs-15);
   line-height: 1.6;
 }
 
@@ -439,10 +435,10 @@ body {
 .data-import-actions button {
   height: var(--zp-control-height);
   border: 1px solid var(--zp-line);
-  border-radius: 10px;
+  border-radius:var(--zp-r-control);
   background: var(--zp-card-translucent-2);
   color: var(--zp-text);
-  font-size: 15px;
+  font-size:var(--zp-fs-15);
 }
 
 .data-import-actions #importSave {
@@ -452,7 +448,7 @@ body {
 .request-row {
   padding: 12px 0;
   border-bottom: 1px solid var(--zp-tint);
-  font-size: 14px;
+  font-size:var(--zp-fs-14);
   line-height: 21px;
 }
 
@@ -468,16 +464,16 @@ body {
    故留到 Row 阶段（方案第十五章）连同行高一起处理，此处不硬凑数值。 */
 .request-row button {
   border: 1px solid var(--zp-line);
-  border-radius: 10px;
+  border-radius:var(--zp-r-control);
   background: var(--zp-card-translucent-2);
   color: var(--zp-text);
   padding: 8px 16px;
-  font-size: 14px;
+  font-size:var(--zp-fs-14);
 }
 
 .request-row div {
-  color: var(--muted);
-  font-size: 12px;
+  color: var(--zp-muted);
+  font-size:var(--zp-fs-12);
 }
 
 .login-shell {
@@ -520,7 +516,7 @@ body {
   height: 54px;
   flex: 0 0 auto;
   border: 1px solid var(--zp-tint-strong);
-  border-radius: 15px;
+  border-radius:var(--zp-r-card);
   /* 徽章底色始终为 logo 原图底色（令牌 --zp-logo-plate）：logo 含白色描边，
      白底（浅色外观）下描边会消失，故不随外观翻转 */
   background: var(--zp-logo-plate);
@@ -534,17 +530,17 @@ body {
 }
 
 .login-brand-name {
-  font-size: 19px;
-  font-weight: 700;
+  font-size:var(--zp-fs-18);
+  font-weight:var(--zp-fw-bold);
   letter-spacing: .01em;
   color: var(--zp-text);
 }
 
 .login-eyebrow {
   margin: 0 0 14px;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 600;
+  color: var(--zp-muted);
+  font-size:var(--zp-fs-12);
+  font-weight:var(--zp-fw-semibold);
   letter-spacing: .22em;
   text-transform: uppercase;
 }
@@ -554,14 +550,14 @@ body {
   color: var(--zp-text);
   font-size: 31px;
   line-height: 1.32;
-  font-weight: 700;
+  font-weight:var(--zp-fw-bold);
   letter-spacing: .01em;
 }
 
 .login-sub {
   margin: 0 0 32px;
-  color: var(--muted);
-  font-size: 15px;
+  color: var(--zp-muted);
+  font-size:var(--zp-fs-15);
   line-height: 1.6;
 }
 
@@ -572,8 +568,8 @@ body {
 .login-field {
   display: block;
   margin: 0 0 15px;
-  color: var(--muted);
-  font-size: 13px;
+  color: var(--zp-muted);
+  font-size:var(--zp-fs-13);
 }
 
 .login-field span {
@@ -595,12 +591,12 @@ body {
      边框令牌定义见 ui-base.css（浅色）与 ui-theme.css（深色覆盖）；占位符
      --zp-muted 见下方 ::placeholder 规则。 */
   border: 1px solid var(--zp-input-line);
-  border-radius: 13px;
+  border-radius:var(--zp-r-control);
   outline: none;
   background: var(--zp-surface);
   color: var(--zp-text);
   font: inherit;
-  font-size: 16px;
+  font-size:var(--zp-fs-16);
   line-height: 54px;
   appearance: none;
 }
@@ -622,7 +618,7 @@ body {
   /* 死规则：ui-overlay.css 的 .login-message 同选择器且后加载，实际取 var(--zp-error)；
      此处对齐令牌，消除字面量分叉（浅色由 ui-theme 的 .login-message 补丁覆盖） */
   color: var(--zp-error);
-  font-size: 13px;
+  font-size:var(--zp-fs-13);
   line-height: 20px;
 }
 
@@ -634,11 +630,11 @@ body {
   height: 54px;
   margin: 0;
   border: 0;
-  border-radius: 14px;
+  border-radius:var(--zp-r-control);
   background: var(--zp-primary);
   color: var(--zp-on-primary);
-  font-size: 16px;
-  font-weight: 600;
+  font-size:var(--zp-fs-16);
+  font-weight:var(--zp-fw-semibold);
   cursor: pointer;
 }
 
@@ -664,7 +660,7 @@ body {
 
 .login-links a {
   color: var(--zp-text);
-  font-size: 13px;
+  font-size:var(--zp-fs-13);
   text-decoration: none;
   /* 热区扩展：inline 垂直 padding 不占布局；水平用负 margin 抵消，视觉不变 */
   padding: 14px 8px;
@@ -672,8 +668,8 @@ body {
 }
 
 .login-links .register-hint {
-  color: var(--muted);
-  font-size: 13px;
+  color: var(--zp-muted);
+  font-size:var(--zp-fs-13);
 }
 
 .login-links span:not(.register-hint) {
@@ -702,7 +698,7 @@ body {
   .login-brand-badge {
     width: 48px;
     height: 48px;
-    border-radius: 13px;
+    border-radius:var(--zp-r-card);
   }
 
   .login-logo {
@@ -769,7 +765,9 @@ body {
   --zp-text:#111111;
   --zp-muted:#666666;
   --zp-soft:#999999;
-  --zp-radius:14px;
+  /* 卡片圆角：基线 3.0 起指向 --zp-r-card（16px）；旧名保留是为了既有
+     var(--zp-radius) 引用点（mobile-ui 的 .card、.zp-btn）零改动跟随。 */
+  --zp-radius:var(--zp-r-card);
   /* 顶部安全区兜底：env() 在部分 WebView（如旧版 Capacitor 壳 / 异常上报）返回 0 时，
      兜底一个最小呼吸位，避免内容被状态栏压住；正常环境 env() 取到真实状态栏高度时取较大值。
      与安卓壳端 MainActivity 的 WebView 边距修复互补（嵌套关系，不会双重叠加）。
@@ -901,22 +899,71 @@ body {
   --zp-control-height:48px;
   --zp-space-4:16px;
 
-  --ui-bg:var(--zp-bg);
-  --ui-surface:var(--zp-surface);
-  --ui-surface-2:var(--zp-surface-2);
-  --ui-surface-3:var(--zp-surface-3);
-  --ui-line:var(--zp-line);
-  --ui-text:var(--zp-text);
-  --ui-muted:var(--zp-muted);
-  --ui-soft:var(--zp-soft);
-  --ui-radius:var(--zp-radius);
-  /* danger 双值共役已消解（Phase 4）：原独立取值 #FF8278 与 mobile-ui 的 #FFB4AB
-     统一收敛到 --zp-danger（浅色 #D4380D 深红正文 / 深色 #FCA5A5 浅红正文），
-     此处降为别名，既有 var(--ui-danger) 引用点零改动跟随主题。 */
-  --ui-danger:var(--zp-danger);
-  --ui-danger-soft:var(--zp-danger-soft);
-  --ui-dialog-radius:18px;
-  --ui-control-radius:11px;
+  /* ===== 设计语言基线 3.0（2026-10-29 · UI 专项整治「立规」）=====
+     背景：整治前全站字号 28 种、圆角 32 种（8/9/10/11/12/13/14/17/18/19 十档同时
+     在用），同一控件在不同页面各写一套，再靠 !important 压成「看起来一样」。
+     这里把刻度收成固定档位：字号 8 档 / 字重 4 档 / 行高 6 档 / 圆角 5 档 / 间距 6 档。
+     铁律：组件层（按钮、卡片、输入、弹层、列表行）只准引用本组令牌；
+     页面级文件只准写布局（宽高、栅格、定位），不准再起字号与圆角。
+     例外仅两处，已书面登记：登录页尺寸（保留 54px 按钮的高度感）、
+     品牌底板 --zp-logo-plate（双主题同值，见上方说明）。 */
+  /* 字号：11 微（角标）/ 12 元信息 / 13 辅助 / 14 列表正文 / 15 正文 /
+     16 强调与按钮 / 18 区块标题 / 20 页面标题 */
+  --zp-fs-11:11px;
+  --zp-fs-12:12px;
+  --zp-fs-13:13px;
+  --zp-fs-14:14px;
+  --zp-fs-15:15px;
+  --zp-fs-16:16px;
+  --zp-fs-18:18px;
+  --zp-fs-20:20px;
+  /* 字重：历史 550/650 归入 500/600 —— 中文字体通常只有 400/700 两档实际字重，
+     550/650 会被就近渲染，写出来只制造「两套值」的错觉，归并零视觉代价。 */
+  --zp-fw-regular:400;
+  --zp-fw-medium:500;
+  --zp-fw-semibold:600;
+  --zp-fw-bold:700;
+  /* 行高：与字号成对使用 */
+  --zp-lh-16:16px;
+  --zp-lh-18:18px;
+  --zp-lh-20:20px;
+  --zp-lh-22:22px;
+  --zp-lh-24:24px;
+  --zp-lh-26:26px;
+  /* 圆角：mini 用于 <40px 的迷你控件与菜单项，control 用于标准按钮/输入，
+     card 用于卡片与列表容器，dialog 用于弹层，pill 用于胶囊。
+     弹层取 18 而非 20：现状 17/18/19 三档，18 是众数，归一只需 ±1px（A① 口径）。 */
+  --zp-r-mini:10px;
+  --zp-r-control:12px;
+  --zp-r-card:16px;
+  --zp-r-dialog:18px;
+  --zp-r-pill:999px;
+  /* 间距：4 的倍数，唯一节奏 */
+  --zp-sp-1:4px;
+  --zp-sp-2:8px;
+  --zp-sp-3:12px;
+  --zp-sp-4:16px;
+  --zp-sp-5:20px;
+  --zp-sp-6:24px;
+
+  /* ===== 旧变量名兼容层（2026-10-29 修）=====
+     admin.html 不加载 app.css，而 admin-base.css 有 26 处 var(--zp-muted)/var(--zp-line)/
+     var(--zp-soft)/var(--zp-surface) —— 这些裸名只在 app.css 里定义，管理端因此**全部落空**
+     （声明被浏览器丢弃，元素回退到继承色）。这也是管理端与业务端观感不一致的
+     隐藏技术原因之一。这里在权威层补全别名，任何页面都能解析；
+     --soft 与 --panel 是首次补上（app.css 里从来没有这两项）。 */
+  --bg:var(--zp-bg);
+  --card:var(--zp-card);
+  --card2:var(--zp-card-translucent-2);
+  --line:var(--zp-line);
+  --muted:var(--zp-muted);
+  --soft:var(--zp-soft);
+  --panel:var(--zp-surface);
+  --text:var(--zp-text);
+
+  /* 2026-10-29：旧 --ui-* 颜色/圆角别名已全部删除（引用点 42 处已改为 --zp-*），
+     命名空间收敛为单一的 --zp-*；--ui-z-* 层级体系保留（它是跨页面层级契约，
+     不是颜色别名的重复）。 */
 
   /* ===== 全局层级体系 3.0 =====
      目的：任何"后打开的弹窗都在上层"，Toast 永远可见，确认框永远盖不住。
@@ -930,7 +977,7 @@ body {
   --ui-z-modal-top:1200;   /* 模态第 3 层：最终确认（删除等破坏性操作） */
   --ui-z-toast:2000;       /* 全局提示：Toast / 气泡反馈（永远最上） */
 }
-html,body{background:var(--ui-bg);color:var(--ui-text)}
+html,body{background:var(--zp-bg);color:var(--zp-text)}
 button,a,input,select,textarea{font-family:inherit}
 button,a{-webkit-tap-highlight-color:transparent}
 button:active{transform:translateY(0)}
@@ -966,8 +1013,8 @@ button:active{transform:translateY(0)}
   border-color:var(--zp-tint);
   box-shadow:none;
 }
-.card,.page2-card{border-radius:var(--ui-radius)}
-.confirm-panel,.pending-box{background:var(--ui-surface-2);border-color:var(--zp-tint)}
+.card,.page2-card{border-radius:var(--zp-radius)}
+.confirm-panel,.pending-box{background:var(--zp-surface-2);border-color:var(--zp-tint)}
 
 /* 顶部栏统一：标准 Header 钩子 .topbar（阶段 6 · 5A）
    布局由各页旧类规则承载（保留差异：dispatch 白字标题 / data 头 padding / history 占位 /
@@ -981,11 +1028,11 @@ button:active{transform:translateY(0)}
   min-height:var(--zp-header-height);
   position:relative;
 }
-.topbar strong,.order-title{font-weight:650}
+.topbar strong,.order-title{font-weight:var(--zp-fw-semibold)}
 /* 2026-10-29：隐私政策 / 服务条款两页此前没有标题规则，h1 用的是浏览器默认
    32px + margin，把顶栏撑到 98px（全站唯一例外）。这里补上与其他页一致的
    20/26、居中、零外边距；各页自己声明的字号（账号 17px 等）特异性更高，不受影响。 */
-.topbar h1{margin:0;font-size:20px;line-height:26px;font-weight:650;text-align:center;color:var(--zp-text)}
+.topbar h1{margin:0;font-size:var(--zp-fs-20);line-height:26px;font-weight:var(--zp-fw-semibold);text-align:center;color:var(--zp-text)}
 /* 统一返回钩子 .app-back（阶段 6 · 5A）：link 型返回键统一为 48px 触控靶区；
    order 页返回为 <button id="backBtn>（由 ID 接线，不在此类）。 */
 .app-back{
@@ -995,9 +1042,9 @@ button:active{transform:translateY(0)}
   align-items:center;
   justify-content:center;
   border:0;
-  border-radius:12px;
+  border-radius:var(--zp-r-control);
   background:transparent;
-  color:var(--ui-muted);
+  color:var(--zp-muted);
   text-decoration:none;
   font-size:0;
   box-sizing:border-box;
@@ -1010,9 +1057,9 @@ button:active{transform:translateY(0)}
 
 /* 菜单统一为单层浮层 */
 .data-page-menu, .order-menu{
-  border:1px solid var(--ui-line);
-  border-radius:12px;
-  background:var(--ui-surface);
+  border:1px solid var(--zp-line);
+  border-radius:var(--zp-r-control);
+  background:var(--zp-surface);
   box-shadow:var(--zp-shadow-menu);
   overflow:hidden;
 }
@@ -1032,17 +1079,17 @@ button:active{transform:translateY(0)}
 }
 .data-import-actions button,.history-dialog-actions button,.order-dialog-actions button,.account-dialog-actions button{
   min-height:var(--zp-control-height);
-  border-radius:var(--ui-control-radius);
-  font-size:14px;
-  font-weight:550;
+  border-radius:var(--zp-r-control);
+  font-size:var(--zp-fs-14);
+  font-weight:var(--zp-fw-medium);
 }
 .data-import-actions button:first-child,.history-dialog-actions button:first-child,.order-dialog-actions button:first-child,.account-dialog-actions button:first-child{
-  background:var(--ui-surface-2);
+  background:var(--zp-surface-2);
   border:1px solid var(--zp-line);
   color:var(--zp-text);
 }
 .data-import-actions button:last-child,.history-dialog-actions button:last-child,.order-dialog-actions button:last-child,.account-dialog-actions button:last-child{
-  background:var(--ui-surface-3);
+  background:var(--zp-surface-3);
   border:1px solid var(--zp-line);
   color:var(--zp-text);
 }
@@ -1052,9 +1099,9 @@ button:active{transform:translateY(0)}
   background:var(--zp-scrim-dialog)!important;
 }
 .order-dialog-panel,.history-dialog-panel,.data-import-panel,.account-dialog,.upload-sheet{
-  background:var(--ui-surface);
-  border:1px solid var(--ui-line);
-  border-radius:var(--ui-dialog-radius);
+  background:var(--zp-surface);
+  border:1px solid var(--zp-line);
+  border-radius:var(--zp-r-dialog);
   box-shadow:var(--zp-shadow-lg);
 }
 .order-dialog-panel,.history-dialog-panel,.data-import-panel,.account-dialog{
@@ -1064,16 +1111,16 @@ button:active{transform:translateY(0)}
   min-height:40px;
 }
 .order-dialog-head strong,.data-import-head h3,.history-dialog-panel>strong,.account-dialog h2{
-  font-size:17px;
+  font-size:var(--zp-fs-16);
   line-height:24px;
-  font-weight:650;
+  font-weight:var(--zp-fw-semibold);
 }
 .order-dialog-panel>p,.history-dialog-panel>p,.account-dialog>p{
-  color:var(--ui-muted);
+  color:var(--zp-muted);
 }
 
 /* 二次确认：不再使用大图标/装饰层，突出标题、风险说明、操作 */
-.page2-danger-btn,.data-swipe-delete{color:var(--ui-danger)!important}
+.page2-danger-btn,.data-swipe-delete{color:var(--zp-danger)!important}
 
 /* 上传/处理：同一面板内切换内容，不叠加第二个面板 */
 .upload-sheet{overflow:hidden}
@@ -1082,7 +1129,7 @@ button:active{transform:translateY(0)}
 
 /* 表单统一：标签、输入、错误信息节奏一致 */
 input,select,textarea{
-  border-radius:var(--ui-control-radius)!important;
+  border-radius:var(--zp-r-control)!important;
 }
 /* 跨页容器 / 行 / 对话框的令牌基座（Phase 4）：
    原由 ui-theme 浅色补丁逐条 :root 前缀覆盖，基底反转后收敛到全局层，
@@ -1102,11 +1149,11 @@ input,select,textarea{
   z-index:400;
   max-width:calc(100vw - 32px);
   padding:10px 14px;
-  border:1px solid var(--ui-line);
-  border-radius:10px;
-  background:var(--ui-surface);
+  border:1px solid var(--zp-line);
+  border-radius:var(--zp-r-mini);
+  background:var(--zp-surface);
   color:var(--zp-text);
-  font-size:13px;
+  font-size:var(--zp-fs-13);
   line-height:18px;
   text-align:center;
   box-shadow:var(--zp-shadow-md);
@@ -1121,7 +1168,7 @@ input,select,textarea{
 
 /* 状态文字与列表节奏统一 */
 .empty,.dispatch-empty,.dispatch-message,.history-state{
-  color:var(--ui-soft);
+  color:var(--zp-soft);
 }
 .store-row,.account-row,.request-row{
   border-bottom-color:var(--zp-tint);
@@ -1130,7 +1177,7 @@ input,select,textarea{
 /* 小屏：进一步减少外层留白，不缩小触控目标 */
 @media(max-width:380px){
   .order-dialog,.history-dialog,.data-import,.upload-overlay{padding:14px}
-  .order-dialog-panel,.history-dialog-panel,.data-import-panel,.account-dialog{border-radius:16px}
+  .order-dialog-panel,.history-dialog-panel,.data-import-panel,.account-dialog{border-radius:var(--zp-r-dialog)}
 }
 @media(prefers-reduced-motion:reduce){
   .ui-toast{transition:none}
@@ -1139,24 +1186,24 @@ input,select,textarea{
 /* 全局二次确认弹窗 */
 .zp-confirm{position:fixed;top:0;right:0;bottom:0;left:0;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;padding:18px;background:var(--zp-scrim-dialog)}
 .zp-confirm[hidden]{display:none}
-.zp-confirm-panel{width:min(100%,360px);padding:20px 18px 16px;border:1px solid var(--ui-line);border-radius:18px;background:var(--ui-surface);box-shadow:var(--zp-shadow-lg)}
-.zp-confirm-panel h3{margin:0;color:var(--zp-text);font-size:17px;line-height:24px;font-weight:650}
-.zp-confirm-panel p{margin:8px 0 0;color:var(--ui-muted);font-size:13px;line-height:20px;word-break:break-word}
+.zp-confirm-panel{width:min(100%,360px);padding:20px 18px 16px;border:1px solid var(--zp-line);border-radius:var(--zp-r-dialog);background:var(--zp-surface);box-shadow:var(--zp-shadow-lg)}
+.zp-confirm-panel h3{margin:0;color:var(--zp-text);font-size:var(--zp-fs-16);line-height:24px;font-weight:var(--zp-fw-semibold)}
+.zp-confirm-panel p{margin:8px 0 0;color:var(--zp-muted);font-size:var(--zp-fs-13);line-height:20px;word-break:break-word}
 .zp-confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
-.zp-confirm-actions button{min-height:var(--zp-control-height);border-radius:11px;font-size:14px;font-weight:550}
+.zp-confirm-actions button{min-height:var(--zp-control-height);border-radius:var(--zp-r-control);font-size:var(--zp-fs-14);font-weight:var(--zp-fw-medium)}
 .zp-confirm-actions button:first-child{border:1px solid var(--zp-line);background:var(--zp-card-translucent-2);color:var(--zp-text)}
 .zp-confirm-actions button:last-child{border:1px solid var(--zp-line);background:var(--zp-card-translucent);color:var(--zp-text)}
 
 /* Android 移动端文字规范 2.4
    仅调整文字尺寸与行高，不改变业务规则、数据结构、交互逻辑或页面布局。
    目标层级：页面标题 20px / 区块标题 18px / 正文 16px / 辅助 15px / 元信息 14px。 */
-.topbar strong,.account-page .topbar h1,.route-apply-page .topbar h1,.data-page .topbar h1,.dispatch-page .topbar h1,.order-title{font-size:20px!important;line-height:26px!important}
-.card h2, .page2-card h2, .section-title, .data-route-title h2{font-size:18px!important;line-height:24px!important}
-.data-import-actions button,.history-dialog-actions button,.order-dialog-actions button,.account-dialog-actions button,.zp-confirm-actions button{font-size:16px!important;line-height:22px!important}
-.order-dialog-head strong,.data-import-head h3,.history-dialog-panel>strong,.account-dialog h2,.zp-confirm-panel h3{font-size:18px!important;line-height:24px!important}
-.order-dialog-panel>p,.history-dialog-panel>p,.account-dialog>p,.zp-confirm-panel p{font-size:15px!important;line-height:22px!important}
-.ui-toast{font-size:15px!important;line-height:21px!important}
-.empty,.dispatch-empty,.dispatch-message,.history-state{font-size:15px!important;line-height:22px!important}
+.topbar strong,.account-page .topbar h1,.route-apply-page .topbar h1,.data-page .topbar h1,.dispatch-page .topbar h1,.order-title{font-size:var(--zp-fs-20)!important;line-height:26px!important}
+.card h2, .page2-card h2, .section-title, .data-route-title h2{font-size:var(--zp-fs-18)!important;line-height:24px!important}
+.data-import-actions button,.history-dialog-actions button,.order-dialog-actions button,.account-dialog-actions button,.zp-confirm-actions button{font-size:var(--zp-fs-16)!important;line-height:var(--zp-lh-22)!important}
+.order-dialog-head strong,.data-import-head h3,.history-dialog-panel>strong,.account-dialog h2,.zp-confirm-panel h3{font-size:var(--zp-fs-18)!important;line-height:24px!important}
+.order-dialog-panel>p,.history-dialog-panel>p,.account-dialog>p,.zp-confirm-panel p{font-size:var(--zp-fs-15)!important;line-height:22px!important}
+.ui-toast{font-size:var(--zp-fs-15)!important;line-height:21px!important}
+.empty,.dispatch-empty,.dispatch-message,.history-state{font-size:var(--zp-fs-15)!important;line-height:22px!important}
 
 /* Modal positioning 2.5
    所有业务弹窗统一居中显示；菜单、Toast、悬浮操作不属于模态弹窗，不参与居中规则。 */
@@ -1175,7 +1222,7 @@ input,select,textarea{
 .account-dialog,
 .upload-sheet{
   margin:0 auto!important;
-  border-radius:18px!important;
+  border-radius:var(--zp-r-dialog)!important;
   max-height:min(88vh,760px);max-height:min(88dvh,760px);
 }
 .upload-sheet{
@@ -1193,7 +1240,7 @@ input,select,textarea{
   .history-picker-panel,
   .data-import-panel,
   .account-dialog,
-  .upload-sheet{border-radius:16px!important}
+  .upload-sheet{border-radius:var(--zp-r-dialog)!important}
 }
 
 
@@ -1203,22 +1250,22 @@ input,select,textarea{
 /* 全局密码显隐 2.7：所有密码输入统一使用小眼睛，空值时隐藏，输入后即时出现。 */
 .zp-password-control{
   position:relative;display:flex;align-items:center;width:100%;min-height:48px;
-  border:1px solid var(--zp-line);border-radius:11px;background:var(--zp-card-translucent-2);
+  border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-translucent-2);
   transition:border-color .16s ease,box-shadow .16s ease;
 }
 .zp-password-control:focus-within{border-color:var(--zp-focus-ring);box-shadow:var(--zp-focus-glow)}
 .zp-password-control input[type="password"],
 .zp-password-control input[type="text"]{
   display:block;flex:1;min-width:0;width:100%;height:48px!important;min-height:48px!important;
-  margin:0!important;padding:0 48px 0 12px!important;border:0!important;border-radius:10px!important;
+  margin:0!important;padding:0 48px 0 12px!important;border:0!important;border-radius:var(--zp-r-control)!important;
   outline:none!important;box-shadow:none!important;background:transparent!important;color:var(--zp-text);
-  font-size:16px;line-height:22px;letter-spacing:.01em;
+  font-size:var(--zp-fs-16);line-height:22px;letter-spacing:.01em;
 }
 .zp-password-control input::placeholder{color:var(--zp-soft)}
 .zp-password-eye{
   position:absolute;right:4px;top:50%;transform:translateY(-50%);
   display:flex;align-items:center;justify-content:center;width:38px;height:38px;
-  padding:0;border:0;border-radius:9px;background:transparent;color:var(--zp-muted);
+  padding:0;border:0;border-radius:var(--zp-r-mini);background:transparent;color:var(--zp-muted);
   cursor:pointer;-webkit-tap-highlight-color:transparent;
 }
 .zp-password-eye svg{display:block;width:19px;height:19px;pointer-events:none}
@@ -1226,7 +1273,7 @@ input,select,textarea{
 .zp-password-eye[hidden]{display:none!important}
 .field .zp-password-control{margin-top:0}
 .page2-label>.zp-password-control{margin-top:6px}
-.reset-password-field>label{display:block;margin:0 0 8px;color:var(--zp-text);font-size:14px;line-height:20px;font-weight:600}
+.reset-password-field>label{display:block;margin:0 0 8px;color:var(--zp-text);font-size:var(--zp-fs-14);line-height:20px;font-weight:var(--zp-fw-semibold)}
 .reset-password-field{margin-top:16px}
 @media(max-width:380px){.zp-password-eye{right:3px;width:36px;height:36px}}
 
@@ -1240,6 +1287,38 @@ input,select,textarea{
    注意：这里不带 env()，因为壳内状态栏已由原生让开；若带 env 且其为 0，
    max() 会退回一个更大的值，等于没改。 */
 html[data-zp-native="1"]{--zp-safe-top:8px}
+
+/* ===== 按钮原语（设计语言基线 3.0） =====
+   存量按钮类名有 11 个入口（primary-btn / page2-primary / data-action-btn /
+   login-submit / .zp-btn / dialog-actions button …），每个都各写一套高度与圆角，
+   这是「视觉一样、实现拼凑」最集中的地方。本组是**唯一尺寸真相源**：
+   ① 新按钮一律 <button class="zp-btn zp-btn--primary">，不再自起度量；
+   ② 存量按钮的度量本轮已统一到同一组令牌（--zp-control-height / --zp-r-control /
+      --zp-fs-16 / --zp-fw-semibold），因此与 .zp-btn 视觉等价，无需改 HTML；
+   ③ 颜色仍走语义令牌，深浅两套主题自动适配，不写第二套。
+   例外：登录页 .login-submit 保留 54px 高度（用户 spec 的落地按钮体量），
+   只跟随令牌的颜色与圆角，尺寸单列。 */
+.zp-btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  min-height:var(--zp-control-height);padding:0 var(--zp-sp-4);
+  border:1px solid transparent;border-radius:var(--zp-r-control);
+  font-size:var(--zp-fs-16);font-weight:var(--zp-fw-semibold);line-height:var(--zp-lh-22);
+  color:var(--zp-text);background:transparent;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+  transition:background-color .16s ease,border-color .16s ease,color .16s ease,opacity .16s ease;
+}
+.zp-btn--primary{background:var(--zp-primary);border-color:var(--zp-primary);color:var(--zp-on-primary)}
+.zp-btn--secondary{background:var(--zp-surface-2);border-color:var(--zp-line);color:var(--zp-text)}
+.zp-btn--ghost{background:transparent;border-color:transparent;color:var(--zp-primary)}
+/* 破坏性动作：中性底 + 红字（与 ui-theme.css 的全站危险按钮标准同口径） */
+.zp-btn--danger{background:var(--zp-secondary-bg);border-color:var(--zp-line);color:var(--zp-error)}
+.zp-btn--block{width:100%}
+/* 迷你档：行内动作、列表行右侧、菜单项，圆角退一档到 --zp-r-mini */
+.zp-btn--mini{min-height:34px;padding:0 var(--zp-sp-3);border-radius:var(--zp-r-mini);font-size:var(--zp-fs-13)}
+.zp-btn--icon{width:var(--zp-control-height);min-height:var(--zp-control-height);padding:0;border-color:transparent;background:transparent;color:var(--zp-muted)}
+.zp-btn:active{background-color:var(--zp-secondary-active)}
+.zp-btn--primary:active{background-color:var(--zp-primary-active);border-color:var(--zp-primary-active)}
+.zp-btn:disabled,.zp-btn[aria-disabled="true"]{opacity:.55;cursor:not-allowed;transform:none}
 
 /* ================================================================
  * 全局层级体系 3.0 · 落地规则
@@ -1347,9 +1426,9 @@ html[data-zp-native="1"]{--zp-safe-top:8px}
   overflow:auto;
   margin:0 auto;
   padding:18px;
-  border:1px solid var(--ui-line);
-  border-radius:var(--ui-dialog-radius);
-  background:var(--ui-surface);
+  border:1px solid var(--zp-line);
+  border-radius:var(--zp-r-dialog);
+  background:var(--zp-surface);
   box-shadow:var(--zp-shadow-lg);
 }
 
@@ -1371,17 +1450,17 @@ html[data-zp-native="1"]{--zp-safe-top:8px}
 .account-dialog-actions button{
   min-height:var(--zp-control-height);
   border:1px solid var(--zp-line);
-  border-radius:var(--ui-control-radius);
-  background:var(--ui-surface-2);
+  border-radius:var(--zp-r-control);
+  background:var(--zp-surface-2);
   color:var(--zp-text);
-  font-size:16px;
-  font-weight:550;
+  font-size:var(--zp-fs-16);
+  font-weight:var(--zp-fw-medium);
 }
 .order-dialog-actions button:last-child,
 .history-dialog-actions button:last-child,
 .account-dialog-actions button:last-child{
   border-color:var(--zp-line);
-  background:var(--ui-surface-3);
+  background:var(--zp-surface-3);
   color:var(--zp-text);
 }
 
@@ -1411,9 +1490,9 @@ html[data-zp-native="1"]{--zp-safe-top:8px}
 .confirm-submit{
   background:var(--zp-primary);
   border:1px solid var(--zp-primary);
-  border-radius:var(--ui-control-radius);
+  border-radius:var(--zp-r-control);
   color:var(--zp-on-primary);
-  font-weight:650;
+  font-weight:var(--zp-fw-semibold);
   transition:background .15s ease,transform .12s ease;
 }
 .primary-btn:hover:not(:disabled),
@@ -1437,9 +1516,9 @@ html[data-zp-native="1"]{--zp-safe-top:8px}
 .page2-secondary{
   background:var(--zp-secondary-bg);
   border:1px solid var(--zp-secondary-border);
-  border-radius:var(--ui-control-radius);
+  border-radius:var(--zp-r-control);
   color:var(--zp-secondary-text);
-  font-weight:600;
+  font-weight:var(--zp-fw-semibold);
   transition:background .15s ease,transform .12s ease;
 }
 .secondary-btn:hover:not(:disabled),
@@ -1489,7 +1568,7 @@ html[data-zp-native="1"]{--zp-safe-top:8px}
 .dispatch-message{
   padding:28px 12px;
   text-align:center;
-  color:var(--ui-soft);
+  color:var(--zp-soft);
 }
 
 /* --- 5.6 焦点可见环：全站统一（键盘/外接设备可访问性） --- */
@@ -1567,10 +1646,10 @@ textarea:disabled,
   backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
 }
 .zp-business-nav-page .bottom-nav-item{
-  min-width:0!important;min-height:52px!important;border:0!important;border-radius:10px!important;
+  min-width:0!important;min-height:52px!important;border:0!important;border-radius:var(--zp-r-card)!important;
   background:transparent!important;color:var(--zp-nav-text)!important;text-decoration:none!important;
   display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;
-  gap:3px!important;font-size:12px!important;line-height:17px!important;font-weight:600!important;
+  gap:3px!important;font-size:var(--zp-fs-12)!important;line-height:17px!important;font-weight:var(--zp-fw-semibold)!important;
   -webkit-tap-highlight-color:transparent;
 }
 .zp-business-nav-page .bottom-nav-item:active{background:var(--zp-nav-active-bg)!important;color:var(--zp-nav-text-active)!important}
@@ -1703,7 +1782,9 @@ button[class*="danger"]:not(.account-collapse-head):disabled,
    历史页整行滑动动作条 .history-delete 显式排除：它是实底专用形态（带边框会与
    行宽不齐、两端混绘出白边），颜色与本标准同族，基座见 history-shell.css；
    .account-collapse-head 是折叠行非动作按钮，同样排除。
-   仅调整颜色和边框，不改变尺寸、位置、文案及确认逻辑。 */
+   2026-10-29：四条 !important 已撤除 —— 各页面级 danger 规则（账号注销、管理端滑出删除、
+   运单删除、数据左滑删除）本轮已把取值对齐到同一组令牌，不再需要靠优先级压平；
+   保留 !important 只会让「下一处新增按钮为什么变样」再次变成黑盒。 */
 button[class*="delete"]:not(.account-collapse-head):not(.history-delete),
 a[class*="delete"],
 button[class*="danger"]:not(.account-collapse-head),
@@ -1713,10 +1794,10 @@ a[class*="danger"],
 .data-swipe-actions .data-swipe-delete,
 .page2-danger-btn,
 .invite-actions .small-action.danger {
-  background:var(--zp-secondary-bg)!important;
-  border:1px solid var(--zp-line)!important;
-  color:var(--zp-error)!important;
-  box-shadow:none!important;
+  background:var(--zp-secondary-bg);
+  border:1px solid var(--zp-line);
+  color:var(--zp-error);
+  box-shadow:none;
 }
 button[class*="delete"]:not(.account-collapse-head):not(.history-delete):active,
 a[class*="delete"]:active,
@@ -1727,9 +1808,9 @@ a[class*="danger"]:active,
 .data-swipe-actions .data-swipe-delete:active,
 .page2-danger-btn:active,
 .invite-actions .small-action.danger:active {
-  background:var(--zp-secondary-active)!important;
-  border-color:var(--zp-line)!important;
-  color:var(--zp-error)!important;
+  background:var(--zp-secondary-active);
+  border-color:var(--zp-line);
+  color:var(--zp-error);
 }
 
 /* 登录输入框深色恢复：app.css 浅色基底已改为白底 + --zp-input-line 边（浅色对比度
@@ -1835,16 +1916,16 @@ main.zp-shell.dispatch-page .zp-scroll{padding-top:0}
    只把多余的一层收掉 2px，不做大幅调整。 */
 .home-app .topbar{display:flex;justify-content:space-between;align-items:center;z-index:100;margin-bottom:6px}
 .home-brand{display:flex;flex-direction:column;line-height:1.2}
-.home-brand strong{font-size:19px;font-weight:700;letter-spacing:.5px;color:var(--zp-text)}
-.home-brand span{margin-top:2px;font-size:11px;color:var(--zp-muted);letter-spacing:1.5px}
+.home-brand strong{font-size:var(--zp-fs-18);font-weight:var(--zp-fw-bold);letter-spacing:.5px;color:var(--zp-text)}
+.home-brand span{margin-top:2px;font-size:var(--zp-fs-11);color:var(--zp-muted);letter-spacing:1.5px}
 .menu-item-icon{width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;color:var(--zp-muted)}
 .menu-item-icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .menu-divider{height:1px;margin:5px 7px;background:var(--zp-tint)}
 
-.task-card{position:relative;overflow:hidden;margin-top:14px;padding:14px;min-height:0;background:var(--zp-card-translucent-2);border:1px solid var(--zp-tint);border-radius:16px;box-shadow:0 12px 30px var(--zp-shadow-md)}
-.task-title{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:21px;line-height:28px;font-weight:700}
+.task-card{position:relative;overflow:hidden;margin-top:14px;padding:14px;min-height:0;background:var(--zp-card-translucent-2);border:1px solid var(--zp-tint);border-radius:var(--zp-r-card);box-shadow:0 12px 30px var(--zp-shadow-md)}
+.task-title{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:var(--zp-fs-20);line-height:28px;font-weight:var(--zp-fw-bold)}
 .task-name{display:flex;align-items:center;gap:9px;min-width:0;white-space:nowrap}
-.task-date{margin:0;min-width:112px;text-align:center;white-space:nowrap;color:var(--zp-muted);font-size:15px;line-height:23px;font-weight:500}
+.task-date{margin:0;min-width:112px;text-align:center;white-space:nowrap;color:var(--zp-muted);font-size:var(--zp-fs-15);line-height:23px;font-weight:var(--zp-fw-medium)}
 /* 2026-10-26 用户反馈：今日配送旁的圆形状态徽章采用主题蓝（双主题经令牌自适应，
    浅色 #1677FF / 深色 #3B82F6），文字改 --zp-on-primary 白字保证蓝底可读 */
 .status-dot{width:26px;height:26px;min-width:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:var(--zp-primary);color:var(--zp-on-primary);border:1px solid var(--zp-tint-strong);font:650 11px/26px Arial,"Microsoft YaHei",sans-serif}
@@ -1852,10 +1933,10 @@ main.zp-shell.dispatch-page .zp-scroll{padding-top:0}
 .today-summary .sub-badge{display:inline;color:var(--zp-text);font:600 14px/29px "Microsoft YaHei",sans-serif;white-space:nowrap}
 .today-summary .sub-badge[hidden]{display:none}
 .task-main{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:8px;margin-top:9px}
-.task-info{min-width:0;color:var(--zp-muted);font-size:15px;line-height:27px}
+.task-info{min-width:0;color:var(--zp-muted);font-size:var(--zp-fs-15);line-height:27px}
 .today-summary{display:flex;align-items:baseline;gap:9px;white-space:nowrap;line-height:29px}
-.today-summary strong{color:var(--zp-text);font-size:20px;line-height:29px;font-weight:600}
-.today-summary span{font-size:16px;line-height:29px;color:var(--zp-muted)}
+.today-summary strong{color:var(--zp-text);font-size:var(--zp-fs-20);line-height:29px;font-weight:var(--zp-fw-semibold)}
+.today-summary span{font-size:var(--zp-fs-16);line-height:29px;color:var(--zp-muted)}
 /* 插画容器与日期等宽(112px)且内容居中：容器右边界与日期右边界一致，
    两者宽度相同 → 插画水平中心恒等于日期中心（用户要求：对齐日期中心下方） */
 .delivery-man{width:112px;height:60px;display:flex;align-items:flex-end;justify-content:center;opacity:.9;transform:translateY(8px)}
@@ -1869,54 +1950,54 @@ main.zp-shell.dispatch-page .zp-scroll{padding-top:0}
 .upload-sheet{width:min(100%,390px);max-width:390px;margin:0 auto;padding:20px 18px calc(18px + env(safe-area-inset-bottom));border-radius:20px 20px 16px 16px;background:var(--zp-card-translucent-2);border:1px solid var(--zp-line);box-shadow:0 18px 46px var(--zp-shadow-lg);animation:zpModalIn .16s ease-out}
 .sheet-handle{width:34px;height:4px;margin:0 auto 16px;border-radius:4px;background:var(--zp-tint-strong)}
 .upload-source-menu{margin:0;padding:0;background:transparent}
-.source-menu-title{height:28px;line-height:28px;margin:0 0 20px;color:var(--zp-text);text-align:center;font-size:20px;font-weight:700}
+.source-menu-title{height:28px;line-height:28px;margin:0 0 20px;color:var(--zp-text);text-align:center;font-size:var(--zp-fs-20);font-weight:var(--zp-fw-bold)}
 /* 2026-10-26 新增「粘贴文本」录入：来源入口从 3 列改 2×2，每格更宽容纳四项文案 */
 .source-menu-options{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.source-option{height:auto;min-height:72px;padding:9px 0;border:1px solid var(--zp-tint);border-radius:12px;background:var(--zp-card-translucent);color:var(--zp-text);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.source-option{height:auto;min-height:72px;padding:9px 0;border:1px solid var(--zp-tint);border-radius:var(--zp-r-control);background:var(--zp-card-translucent);color:var(--zp-text);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .source-option:active{background:var(--zp-primary);color:var(--zp-on-primary);transform:scale(.985)}
 .source-icon{width:24px;height:24px;display:flex;align-items:center;justify-content:center}
 .source-icon svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.source-option strong{font-size:13px;font-weight:600;line-height:18px}
-.upload-cancel-btn{width:100%;height:48px;min-height:48px;margin-top:12px;border:1px solid var(--zp-tint);border-radius:12px;background:var(--zp-card-translucent);color:var(--zp-muted);font-size:14px;font-weight:650;-webkit-tap-highlight-color:transparent}
+.source-option strong{font-size:var(--zp-fs-13);font-weight:var(--zp-fw-semibold);line-height:18px}
+.upload-cancel-btn{width:100%;height:48px;min-height:48px;margin-top:12px;border:1px solid var(--zp-tint);border-radius:var(--zp-r-control);background:var(--zp-card-translucent);color:var(--zp-muted);font-size:var(--zp-fs-14);font-weight:var(--zp-fw-semibold);-webkit-tap-highlight-color:transparent}
 .upload-cancel-btn:active{background:var(--zp-primary);color:var(--zp-on-primary);transform:scale(.985)}
 
 /* 粘贴文本录入面板：与来源菜单同一容器风格，纯令牌配色（组件层零字面量） */
 .upload-text-panel{margin:0;padding:0;background:transparent}
 .upload-text-panel[hidden]{display:none}
-.waybill-text-input{display:block;width:100%;box-sizing:border-box;min-height:180px;margin:0 0 8px;padding:12px 14px;border:1px solid var(--zp-input-line);border-radius:12px;background:var(--zp-surface);color:var(--zp-text);font:inherit;font-size:15px;line-height:22px;resize:vertical;-webkit-tap-highlight-color:transparent}
+.waybill-text-input{display:block;width:100%;box-sizing:border-box;min-height:180px;margin:0 0 8px;padding:12px 14px;border:1px solid var(--zp-input-line);border-radius:var(--zp-r-control);background:var(--zp-surface);color:var(--zp-text);font:inherit;font-size:var(--zp-fs-15);line-height:22px;resize:vertical;-webkit-tap-highlight-color:transparent}
 .waybill-text-input::placeholder{color:var(--zp-muted)}
 .waybill-text-input:focus{outline:none;border-color:var(--zp-primary)}
-.text-panel-meta{display:flex;align-items:center;justify-content:space-between;min-height:28px;color:var(--zp-muted);font-size:12px}
+.text-panel-meta{display:flex;align-items:center;justify-content:space-between;min-height:28px;color:var(--zp-muted);font-size:var(--zp-fs-12)}
 .text-meta-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
 /* 清空：仅在文本框有内容时出现（空面板不显示无效按钮，避免多一个灰按钮干扰） */
-.text-clear-btn{height:30px;padding:0 12px;border:1px solid var(--zp-tint);border-radius:9px;background:transparent;color:var(--zp-muted);font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.text-clear-btn{height:30px;padding:0 12px;border:1px solid var(--zp-tint);border-radius:var(--zp-r-mini);background:transparent;color:var(--zp-muted);font-size:var(--zp-fs-12);font-weight:var(--zp-fw-semibold);cursor:pointer;-webkit-tap-highlight-color:transparent}
 .text-clear-btn:active{background:var(--zp-tint);color:var(--zp-text);transform:scale(.985)}
 .text-clear-btn[hidden]{display:none}
-.text-paste-btn{height:30px;padding:0 12px;border:1px solid var(--zp-tint);border-radius:9px;background:var(--zp-card-translucent);color:var(--zp-primary);font-size:12px;font-weight:650;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.text-paste-btn{height:30px;padding:0 12px;border:1px solid var(--zp-tint);border-radius:var(--zp-r-mini);background:var(--zp-card-translucent);color:var(--zp-primary);font-size:var(--zp-fs-12);font-weight:var(--zp-fw-semibold);cursor:pointer;-webkit-tap-highlight-color:transparent}
 .text-paste-btn:active{background:var(--zp-primary);color:var(--zp-on-primary);transform:scale(.985)}
 .text-panel-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
 .text-panel-actions .upload-cancel-btn{margin-top:0}
-.text-submit-btn{height:48px;min-height:48px;border:1px solid var(--zp-primary);border-radius:12px;background:var(--zp-primary);color:var(--zp-on-primary);font-size:14px;font-weight:650;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.text-submit-btn{height:48px;min-height:48px;border:1px solid var(--zp-primary);border-radius:var(--zp-r-control);background:var(--zp-primary);color:var(--zp-on-primary);font-size:var(--zp-fs-14);font-weight:var(--zp-fw-semibold);cursor:pointer;-webkit-tap-highlight-color:transparent}
 .text-submit-btn:active{transform:scale(.985)}
 .text-submit-btn:disabled{opacity:.5}
 .text-submit-btn:focus,.text-paste-btn:focus,.waybill-text-input:focus-visible{outline:2px solid var(--zp-focus-ring);outline-offset:2px}
 .upload-processing{padding:8px 2px 6px}
 .upload-processing[hidden],.upload-processing-error[hidden]{display:none}
-.processing-title{color:var(--zp-text);text-align:center;font-size:16px;font-weight:700;line-height:28px}
-#processingPercent{display:inline-block;margin-left:4px;font-variant-numeric:tabular-nums;color:var(--zp-muted);font-weight:650}
+.processing-title{color:var(--zp-text);text-align:center;font-size:var(--zp-fs-16);font-weight:var(--zp-fw-bold);line-height:28px}
+#processingPercent{display:inline-block;margin-left:4px;font-variant-numeric:tabular-nums;color:var(--zp-muted);font-weight:var(--zp-fw-semibold)}
 .processing-progress{position:relative;width:100%;height:22px;margin:22px 0 5px}
 .processing-progress-line{position:absolute;left:0;right:0;top:10px;height:2px;border-radius:2px;background:var(--zp-line);display:block}
 .processing-progress-line:before{content:"";position:absolute;left:0;top:0;width:var(--progress,0%);height:2px;border-radius:2px;background:var(--zp-muted)}
 .processing-progress-line i{position:absolute;left:var(--progress,0%);top:50%;width:10px;height:10px;margin:-4px 0 0 -5px;border-radius:50%;background:var(--zp-text);box-shadow:0 0 0 2px var(--zp-tint)}
-.processing-error-title{color:var(--zp-text);text-align:center;font-size:19px;font-weight:700;line-height:28px}
-.processing-error-message{margin-top:10px;color:var(--zp-muted);text-align:center;font-size:15px;line-height:23px;word-break:break-word}
-.processing-retry-btn{display:block;width:100%;height:48px;min-height:48px;margin-top:20px;border:1px solid var(--zp-primary);border-radius:12px;background:var(--zp-primary);color:var(--zp-on-primary);font-size:15px;font-weight:650;-webkit-tap-highlight-color:transparent}
+.processing-error-title{color:var(--zp-text);text-align:center;font-size:var(--zp-fs-18);font-weight:var(--zp-fw-bold);line-height:28px}
+.processing-error-message{margin-top:10px;color:var(--zp-muted);text-align:center;font-size:var(--zp-fs-15);line-height:23px;word-break:break-word}
+.processing-retry-btn{display:block;width:100%;height:48px;min-height:48px;margin-top:20px;border:1px solid var(--zp-primary);border-radius:var(--zp-r-control);background:var(--zp-primary);color:var(--zp-on-primary);font-size:var(--zp-fs-15);font-weight:var(--zp-fw-semibold);-webkit-tap-highlight-color:transparent}
 .processing-retry-btn:active{background:var(--zp-line);transform:scale(.985)}
 /* 等待期信息层：阶段文案 + 已用时，让"干等"变成"有进度可看" */
 .processing-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px}
-.processing-stage{min-width:0;overflow:hidden;color:var(--zp-muted);text-align:left;font-size:14px;line-height:20px;text-overflow:ellipsis;white-space:nowrap}
-.processing-elapsed{flex:none;color:var(--zp-muted);font-size:13px;line-height:20px;font-variant-numeric:tabular-nums}
-.processing-cancel-btn{display:block;width:100%;min-height:var(--zp-control-height);margin-top:12px;border:1px solid var(--zp-line);border-radius:12px;background:var(--zp-card-translucent-2);color:var(--zp-muted);font-size:15px;font-weight:650;-webkit-tap-highlight-color:transparent}
+.processing-stage{min-width:0;overflow:hidden;color:var(--zp-muted);text-align:left;font-size:var(--zp-fs-14);line-height:20px;text-overflow:ellipsis;white-space:nowrap}
+.processing-elapsed{flex:none;color:var(--zp-muted);font-size:var(--zp-fs-13);line-height:20px;font-variant-numeric:tabular-nums}
+.processing-cancel-btn{display:block;width:100%;min-height:var(--zp-control-height);margin-top:12px;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-translucent-2);color:var(--zp-muted);font-size:var(--zp-fs-15);font-weight:var(--zp-fw-semibold);-webkit-tap-highlight-color:transparent}
 .processing-cancel-btn[hidden]{display:none}
 .processing-cancel-btn:active{background:var(--zp-card-translucent);color:var(--zp-text)}
 /* 停滞但存活：进度条叠加流动微光，表示"服务端仍在运行"而非卡死。
@@ -1934,17 +2015,17 @@ main.zp-shell.dispatch-page .zp-scroll{padding-top:0}
 .source-option:focus-visible, .upload-cancel-btn:focus-visible, .processing-retry-btn:focus-visible, .processing-cancel-btn:focus-visible{outline:2px solid var(--zp-focus-ring);outline-offset:2px}
 @media(max-width:380px){
  /* 左右内缩不再收紧到 12px：与全局 --zp-space-4 保持同一档，跨页一致 */
- .task-card{margin-top:14px;padding:13px 14px 12px;border-radius:16px}
- .task-title{font-size:20px;line-height:26px}
- .task-date{font-size:16px;line-height:23px}
- .today-summary strong{font-size:19px}.today-summary span{font-size:15px}
+ .task-card{margin-top:14px;padding:13px 14px 12px;border-radius:var(--zp-r-card)}
+ .task-title{font-size:var(--zp-fs-20);line-height:26px}
+ .task-date{font-size:var(--zp-fs-16);line-height:23px}
+ .today-summary strong{font-size:var(--zp-fs-18)}.today-summary span{font-size:var(--zp-fs-15)}
  .delivery-man{width:112px;height:46px;opacity:.9;transform:translateY(8px)}
  .upload-sheet{width:min(90vw,340px);padding:20px 17px 18px}
- .source-menu-title{font-size:19px;margin-bottom:18px}
+ .source-menu-title{font-size:var(--zp-fs-18);margin-bottom:18px}
  .source-menu-options{gap:7px}
  .source-option{height:auto;min-height:62px}
- .processing-title{font-size:17px}.processing-progress{margin-top:20px}
- .processing-error-title{font-size:18px}.processing-error-message{font-size:13px}
+ .processing-title{font-size:var(--zp-fs-16)}.processing-progress{margin-top:20px}
+ .processing-error-title{font-size:var(--zp-fs-18)}.processing-error-message{font-size:var(--zp-fs-13)}
 }
 
 /* 当前线路显示 */
@@ -1954,27 +2035,27 @@ main.zp-shell.dispatch-page .zp-scroll{padding-top:0}
 /* Final Android typography normalization: size/line-height only */
 /* 2026-10-29 顶栏定高 50px：品牌区 42（标题 24 + 间距 2 + 副标 16）+ 8px 呼吸位。
    字号不动（20/11 已在可读下限），只调行高；副标行高 16 也让两行之间松一点。 */
-.home-brand strong{font-size:20px;line-height:24px;letter-spacing:.5px}
-.home-brand span{font-size:11px;line-height:16px}
+.home-brand strong{font-size:var(--zp-fs-20);line-height:24px;letter-spacing:.5px}
+.home-brand span{font-size:var(--zp-fs-11);line-height:16px}
 /* 全局 .topbar strong 用 !important 锁定 20/26（各页标题行高），普通声明压不过，
    品牌区要收行高必须同样带 !important；只作用于首页品牌，其他页标题不受影响。 */
 .home-app .home-brand strong{line-height:24px!important}
-.task-title{font-size:16.5px;line-height:22px}
-.task-date{font-size:15px;line-height:22px}
-.task-info{font-size:16px;line-height:23px}
-.today-summary strong{font-size:20px;line-height:27px}
-.today-summary span{font-size:16px;line-height:23px}
-.source-menu-title{font-size:18px;line-height:24px}
-.processing-title{font-size:18px;line-height:26px}
-.processing-error-title{font-size:18px;line-height:24px}
-.processing-error-message{font-size:16px;line-height:23px}
-.processing-retry-btn{font-size:16px;line-height:22px}
+.task-title{font-size:var(--zp-fs-16);line-height:22px}
+.task-date{font-size:var(--zp-fs-15);line-height:22px}
+.task-info{font-size:var(--zp-fs-16);line-height:23px}
+.today-summary strong{font-size:var(--zp-fs-20);line-height:27px}
+.today-summary span{font-size:var(--zp-fs-16);line-height:23px}
+.source-menu-title{font-size:var(--zp-fs-18);line-height:24px}
+.processing-title{font-size:var(--zp-fs-18);line-height:26px}
+.processing-error-title{font-size:var(--zp-fs-18);line-height:24px}
+.processing-error-message{font-size:var(--zp-fs-16);line-height:23px}
+.processing-retry-btn{font-size:var(--zp-fs-16);line-height:22px}
 
 /* 加载占位优化：菜单「当前线路」空值期间显示骨架微光条，替代「—」横线闪现 */
 
 /* 上传入口「文件」按钮副标题：明确此入口用于 PDF 运单，
    避免与「拍摄/相册」的图片入口混淆 */
-.source-option small{font-size:10px;line-height:14px;color:var(--zp-muted);font-weight:500}
+.source-option small{font-size:var(--zp-fs-11);line-height:14px;color:var(--zp-muted);font-weight:var(--zp-fw-medium)}
 
 /* 首页菜单轻入场：opacity + 轻微上移，弱化「Web Dropdown」观感 */
 
@@ -1984,24 +2065,26 @@ main.zp-shell.dispatch-page .zp-scroll{padding-top:0}
   margin-top:10px;
   touch-action:pan-y;   /* 纵向可滚动，横向手势留给 JS 切月 */
   padding:12px 13px 11px;
-  border:1px solid var(--zp-surface-3);border-radius:14px;background:var(--zp-card-translucent-2);overflow:hidden;
+  border:1px solid var(--zp-surface-3);border-radius:var(--zp-r-card);background:var(--zp-card-translucent-2);overflow:hidden;
 }
 .trend-card.is-in{animation:trendIn .22s ease-out}
 @keyframes trendIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .trend-head{display:flex;flex-direction:column;gap:7px}
 .trend-title-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .trend-controls{display:flex;align-items:center;gap:8px;flex-shrink:0}
-.trend-title{margin:0;font-size:15px;line-height:21px;color:var(--zp-text);font-weight:650;letter-spacing:.5px}
+.trend-title{margin:0;font-size:var(--zp-fs-15);line-height:21px;color:var(--zp-text);font-weight:var(--zp-fw-semibold);letter-spacing:.5px}
 .trend-year{
-  appearance:none;margin:0;padding:5px 10px;border:1px solid var(--zp-line);border-radius:999px;
-  background:var(--zp-card-translucent);color:var(--zp-muted);font-size:12px;line-height:16px;cursor:pointer;white-space:nowrap;
+  appearance:none;margin:0;padding:5px 10px;border:1px solid var(--zp-line);border-radius:var(--zp-r-pill);
+  background:var(--zp-surface-2);color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:16px;cursor:pointer;white-space:nowrap;
   transition:background .15s,color .15s,border-color .15s;
 }
-.trend-year:active,.trend-year.is-active{background:var(--zp-card-translucent);color:var(--zp-text);border-color:var(--zp-line)}
+/* 选中态用 --zp-surface-3（浅色 #E8EAED / 深色 #334155）：原 --zp-card-translucent
+   在浅色下是 82% 白，叠在近白卡片上完全看不出选中，等于没有状态。 */
+.trend-year:active,.trend-year.is-active{background:var(--zp-surface-3);color:var(--zp-text);border-color:var(--zp-line)}
 .trend-month-row{display:flex;align-items:center;justify-content:center;gap:14px}
 .trend-nav{
-  width:30px;height:30px;min-width:30px;padding:0;border:0;border-radius:9px;background:transparent;
-  color:var(--zp-muted);font-size:22px;line-height:1;font-weight:400;
+  width:30px;height:30px;min-width:30px;padding:0;border:0;border-radius:var(--zp-r-mini);background:transparent;
+  color:var(--zp-muted);font-size:22px;line-height:1;font-weight:var(--zp-fw-regular);
   display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;
 }
 .trend-nav:active{background:var(--zp-primary);color:var(--zp-on-primary)}
@@ -2010,43 +2093,43 @@ main.zp-shell.dispatch-page .zp-scroll{padding-top:0}
    （四周 -9px）。2026-10-24 由 44px 下限提级到 Android 标准 48px。 */
 .trend-nav,.trend-metric-btn,.trend-year{position:relative}
 .trend-nav::after,.trend-metric-btn::after,.trend-year::after{content:"";position:absolute;inset:-9px}
-.trend-month{color:var(--zp-muted);font-size:12px;line-height:18px;font-variant-numeric:tabular-nums;letter-spacing:.5px;will-change:transform}
+.trend-month{color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:18px;font-variant-numeric:tabular-nums;letter-spacing:.5px;will-change:transform}
 .trend-metric{display:flex;gap:6px}
-.trend-metric-btn{appearance:none;border:1px solid var(--zp-line);background:var(--zp-surface-2);color:var(--zp-muted);font-size:12px;line-height:18px;padding:5px 11px;border-radius:999px;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
-.trend-metric-btn.is-active{background:var(--zp-primary);color:var(--zp-on-primary);border-color:var(--zp-primary);font-weight:600}
+.trend-metric-btn{appearance:none;border:1px solid var(--zp-line);background:var(--zp-surface-3);color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:18px;padding:5px 11px;border-radius:var(--zp-r-pill);cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.trend-metric-btn.is-active{background:var(--zp-primary);color:var(--zp-on-primary);border-color:var(--zp-primary);font-weight:var(--zp-fw-semibold)}
 .trend-metric-btn:active{transform:translateY(.5px)}
 /* 底排：配送汇总（9 单 / 6.98 t）居左，环比提示居右，同排显示省一行高度 */
 .trend-bottom-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:1px}
 .trend-summary{display:flex;gap:12px;align-items:baseline;min-width:0}
-.trend-stat{display:flex;align-items:baseline;gap:2px;color:var(--zp-muted);font-size:10px;line-height:15px}
-.trend-stat b{color:var(--zp-text);font-size:15px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:.5px}
-.trend-stat i{font-style:normal;color:var(--zp-muted);font-size:9px}
-.trend-delta{margin-left:4px;font-size:9px;font-style:normal;font-variant-numeric:tabular-nums}
+.trend-stat{display:flex;align-items:baseline;gap:2px;color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:15px}
+.trend-stat b{color:var(--zp-text);font-size:var(--zp-fs-15);font-weight:var(--zp-fw-semibold);font-variant-numeric:tabular-nums;letter-spacing:.5px}
+.trend-stat i{font-style:normal;color:var(--zp-muted);font-size:var(--zp-fs-11)}
+.trend-delta{margin-left:4px;font-size:var(--zp-fs-11);font-style:normal;font-variant-numeric:tabular-nums}
 .trend-delta.is-up{color:var(--zp-success)}
 .trend-delta.is-down{color:var(--zp-error)}
 .trend-chart-wrap{height:80px;margin:7px -2px 0;will-change:transform,opacity;touch-action:pan-y}
 .trend-chart{width:100%;height:100%;display:block;overflow:visible}
 .trend-grid{fill:none;stroke:var(--zp-surface-3);stroke-width:1;stroke-dasharray:2 5}
-.trend-area{fill:var(--zp-text);fill-opacity:.05;stroke:none}
-.trend-line{fill:none;stroke:var(--zp-text);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.trend-point{fill:var(--zp-surface-2);stroke:var(--zp-text);stroke-width:1.5;cursor:pointer;transition:r .15s}
-.trend-point.is-peak{fill:var(--zp-text);stroke:var(--zp-text);stroke-width:1.5}
+.trend-area{fill:var(--zp-primary);fill-opacity:.10;stroke:none}
+.trend-line{fill:none;stroke:var(--zp-primary);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.trend-point{fill:var(--zp-surface);stroke:var(--zp-primary);stroke-width:1.5;cursor:pointer;transition:r .15s}
+.trend-point.is-peak{fill:var(--zp-primary);stroke:var(--zp-primary);stroke-width:1.5}
 .trend-point:focus{outline:none}
 .trend-point:focus-visible{stroke:var(--zp-focus-ring);stroke-width:2.5}
-.trend-year-bar{fill:var(--zp-line)}
-.trend-year-bar.is-peak{fill:var(--zp-text)}
-.trend-axis{height:15px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 3px;color:var(--zp-muted);font-size:9px;line-height:13px;font-variant-numeric:tabular-nums}
-.trend-hint{min-height:0;margin-top:0;flex:none;color:var(--zp-muted);font-size:9px;line-height:14px;text-align:right}
-.trend-hint b{color:var(--zp-muted);font-weight:600;font-variant-numeric:tabular-nums}
+.trend-year-bar{fill:var(--zp-tint-strong)}
+.trend-year-bar.is-peak{fill:var(--zp-primary)}
+.trend-axis{height:15px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 3px;color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:13px;font-variant-numeric:tabular-nums}
+.trend-hint{min-height:0;margin-top:0;flex:none;color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:14px;text-align:right}
+.trend-hint b{color:var(--zp-muted);font-weight:var(--zp-fw-semibold);font-variant-numeric:tabular-nums}
 @media(prefers-reduced-motion:reduce){
   .trend-card.is-in{animation:none}
   .trend-chart-wrap{transition:none!important}
 }
 @media(max-width:380px){
   .trend-card{padding:12px 11px 10px}
-  .trend-title{font-size:16px}
+  .trend-title{font-size:var(--zp-fs-16)}
   .trend-chart-wrap{height:76px}
-  .trend-stat b{font-size:14px}
+  .trend-stat b{font-size:var(--zp-fs-14)}
   .trend-summary{gap:10px}
 }
 
@@ -2088,7 +2171,7 @@ main.home-app .task-card{margin-top:0}
   width:22px;
   min-width:22px;
   color:var(--zp-muted);
-  font-size:15px;
+  font-size:var(--zp-fs-15);
   line-height:20px;
   font-variant-numeric:tabular-nums;
   text-align:right;
@@ -2105,11 +2188,11 @@ main.home-app .task-card{margin-top:0}
   white-space:normal;
   overflow-wrap:anywhere;
   color:var(--zp-text);
-  font-size:17px;
+  font-size:var(--zp-fs-16);
   line-height:24px;
-  font-weight:550;
+  font-weight:var(--zp-fw-medium);
 }
-.today-store-empty{padding:18px 4px;color:var(--zp-muted);font-size:14px;text-align:center}
+.today-store-empty{padding:18px 4px;color:var(--zp-muted);font-size:var(--zp-fs-14);text-align:center}
 /* 统计版块精简：压缩垂直占用（小标签行高/间距收窄），无统计项时整块不占位。 */
 .today-metrics{
   display:flex;
@@ -2120,7 +2203,7 @@ main.home-app .task-card{margin-top:0}
   border-top:1px solid var(--zp-tint);
 }
 .today-metrics:empty{display:none}
-.today-metrics span{color:var(--zp-muted);font-size:12px;line-height:18px}
+.today-metrics span{color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:18px}
 .bottom-nav{
   position:fixed;
   left:50%;
@@ -2140,7 +2223,7 @@ main.home-app .task-card{margin-top:0}
   min-width:0;
   min-height:52px;
   border:0;
-  border-radius:10px;
+  border-radius:var(--zp-r-card);
   background:transparent;
   color:var(--zp-nav-text);
   text-decoration:none;
@@ -2149,9 +2232,9 @@ main.home-app .task-card{margin-top:0}
   align-items:center;
   justify-content:center;
   gap:3px;
-  font-size:12px;
+  font-size:var(--zp-fs-12);
   line-height:17px;
-  font-weight:600;
+  font-weight:var(--zp-fw-semibold);
   -webkit-tap-highlight-color:transparent;
 }
 .bottom-nav-item:active{background:var(--zp-nav-active-bg);color:var(--zp-nav-text-active)}
@@ -2175,7 +2258,7 @@ main.home-app .task-card{margin-top:0}
  .home-app{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
  .today-store-list{max-height:252px}   /* 行高 42px × 6 = 252px，固定展示 6 家 */
  .today-store-row{min-height:44px}
- .today-store-name{font-size:16px}
+ .today-store-name{font-size:var(--zp-fs-16)}
  .bottom-nav{padding-left:6px;padding-right:6px}
 }
 
@@ -2257,77 +2340,3 @@ main.home-app .today-store-list.is-empty{display:flex;align-items:center;justify
 .delivery-man .delivery-img-light{display:none}
 :root[data-zp-theme="light"] .delivery-man .delivery-img-dark{display:none}
 :root[data-zp-theme="light"] .delivery-man .delivery-img-light{display:inline}
-
-/* 浅色外观适配补全：页面背景、品牌区、菜单、今日卡文字、功能按钮、
-   门店清单、月度统计卡与上传弹层（此前仅覆盖底部导航，页面主体仍是深色） */
-:root[data-zp-theme="light"] .home-app{background:var(--zp-bg)}
-:root[data-zp-theme="light"] .home-brand strong{color:var(--zp-text)}
-:root[data-zp-theme="light"] .home-brand span{color:#59636E}
-:root[data-zp-theme="light"] .home-brand span{color:#59636E}
-:root[data-zp-theme="light"] .menu-item-icon{color:var(--zp-muted)}
-:root[data-zp-theme="light"] .menu-divider{background:rgba(20,30,40,.10)}
-:root[data-zp-theme="light"] .task-card{box-shadow:0 8px 24px rgba(20,30,40,.08)}
-:root[data-zp-theme="light"] .task-date,
-:root[data-zp-theme="light"] .task-info,
-:root[data-zp-theme="light"] .today-store-index,
-:root[data-zp-theme="light"] .today-store-empty,
-:root[data-zp-theme="light"] .today-metrics span{color:var(--zp-soft)}
-:root[data-zp-theme="light"] .today-summary strong{color:var(--zp-text)}
-:root[data-zp-theme="light"] .today-summary span,
-:root[data-zp-theme="light"] .today-summary .sub-badge{color:var(--zp-muted)}
-:root[data-zp-theme="light"] .today-store-list,
-:root[data-zp-theme="light"] .today-metrics{border-top-color:rgba(20,30,40,.10)}
-:root[data-zp-theme="light"] .today-store-row{color:var(--zp-text);border-bottom-color:rgba(20,30,40,.08)}
-:root[data-zp-theme="light"] .today-store-row:active{background:#EDF1F5}
-:root[data-zp-theme="light"] .today-store-name{color:var(--zp-text)}
-:root[data-zp-theme="light"] .source-option:focus-visible, :root[data-zp-theme="light"] .upload-cancel-btn:focus-visible, :root[data-zp-theme="light"] .processing-retry-btn:focus-visible, :root[data-zp-theme="light"] .processing-cancel-btn:focus-visible{outline-color:rgba(23,32,42,.35)}
-
-/* 浅色：月度统计卡（Smart Trend）——曲线与坐标在白卡上需换深色墨水 */
-/* 2026-10-26 用户反馈「月度统计背景与整体风格不合」：浅色下与今日配送卡（task-card，
-   --zp-card-translucent-2 底 + --zp-tint 边）统一，不再用纯白底单开一档 */
-:root[data-zp-theme="light"] .trend-card{background:var(--zp-card-translucent-2);border-color:var(--zp-tint)}
-:root[data-zp-theme="light"] .trend-title{color:var(--zp-text)}
-:root[data-zp-theme="light"] .trend-year,
-:root[data-zp-theme="light"] .trend-year:active,
-:root[data-zp-theme="light"] .trend-year.is-active{background:#E1E7EC;color:var(--zp-text);border-color:#8793A0}
-:root[data-zp-theme="light"] .trend-nav{color:var(--zp-muted)}
-:root[data-zp-theme="light"] .trend-nav:active{background:#E8EDF1;color:var(--zp-text)}
-:root[data-zp-theme="light"] .trend-month{color:#46515D}
-:root[data-zp-theme="light"] .trend-stat{color:var(--zp-muted)}
-:root[data-zp-theme="light"] .trend-stat b{color:var(--zp-text)}
-:root[data-zp-theme="light"] .trend-stat i{color:var(--zp-soft)}
-:root[data-zp-theme="light"] .trend-delta.is-up{color:#2E7D4F}
-:root[data-zp-theme="light"] .trend-delta.is-down{color:#B4472F}
-:root[data-zp-theme="light"] .trend-grid{stroke:#D7DDE3}
-:root[data-zp-theme="light"] .trend-area{fill:var(--zp-primary)}
-:root[data-zp-theme="light"] .trend-line{stroke:var(--zp-primary)}
-:root[data-zp-theme="light"] .trend-point{fill:var(--zp-surface);stroke:var(--zp-primary)}
-:root[data-zp-theme="light"] .trend-point.is-peak{fill:var(--zp-primary);stroke:var(--zp-primary)}
-:root[data-zp-theme="light"] .trend-year-bar{fill:#B7C3CE}
-:root[data-zp-theme="light"] .trend-year-bar.is-peak{fill:var(--zp-primary)}
-:root[data-zp-theme="light"] .trend-axis{color:#66717D}
-:root[data-zp-theme="light"] .trend-hint{color:var(--zp-soft)}
-:root[data-zp-theme="light"] .trend-hint b{color:var(--zp-muted)}
-
-/* 浅色：上传来源弹层与识别处理态 */
-:root[data-zp-theme="light"] .upload-sheet{background:var(--zp-surface);border-color:#D7DDE3;box-shadow:0 18px 46px rgba(20,30,40,.22)}
-:root[data-zp-theme="light"] .sheet-handle{background:rgba(20,30,40,.18)}
-:root[data-zp-theme="light"] .source-menu-title,
-:root[data-zp-theme="light"] .processing-title,
-:root[data-zp-theme="light"] .processing-error-title{color:var(--zp-text)}
-:root[data-zp-theme="light"] .source-option{background:#F0F2F4;border-color:#D7DDE3;color:var(--zp-text)}
-:root[data-zp-theme="light"] .source-option:active{background:#E8EDF1}
-:root[data-zp-theme="light"] .source-option small{color:var(--zp-soft)}
-:root[data-zp-theme="light"] .upload-cancel-btn{background:#F0F2F4;border-color:#D7DDE3;color:var(--zp-muted)}
-:root[data-zp-theme="light"] .upload-cancel-btn:active{background:#E8EDF1;color:var(--zp-text)}
-:root[data-zp-theme="light"] #processingPercent,
-:root[data-zp-theme="light"] .processing-error-message,
-:root[data-zp-theme="light"] .processing-stage{color:var(--zp-muted)}
-:root[data-zp-theme="light"] .processing-elapsed{color:var(--zp-soft)}
-:root[data-zp-theme="light"] .processing-progress-line{background:#D7DDE3}
-:root[data-zp-theme="light"] .processing-progress-line:before{background:#46515D}
-:root[data-zp-theme="light"] .processing-progress-line i{background:var(--zp-primary);box-shadow:0 0 0 2px rgba(20,30,40,.10)}
-:root[data-zp-theme="light"] .processing-retry-btn{background:var(--zp-primary);border-color:var(--zp-primary);color:var(--zp-on-primary)}
-:root[data-zp-theme="light"] .processing-retry-btn:active{background:#1D2A36}
-:root[data-zp-theme="light"] .processing-cancel-btn{background:#F0F2F4;border-color:#D7DDE3;color:var(--zp-muted)}
-:root[data-zp-theme="light"] .processing-cancel-btn:active{background:#E8EDF1;color:var(--zp-text)}
