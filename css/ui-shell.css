@@ -37,16 +37,28 @@ main > .topbar{
   padding-top:var(--zp-safe-top);
   min-height:var(--zp-header-height);
   background:var(--zp-bg);
+  /* 2026-10-29：顶栏与内容之间统一留 20px（这里 6 + 滚动区自带 14），
+     与首页「今日配送」上方的距离同一口径。各页原有的 8px 覆盖同步改为 6px。 */
+  margin-bottom:6px;
 }
-/* 顶栏内的圆形按钮：48 → 44。48 是为「页面内主按钮」定的，顶栏里它决定了整条
-   顶栏的高度（8px 呼吸位 + 48 = 56px）。44 仍是触摸最小推荐值，不牺牲可点性，
-   换来顶栏 56 → 52px，与首页 48px 的差距从 8px 收到 4px。 */
+/* 顶栏里决定整条高度的就是圆形按钮：排版盒收到 42px，顶栏 = 8px 呼吸位 + 42 = 50px，
+   全站（含首页品牌区）等高。42 低于 44 的触摸建议值，用不可见 ::after 把可点区域
+   补回 44×44 —— 视觉收紧不等于触控变小。 */
 main > .topbar .app-back,
-main > .topbar .data-page-menu-btn{
-  width:44px;
-  height:44px;
-  min-width:44px;
-  min-height:44px;
+main > .topbar .data-page-menu-btn,
+main > .topbar .order-icon-btn{
+  position:relative;
+  width:42px;
+  height:42px;
+  min-width:42px;
+  min-height:42px;
+}
+main > .topbar .app-back::after,
+main > .topbar .data-page-menu-btn::after,
+main > .topbar .order-icon-btn::after{
+  content:"";
+  position:absolute;
+  inset:-1px;      /* 42 + 1×2 = 44px 可点区域 */
 }
 /* 内部唯一滚动容器：flex:1 撑满剩余高度，min-height:0 是 flex 列中
    能正确收缩并出现滚动条的关键。 */

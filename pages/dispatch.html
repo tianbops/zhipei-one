@@ -33,13 +33,14 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="智配One">
 <script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F6F7F9":"#121826");}catch(e){}</script><script src="/js/theme-sync.js?v=2c1a5bbc"></script>
-<link rel="stylesheet" href="/css/app.css?v=c8dcd848"><link rel="stylesheet" href="/css/ui-base.css?v=a8937d92"><link rel="stylesheet" href="/css/ui-overlay.css?v=7612d542"><link rel="stylesheet" href="/css/ui-theme.css?v=54df0f20"><link rel="stylesheet" href="/css/ui-shell.css?v=a7e0ecbb">
-<link rel="stylesheet" href="/css/mobile-ui.css?v=b2dd17f4"><link rel="stylesheet" href="/css/business-pages.css?v=55b389bf">
+<link rel="stylesheet" href="/css/app.css?v=c8dcd848"><link rel="stylesheet" href="/css/ui-base.css?v=62e23650"><link rel="stylesheet" href="/css/ui-overlay.css?v=7612d542"><link rel="stylesheet" href="/css/ui-theme.css?v=54df0f20"><link rel="stylesheet" href="/css/ui-shell.css?v=61229677">
+<link rel="stylesheet" href="/css/mobile-ui.css?v=b2dd17f4"><link rel="stylesheet" href="/css/business-pages.css?v=015b92e3">
 <style>
 .dispatch-page{min-height:100dvh;padding:0 16px 88px;background:var(--zp-bg)}
 .dispatch-page .topbar{z-index:10}
 @media(max-width:380px){.dispatch-page{padding-left:12px;padding-right:12px}}
-.dispatch-intro{padding:18px 0 10px}
+/* 2026-10-29 顶栏下方统一 20px（.zp-scroll 上内边距为 0，这里补 14） */
+.dispatch-intro{padding:14px 0 10px}
 .dispatch-intro h2{margin:0;font-size:20px;line-height:1.35}
 .dispatch-intro p{margin:6px 0 0;color:var(--zp-muted);font-size:13px}
 .dispatch-section{margin:14px 0 0}

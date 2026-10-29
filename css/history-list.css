@@ -14,7 +14,7 @@ main.history-shell{
   padding-top:8px;
   padding-bottom:0;
 }
-.history-shell .topbar{margin-bottom:8px;z-index:100;background:var(--zp-bg)}
+.history-shell .topbar{margin-bottom:6px;z-index:100;background:var(--zp-bg)}
 .history-card{
   padding:0;
   background:transparent;
@@ -22,6 +22,9 @@ main.history-shell{
   border-radius:0;
   overflow:visible;
 }
+/* 2026-10-29：卡片 overflow:visible，首个 <hr> 的 margin-top:14px 会穿透到卡片外，
+   让首屏内容比其它页低 14px（顶栏下方实际 34px）。首条分隔线不再外扩。 */
+.history-card>.history-divider:first-child{margin-top:0}
 /* 工具栏语义按钮 · 浅色覆盖（P0-3） */
 /* 浅色主题 .card 通配规则（白底+阴影）会盖过 .history-card 的透明背景，
    导致历史查询页顶部出现一块带阴影的白色方块。此处显式压回无卡片样式。 */

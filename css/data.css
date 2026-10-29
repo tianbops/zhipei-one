@@ -108,7 +108,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 /* 2026-10-29：补回顶部安全区。此前 padding 写成 0，特异性(0,2,0)压过
    main > .topbar 的 var(--zp-safe-top)，导致本页顶栏是全站唯一贴着屏幕顶端的，
    比历史页/账号页高 24px，跨页切换时标题会跳。现与全局口径统一。 */
-.data-page .topbar{z-index:100;padding:var(--zp-safe-top) 0 8px;height:auto;min-height:var(--zp-header-height);background:var(--zp-bg);margin-bottom:8px}
+.data-page .topbar{z-index:100;padding:var(--zp-safe-top) 0 0;height:auto;min-height:var(--zp-header-height);background:var(--zp-bg);margin-bottom:6px}
 .data-page .topbar h1{margin:0;text-align:center;font-weight:650}
 .data-page .app-back{width:var(--zp-control-height);height:var(--zp-control-height);display:flex;align-items:center;justify-content:center;border:1px solid var(--zp-line);border-radius:11px;background:var(--zp-card-translucent-2);color:var(--zp-text);text-decoration:none;box-sizing:border-box}
 .data-page-menu-btn{width:var(--zp-control-height);height:var(--zp-control-height);display:flex;align-items:center;justify-content:center;border:1px solid var(--zp-line);border-radius:11px;background:var(--zp-card-translucent-2);color:var(--zp-text);text-decoration:none;box-sizing:border-box}
@@ -120,7 +120,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-summary{margin-top:10px;padding-top:0;border-top:0}
 .data-summary strong{font-size:17px;font-weight:600}
 .data-route-hint{margin-top:4px}
-.data-page-menu{position:fixed;top:calc(62px + var(--zp-safe-top));right:14px;z-index:130;width:108px;padding:6px;background:var(--zp-card-translucent);border:1px solid var(--zp-line);border-radius:12px;box-shadow:0 14px 34px var(--zp-shadow-menu)}
+.data-page-menu{position:fixed;top:calc(60px + var(--zp-safe-top));right:14px;z-index:130;width:108px;padding:6px;background:var(--zp-card-translucent);border:1px solid var(--zp-line);border-radius:12px;box-shadow:0 14px 34px var(--zp-shadow-menu)}
 .data-page-menu button{display:block;width:100%;height:var(--zp-control-height);border:0;border-radius:10px;background:transparent;color:var(--zp-text);text-align:left;padding:0 16px;font-size:14px}
 .data-page-menu button:active{background:var(--zp-primary);color:var(--zp-on-primary)}
 @media(min-width:600px){.data-page-menu{right:24px}}

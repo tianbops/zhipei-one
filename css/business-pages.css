@@ -1,6 +1,6 @@
 /* 智配One · 业务页面 2.0 */
 .page2{width:min(100%,430px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:max(14px,var(--zp-safe-top)) 16px calc(30px + env(safe-area-inset-bottom))}
-.account-page .topbar,.route-apply-page .topbar{margin-bottom:8px;z-index:100;background:var(--zp-bg)}
+.account-page .topbar,.route-apply-page .topbar{margin-bottom:6px;z-index:100;background:var(--zp-bg)}
 .account-page .topbar h1,.route-apply-page .topbar h1{margin:0;text-align:center;font-weight:700}
 .page2-card{background:var(--zp-card-translucent-2);border:1px solid var(--zp-tint);border-radius:16px;padding:16px;margin-bottom:10px}
 .page2-card h2{margin:0 0 8px;font-size:16px;line-height:22px}
@@ -31,7 +31,7 @@
 
 /* 我的页：与线路申请页统一布局、颜色与密度。 */
 .account-page{background:var(--zp-bg);padding-top:16px /* 页面底色随主题（Phase 4：不再借用 logo 底板） */;padding-bottom:calc(92px + env(safe-area-inset-bottom))}
-.account-page .topbar{margin-bottom:8px;z-index:100;background:var(--zp-bg)}
+.account-page .topbar{margin-bottom:6px;z-index:100;background:var(--zp-bg)}
 .account-page .topbar h1{margin:0;text-align:center;color:var(--zp-text);font-size:17px;line-height:23px;font-weight:700}
 .account-page .page2-card{background:var(--zp-card-translucent-2);border:1px solid var(--zp-tint);border-radius:16px;padding:14px;margin-bottom:8px;box-shadow:0 12px 30px var(--zp-shadow-md)}
 .account-page .page2-card h2{margin:0 0 6px;color:var(--zp-text);font-size:15px!important;line-height:21px!important;font-weight:700}

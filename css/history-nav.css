@@ -3,8 +3,8 @@
 .history-shell .app-back{color:var(--zp-text)}
 .history-shell .app-back:active{background:var(--zp-card-translucent);transform:none}
 .history-topbar-placeholder{
-  width:44px;
-  height:44px;
+  width:42px;
+  height:42px;
   display:block;
 }
 

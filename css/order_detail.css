@@ -1,5 +1,5 @@
 .order-shell{width:100%;max-width:520px;height:100vh;height:100dvh;margin:0 auto;padding:0 12px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden}
-.order-shell .topbar{flex:0 0 auto;min-height:var(--zp-header-height);background:var(--zp-bg);margin-bottom:8px}
+.order-shell .topbar{flex:0 0 auto;min-height:var(--zp-header-height);background:var(--zp-bg);margin-bottom:6px}
 .order-title{text-align:center;font-size:18px;line-height:24px;font-weight:700}
 .order-icon-btn{width:var(--zp-control-height);height:var(--zp-control-height);border:1px solid var(--zp-line);border-radius:13px;background:var(--zp-card-translucent);color:var(--zp-text);display:flex;align-items:center;justify-content:center}
 .order-icon-btn svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
@@ -250,7 +250,7 @@
 .order-shell{
   padding-top:0;
 }
-.order-shell .topbar{margin-bottom:12px}
+.order-shell .topbar{margin-bottom:6px}
 .order-title{
   font-size:20px;
   line-height:26px;

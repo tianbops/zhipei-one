@@ -1,6 +1,6 @@
 /* 智配One · 历史查询 · Android 2.0 */
 .history-shell{padding-bottom:0}
-.history-shell .topbar{margin-bottom:8px;z-index:100;background:var(--zp-bg)}
+.history-shell .topbar{margin-bottom:6px;z-index:100;background:var(--zp-bg)}
 .history-shell .topbar>strong{text-align:center;font-size:20px;line-height:26px;font-weight:700}
 
 .history-card{

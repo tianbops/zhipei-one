@@ -159,6 +159,10 @@
      内容实际高度：首页品牌区 42 + 8 = 50；其他页按钮行 42 + 8 = 50。
      这里既是下限也是「目标值」—— 内容低于它时补足到 50，保证各页顶栏等高。 */
   --zp-header-height:50px;
+  /* 顶栏两侧按钮的栅格列宽 = 顶栏内按钮的排版盒尺寸（42）。
+     与 main > .topbar .app-back 的 42 同源，改一处即可，避免「按钮小了、
+     栅格还留着 48」导致标题偏心的经典牵连。 */
+  --zp-topbar-btn:42px;
   --zp-control-height:48px;
   --zp-space-4:16px;
 
@@ -237,12 +241,16 @@ button:active{transform:translateY(0)}
    详见资产审计台账第二十四章。 */
 .topbar{
   display:grid;
-  grid-template-columns:var(--zp-control-height) 1fr var(--zp-control-height);
+  grid-template-columns:var(--zp-topbar-btn) 1fr var(--zp-topbar-btn);
   align-items:center;
   min-height:var(--zp-header-height);
   position:relative;
 }
 .topbar strong,.order-title{font-weight:650}
+/* 2026-10-29：隐私政策 / 服务条款两页此前没有标题规则，h1 用的是浏览器默认
+   32px + margin，把顶栏撑到 98px（全站唯一例外）。这里补上与其他页一致的
+   20/26、居中、零外边距；各页自己声明的字号（账号 17px 等）特异性更高，不受影响。 */
+.topbar h1{margin:0;font-size:20px;line-height:26px;font-weight:650;text-align:center;color:var(--zp-text)}
 /* 统一返回钩子 .app-back（阶段 6 · 5A）：link 型返回键统一为 48px 触控靶区；
    order 页返回为 <button id="backBtn>（由 ID 接线，不在此类）。 */
 .app-back{
