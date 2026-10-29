@@ -40,7 +40,7 @@
 .acct-row-icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .acct-glyph{font-size:var(--zp-fs-15);font-weight:var(--zp-fw-bold);letter-spacing:-1px}
 .acct-row-label{flex:none}
-.acct-row-value{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;color:var(--zp-muted);font-size:var(--zp-fs-14)}
+.acct-row-value{margin-left:auto;min-width:4em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;color:var(--zp-muted);font-size:var(--zp-fs-14)}
 .acct-arrow{flex:none;width:16px;height:16px;fill:none;stroke:var(--zp-muted);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .18s ease}
 /* 展开态箭头旋转 90°（与「字体大小」一致）；手风琴收起后由 aria-expanded 自动复位 */
 .acct-row[aria-expanded="true"] .acct-arrow{transform:rotate(90deg)}
@@ -131,6 +131,11 @@
   margin:18px 2px 8px;padding:0}
 .acct-about-name{margin:0;color:var(--zp-muted);font-size:var(--zp-fs-13);line-height:18px;font-weight:var(--zp-fw-bold)}
 .acct-about-ver{margin:0;color:var(--zp-muted);font-size:var(--zp-fs-12)}
+/* 首字对齐：版本文案与卡片值列首字同一竖线。
+   值列首字 = 值盒右缘(行右缘357 - 箭头16 - 间距12 = 329) - 4em(fs-14)；
+   品牌行右缘 372，与值盒右缘差 43px，按自身宽度 transform 平移补齐
+   （4em×14/12 换算成品牌行 fs-12 的 em），字号缩放下恒成立。 */
+.acct-about-ver #aboutVerText{display:inline-block;transform:translateX(calc(100% - 4em * 14 / 12 - 43px))}
 /* App 端壳版本落后于最新版时的更新徽标：主色胶囊（沿用唯一主色 --zp-primary），
    点击直接触发 APK 下载（原生 DownloadManager 接管）。类名避开 danger/delete
    子串（全站危险按钮兜底规则红线）；#aboutVersion 锚定提升特异性，压过
