@@ -112,7 +112,6 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 /* 2026-10-29：补回顶部安全区。此前 padding 写成 0，特异性(0,2,0)压过
    main > .topbar 的 var(--zp-safe-top)，导致本页顶栏是全站唯一贴着屏幕顶端的，
    比历史页/账号页高 24px，跨页切换时标题会跳。现与全局口径统一。 */
-.data-page .topbar{z-index:100;padding:var(--zp-safe-top) 0 0;height:auto;min-height:var(--zp-header-height);background:var(--zp-bg);margin-bottom:6px}
 .data-page .topbar h1{margin:0;text-align:center;font-weight:var(--zp-fw-semibold)}
 .data-page .app-back{width:var(--zp-control-height);height:var(--zp-control-height);display:flex;align-items:center;justify-content:center;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-translucent-2);color:var(--zp-text);text-decoration:none;box-sizing:border-box}
 .data-page-menu-btn{width:var(--zp-control-height);height:var(--zp-control-height);display:flex;align-items:center;justify-content:center;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-translucent-2);color:var(--zp-text);text-decoration:none;box-sizing:border-box}

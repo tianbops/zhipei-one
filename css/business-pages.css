@@ -1,6 +1,5 @@
 /* 智配One · 业务页面 2.0 */
 /* .page2 只作命名空间：外壳尺寸统一由 main.zp-shell 声明（2026-10-29 外壳收编）。 */
-.account-page .topbar,.route-apply-page .topbar{margin-bottom:6px;z-index:100;background:var(--zp-bg)}
 .account-page .topbar h1,.route-apply-page .topbar h1{margin:0;text-align:center;font-weight:var(--zp-fw-bold)}
 .page2-card{background:var(--zp-card-translucent-2);border:1px solid var(--zp-tint);border-radius:var(--zp-r-card);padding:16px;margin-bottom:10px}
 .page2-card h2{margin:0 0 8px;font-size:var(--zp-fs-18);line-height:24px}
@@ -34,7 +33,6 @@
 
 /* 我的页：与线路申请页统一布局、颜色与密度。 */
 .account-page{background:var(--zp-bg);padding-top:16px /* 页面底色随主题（Phase 4：不再借用 logo 底板） */;padding-bottom:calc(92px + env(safe-area-inset-bottom))}
-.account-page .topbar{margin-bottom:6px;z-index:100;background:var(--zp-bg)}
 .account-page .topbar h1{margin:0;text-align:center;color:var(--zp-text);font-size:var(--zp-fs-20);line-height:26px;font-weight:var(--zp-fw-bold)}
 .account-page .page2-card{background:var(--zp-card-translucent-2);border:1px solid var(--zp-tint);border-radius:var(--zp-r-card);padding:14px;margin-bottom:8px;box-shadow:0 12px 30px var(--zp-shadow-md)}
 /* .account-page .page2-card h2 已删：设置页没有 .page2-card 结构，规则零作用，
@@ -76,7 +74,6 @@
    本轮原样迁移，未作改写；它属于「底栏两套实现」的遗留问题，
    待底栏统一到单一组件后再删。 */
 /* .dispatch-page 只作命名空间：外壳尺寸统一由 main.zp-shell 声明。 */
-.dispatch-page .topbar{z-index:10}
 @media(max-width:380px){.dispatch-page{padding-left:12px;padding-right:12px}}
 /* 2026-10-29 顶栏下方统一 20px（.zp-scroll 上内边距为 0，这里补 14） */
 .dispatch-intro{padding:14px 0 10px}

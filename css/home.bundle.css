@@ -1494,13 +1494,6 @@ body.sheet-open .zp-nav{z-index:calc(var(--ui-z-modal) + 1)}
   z-index:var(--ui-z-float)!important;
 }
 
-/* --- 顶栏 --- */
-.home-app .topbar,
-.order-shell .topbar{
-  z-index:var(--ui-z-topbar)!important;
-}
-
-
 /* ================================================================
  * 弹窗样式收敛 4.0 · 单一来源
  * ----------------------------------------------------------------
@@ -1956,12 +1949,13 @@ main.zp-shell{
 }
 /* 顶栏：不再 sticky/fixed，作为不滚动的 flex 子项，绝无抖动；
    左右缩进由外壳的 padding 提供，这里只补顶部安全区与底色。 */
-/* 顶栏统一规范（单一来源）：安全区只在此声明一次，覆盖全部外壳
-   （zp-shell 与 order-shell 等）。各页旧类仅保留布局差异，不再重复声明安全区。 */
+/* 顶栏统一规范（单一来源）：安全区、底色、下间距、层级（--ui-z-topbar）只在此
+   声明一次，覆盖全部外壳（zp-shell 与 order-shell 等）。各页顶栏类只保留自身
+   布局差异（display / 对齐），不再重复声明这几项。 */
 main > .topbar{
   flex:0 0 auto;
   position:static;
-  z-index:100;
+  z-index:var(--ui-z-topbar);
   padding-top:var(--zp-safe-top);
   min-height:var(--zp-header-height);
   background:var(--zp-bg);
@@ -2020,7 +2014,7 @@ html[data-zp-boot="hop"] .login-shell{display:none!important}
 /* 2026-10-29：顶栏与「今日配送」之间保留一点距离感。
    间距 = 这里的 6px + .zp-scroll 的 14px = 20px（原来 8+14=22，几乎没变），
    只把多余的一层收掉 2px，不做大幅调整。 */
-.home-app .topbar{display:flex;justify-content:space-between;align-items:center;z-index:100;margin-bottom:6px}
+.home-app .topbar{display:flex;justify-content:space-between;align-items:center}
 .home-brand{display:flex;flex-direction:column;line-height:1.2}
 .home-brand strong{font-size:var(--zp-fs-18);font-weight:var(--zp-fw-bold);letter-spacing:.5px;color:var(--zp-text)}
 .home-brand span{margin-top:2px;font-size:var(--zp-fs-11);color:var(--zp-muted);letter-spacing:1.5px}

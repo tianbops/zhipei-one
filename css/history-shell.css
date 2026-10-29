@@ -1,5 +1,5 @@
 /* 智配One · 历史查询 · Android 2.0 */
-.history-shell .topbar{margin-bottom:6px;z-index:100;background:var(--zp-bg)}
+/* 顶栏（含 z-index）统一由 ui-shell 的 main > .topbar 声明，本文件不再重复。 */
 .history-shell .topbar>strong{text-align:center;font-size:var(--zp-fs-20);line-height:26px;font-weight:var(--zp-fw-bold)}
 
 .history-card{

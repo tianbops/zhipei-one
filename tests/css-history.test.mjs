@@ -39,8 +39,9 @@ assert.deepStrictEqual(refs, NAMES,
 const concat = NAMES.map((n) => readFileSync(`${root}css/${n}.css`, "utf8")).join("\n");
 const reps = [
   // 2026-10-29 外壳收编：.history-shell 只作命名空间，尺寸由 main.zp-shell 声明；
-  // 代表选择器改用它仍在承担的顶栏规则。
-  ".history-shell .topbar{",               // shell：顶栏
+  // 顶栏的位置/底色/层级也已收编到 ui-shell 的 main > .topbar（单一来源），
+  // 本页只保留标题排版，代表选择器取它仍在承担的规则。
+  ".history-shell .topbar>strong{",        // shell：顶栏标题排版
   ".history-swipe-row{",                   // shell：滑动行
   ".history-delete{",                      // shell：滑动删除动作条
   ".history-picker{",                      // shell：日历选择器

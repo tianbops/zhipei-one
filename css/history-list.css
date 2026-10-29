@@ -6,7 +6,6 @@
    用 main.history-shell（0,1,1）与 main.zp-shell 同特异性，靠后加载胜出，
    且不受 ui-unified 中 main.zp-shell 的 padding-top/bottom:0 影响。
    注意：板块自身不再重复缩进（见下方 .history-actions 等归零），否则会变成 16+16。 */
-.history-shell .topbar{margin-bottom:6px;z-index:100;background:var(--zp-bg)}
 .history-card{
   padding:0;
   background:transparent;

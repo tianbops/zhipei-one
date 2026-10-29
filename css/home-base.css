@@ -5,7 +5,7 @@
 /* 2026-10-29：顶栏与「今日配送」之间保留一点距离感。
    间距 = 这里的 6px + .zp-scroll 的 14px = 20px（原来 8+14=22，几乎没变），
    只把多余的一层收掉 2px，不做大幅调整。 */
-.home-app .topbar{display:flex;justify-content:space-between;align-items:center;z-index:100;margin-bottom:6px}
+.home-app .topbar{display:flex;justify-content:space-between;align-items:center}
 .home-brand{display:flex;flex-direction:column;line-height:1.2}
 .home-brand strong{font-size:var(--zp-fs-18);font-weight:var(--zp-fw-bold);letter-spacing:.5px;color:var(--zp-text)}
 .home-brand span{margin-top:2px;font-size:var(--zp-fs-11);color:var(--zp-muted);letter-spacing:1.5px}
