@@ -4,10 +4,10 @@
 /* 管理员密码输入框 3.4：强化输入区域、焦点状态与密码显隐操作。 */
 .reset-password-field{margin-top:16px}
 .reset-password-field>label{display:block;margin:0 0 8px;color:var(--zp-text);font-size:var(--zp-fs-14);line-height:20px;font-weight:var(--zp-fw-semibold)}
-.reset-password-control{position:relative;display:flex;align-items:center;min-height:62px;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-surface-2);transition:border-color .16s ease,box-shadow .16s ease}
-.reset-password-control:focus-within{border-color:var(--zp-focus-ring);box-shadow:0 0 0 3px var(--zp-focus-glow)}
+.reset-password-control{position:relative;display:flex;align-items:center;min-height:62px;border:1px solid var(--zp-input-line);border-radius:var(--zp-r-control);background:var(--zp-input-bg);transition:border-color .16s ease,box-shadow .16s ease}
+.reset-password-control:focus-within{border-color:var(--zp-input-focus);box-shadow:0 0 0 3px var(--zp-focus-glow)}
 .reset-password-control input{flex:1;min-width:0;width:100%;height:50px!important;padding:0 10px 0 14px!important;border:0!important;border-radius:var(--zp-r-control);background:transparent!important;color:var(--zp-text);font-size:var(--zp-fs-16);line-height:22px;letter-spacing:.02em;outline:none!important;box-shadow:none!important}
-.reset-password-control input::placeholder{color:var(--zp-muted);letter-spacing:0}
+.reset-password-control input::placeholder{color:var(--zp-input-placeholder);letter-spacing:0}
 /* 2026-10 触控靶区整改：36px → 48px（WCAG 2.5.5 / 安卓 48dp 建议线），
    容器 min-height 同步 52 → 62（48 + 上下 7px 呼吸位）。 */
 .reset-password-control button{flex:0 0 auto;min-width:54px;height:48px;margin:0 7px;padding:0 9px;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-secondary-bg);color:var(--zp-text);font-size:var(--zp-fs-13);line-height:20px;font-weight:var(--zp-fw-semibold)}
@@ -125,10 +125,10 @@
 .dialog.password-dialog p{margin-top:5px;font-size:var(--zp-fs-15);line-height:22px}
 .dialog.password-dialog .dialog-actions{margin-top:20px;gap:10px}
 .dialog.password-dialog .dialog-actions button{height:48px;font-size:var(--zp-fs-16);line-height:22px}
-.zp-password-control{position:relative;display:flex;align-items:center;width:100%;min-height:48px;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-surface-2);transition:border-color .16s ease,box-shadow .16s ease}
+.zp-password-control{position:relative;display:flex;align-items:center;width:100%;min-height:48px;border:1px solid var(--zp-input-line);border-radius:var(--zp-r-control);background:var(--zp-input-bg);transition:border-color .16s ease,box-shadow .16s ease}
 .zp-password-control:focus-within{border-color:var(--zp-focus-ring);box-shadow:0 0 0 3px var(--zp-focus-glow)}
 .zp-password-control input[type="password"],.zp-password-control input[type="text"]{display:block;flex:1;min-width:0;width:100%;height:48px!important;margin:0!important;padding:0 48px 0 12px!important;border:0!important;border-radius:var(--zp-r-control)!important;background:transparent!important;color:var(--zp-text);font-size:var(--zp-fs-16);line-height:22px;outline:none!important;box-shadow:none!important}
-.zp-password-control input::placeholder{color:var(--zp-muted)}
+.zp-password-control input::placeholder{color:var(--zp-input-placeholder)}
 .zp-password-eye{position:absolute;right:4px;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:38px;height:38px;padding:0;border:0;border-radius:var(--zp-r-mini);background:transparent;color:var(--zp-muted);cursor:pointer;-webkit-tap-highlight-color:transparent}
 .zp-password-eye svg{display:block;width:19px;height:19px;pointer-events:none}
 .zp-password-eye:active{background:var(--zp-secondary-active);color:var(--zp-text)}
@@ -144,10 +144,10 @@
 .dialog.username-dialog .dialog-actions button{height:48px;font-size:var(--zp-fs-16);line-height:22px}
 .dialog:not(.password-dialog) .username-field{margin-top:0}
 .username-field>label{display:block;margin:0 0 8px;color:var(--zp-text);font-size:var(--zp-fs-14);line-height:20px;font-weight:var(--zp-fw-semibold)}
-.username-control{display:flex;align-items:center;min-height:52px;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-surface-2);transition:border-color .16s ease,box-shadow .16s ease}
-.username-control:focus-within{border-color:var(--zp-focus-ring);box-shadow:0 0 0 3px var(--zp-focus-glow)}
+.username-control{display:flex;align-items:center;min-height:52px;border:1px solid var(--zp-input-line);border-radius:var(--zp-r-control);background:var(--zp-input-bg);transition:border-color .16s ease,box-shadow .16s ease}
+.username-control:focus-within{border-color:var(--zp-input-focus);box-shadow:0 0 0 3px var(--zp-focus-glow)}
 .username-control input{display:block;flex:1;min-width:0;width:100%;height:50px!important;margin:0!important;padding:0 14px!important;border:0!important;border-radius:var(--zp-r-control);background:transparent!important;color:var(--zp-text);font-size:var(--zp-fs-16);line-height:22px;letter-spacing:.01em;outline:none!important;box-shadow:none!important}
-.username-control input::placeholder{color:var(--zp-muted);letter-spacing:0}
+.username-control input::placeholder{color:var(--zp-input-placeholder);letter-spacing:0}
 .username-field .field-hint{margin-top:8px}
 
 /* 管理员用户管理 3.7：左滑已表达操作方向，禁止用户行末尾出现装饰箭头。 */

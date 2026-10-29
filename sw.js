@@ -9,7 +9,7 @@
  *   - 图片/字体       ：stale-while-revalidate（内容基本不变，秒开优先）
  * 资产缓存键用完整 URL（含 ?v=）精确匹配；页面缓存键用 pathname 规整（忽略 ?from 等查询）。
  */
-const VERSION = "zp-pwa-197";
+const VERSION = "zp-pwa-199";
 const STATIC_CACHE = VERSION + "-static";
 const PAGES_CACHE = VERSION + "-pages";
 const OFFLINE_URL = "/offline";
@@ -34,27 +34,27 @@ const PRECACHE = [
   "/assets/icons/apple-touch-icon.png?v=25f1ad28",
   "/assets/icons/icon-192.png?v=4d3f7fd9",
   "/css/account.css?v=594a4b32",
-  "/css/admin-base.css?v=b9c7dde8",
-  "/css/admin-forms.css?v=fa615cfd",
+  "/css/admin-base.css?v=6b4450e7",
+  "/css/admin-forms.css?v=4051cb83",
   "/css/admin-overlay.css?v=14bf1db5",
   "/css/admin-perf.css?v=5b3c0761",
-  "/css/app.css?v=e7614cfc",
-  "/css/business-pages.css?v=5d850351",
-  "/css/data.css?v=b85f745f",
+  "/css/app.css?v=d7ee1ea8",
+  "/css/business-pages.css?v=541a2ca8",
+  "/css/data.css?v=3b5571b3",
   "/css/doc-page.css?v=95aeca32",
   "/css/history-list.css?v=7986eed1",
   "/css/history-nav.css?v=8023e0c7",
-  "/css/history-overlays.css?v=02c008ed",
+  "/css/history-overlays.css?v=361a3fbc",
   "/css/history-shell.css?v=80ac7cdd",
-  "/css/home.bundle.css?v=516f7377",
-  "/css/mobile-ui.css?v=ea7345fd",
+  "/css/home.bundle.css?v=6e766272",
+  "/css/mobile-ui.css?v=ea6dd4a6",
   "/css/offline.css?v=f44fa920",
   "/css/order_detail.css?v=fbd6bf03",
-  "/css/ui-base.css?v=922bea8c",
-  "/css/ui-overlay.css?v=e3320930",
+  "/css/ui-base.css?v=2d2bcae0",
+  "/css/ui-overlay.css?v=54395092",
   "/css/ui-shell.css?v=7fb74058",
-  "/css/ui-theme.css?v=b5339c29",
-  "/css/zp-picker.css?v=efc1787d",
+  "/css/ui-theme.css?v=c306fcf7",
+  "/css/zp-picker.css?v=4a088057",
   "/js/admin/account.js?v=9c4b58ce",
   "/js/admin/boot.js?v=fd3194d5",
   "/js/admin/core.js?v=4cfb8bfe",
@@ -91,7 +91,7 @@ const PRECACHE = [
   "/js/ui/feedback.js?v=f8da0256",
   "/js/ui/nav-prefetch.js?v=7c589b89",
   "/js/ui/nav.js?v=fee2f25c",
-  "/js/ui/zp-picker.js?v=78935f03",
+  "/js/ui/zp-picker.js?v=1cdf0a93",
 ];
 /* PRECACHE-END */
 

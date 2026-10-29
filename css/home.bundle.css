@@ -282,7 +282,7 @@ body {
 }
 
 .auth-card input:focus {
-  border-color: var(--zp-focus-ring);
+  border-color: var(--zp-input-focus);
 }
 
 .auth-card .message {
@@ -408,18 +408,10 @@ body {
   color: var(--zp-text);
 }
 
-.data-textarea {
-  width: 100%;
-  min-height: 280px;
-  box-sizing: border-box;
-  border: 1px solid var(--zp-line);
-  border-radius:var(--zp-r-control);
-  background: var(--zp-bg);
-  color: var(--zp-text);
-  padding: 12px;
-  font-size:var(--zp-fs-15);
-  line-height: 1.6;
-}
+/* .data-textarea：2026-10-29 删除本处重复定义。
+   data.css 已给出数据页权威规格（min-height 230 / 14px / 输入框令牌），
+   这里原先是 280 / 15px / --zp-bg 底 —— 两份同选择器不同取值，最终按加载顺序
+   取 data.css，本块从未生效，只制造「改哪份才对」的困惑。 */
 
 .data-preview {
   margin-top: 10px;
@@ -593,7 +585,7 @@ body {
   border: 1px solid var(--zp-input-line);
   border-radius:var(--zp-r-control);
   outline: none;
-  background: var(--zp-surface);
+  background: var(--zp-input-bg);
   color: var(--zp-text);
   font: inherit;
   font-size:var(--zp-fs-16);
@@ -604,12 +596,12 @@ body {
 /* 原 var(--zp-soft)#999999 在浅色底上仅 2.6:1（WCAG AA 要求 4.5:1）；
    --zp-muted 浅色 #666666 = 5.7:1 达标，深色自动取 #94A3B8 同样更清晰 */
 .login-field input::placeholder {
-  color: var(--zp-muted);
+  color: var(--zp-input-placeholder);
 }
 
 .login-field input:focus {
-  border-color: var(--zp-focus-ring);
-  background: var(--zp-surface);
+  border-color: var(--zp-input-focus);
+  background: var(--zp-input-bg);
 }
 
 .login-message {
@@ -768,6 +760,25 @@ body {
      深一档才能与白底/浅灰页面背景拉开层次（原 #EEEEEE 边在白底上几乎隐形）；
      深色覆盖见 ui-theme.css。取值刻意避开 retired 色板中的旧浅灰蓝灰族。 */
   --zp-input-line:#C5CCD4;
+  /* ===== 输入框令牌组（2026-10-29 统一：一处定义，全站一个外观）=====
+     背景：输入框曾有四套并存 —— 登录框（白底 + #C5CCD4 边）、pages/* 的 !important
+     兜底（同白底）、.zp-password-control 包裹层（卡片同色底 + #EEEEEE 边，在灰卡上
+     等于隐形）、管理端（白底但沿用 --zp-line #EEEEEE 边）、data 页（--zp-surface-2 灰底）。
+     同一屏里「当前密码」无框、「新用户名」白框，正是四套规格并排的结果。
+     口径：输入框 = 比所在卡片亮一档的实色 + 明确描边，深浅两套主题同一条规则：
+       浅色 卡片 #F2F3F5 → 输入框 #FFFFFF，边 #C5CCD4
+       深色 卡片 #121826 → 输入框 #1E293B，边 #334155
+     禁用态不再靠整块 opacity（会把边框一起淡掉），改为独立底色/描边/文字色。 */
+  --zp-input-bg:#FFFFFF;
+  --zp-input-bg-disabled:#F2F3F5;
+  --zp-input-line-disabled:#D0D5DD;
+  --zp-input-placeholder:#666666;   /* 与 --zp-muted 同值：#999 在浅底仅 2.6:1，不达 WCAG AA */
+  --zp-input-text-disabled:#B5BCC4;
+  /* 输入框聚焦描边：品牌蓝一档（浅色 #1677FF / 深色 #60A5FA）。
+     与 focus-visible 的 --zp-focus（中性 #666/#F1F5F9，供键盘导航描边）分开：
+     前者表达「正在编辑」，后者表达「焦点在哪」，两者语义不同，此前混用导致
+     同一输入框在登录页聚焦变灰、在数据页变蓝。 */
+  --zp-input-focus:#1677FF;
   --zp-text:#111111;
   --zp-muted:#666666;
   --zp-soft:#999999;
@@ -1133,9 +1144,39 @@ button:active{transform:translateY(0)}
 .upload-source-menu,.upload-processing{background:transparent}
 .sheet-handle{opacity:.8}
 
-/* 表单统一：标签、输入、错误信息节奏一致 */
+/* ===== 表单控件基座（2026-10-29 输入框统一，替代 mobile-ui 的 !important 兜底）=====
+   为什么从 mobile-ui 搬到这里：mobile-ui 只被 pages/* 加载，登录/注册/初始化/管理端
+   拿不到同一套兜底，于是每处各写一份；且原实现用 !important 压页面级规则，页面只好
+   再加一条更高特异性的声明反压，形成来回打架。收敛到 ui-base（唯一全站加载的样式）
+   后，页面级文件只负责布局（宽度、间距），颜色一律取本组令牌，不再重复声明。
+
+   排除范围：range（滑块自带轨道）、file（隐藏的原生选择器）、checkbox/radio（原生控件），
+   它们不是「文本框」，套边框会画出多余方框。
+   特异性刻意保持元素级（0,0,1），让页面级只写布局时不会互相压制；
+   颜色类声明由本组令牌唯一供给，页面文件不再重复。 */
 input,select,textarea{
-  border-radius:var(--zp-r-control)!important;
+  border:1px solid var(--zp-input-line);
+  border-radius:var(--zp-r-control);
+  background-color:var(--zp-input-bg);
+  color:var(--zp-text);
+}
+input[type="range"],input[type="file"],input[type="checkbox"],input[type="radio"]{
+  border:0;border-radius:0;background-color:transparent;
+}
+input[type="range"]:focus,input[type="file"]:focus{box-shadow:none}
+input:focus,select:focus,textarea:focus{
+  border-color:var(--zp-input-focus);
+  box-shadow:var(--zp-focus-glow);
+  outline:none;
+}
+input::placeholder,
+textarea::placeholder{color:var(--zp-input-placeholder);opacity:1}
+/* 禁用态：保留描边与可读文字，只把「可输入」的信号收掉（不再整块 opacity） */
+input:disabled,select:disabled,textarea:disabled{
+  background-color:var(--zp-input-bg-disabled);
+  border-color:var(--zp-input-line-disabled);
+  color:var(--zp-input-text-disabled);
+  opacity:1;
 }
 /* 跨页容器 / 行 / 对话框的令牌基座（Phase 4）：
    原由 ui-theme 浅色补丁逐条 :root 前缀覆盖，基底反转后收敛到全局层，
@@ -1253,21 +1294,24 @@ input,select,textarea{
 /* 全局快速滚动箭头已下线（产品决策）：不再注入 ↑/↓ 悬浮按钮。 */
 
 
-/* 全局密码显隐 2.7：所有密码输入统一使用小眼睛，空值时隐藏，输入后即时出现。 */
+/* 全局密码显隐 2.7：所有密码输入统一使用小眼睛，空值时隐藏，输入后即时出现。
+   2026-10-29 外观收编：包裹层原为「卡片同色底 + --zp-line 边」，夹在 #F2F3F5 卡片里
+   边线几乎不可见，与本页裸输入框（白底 + #C5CCD4 边）并排成两种控件。现改为与
+   .zp-input 基座同一组令牌，包裹层视觉即输入框视觉。 */
 .zp-password-control{
   position:relative;display:flex;align-items:center;width:100%;min-height:48px;
-  border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-translucent-2);
+  border:1px solid var(--zp-input-line);border-radius:var(--zp-r-control);background:var(--zp-input-bg);
   transition:border-color .16s ease,box-shadow .16s ease;
 }
-.zp-password-control:focus-within{border-color:var(--zp-focus-ring);box-shadow:var(--zp-focus-glow)}
+.zp-password-control:focus-within{border-color:var(--zp-input-focus);box-shadow:var(--zp-focus-glow)}
 .zp-password-control input[type="password"],
 .zp-password-control input[type="text"]{
   display:block;flex:1;min-width:0;width:100%;height:48px!important;min-height:48px!important;
-  margin:0!important;padding:0 48px 0 12px!important;border:0!important;border-radius:var(--zp-r-control)!important;
+  margin:0!important;padding:0 48px 0 16px!important;border:0!important;border-radius:var(--zp-r-control)!important;
   outline:none!important;box-shadow:none!important;background:transparent!important;color:var(--zp-text);
-  font-size:var(--zp-fs-16);line-height:22px;letter-spacing:.01em;
+  font-size:var(--zp-fs-15);line-height:22px;letter-spacing:.01em;
 }
-.zp-password-control input::placeholder{color:var(--zp-soft)}
+.zp-password-control input::placeholder{color:var(--zp-input-placeholder)}
 .zp-password-eye{
   position:absolute;right:4px;top:50%;transform:translateY(-50%);
   display:flex;align-items:center;justify-content:center;width:38px;height:38px;
@@ -1592,13 +1636,16 @@ html[data-zp-native="1"]{--zp-safe-top:8px}
 /* --- 5.6 焦点可见环：全站统一（键盘/外接设备可访问性） --- */
 button:focus-visible,
 a:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible,
 [tabindex]:focus-visible{
   outline:2px solid var(--zp-focus);
   outline-offset:2px;
 }
+/* 输入类控件的焦点指示由「描边变色 + --zp-focus-glow 光晕」承担（见 ui-base 表单基座），
+   不再叠加 outline：两者同时出现会画成「黑环套蓝环」的双框。此处显式声明，
+   防止上组选择器或 UA 默认把 outline 加回文本框。 */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible{outline:none}
 
 /* --- 5.7 禁用态：统一配色与光标 --- */
 button:disabled,
@@ -1718,6 +1765,14 @@ textarea:disabled,
      避免深底上的行间线亮成描边（浅色取值见 ui-base.css）。 */
   --zp-line-inset:#253345;
   --zp-input-line:var(--zp-line);
+  /* 输入框：卡片 #121826 上亮一档的实色（与浅色「白卡上纯白」同一条规则），
+     边取 --zp-line #334155 保证轮廓可见；禁用态整档压暗但保留描边。 */
+  --zp-input-bg:#1E293B;
+  --zp-input-bg-disabled:#182130;
+  --zp-input-line-disabled:#2A3648;
+  --zp-input-placeholder:#94A3B8;   /* 与深色 --zp-muted 同值 */
+  --zp-input-text-disabled:#64748B;
+  --zp-input-focus:#60A5FA;
   --zp-text:#F1F5F9;
   --zp-muted:#94A3B8;
   --zp-soft:#64748B;
@@ -1834,17 +1889,11 @@ a[class*="danger"]:active,
   color:var(--zp-error);
 }
 
-/* 登录输入框深色恢复：app.css 浅色基底已改为白底 + --zp-input-line 边（浅色对比度
-   修复，见该处注释）。深色下边框令牌 --zp-input-line 已覆盖为 --zp-line，无需重复；
-   此处仅恢复半透明底与聚焦实底，保持原深色观感。 */
-:root[data-zp-theme="dark"] .login-field input {
-  color-scheme: dark;
-  background: var(--zp-card-translucent-2);
-}
-:root[data-zp-theme="dark"] .login-field input:focus {
-  color-scheme: dark;
-  background: var(--zp-surface);
-}
+/* 登录输入框深色：2026-10-29 移除本条补丁。
+   原先把深色底恢复为 --zp-card-translucent-2（≈#121826，与卡片同色）与聚焦实底，
+   而其它页输入框是 --zp-surface #1E293B —— 同一个 .login-field 输入框在深色下
+   「登录页像凹槽、注册页像灰块」。现由 --zp-input-bg 一处供给（深色 #1E293B），
+   聚焦色同源 --zp-input-focus，故不再需要页面级深色覆盖。 */
 
 /* ============================================================
    统一应用外壳 zp-shell（阶段 7 · 抖动修复 / 全局统一 UI）
@@ -1990,9 +2039,9 @@ html[data-zp-boot="hop"] .login-shell{display:none!important}
 /* 粘贴文本录入面板：与来源菜单同一容器风格，纯令牌配色（组件层零字面量） */
 .upload-text-panel{margin:0;padding:0;background:transparent}
 .upload-text-panel[hidden]{display:none}
-.waybill-text-input{display:block;width:100%;box-sizing:border-box;min-height:180px;margin:0 0 8px;padding:12px 14px;border:1px solid var(--zp-input-line);border-radius:var(--zp-r-control);background:var(--zp-surface);color:var(--zp-text);font:inherit;font-size:var(--zp-fs-15);line-height:22px;resize:vertical;-webkit-tap-highlight-color:transparent}
-.waybill-text-input::placeholder{color:var(--zp-muted)}
-.waybill-text-input:focus{outline:none;border-color:var(--zp-primary)}
+.waybill-text-input{display:block;width:100%;box-sizing:border-box;min-height:180px;margin:0 0 8px;padding:12px 14px;border:1px solid var(--zp-input-line);border-radius:var(--zp-r-control);background:var(--zp-input-bg);color:var(--zp-text);font:inherit;font-size:var(--zp-fs-15);line-height:22px;resize:vertical;-webkit-tap-highlight-color:transparent}
+.waybill-text-input::placeholder{color:var(--zp-input-placeholder)}
+.waybill-text-input:focus{outline:none;border-color:var(--zp-input-focus)}
 .text-panel-meta{display:flex;align-items:center;justify-content:space-between;min-height:28px;color:var(--zp-muted);font-size:var(--zp-fs-12)}
 .text-meta-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
 /* 清空：仅在文本框有内容时出现（空面板不显示无效按钮，避免多一个灰按钮干扰） */

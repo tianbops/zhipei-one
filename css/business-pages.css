@@ -5,16 +5,19 @@
 .page2-card{background:var(--zp-card-translucent-2);border:1px solid var(--zp-tint);border-radius:var(--zp-r-card);padding:16px;margin-bottom:10px}
 .page2-card h2{margin:0 0 8px;font-size:var(--zp-fs-16);line-height:22px}
 .page2-label{display:block;margin-top:13px;color:var(--zp-muted);font-size:var(--zp-fs-13)}
-.page2-label select,.page2-label input,.page2-label textarea,.page2-label button.zp-pk-trigger{display:block;width:100%;min-height:48px;margin-top:6px;padding:0 16px;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-translucent-2);color:var(--zp-text)}
-/* zp-picker 触发器顶替原生 select：外观继承上述控件样式，内部仍需 flex 排布文字与箭头 */
-.page2-label button.zp-pk-trigger{display:flex}
+/* 表单控件只保留布局（宽、高、间距）；底色 / 描边 / 圆角 / 文字色统一由 ui-base 的
+   「表单控件基座」供给（2026-10-29）。此前这里写死「--zp-card-translucent-2 底 +
+   --zp-line 边」，在灰卡上等于隐形，且与登录框白底规格分叉。 */
+.page2-label select,.page2-label input,.page2-label textarea,.page2-label button.zp-pk-trigger{display:block;width:100%;min-height:48px;margin-top:6px;padding:0 16px}
+/* zp-picker 触发器顶替原生 select：外观取同一组输入框令牌，内部仍需 flex 排布文字与箭头 */
+.page2-label button.zp-pk-trigger{display:flex;border:1px solid var(--zp-input-line);border-radius:var(--zp-r-control);background:var(--zp-input-bg);color:var(--zp-text)}
 .page2-primary,.page2-secondary{width:100%;min-height:48px;margin-top:14px;border-radius:var(--zp-r-control);font-size:var(--zp-fs-15)}
 .page2-primary{border:1px solid var(--zp-primary);background:var(--zp-primary);color:var(--zp-on-primary)}
 .page2-secondary{border:1px solid var(--zp-line);background:var(--zp-card-translucent-2);color:var(--zp-text)}
 .page2-primary:disabled,.page2-secondary:disabled{opacity:.45}
 .page2-soft{margin:4px 0 0;color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:18px}
 .page2-danger{color:var(--zp-danger)!important}
-@media(max-width:380px){.page2{padding-left:12px;padding-right:12px}.page2-card{padding:15px}}.request-row{padding:12px 0;border-bottom:1px solid var(--zp-divider);font-size:var(--zp-fs-13);line-height:21px;color:var(--zp-muted)}.request-row:last-child{border-bottom:0}.request-row strong{color:var(--zp-text)}.data-help{margin:6px 0 0;color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:19px}.data-import{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;background:var(--zp-scrim)}.data-import-panel{width:min(100%,430px);max-height:88vh;overflow:auto;padding:18px;border:1px solid var(--zp-line);border-radius:var(--zp-r-dialog);background:var(--zp-card-translucent)}.data-textarea{width:100%;min-height:190px;margin-top:10px;padding:12px;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-translucent-2);color:var(--zp-text);resize:vertical}.data-import-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.data-import-actions button{min-height:var(--zp-control-height);border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-translucent-2);color:var(--zp-text)}.data-import-actions button:last-child{background:var(--zp-primary);border-color:var(--zp-primary);color:var(--zp-on-primary)}.account-row{display:flex;justify-content:space-between;align-items:center;min-height:48px;border-bottom:1px solid var(--zp-divider);font-size:var(--zp-fs-13);color:var(--zp-muted)}.account-row:last-child{border-bottom:0}.account-row strong{color:var(--zp-text)}.account-logout{margin-top:0}.empty{padding:30px 10px;text-align:center;color:var(--zp-muted)}
+@media(max-width:380px){.page2{padding-left:12px;padding-right:12px}.page2-card{padding:15px}}.request-row{padding:12px 0;border-bottom:1px solid var(--zp-divider);font-size:var(--zp-fs-13);line-height:21px;color:var(--zp-muted)}.request-row:last-child{border-bottom:0}.request-row strong{color:var(--zp-text)}.data-help{margin:6px 0 0;color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:19px}.data-import{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;background:var(--zp-scrim)}.data-import-panel{width:min(100%,430px);max-height:88vh;overflow:auto;padding:18px;border:1px solid var(--zp-line);border-radius:var(--zp-r-dialog);background:var(--zp-card-translucent)}.data-textarea{width:100%;min-height:190px;margin-top:10px;padding:12px;resize:vertical}.data-import-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.data-import-actions button{min-height:var(--zp-control-height);border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-translucent-2);color:var(--zp-text)}.data-import-actions button:last-child{background:var(--zp-primary);border-color:var(--zp-primary);color:var(--zp-on-primary)}.account-row{display:flex;justify-content:space-between;align-items:center;min-height:48px;border-bottom:1px solid var(--zp-divider);font-size:var(--zp-fs-13);color:var(--zp-muted)}.account-row:last-child{border-bottom:0}.account-row strong{color:var(--zp-text)}.account-logout{margin-top:0}.empty{padding:30px 10px;text-align:center;color:var(--zp-muted)}
 /* 线路申请页：保持现有视觉，只压缩占用并将维护申请改为折叠面板 */
 .route-apply-page .page2-card{padding:14px;margin-bottom:8px}
 .route-apply-page .page2-card h2{font-size:var(--zp-fs-15);margin-bottom:6px}
@@ -39,8 +42,7 @@
 .account-page .account-row{min-height:46px;border-bottom:0;color:var(--zp-muted);font-size:var(--zp-fs-15);line-height:22px}
 .account-page .account-row strong{color:var(--zp-text);font-size:var(--zp-fs-15);font-weight:var(--zp-fw-semibold);text-align:right}
 .account-page .page2-label{display:block;margin-top:10px;color:var(--zp-muted);font-size:var(--zp-fs-13);line-height:20px}
-.account-page .page2-label input{display:block;width:100%;min-height:48px;margin-top:5px;padding:0 14px;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-translucent-2);color:var(--zp-text);font-size:var(--zp-fs-15)}
-.account-page .page2-label input::placeholder{color:var(--zp-muted)}
+.account-page .page2-label input{display:block;width:100%;min-height:48px;margin-top:5px;font-size:var(--zp-fs-15)}
 .account-page .page2-primary,.account-page .page2-secondary{min-height:var(--zp-control-height);margin-top:12px;border-radius:var(--zp-r-control);font-size:var(--zp-fs-15);font-weight:var(--zp-fw-semibold)}
 .account-page .page2-primary{background:var(--zp-primary);border:1px solid var(--zp-primary);color:var(--zp-on-primary)}
 .account-page .account-danger-box{padding:12px 14px 14px;border-top:1px solid var(--zp-tint)}

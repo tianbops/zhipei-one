@@ -16,6 +16,14 @@
      避免深底上的行间线亮成描边（浅色取值见 ui-base.css）。 */
   --zp-line-inset:#253345;
   --zp-input-line:var(--zp-line);
+  /* 输入框：卡片 #121826 上亮一档的实色（与浅色「白卡上纯白」同一条规则），
+     边取 --zp-line #334155 保证轮廓可见；禁用态整档压暗但保留描边。 */
+  --zp-input-bg:#1E293B;
+  --zp-input-bg-disabled:#182130;
+  --zp-input-line-disabled:#2A3648;
+  --zp-input-placeholder:#94A3B8;   /* 与深色 --zp-muted 同值 */
+  --zp-input-text-disabled:#64748B;
+  --zp-input-focus:#60A5FA;
   --zp-text:#F1F5F9;
   --zp-muted:#94A3B8;
   --zp-soft:#64748B;
@@ -132,14 +140,8 @@ a[class*="danger"]:active,
   color:var(--zp-error);
 }
 
-/* 登录输入框深色恢复：app.css 浅色基底已改为白底 + --zp-input-line 边（浅色对比度
-   修复，见该处注释）。深色下边框令牌 --zp-input-line 已覆盖为 --zp-line，无需重复；
-   此处仅恢复半透明底与聚焦实底，保持原深色观感。 */
-:root[data-zp-theme="dark"] .login-field input {
-  color-scheme: dark;
-  background: var(--zp-card-translucent-2);
-}
-:root[data-zp-theme="dark"] .login-field input:focus {
-  color-scheme: dark;
-  background: var(--zp-surface);
-}
+/* 登录输入框深色：2026-10-29 移除本条补丁。
+   原先把深色底恢复为 --zp-card-translucent-2（≈#121826，与卡片同色）与聚焦实底，
+   而其它页输入框是 --zp-surface #1E293B —— 同一个 .login-field 输入框在深色下
+   「登录页像凹槽、注册页像灰块」。现由 --zp-input-bg 一处供给（深色 #1E293B），
+   聚焦色同源 --zp-input-focus，故不再需要页面级深色覆盖。 */

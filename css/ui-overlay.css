@@ -252,13 +252,16 @@
 /* --- 5.6 焦点可见环：全站统一（键盘/外接设备可访问性） --- */
 button:focus-visible,
 a:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible,
 [tabindex]:focus-visible{
   outline:2px solid var(--zp-focus);
   outline-offset:2px;
 }
+/* 输入类控件的焦点指示由「描边变色 + --zp-focus-glow 光晕」承担（见 ui-base 表单基座），
+   不再叠加 outline：两者同时出现会画成「黑环套蓝环」的双框。此处显式声明，
+   防止上组选择器或 UA 默认把 outline 加回文本框。 */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible{outline:none}
 
 /* --- 5.7 禁用态：统一配色与光标 --- */
 button:disabled,

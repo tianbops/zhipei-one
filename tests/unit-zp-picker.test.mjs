@@ -170,18 +170,18 @@ test("triggerSurfaceStyle：无背景时输出完整表面声明（var() 动态�
   const css = core.triggerSurfaceStyle(false, false);
   assert.equal(
     css,
-    "background:var(--zp-surface-2);border:1px solid var(--zp-line);border-radius:11px;color:var(--zp-text)"
+    "background:var(--zp-input-bg);border:1px solid var(--zp-input-line);border-radius:var(--zp-r-control);color:var(--zp-text)"
   );
   // 必须覆盖 background/border/radius/color 四项：UA 绘制同时盖过背景与边框，
   // 文字色虽走作者样式仍显式声明兜底；任一项缺失都算修复不完整。
-  for (const decl of ["background:var(--zp-surface-2)", "border:1px solid var(--zp-line)", "border-radius:11px", "color:var(--zp-text)"]) {
+  for (const decl of ["background:var(--zp-input-bg)", "border:1px solid var(--zp-input-line)", "border-radius:var(--zp-r-control)", "color:var(--zp-text)"]) {
     assert.ok(css.includes(decl), "缺少声明：" + decl);
   }
 });
 
-test("triggerSurfaceStyle：.page2-label 内镜像页面定制背景，不破坏业务覆盖", () => {
+test("triggerSurfaceStyle：.page2 内外同值（触发器与输入框同族）", () => {
   const css = core.triggerSurfaceStyle(false, true);
-  assert.ok(css.startsWith("background:var(--zp-card-translucent-2);"), "须镜像 business-pages.css 的页面定制值");
-  assert.ok(!css.includes("--zp-surface-2"), "不得把页面定制背景改写为通用表面色");
-  assert.ok(css.includes("border:1px solid var(--zp-line)") && css.includes("color:var(--zp-text)"), "边框/文字色与通用路径一致");
+  assert.equal(css, core.triggerSurfaceStyle(false, false), "同一控件族不得按容器分叉出第二套底色");
+  assert.ok(!css.includes("--zp-card-translucent-2"), "不得回退到旧的卡片底色（灰卡上等于隐形）");
+  assert.ok(css.includes("border:1px solid var(--zp-input-line)"), "描边须与输入框同源");
 });

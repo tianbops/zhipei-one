@@ -6,7 +6,7 @@
 .shell{min-height:100dvh;padding:var(--zp-safe-top) 14px calc(28px + env(safe-area-inset-bottom))}.panel{width:min(100%,680px);margin:auto}.head{min-height:42px;padding:0 2px}.head img{width:36px;height:36px;padding:5px;background:var(--zp-logo-plate);border-radius:var(--zp-r-mini)}.head h1{font-size:var(--zp-fs-20);line-height:26px}/* 顶栏按钮 42px：与业务端同口径，顶栏 = 8px 呼吸位 + 42 = 50px；
    可点区域由下面的 ::after 补回 44×44。 */
 .menu-btn{position:relative;width:42px;height:42px;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-surface)}
-.menu-btn::after{content:"";position:absolute;inset:-1px}.tabs{border-bottom:1px solid var(--zp-line)}.tab{height:46px;font-size:var(--zp-fs-16);line-height:22px}.viewport{margin-top:20px}.title{font-size:var(--zp-fs-18);line-height:24px;margin-bottom:10px}.search input,.field input,.field select{height:48px;background:var(--zp-surface);border-color:var(--zp-line);border-radius:var(--zp-r-control)}.row,.route,.card,.invite{background:var(--zp-card-translucent-2);border-color:var(--zp-tint);border-radius:var(--zp-r-card)}.row .content{background:var(--zp-bg);min-height:58px}.route-content{background:var(--zp-bg)}.dialog-bg{background:var(--zp-scrim)}.dialog{background:var(--zp-card-translucent-2);border-color:var(--zp-line);border-radius:var(--zp-r-dialog)}.dialog-actions button{height:48px}.cancel{order:0}.ok{order:1}.toast{background:var(--zp-secondary-active)}
+.menu-btn::after{content:"";position:absolute;inset:-1px}.tabs{border-bottom:1px solid var(--zp-line)}.tab{height:46px;font-size:var(--zp-fs-16);line-height:22px}.viewport{margin-top:20px}.title{font-size:var(--zp-fs-18);line-height:24px;margin-bottom:10px}.search input,.field input,.field select{height:48px;background:var(--zp-input-bg);border-color:var(--zp-input-line);border-radius:var(--zp-r-control)}.row,.route,.card,.invite{background:var(--zp-card-translucent-2);border-color:var(--zp-tint);border-radius:var(--zp-r-card)}.row .content{background:var(--zp-bg);min-height:58px}.route-content{background:var(--zp-bg)}.dialog-bg{background:var(--zp-scrim)}.dialog{background:var(--zp-card-translucent-2);border-color:var(--zp-line);border-radius:var(--zp-r-dialog)}.dialog-actions button{height:48px}.cancel{order:0}.ok{order:1}.toast{background:var(--zp-secondary-active)}
 .head{display:flex;align-items:center;gap:11px;padding:0 2px}
 .head .head-info{min-width:0;flex:1}.head h1{margin:0;line-height:22px;font-weight:var(--zp-fw-bold)}
 .head .who{display:flex;align-items:baseline;gap:8px;min-width:0;color:var(--zp-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -28,7 +28,7 @@
 /* 诊断/学习隔离筛选行里的下拉框：此前每处靠内联 style 写一遍完整控件样式
    （height/padding/background/border/radius/color 共 6 条 × 3 处），
    现收进本层，HTML 只保留 flex 比例（那是布局，不是控件规格）。 */
-.search select{height:48px;padding:0 10px;background:var(--zp-surface);border:1px solid var(--zp-line);border-radius:var(--zp-r-control);color:var(--zp-text)}
+.search select{height:48px;padding:0 10px;background:var(--zp-input-bg);border:1px solid var(--zp-input-line);border-radius:var(--zp-r-control);color:var(--zp-text)}
 .row,.route,.card,.invite{border:1px solid var(--zp-line);box-shadow:none}.invite{position:relative;overflow:hidden;touch-action:pan-y;-webkit-user-select:none;user-select:none}.invite-head{display:flex;align-items:center;gap:8px}.invite-head .code{margin-right:auto}.invite-head .q-badge{margin-left:auto}.invite-head .copy{flex:0 0 auto}.invite-content{position:relative;z-index:2;background:var(--zp-bg);padding:13px 14px;transition:transform .18s ease}.invite-actions{position:absolute;inset:0 0 0 auto;width:148px;display:flex;align-items:stretch;z-index:1;margin:0;padding:0;border:0}.invite-actions .small-action{width:74px;min-width:0;border:0;border-radius:0;background:var(--zp-secondary-active);color:var(--zp-text)}.invite-actions .small-action.danger{background:var(--zp-secondary-bg);border-color:transparent;color:var(--zp-error)}.invite.open .invite-content{transform:translateX(-148px)}.invite-actions .small-action{touch-action:manipulation;-webkit-tap-highlight-color:transparent}.row{margin-bottom:6px;overflow:hidden}.row .content{min-height:54px}
 .row .main strong{font-size:var(--zp-fs-14)}.row .meta,.meta{color:var(--zp-soft);font-size:var(--zp-fs-12)}
 .route{margin-bottom:7px;background:var(--zp-card-translucent-2);overflow:hidden}.route-content{padding:13px 14px;background:transparent}
@@ -79,8 +79,8 @@ body{touch-action:pan-y}
 .sub-title{font-size:var(--zp-fs-14);font-weight:var(--zp-fw-bold);margin:16px 0 8px;color:var(--zp-muted)}
 .search{display:flex;align-items:center;gap:8px}
 .search>span{color:var(--zp-soft);font-size:var(--zp-fs-20);line-height:1}
-.search input{flex:1;min-width:0;border:1px solid var(--zp-line);color:var(--zp-text);outline:none}
-.search input::placeholder{color:var(--zp-muted)}
+.search input{flex:1;min-width:0;border:1px solid var(--zp-input-line);color:var(--zp-text);outline:none}
+.search input::placeholder{color:var(--zp-input-placeholder)}
 input,select{color:var(--zp-text);outline:none}
 select option{background:var(--zp-secondary-bg);color:var(--zp-text)}
 /* P2-12 收口：移除全屏遮罩上的 backdrop-filter。
@@ -92,8 +92,8 @@ select option{background:var(--zp-secondary-bg);color:var(--zp-text)}
 .dialog{width:min(100%,380px);max-height:88dvh;overflow:auto;background:var(--zp-card-translucent-2);border:1px solid var(--zp-line);border-radius:var(--zp-r-dialog);padding:18px;box-shadow:0 18px 50px var(--zp-shadow-lg)}
 /* 弹窗内表单控件通栏：下拉框/输入框不再窄条贴左，与弹窗同宽，观感整齐 */
 /* 统一尺寸/字号/边框/padding：font-size>=16px 防安卓聚焦自动放大视口（此前 13.3px 导致聚焦的框明显变大） */
-.dialog .field input,.dialog .field select{width:100%;height:48px;padding:0 12px;font-size:var(--zp-fs-16);line-height:normal;text-align:center;text-align-last:center;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);appearance:none;-webkit-appearance:none}
-.dialog .field input:focus,.dialog .field select:focus{border-width:1px}
+.dialog .field input,.dialog .field select{width:100%;height:48px;padding:0 12px;font-size:var(--zp-fs-16);line-height:normal;text-align:center;text-align-last:center;border:1px solid var(--zp-input-line);border-radius:var(--zp-r-control);appearance:none;-webkit-appearance:none}
+.dialog .field input:focus,.dialog .field select:focus{border-color:var(--zp-input-focus)}
 .dialog .field select{background-image:linear-gradient(45deg,transparent 50%,var(--zp-muted) 50%),linear-gradient(135deg,var(--zp-muted) 50%,transparent 50%);background-position:calc(100% - 20px) 50%,calc(100% - 14px) 50%;background-size:6px 6px;background-repeat:no-repeat}
 .dialog .field input[type=number]{appearance:textfield;-webkit-appearance:textfield;-moz-appearance:textfield}
 .dialog-actions button{color:var(--zp-text);border:1px solid var(--zp-line);background:var(--zp-secondary-bg)}

@@ -49,16 +49,16 @@
 .history-export-row span{font-size:var(--zp-fs-15);color:var(--zp-text);font-weight:var(--zp-fw-medium)}
 .history-export-row select{
   min-width:0;height:48px;flex:1;max-width:200px;padding:0 10px;
-  border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-surface-2);color:var(--zp-text);font-size:var(--zp-fs-14);
+  border:1px solid var(--zp-input-line);border-radius:var(--zp-r-control);background:var(--zp-input-bg);color:var(--zp-text);font-size:var(--zp-fs-14);
 }
 
 /* 客户快查 */
 .history-lookup-row{display:flex;gap:8px;margin:0 0 12px}
 .history-lookup-row input{
   flex:1;min-width:0;height:48px;padding:0 12px;
-  border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-surface-2);color:var(--zp-text);font-size:var(--zp-fs-14);
+  border:1px solid var(--zp-input-line);border-radius:var(--zp-r-control);background:var(--zp-input-bg);color:var(--zp-text);font-size:var(--zp-fs-14);
 }
-.history-lookup-row input::placeholder{color:var(--zp-muted)}
+.history-lookup-row input::placeholder{color:var(--zp-input-placeholder)}
 .history-lookup-row button{
   flex:0 0 auto;height:48px;padding:0 18px;
   border:1px solid var(--zp-primary);border-radius:var(--zp-r-control);background:var(--zp-primary);color:var(--zp-on-primary);font-size:var(--zp-fs-15);font-weight:var(--zp-fw-semibold);

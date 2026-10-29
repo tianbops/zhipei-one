@@ -55,9 +55,9 @@
 /* 粘贴文本录入面板：与来源菜单同一容器风格，纯令牌配色（组件层零字面量） */
 .upload-text-panel{margin:0;padding:0;background:transparent}
 .upload-text-panel[hidden]{display:none}
-.waybill-text-input{display:block;width:100%;box-sizing:border-box;min-height:180px;margin:0 0 8px;padding:12px 14px;border:1px solid var(--zp-input-line);border-radius:var(--zp-r-control);background:var(--zp-surface);color:var(--zp-text);font:inherit;font-size:var(--zp-fs-15);line-height:22px;resize:vertical;-webkit-tap-highlight-color:transparent}
-.waybill-text-input::placeholder{color:var(--zp-muted)}
-.waybill-text-input:focus{outline:none;border-color:var(--zp-primary)}
+.waybill-text-input{display:block;width:100%;box-sizing:border-box;min-height:180px;margin:0 0 8px;padding:12px 14px;border:1px solid var(--zp-input-line);border-radius:var(--zp-r-control);background:var(--zp-input-bg);color:var(--zp-text);font:inherit;font-size:var(--zp-fs-15);line-height:22px;resize:vertical;-webkit-tap-highlight-color:transparent}
+.waybill-text-input::placeholder{color:var(--zp-input-placeholder)}
+.waybill-text-input:focus{outline:none;border-color:var(--zp-input-focus)}
 .text-panel-meta{display:flex;align-items:center;justify-content:space-between;min-height:28px;color:var(--zp-muted);font-size:var(--zp-fs-12)}
 .text-meta-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
 /* 清空：仅在文本框有内容时出现（空面板不显示无效按钮，避免多一个灰按钮干扰） */

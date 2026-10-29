@@ -12,9 +12,10 @@ html{background:var(--zp-bg);-webkit-text-size-adjust:100%}
 body{background:var(--zp-bg);color:var(--zp-text);overscroll-behavior-y:none}
 button,a,input,select,textarea{font:inherit}
 button,a{touch-action:manipulation}
-button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+button:focus-visible,a:focus-visible{
   outline:2px solid var(--zp-focus-ring);outline-offset:2px;
 }
+input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none}
 .shell{
   width:min(calc(100% - 24px),560px);
   padding:max(10px,var(--zp-safe-top)) 0 calc(28px + env(safe-area-inset-bottom));
@@ -32,16 +33,10 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   min-height:48px;
   border-radius:var(--zp-r-control);
 }
-/* 输入框全站兜底（2026-10-29 基线 3.0 校正）：
-   原值「--zp-surface-2 底 + --zp-line 边」在浅色页面上几乎隐形（#F2F3F5 底 /
-   #EEEEEE 边 vs #F6F7F9 页面底），各页因此各自加纯白底 + #C9D1D9 的浅色补丁，
-   形成「一个输入框两套规格」。现统一为令牌口径：白底 + --zp-input-line 边，
-   与登录框（唯一做过对比度修复的输入框）同源，页面级补丁因此可整条删除。 */
-input,select,textarea{
-  border-color:var(--zp-input-line)!important;
-  background:var(--zp-surface)!important;
-  color:var(--zp-text)!important;
-}
+/* 输入框外观：2026-10-29 起统一在 ui-base.css 的「表单控件基座」。
+   原此处用三条 !important 强推「白底 + --zp-input-line 边」，只覆盖 pages/*（本文件
+   不被登录 / 注册 / 初始化 / 管理端加载），且逼得页面级再加特异性反压，
+   最终一屏并列两种框。现只保留几何：高度与内边距属于各页排版，颜色归令牌。 */
 input,select{min-height:48px}
 select{padding-inline:12px}
 label{display:block;color:var(--zp-muted);font-size:var(--zp-fs-13);line-height:20px}
@@ -50,7 +45,9 @@ label+label{margin-top:13px}
 .message.error{color:var(--zp-danger)}
 .empty{padding:28px 12px;text-align:center;color:var(--zp-soft)}
 [disabled]{cursor:default!important}
-button:disabled,select:disabled,input:disabled{opacity:.45}
+/* 输入框的禁用观感由 ui-base 的 :disabled 规则给出（保留描边 + 独立底色）；
+   这里只弱化按钮，避免把整个输入框连边框一起淡掉。 */
+button:disabled{opacity:.45}
 @media(max-width:380px){
   .shell{width:min(calc(100% - 20px),560px)}
   .card{padding:15px}

@@ -64,13 +64,16 @@
      JS 侧再把「级联本应解析出的表面声明」固化为 inline——用 var() 书写，
      主题切换依旧动态生效（inline var() 随 html[data-zp-theme] 重新求值）。
      入参：hasBg=触发器已带 inline 背景（不干预，尊重页面/复制来的样式）；
-     page2=触发器位于 .page2-label 内——业务页在那里以 --zp-card-translucent-2
-     定制触发器背景（css/business-pages.css），必须镜像同值，不得破坏页面级覆盖。
+     page2=触发器位于 .page2-label 内（保留入参以兼容调用点与单测签名）。
+     2026-10-29 输入框统一：原先按 page2 分叉成 --zp-card-translucent-2 / --zp-surface-2
+     两套底色，且圆角硬编码 11px（与控件基线 12 差 1px）。现在触发器与文本框同属
+     一个控件族，一律取 --zp-input-bg / --zp-input-line / --zp-r-control，
+     不再区分所在容器——同一屏里「线路」下拉与「新用户名」输入框外观必须相同。
      返回 CSS 文本；无需兜底时返回 null。 */
-  function triggerSurfaceStyle(hasBg, page2) {
+  function triggerSurfaceStyle(hasBg, _page2) {
     if (hasBg) return null;
-    return "background:" + (page2 ? "var(--zp-card-translucent-2)" : "var(--zp-surface-2)") +
-      ";border:1px solid var(--zp-line);border-radius:11px;color:var(--zp-text)";
+    return "background:var(--zp-input-bg);border:1px solid var(--zp-input-line);" +
+      "border-radius:var(--zp-r-control);color:var(--zp-text)";
   }
   var zpPickerCore = {
     WEEK: WEEK, pad2: pad2, clampScale: clampScale, toISO: toISO, parseISO: parseISO,

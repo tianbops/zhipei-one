@@ -282,7 +282,7 @@ body {
 }
 
 .auth-card input:focus {
-  border-color: var(--zp-focus-ring);
+  border-color: var(--zp-input-focus);
 }
 
 .auth-card .message {
@@ -408,18 +408,10 @@ body {
   color: var(--zp-text);
 }
 
-.data-textarea {
-  width: 100%;
-  min-height: 280px;
-  box-sizing: border-box;
-  border: 1px solid var(--zp-line);
-  border-radius:var(--zp-r-control);
-  background: var(--zp-bg);
-  color: var(--zp-text);
-  padding: 12px;
-  font-size:var(--zp-fs-15);
-  line-height: 1.6;
-}
+/* .data-textarea：2026-10-29 删除本处重复定义。
+   data.css 已给出数据页权威规格（min-height 230 / 14px / 输入框令牌），
+   这里原先是 280 / 15px / --zp-bg 底 —— 两份同选择器不同取值，最终按加载顺序
+   取 data.css，本块从未生效，只制造「改哪份才对」的困惑。 */
 
 .data-preview {
   margin-top: 10px;
@@ -593,7 +585,7 @@ body {
   border: 1px solid var(--zp-input-line);
   border-radius:var(--zp-r-control);
   outline: none;
-  background: var(--zp-surface);
+  background: var(--zp-input-bg);
   color: var(--zp-text);
   font: inherit;
   font-size:var(--zp-fs-16);
@@ -604,12 +596,12 @@ body {
 /* 原 var(--zp-soft)#999999 在浅色底上仅 2.6:1（WCAG AA 要求 4.5:1）；
    --zp-muted 浅色 #666666 = 5.7:1 达标，深色自动取 #94A3B8 同样更清晰 */
 .login-field input::placeholder {
-  color: var(--zp-muted);
+  color: var(--zp-input-placeholder);
 }
 
 .login-field input:focus {
-  border-color: var(--zp-focus-ring);
-  background: var(--zp-surface);
+  border-color: var(--zp-input-focus);
+  background: var(--zp-input-bg);
 }
 
 .login-message {
