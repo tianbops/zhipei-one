@@ -2,16 +2,22 @@
 /**
  * run-tests-parallel.mjs —— 用 Node 原生 test runner 并行执行现有测试集
  *
- * 背景（改造前的实测依据）：
- *   1) package.json 的 test:node 是 75 个 `node tests/xxx` 的 && 串行链 —— 前提成立，确实无并行。
- *   2) 但直接改写成 `node --test tests/` 不可行：
- *      - 在本项目 Node(v22.13.1) 上 runner 会把 "tests" 当模块去 require，报 MODULE_NOT_FOUND；
- *      - 且 runner 的自动发现只认 *.test.* / *-test.* / *_test.* / test-*.js 等模式，
- *        本项目大量 integration-*.cjs / unit-*.cjs 会被**静默漏跑**（覆盖率凭肉眼不可见地下降）。
+ * 角色（2026-10-30 起，审计报告 N-7）：本脚本就是 `npm run test:node`。
  *
- * 方案：从 package.json 的 test:node 反解出「与串行链逐字相同」的文件清单，一次性交给
- *       `node --test --test-concurrency=N <files...>` 并行执行。
- *       覆盖率按构造等价（清单同源），只换执行方式，不像 Renaming 方案那样动测试文件。
+ * 为什么必须换掉原来的串行链：
+ *   `test:node` 原本是 97 段 `node tests/xxx` 的 && 串行链 —— 单点失败会
+ *   **静默跳过其后全部测试**。已实证：2026-10-29 home-bundle-fresh 一处失败，
+ *   其后 30+ 个测试根本没跑，CI 只报"失败"不报"还有 30 个没跑"。
+ *   这等于给回归开了后门：红一次没人管，后面所有检查都被掩盖。
+ *
+ * 做法（不变的约束）：
+ *   1) 清单仍从 package.json 的 `test:serial`（原串行链，逐字保留）反解，
+ *      与串行口径同源 —— 不改测试文件、不靠文件名约定自动发现；
+ *   2) 不用 `node --test tests/`：本项目 Node(v22.13.1) 上 runner 会把目录当
+ *      模块 require 报 MODULE_NOT_FOUND，且自动发现只认 *.test.* 等模式，
+ *      integration-*.cjs / unit-*.cjs 会被静默漏跑。
+ *   3) 一次性把清单交给 `node --test --test-concurrency=N <files...>`：
+ *      全量跑完再汇总，任何一个失败都能在同一个输出里看见。
  *
  * 用法：
  *   node scripts/run-tests-parallel.mjs                    # 默认并发 CPU 数
@@ -41,17 +47,35 @@ function parseArgs(argv) {
   return { concurrency, filters };
 }
 
-/** 从 package.json 的 test:node 反解测试文件清单（保持与串行链同源） */
+/** 从 package.json 的 test:serial 反解测试文件清单（唯一真值源，串行链逐字保留） */
 function collectTestFiles() {
   const pkg = JSON.parse(readFileSync(resolve(ROOT, "package.json"), "utf8"));
-  const cmd = pkg.scripts?.["test:node"];
-  if (!cmd) throw new Error("package.json 缺少 scripts.test:node，无法反解清单");
-  return cmd
-    .split("&&")
-    .map(s => s.trim())
-    .map(s => s.match(/^node\s+(tests\/[^\s]+)$/))
-    .filter(Boolean)
-    .map(m => m[1]);
+  const cmd = pkg.scripts?.["test:serial"];
+  if (!cmd) throw new Error("package.json 缺少 scripts['test:serial']（串行链真值源），无法反解清单");
+
+  const segments = cmd.split("&&").map(s => s.trim()).filter(Boolean);
+  const files = [];
+  const unparsed = [];
+  for (const seg of segments) {
+    // 只接受「node <tests|scripts>/<文件>」这一种形态。
+    // 早先的实现只认 tests/，导致链尾 `node scripts/ui-token-guard.mjs`
+    // 被静默丢弃 —— 与串行链的"静默跳过"是同一类毛病，故改为无法解析即报错。
+    const m = seg.match(/^node\s+((?:tests|scripts)\/[\w./-]+)$/);
+    if (m) files.push(m[1]);
+    else unparsed.push(seg);
+  }
+  if (unparsed.length) {
+    console.error("✗ test:serial 中存在无法解析的片段（会造成静默漏跑）：");
+    unparsed.forEach(s => console.error("  - " + s));
+    console.error("  允许的形态：node tests/<文件> 或 node scripts/<文件>，用 && 连接");
+    process.exit(1);
+  }
+  const self = files.find(f => /run-tests-parallel\.mjs$/.test(f));
+  if (self) {
+    console.error("✗ test:serial 不得包含 " + self + "（会自我递归）");
+    process.exit(1);
+  }
+  return files;
 }
 
 const { concurrency, filters } = parseArgs(process.argv);

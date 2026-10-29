@@ -34,14 +34,14 @@ git push -u origin backup/<任务名>-<YYYYMMDD>
 git checkout main
 
 # 2. 改动 → 本地验证 → 提交
-npm run test:node      # 全量测试链（必须 EXIT=0）
-npm run coverage       # 覆盖率棘轮
+npm run test:node      # 全量测试（并行，全部跑完再汇总；必须 EXIT=0）
+npm run coverage       # 覆盖率棘轮（内部跑 test:serial，保持 c8 口径）
 
 # 3. 推送（部署由项目所有者在本地执行 deploy.sh）
 git push origin main
 ```
 
-## 4. 四道"静默失效"陷阱（改完不跑守卫 = 线上功能消失，且不报错）
+## 4. 五道"静默失效"陷阱（改完不跑守卫 = 线上功能消失/回归被掩盖，且不报错）
 
 这四条是本项目历史上真实踩过的坑，全部表现为「页面正常、功能静默失效」：
 
@@ -87,6 +87,22 @@ npm run check:naming
 
 校验仓库名 / package.json / wrangler.toml / manifest.json / Android applicationId
 五域一致。依赖 `git fetch --unshallow` 的完整历史。
+
+### 4.5 改了测试脚本 → 必须确认「全部跑完」，不是「第一处失败就收工」
+
+```bash
+npm run test:node      # 并行执行器：全部文件跑完再汇总（推荐日常用）
+npm run test:serial    # 原 97 段串行链：保留为 c8 覆盖率口径 + 应急排查
+```
+
+`test:node` 曾是一条 97 段 `&&` 串行链，**单点失败会静默跳过其后全部测试**。
+真实事故（2026-10-29）：`home-bundle-fresh` 一处失败，其后 30+ 个测试从未执行，
+CI 只报「失败」不报「还有 30 个没跑」——回归后门。
+
+现在 `test:node` → `scripts/run-tests-parallel.mjs`：从 `test:serial` 反解清单，
+一次性交给 `node --test` 全量跑完再汇总。新增测试必须同时加进 `test:serial`
+（否则并行器看不到它），且片段形态只能是 `node tests/<文件>` 或
+`node scripts/<文件>`——不认识的形态会让并行器直接报错，而不是静默丢弃。
 
 ## 5. 架构地图
 
