@@ -150,15 +150,11 @@
 /* 小链接热区透明扩展至 ≥44px（保持早前可达性巡检结论） */
 #installLabelBtn{position:relative}
 #installLabelBtn::after{content:"";position:absolute;inset:-14px -10px}
-/* .about-link（关于行右侧下划线小链接）已随设置页改版下线，选择器一并摘除。 */
-.about-row-actions{display:flex;align-items:center;gap:16px;flex:none;margin-left:auto}
+/* .about-link（关于行右侧下划线小链接）已随设置页改版下线，选择器一并摘除。
+   .about-row-actions / .acct-mini-btn（网页版行胶囊按钮）已随 2026-10-29 改版下线：
+   网页版行与「下载应用」行同构 —— 整行可点，右侧 acct-row-value 灰字 + 箭头。 */
 /* 下载应用行右侧动作文案：默认灰（acct-row-value 已给），有更新时主色强调 */
 .acct-install-action.is-update{color:var(--zp-primary);font-weight:var(--zp-fw-semibold)}
-/* 网页版「复制网址」小按钮 */
-.acct-mini-btn{padding:5px 12px;border:1px solid var(--zp-line);border-radius:var(--zp-r-pill);background:none;
-  color:var(--zp-text);font-size:var(--zp-fs-13);font-weight:var(--zp-fw-medium);line-height:18px;white-space:nowrap;cursor:pointer;
-  -webkit-tap-highlight-color:transparent}
-.acct-mini-btn:active{opacity:.6}
 
 /* 底部留白：注销账号是页面最后一项。通用 .zp-scroll 只留 72px（底栏 64px + 8px），
    而底栏中间的「+」向上突出约 28px，会与注销文字几乎贴在一起。

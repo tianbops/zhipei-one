@@ -29,7 +29,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="智配One"><script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F6F7F9":"#121826");}catch(e){}</script><script src="/js/theme-sync.js?v=2c1a5bbc"></script>
 <link rel="stylesheet" href="/css/app.css?v=b5364547"><link rel="stylesheet" href="/css/ui-base.css?v=29e6b586"><link rel="stylesheet" href="/css/ui-overlay.css?v=fe14de91"><link rel="stylesheet" href="/css/ui-theme.css?v=c306fcf7"><link rel="stylesheet" href="/css/ui-shell.css?v=2ab76df5"><link rel="stylesheet" href="/css/mobile-ui.css?v=3f9fab5a"><link rel="stylesheet" href="/css/business-pages.css?v=2f512c53">
-<link rel="stylesheet" href="/css/account.css?v=8b3881e6"><script src="/js/perf-diagnostics.js?v=072dcda3"></script>
+<link rel="stylesheet" href="/css/account.css?v=aa0aa89e"><script src="/js/perf-diagnostics.js?v=072dcda3"></script>
 </head>
 <body><main class="page2 account-page zp-shell">
 <header class="topbar"><a class="app-back" href="/home" aria-label="返回"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><h1>设置</h1><span></span></header>
@@ -106,17 +106,16 @@
   <div class="acct-rows">
     <button class="acct-row" id="installRow" type="button">
       <span class="acct-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2.5"></rect><path d="M10 7h4"></path></svg></span>
-      <span id="installLabelBtn" class="acct-row-label">下载应用</span>
+      <span id="installLabelBtn" class="acct-row-label">客户端</span>
       <span id="installActionText" class="acct-row-value acct-install-action">下载</span>
       <svg class="acct-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
     </button>
-    <div class="acct-row" role="group">
+    <button class="acct-row" id="webCopyBtn" type="button" aria-label="复制Web端地址">
       <span class="acct-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18"></path></svg></span>
-      <span class="acct-row-label">网页版</span>
-      <span class="about-row-actions">
-        <button id="webCopyBtn" class="acct-mini-btn" type="button">复制网址</button>
-      </span>
-    </div>
+      <span class="acct-row-label">Web端</span>
+      <span class="acct-row-value">复制网址</span>
+      <svg class="acct-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
+    </button>
   </div>
   <a id="installDlLink" hidden aria-hidden="true"></a>
   <div id="installGuide" class="install-guide" hidden>
@@ -318,8 +317,8 @@ $("deleteConfirm").onclick=async()=>{
  }catch(e){show("deleteMessage",e);$("deleteConfirm").disabled=false}
 };
 
- /* 关于（成熟 App 范式 2.0）：品牌区版本 + 获取组（下载应用/网页端地址）+ 信息组（隐私/条款/帮助）。
-    - 下载应用与版本提示：全端统一「检查最新版本」范式，文案由唯一渲染源 applyAction() 计算：
+ /* 关于（成熟 App 范式 2.0）：品牌区版本 + 获取组（客户端/Web端地址）+ 信息组（隐私/条款/帮助）。
+    - 客户端与版本提示：全端统一「检查最新版本」范式，文案由唯一渲染源 applyAction() 计算：
       已是最新 →「已是最新」；最新安装包比当前新 → 高亮「更新到 Vx.x.x」。
       数据单一来源：/version.json（网页实时版，SW 保证最新）、/downloads/manifest.json（最新安装包）、
       ZhipeiNative.appVersion()（App 壳版本，锁在安装包内）。
@@ -366,7 +365,7 @@ $("deleteConfirm").onclick=async()=>{
   if(apkV){
    textEl.textContent="当前版本 V"+apkV;
    if(state.webVer&&compareVer(apkV,state.webVer)<0){
-    // 「有新版本」只作状态提示（静态角标）；真正的更新动作在下方「下载应用」行
+    // 「有新版本」只作状态提示（静态角标）；真正的更新动作在下方「客户端」行
     verBadge=document.createElement("span");
     verBadge.className="acct-ver-badge";
     verBadge.textContent="有新版本";
@@ -374,7 +373,7 @@ $("deleteConfirm").onclick=async()=>{
     textEl.after(verBadge);
    }
   }else{
-   textEl.textContent=state.webVer?("当前版本 V"+state.webVer):"网页版";
+   textEl.textContent=state.webVer?("当前版本 V"+state.webVer):"Web端";
   }
  }
  function applyAction(){
@@ -460,7 +459,7 @@ $("deleteConfirm").onclick=async()=>{
   list.forEach(t=>{const li=document.createElement("li");li.textContent=t;steps.appendChild(li)});
   guide.hidden=false;
  }
- /* 点击「下载应用」：统一入口 —— 与 App 壳一致，下载最新 APK。
+ /* 点击「客户端」：统一入口 —— 与 App 壳一致，下载最新 APK。
     - App 壳：原生下载（原地更新安装包）
     - 微信：网页内无法下载，引导去外部浏览器后由浏览器流程下载
     - iOS：无原生 APK，退化为「添加到主屏幕」
@@ -469,7 +468,7 @@ $("deleteConfirm").onclick=async()=>{
   guide.hidden=true;
   if(isNativeApp){triggerApk();return;}
   if(isWeChat){
-    showSteps(["点右上角「···」","选「在浏览器中打开」","在浏览器中打开后点「下载应用」获取安装包"]);
+    showSteps(["点右上角「···」","选「在浏览器中打开」","在浏览器中打开后点「客户端」获取安装包"]);
     return;
   }
   if(isIOS){
