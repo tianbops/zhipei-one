@@ -1178,6 +1178,19 @@ input:disabled,select:disabled,textarea:disabled{
   color:var(--zp-input-text-disabled);
   opacity:1;
 }
+/* 自动填充：Chrome / 安卓 WebView 会给填充过的账号密码框刷上自己的底色
+   （浅色 #E8F0FE、深色 #3A4A5E），并强制文字色 —— 登录页两个框一旦一个被填充、
+   一个没填，就又变成「一深一浅」。这里用内阴影把填充层盖回输入框底色，
+   文字/光标跟随主题，并让底色过渡足够长以避开填充动画。 */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill{
+  -webkit-text-fill-color:var(--zp-text);
+  -webkit-box-shadow:0 0 0 1000px var(--zp-input-bg) inset;
+  caret-color:var(--zp-text);
+  transition:background-color 9999s ease-out 0s;
+}
 /* 跨页容器 / 行 / 对话框的令牌基座（Phase 4）：
    原由 ui-theme 浅色补丁逐条 :root 前缀覆盖，基底反转后收敛到全局层，
    双主题自适应；页面级文件（admin-base / business-pages）保留几何与布局，
