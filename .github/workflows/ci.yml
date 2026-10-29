@@ -17,7 +17,7 @@ jobs:
           # checkout 默认 fetch-depth: 1（浅克隆），会导致 scripts/check-naming.mjs
           # 读不到足够历史而**降级为提示** —— 硬门禁形同虚设。这里必须取完整历史。
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           # 固定与本地验证工具链一致的精确版本：V8 覆盖数据的分支计数随 Node 小版本
           # 漂移，会让覆盖率棘轮（82/65/83/82）在 CI 上产生 ±0.1% 级扰动而误红。
