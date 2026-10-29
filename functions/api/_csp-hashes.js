@@ -12,7 +12,6 @@ export const INLINE_SCRIPT_HASHES = [
   "'sha256-6cZbWMQszjI/NJGFAo7bPl2caT4X97CIk4zJ+t3zZiM='",
   "'sha256-DNlGkYrDCx/AfzEjsbdWJGh237CdEZ9iSdGvFqGSXIs='",
   "'sha256-EQJmSLoiJL+PQWC4gR5vK1m00IAIkOncgH8MBRcIFI8='",
-  "'sha256-F50LRLJ52uBVCoXcI4LrZMSGEXWp8I63FyIiHF6iHBc='",
   "'sha256-FtNCWvRQ8Fk17rFw1hKRlJwhHLDsg23OtAvJiOm2l7A='",
   "'sha256-MKdPLPHgoQKi9NaNphrUVdhASlXdJH/uPhOszrQk/Ps='",
   "'sha256-Olpv4WZyS2ww4ZTxshC1vGXZYa6gG40pXYAUgL+pvOM='",
@@ -24,6 +23,7 @@ export const INLINE_SCRIPT_HASHES = [
   "'sha256-fmSxi6o0X0L18UHDMnuUmLsD6zBhC+okAzUDoP1axbc='",
   "'sha256-nEqy98Q3AUMWGF2ZJKlpxae2hLsCfWAol3+nA7s4KXI='",
   "'sha256-vg4zcO/PWYJRpe2qI8rwNf3wpqBQ/IJxB1fyaLxnMqI='",
+  "'sha256-vlMM6TYiKT8XClbVvPXPOij//QEz41WX1g+7ZWHwhRQ='",
 ];
 
 /** 把哈希表注入基础 CSP 的 script-src（'unsafe-inline' 保留作旧浏览器回退） */
