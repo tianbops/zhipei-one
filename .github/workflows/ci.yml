@@ -12,7 +12,7 @@ jobs:
   node:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # checkout 默认 fetch-depth: 1（浅克隆），会导致 scripts/check-naming.mjs
           # 读不到足够历史而**降级为提示** —— 硬门禁形同虚设。这里必须取完整历史。
