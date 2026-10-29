@@ -69,7 +69,7 @@
 /* --- 字体大小行（2026-10-29：.acct-font-row/.acct-font-value 两条死样式已删，
    现结构是 .acct-font-trigger 折叠行 + .acct-font-slider 滑块行，见下方） --- */
 .acct-font-slider{flex:1;display:flex;align-items:center;gap:8px;min-width:0}
-.acct-font-slider input[type="range"]{flex:1;min-width:0;accent-color:var(--zp-text)}
+.acct-font-slider input[type="range"]{flex:1;min-width:0;accent-color:var(--zp-primary)}
 
 /* --- 字体大小：默认折叠为一行「字体大小 ›」，点开才露出滑块，避免误触 --- */
 .acct-font-trigger{display:flex;align-items:center;gap:10px;width:100%;min-height:56px;padding:0;background:none;border:0;color:var(--zp-text);font:inherit;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
