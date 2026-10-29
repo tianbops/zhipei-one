@@ -65,21 +65,25 @@
 .acct-row[aria-expanded="true"] .acct-arrow{transform:rotate(90deg)}
 @media(prefers-reduced-motion:reduce){.acct-arrow{transition:none}}
 
-/* --- 主题分段选择器（行内右侧，参考胶囊分段样式） ---
-   容器按内容收紧：flex:none 不再横向撑满整行，margin-left:auto 右对齐，
-   外框宽度随「系统/浅色/深色」文字自适应（避免出现超宽长方形底框）。 */
+/* --- 主题分段选择器（行内右侧，纯文字分段） ---
+   2026-10-29 去掉选中项背后的长方形色块（浅色白块 / 深色 --zp-line 灰蓝块），
+   改用文字颜色 + 字重区分选中，深浅两套主题观感一致，也不再有「框」的突兀感。
+   容器按内容收紧：flex:none 不再横向撑满整行，margin-left:auto 右对齐。 */
 .acct-theme-row{display:flex;align-items:center;gap:10px;min-height:56px}
 .acct-theme-row .acct-row-label{flex:none}
-.acct-seg{display:inline-flex;flex:none;margin-left:auto;align-items:center;gap:2px;padding:2px;border-radius:10px;
-  background:var(--zp-surface-2,var(--zp-surface-2))}
-:root[data-zp-theme="dark"] .acct-seg{background:var(--zp-surface-2)}
+.acct-seg{display:inline-flex;flex:none;margin-left:auto;align-items:center;gap:0;padding:0;border-radius:0;
+  background:none}
 /* 视觉高度按文字收紧：14px 文字 + 32px 按钮高，替代原先过高的 48px；
    触控热区不缩水 —— 用 ::after 把可点区域仍撑到 48px 高（视觉轻、触控不缩水）。 */
-.account-page .acct-seg .appearance-theme-option{position:relative;min-height:32px;padding:0 12px;border:0;border-radius:9px;background:transparent;
-  color:var(--zp-muted,var(--zp-muted));font-size:14px;line-height:1.4;font-weight:600;box-shadow:none}
-.account-page .acct-seg .appearance-theme-option::after{content:"";position:absolute;left:-2px;right:-2px;top:50%;transform:translateY(-50%);height:48px}
-.account-page .acct-seg .appearance-theme-option.is-selected{background:var(--zp-card,#FFFFFF);color:var(--zp-accent);box-shadow:0 1px 4px var(--zp-shadow-md)}
-:root[data-zp-theme="dark"] .account-page .acct-seg .appearance-theme-option.is-selected{background:var(--zp-line)}
+.account-page .acct-seg .appearance-theme-option{position:relative;min-height:32px;padding:0 10px;border:0;border-radius:0;background:none;
+  color:var(--zp-muted,var(--zp-muted));font-size:14px;line-height:1.4;font-weight:600;box-shadow:none;transition:color .16s ease}
+.account-page .acct-seg .appearance-theme-option::after{content:"";position:absolute;left:-1px;right:-1px;top:50%;transform:translateY(-50%);height:48px}
+/* 末项贴齐卡片右内边，与「tian860 / 已是最新」等值列同一竖线；热区右移补偿 */
+.account-page .acct-seg .appearance-theme-option:last-child{padding-right:0}
+.account-page .acct-seg .appearance-theme-option:last-child::after{right:-11px}
+.account-page .acct-seg .appearance-theme-option.is-selected{background:none;box-shadow:none;color:var(--zp-accent);font-weight:700}
+.account-page .acct-seg .appearance-theme-option:active{opacity:.55}
+@media(prefers-reduced-motion:reduce){.account-page .acct-seg .appearance-theme-option{transition:none}}
 
 /* --- 字体大小行 --- */
 .acct-font-row{display:flex;align-items:center;gap:12px;min-height:56px}
@@ -195,7 +199,7 @@
 @media(max-width:380px){
   .account-page{padding-left:12px;padding-right:12px}
   .acct-card{padding-left:12px;padding-right:12px}
-  .account-page .acct-seg .appearance-theme-option{padding:0 10px}
+  .account-page .acct-seg .appearance-theme-option{padding:0 8px}
 }
 </style><script src="/js/perf-diagnostics.js?v=a2065bec"></script>
 </head>
