@@ -46,7 +46,7 @@ async function retireStaleFingerprintKey(env, { prevFingerprint, nextFingerprint
 
 async function loadBase(env,id){const raw=await get(env,"route:"+id+":base");if(!raw)throw Object.assign(new Error("线路数据资料尚未建立"),{code:"BASE_NOT_FOUND"});let x;try{x=typeof raw==="string"?JSON.parse(raw):raw}catch{throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"})}if(!x||!Array.isArray(x.stores))throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"});return {...x,routeId:id}}
 // 读取运单主记录（zp:waybill:<id>）。此前 confirm.js 引用了未定义的 load，导致确认链路运行时报错，
-// 此处补全与 base.js/learning.js 同构的本地实现。
+// 此处补全与 base.js 同构的本地实现。
 async function load(env,waybillId){const raw=await get(env,"waybill:"+waybillId);if(!raw)return null;try{return typeof raw==="string"?JSON.parse(raw):raw}catch{return null}}
 async function retryLearningRepairs(env,waybillId,userId){
  const key="waybill:"+waybillId+":learning-repair";

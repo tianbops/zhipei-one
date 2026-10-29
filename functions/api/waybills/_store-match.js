@@ -12,7 +12,7 @@
  *
  * 新版方案：多信号加权投票 + 硬性守门规则 + 显式置信差。
  *
- * 对外契约（process.js / store-learn.js 依赖，保持不变）：
+ * 对外契约（process.js 依赖，保持不变）：
  *   clean / formatCompareKey / businessStoreCode / matchStores
  * 其中 formatCompareKey 保持「纯格式归一」语义不变，
  * 因其同时被去重与线路分段逻辑复用，不可篡改语义。
@@ -20,7 +20,7 @@
 
 /* ================================================================
  * 入口（P1-1g 拆分）：实现已按职责拆到三个兄弟模块，本文件只做转发，
- * 公开面与拆分前逐一对应（process.js / store-learn.js / 各测试无需改动）。
+ * 公开面与拆分前逐一对应（process.js / 各测试无需改动）。
  * ================================================================ */
 
 export {clean, formatCompareKey, businessStoreCode, normalizeForMatch,
