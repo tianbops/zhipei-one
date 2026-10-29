@@ -41,7 +41,7 @@
 .account-page .account-row{min-height:46px;border-bottom:0;color:var(--zp-muted);font-size:var(--zp-fs-15);line-height:22px}
 .account-page .account-row strong{color:var(--zp-text);font-size:var(--zp-fs-15);font-weight:var(--zp-fw-semibold);text-align:right}
 .account-page .page2-label{display:block;margin-top:10px;color:var(--zp-muted);font-size:var(--zp-fs-13);line-height:20px}
-.account-page .page2-label input{display:block;width:100%;min-height:48px;margin-top:5px;font-size:var(--zp-fs-15)}
+.account-page .page2-label>input{display:block;width:100%;min-height:48px;margin-top:5px;font-size:var(--zp-fs-15)}
 .account-page .page2-primary,.account-page .page2-secondary{min-height:var(--zp-control-height);margin-top:12px;border-radius:var(--zp-r-control);font-size:var(--zp-fs-15);font-weight:var(--zp-fw-semibold)}
 .account-page .page2-primary{background:var(--zp-primary);border:1px solid var(--zp-primary);color:var(--zp-on-primary)}
 .account-page .account-danger-box{padding:12px 14px 14px;border-top:1px solid var(--zp-tint)}

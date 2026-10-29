@@ -9,7 +9,7 @@
  *   - 图片/字体       ：stale-while-revalidate（内容基本不变，秒开优先）
  * 资产缓存键用完整 URL（含 ?v=）精确匹配；页面缓存键用 pathname 规整（忽略 ?from 等查询）。
  */
-const VERSION = "zp-pwa-224";
+const VERSION = "zp-pwa-225";
 const STATIC_CACHE = VERSION + "-static";
 const PAGES_CACHE = VERSION + "-pages";
 const OFFLINE_URL = "/offline";
@@ -34,23 +34,23 @@ const PRECACHE = [
   "/assets/icons/apple-touch-icon.png?v=25f1ad28",
   "/assets/icons/icon-192.png?v=4d3f7fd9",
   "/css/account.css?v=96570a3d",
-  "/css/admin-base.css?v=f504448d",
-  "/css/admin-forms.css?v=1716835a",
+  "/css/admin-base.css?v=13ba150b",
+  "/css/admin-forms.css?v=4afab52f",
   "/css/admin-overlay.css?v=5361c69e",
   "/css/admin-perf.css?v=5b3c0761",
   "/css/app.css?v=a4eb6f4f",
-  "/css/business-pages.css?v=96670111",
+  "/css/business-pages.css?v=e6ffd7fe",
   "/css/data.css?v=b547cf69",
   "/css/doc-page.css?v=df84b894",
   "/css/history-list.css?v=17b6ce84",
   "/css/history-nav.css?v=8023e0c7",
   "/css/history-overlays.css?v=361a3fbc",
   "/css/history-shell.css?v=3c752973",
-  "/css/home.bundle.css?v=c602add3",
+  "/css/home.bundle.css?v=6686c8dc",
   "/css/mobile-ui.css?v=3f9fab5a",
   "/css/offline.css?v=f44fa920",
   "/css/order_detail.css?v=604ca640",
-  "/css/ui-base.css?v=ed6093a8",
+  "/css/ui-base.css?v=ebefc794",
   "/css/ui-overlay.css?v=fe14de91",
   "/css/ui-shell.css?v=2ab76df5",
   "/css/ui-theme.css?v=c306fcf7",

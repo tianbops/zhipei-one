@@ -123,10 +123,11 @@
    「.dialog.password-dialog …」规则从未匹配过任何元素 —— 整整 8 条死规则，
    弹窗实际用的是 admin-base 的通用 .dialog 尺寸。改为 .password-dialog>.dialog
    后才真正生效（390 宽 / 22-20 内边距 / 18 圆角，与业务弹窗 398 同族）。 */
-/* 密码框文字左对齐：管理端 .dialog .field input 默认 text-align:center（为数字键盘输入设的），
-   但密码格右侧有 48px 的小眼睛，居中会把掩码推到偏左 16px，与框视觉中心不齐。
-   业务端密码框一律左对齐，这里跟齐。 */
-.password-dialog>.dialog .zp-password-control input{text-align:left;text-align-last:left}
+/* 密码框文字对齐：原先这里强制 text-align:left，因为 admin-base 的
+   .dialog .field input 设了 text-align:center，而密码格右侧有 48px 小眼睛，
+   居中会把掩码推到偏左。2026-10-29 把那条规则收紧为 .dialog .field>input 后，
+   被 .zp-password-control 包裹的输入框不再命中中心对齐，input 自身默认 start 即左对齐，
+   这条覆盖随之删除（不再有需要压制的竞争声明）。 */
 .password-dialog>.dialog{width:min(100%,390px);padding:22px 20px 18px;border-radius:var(--zp-r-dialog)}
 .password-dialog>.dialog h2{font-size:var(--zp-fs-18);line-height:26px}
 .password-dialog>.dialog p{margin-top:5px;font-size:var(--zp-fs-15);line-height:22px}
