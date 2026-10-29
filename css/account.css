@@ -50,7 +50,7 @@
    2026-10-29 去掉选中项背后的长方形色块（浅色白块 / 深色 --zp-line 灰蓝块），
    改用文字颜色 + 字重区分选中，深浅两套主题观感一致，也不再有「框」的突兀感。
    容器按内容收紧：flex:none 不再横向撑满整行，margin-left:auto 右对齐。 */
-.acct-theme-row{display:flex;align-items:center;gap:10px;min-height:56px}
+.acct-theme-row{display:flex;align-items:center;gap:10px;min-height:56px;border-bottom:1px solid var(--zp-line-inset)}
 .acct-theme-row .acct-row-label{flex:none}
 .acct-seg{display:inline-flex;flex:none;margin-left:auto;align-items:center;gap:0;padding:0;border-radius:0;
   background:none}
