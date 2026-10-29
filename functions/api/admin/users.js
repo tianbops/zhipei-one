@@ -67,7 +67,9 @@ export async function onRequestGet({request,env}){
  for(const id of userIds){
   const u=parseUser(map.get("zp:user:"+id));
   if(!u)return json({success:false,code:"USER_DATA_INVALID",error:"用户索引包含缺失或损坏的用户数据，请联系管理员处理"},409);
-  users.push(u);
+  // 系统管理员不进用户管理列表：本就不可经此接口修改（POST 有 isSystemAdmin 拦截），
+  // 列出来只会让管理员在「用户」里看到自己、计数虚高。
+  if(!isSystemAdmin(u))users.push(u);
  }
  // 线路名同样批量取，避免「每用户一次 GET route」的第二个 O(N)
  const routeIds=[...new Set(users.map(u=>String(u.boundRouteId||"")).filter(Boolean))];
