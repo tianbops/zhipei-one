@@ -34,7 +34,7 @@
 .route{margin-bottom:7px;background:var(--zp-card-translucent-2);overflow:hidden}.route-content{padding:13px 14px;background:transparent}
 .route-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}.route-name{font-size:var(--zp-fs-14);font-weight:var(--zp-fw-bold)}.route-count{color:var(--zp-muted);font-size:var(--zp-fs-12)}
 .person{min-height:40px;border-top:1px solid var(--zp-tint);display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--zp-muted);font-size:var(--zp-fs-12)}
-.small-action,.copy{border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-secondary-bg);color:var(--zp-text)}.small-action{min-height:34px;padding:0 10px}
+.small-action,.copy{border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-secondary-bg);color:var(--zp-text)}.small-action{min-height:34px;padding:0 10px;white-space:nowrap}
 .dialog-bg{padding:18px}.dialog{width:min(100%,380px);padding:18px}.dialog h2{margin:0;font-size:var(--zp-fs-16);line-height:22px}
 .dialog p{margin:7px 0 0;color:var(--zp-muted);font-size:var(--zp-fs-14);line-height:21px;white-space:pre-line}
 .field{margin-top:13px}.field label{display:block;margin-bottom:5px;color:var(--zp-muted);font-size:var(--zp-fs-12)}
