@@ -29,9 +29,12 @@ tools/.upstash-dump.json
 tools/*.dump.json
 *.upstash-dump.json
 
-# 依赖锁文件与覆盖率产物：仓库约定不跟踪锁文件；coverage/ 为 c8 本地度量产物
-package-lock.json
+# 覆盖率产物：coverage/ 为 c8 本地度量产物
 coverage/
+
+# 依赖锁文件 package-lock.json **已纳入版本控制**（2026-10-30，审计报告 D-3）：
+# 原约定「不跟踪锁文件」导致 CI 每次安装"当时最新"的 devDeps，构建不可重现，
+# 也无法用 npm ci / npm audit 做供应链门禁。现改为一律跟踪。
 
 # 编辑器/系统
 .vscode/

@@ -9,6 +9,9 @@ Cloudflare Pages + Pages Functions 的**云端交付**配送单据系统。
 核心链路：OCR 录入 → 人工确认 → 历史查询。**明确不做** ERP / TMS / 智能调度。
 
 - 运行时依赖：**零**（`dependencies` 为空，全部用 Cloudflare 内置能力）
+- 依赖锁文件：`package-lock.json` **纳入版本控制**（2026-10-30 起）。
+  CI 用 `npm ci` 严格按锁文件安装；不得把锁文件重新加回 `.gitignore`，
+  否则 CI 会退化为"装当时最新"，构建不可重现且 `npm audit` 无据可依。
 - 存储：Redis（Upstash 兼容）为主，D1 为迁移目标
 - 前端：原生 JS + 手写 CSS，**无框架、无构建器**（唯一例外见 §4.1 home bundle）
 

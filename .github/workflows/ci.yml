@@ -54,23 +54,18 @@ jobs:
             echo "仅文档改动，跳过测试与覆盖率。"
           fi
 
+      # ── 依赖安装（可重现）────────────────────────────────────────
+      # package-lock.json 已纳入版本控制（审计报告 D-3），因此用 npm ci：
+      # 严格按锁文件安装，任何 package.json / lock 不一致会直接失败而不是静默漂移。
+      - name: 安装依赖（npm ci，严格按锁文件）
+        run: npm ci --no-audit --no-fund
+
       # ── 依赖审计门禁（P0-2）──────────────────────────────────────
       # 文档改动也要过：供应链漏洞不该等到"有代码改动"才查。
       # --audit-level=high：只阻断 High/Critical，Low/Moderate 只记录不红。
-      # 注意：本仓库约定**不跟踪** package-lock.json（见 .gitignore），而 npm audit
-      # 必须有 lockfile 才能跑（否则报 "requires an existing lockfile"），
-      # 所以先离线生成一份再审计。
-      # 已知代价：无 lockfile ⇒ CI 每次解析"当时最新"的 devDeps，构建不可重现。
-      # 该问题已登记（审计报告 D-3），修复方式为把 package-lock.json 纳入版本控制，
-      # 属独立决策，不在本次门禁改动内一并处理。
       - name: 依赖安全审计
-        run: |
-          set -eu
-          npm install --package-lock-only --no-audit --no-fund
-          npm audit --audit-level=high
+        run: npm audit --audit-level=high
 
-      - if: steps.scope.outputs.docs_only != 'true'
-        run: npm install --no-audit --no-fund
       - if: steps.scope.outputs.docs_only != 'true'
         run: npm run test:node
       # D1 存储引擎离线测试（node:sqlite 充当 D1 形状适配器）：命令面 / 事务 / TTL /
