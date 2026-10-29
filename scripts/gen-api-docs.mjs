@@ -81,7 +81,11 @@ function extractMethods(src) {
   return [...methods].sort((a, b) => order.indexOf(a) - order.indexOf(b));
 }
 
-const files = walk(API_DIR).filter((f) => !path.basename(f).startsWith("_"));
+// 跳过 `_` 前缀的内部助手，以及 `[[path]].js` 这类兜底通配路由（不是业务端点）
+const files = walk(API_DIR).filter((f) => {
+  const b = path.basename(f);
+  return !b.startsWith("_") && !b.includes("[");
+});
 const rows = [];
 for (const f of files) {
   const src = readFileSync(f, "utf8");
