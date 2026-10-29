@@ -7,7 +7,6 @@
  * _headers 对 Pages Functions 响应无效 → API 侧（_json.js）import 本表组装 CSP。
  */
 export const INLINE_SCRIPT_HASHES = [
-  "'sha256-30QVRC5+xnf2L/FpOCv5N1NRmp+tGTc/LR8E7IYgQoY='",
   "'sha256-5Vv5M5V4cNzigHGeG7tyjX/fT0hiciAOdWNc6scp+uU='",
   "'sha256-6S3Q9SYudD0KybsCNaJN3eXkpWemo+PoGyDbEWO4OTA='",
   "'sha256-6cZbWMQszjI/NJGFAo7bPl2caT4X97CIk4zJ+t3zZiM='",
@@ -22,6 +21,7 @@ export const INLINE_SCRIPT_HASHES = [
   "'sha256-cf75Iui0OlJqDOCnnPHxROdfuSannIL1ZAs75ruJkis='",
   "'sha256-eMT6TQXzCqozsul4L3cq/gnK8jCzbH4qlVqfrCgbfEk='",
   "'sha256-fmSxi6o0X0L18UHDMnuUmLsD6zBhC+okAzUDoP1axbc='",
+  "'sha256-gjCyREQu+3N0BTdehavxH195lFw42QDTMpdT/6PKylc='",
   "'sha256-nEqy98Q3AUMWGF2ZJKlpxae2hLsCfWAol3+nA7s4KXI='",
   "'sha256-vg4zcO/PWYJRpe2qI8rwNf3wpqBQ/IJxB1fyaLxnMqI='",
 ];
