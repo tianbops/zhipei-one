@@ -24,11 +24,6 @@ body {
   min-height: 100dvh;
 }
 
-.shell {
-  width: min(100% - 28px,560px);
-  margin: auto;
-  padding: 14px 0 40px;
-}
 
 /* 阶段 6 · 5A：移除遗留 .topbar 死规则（无任何 HTML 使用裸 .topbar）。
    标准 Header 钩子 .topbar 现统一定义于 css/ui-unified.css（权威层）。详见资产审计台账第二十四章。 */
@@ -308,10 +303,6 @@ body {
 }
 
 @media (max-width:380px) {
-  .shell {
-    width: min(100% - 22px,560px);
-  }
-
   .pipeline {
     gap: 3px;
     font-size:var(--zp-fs-11);
@@ -500,26 +491,9 @@ body {
   margin-bottom: 38px;
 }
 
-.login-brand-badge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 54px;
-  height: 54px;
-  flex: 0 0 auto;
-  border: 1px solid var(--zp-tint-strong);
-  border-radius:var(--zp-r-card);
-  /* 徽章底色始终为 logo 原图底色（令牌 --zp-logo-plate）：logo 含白色描边，
-     白底（浅色外观）下描边会消失，故不随外观翻转 */
-  background: var(--zp-logo-plate);
-}
-
-.login-logo {
-  display: block;
-  width: 38px;
-  height: auto;
-  object-fit: contain;
-}
+/* 2026-10-29：.login-brand-badge / .login-logo 已删 —— 登录首屏改版后品牌区只剩
+   文字（智配One / SMART DELIVERY OPS / 主张句），图形徽章与 logo 图已从 DOM 移除，
+   两条规则零引用。--zp-logo-plate 令牌仍被管理端 .head img 使用，故保留。 */
 
 .login-brand-name {
   font-size:var(--zp-fs-18);
@@ -685,16 +659,6 @@ body {
 
   .login-brand-row {
     margin-bottom: 30px;
-  }
-
-  .login-brand-badge {
-    width: 48px;
-    height: 48px;
-    border-radius:var(--zp-r-card);
-  }
-
-  .login-logo {
-    width: 34px;
   }
 
   .login-headline {

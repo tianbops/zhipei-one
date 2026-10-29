@@ -38,7 +38,9 @@ assert.deepStrictEqual(refs, NAMES,
 // 3) 每段代表选择器齐全
 const concat = NAMES.map((n) => readFileSync(`${root}css/${n}.css`, "utf8")).join("\n");
 const reps = [
-  ".history-shell{",                       // shell：页壳
+  // 2026-10-29 外壳收编：.history-shell 只作命名空间，尺寸由 main.zp-shell 声明；
+  // 代表选择器改用它仍在承担的顶栏规则。
+  ".history-shell .topbar{",               // shell：顶栏
   ".history-swipe-row{",                   // shell：滑动行
   ".history-delete{",                      // shell：滑动删除动作条
   ".history-picker{",                      // shell：日历选择器

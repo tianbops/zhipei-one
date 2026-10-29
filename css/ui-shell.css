@@ -13,7 +13,7 @@
    ============================================================ */
 main.zp-shell{
   width:100%;
-  max-width:var(--zp-shell-max,520px);
+  max-width:var(--zp-shell-max);
   height:100vh;            /* 旧内核回退 */
   height:100dvh;
   margin:0 auto;
@@ -22,9 +22,15 @@ main.zp-shell{
   overflow:hidden;
   position:relative;
   background:var(--zp-bg);
-  padding-top:0;           /* 抵消 .shell/.page2/.home-app 的上下 padding，
-                             左右 padding 保留（仍来自各容器类），保证内容/顶栏对齐 */
-  padding-bottom:0;
+  /* 2026-10-29 外壳收编：左右留白也从这里出。
+     此前是「外层次项负责上/下、各页容器类负责左/右」，一个外壳由两处声明，
+     于是 .page2 留 16、.order-shell 留 12、.home-app 留 16、.history-shell 留 16
+     且各自再写 padding-top 被这里抵消 —— 补丁套补丁。现在容器类一律不写尺寸，
+     宽度读 --zp-shell-max、留白读 --zp-gutter，改一处全站生效。 */
+  padding:0 var(--zp-gutter);
+}
+@media(max-width:380px){
+  main.zp-shell{--zp-gutter:12px}
 }
 /* 顶栏：不再 sticky/fixed，作为不滚动的 flex 子项，绝无抖动；
    左右缩进由外壳的 padding 提供，这里只补顶部安全区与底色。 */

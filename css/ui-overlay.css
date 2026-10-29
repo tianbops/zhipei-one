@@ -81,14 +81,18 @@
 .history-dialog,
 .history-picker,
 .upload-overlay{
-  position:fixed!important;
-  top:0!important;right:0!important;bottom:0!important;left:0!important;inset:0!important;
-  display:flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  padding:12px!important;
-  background:var(--zp-scrim-dialog)!important;
+  position:fixed;
+  top:0;right:0;bottom:0;left:0;inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:12px;
+  background:var(--zp-scrim-dialog);
 }
+/* 2026-10-29：本段原为 9 条 !important。它作为「唯一完整定义」其实没有被任何
+   组件规则竞争 —— data-import 早被排除在外（见上方警告），history-dialog 的
+   内边距已改成同一个 12px。!important 反而让「调整某个弹窗」时必须写更后、
+   更重的规则。去掉后行为不变。 */
 
 /* --- 统一面板 ---
    所有业务弹窗面板统一为 398px 宽（与上方 2.1 节 max-width 一致）。
@@ -97,8 +101,7 @@
 .order-dialog-panel,
 .history-dialog-panel,
 .history-picker-panel,
-.account-dialog,
-.upload-sheet{
+.account-dialog{
   width:min(100%,398px);
   max-height:min(88vh,760px);max-height:min(88dvh,760px);
   overflow:auto;
@@ -108,6 +111,20 @@
   border-radius:var(--zp-r-dialog);
   background:var(--zp-surface);
   box-shadow:var(--zp-shadow-lg);
+}
+/* 上传面板是底部 sheet：宽度 390、底部留安全区，与居中弹窗的 398/18 不同。
+   2026-10-29 从上面的组里拆出（此前两组各写一遍，取值互相打架）。 */
+.upload-sheet{
+  width:min(100%,390px);
+  max-height:min(88vh,760px);max-height:min(88dvh,760px);
+  overflow:auto;
+  margin:0 auto;
+  padding:20px 18px calc(18px + env(safe-area-inset-bottom));
+  border:1px solid var(--zp-line);
+  border-radius:var(--zp-r-dialog);
+  background:var(--zp-surface);
+  box-shadow:var(--zp-shadow-lg);
+  animation:zpModalIn .16s ease-out;
 }
 
 /* --- 统一次级按钮（取消类）--- */
@@ -236,18 +253,10 @@
   color:var(--zp-error);
 }
 
-/* --- 5.5 空状态 / 状态文字：统一内边距与居中节奏 ---
-   注意：history-state 在 history.css 里被定义了两次（22px 16px 与 18px 8px），
-   此处收口为同一个值，消除"改一处不生效"。 */
-.empty,
-.data-empty,
-.history-state,
-.dispatch-empty,
-.dispatch-message{
-  padding:28px 12px;
-  text-align:center;
-  color:var(--zp-soft);
-}
+/* --- 5.5 空状态 ---
+   2026-10-29：本条「五选择器合并」规则已删除。它是用加载顺序 + 同一份取值把
+   .empty/.data-empty/.history-state/.dispatch-* 的不同 padding 强行拉平，
+   属于「补丁式统一」。空态现为 css/ui-base.css 的单一原语 .zp-empty。 */
 
 /* --- 5.6 焦点可见环：全站统一（键盘/外接设备可访问性） --- */
 button:focus-visible,
@@ -312,53 +321,8 @@ textarea:disabled,
 
 /* 菜单轻入场：opacity + 轻微上移，弱化 Web Dropdown 观感（全站通用） */
 
-/* 业务端一级导航：所有业务页面统一常驻，避免页面各自维护不同版本。
-   该类由 js/ui-unified.js 在业务页 body 上添加（原误置于 JS 文件内导致整文件语法错误，
-   现回归此处）。 */
-.zp-business-nav-page{padding-bottom:0!important;overflow-x:hidden}
-.zp-business-nav-page .bottom-nav{
-  position:fixed!important;left:50%!important;right:auto!important;bottom:0!important;z-index:40!important;
-  width:min(100%,430px)!important;min-height:64px!important;
-  padding:6px 8px calc(6px + env(safe-area-inset-bottom))!important;
-  transform:translateX(-50%)!important;
-  display:grid!important;grid-template-columns:repeat(5,1fr)!important;gap:4px!important;
-  background:var(--zp-nav-bg)!important;
-  /* 2026-10-28 用户要求：去掉底栏上沿横线，与首页口径一致 */
-  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
-}
-.zp-business-nav-page .bottom-nav-item{
-  min-width:0!important;min-height:52px!important;border:0!important;border-radius:var(--zp-r-card)!important;
-  background:transparent!important;color:var(--zp-nav-text)!important;text-decoration:none!important;
-  display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;
-  gap:3px!important;font-size:var(--zp-fs-12)!important;line-height:17px!important;font-weight:var(--zp-fw-semibold)!important;
-  -webkit-tap-highlight-color:transparent;
-}
-.zp-business-nav-page .bottom-nav-item:active{background:var(--zp-nav-active-bg)!important;color:var(--zp-nav-text-active)!important}
-.zp-business-nav-page .bottom-nav-icon{width:22px!important;height:22px!important;display:flex!important;align-items:center!important;justify-content:center!important}
-.zp-business-nav-page .bottom-nav-icon svg{width:21px!important;height:21px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important}
-/* 选中态仅主色文字/图标，无背景块（与首页底栏口径一致） */
-.zp-business-nav-page .bottom-nav-item[aria-current="page"]{color:var(--zp-primary)!important;background:transparent!important}
-/* 中间上传加号（底栏 5 位改版）：无文字标签的凸起圆形按钮。
-   圆形由 .bottom-nav-icon 承载，上移凸出导航条；底色沿用唯一主色 --zp-primary，
-   白 + 图标，按压提亮——不引入新的强调色。 */
-.zp-business-nav-page .bottom-nav-plus .bottom-nav-icon{
-  width:52px!important;height:52px!important;border-radius:50%!important;
-  background:var(--zp-primary)!important;color:var(--zp-on-primary)!important;
-  transform:translateY(-16px)!important;
-  box-shadow:var(--zp-shadow-sm)!important;
-}
-.zp-business-nav-page .bottom-nav-plus .bottom-nav-icon svg{width:24px!important;height:24px!important;stroke-width:2.2!important}
-.zp-business-nav-page .bottom-nav-plus:active{background:transparent!important}
-.zp-business-nav-page .bottom-nav-plus:active .bottom-nav-icon{filter:brightness(1.15)!important}
-/* 底部让位已废弃（2026-10-18）：zp-shell / order-shell 均为 overflow:hidden 的 flex 外壳，
-   main 不再滚动，旧 82px 让位只会把滚动容器底边抬到导航横线上方 ~18px，
-   形成常驻黑色死区（任何滚动位置下内容都被悬空裁切）。
-   让位职责由各滚动容器自身 padding-bottom（72px + 安全区 = 导航 64px + 8px 呼吸位）接管。 */
-.zp-business-nav-page main{padding-bottom:0!important}
-@media(max-width:430px){
-  .zp-business-nav-page .bottom-nav{width:100%!important}
-}
-@media(max-width:380px){
-  .zp-business-nav-page .bottom-nav{padding-left:6px!important;padding-right:6px!important}
-}
-
+/* 业务端一级导航（2026-10-29 底栏收编）：原 .zp-business-nav-page 前缀 + 40 条
+   !important 的整段已删除 —— 它只是把 css/home-dashboard.css 的底栏声明重写一遍
+   以压过同一元素上的旧值。底栏现在是 css/ui-base.css 的单一原语 .zp-nav，
+   业务页与首页共用同一份，无需任何页面级前缀或 !important。
+   遗留的 .zp-business-nav-page 类仍由 nav.js 添加，仅作「本页是业务页」的标记。 */

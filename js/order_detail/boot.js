@@ -38,6 +38,6 @@ document.addEventListener('click',e=>{if(menuOpen&&!$('menuPanel').contains(e.ta
     $('metrics').innerHTML='';
     $('routeName').textContent=e.message||'暂无当日运单';
     $('vehicle').textContent='—';
-    $('routeList').innerHTML='<div class="order-empty">'+esc(e.message||'暂无当日运单')+'</div>';
+    $('routeList').innerHTML='<div class="zp-empty">'+esc(e.message||'暂无当日运单')+'</div>';
   }
 })();

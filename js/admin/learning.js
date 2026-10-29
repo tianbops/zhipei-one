@@ -26,9 +26,9 @@ async function renderLearningStores(){
 }
 async function renderLearningIsolation(){
   renderLearningStores();
-  let d;try{d=await api("/api/admin/global-learning?action=quarantined")}catch(e){$("learnQuarantined").innerHTML='<div class="empty">读取隔离列表失败：'+esc(e.message)+'</div>';return}
+  let d;try{d=await api("/api/admin/global-learning?action=quarantined")}catch(e){$("learnQuarantined").innerHTML='<div class="zp-empty">读取隔离列表失败：'+esc(e.message)+'</div>';return}
   const list=d.records||[];
-  if(!list.length){$("learnQuarantined").innerHTML='<div class="empty">暂无被隔离的学习记录</div>';return}
+  if(!list.length){$("learnQuarantined").innerHTML='<div class="zp-empty">暂无被隔离的学习记录</div>';return}
   $("learnQuarantined").innerHTML=list.map(r=>{
     const reason=r.quarantineReason||"";
     return '<div class="row" data-store="'+esc(r.storeId)+'"><div class="content"><div class="main"><strong>'+esc(r.storeId)+'</strong>'

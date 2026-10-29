@@ -135,9 +135,9 @@ async function loadHome(){
             const name=esc(x?.name||x?.rawName||"未识别门店"),nav=safeUrl(navOf(x));
             const body='<span class="today-store-index">'+(i+1)+'</span><span class="today-store-name">'+name+'</span>';
             return nav?'<a class="today-store-row" href="'+attr(nav)+'" target="_self">'+body+'</a>':'<div class="today-store-row">'+body+'</div>';
-          }).join(""):'<div class="today-store-empty">今日暂无配送门店</div>';
+          }).join(""):'<div class="zp-empty zp-empty--tight">今日暂无配送门店</div>';
         }catch{
-          todayStoreList.innerHTML='<div class="today-store-empty">今日门店明细暂不可用</div>';
+          todayStoreList.innerHTML='<div class="zp-empty zp-empty--tight">今日门店明细暂不可用</div>';
         }
       }
 

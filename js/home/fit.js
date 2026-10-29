@@ -29,7 +29,7 @@
   /* 底部渐隐：仅「可滚且未到底」时启用（滚动条全站隐藏，否则看不出能滚） */
   function syncFade() {
     /* 空态：整块区域垂直居中，避免「文案贴着分隔线、下面空一大片」 */
-    list.classList.toggle("is-empty", list.children.length === 1 && !!list.querySelector(".today-store-empty"));
+    list.classList.toggle("is-empty", list.children.length === 1 && !!list.querySelector(".zp-empty--tight"));
     var canScroll = list.scrollHeight - list.clientHeight > 2;
     var atEnd = list.scrollTop + list.clientHeight >= list.scrollHeight - 2;
     list.classList.toggle("can-scroll", canScroll && !atEnd);

@@ -8,10 +8,10 @@ async function renderDiagnostics(){
   const requestId=($("diagRequestId")?.value||"").trim();
   if(requestId){
     $("diagRouteMeta").textContent="按 requestId 查询失败/超时处理票据";
-    $("diagnostics").innerHTML='<div class="empty">正在查询处理票据…</div>';
+    $("diagnostics").innerHTML='<div class="zp-empty">正在查询处理票据…</div>';
     let d;
     try{d=await api("/api/waybills/diagnostic?requestId="+encodeURIComponent(requestId))}
-    catch(e){$("diagnostics").innerHTML='<div class="empty">查询失败：'+esc(e.message)+'</div>';return}
+    catch(e){$("diagnostics").innerHTML='<div class="zp-empty">查询失败：'+esc(e.message)+'</div>';return}
     const t=d.procTicket||{};
     const timing=t.timing&&typeof t.timing==="object"?t.timing:{};
     const timingLabels={ocrSubmitMs:"OCR提交",ocrStatusPollCount:"状态轮询次数",ocrStatusWaitMs:"轮询等待",ocrStatusRequestMs:"状态请求",ocrResultFetchMs:"结果读取",ocrResultFetchWaitMs:"结果重试等待",ocrResultFetchAttempts:"结果读取次数",recognizedMs:"识别总计",ocrMs:"OCR总计",baseMs:"基准读取",extractMs:"文本提取",matchMs:"门店匹配",dedupeMs:"去重",planMs:"线路规划",totalMs:"处理总计"};
@@ -29,18 +29,18 @@ async function renderDiagnostics(){
   }
   const routeId=($("diagRoute").value||"").trim();
   const selectedRoute=(S.routes||[]).find(r=>String(r.id)===routeId);
-  if(!routeId||!selectedRoute){$("diagnostics").innerHTML='<div class="empty">'+(S.routes&&S.routes.length?"请选择一条有效线路":"线路列表尚未加载，或当前没有可选线路")+'</div>';return}
+  if(!routeId||!selectedRoute){$("diagnostics").innerHTML='<div class="zp-empty">'+(S.routes&&S.routes.length?"请选择一条有效线路":"线路列表尚未加载，或当前没有可选线路")+'</div>';return}
   const date=($("diagDate").value||"").trim(),vehicle=($("diagVehicle").value||"").trim();
-  if(date&&!/^\d{4}-\d{2}-\d{2}$/.test(date)){$("diagnostics").innerHTML='<div class="empty">日期格式无效，请选择有效日期</div>';return}
+  if(date&&!/^\d{4}-\d{2}-\d{2}$/.test(date)){$("diagnostics").innerHTML='<div class="zp-empty">日期格式无效，请选择有效日期</div>';return}
   $("diagRouteMeta").textContent="线路："+(rn(selectedRoute.name)||selectedRoute.name||routeId)+" · 线路ID："+routeId;
   let q="/api/waybills/diagnostic?routeId="+encodeURIComponent(routeId);
   if(date)q+="&date="+encodeURIComponent(date);
   if(vehicle)q+="&vehicle="+encodeURIComponent(vehicle);
-  $("diagnostics").innerHTML='<div class="empty">正在查询运单…</div>';
-  let d;try{d=await api(q)}catch(e){$("diagnostics").innerHTML='<div class="empty">查询失败：'+esc(e.message)+'</div>';return}
+  $("diagnostics").innerHTML='<div class="zp-empty">正在查询运单…</div>';
+  let d;try{d=await api(q)}catch(e){$("diagnostics").innerHTML='<div class="zp-empty">查询失败：'+esc(e.message)+'</div>';return}
   const list=d.waybills||[];
-  if(!list.length){const scope=(date?"日期 "+date+" · ":"")+(vehicle?"车牌 "+vehicle+" · ":"");$("diagnostics").innerHTML='<div class="empty">'+esc(scope)+(date?"该线路在所选日期没有匹配到运单。":"该线路暂无匹配运单。")+'<br>如确认当天已有运单，可继续检查运单索引一致性。</div>';return}
-  const truncHint=(d.truncated&&Number(d.count)>list.length)?'<div class="empty" style="color:var(--zp-warning)">共 '+esc(d.count)+' 张运单，当前仅显示最近 20 张</div>':"";
+  if(!list.length){const scope=(date?"日期 "+date+" · ":"")+(vehicle?"车牌 "+vehicle+" · ":"");$("diagnostics").innerHTML='<div class="zp-empty">'+esc(scope)+(date?"该线路在所选日期没有匹配到运单。":"该线路暂无匹配运单。")+'<br>如确认当天已有运单，可继续检查运单索引一致性。</div>';return}
+  const truncHint=(d.truncated&&Number(d.count)>list.length)?'<div class="zp-empty" style="color:var(--zp-warning)">共 '+esc(d.count)+' 张运单，当前仅显示最近 20 张</div>':"";
   const timingNote='<div class="meta" style="margin:6px 2px 10px">阶段计时仅展示记录中已保存的数据；“处理总计”不包含最终保存阶段耗时。</div>';
   $("diagnostics").innerHTML=timingNote+truncHint+list.map(w=>{
     const lvl=(w.quality&&w.quality.level)||"OK";const ql=lvl==="REVIEW"?"review":"ok";

@@ -71,7 +71,7 @@ body{touch-action:pan-y}
 .route-content{position:relative;transition:transform .18s ease}
 .route-content .person .small-action{position:relative;z-index:4}
 .route-line{height:1px;background:var(--zp-tint);margin:9px 0 0}
-.empty{padding:28px 12px;text-align:center;color:var(--zp-soft)}
+/* 空态统一走 css/ui-base.css 的 .zp-empty（本文件不再定义）。 */
 .q-badge{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:var(--zp-r-pill);font-size:var(--zp-fs-11);font-weight:var(--zp-fw-bold);vertical-align:middle;white-space:nowrap}
 .q-badge.ok{background:var(--zp-success-soft);color:var(--zp-success)}
 .q-badge.review{background:var(--zp-warning-soft);color:var(--zp-warning)}

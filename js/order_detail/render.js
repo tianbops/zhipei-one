@@ -60,7 +60,7 @@ function render(){
         window.zpMarkStale?.();
         $('orderDate').textContent=targetDate||'历史运单';
         $('storeCount').textContent='0';$('summaryUnit').textContent='张';$('totalWeight').textContent='0.00';$('metrics').innerHTML='';
-        $('routeName').textContent='—';$('vehicle').textContent='—';$('driver').textContent='—';$('deliveryPerson').textContent='—';$('routeList').innerHTML='<div class="order-empty">暂无配送数据</div>';
+        $('routeName').textContent='—';$('vehicle').textContent='—';$('driver').textContent='—';$('deliveryPerson').textContent='—';$('routeList').innerHTML='<div class="zp-empty">暂无配送数据</div>';
       }catch(err){btn.disabled=false;btn.textContent='删除';zpToast(err.message||'删除失败','error')}
     };
   });
@@ -109,7 +109,7 @@ function render(){
    const noteHtml=note?'<span class="order-store-note-inline">（'+esc(note)+'）</span>':'';
    const nameHtmlWithNote=nav?'<a class="order-store-name nav" href="'+attr(nav)+'" target="_self">'+name+noteHtml+status+'</a>':'<div class="order-store-name">'+name+noteHtml+status+'</div>';
    return '<div class="order-store-item"><span class="order-store-index">'+String(i+1).padStart(2,'0')+'</span><div class="order-store-main">'+nameHtmlWithNote+'</div></div>';
- }).join(''):'<div class="order-empty">当日暂无配送数据</div>';
+ }).join(''):'<div class="zp-empty">当日暂无配送数据</div>';
  const old=$('confirmPendingBtn');if(old)old.remove();
  if(pending.length){const b=document.createElement('button');b.id='confirmPendingBtn';b.type='button';b.className='order-pending-fab';b.textContent='待确认'+pending.length+'家';b.onclick=openConfirm;const slot=$('pendingBtnSlot');slot?slot.appendChild(b):document.body.appendChild(b)}
 }

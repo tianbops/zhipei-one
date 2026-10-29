@@ -51,7 +51,7 @@
     };
     // 全局字号缩放的目标标签：必须覆盖所有可能直接包裹文本的标签。
     // 历史教训：原先漏了 div（及 em/i/b/h5/h6 等文字级标签），导致如
-    // .dispatch-message 这类「div 直接包文字」的提示在调字号时完全不变化，
+    // .zp-empty 这类「div 直接包文字」的提示在调字号时完全不变化，
     // 表现为同一页面有的字变大有的不变。新增文字级标签时优先补到这里。
     const textSelector="p,span,a,button,label,input,select,textarea,li,td,th,strong,small,em,i,b,u,s,cite,code,kbd,var,mark,time,figcaption,option,optgroup,dt,dd,blockquote,caption,address,h1,h2,h3,h4,h5,h6,legend,summary,output,div,.summary,.message,.page2-soft,.store-row,.account-row,.page2-row,.page2-label,.topbar,.order-title";
     const collectTextTargets=(rootNode=document)=>{

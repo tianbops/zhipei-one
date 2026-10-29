@@ -8,7 +8,7 @@
    因此不存在「两页长得一样」的问题，只是排版规则共享。
    顺带清掉 2 处 var(--zp-text,#fff) 的深色纪元兜底。 */
 .doc-page .doc-card{padding:18px 16px 20px}
-.doc-page h2{margin:0 0 4px;font-size:var(--zp-fs-16);line-height:24px}
+.doc-page h2{margin:0 0 4px;font-size:var(--zp-fs-18);line-height:24px}
 .doc-page .doc-intro{margin:0 0 14px;color:var(--zp-muted);font-size:var(--zp-fs-13);line-height:20px}
 .doc-page h3{margin:18px 0 6px;font-size:var(--zp-fs-15);line-height:22px}
 .doc-page h3:first-of-type{margin-top:4px}

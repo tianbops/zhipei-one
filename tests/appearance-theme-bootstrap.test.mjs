@@ -70,7 +70,7 @@ for (const p of UI_CSS_PARTS) {
 }
 for (const selector of [
   '.history-dialog-panel', '.dispatch-page', '.data-import-panel', '.account-page',
-  '.bottom-nav', '.row', '.dialog', 'input'
+  '.zp-nav', '.row', '.dialog', 'input'
 ]) {
   assert.ok(unified.includes(selector), "全局浅色适配未覆盖关键组件: " + selector);
 }

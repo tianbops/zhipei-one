@@ -6,14 +6,6 @@
    用 main.history-shell（0,1,1）与 main.zp-shell 同特异性，靠后加载胜出，
    且不受 ui-unified 中 main.zp-shell 的 padding-top/bottom:0 影响。
    注意：板块自身不再重复缩进（见下方 .history-actions 等归零），否则会变成 16+16。 */
-main.history-shell{
-  padding-left:var(--zp-space-4,16px);
-  padding-right:var(--zp-space-4,16px);
-}
-.history-shell{
-  padding-top:8px;
-  padding-bottom:0;
-}
 .history-shell .topbar{margin-bottom:6px;z-index:100;background:var(--zp-bg)}
 .history-card{
   padding:0;
@@ -29,13 +21,9 @@ main.history-shell{
 /* 浅色主题 .card 通配规则（白底+阴影）会盖过 .history-card 的透明背景，
    导致历史查询页顶部出现一块带阴影的白色方块。此处显式压回无卡片样式。 */
 :root[data-zp-theme="light"] .history-card{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important}
-.history-state{
-  min-height:20px;
-  padding:18px 0;
-  color:var(--zp-muted);
-  font-size:var(--zp-fs-14);
-  line-height:20px;
-}
+/* .history-state 已并入 css/ui-base.css 的 .zp-empty（2026-10-29 空态收编）。
+   此前 history-list 与 history-shell 各定义一份（18px 0 / 22px 16px，字号 14/13 不一），
+   靠加载顺序决定谁生效。 */
 .history-list{
   width:100%;
   border:1px solid var(--zp-tint);

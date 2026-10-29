@@ -1,4 +1,4 @@
-.order-shell{width:100%;max-width:520px;height:100vh;height:100dvh;margin:0 auto;padding:0 12px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden}
+/* .order-shell 只作命名空间：外壳尺寸统一由 main.zp-shell 声明。 */
 .order-shell .topbar{flex:0 0 auto;min-height:var(--zp-header-height);background:var(--zp-bg);margin-bottom:6px}
 .order-title{text-align:center;font-size:var(--zp-fs-18);line-height:24px;font-weight:var(--zp-fw-bold)}
 .order-icon-btn{width:var(--zp-control-height);height:var(--zp-control-height);border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-translucent);color:var(--zp-text);display:flex;align-items:center;justify-content:center}
@@ -42,7 +42,7 @@
 .order-store-note{margin-top:3px;color:var(--zp-soft);font-size:var(--zp-fs-11);line-height:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .order-store-status{display:inline-flex;margin-left:6px;padding:1px 5px;border-radius:5px;background:var(--zp-line);color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:16px;vertical-align:2px;font-weight:var(--zp-fw-semibold)}
 .order-store-status.pending{background:var(--zp-warning-soft);color:var(--zp-warning)}
-.order-empty{text-align:center;color:var(--zp-muted);font-size:var(--zp-fs-14);padding:48px 18px}
+/* 空态统一走 css/ui-base.css 的 .zp-empty（本文件不再定义）。 */
 
 /* 弹窗：放宽尺寸上限（用户反馈"显示框调大一点"），高度用 dvh 并带 vh 兜底 */
 .order-dialog-panel{width:min(100%,460px);max-height:min(90vh,800px);max-height:min(90dvh,800px);display:flex;flex-direction:column;background:var(--zp-card-translucent);border:1px solid var(--zp-line);border-radius:var(--zp-r-dialog);box-shadow:0 18px 50px var(--zp-shadow-lg);overflow:hidden}
@@ -232,7 +232,6 @@
 .order-store-note-inline{font-size:var(--zp-fs-13);line-height:20px}
 .order-store-note{font-size:var(--zp-fs-13);line-height:19px}
 .order-store-status{font-size:var(--zp-fs-11);line-height:16px}
-.order-empty{font-size:var(--zp-fs-15);line-height:22px}
 .order-dialog-head strong{font-size:var(--zp-fs-18);line-height:24px}
 .pending-title{font-size:var(--zp-fs-16);line-height:22px}
 .pending-hint{font-size:var(--zp-fs-13);line-height:19px}

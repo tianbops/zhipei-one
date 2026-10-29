@@ -16,7 +16,7 @@ function renderInvites(){
       : '<button class="small-action" data-invite-action="disable" data-id="'+esc(c.id)+'">停用</button>')
       +'<button class="small-action danger" data-invite-action="remove" data-id="'+esc(c.id)+'">删除</button>';
     return '<div class="invite"><div class="invite-actions">'+actions+'</div><div class="invite-content"><div class="invite-head"><span class="code">'+esc(c.code)+'</span><span class="q-badge '+statusClass+'">'+status+'</span><button class="copy" data-c="'+esc(c.code)+'" aria-label="复制邀请码"><span class="copy-i"></span></button></div><div class="meta">已用 '+used+'次 · 剩余 '+left+' · '+(c.expiresAt?new Date(c.expiresAt).toLocaleDateString():"永久")+'</div></div></div>';
-  }).join(""):'<div class="empty">暂无邀请码</div>';
+  }).join(""):'<div class="zp-empty">暂无邀请码</div>';
   document.querySelectorAll("#invites [data-c]").forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText(b.dataset.c);toast("已复制")}catch{toast("复制失败")}});
   document.querySelectorAll("#invites .invite").forEach(swInvite);
   document.querySelectorAll("#invites [data-invite-action]").forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();inviteAct(b.dataset.id,b.dataset.inviteAction)});

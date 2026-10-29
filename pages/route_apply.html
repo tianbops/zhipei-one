@@ -33,9 +33,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="智配One">
 <script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F6F7F9":"#121826");}catch(e){}</script><script src="/js/theme-sync.js?v=2c1a5bbc"></script>
-<link rel="stylesheet" href="/css/app.css?v=d7ee1ea8"><link rel="stylesheet" href="/css/ui-base.css?v=8d0c9a61"><link rel="stylesheet" href="/css/ui-overlay.css?v=54395092"><link rel="stylesheet" href="/css/ui-theme.css?v=c306fcf7"><link rel="stylesheet" href="/css/ui-shell.css?v=7fb74058">
-<link rel="stylesheet" href="/css/mobile-ui.css?v=ea6dd4a6">
-<link rel="stylesheet" href="/css/business-pages.css?v=541a2ca8">
+<link rel="stylesheet" href="/css/app.css?v=a4eb6f4f"><link rel="stylesheet" href="/css/ui-base.css?v=ed6093a8"><link rel="stylesheet" href="/css/ui-overlay.css?v=1eeb651c"><link rel="stylesheet" href="/css/ui-theme.css?v=c306fcf7"><link rel="stylesheet" href="/css/ui-shell.css?v=a444eb5c">
+<link rel="stylesheet" href="/css/mobile-ui.css?v=3f9fab5a">
+<link rel="stylesheet" href="/css/business-pages.css?v=660bb513">
 <link rel="stylesheet" href="/css/zp-picker.css?v=4a088057">
 </head>
 <body>
@@ -61,7 +61,7 @@
 </section>
 <section class="page2-card">
   <h2>我的申请记录</h2>
-  <div id="requests"><div class="empty">读取中…</div></div>
+  <div id="requests"><div class="zp-empty">读取中…</div></div>
 </section>
 </div>
 </main>
@@ -87,7 +87,7 @@ async function load(){
   try{
    const qs=await api("/api/route-requests");
    const statusText={pending:"待审核",approved:"已批准",rejected:"已驳回"};
-   $("requests").innerHTML=qs.requests?.length?qs.requests.slice().reverse().map(x=>'<div class="request-row"><strong>'+esc2(rName(routeMap[x.routeId]||x.routeId))+'</strong> · '+(x.duty==="driver"?"司机":"配送")+' · '+(statusText[x.status]||x.status)+(x.reviewedAt?" · "+new Date(x.reviewedAt).toLocaleString():"")+"</div>").join(""):'<div class="empty">暂无线路申请记录</div>';
+   $("requests").innerHTML=qs.requests?.length?qs.requests.slice().reverse().map(x=>'<div class="request-row"><strong>'+esc2(rName(routeMap[x.routeId]||x.routeId))+'</strong> · '+(x.duty==="driver"?"司机":"配送")+' · '+(statusText[x.status]||x.status)+(x.reviewedAt?" · "+new Date(x.reviewedAt).toLocaleString():"")+"</div>").join(""):'<div class="zp-empty">暂无线路申请记录</div>';
   }catch(e){$("requests").textContent="申请记录加载失败："+msg(e)}
  }catch(e){if(e&&e.code==="HTTP_401"&&window.zpAuthFail){window.zpAuthFail("expired");return}$("route").innerHTML='<option value="">线路加载失败</option>';$("requests").textContent="线路加载失败："+msg(e);$("message").textContent=msg(e)}
 }
@@ -105,7 +105,7 @@ $("submit").onclick=async()=>{
 };
 load();
 </script>
-<script src="/js/ui/core.js?v=7c4e2f82"></script><script src="/js/ui/appearance.js?v=24eaa466"></script><script src="/js/ui/feedback.js?v=f8da0256"></script><script src="/js/ui/nav.js?v=fee2f25c"></script><script src="/js/ui/back.js?v=870088ec"></script><script src="/js/ui/nav-prefetch.js?v=7c589b89"></script><script src="/js/ui/zp-picker.js?v=1cdf0a93"></script>
+<script src="/js/ui/core.js?v=7c4e2f82"></script><script src="/js/ui/appearance.js?v=2661f74b"></script><script src="/js/ui/feedback.js?v=f8da0256"></script><script src="/js/ui/nav.js?v=1a5738b3"></script><script src="/js/ui/back.js?v=870088ec"></script><script src="/js/ui/nav-prefetch.js?v=7c589b89"></script><script src="/js/ui/zp-picker.js?v=1cdf0a93"></script>
 <script src="/js/pwa.js?v=68dbac73"></script>
 </body>
 </html>

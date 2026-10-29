@@ -37,8 +37,8 @@ const reps = [
   ".home-app{",                 // base：App 壳
   ".task-card{",                // base：任务卡
   ".trend-card{",               // trend：配送趋势
-  ".bottom-nav{",               // dashboard：底部导航
-  "body.sheet-open .bottom-nav",// dashboard：上传弹层置顶
+  // 2026-10-29 底栏收编：底栏已从 home-dashboard.css 移入 css/ui-base.css（.zp-nav），
+  // 首页与业务页共用同一份原语；此处不再断言该选择器，改由底栏专项断言覆盖。
   // 2026-10-29 UI 专项整治：light 段的纯颜色补丁（~50 条冷灰蓝字面量）已全部删除，
   // 该段现在只剩「明暗插图切换」这一条有实际职责的规则，代表选择器随之改为它。
   ':root[data-zp-theme="light"] .delivery-man{', // light：明暗插图切换

@@ -7,7 +7,7 @@ const { $, S, esc, rn, api, toast, open, close, page, sw, closeSwipes, dlg, dt, 
 async function renderPerfReport(){
   const summary=$("perfSummary"),endpoints=$("perfEndpoints"),phases=$("perfPhases"),updated=$("perfUpdated");
   window.__zpPerfCopyText="智配One 性能诊断报告\n状态：正在读取数据…";
-  summary.innerHTML='<div class="empty">正在读取最近24小时性能数据…</div>';endpoints.innerHTML="";phases.innerHTML="";
+  summary.innerHTML='<div class="zp-empty">正在读取最近24小时性能数据…</div>';endpoints.innerHTML="";phases.innerHTML="";
   try{
     const d=await api("/api/perf-report?adminView="+Date.now());
     if(!d.success||!d.totals)throw Error("性能报告格式异常");
@@ -32,7 +32,7 @@ async function renderPerfReport(){
     for(const [name,x] of top)reportLines.push(name+"：样本 "+x.count+"，平均 "+(x.count?Math.round(x.sum/x.count):0)+" ms，峰值 "+Math.round(x.max)+" ms，服务端平均 "+(x.serverCount?Math.round(x.serverSum/x.serverCount)+" ms（"+x.serverCount+"次）":"暂无")+(x.failures?"，异常 "+x.failures+codesText(x):""));
     const codeLines=[];for(const [name,x] of [...em.entries()])if(x.codes.size)codeLines.push(name+"：异常 "+x.failures+" "+codesText(x)+"，平均响应 "+(x.count?Math.round(x.sum/x.count):0)+" ms，服务端平均 "+(x.serverCount?Math.round(x.serverSum/x.serverCount)+" ms":"暂无"));
     if(codeLines.length)reportLines.push("","异常状态码细分（HTTP 状态码×次数，用于区分服务端拒绝与网络失败）",...codeLines);
-    endpoints.innerHTML='<div class="perf-list-title">接口耗时 · 按平均耗时排序</div>'+(top.length?top.map(([name,x])=>'<div class="perf-row"><div class="perf-row-top"><span>'+esc(name)+'</span><span>'+(x.count?Math.round(x.sum/x.count):0)+' ms 平均</span></div><div class="perf-row-meta">样本 '+x.count+' · 峰值 '+Math.round(x.max)+' ms · 服务端 '+(x.serverCount?Math.round(x.serverSum/x.serverCount)+' ms 平均（'+x.serverCount+'次）':'暂无服务端计时')+(x.failures?' · 异常 '+x.failures+codesText(x):'')+'</div></div>').join(""):'<div class="empty">最近24小时暂无接口样本</div>');
+    endpoints.innerHTML='<div class="perf-list-title">接口耗时 · 按平均耗时排序</div>'+(top.length?top.map(([name,x])=>'<div class="perf-row"><div class="perf-row-top"><span>'+esc(name)+'</span><span>'+(x.count?Math.round(x.sum/x.count):0)+' ms 平均</span></div><div class="perf-row-meta">样本 '+x.count+' · 峰值 '+Math.round(x.max)+' ms · 服务端 '+(x.serverCount?Math.round(x.serverSum/x.serverCount)+' ms 平均（'+x.serverCount+'次）':'暂无服务端计时')+(x.failures?' · 异常 '+x.failures+codesText(x):'')+'</div></div>').join(""):'<div class="zp-empty">最近24小时暂无接口样本</div>');
     const pm=new Map();
     for(const g of groups)for(const [name,p] of Object.entries(g.phases||{})){
       const x=pm.get(name)||{count:0,sum:0,max:0},n=Number(p.count)||0;x.count+=n;x.sum+=(Number(p.avgMs)||0)*n;x.max=Math.max(x.max,Number(p.max)||0);pm.set(name,x);
@@ -42,7 +42,7 @@ async function renderPerfReport(){
     phases.innerHTML=ps.length?'<div class="perf-list-title">历史查询阶段耗时</div>'+ps.map(([name,x])=>'<div class="perf-row"><div class="perf-row-top"><span>'+esc(name)+'</span><span>'+(x.count?Math.round(x.sum/x.count):0)+' ms 平均</span></div><div class="perf-row-meta">样本 '+x.count+' · 峰值 '+Math.round(x.max)+' ms</div></div>').join(""):"";
   }catch(e){
     updated.textContent="读取失败："+(e.message||"请稍后重试");window.__zpPerfCopyText="智配One 性能诊断报告\n读取失败："+(e.message||"请稍后重试");
-    summary.innerHTML='<div class="empty">性能报告暂时不可用。请确认管理员会话有效后重试。</div>';
+    summary.innerHTML='<div class="zp-empty">性能报告暂时不可用。请确认管理员会话有效后重试。</div>';
   }
 }
 A.renderPerfReport=renderPerfReport;

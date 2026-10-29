@@ -192,6 +192,17 @@
   --zp-topbar-btn:42px;
   --zp-control-height:48px;
   --zp-space-4:16px;
+  /* ===== 外壳尺寸（2026-10-29 外壳收编）=====
+     背景：外壳曾由 6 个容器类分别声明 —— .home-app / .page2 / .shell /
+     .order-shell / .dispatch-page / .history-shell，各写一遍 width、min-height、
+     margin:auto、padding，宽度出现 430/520/560 三档，左右留白出现 0/12/14/16 四档；
+     main.zp-shell 想统一只能"盖一层再把旧值抵消掉"（padding-top:0 就是抵消痕迹）。
+     现在外壳只有一个来源：main.zp-shell 读下面两个值，各页容器类不再声明尺寸。
+       shell-max 430 —— 主流值（首页/线路/设置/数据/历史），也是 iPhone 最大逻辑宽，
+          超出即为平板/桌面，居中留白即可，不必为单个页面放宽。
+       gutter 16 —— 与 --zp-space-4 同源；窄屏 380 以下降为 12（见 ui-shell.css）。 */
+  --zp-shell-max:430px;
+  --zp-gutter:16px;
 
   /* ===== 设计语言基线 3.0（2026-10-29 · UI 专项整治「立规」）=====
      背景：整治前全站字号 28 种、圆角 32 种（8/9/10/11/12/13/14/17/18/19 十档同时
@@ -264,6 +275,7 @@
      约定：同一层级内的元素不得互相覆盖；跨层级严格递进。
      规则：页面内所有 position:fixed / absolute + z-index 一律引用下列变量，禁止硬编码。 */
   --ui-z-topbar:10;        /* 顶栏：页面顶部固定栏 */
+  --ui-z-nav:40;           /* 常驻底部导航：压过内容，低于菜单与一切浮层 */
   --ui-z-float:90;         /* 悬浮操作：快速滚动、悬浮按钮（不遮挡弹窗） */
   --ui-z-menu:200;         /* 菜单浮层：下拉菜单、页面菜单、选择器（非模态） */
   --ui-z-modal:1000;       /* 模态第 1 层：业务弹窗（导入/订单/历史/账号/上传） */
@@ -388,25 +400,15 @@ button:active{transform:translateY(0)}
   color:var(--zp-text);
 }
 
-/* 统一模态层：只保留一层遮罩 + 一个内容面板 */
-.order-dialog,.history-dialog,.data-import,.upload-overlay{
-  background:var(--zp-scrim-dialog)!important;
-}
-.order-dialog-panel,.history-dialog-panel,.data-import-panel,.account-dialog,.upload-sheet{
-  background:var(--zp-surface);
-  border:1px solid var(--zp-line);
-  border-radius:var(--zp-r-dialog);
-  box-shadow:var(--zp-shadow-lg);
-}
-.order-dialog-panel,.history-dialog-panel,.data-import-panel,.account-dialog{
-  max-width:398px;
-}
+/* 弹层：遮罩与面板的「唯一完整定义」在 css/ui-overlay.css 的 4.0 节
+   （position/display/居中/padding/宽 398/圆角 18/边/阴影/滚动）。
+   本节原来又写了一遍 background/border/radius/shadow/max-width，
+   同特异性下被 4.0 节整段覆盖 —— 属于「写了两遍、只有一遍算数」。
+   2026-10-29 已删除重复声明，只保留 4.0 节没有的两项：头部高度与标题字重。 */
 .order-dialog-head,.data-import-head{
   min-height:40px;
 }
 .order-dialog-head strong,.data-import-head h3,.history-dialog-panel>strong,.account-dialog h2{
-  font-size:var(--zp-fs-16);
-  line-height:24px;
   font-weight:var(--zp-fw-semibold);
 }
 .order-dialog-panel>p,.history-dialog-panel>p,.account-dialog>p{
@@ -503,9 +505,28 @@ textarea:-webkit-autofill{
 .ui-toast.success{background:var(--zp-success-surface)}
 .ui-toast.error{background:var(--zp-error-surface);border-color:var(--zp-error-surface-strong)}
 
-/* 状态文字与列表节奏统一 */
-.empty,.dispatch-empty,.dispatch-message,.history-state{
+/* ===== 空态原语（2026-10-29 空态收编） =====
+   背景：同一句「居中灰字提示」全站有 8 个类名、8 套取值：
+     .empty（管理端 28/12 · 线路申请 30/10 · mobile-ui 28/12）
+     .data-empty（28/8 · 13px）  .dispatch-message（24/12 · 13px）
+     .dispatch-empty（同前者）    .history-state（22/16 与 18/8 两份定义）
+     .today-store-empty（18/4 · 14px）  .order-empty（48/18 · 14px 与 15px 两份）
+   于是 ui-overlay.css 只好再写一条「五选择器合并 + !important」把四处强行拉平——
+   收口靠的是加载顺序与权重，不是同一份定义。现在只有一个类：
+     .zp-empty           常规空态（整块区域无数据）
+     .zp-empty--tight    列表内嵌空态（首页「今日暂无配送门店」这种行内位置）
+   旧类名全部移除，HTML/JS 引用同步改名。 */
+.zp-empty{
+  padding:28px 12px;
+  text-align:center;
   color:var(--zp-soft);
+  font-size:var(--zp-fs-15);
+  line-height:22px;
+}
+.zp-empty--tight{
+  padding:18px 4px;
+  font-size:var(--zp-fs-14);
+  line-height:20px;
 }
 .store-row,.account-row,.request-row{
   border-bottom-color:var(--zp-tint);
@@ -524,61 +545,44 @@ textarea:-webkit-autofill{
 .zp-confirm{position:fixed;top:0;right:0;bottom:0;left:0;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;padding:18px;background:var(--zp-scrim-dialog)}
 .zp-confirm[hidden]{display:none}
 .zp-confirm-panel{width:min(100%,360px);padding:20px 18px 16px;border:1px solid var(--zp-line);border-radius:var(--zp-r-dialog);background:var(--zp-surface);box-shadow:var(--zp-shadow-lg)}
-.zp-confirm-panel h3{margin:0;color:var(--zp-text);font-size:var(--zp-fs-16);line-height:24px;font-weight:var(--zp-fw-semibold)}
-.zp-confirm-panel p{margin:8px 0 0;color:var(--zp-muted);font-size:var(--zp-fs-13);line-height:20px;word-break:break-word}
+.zp-confirm-panel h3{margin:0;color:var(--zp-text);font-weight:var(--zp-fw-semibold)}
+.zp-confirm-panel p{margin:8px 0 0;color:var(--zp-muted);word-break:break-word}
 .zp-confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
-.zp-confirm-actions button{min-height:var(--zp-control-height);border-radius:var(--zp-r-control);font-size:var(--zp-fs-14);font-weight:var(--zp-fw-medium)}
+.zp-confirm-actions button{min-height:var(--zp-control-height);border-radius:var(--zp-r-control);font-weight:var(--zp-fw-medium)}
 .zp-confirm-actions button:first-child{border:1px solid var(--zp-line);background:var(--zp-card-translucent-2);color:var(--zp-text)}
 .zp-confirm-actions button:last-child{border:1px solid var(--zp-line);background:var(--zp-card-translucent);color:var(--zp-text)}
 
-/* Android 移动端文字规范 2.4
-   仅调整文字尺寸与行高，不改变业务规则、数据结构、交互逻辑或页面布局。
-   目标层级：页面标题 20px / 区块标题 18px / 正文 16px / 辅助 15px / 元信息 14px。 */
-.topbar strong,.account-page .topbar h1,.route-apply-page .topbar h1,.data-page .topbar h1,.dispatch-page .topbar h1,.order-title{font-size:var(--zp-fs-20)!important;line-height:26px!important}
-.card h2, .page2-card h2, .section-title, .data-route-title h2{font-size:var(--zp-fs-18)!important;line-height:24px!important}
-.data-import-actions button,.history-dialog-actions button,.order-dialog-actions button,.account-dialog-actions button,.zp-confirm-actions button{font-size:var(--zp-fs-16)!important;line-height:var(--zp-lh-22)!important}
-.order-dialog-head strong,.data-import-head h3,.history-dialog-panel>strong,.account-dialog h2,.zp-confirm-panel h3{font-size:var(--zp-fs-18)!important;line-height:24px!important}
-.order-dialog-panel>p,.history-dialog-panel>p,.account-dialog>p,.zp-confirm-panel p{font-size:var(--zp-fs-15)!important;line-height:22px!important}
-.ui-toast{font-size:var(--zp-fs-15)!important;line-height:21px!important}
-.empty,.dispatch-empty,.dispatch-message,.history-state{font-size:var(--zp-fs-15)!important;line-height:22px!important}
+/* ===== 文字层级基线（2026-10-29 去 !important） =====
+   上一版这里是一组 !important 强制规则（「Android 移动端文字规范 2.4」），用来把
+   各页标题、弹窗标题/正文/按钮的字号硬拉到统一值。它压住了组件自己的声明，于是
+   组件要改行高就不得不再带一条 !important（首页 .home-brand strong 就是被这样逼出来的），
+   补丁开始互相叠加。
 
-/* Modal positioning 2.5
-   所有业务弹窗统一居中显示；菜单、Toast、悬浮操作不属于模态弹窗，不参与居中规则。 */
-.order-dialog,
-.history-dialog,
-.history-picker,
-.data-import,
-.upload-overlay{
-  align-items:center!important;
-  justify-content:center!important;
-}
-.order-dialog-panel,
-.history-dialog-panel,
-.history-picker-panel,
-.data-import-panel,
-.account-dialog,
-.upload-sheet{
-  margin:0 auto!important;
-  border-radius:var(--zp-r-dialog)!important;
-  max-height:min(88vh,760px);max-height:min(88dvh,760px);
-}
-.upload-sheet{
-  width:min(100%,390px)!important;
-  padding:20px 18px calc(18px + env(safe-area-inset-bottom))!important;
-}
-@media(max-width:380px){
-  .order-dialog,
-  .history-dialog,
-  .history-picker,
-  .data-import,
-  .upload-overlay{padding:14px!important}
-  .order-dialog-panel,
-  .history-dialog-panel,
-  .history-picker-panel,
-  .data-import-panel,
-  .account-dialog,
-  .upload-sheet{border-radius:var(--zp-r-dialog)!important}
-}
+   现在的口径：层级仍然只有五档 —— 页面标题 20 / 区块标题 18 / 按钮正文 16 /
+   辅助 15 / 元信息 14；但**由组件自己声明**，本段只是它们的基线值，普通级联即可
+   覆盖（同特异性后者胜）。各页组件已同步改为正确值，因此视觉与改造前一致。
+   本段只列「组件自身没有字号声明」的那些，有声明的一律以组件为准：
+     · .topbar strong / .section-title —— 顶栏标题与区块标题的兜底
+     · 弹窗标题 / 正文 / 按钮 —— account-dialog 等原本完全依赖 !important
+     · .ui-toast —— 全局提示 */
+.topbar strong{font-size:var(--zp-fs-20);line-height:26px}
+.section-title{font-size:var(--zp-fs-18);line-height:24px}
+.order-dialog-head strong,.data-import-head h3,.history-dialog-panel>strong,
+.account-dialog h2,.zp-confirm-panel h3{font-size:var(--zp-fs-18);line-height:24px}
+.order-dialog-panel>p,.history-dialog-panel>p,.account-dialog>p,
+.zp-confirm-panel p{font-size:var(--zp-fs-15);line-height:22px}
+.data-import-actions button,.history-dialog-actions button,.order-dialog-actions button,
+.account-dialog-actions button,.zp-confirm-actions button{font-size:var(--zp-fs-16);line-height:var(--zp-lh-22)}
+.ui-toast{font-size:var(--zp-fs-15);line-height:21px}
+
+/* 弹层定位与圆角（2026-10-29 去 !important）：遮罩的 display/居中/padding 与
+   面板的 width/圆角/最大高度，唯一完整定义在 css/ui-overlay.css 的 4.0 节，
+   本节不再重写一遍。原来这里用 !important 压各组件自己的 align-items /
+   border-radius / margin，组件要改就只能在更后面再写一条 !important。
+   现在由组件自己写对：.data-import 已是 align-items:center + padding:12px，
+   .history-dialog 已是 padding:12px，其余弹层本就只依赖 4.0 节。
+   上传面板（.upload-sheet）是底部 sheet，需要安全区内边距与 390 宽 ——
+   它的完整定义同样在 css/ui-overlay.css 4.0 节，本节不再声明。 */
 
 
 /* 全局快速滚动箭头已下线（产品决策）：不再注入 ↑/↓ 悬浮按钮。 */
@@ -671,3 +675,83 @@ html[data-zp-native="1"]{--zp-safe-top:8px}
 .password-toggle{position:absolute;right:6px;bottom:0;width:40px;height:48px;padding:0;border:0;background:transparent;color:var(--zp-muted);display:flex;align-items:center;justify-content:center;cursor:pointer}
 .password-toggle:hover{color:var(--zp-text)}
 .password-toggle svg{width:20px;height:20px;pointer-events:none}
+
+/* ===== 常驻底部导航原语（2026-10-29 底栏收编） =====
+   背景：底栏曾有三份实现，全都叫 .bottom-nav，靠页面级前缀与 !important 抢胜负：
+     ① css/home-dashboard.css —— 首页静态导航（干净版，无 !important）
+     ② css/ui-overlay.css —— .zp-business-nav-page 前缀 40 条 !important，作用是把①的
+        每条声明原样重写一遍，只为让业务页「长得像首页」；
+     ③ css/business-pages.css —— .dispatch-page 前缀 30 条 !important，注释自称
+        「防字体污染守卫」，而全站已无 @font-face / 图标字体，它对齐的目标同样是①。
+   同一个组件抄三遍，改一处必须同步三处，漏一处就成了「视觉一样、取值不同」——
+   这正是本次整治要消灭的形态。现收为单一来源：
+     · 结构（5 列 grid / 52px 触控 / 圆形加号）与配色（--zp-nav-* 令牌组）只在此声明；
+     · 页面级文件不再出现底栏规则，任何页面挂上 .zp-nav 即得同一底栏；
+     · 层级进 --ui-z-nav 体系，取代首页的 30 与业务页的 40 两个硬编码值。
+   类名同步从 .bottom-nav 改为 .zp-nav（与 .zp-btn/.zp-empty/.zp-shell 同族前缀）。 */
+.zp-nav{
+  position:fixed;
+  left:50%;
+  bottom:0;
+  z-index:var(--ui-z-nav);
+  width:min(100%,var(--zp-shell-max));
+  min-height:64px;
+  padding:6px 8px calc(6px + env(safe-area-inset-bottom));
+  transform:translateX(-50%);
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:4px;
+  background:var(--zp-nav-bg);
+  /* 无上沿分隔线（2026-10-28 用户定稿）：底栏与内容靠色阶分开。 */
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+}
+.zp-nav-item{
+  min-width:0;
+  min-height:52px;
+  padding:0;
+  border:0;
+  border-radius:var(--zp-r-card);
+  background:transparent;
+  color:var(--zp-nav-text);
+  text-decoration:none;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  font-size:var(--zp-fs-12);
+  line-height:17px;
+  font-weight:var(--zp-fw-semibold);
+  -webkit-tap-highlight-color:transparent;
+}
+.zp-nav-item:active{background:var(--zp-nav-active-bg);color:var(--zp-nav-text-active)}
+.zp-nav-icon{width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex:none}
+.zp-nav-icon svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+/* 选中态只改文字/图标颜色（2026-10-24 用户定稿）：不加背景块、不改字重，
+   与未选中态仅靠 主色 ↔ 中性灰 的色差区分。 */
+.zp-nav-item[aria-current="page"],
+.zp-nav-item.is-active{color:var(--zp-primary)}
+/* 中间上传加号：无文字标签的凸起圆形按钮，圆形由 .zp-nav-icon 承载。
+   阴影此前写成 box-shadow:0 8px 20px var(--zp-shadow-sm) —— 令牌本身是完整 shadow
+   值（含 offset/blur/color），套进长度位置后整条声明非法被丢弃，于是首页加号没有
+   阴影、业务页（用 var(--zp-shadow-sm)!important）却有，又是「看起来一样」的一处裂缝。
+   这里直接用完整 shadow 令牌。 */
+.zp-nav-plus .zp-nav-icon{
+  width:52px;
+  height:52px;
+  border-radius:50%;
+  background:var(--zp-primary);
+  color:var(--zp-on-primary);
+  transform:translateY(-16px);
+  box-shadow:var(--zp-shadow-md);
+}
+.zp-nav-plus .zp-nav-icon svg{width:24px;height:24px;stroke-width:2.2}
+.zp-nav-plus:active{background:transparent}
+.zp-nav-plus:active .zp-nav-icon{filter:brightness(1.15)}
+@media(max-width:380px){
+  .zp-nav{padding-left:6px;padding-right:6px}
+}
+/* 首页上传弹层打开时，底栏浮于遮罩之上，使「上传」按钮可再次点击将其关闭。
+   用层级令牌递进而非硬编码 1001，叠放秩序仍由 --ui-z-* 一处决定。 */
+body.sheet-open .zp-nav{z-index:calc(var(--ui-z-modal) + 1)}

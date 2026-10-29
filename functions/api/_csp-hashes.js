@@ -8,22 +8,22 @@
  */
 export const INLINE_SCRIPT_HASHES = [
   "'sha256-30QVRC5+xnf2L/FpOCv5N1NRmp+tGTc/LR8E7IYgQoY='",
+  "'sha256-5Vv5M5V4cNzigHGeG7tyjX/fT0hiciAOdWNc6scp+uU='",
+  "'sha256-6S3Q9SYudD0KybsCNaJN3eXkpWemo+PoGyDbEWO4OTA='",
   "'sha256-6cZbWMQszjI/NJGFAo7bPl2caT4X97CIk4zJ+t3zZiM='",
   "'sha256-DNlGkYrDCx/AfzEjsbdWJGh237CdEZ9iSdGvFqGSXIs='",
   "'sha256-EQJmSLoiJL+PQWC4gR5vK1m00IAIkOncgH8MBRcIFI8='",
   "'sha256-FtNCWvRQ8Fk17rFw1hKRlJwhHLDsg23OtAvJiOm2l7A='",
-  "'sha256-KeOO7d7QRf/zHYg2Li3PRoBBoJSxtxjdiMZbHRBIYZU='",
   "'sha256-MKdPLPHgoQKi9NaNphrUVdhASlXdJH/uPhOszrQk/Ps='",
   "'sha256-Olpv4WZyS2ww4ZTxshC1vGXZYa6gG40pXYAUgL+pvOM='",
+  "'sha256-PM4M2AzDWmfYA9sOIB1k7Twu2pvKwWhepSpPitM+gGY='",
   "'sha256-Ugr/ROWqz2c38q1IjBPexc6mwtLx8Ps2WXYPFdznT0U='",
   "'sha256-XA08JObdZbZVLasslDJ8CblQME6wINeX7rW15EbsqZw='",
   "'sha256-cf75Iui0OlJqDOCnnPHxROdfuSannIL1ZAs75ruJkis='",
-  "'sha256-dOlUULBTWGYBuLtA7V/UEs3sENOdOPTC8j+OsFRUNjw='",
   "'sha256-eMT6TQXzCqozsul4L3cq/gnK8jCzbH4qlVqfrCgbfEk='",
   "'sha256-fmSxi6o0X0L18UHDMnuUmLsD6zBhC+okAzUDoP1axbc='",
   "'sha256-nEqy98Q3AUMWGF2ZJKlpxae2hLsCfWAol3+nA7s4KXI='",
   "'sha256-vg4zcO/PWYJRpe2qI8rwNf3wpqBQ/IJxB1fyaLxnMqI='",
-  "'sha256-zbuCwJsCrV/haN2wi+T5550L0MaACsf4FBjSJFIVoyY='",
 ];
 
 /** 把哈希表注入基础 CSP 的 script-src（'unsafe-inline' 保留作旧浏览器回退） */

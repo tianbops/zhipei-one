@@ -26,14 +26,18 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-store-meta{display:grid;gap:3px;margin-top:5px;color:var(--zp-muted);font-size:var(--zp-fs-14);line-height:20px;word-break:break-all}
 .data-store-meta span{display:block}
 .data-store-meta-label{color:var(--zp-muted);margin-right:4px}
-.data-empty{padding:28px 8px;text-align:center;color:var(--zp-muted);font-size:var(--zp-fs-13)}
+/* 空态统一走 css/ui-base.css 的 .zp-empty（本文件不再定义）。 */
 /* 数据中心弹窗：内部布局沿用原始定义。
    遮罩与面板的定位/外观由 ui-unified.css 统一规则接管（与原版渲染一致）；
    此处仅补充 dvh 兜底（旧内核不支持 dvh 时退回 88vh，避免面板失去高度上限）。 */
-.data-import{position:fixed;inset:0;z-index:120;background:var(--zp-scrim-dialog);padding:16px;display:flex;align-items:flex-end;justify-content:center}
+.data-import{position:fixed;inset:0;z-index:120;background:var(--zp-scrim-dialog);padding:12px;display:flex;align-items:center;justify-content:center}
 /* 面板为纵向 flex：内容区滚动，底部「取消/确认」操作条 sticky 常驻，
    长表单（单独追加/编辑门店）在小屏上不再需要面板内滚动才能看到按钮 */
-.data-import-panel{width:min(100%,620px);max-height:min(88vh,760px);max-height:min(88dvh,760px);overflow:auto;display:flex;flex-direction:column;background:var(--zp-card-translucent);border:1px solid var(--zp-line);border-radius:18px 18px 12px 12px;padding:18px 16px 0;box-shadow:0 -10px 40px var(--zp-shadow-md)}
+/* 面板外形（宽 398 / 圆角 18 / 实底 / 阴影 / 内边距）统一由 css/ui-overlay.css 4.0 节给出，
+   本节只保留它特有的两件事：内部纵向布局、入场动效。
+   2026-10-29 前这里写的是 width:620 / 圆角 18 18 12 12 / 半透明底 / 自带上浮阴影 ——
+   与「弹窗一律 398 居中」的另一套取值并存，桌面端会撑到 620。 */
+.data-import-panel{overflow:auto;display:flex;flex-direction:column}
 .data-import-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
 .data-import-head h3{margin:0;font-size:var(--zp-fs-16);line-height:24px}
 .data-import-close{width:34px;height:34px;border:1px solid var(--zp-line);border-radius:var(--zp-r-mini);background:var(--zp-card-translucent-2);color:var(--zp-muted);font-size:var(--zp-fs-18)}
@@ -44,7 +48,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-import-actions{position:sticky;bottom:0;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px -16px 0;padding:12px 16px calc(14px + env(safe-area-inset-bottom));background:var(--zp-card-translucent);border-top:1px solid var(--zp-tint)}
 .data-import-actions button{height:var(--zp-control-height);border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-translucent-2);color:var(--zp-text);font-size:var(--zp-fs-15)}
 .data-import-actions #importSave{background:var(--zp-primary);color:var(--zp-on-primary)}
-@media(min-width:600px){.data-import{align-items:center}.data-import-panel{border-radius:var(--zp-r-dialog)}}
+/* 桌面端居中的补丁已无必要：.data-import 现在全程居中。 */
 /* 轻量入场动效：只做透明度+上滑，不改布局与结构；系统开启"减弱动态效果"时自动关闭 */
 @keyframes dataSheetIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 .data-import-panel{animation:dataSheetIn .18s ease-out}
@@ -138,7 +142,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-summary{font-size:var(--zp-fs-15);line-height:22px}
 .data-summary strong{font-size:var(--zp-fs-18);line-height:24px}
 .data-import-actions button{font-size:var(--zp-fs-16);line-height:22px}
-.data-page .topbar h1{font-size:var(--zp-fs-18);line-height:24px}
+.data-page .topbar h1{font-size:var(--zp-fs-20);line-height:26px}
 .data-route-title h2{font-size:var(--zp-fs-18);line-height:24px}
 .data-page-menu button{font-size:var(--zp-fs-16);line-height:22px}
 .data-feedback{font-size:var(--zp-fs-13);line-height:18px}

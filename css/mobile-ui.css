@@ -16,10 +16,6 @@ button:focus-visible,a:focus-visible{
   outline:2px solid var(--zp-focus-ring);outline-offset:2px;
 }
 input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none}
-.shell{
-  width:min(calc(100% - 24px),560px);
-  padding:max(10px,var(--zp-safe-top)) 0 calc(28px + env(safe-area-inset-bottom));
-}
 /* 阶段 6 · 5A：移除遗留 .topbar 死规则（无 HTML 用裸 .topbar）；.topbar/.app-back 现定义于 css/ui-unified.css。 */
 .card{
   background:var(--zp-card-translucent-2);
@@ -43,13 +39,11 @@ label{display:block;color:var(--zp-muted);font-size:var(--zp-fs-13);line-height:
 label+label{margin-top:13px}
 .message{font-size:var(--zp-fs-13)}
 .message.error{color:var(--zp-danger)}
-.empty{padding:28px 12px;text-align:center;color:var(--zp-soft)}
 [disabled]{cursor:default!important}
 /* 输入框的禁用观感由 ui-base 的 :disabled 规则给出（保留描边 + 独立底色）；
    这里只弱化按钮，避免把整个输入框连边框一起淡掉。 */
 button:disabled{opacity:.45}
 @media(max-width:380px){
-  .shell{width:min(calc(100% - 20px),560px)}
   .card{padding:15px}
 }
 @media(prefers-reduced-motion:reduce){

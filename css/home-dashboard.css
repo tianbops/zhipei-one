@@ -1,5 +1,4 @@
 /* ===== 首页新版信息架构：今日工作台 + 底部四入口 ===== */
-.home-app{padding-bottom:calc(78px + env(safe-area-inset-bottom))}
 .home-app .topbar{justify-content:flex-start}
 .task-card{padding-bottom:14px}
 /* 2026-10-29：顶栏下方已经有 .zp-scroll 的 14px padding，卡片这里再写 margin-top:14px
@@ -56,7 +55,7 @@ main.home-app .task-card{margin-top:0}
   line-height:24px;
   font-weight:var(--zp-fw-medium);
 }
-.today-store-empty{padding:18px 4px;color:var(--zp-muted);font-size:var(--zp-fs-14);text-align:center}
+/* 首页列表内嵌空态改用 .zp-empty--tight（css/ui-base.css）。 */
 /* 统计版块精简：压缩垂直占用（小标签行高/间距收窄），无统计项时整块不占位。 */
 .today-metrics{
   display:flex;
@@ -68,68 +67,13 @@ main.home-app .task-card{margin-top:0}
 }
 .today-metrics:empty{display:none}
 .today-metrics span{color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:18px}
-.bottom-nav{
-  position:fixed;
-  left:50%;
-  bottom:0;
-  z-index:30;
-  width:min(100%,430px);
-  min-height:64px;
-  padding:6px 8px calc(6px + env(safe-area-inset-bottom));
-  transform:translateX(-50%);
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
-  gap:4px;
-  background:var(--zp-nav-bg);
-  /* 2026-10-28 用户要求：去掉底栏上沿横线，全站底部导航统一无分隔线 */
-}
-.bottom-nav-item{
-  min-width:0;
-  min-height:52px;
-  border:0;
-  border-radius:var(--zp-r-card);
-  background:transparent;
-  color:var(--zp-nav-text);
-  text-decoration:none;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:3px;
-  font-size:var(--zp-fs-12);
-  line-height:17px;
-  font-weight:var(--zp-fw-semibold);
-  -webkit-tap-highlight-color:transparent;
-}
-.bottom-nav-item:active{background:var(--zp-nav-active-bg);color:var(--zp-nav-text-active)}
-.bottom-nav-icon{width:22px;height:22px;display:flex;align-items:center;justify-content:center}
-.bottom-nav-icon svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-/* 选中态只改文字/图标颜色（2026-10-24 用户定稿）：不加背景块、不改字重，
-   与未选中态仅靠 主色 ↔ 中性灰 的色差区分，保持底栏干净 */
-.bottom-nav-item[aria-current="page"]{color:var(--zp-primary)}
-/* 中间上传加号：无文字标签的凸起圆形按钮（首页静态导航版；
-   业务页生效值由 ui-unified.css 的 !important 规则统一，此处保持一致） */
-.bottom-nav-plus .bottom-nav-icon{
-  width:52px;height:52px;border-radius:50%;
-  background:var(--zp-primary);color:var(--zp-on-primary);
-  transform:translateY(-16px);
-  box-shadow:0 8px 20px var(--zp-shadow-sm);
-}
-.bottom-nav-plus .bottom-nav-icon svg{width:24px;height:24px;stroke-width:2.2}
-.bottom-nav-plus:active{background:transparent}
-.bottom-nav-plus:active .bottom-nav-icon{filter:brightness(1.15)}
+/* 底栏原语已收进 css/ui-base.css（.zp-nav），本页不再声明。 */
 @media(max-width:380px){
  .home-app{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
  .today-store-list{max-height:252px}   /* 行高 42px × 6 = 252px，固定展示 6 家 */
  .today-store-row{min-height:44px}
  .today-store-name{font-size:var(--zp-fs-16)}
- .bottom-nav{padding-left:6px;padding-right:6px}
 }
-
-/* 上传弹窗开启（body.sheet-open）时，底部导航浮于遮罩(--ui-z-modal:1000)之上，
-   使「上传」按钮可再次点击将其关闭——实现首页上传按钮 toggle 回首页态。
-   子页面无 #uploadArea/openUpload，不会出现 sheet-open，故此规则仅作用于首页。 */
-body.sheet-open .bottom-nav{z-index:1001 !important}
 
 
 /* ===== 一屏定盘（2026-10-29） =====

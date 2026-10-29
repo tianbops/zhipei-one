@@ -22,7 +22,7 @@ const renderSubstituteBadge=()=>{
   const isSubstitute=!!dispatchRouteId&&!dispatchRouteId.startsWith(TEMP_ROUTE_PREFIX)&&dispatchRouteId!==boundRouteId;
   subBadge.hidden=!isSubstitute;
 };
-const setEmptyToday=()=>{todayCount.textContent="暂无运单";todayWeight.textContent="";if(todayStoreList)todayStoreList.innerHTML='<div class="today-store-empty">今日暂无配送门店</div>';if(todayMetrics)todayMetrics.innerHTML=""};
+const setEmptyToday=()=>{todayCount.textContent="暂无运单";todayWeight.textContent="";if(todayStoreList)todayStoreList.innerHTML='<div class="zp-empty zp-empty--tight">今日暂无配送门店</div>';if(todayMetrics)todayMetrics.innerHTML=""};
 const setRouteBadge=(route)=>{if(!dot)return;const type=route?.type||"";const name=String(route?.name||"").trim();
   /* 全局标准：圆点内只显示线路数字（临时线路显示「临」），「X号线」全名用于文字位置 */
   const badge=(type==="temporary"||/临时/.test(name))?"临":(window.zpRouteShort?window.zpRouteShort(name):(name.match(/\d+/)?.[0]||name.replace(/\s+/g,"").slice(0,2)||"—"));

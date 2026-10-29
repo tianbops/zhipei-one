@@ -66,11 +66,10 @@
 .account-page .acct-seg .appearance-theme-option:active{opacity:.55}
 @media(prefers-reduced-motion:reduce){.account-page .acct-seg .appearance-theme-option{transition:none}}
 
-/* --- 字体大小行 --- */
-.acct-font-row{display:flex;align-items:center;gap:12px;min-height:56px}
+/* --- 字体大小行（2026-10-29：.acct-font-row/.acct-font-value 两条死样式已删，
+   现结构是 .acct-font-trigger 折叠行 + .acct-font-slider 滑块行，见下方） --- */
 .acct-font-slider{flex:1;display:flex;align-items:center;gap:8px;min-width:0}
 .acct-font-slider input[type="range"]{flex:1;min-width:0;accent-color:var(--zp-text)}
-.acct-font-value{flex:none;min-width:34px;text-align:right;color:var(--zp-muted);font-size:var(--zp-fs-13)}
 
 /* --- 字体大小：默认折叠为一行「字体大小 ›」，点开才露出滑块，避免误触 --- */
 .acct-font-trigger{display:flex;align-items:center;gap:10px;width:100%;min-height:56px;padding:0;background:none;border:0;color:var(--zp-text);font:inherit;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
@@ -146,21 +145,13 @@
 .acct-about-copyright{margin:14px 0 4px;text-align:center;color:var(--zp-muted);font-size:var(--zp-fs-12)}
 .install-guide{margin:2px 0 12px}
 .install-guide ol{margin:0;padding-left:20px;color:var(--zp-muted);font-size:var(--zp-fs-13);line-height:22px}
-/* 旧壳兜底引导：≤1.0.11 的 APK 壳没有原生下载监听，App 内点下载无反应，
-   引导用户去浏览器打开网页端地址自愈（新壳 ≥1.0.12 不展示） */
-.install-guide-fallback{margin:8px 0 0;padding:12px 14px;border-radius:var(--zp-r-control);
-  background:var(--zp-bg);color:var(--zp-text);font-size:var(--zp-fs-13);line-height:20px}
-.install-guide-fallback p{margin:0 0 4px}
-.install-guide-fallback b{font-weight:var(--zp-fw-semibold)}
-.install-guide-copy{margin-top:8px;padding:8px 16px;min-height:36px;border:0;border-radius:var(--zp-r-pill);
-  background:var(--zp-primary);color:var(--zp-on-primary);
-  font-size:var(--zp-fs-13);font-weight:var(--zp-fw-semibold);cursor:pointer}
-.install-guide-copy:active{opacity:.75}
+/* 2026-10-29：.install-guide-fallback / .install-guide-copy 两条已删 —— 对应
+   「≤1.0.11 旧壳没有原生下载监听」的兜底引导，该壳早已退役，HTML/JS 零引用。 */
 /* 小链接热区透明扩展至 ≥44px（保持早前可达性巡检结论） */
-#installLabelBtn,.about-row-actions .about-link{position:relative}
-#installLabelBtn::after,.about-row-actions .about-link::after{content:"";position:absolute;inset:-14px -10px}
+#installLabelBtn{position:relative}
+#installLabelBtn::after{content:"";position:absolute;inset:-14px -10px}
+/* .about-link（关于行右侧下划线小链接）已随设置页改版下线，选择器一并摘除。 */
 .about-row-actions{display:flex;align-items:center;gap:16px;flex:none;margin-left:auto}
-.about-row-actions .about-link{padding:0;border:0;background:none;color:var(--zp-text);font-size:var(--zp-fs-13);text-decoration:underline;cursor:pointer}
 /* 下载应用行右侧动作文案：默认灰（acct-row-value 已给），有更新时主色强调 */
 .acct-install-action.is-update{color:var(--zp-primary);font-weight:var(--zp-fw-semibold)}
 /* 网页版「复制网址」小按钮 */
@@ -175,7 +166,7 @@
 .account-page .zp-scroll{padding-bottom:calc(112px + env(safe-area-inset-bottom))}
 
 @media(max-width:380px){
-  .account-page{padding-left:12px;padding-right:12px}
+  /* 外壳左右留白由 main.zp-shell 的 --zp-gutter 统一下调到 12，本页不再重复声明。 */
   .acct-card{padding-left:12px;padding-right:12px}
   .account-page .acct-seg .appearance-theme-option{padding:0 8px}
 }

@@ -26,15 +26,11 @@
 #users .row .main{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-width:0}
 #users .row .main strong{flex:1;min-width:0}
 #users .row .main .meta{flex:0 0 auto;white-space:nowrap;text-align:right}
-#users .row .arrow{display:none!important}#users .row .content{padding-right:13px}
-/* 左滑操作：删除动作始终位于内容层后方，仅在左滑露出。 */
-#routes .route{overflow:hidden}
-#routes .route-delete{right:-74px;top:0;height:100%;min-height:54px;margin:0;padding:0;width:74px;border:0;border-radius:0;background:var(--zp-secondary-bg);color:var(--zp-error);z-index:1;pointer-events:none}
-#routes .route-content{position:relative;z-index:2;background:var(--zp-bg);transform:translateX(0)}
-#routes .route.open .route-content{transform:translateX(-74px)}
-#routes .route.open .route-delete{pointer-events:auto}
-/* 管理员用户/线路左滑 3.2：移除无意义箭头；线路删除按钮仅在左滑后露出。 */
-#users .row .arrow{display:none!important}
+/* 管理员用户/线路左滑：单一来源（2026-10-29 合并）。
+   此前同一套规则写了两遍 —— 上面一段无 !important 的「首版」，下面一段 3.2 版
+   把每个属性重写一遍并全部加 !important。同特异性下后者本来就赢，!important
+   只是让「改首版」彻底变成无效劳动。旧段已删，保留实际生效的 3.2 取值。
+   用户行末尾箭头由文件下方的 #users .row .arrow / ::after 统一隐藏。 */
 #routes .route{position:relative;overflow:hidden}
 #routes .route-delete{
   right:-74px!important;top:0!important;bottom:0!important;
@@ -116,33 +112,32 @@
    · 而 :root[data-zp-theme="light"] .dialog 通用规则又只会把面板刷白，
      文字/图标/分隔线没有跟随 → 白底浅字，「修改密码/重置数据」看不清。
    旧修法：额外补一整段 :root[...light] 覆盖（两块并行、易漂移）。
-   现修法：面板/文字/图标/分隔线/退出项/按压态一律改用 --ui-*/--zp-* 变量，
+   现修法：面板/文字/图标/分隔线/退出项/按压态一律改用 --ui-* 与 --zp-* 变量，
    随 data-zp-theme 自动翻转，深/浅双主题一次到位，无需再打浅色补丁。 */
 
-/* 管理员密码弹窗 3.5：紧凑居中布局与统一小眼睛控件。 */
-.dialog.password-dialog{width:min(100%,390px);padding:22px 20px 18px;border-radius:var(--zp-r-dialog)}
-.dialog.password-dialog h2{font-size:var(--zp-fs-18);line-height:26px}
-.dialog.password-dialog p{margin-top:5px;font-size:var(--zp-fs-15);line-height:22px}
-.dialog.password-dialog .dialog-actions{margin-top:20px;gap:10px}
-.dialog.password-dialog .dialog-actions button{height:48px;font-size:var(--zp-fs-16);line-height:22px}
-.zp-password-control{position:relative;display:flex;align-items:center;width:100%;min-height:48px;border:1px solid var(--zp-input-line);border-radius:var(--zp-r-control);background:var(--zp-input-bg);transition:border-color .16s ease,box-shadow .16s ease}
-.zp-password-control:focus-within{border-color:var(--zp-focus-ring);box-shadow:0 0 0 3px var(--zp-focus-glow)}
-.zp-password-control input[type="password"],.zp-password-control input[type="text"]{display:block;flex:1;min-width:0;width:100%;height:48px!important;margin:0!important;padding:0 48px 0 12px!important;border:0!important;border-radius:var(--zp-r-control)!important;background:transparent!important;color:var(--zp-text);font-size:var(--zp-fs-16);line-height:22px;outline:none!important;box-shadow:none!important}
-.zp-password-control input::placeholder{color:var(--zp-input-placeholder)}
-.zp-password-eye{position:absolute;right:4px;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:38px;height:38px;padding:0;border:0;border-radius:var(--zp-r-mini);background:transparent;color:var(--zp-muted);cursor:pointer;-webkit-tap-highlight-color:transparent}
-.zp-password-eye svg{display:block;width:19px;height:19px;pointer-events:none}
-.zp-password-eye:active{background:var(--zp-secondary-active);color:var(--zp-text)}
-.zp-password-eye[hidden]{display:none!important}
-@media(max-width:380px){.dialog.password-dialog{padding:20px 16px 16px}.zp-password-eye{right:3px;width:36px;height:36px}}
+/* 管理员密码弹窗 3.5：紧凑居中布局与统一小眼睛控件。
+   2026-10-29 修正选择器：js/admin/core.js 把 password-dialog / username-dialog
+   这个类加在**遮罩层 .dialog-bg** 上（不是 .dialog 面板），所以此前所有
+   「.dialog.password-dialog …」规则从未匹配过任何元素 —— 整整 8 条死规则，
+   弹窗实际用的是 admin-base 的通用 .dialog 尺寸。改为 .password-dialog>.dialog
+   后才真正生效（390 宽 / 22-20 内边距 / 18 圆角，与业务弹窗 398 同族）。 */
+/* 密码框文字左对齐：管理端 .dialog .field input 默认 text-align:center（为数字键盘输入设的），
+   但密码格右侧有 48px 的小眼睛，居中会把掩码推到偏左 16px，与框视觉中心不齐。
+   业务端密码框一律左对齐，这里跟齐。 */
+.password-dialog>.dialog .zp-password-control input{text-align:left;text-align-last:left}
+.password-dialog>.dialog{width:min(100%,390px);padding:22px 20px 18px;border-radius:var(--zp-r-dialog)}
+.password-dialog>.dialog h2{font-size:var(--zp-fs-18);line-height:26px}
+.password-dialog>.dialog p{margin-top:5px;font-size:var(--zp-fs-15);line-height:22px}
+.password-dialog>.dialog .dialog-actions{margin-top:20px;gap:10px}
+.password-dialog>.dialog .dialog-actions button{height:48px;font-size:var(--zp-fs-16);line-height:22px}
+/* 2026-10-29：.zp-password-control / .zp-password-eye 整套已从这里删除 ——
+   它与 css/ui-base.css 的同名原语逐条重写，只差几处取值（内缩 12 vs 16、
+   字号 16 vs 15、按压色 --zp-secondary-active vs --zp-primary），
+   造成「同一个密码框在管理端和业务端长得不一样」。全站以 ui-base 为唯一来源。 */
+@media(max-width:380px){.password-dialog>.dialog{padding:20px 16px 16px}}
 
 /* 管理员用户名弹窗 3.7：标题与重新登录提示同排，字段标签与输入提示分层。 */
-.dialog.username-dialog{width:min(100%,390px);padding:22px 20px 18px;border-radius:var(--zp-r-dialog)}
-.dialog.username-dialog h2{font-size:var(--zp-fs-18);line-height:24px;flex:0 0 auto}
-.dialog.username-dialog p{margin:0 0 0 auto;color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:16px;white-space:nowrap;text-align:right}
-.dialog.username-dialog #db{margin-top:18px}
-.dialog.username-dialog .dialog-actions{margin-top:20px;gap:10px}
-.dialog.username-dialog .dialog-actions button{height:48px;font-size:var(--zp-fs-16);line-height:22px}
-.dialog:not(.password-dialog) .username-field{margin-top:0}
+.dialog-bg:not(.password-dialog) .username-field{margin-top:0}
 .username-field>label{display:block;margin:0 0 8px;color:var(--zp-text);font-size:var(--zp-fs-14);line-height:20px;font-weight:var(--zp-fw-semibold)}
 .username-control{display:flex;align-items:center;min-height:52px;border:1px solid var(--zp-input-line);border-radius:var(--zp-r-control);background:var(--zp-input-bg);transition:border-color .16s ease,box-shadow .16s ease}
 .username-control:focus-within{border-color:var(--zp-input-focus);box-shadow:0 0 0 3px var(--zp-focus-glow)}
@@ -157,48 +152,23 @@
 #users .row .main strong{flex:1 1 auto;min-width:0;text-align:left}
 #users .row .main .meta{flex:0 0 auto;margin-left:12px;text-align:right}
 
-/* 管理员用户名弹窗 3.9：统一弹窗内垂直节奏，拉开说明、字段标签和输入框的距离。 */
-.dialog.username-dialog{
-  padding:22px 20px 20px;
-}
-.dialog.username-dialog h2{
-  margin:0!important;
-  font-size:var(--zp-fs-18);
-  line-height:26px;
-}
-.dialog.username-dialog p{
-  display:block;
-  margin:7px 0 0!important;
-  color:var(--zp-muted);
-  font-size:var(--zp-fs-14);
-  line-height:21px;
-  white-space:normal;
-  text-align:left;
-}
-.dialog.username-dialog #db{
-  margin-top:20px!important;
-}
-.dialog.username-dialog .username-field{
-  margin-top:0!important;
-}
-.dialog.username-dialog .username-field>label{
-  margin-bottom:9px;
-  font-size:var(--zp-fs-14);
-  line-height:20px;
-}
-.dialog.username-dialog .username-control{
-  min-height:52px;
-}
-.dialog.username-dialog .dialog-actions{
-  margin-top:22px!important;
-  gap:10px;
-}
-.dialog.username-dialog .dialog-actions button{
-  height:48px;
-}
-#users .row .arrow{display:none!important}
+/* 管理员用户名弹窗：单一来源（2026-10-29 合并）。
+   此前本文件有**两套** .username-dialog>.dialog —— 3.7 紧凑版在文件中部，
+   3.9 展开版在文件末尾，后者用 5 个 !important 逐个覆盖前者的 margin/gap，
+   而 width / border-radius 又只有前者有。改一处必须先搞清楚哪几条还活着。
+   现合并为一段：取 3.9 的垂直节奏（22/20/20、标题 18/26、说明 14/21 左对齐），
+   补回 3.7 独有的 width / border-radius / 按钮字号。 */
+.username-dialog>.dialog{width:min(100%,390px);padding:22px 20px 20px;border-radius:var(--zp-r-dialog)}
+.username-dialog>.dialog h2{margin:0;font-size:var(--zp-fs-18);line-height:26px;flex:0 0 auto}
+.username-dialog>.dialog p{display:block;margin:7px 0 0;color:var(--zp-muted);font-size:var(--zp-fs-14);line-height:21px;white-space:normal;text-align:left}
+.username-dialog>.dialog #db{margin-top:20px}
+.username-dialog>.dialog .username-field{margin-top:0}
+.username-dialog>.dialog .username-field>label{margin-bottom:9px;font-size:var(--zp-fs-14);line-height:20px}
+.username-dialog>.dialog .username-control{min-height:52px}
+.username-dialog>.dialog .dialog-actions{margin-top:22px;gap:10px}
+.username-dialog>.dialog .dialog-actions button{height:48px;font-size:var(--zp-fs-16);line-height:22px}
 @media(max-width:380px){
-  .dialog.username-dialog{padding:20px 16px 18px}
-  .dialog.username-dialog #db{margin-top:18px!important}
-  .dialog.username-dialog .dialog-actions{margin-top:20px!important}
+  .username-dialog>.dialog{padding:20px 16px 18px}
+  .username-dialog>.dialog #db{margin-top:18px}
+  .username-dialog>.dialog .dialog-actions{margin-top:20px}
 }
