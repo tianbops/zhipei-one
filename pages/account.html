@@ -319,69 +319,96 @@ $("deleteConfirm").onclick=async()=>{
 };
 
  /* 关于（成熟 App 范式 2.0）：品牌区版本 + 获取组（下载应用/网页端地址）+ 信息组（隐私/条款/帮助）。
-    - 版本号读 /version.json（SW 保证永远最新）；App 壳版本读 ZhipeiNative.appVersion()
-    - 下载应用：App 壳与网页端统一为「下载真 APK」。App 壳走原生 ZhipeiNative.downloadApk()；
-      浏览器（Android / 桌面）同样直接触发 /downloads 下的 APK 文件下载，不再只给 PWA 安装引导。
+    - 下载应用与版本提示：全端统一「检查最新版本」范式，文案由唯一渲染源 applyAction() 计算：
+      已是最新 →「已是最新」；最新安装包比当前新 → 高亮「更新到 Vx.x.x」。
+      数据单一来源：/version.json（网页实时版，SW 保证最新）、/downloads/manifest.json（最新安装包）、
+      ZhipeiNative.appVersion()（App 壳版本，锁在安装包内）。
+      App 壳点击走原生 ZhipeiNative.downloadApk()；浏览器同样下载 /downloads 下的真 APK；
       iOS 无原生 APK，退化为「添加到主屏幕」；微信内置浏览器无法下载，引导去外部浏览器。
-    - 最新安装包直链读 /downloads/manifest.json（发版零改动）
-    - 网页端地址：点击复制官网 https://tianyou-zhipei.pages.dev
-    - 信息组暂为占位（真实页面待补） */
+    - 网页端地址：点击复制官网 https://tianyou-zhipei.pages.dev */
 (function(){
  const guide=$("installGuide"),steps=$("installGuideSteps"),
   webCopyBtn=$("webCopyBtn"),installDlLink=$("installDlLink"),
   installRow=$("installRow"),actionText=$("installActionText");
  if(!$("aboutVersion"))return;
  function setAction(text,primary){if(!actionText)return;actionText.textContent=text;actionText.classList.toggle("is-update",!!primary);}
- // 下载应用：App 壳与浏览器统一为「下载真 APK」。App 壳走原生 ZhipeiNative.downloadApk()；
- // 浏览器（Android / 桌面）同样直接触发 /downloads 下的 APK 文件下载，不再只给 PWA 安装引导。
  const isNativeApp=!!(window.ZhipeiNative&&typeof window.ZhipeiNative.downloadApk==="function");
+ const ua=navigator.userAgent||"";
+ const isWeChat=/MicroMessenger/i.test(ua);
+ const isIOS=/iPad|iPhone|iPod/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
 
- /* 品牌区版本号：多端版本语义分层（App 壳版本 ≠ 网页实时版本）。
-    - 浏览器/PWA：web 实时版本（version.json，SW 保证永远最新）→「版本 Vx.x.x」
-    - App 壳：APK 版本（ZhipeiNative.appVersion()，锁在安装包）→「App Vx.x.x」；
-      落后于最新版时追加「有新版本」徽标，点击直接下 APK。 */
- (function(){
-  const textEl=$("aboutVerText");if(!textEl)return;
-  function apkVersion(){
-   try{
-    if(window.ZhipeiNative&&window.ZhipeiNative.appVersion){
-     const v=window.ZhipeiNative.appVersion();
-     if(v&&/^\d+(\.\d+)*$/.test(String(v)))return String(v);
-    }
-   }catch(e){}
-   return null;
-  }
-  function compareVer(a,b){
-   const pa=String(a).split(".").map(n=>parseInt(n,10)||0);
-   const pb=String(b).split(".").map(n=>parseInt(n,10)||0);
-   const n=Math.max(pa.length,pb.length);
-   for(let i=0;i<n;i++){const x=pa[i]||0,y=pb[i]||0;if(x!==y)return x<y?-1:1;}
-   return 0;
-  }
-  function render(webVer){
-   const apkV=apkVersion();
-   if(apkV){
-    textEl.textContent="当前版本 V"+apkV;
-    if(webVer&&compareVer(apkV,webVer)<0){
-     // 「有新版本」只作状态提示（静态角标）；真正的更新动作在下方「下载应用」行
-     const badge=document.createElement("span");
-     badge.className="acct-ver-badge";
-     badge.textContent="有新版本";
-     badge.setAttribute("role","status");
-     textEl.after(badge);
-     setAction("更新到 V"+webVer,true);
-    }else{
-     setAction("已是最新",false);
-    }
-   }else{
-    textEl.textContent=webVer?("当前版本 V"+webVer):"网页版";
-    // 浏览器环境动作文案由下方环境判定给出（下载 / 在浏览器打开 / 添加到主屏幕）
+ /* App 壳版本（锁在安装包内）；浏览器环境返回 null */
+ function apkVersion(){
+  try{
+   if(window.ZhipeiNative&&window.ZhipeiNative.appVersion){
+    const v=window.ZhipeiNative.appVersion();
+    if(v&&/^\d+(\.\d+)*$/.test(String(v)))return String(v);
    }
+  }catch(e){}
+  return null;
+ }
+ /* 版本比较：逐段数值比较，段数不足补 0 */
+ function compareVer(a,b){
+  const pa=String(a).split(".").map(n=>parseInt(n,10)||0);
+  const pb=String(b).split(".").map(n=>parseInt(n,10)||0);
+  const n=Math.max(pa.length,pb.length);
+  for(let i=0;i<n;i++){const x=pa[i]||0,y=pb[i]||0;if(x!==y)return x<y?-1:1;}
+  return 0;
+ }
+
+ /* 两路版本数据（webVer / apkVer）到位后统一渲染 —— actionText 与版本文案的唯一写入点 */
+ const state={webVer:null,apkVer:null};
+ let verBadge=null;
+ function renderVer(){
+  const textEl=$("aboutVerText");if(!textEl)return;
+  if(verBadge){verBadge.remove();verBadge=null;}
+  const apkV=apkVersion();
+  if(apkV){
+   textEl.textContent="当前版本 V"+apkV;
+   if(state.webVer&&compareVer(apkV,state.webVer)<0){
+    // 「有新版本」只作状态提示（静态角标）；真正的更新动作在下方「下载应用」行
+    verBadge=document.createElement("span");
+    verBadge.className="acct-ver-badge";
+    verBadge.textContent="有新版本";
+    verBadge.setAttribute("role","status");
+    textEl.after(verBadge);
+   }
+  }else{
+   textEl.textContent=state.webVer?("当前版本 V"+state.webVer):"网页版";
   }
-  zpFetch("/version.json?ts="+Date.now(),{cache:"no-store"}).then(r=>r.json()).then(v=>{
-   render(v&&v.version);
-  }).catch(()=>{render(null)});
- })();
+ }
+ function applyAction(){
+  if(isNativeApp){
+   const v=apkVersion();
+   if(v&&state.webVer&&compareVer(v,state.webVer)<0)setAction("更新到 V"+state.webVer,true);
+   else if(v)setAction("已是最新",false);
+   return;
+  }
+  if(isWeChat){setAction("在浏览器打开",false);return;}
+  if(isIOS){setAction("添加到主屏幕",false);return;}
+  /* 通用浏览器：与 App 壳同一套「检查最新版本」提示 ——
+     最新安装包比网页实时版本新 → 高亮「更新到 Vx.x.x」；否则 →「已是最新」。 */
+  if(state.apkVer){
+   if(state.webVer&&compareVer(state.apkVer,state.webVer)>0)setAction("更新到 V"+state.apkVer,true);
+   else setAction("已是最新",false);
+  }else setAction("下载",false);
+ }
+ function render(){renderVer();applyAction();}
+
+ zpFetch("/version.json?ts="+Date.now(),{cache:"no-store"})
+  .then(r=>r.json())
+  .then(v=>{state.webVer=(v&&v.version)||null;render();})
+  .catch(()=>{render();});
+ if(!isIOS){
+  zpFetch("/downloads/manifest.json?ts="+Date.now(),{cache:"no-store"})
+   .then(r=>r.ok?r.json():null)
+   .then(m=>{
+    state.apkVer=(m&&m.version)||null;
+    setApk((m&&m.file)||"zhipei-one-latest-release.apk",m&&m.version);
+    render();
+   })
+   .catch(()=>{setApk("zhipei-one-latest-release.apk");render();});
+ }
 
  /* 网页端地址：复制固定官网地址 */
  const WEB_URL="https://tianyou-zhipei.pages.dev";
@@ -433,23 +460,7 @@ $("deleteConfirm").onclick=async()=>{
   list.forEach(t=>{const li=document.createElement("li");li.textContent=t;steps.appendChild(li)});
   guide.hidden=false;
  }
- const ua=navigator.userAgent||"";
- const isWeChat=/MicroMessenger/i.test(ua);
- const isIOS=/iPad|iPhone|iPod/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
- if(!isIOS&&installDlLink){
-  zpFetch("/downloads/manifest.json?ts="+Date.now(),{cache:"no-store"})
-   .then(r=>r.ok?r.json():null)
-   .then(m=>setApk((m&&m.file)||"zhipei-one-latest-release.apk",m&&m.version))
-   .catch(()=>{setApk("zhipei-one-latest-release.apk")});
- }
- const label=$("installLabelBtn");
- /* 右侧动作文案：与点击行为一致。能直接下 APK 的环境统一显示「下载」（与 App 壳一致）；
-    iOS 无 APK 显示「添加到主屏幕」；微信内置浏览器无法下载，显示「在浏览器打开」。 */
- if(isNativeApp){setAction("下载",false);}
- else if(isWeChat){setAction("在浏览器打开",false);}
- else if(isIOS){setAction("添加到主屏幕",false);}
- else{setAction("下载",false);}
- /* 点击「下载应用」：统一入口，与 App 壳行为一致 —— 优先下载真 APK。
+ /* 点击「下载应用」：统一入口 —— 与 App 壳一致，下载最新 APK。
     - App 壳：原生下载（原地更新安装包）
     - 微信：网页内无法下载，引导去外部浏览器后由浏览器流程下载
     - iOS：无原生 APK，退化为「添加到主屏幕」
@@ -472,8 +483,7 @@ $("deleteConfirm").onclick=async()=>{
   setAction("已安装",false);guide.hidden=true;if(window.zpToast)window.zpToast("已添加到桌面","success");
  });
 
- /* 信息组：占位，待补真实页面 */
-/* 隐私政策 / 服务条款：独立静态页（公开免登录、可分享）；帮助反馈：页内弹层 */
+ /* 隐私政策 / 服务条款：独立静态页（公开免登录、可分享）；帮助反馈：页内弹层 */
 (function(){
  const helpLayer=$("helpLayer"),helpClose=$("helpClose"),helpMailBtn=$("helpMailBtn");
  function openHelp(){
