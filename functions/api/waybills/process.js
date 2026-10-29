@@ -9,6 +9,7 @@
  *   边界主动检查；失败统一经 failProcess 写状态机票据并返回可恢复提示。
  */
 import {json} from "../_json.js";
+import {clientDetail,clientMessage,logServerError} from "../_errors.js";
 import {currentUser} from "../_auth.js";
 import {get,command,newId} from "../_redis.js";
 import {canUseRoute} from "../_permissions.js";
@@ -374,7 +375,11 @@ export async function onRequestPost({request,env}){
       if(heartbeat)clearInterval(heartbeat);
       if(!closed){closed=true;try{controller.close()}catch{}}
     }).catch(error=>{
-      push(JSON.stringify({type:"result",success:false,code:error?.code||"PROCESS_UNHANDLED_ERROR",message:error?.message||"处理流程发生未捕获异常",error:error?.message||"处理流程发生未捕获异常",detail:error?.stack||String(error||"")})+"\n");
+      // P0-5：此前这里把 error.stack 直接塞进 detail 发给浏览器。
+      // 现在未预期异常只回通用文案，完整 message + stack 仅进服务端日志。
+      logServerError("waybills.process.stream", error);
+      const message=clientMessage(error,"处理流程发生未捕获异常");
+      push(JSON.stringify({type:"result",success:false,code:error?.code||"PROCESS_UNHANDLED_ERROR",message,error:message,detail:clientDetail(error)})+"\n");
       if(heartbeat)clearInterval(heartbeat);
       if(!closed){closed=true;try{controller.close()}catch{}}
     });

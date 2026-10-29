@@ -1,4 +1,5 @@
 import {json,body} from "../_json.js";
+import {clientMessage,logServerError} from "../_errors.js";
 import {currentUser} from "../_auth.js";
 import {get,newId,command} from "../_redis.js";
 import {canMaintainRoute,requireBusinessUser} from "../_permissions.js";
@@ -217,6 +218,8 @@ export async function onRequestPost({request,env}){
   return json({success:true,waybill:order,learning:learningStatus,indexSync});
  }catch(e){
   try{if(routeBaseLock)await releaseLock(env,routeBaseLock);if(waybillLock)await releaseLock(env,waybillLock);if(requestLock)await releaseLock(env,requestLock);}catch(e){degraded("lock.release-failed-on-error",e,{})}
-  return json({success:false,code:e?.code||"CONFIRM_INTERNAL_ERROR",error:e?.message||"确认待定门店失败",recoverable:true,action:"RETRY_LATER",hint:"确认失败，请稍后重试"},500);
+  // P0-5：未预期异常原文只进服务端日志，响应体只给通用文案（域内码仍透传其业务提示）。
+  logServerError("waybills.confirm",e,{requestId:order?.requestId||null});
+  return json({success:false,code:e?.code||"CONFIRM_INTERNAL_ERROR",error:clientMessage(e,"确认待定门店失败"),recoverable:true,action:"RETRY_LATER",hint:"确认失败，请稍后重试"},500);
  }
 }
