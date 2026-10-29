@@ -1,8 +1,13 @@
 name: CI
+
 on:
   push:
     branches: [main, master]
   pull_request:
+
+permissions:
+  contents: read
+
 jobs:
   node:
     runs-on: ubuntu-latest
@@ -15,17 +20,69 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           # 固定与本地验证工具链一致的精确版本：V8 覆盖数据的分支计数随 Node 小版本
-          # 漂移，会让覆盖率棘轮（83/65/83/83）在 CI 上产生 ±0.1% 级扰动而误红。
+          # 漂移，会让覆盖率棘轮（82/65/83/82）在 CI 上产生 ±0.1% 级扰动而误红。
           node-version: "22.13.1"
-      - run: npm install --no-audit --no-fund
-      - run: npm run test:node
+
+      # 文档-only 改动不做重活（省 CI 额度）。
+      # 刻意**不用** workflow 级 paths-ignore：GitHub 对"根本没启动"的 workflow
+      # 不会给 required status check 结论，PR 会永远卡在 Waiting。改成 job 内短路，
+      # job 照常跑完并报 success，分支保护与 auto-merge 都不受影响。
+      - name: 判断是否仅为文档改动
+        id: scope
+        run: |
+          set -eu
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch --no-tags --depth=50 origin "${{ github.base_ref }}"
+            BASE="origin/${{ github.base_ref }}"
+            FILES=$(git diff --name-only "$BASE"...HEAD)
+          else
+            BEFORE="${{ github.event.before }}"
+            if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+              FILES=$(git show --name-only --pretty=format: HEAD)
+            else
+              FILES=$(git diff --name-only "$BEFORE" HEAD)
+            fi
+          fi
+          echo "改动文件："
+          echo "$FILES"
+          # 只要有任何一行不是 .md/.txt、不在 docs/ 下、不是 Issue 模板，就算有代码改动
+          if echo "$FILES" | grep -vqE '\.(md|txt)$|^docs?/|^\.github/ISSUE_TEMPLATE/'; then
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+            echo "含代码改动，跑完整门禁。"
+          else
+            echo "docs_only=true" >> "$GITHUB_OUTPUT"
+            echo "仅文档改动，跳过测试与覆盖率。"
+          fi
+
+      # ── 依赖审计门禁（P0-2）──────────────────────────────────────
+      # 文档改动也要过：供应链漏洞不该等到"有代码改动"才查。
+      # --audit-level=high：只阻断 High/Critical，Low/Moderate 只记录不红。
+      # 注意：本仓库约定**不跟踪** package-lock.json（见 .gitignore），而 npm audit
+      # 必须有 lockfile 才能跑（否则报 "requires an existing lockfile"），
+      # 所以先离线生成一份再审计。
+      # 已知代价：无 lockfile ⇒ CI 每次解析"当时最新"的 devDeps，构建不可重现。
+      # 该问题已登记（审计报告 D-3），修复方式为把 package-lock.json 纳入版本控制，
+      # 属独立决策，不在本次门禁改动内一并处理。
+      - name: 依赖安全审计
+        run: |
+          set -eu
+          npm install --package-lock-only --no-audit --no-fund
+          npm audit --audit-level=high
+
+      - if: steps.scope.outputs.docs_only != 'true'
+        run: npm install --no-audit --no-fund
+      - if: steps.scope.outputs.docs_only != 'true'
+        run: npm run test:node
       # D1 存储引擎离线测试（node:sqlite 充当 D1 形状适配器）：命令面 / 事务 / TTL /
       # EVAL 注册表覆盖（37 脚本全命中）/ delete_route+409 回归 / perf 聚合 / pipeline 回滚 / 并发排队
-      - run: npm run test:d1
+      - if: steps.scope.outputs.docs_only != 'true'
+        run: npm run test:d1
       # 覆盖率棘轮：c8 --check-coverage 四阈值（statements/branches/functions/lines），
       # 低于阈值即 fail；阈值只升不降，调整须同步 tests/coverage-thresholds.test.mjs 的 RATCHET_FLOOR
-      - run: npm run coverage
+      - if: steps.scope.outputs.docs_only != 'true'
+        run: npm run coverage
       # 命名一致性护栏（仓库名 / package.json / wrangler / manifest / Android applicationId 五域对照）。
       # 该脚本此前从未被任何自动化调用过，只是孤立的 npm script；依赖 fetch-depth: 0 的完整历史
       # 才不会降级为「提示」。2026-10-28 起纳入 CI。
-      - run: npm run check:naming
+      - if: steps.scope.outputs.docs_only != 'true'
+        run: npm run check:naming

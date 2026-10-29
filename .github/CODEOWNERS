@@ -1,0 +1,35 @@
+# CODEOWNERS — 智配One Web 端
+#
+# 作用：把高风险路径显式标记出来，供分支保护的 "Require review from Code Owners"
+# 与 AI 审查 status check 使用。取消人审后，这里标记的是"改动必须被额外看一眼"的范围，
+# 不是"必须找人批"——审查来源可以是 Copilot review / 其他 AI review / 仅 CI，可替换。
+#
+# 语法：<路径模式> <owner>。owner 必须是仓库协作者或团队。
+
+# 默认归属
+*                                   @tianbops
+
+# ── 极高风险：认证、权限判定、凭证 ──────────────────────────────
+/functions/api/_auth.js             @tianbops
+/functions/api/_permissions.js      @tianbops
+/functions/api/_waybill-acl.js      @tianbops
+/functions/api/_waybill-identity.js @tianbops
+/functions/api/_env-admin.js        @tianbops
+/functions/api/_password.js         @tianbops
+/functions/api/_ratelimit.js        @tianbops
+
+# ── 高风险：安全响应头、CSP 哈希（改错=全站功能静默失效）──────────
+/_headers                           @tianbops
+/functions/api/_csp-hashes.js       @tianbops
+/scripts/csp-hashes.mjs             @tianbops
+/functions/api/_json.js             @tianbops
+
+# ── 高风险：部署与密钥路径 ────────────────────────────────────
+/deploy.sh                          @tianbops
+/.gitignore                         @tianbops
+/wrangler.toml                      @tianbops
+
+# ── 高风险：管理端与数据删除 ──────────────────────────────────
+/functions/api/admin/               @tianbops
+/functions/api/history-trash.js     @tianbops
+/migrations/                        @tianbops

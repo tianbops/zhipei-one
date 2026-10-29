@@ -1,0 +1,29 @@
+version: 2
+updates:
+  # npm 依赖（运行时为空，实际只覆盖 devDependencies 的 5 个工具）
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "chore(deps)"
+    labels:
+      - dependencies
+    # 主版本升级不自动提：本项目零运行时依赖，devDeps 主版本变更可能破坏
+    # 覆盖率棘轮（c8）或规则引擎（postcss/eslint）的行为，需人工评估
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  # GitHub Actions 版本（security 更新优先，避免 action 供应链风险）
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "chore(ci)"
+    labels:
+      - dependencies
+      - ci
