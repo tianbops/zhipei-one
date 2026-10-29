@@ -6,7 +6,7 @@
 **统一响应格式**：`{ success: boolean, error?: string, code?: string }`（失败时 `success:false`）。
 鉴权走 `credentials: "same-origin"` 的会话 Cookie；写操作（POST/PUT/DELETE）前端默认不做自动重试。
 
-**端点数：29**
+**端点数：27**
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
@@ -26,7 +26,6 @@
 | GET | `/api/history-lookup` | — |
 | GET / POST / DELETE | `/api/history-trash` | — |
 | GET / POST | `/api/invite-codes` | — |
-| GET / POST | `/api/learning` | — |
 | POST | `/api/login` | POST /api/login —— 账号口令登录，成功后下发 7 天会话 Cookie（HttpOnly + SameSite=Lax + Secure… |
 | POST | `/api/logout` | — |
 | GET | `/api/me` | GET /api/me —— 取当前登录用户（会话 Cookie 校验）。 未登录返回 401；页面靠它判断要不要跳登录页，管理端 boot 靠它确认 a… |
@@ -35,7 +34,6 @@
 | POST | `/api/route-binding` | — |
 | GET / POST | `/api/route-requests` | — |
 | POST | `/api/route-unbind` | — |
-| POST | `/api/store-learn` | — |
 | POST | `/api/waybills/confirm` | 指纹漂移回收（2026-10-07 生产实测发现）。 businessFingerprint 的入参包含每个门店的 pending / routeOrde… |
 | POST | `/api/waybills/extract` | — |
 | POST | `/api/waybills/process` | 智配One · 运单处理入口（POST /api/waybills/process） ----------------------------------… |

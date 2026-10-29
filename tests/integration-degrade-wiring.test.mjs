@@ -115,114 +115,7 @@ function captureWarnings(fn) {
 }
 
 /* ============================================================
-   1. store-learn.js：学习重放失败必须留痕
-   —— 直接调用导出的真实 retryRouteLearningRepairs()，而非复刻同形态代码
-   ============================================================ */
-/**
- * 在**绑定参数层**做故障注入。
- * 注意教训：键名是 bind(...) 的参数，并不会出现在 SQL 文本里，
- * 所以用正则匹配 SQL 字符串是拦不住的 —— 必须在 bind 后污染执行方法。
- */
-function poisonByKey(env, matcher, message) {
-  const target = env.DB;
-  return {
-    ...env,
-    DB: new Proxy(target, {
-      get(t, prop) {
-        if (prop === "prepare") {
-          return (sql) => {
-            const stmt = t.prepare(sql);
-            // 注意：db.batch(stmts) 内部会读每条语句的 .sql / .params，
-            // 包装层必须原样透传这两个字段，否则 batch 直接报 "sql must be a string"。
-            return {
-              sql,
-              params: [],
-              bind(...params) {
-                stmt.bind(...params);
-                const poisoned = params.some((x) => matcher(String(x)));
-                const fail = () => {
-                  throw new Error(message);
-                };
-                const wrapped = {
-                  sql,
-                  get params() {
-                    return stmt.params;
-                  },
-                  first: async () => (poisoned ? fail() : stmt.first()),
-                  all: async () => (poisoned ? fail() : stmt.all()),
-                  run: async () => (poisoned ? fail() : stmt.run()),
-                };
-                return wrapped;
-              },
-            };
-          };
-        }
-        const v = Reflect.get(t, prop, t);
-        return typeof v === "function" ? v.bind(t) : v;
-      },
-    }),
-  };
-}
-
-async function testStoreLearnRepairFailure() {
-  const { env } = freshBackend();
-  const backend = new D1Backend(env.DB);
-  const repairKey = "zp:route:r1:learning-repair";
-  // ctx.hset 的签名是 (key, entries)，entries 为 [[field, value], ...] 二维数组
-  await backend.tx(async (ctx) => {
-    await ctx.hset(repairKey, [
-      [
-        "f1",
-        JSON.stringify({
-          storeId: "s1",
-          rawName: "北京s店",
-          standardName: "北京店",
-          routeId: "r1",
-        }),
-      ],
-    ]);
-  });
-  const brokenEnv = poisonByKey(
-    env,
-    (k) => k.includes("global:learning"),
-    "injected: learning write failed"
-  );
-
-  const { retryRouteLearningRepairs } = await import("../functions/api/store-learn.js");
-  __resetDegradeState();
-  const cap = captureWarnings();
-  let threw = null;
-  let remaining = -1;
-  try {
-    remaining = await retryRouteLearningRepairs(brokenEnv, "r1");
-  } catch (e) {
-    threw = String(e?.message || e);
-  }
-  const rows = cap.finish();
-
-  t("store-learn 场景：学习写入失败不上抛（原语义：剥离主线）", threw === null, String(threw));
-  t(
-    "store-learn 场景：产出预期 tag",
-    rows.some((r) => r.includes("learning.repair-replay-failed")),
-    rows.join(" | ") || "无告警"
-  );
-  const row = JSON.parse(rows.find((r) => r.includes("learning.repair-replay-failed")) || "{}");
-  t("store-learn 场景：上下文含 routeId", row.routeId === "r1", String(row.routeId));
-  t("store-learn 场景：上下文含 field", row.field === "f1", String(row.field));
-  t(
-    "store-learn 场景：错误文案来自注入异常",
-    String(row.error).includes("learning write failed"),
-    String(row.error)
-  );
-  t(
-    "store-learn 场景：坏记录未被消费（remaining>0，可下次重放）",
-    remaining > 0,
-    String(remaining)
-  );
-}
-
-/* ============================================================
-   2. latest.js：MGET 整体失败→降级 pipeline，必须留痕且能自愈
+   1. latest.js：MGET 整体失败→降级 pipeline，必须留痕且能自愈
    ============================================================ */
 const todayCNRaw = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Asia/Shanghai",
@@ -301,7 +194,7 @@ async function testLatestMgetFailure() {
 }
 
 /* ============================================================
-   3. confirm.js 的 releaseLock：取锁失败必须留痕且不冒泡
+   2. confirm.js 的 releaseLock：取锁失败必须留痕且不冒泡
    ============================================================ */
 async function testLockReleaseFailure() {
   const { env } = freshBackend();
@@ -360,7 +253,7 @@ async function testLockReleaseFailure() {
 }
 
 /* ============================================================
-   4. admin/users.js：申请记录解析失败必须留痕
+   3. admin/users.js：申请记录解析失败必须留痕
    —— 调用导出的真实 cleanupUserRequests()
 
    2026-10-28 第三轮复盘：这里原先是"复刻同形态代码"（自己 new Map、自己 JSON.parse、
@@ -414,7 +307,6 @@ async function testAdminUnparsable() {
 }
 
 (async () => {
-  await testStoreLearnRepairFailure();
   await testLatestMgetFailure();
   await testLockReleaseFailure();
   await testAdminUnparsable();
@@ -425,5 +317,5 @@ async function testAdminUnparsable() {
     failures.forEach((f) => console.error("  ✗ " + f));
     process.exit(1);
   }
-  console.log("✓ 五处降级上报在真实调用路径上均被执行且自身不抛错");
+  console.log("✓ 各处降级上报在真实调用路径上均被执行且自身不抛错");
 })();
