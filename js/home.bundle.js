@@ -1938,33 +1938,19 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
   const UI=window.__zpUi||(window.__zpUi={state:{}});
   const sharedState=UI.state||(UI.state={});
 
-  // 来源 → 返回目标。值可为字符串，也可为函数（携带上下文 id 精确回跳）
-  const BACK_MAP={
-    history:q=>{const d=q.get("date");return d?"/pages/history?date="+encodeURIComponent(d):"/pages/history"},
-    today:"/pages/today",
-    process:"/home",
-    data:"/pages/data",
-    account:"/pages/account",
-    route:"/pages/route_apply",
-    // 线路页是一级页，其四个出口（数据资料/历史/我的/线路申请）返回必须回到线路页，
-    // 此前缺这个键，全部掉回首页。
-    dispatch:"/pages/dispatch",
-    home:"/home",
-    // 运单详情 → 数据资料 → 必须回到「原来那一张」运单：只带 from 不够，必须带 id
-    order:q=>"/pages/order_detail?id="+encodeURIComponent(q.get("id")||"")+"&source=process&from=process"
-  };
-
+  // 收口模型（ZP-NAV-2026-002 · 修订 F，2026-10-30 定稿）：
+  // 不再按 from= 回跳来源页。业务区任何页面返回 → /home；管理员区任何页面返回 → /admin。
+  // 旧 BACK_MAP（history→history、dispatch→dispatch、order→原运单）已删除：
+  // 来源驱动会让「历史→详情→返回」回到历史，与本方案「唯一根为首页」冲突。
   const zpZone=UI.detectZone();
   // 区根用无扩展名形态（省一次 308 跳转；带 .html 的旧写法依赖重定向也能到）
   const zpRoot=zpZone==="admin"?"/admin":"/home";
   const zpIsWorkspaceRoot=UI.normPath(location.pathname)===UI.normPath(zpRoot);
 
-  // 一次性「本页上下文已失效」标记。删除类操作（如删完当天最后一张运单）之后，
-  // 按来源回跳会落到已删除的对象上——详情页变成「运单读取失败」空态、历史页落在
-  // 已删日期。置位后 zpResolveBack 一律短路回本区根（跨区防火墙天然仍成立）。
-  let zpStale=false;
+  // 删除类操作（如删完当天最后一张运单）之后调用：把 URL 上的 id/date 摘掉，
+  // 避免刷新或 bfcache 恢复时又落回已删除的对象（详情页变「读取失败」空态）。
+  // 单根模型下返回目标已恒为本区根，此处只剩历史项清洗职责。
   window.zpMarkStale=function(){
-    zpStale=true;
     // 同时把当前历史项里的失效 id/date 摘掉，避免刷新或 bfcache 恢复时又回到死链
     try{
       const u=new URL(location.href);
@@ -1972,22 +1958,11 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
       history.replaceState(history.state,"",u.pathname+u.search);
     }catch{}
   };
-  // 来源驱动返回。跨区防火墙：管理员端任何解析结果（含 fallback）若不是管理页，一律作废回落到本区根
-  window.zpResolveBack=function(fallback){
-    if(zpStale)return zpRoot; // 上下文已失效：不再按来源回跳，直接回本区根
-    const q=new URLSearchParams(location.search);
-    // 用 hasOwnProperty 取值：归一化后的任意字符串都可能撞上 Object 原型键（如 constructor），
-    // 直接 BACK_MAP[key] 会取到原型上的函数并被当成「返回目标函数」执行。
-    const key=UI.normFrom(q.get("from"));
-    const v=Object.prototype.hasOwnProperty.call(BACK_MAP,key)?BACK_MAP[key]:undefined;
-    let target=typeof v==="function"?v(q):v;
-    let out=target||fallback||zpRoot;
-    // 防火墙放在最后（判定用规整化路径，兼容 /admin 与 /admin 两种形态）：
-    // 管理员端永远不回落到业务端，业务端也永不进入管理端
-    if(zpZone==="admin"&&UI.normPath(out)!=="/admin")out=zpRoot;
-    if(zpZone!=="admin"&&UI.normPath(out)==="/admin")out=zpRoot;
-    if(UI.normPath(out)===UI.normPath(location.pathname))out=zpRoot; // 兜底：绝不自我返回造成死循环
-    return out;
+  // 返回目标解析（单根）。
+  window.zpResolveBack=function(){
+    // 单根模型：与来源、与上下文是否失效都无关，一律回本区根。
+    // 跨区防火墙由此天然成立——业务区只可能得到 /home，管理员区只可能得到 /admin。
+    return zpRoot;
   };
   window.zpGoBack=function(fallback){location.replace(zpResolveBack(fallback))};
 
@@ -2102,16 +2077,18 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
   window.zpHandleBack=async function(){
     if(await zpCloseTopLayer())return "handled";
     if(zpIsWorkspaceRoot){
-      // 管理员工作区的最终返回点是登录页，不是业务首页或直接退出应用。
-      // 先注销服务端会话，再清理本地角色标记；manual=1 防止登录页自动把旧会话送回管理端。
+      // 管理员空间：先把模块收口到管理员首页（模块 0），再走「两次返回退桌面」。
+      // 2026-10-30 起返回键不再注销会话：旧实现在这里 POST /api/logout 直接回登录页，
+      // 既违反「返回键永不登出」，也无法满足 A1「管理员首页返回 = 退桌面、不进入业务首页」。
       if(zpZone==="admin"){
-        try{await Promise.race([fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"}),new Promise(resolve=>setTimeout(resolve,2500))])}catch{}
-        try{sessionStorage.removeItem("zpAuth");sessionStorage.removeItem("zpRole");sessionStorage.removeItem("zpExitAdmin");sessionStorage.removeItem("zpAutoHop")}catch{}
-        try{localStorage.removeItem("zpLastAuth");localStorage.removeItem("zpLastRole")}catch{}
-        location.replace("/?reason=logout&manual=1");
-        return "leave";
+        const A=window.ZPAdmin;
+        const cur=A&&A.S&&typeof A.S.page==="number"?A.S.page:0;
+        if(cur>0&&A&&typeof A.page==="function"){
+          A.page(0);
+          return "handled";
+        }
       }
-      if(zpExitArmed)return "exit"; // 业务工作区根第二次返回：确认退出应用，调用方必须执行 zpDoExit()
+      if(zpExitArmed)return "exit"; // 工作区根（业务首页 / 管理员首页）第二次返回：退桌面，调用方必须执行 zpDoExit()
       zpExitArmed=true;
       try{window.zpToast?window.zpToast("再按一次退出","info"):0}catch{}
       clearTimeout(zpExitTimer);

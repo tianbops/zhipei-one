@@ -42,7 +42,7 @@ function slice(from, to) {
   if (i < 0 || j < 0 || j <= i) throw new Error("源码切片失败：" + from);
   return SRC.slice(i, j);
 }
-const RESOLVE_BODY = slice("const BACK_MAP=", "window.zpGoBack=");
+const RESOLVE_BODY = slice("const zpZone=UI.detectZone();", "window.zpGoBack=");
 const LADDER_BODY = slice("function zpIsVisible(", "window.zpHandleBack=");
 
 /** 用给定的 URL（可含 ?from= ）求解析结果 */
@@ -55,32 +55,32 @@ function resolve(url, fallback) {
   return factory(win, doc, loc)(fallback);
 }
 
-console.log("一、来源驱动返回（业务端 12 条）");
+console.log("一、收口首页（业务端 19 条）");
 {
+  // 2026-10-30 模型变更（ZP-NAV-2026-002 修订 F）：不再按 from= 回跳来源页。
+  // 业务区任何页面返回都收口到 /home，来源、日期、运单 id 一律不参与解析。
   const cases = [
     ["/home", "", "/home", "首页即工作区根"],
-    ["/pages/today?from=home", "", "/home", "首页→今日运单→首页"],
-    ["/pages/history?from=home", "", "/home", "首页→历史记录→首页"],
-    ["/pages/data?from=home", "", "/home", "首页→数据中心→首页"],
-    ["/pages/account?from=home", "", "/home", "首页→账号设置→首页"],
-    ["/pages/dispatch?from=home", "", "/home", "首页→当前线路→首页"],
-    ["/pages/route_apply?from=home", "", "/home", "首页→绑定线路→首页"],
-    ["/pages/order_detail?id=W1&source=process&from=process", "", "/home", "识别/规划完成→运单详情→首页"],
-    // 口径：from=history 且带 date= 时必须带 date 回跳——保留「是哪一天」的上下文
-    // 优于回到列表首屏（1e511840 引入 date 携带后，本条断言同步为带 date 形态）
-    ["/pages/order_detail?source=today&from=history&date=2026-10-02", "", "/pages/history?date=2026-10-02", "历史→某日详情→回历史（保留日期）"],
-    ["/pages/data?from=order&id=W9&source=process", "", "/pages/order_detail?id=W9&source=process&from=process", "详情→数据资料→必须回到原来那张运单"],
-    ["/pages/data", "", "/home", "无来源→回落到工作区根"],
-    ["/pages/order_detail?from=today", "", "/pages/today", "今日运单→详情→回今日运单"],
-    // 线路页是一级页，其四个出口返回必须回到线路页（此前缺 dispatch 键，全部掉首页）
-    ["/pages/data?from=dispatch", "", "/pages/dispatch", "线路页→数据资料→回线路页"],
-    ["/pages/route_apply?from=dispatch", "", "/pages/dispatch", "线路页→线路申请→回线路页"],
-    ["/pages/account?from=dispatch", "", "/pages/dispatch", "线路页→我的→回线路页"],
-    // 历史链接/旧缓存页里的「路径碎片」写法，归一化后命中映射；未收录的一律回落首页
-    ["/pages/account?from=pages%2Fdispatch", "", "/pages/dispatch", "路径碎片归一化命中 dispatch"],
-    ["/pages/account?from=pages%2Forder_detail", "", "/home", "未收录的路径碎片→回落首页"],
-    ["/pages/account?from=home", "", "/home", "底栏跳转来源=home→回首页"],
-    ["/pages/data?from=constructor", "", "/home", "原型键不得误命中映射"],
+    ["/pages/today?from=home", "", "/home", "今日运单→首页"],
+    ["/pages/history?from=home", "", "/home", "历史→首页"],
+    ["/pages/data?from=home", "", "/home", "数据中心→首页"],
+    ["/pages/account?from=home", "", "/home", "账号设置→首页"],
+    ["/pages/dispatch?from=home", "", "/home", "线路→首页"],
+    ["/pages/route_apply?from=home", "", "/home", "绑定线路→首页"],
+    ["/pages/order_detail?id=W1&source=process&from=process", "", "/home", "运单详情→首页"],
+    // 关键行为变更：过去带 date 回历史，现在一律回首页（方案明确接受该体验代价）
+    ["/pages/order_detail?source=today&from=history&date=2026-10-02", "", "/home", "历史→详情→首页（不再回历史）"],
+    ["/pages/history?from=home&date=2026-10-02", "", "/home", "历史带日期→首页"],
+    // 子页面之间不互通：详情→数据资料不再回到「原来那张运单」
+    ["/pages/data?from=order&id=W9&source=process", "", "/home", "详情→数据资料→首页（不回原运单）"],
+    ["/pages/data", "", "/home", "无来源→首页"],
+    ["/pages/order_detail?from=today", "", "/home", "今日运单→详情→首页"],
+    ["/pages/data?from=dispatch", "", "/home", "线路→数据资料→首页"],
+    ["/pages/route_apply?from=dispatch", "", "/home", "线路→线路申请→首页"],
+    ["/pages/account?from=dispatch", "", "/home", "线路→我的→首页"],
+    ["/pages/account?from=pages%2Fdispatch", "", "/home", "路径碎片来源不影响收口"],
+    ["/pages/account?from=constructor", "", "/home", "原型键来源不影响收口"],
+    ["/pages/order_detail?from=admin", "", "/home", "业务页带 from=admin 仍回首页，不进管理端"],
   ];
   for (const [url, fb, want, name] of cases) {
     const got = resolve(url, fb);
@@ -173,9 +173,9 @@ const fakeEl = (over) => Object.assign({
   classList: { contains: () => false },
 }, over || {});
 
-console.log("\n三、失效上下文 zpMarkStale（3 条）");
+console.log("\n三、上下文清洗 zpMarkStale（3 条）");
 {
-  /** 先置「已失效」标记再解析：删除类操作后不得再回跳到已删除的对象 */
+  /** 删除类操作后调用 zpMarkStale，再解析：目标仍必须是本区根 */
   function resolveStale(url, fallback) {
     const u = new URL(url, "https://x.invalid");
     const win = {}, doc = { body: { dataset: {} } }, loc = { pathname: u.pathname, search: u.search };

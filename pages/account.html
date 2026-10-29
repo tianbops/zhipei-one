@@ -28,10 +28,10 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="智配One"><script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F6F7F9":"#121826");}catch(e){}</script><script src="/js/theme-sync.js?v=2c1a5bbc"></script>
-<link rel="stylesheet" href="/css/app.css?v=b5364547"><link rel="stylesheet" href="/css/ui-base.css?v=29e6b586"><link rel="stylesheet" href="/css/ui-overlay.css?v=fe14de91"><link rel="stylesheet" href="/css/ui-theme.css?v=c306fcf7"><link rel="stylesheet" href="/css/ui-shell.css?v=2ab76df5"><link rel="stylesheet" href="/css/mobile-ui.css?v=3f9fab5a"><link rel="stylesheet" href="/css/business-pages.css?v=2f512c53">
+<link rel="stylesheet" href="/css/app.css?v=b5364547"><link rel="stylesheet" href="/css/ui-base.css?v=b090c428"><link rel="stylesheet" href="/css/ui-overlay.css?v=fe14de91"><link rel="stylesheet" href="/css/ui-theme.css?v=c306fcf7"><link rel="stylesheet" href="/css/ui-shell.css?v=2ab76df5"><link rel="stylesheet" href="/css/mobile-ui.css?v=3f9fab5a"><link rel="stylesheet" href="/css/business-pages.css?v=2f512c53">
 <link rel="stylesheet" href="/css/account.css?v=f707bce7"><script src="/js/perf-diagnostics.js?v=072dcda3"></script>
 </head>
-<body><main class="page2 account-page zp-shell">
+<body class="zp-has-nav"><main class="page2 account-page zp-shell">
 <header class="topbar"><a class="app-back" href="/home" aria-label="返回"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><h1>设置</h1><span></span></header>
 
 <div class="zp-scroll">
@@ -515,6 +515,27 @@ if(t)t.addEventListener("click",()=>location.assign("/pages/terms"));
 })();
 
 load();
-</script><script src="/js/ui/core.js?v=7c4e2f82"></script><script src="/js/ui/appearance.js?v=2661f74b"></script><script src="/js/ui/feedback.js?v=f8da0256"></script><script src="/js/ui/nav.js?v=1a5738b3"></script><script src="/js/ui/back.js?v=870088ec"></script><script src="/js/ui/nav-prefetch.js?v=7c589b89"></script>
+</script><script src="/js/ui/core.js?v=7c4e2f82"></script><script src="/js/ui/appearance.js?v=2661f74b"></script><script src="/js/ui/feedback.js?v=f8da0256"></script><script src="/js/ui/nav.js?v=1a5738b3"></script><script src="/js/ui/back.js?v=463c7b00"></script><script src="/js/ui/nav-prefetch.js?v=7c589b89"></script>
 <script src="/js/pwa.js?v=68dbac73"></script>
+<nav class="zp-nav" aria-label="主要功能">
+    <a class="zp-nav-item zp-nav-home" href="/home">
+      <span class="zp-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 9.8 12 3.5l8.5 6.3V19a1.5 1.5 0 0 1-1.5 1.5h-3.2v-6H9.2v6H5A1.5 1.5 0 0 1 3.5 19z"/></svg></span>
+      <span>首页</span>
+    </a>
+    <a class="zp-nav-item" href="/pages/history?from=home">
+      <span class="zp-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3.5 5v4h4"/><path d="M12 7.5v5l3.2 1.9"/></svg></span>
+      <span>历史</span>
+    </a>
+    <a class="zp-nav-item zp-nav-plus" href="/home?openUpload=1" aria-label="上传">
+      <span class="zp-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg></span>
+    </a>
+    <a class="zp-nav-item" href="/pages/dispatch?from=home">
+      <span class="zp-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16v12H4z"/><path d="M8 10h8M8 14h5"/></svg></span>
+      <span>线路</span>
+    </a>
+    <a class="zp-nav-item is-active" href="/pages/account" aria-current="page">
+      <span class="zp-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3"/><path d="M5 20c.8-3.2 3.1-5 7-5s6.2 1.8 7 5"/></svg></span>
+      <span>我的</span>
+    </a>
+  </nav>
 </body></html>

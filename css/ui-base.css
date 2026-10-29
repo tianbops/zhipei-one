@@ -734,6 +734,9 @@ html[data-zp-native="1"]{--zp-safe-top:8px}
   -webkit-tap-highlight-color:transparent;
 }
 .zp-nav-item:active{background:var(--zp-nav-active-bg);color:var(--zp-nav-text-active)}
+/* 2026-10-30：历史/我的补齐四 Tab 底栏（ZP-NAV-2026-002 · C）后，
+   内容需为固定底栏让出高度；取值与首页 .home-app 的 72px 同口径。 */
+body.zp-has-nav{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
 .zp-nav-icon{width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex:none}
 .zp-nav-icon svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 /* 选中态只改文字/图标颜色（2026-10-24 用户定稿）：不加背景块、不改字重，
