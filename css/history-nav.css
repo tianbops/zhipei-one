@@ -31,3 +31,7 @@
   .history-calendar-grid.cal-anim-right{animation:none}
 }
 
+
+/* 2026-10-30：历史页补齐四 Tab 底栏后，滚动区必须为固定底栏让出高度，
+   否则最后一条运单会被底栏永久遮住（.zp-shell 是 100dvh，body padding 不生效）。 */
+.history-shell .zp-scroll{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
