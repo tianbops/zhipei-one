@@ -27,6 +27,12 @@
   --zp-surface-2:#F2F3F5;
   --zp-surface-3:#E8EAED;
   --zp-line:#EEEEEE;
+  /* 卡片内分隔线（列表行下边线、展开体上边线）：
+     浅色沿用 --zp-line #EEEEEE（白卡上的浅灰细线）；深色必须比 --zp-line #334155
+     更柔，否则深底上的行间线会亮得像描边。此前这类差异靠 5 条
+     :root[data-zp-theme="dark"] .acct-row{border-bottom-color:…} 专题补丁实现，
+     属于「组件里写两套主题」，现已收进令牌层：组件只写一次 --zp-line-inset。 */
+  --zp-line-inset:#EEEEEE;
   /* 登录输入框专用边框（2026-10-26 浅色对比度修复）：浅色默认边框需比 --zp-line
      深一档才能与白底/浅灰页面背景拉开层次（原 #EEEEEE 边在白底上几乎隐形）；
      深色覆盖见 ui-theme.css。取值刻意避开 retired 色板中的旧浅灰蓝灰族。 */
@@ -588,3 +594,15 @@ html[data-zp-native="1"]{--zp-safe-top:8px}
 .zp-btn:active{background-color:var(--zp-secondary-active)}
 .zp-btn--primary:active{background-color:var(--zp-primary-active);border-color:var(--zp-primary-active)}
 .zp-btn:disabled,.zp-btn[aria-disabled="true"]{opacity:.55;cursor:not-allowed;transform:none}
+
+/* ===== 密码框（含显隐按钮）原语 =====
+   2026-10-29 UI 专项整治：index.html / register.html / admin-bootstrap.html
+   三处各自内联了一份**逐字节相同**的 .password-field / .password-toggle
+   （6 行 × 3 份），属于「同一控件抄三遍」。现收进本层作为唯一来源，
+   三页各删内联块。类名与 DOM 结构未动，JS 选择器零改动。
+   显隐按钮高 48 与输入框同高、右内缩 6px，触控靶区 40×48。 */
+.password-field{position:relative}
+.password-field input{padding-right:52px}
+.password-toggle{position:absolute;right:6px;bottom:0;width:40px;height:48px;padding:0;border:0;background:transparent;color:var(--zp-muted);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.password-toggle:hover{color:var(--zp-text)}
+.password-toggle svg{width:20px;height:20px;pointer-events:none}

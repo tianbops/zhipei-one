@@ -21,7 +21,6 @@
 })();
 </script>
 
-
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#F6F7F9">
@@ -33,123 +32,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="智配One">
 <script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F6F7F9":"#121826");}catch(e){}</script><script src="/js/theme-sync.js?v=2c1a5bbc"></script>
-<link rel="stylesheet" href="/css/app.css?v=e7614cfc"><link rel="stylesheet" href="/css/ui-base.css?v=41b3ce3e"><link rel="stylesheet" href="/css/ui-overlay.css?v=e3320930"><link rel="stylesheet" href="/css/ui-theme.css?v=ebe9cf62"><link rel="stylesheet" href="/css/ui-shell.css?v=61229677">
-<link rel="stylesheet" href="/css/mobile-ui.css?v=ea7345fd"><link rel="stylesheet" href="/css/business-pages.css?v=c15f980a">
-<style>
-.dispatch-page{min-height:100dvh;padding:0 16px 88px;background:var(--zp-bg)}
-.dispatch-page .topbar{z-index:10}
-@media(max-width:380px){.dispatch-page{padding-left:12px;padding-right:12px}}
-/* 2026-10-29 顶栏下方统一 20px（.zp-scroll 上内边距为 0，这里补 14） */
-.dispatch-intro{padding:14px 0 10px}
-.dispatch-intro h2{margin:0;font-size:var(--zp-fs-20);line-height:1.35}
-.dispatch-intro p{margin:6px 0 0;color:var(--zp-muted);font-size:var(--zp-fs-13)}
-.dispatch-section{margin:14px 0 0}
-.dispatch-section-title{margin:0 0 8px;font-size:var(--zp-fs-13);color:var(--zp-muted);font-weight:var(--zp-fw-semibold)}
-.dispatch-current{background:var(--zp-card-translucent-2);border:1px solid var(--zp-tint);border-radius:var(--zp-r-card);padding:14px 16px;box-shadow:0 12px 30px var(--zp-shadow-md)}
-.dispatch-current-row{display:flex;align-items:center;gap:var(--zp-seg-btn-gap,8px)}.dispatch-current-name{flex:none}.dispatch-current-status{flex:0 1 auto;min-width:0}
-.dispatch-current-name{font-size:22px;font-weight:var(--zp-fw-bold);line-height:1;color:var(--zp-text)}
-.dispatch-current-status{font-size:var(--zp-fs-12);color:var(--zp-muted);display:flex;align-items:baseline;gap:2px}
-.dispatch-current-count{margin-left:4px;font-size:var(--zp-fs-12);color:var(--zp-muted);font-weight:var(--zp-fw-semibold)}
-.dispatch-switch{margin-left:auto;flex:none;width:calc((100% - 2*var(--zp-seg-btn-gap,8px))/3);min-width:72px;min-height:var(--zp-seg-btn-h,42px);padding:var(--zp-seg-btn-pad,0 8px);border:1px solid var(--zp-tint-strong);border-radius:var(--zp-seg-btn-radius,12px);background:var(--zp-primary);color:var(--zp-on-primary);font-size:var(--zp-seg-btn-font,13px);font-weight:var(--zp-fw-semibold)}
-.dispatch-switch:active{opacity:.82}
-.dispatch-action-card{background:var(--zp-card-translucent-2);border:1px solid var(--zp-tint);border-radius:var(--zp-r-control);overflow:hidden;box-shadow:0 12px 30px var(--zp-shadow-md)}
-.dispatch-action{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:12px 14px;border:0;border-bottom:1px solid var(--zp-tint);background:transparent;color:var(--zp-text);text-align:left;cursor:pointer;text-decoration:none}
-.dispatch-action:last-child{border-bottom:0}
-.dispatch-action:active{background:var(--zp-tint)}
-.dispatch-action-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:var(--zp-r-mini);background:var(--zp-tint);color:var(--zp-muted);flex:none}
-.dispatch-action-icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-.dispatch-action-main{min-width:0;flex:1}
-.dispatch-action-main strong{display:block;font-size:var(--zp-fs-15);font-weight:var(--zp-fw-semibold)}
-.dispatch-action-main small{display:block;margin-top:3px;color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:1.35}
-.dispatch-action-arrow{color:var(--zp-muted);font-size:var(--zp-fs-20);line-height:1}
-.dispatch-message,.dispatch-empty{padding:24px 12px;text-align:center;color:var(--zp-muted);font-size:var(--zp-fs-13)}
-.dispatch-retry{display:block;margin:12px auto 0;min-width:88px;height:36px;padding:0 18px;border:1px solid var(--zp-tint-strong);border-radius:var(--zp-r-mini);background:var(--zp-primary);color:var(--zp-on-primary);font-size:var(--zp-fs-13);font-weight:var(--zp-fw-semibold);cursor:pointer}
-.dispatch-retry:active{opacity:.82}
-.dispatch-sheet-backdrop{position:fixed;inset:0;z-index:50;display:none;place-items:end center;background:var(--zp-scrim);padding:0}
-.dispatch-sheet-backdrop.open{display:grid}
-.dispatch-sheet{width:100%;max-width:480px;padding:12px 16px calc(18px + env(safe-area-inset-bottom));background:var(--zp-surface-2);border-top:1px solid var(--zp-line);border-radius:20px 20px 0 0;box-shadow:0 -12px 36px var(--zp-shadow-md)}
-.dispatch-sheet-handle{width:34px;height:4px;margin:1px auto 14px;border-radius:4px;background:var(--zp-muted)}
-.dispatch-sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.dispatch-sheet h3{margin:0;font-size:var(--zp-fs-18)}
-.dispatch-sheet-confirm{height:36px;padding:0 14px;border:1px solid var(--zp-line);border-radius:var(--zp-r-dialog);background:var(--zp-secondary-active);color:var(--zp-text);font-size:var(--zp-fs-13);font-weight:var(--zp-fw-semibold)}
-.dispatch-sheet-confirm:disabled{opacity:.45}
-.dispatch-sheet-sub{margin:0 0 8px;color:var(--zp-muted);font-size:var(--zp-fs-12)}
-.dispatch-picker{position:relative;height:246px;overflow:hidden;border-top:1px solid var(--zp-line);border-bottom:1px solid var(--zp-line);background:var(--zp-secondary-bg)}
-.dispatch-picker::before,.dispatch-picker::after{content:"";position:absolute;left:0;right:0;height:78px;z-index:2;pointer-events:none}
-.dispatch-picker::before{top:0;background:linear-gradient(var(--zp-secondary-bg),transparent)}
-.dispatch-picker::after{bottom:0;background:linear-gradient(transparent,var(--zp-secondary-bg))}
-.dispatch-picker-selection{position:absolute;left:10px;right:10px;top:calc(50% - 27px);height:54px;border-top:1px solid var(--zp-line);border-bottom:1px solid var(--zp-line);border-radius:var(--zp-r-control);pointer-events:none;z-index:1}
-.dispatch-picker-list{height:100%;overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior:contain;scrollbar-width:none;padding:96px 10px}
-.dispatch-picker-list::-webkit-scrollbar{display:none}
-.dispatch-picker-option{height:54px;scroll-snap-align:center;display:flex;align-items:center;justify-content:center;border:0;background:transparent;color:var(--zp-muted);width:100%;font-size:var(--zp-fs-16);font-weight:var(--zp-fw-medium)}
-.dispatch-picker-option.is-selected{color:var(--zp-text);font-size:var(--zp-fs-18);font-weight:var(--zp-fw-bold)}
-.dispatch-picker-option small{margin-left:8px;color:var(--zp-muted);font-size:var(--zp-fs-12);font-weight:var(--zp-fw-regular)}
-.dispatch-picker-empty{display:grid;place-items:center;height:100%;color:var(--zp-muted);font-size:var(--zp-fs-13)}
-.dispatch-sheet-cancel{width:100%;height:46px;margin-top:10px;border:1px solid var(--zp-line);border-radius:var(--zp-r-dialog);background:var(--zp-secondary-active);color:var(--zp-text);font-size:var(--zp-fs-14)}
-.dispatch-confirm-backdrop{position:fixed;inset:0;z-index:60;display:none;place-items:center;padding:20px;background:var(--zp-scrim)}
-.dispatch-confirm-backdrop.open{display:grid}
-.dispatch-dialog{width:min(100%,360px);padding:20px;background:var(--zp-surface-2);border:1px solid var(--zp-line);border-radius:var(--zp-r-dialog)}
-.dispatch-dialog h3{margin:0;font-size:var(--zp-fs-18)}
-.dispatch-dialog p{margin:8px 0 18px;color:var(--zp-muted);font-size:var(--zp-fs-13);line-height:1.55}
-.dispatch-dialog-actions{display:flex;gap:10px}
-.dispatch-dialog-actions button{flex:1;height:46px;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);font-size:var(--zp-fs-14)}
-.dispatch-dialog-cancel{background:var(--zp-secondary-bg);color:var(--zp-muted)}
-.dispatch-dialog-ok{background:var(--zp-secondary-active);color:var(--zp-text)}
+<link rel="stylesheet" href="/css/app.css?v=e7614cfc"><link rel="stylesheet" href="/css/ui-base.css?v=922bea8c"><link rel="stylesheet" href="/css/ui-overlay.css?v=e3320930"><link rel="stylesheet" href="/css/ui-theme.css?v=b5339c29"><link rel="stylesheet" href="/css/ui-shell.css?v=7fb74058">
+<link rel="stylesheet" href="/css/mobile-ui.css?v=ea7345fd"><link rel="stylesheet" href="/css/business-pages.css?v=5d850351">
 
-/* 线路页常驻导航：独立于历史 icon/font 规则，避免字体/伪元素污染中文标签 */
-.dispatch-page + .zp-nope{}
-.dispatch-page .bottom-nav,
-.dispatch-page .bottom-nav *{
-  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC","Microsoft YaHei",sans-serif!important;
-  font-style:normal!important;
-  font-variant:normal!important;
-  text-transform:none!important;
-  letter-spacing:0!important;
-  writing-mode:horizontal-tb!important;
-}
-.dispatch-page .bottom-nav-item{
-  overflow:hidden!important;
-  white-space:nowrap!important;
-  word-break:keep-all!important;
-  word-wrap:normal!important;
-  text-rendering:auto!important;
-  /* 与首页静态导航对齐：标签基准 12px（home.css 不在此页加载，此处补回，
-     避免标签回退到 body 默认 16px 造成跨页字号不一致） */
-  font-size:var(--zp-fs-12)!important;
-  line-height:17px!important;
-}
-.dispatch-page .bottom-nav-item > span:last-child:not(.bottom-nav-icon){
-  display:block!important;
-  width:100%!important;
-  overflow:hidden!important;
-  text-align:center!important;
-  white-space:nowrap!important;
-  word-break:keep-all!important;
-}
-/* 中间上传加号：无文字标签（仅图标），且圆形需凸出导航条，
-   不能被 item 的 overflow:hidden 裁掉 */
-.dispatch-page .bottom-nav-item.bottom-nav-plus{overflow:visible!important}
-.dispatch-page .bottom-nav-icon,
-.dispatch-page .bottom-nav-icon svg{
-  flex:none!important;
-  display:block!important;
-  font-size:0!important;
-}
-/* 上面的守卫把图标容器改成 block 是为防字体污染；但加号的 52px 圆形容器
-   必须保持 flex 居中，否则 24px 的 + 会贴在圆形左上角（每边偏 14px）。
-   特异性更高（3 类 > 2 类）且同为 !important，稳定覆盖。 */
-.dispatch-page .bottom-nav-plus .bottom-nav-icon{
-  display:flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-}
-.dispatch-page .bottom-nav-icon svg *{
-  font-size:0!important;
-}
-
-/* 浅色外观适配：页面背景、当前线路卡、功能入口、切换弹层与确认弹窗
-   （此前整页只有深色一套，浅色模式下与其它业务页不一致） */
-</style>
 <script src="/js/perf-diagnostics.js?v=a2065bec"></script>
 </head>
 <body>

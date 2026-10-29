@@ -49,20 +49,21 @@
   transform:translate3d(-84px,0,0);
   box-shadow:8px 0 16px var(--zp-shadow-md);
 }
-/* 左滑露出的删除按钮：图标+文字纵向居中，红渐变明确危险语义。
-   宽度与 JS 的 SWIPE_W 保持同步（小屏 80px，见文末媒体查询）。
-   注意：已从 ui-unified.css 的「全站删除按钮统一标准」中排除——
-   那是为独立按钮设计的（半透明红晕底 + 1px 红边框 + 红字），
-   套在整行高的滑动动作条上会与左侧圆角混绘出「圆角 + 直角框」。
-   本按钮改为实心 + 无边框 + 白字，左右形状与行严格贴合。 */
-/* 形态：四角同圆的动作条，右侧与屏幕右缘留 6px 呼吸位——
-   此前「左侧圆角 + 右侧直角贴屏」虽是常见做法，但左右不对称，
-   在浅色卡片背景上尤其突兀（体现为「圆角和直角并存」的观感）。 */
+/* 左滑露出的删除动作条：图标 + 文字纵向居中。
+   2026-10-29 用户定稿：**取消胶囊形态**，与行同一整块、无圆角、无独立底色。
+   背景理由（这是本题的根）：
+     原实现用 --zp-secondary-bg 当底色，浅色下是 #F2F3F5，与行底 #FFFFFF 只差
+     13 个灰阶，几乎看不见 —— 观感是「一行红字」；深色下同一令牌是 #253345，
+     压在 #121826 的页底上反差拉满，于是变成一块明显的圆角胶囊。
+     同一组件在两套主题下呈现两种形态，正是「视觉一样、实现拼凑」的后果。
+   改法：底色取 --zp-bg（= 行表面实色，深浅两套都等于行底），圆角归零、右缘贴齐，
+   于是任何主题下都只剩红字与图标 —— 与浅色的既有观感一致，深色不再突兀。
+   宽度 84 与 JS core.js 的 SWIPE_W 严格同值：此前窄屏 CSS 是 80 而 JS 固定 84，
+   滑到底会多出 4px 空白（真 bug，本轮一并修掉）。 */
 .history-delete{
   position:absolute;
   z-index:1;
-  inset:0 6px 0 auto;
-  top:0;right:6px;bottom:0;left:auto;
+  inset:0 0 0 auto;
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -72,11 +73,10 @@
   margin:0;
   padding:0;
   border:0;
-  border-radius:var(--zp-r-control);
-  /* 全站危险按钮标准「中性底+红字」的实底专用形态（Phase 4）：
-     与次按钮同底 var(--zp-secondary-bg)、文字取错误色 var(--zp-error)，
-     双主题自动跟随；按压态与次按钮按压同令牌。 */
-  background:var(--zp-secondary-bg);
+  border-radius:0;
+  /* 底色 = 行表面实色：深浅两套主题下都与行完全一致，因此动作条本身不可见，
+     只有红字与图标（危险语义靠 --zp-error 承载，不靠色块）。 */
+  background:var(--zp-bg);
   color:var(--zp-error);
   font-size:var(--zp-fs-12);
   font-weight:var(--zp-fw-semibold);
@@ -316,8 +316,8 @@
   .history-date-main{padding-left:27px}
   .history-month-main span{font-size:var(--zp-fs-15)}
   .history-month-main small,.history-date-main small{font-size:var(--zp-fs-11)}
-  .history-delete{width:80px}
-  .history-swipe-row.swiped .history-row-surface{transform:translate3d(-80px,0,0)}
+  /* 窄屏不再单独改宽度：JS 的 SWIPE_W 恒为 84，CSS 写 80 会让滑到底多出 4px
+     空白。两者必须同值，故此处不再覆盖。 */
   .history-calendar-grid{min-height:232px}
 }
 

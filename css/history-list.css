@@ -130,18 +130,9 @@ main.history-shell{
   line-height:20px;
   font-weight:var(--zp-fw-bold);
 }
-.history-delete{
-  width:84px;
-  background:var(--zp-secondary-bg);
-  color:var(--zp-error);
-  font-size:var(--zp-fs-12);
-  line-height:16px;
-  font-weight:var(--zp-fw-semibold);
-  letter-spacing:1px;
-}
-.history-swipe-row.swiped .history-row-surface{
-  transform:translate3d(-84px,0,0);
-}
+/* 2026-10-29：本文件原有的 .history-delete 度量与 .swiped 位移是 history-shell.css
+   同名规则的重复副本（后加载者胜，导致「改 shell 不生效」）。已删除，统一到
+   history-shell.css 一处：动作条形态、宽度 84 与 JS 的 SWIPE_W 同值。 */
 
 /* 月份之间增加清晰但克制的呼吸感。
    2026-10-28 板块统一：原来用 --zp-logo-plate（近黑 #05070A）做 6px 分隔条，
@@ -169,9 +160,7 @@ main.history-shell{
   .history-month-main span{font-size:var(--zp-fs-16)}
   .history-month-main small,
   .history-date-main small{font-size:var(--zp-fs-13)}
-  .history-delete{width:80px}
-  .history-swipe-row.swiped .history-row-surface{
-    transform:translate3d(-80px,0,0);
-  }
+  /* 窄屏不再单独改宽度：JS 的 SWIPE_W 恒为 84，CSS 若写 80，滑到底会多出
+     4px 空白。两者必须同值，故此处只保留读数密度相关的字号收敛。 */
 }
 

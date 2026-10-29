@@ -25,6 +25,10 @@
 .viewport{margin-top:20px}.title{display:flex;align-items:center;justify-content:space-between;min-height:30px;margin-bottom:9px;font-size:var(--zp-fs-16);font-weight:var(--zp-fw-bold)}
 .add{width:34px;height:34px;border:1px solid var(--zp-line);border-radius:var(--zp-r-mini);background:var(--zp-card);color:var(--zp-text);font-size:var(--zp-fs-20);line-height:1}
 .search{margin-bottom:8px}.search input{width:100%;padding:0 12px;color:var(--zp-text)}
+/* 诊断/学习隔离筛选行里的下拉框：此前每处靠内联 style 写一遍完整控件样式
+   （height/padding/background/border/radius/color 共 6 条 × 3 处），
+   现收进本层，HTML 只保留 flex 比例（那是布局，不是控件规格）。 */
+.search select{height:48px;padding:0 10px;background:var(--zp-surface);border:1px solid var(--zp-line);border-radius:var(--zp-r-control);color:var(--zp-text)}
 .row,.route,.card,.invite{border:1px solid var(--zp-line);box-shadow:none}.invite{position:relative;overflow:hidden;touch-action:pan-y;-webkit-user-select:none;user-select:none}.invite-head{display:flex;align-items:center;gap:8px}.invite-head .code{margin-right:auto}.invite-head .q-badge{margin-left:auto}.invite-head .copy{flex:0 0 auto}.invite-content{position:relative;z-index:2;background:var(--zp-bg);padding:13px 14px;transition:transform .18s ease}.invite-actions{position:absolute;inset:0 0 0 auto;width:148px;display:flex;align-items:stretch;z-index:1;margin:0;padding:0;border:0}.invite-actions .small-action{width:74px;min-width:0;border:0;border-radius:0;background:var(--zp-secondary-active);color:var(--zp-text)}.invite-actions .small-action.danger{background:var(--zp-secondary-bg);border-color:transparent;color:var(--zp-error)}.invite.open .invite-content{transform:translateX(-148px)}.invite-actions .small-action{touch-action:manipulation;-webkit-tap-highlight-color:transparent}.row{margin-bottom:6px;overflow:hidden}.row .content{min-height:54px}
 .row .main strong{font-size:var(--zp-fs-14)}.row .meta,.meta{color:var(--zp-soft);font-size:var(--zp-fs-12)}
 .route{margin-bottom:7px;background:var(--zp-card-translucent-2);overflow:hidden}.route-content{padding:13px 14px;background:transparent}

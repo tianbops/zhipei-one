@@ -12,6 +12,9 @@
   --zp-surface-2:#253345;
   --zp-surface-3:#334155;
   --zp-line:#334155;
+  /* 卡片内分隔线在深色下取 --zp-surface-2 #253345：比 --zp-line 柔一档，
+     避免深底上的行间线亮成描边（浅色取值见 ui-base.css）。 */
+  --zp-line-inset:#253345;
   --zp-input-line:var(--zp-line);
   --zp-text:#F1F5F9;
   --zp-muted:#94A3B8;

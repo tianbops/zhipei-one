@@ -1,0 +1,22 @@
+/* 智配One · 文档页（隐私政策 / 服务条款）
+   ------------------------------------------------------------------
+   2026-10-29 UI 专项整治「收编」批次：这两页此前各自内联一份 <style>，
+   14 行内容**逐字节相同**（相似度 100%），是「同一份样式抄两遍」的典型。
+   现合并为本文件单一来源，两页各一行 <link> 引用。
+
+   两页共用 .doc-page / .doc-card / .doc-intro 命名，正文由各自的 HTML 承载，
+   因此不存在「两页长得一样」的问题，只是排版规则共享。
+   顺带清掉 2 处 var(--zp-text,#fff) 的深色纪元兜底。 */
+.doc-page .doc-card{padding:18px 16px 20px}
+.doc-page h2{margin:0 0 4px;font-size:var(--zp-fs-16);line-height:24px}
+.doc-page .doc-intro{margin:0 0 14px;color:var(--zp-muted);font-size:var(--zp-fs-13);line-height:20px}
+.doc-page h3{margin:18px 0 6px;font-size:var(--zp-fs-15);line-height:22px}
+.doc-page h3:first-of-type{margin-top:4px}
+.doc-page p{margin:0 0 8px;font-size:var(--zp-fs-14);line-height:23px}
+.doc-page ul{margin:0 0 8px;padding-left:20px}
+.doc-page li{margin:0 0 5px;font-size:var(--zp-fs-14);line-height:23px}
+/* 关键词强调：正文里加粗的一句，颜色跟随正文令牌（浅色 #111 / 深色 #F1F5F9） */
+.doc-page .doc-em{color:var(--zp-text);font-weight:var(--zp-fw-semibold)}
+.doc-page .doc-foot{margin-top:20px;padding-top:14px;border-top:1px solid var(--zp-line);
+  color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:20px}
+.doc-page .doc-mail{color:var(--zp-text);font-weight:var(--zp-fw-semibold)}

@@ -1,0 +1,14 @@
+/* 智配One · 离线页
+   ------------------------------------------------------------------
+   2026-10-29 UI 专项整治「收编」批次：原为 offline.html 内联 <style>（9 行）。
+   离线页是 Service Worker 的兜底壳页，必须在断网时也能完整渲染，
+   因此样式同样要能被 SW 预缓存（bump_asset_versions.py 会把它登记进 PRECACHE）。
+   取值全部走令牌，深浅主题自动适配。 */
+.zp-offline{min-width:100%;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--zp-bg);box-sizing:border-box}
+.zp-offline-card{width:min(100%,360px);padding:28px 22px;border:1px solid var(--zp-tint);border-radius:var(--zp-r-card);background:var(--zp-card-translucent-2);text-align:center}
+.zp-offline-card img{width:64px;height:64px;margin-bottom:14px}
+.zp-offline-card h1{margin:0;color:var(--zp-text);font-size:var(--zp-fs-18);line-height:24px;font-weight:var(--zp-fw-bold)}
+.zp-offline-card p{margin:10px 0 0;color:var(--zp-muted);font-size:var(--zp-fs-14);line-height:22px}
+.zp-offline-card .zp-offline-hint{margin-top:6px;color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:19px}
+.zp-offline-btn{width:100%;min-height:46px;margin-top:20px;border:0;border-radius:var(--zp-r-control);background:var(--zp-primary);color:var(--zp-on-primary);font-size:var(--zp-fs-15);font-weight:var(--zp-fw-semibold)}
+.zp-offline-btn:active{background:var(--zp-primary-active)}

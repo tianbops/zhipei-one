@@ -38,12 +38,6 @@
 .account-page .page2-soft{margin:4px 0 0;color:var(--zp-muted);font-size:var(--zp-fs-13);line-height:20px}
 .account-page .account-row{min-height:46px;border-bottom:0;color:var(--zp-muted);font-size:var(--zp-fs-15);line-height:22px}
 .account-page .account-row strong{color:var(--zp-text);font-size:var(--zp-fs-15);font-weight:var(--zp-fw-semibold);text-align:right}
-.account-page .account-collapse-head{width:100%;min-height:48px;padding:0 14px;border:0;background:transparent;color:var(--zp-text);display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;font-size:var(--zp-fs-15);line-height:21px;font-weight:var(--zp-fw-bold)}
-.account-page .account-collapse-icon{width:32px;height:32px;flex:0 0 32px;display:inline-flex;align-items:center;justify-content:center;color:var(--zp-muted);font-size:0!important;line-height:0!important}
-.account-page .account-collapse-icon::before{content:"";display:block;width:7px;height:7px;border-right:1.7px solid currentColor;border-bottom:1.7px solid currentColor;transform:rotate(45deg) translate(-1px,-1px);transition:transform .18s ease}
-.account-page .account-collapse-head[aria-expanded="true"] .account-collapse-icon::before{transform:rotate(225deg) translate(-1px,-1px)}
-.account-page .account-collapse-body{padding:0 14px 14px;border-top:1px solid var(--zp-tint)}
-.account-page .account-collapse-body[hidden]{display:none}
 .account-page .page2-label{display:block;margin-top:10px;color:var(--zp-muted);font-size:var(--zp-fs-13);line-height:20px}
 .account-page .page2-label input{display:block;width:100%;min-height:48px;margin-top:5px;padding:0 14px;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-translucent-2);color:var(--zp-text);font-size:var(--zp-fs-15)}
 .account-page .page2-label input::placeholder{color:var(--zp-muted)}
@@ -58,36 +52,145 @@
 .account-page .page2-danger-btn{width:100%;min-height:var(--zp-control-height);margin-top:12px;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-secondary-bg);color:var(--zp-error);font-size:var(--zp-fs-16);font-weight:var(--zp-fw-semibold)}
 .account-page .account-dialog-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
 .account-page .account-dialog-actions button{margin-top:0}
-.account-page .account-logout-section{margin:16px 0 0;padding:0}
-.account-page .account-logout{width:100%;min-height:var(--zp-control-height);margin:0;border:1px solid var(--zp-primary);border-radius:var(--zp-r-card);background:var(--zp-primary);color:var(--zp-on-primary);font-size:var(--zp-fs-15);font-weight:var(--zp-fw-semibold)}
-.account-page .account-logout-section .message{margin:8px 2px 0}
-@media(max-width:380px){.account-page{padding-left:12px;padding-right:12px}.account-page .page2-card{padding-left:12px;padding-right:12px}.account-page .account-collapse-head{padding-left:12px;padding-right:12px}.account-page .account-collapse-body,.account-page .account-danger-box{padding-left:12px;padding-right:12px}}
-@media(prefers-reduced-motion:reduce){.account-page .account-collapse-icon::before{transition:none}}
+@media(max-width:380px){.account-page{padding-left:12px;padding-right:12px}.account-page .page2-card{padding-left:12px;padding-right:12px}.account-page .account-danger-box{padding-left:12px;padding-right:12px}}
 
 /* Android 返回层 2.5：所有业务页统一为运单详情同款纯箭头；点击走浏览器历史栈。 */
 .page2 .app-back{color:var(--zp-text)}
 .page2 .app-back:active{color:var(--zp-text)}
 
-/* 线路选择页（原 dispatch.html 局部样式，原样迁移至统一层；声明与级联顺序保持不变） */
-.dispatch-page{width:min(100%,430px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:16px 16px calc(28px + env(safe-area-inset-bottom));background:var(--zp-bg)}
-.dispatch-page .app-back{color:var(--zp-text)}
-.dispatch-page .topbar h1{margin:0;text-align:center;color:var(--zp-text);font-weight:var(--zp-fw-bold)}
-.dispatch-section{margin-top:18px}
-.dispatch-section-title{margin:0 0 9px 3px;color:var(--zp-muted);font-size:var(--zp-fs-13);font-weight:var(--zp-fw-semibold)}
-.dispatch-empty,.dispatch-message{padding:16px;color:var(--zp-muted);text-align:center;font-size:var(--zp-fs-14)}
-/* Android typography readability adjustment: size/line-height only */
-.dispatch-section-title{font-size:var(--zp-fs-15);line-height:20px}
-.dispatch-empty,.dispatch-message{font-size:var(--zp-fs-15);line-height:22px}
+/* 线路选择页
+   ------------------------------------------------------------------
+   2026-10-29 UI 专项整治「收编」批次：原 pages/dispatch.html 内联 <style>（110 行）
+   与本节早期的 8 条规则**存在同名重复定义**（.dispatch-section / -title / -empty
+   各写两遍，实际生效的总是后加载的那份）。此处合并为唯一来源：
+     · .dispatch-page 保留早期的 width/min-height/margin（内联没有这三项），
+       padding 取内联的新值；
+     · app-back / topbar h1 只有早期版本有，原样保留；
+     · 其余同名规则删除早期副本，以迁移后的声明为准，并把早期副本里
+       「未被覆盖即仍在生效」的两个行高（title 20 / empty 22）显式写回，
+       保证合并前后计算样式逐项一致。
+   底栏（.bottom-nav）那一大段 !important 是防字体污染的历史守卫，
+   本轮原样迁移，未作改写；它属于「底栏两套实现」的遗留问题，
+   待底栏统一到单一组件后再删。 */
+.dispatch-page{width:min(100%,430px);min-height:100vh;min-height:100dvh;margin:0 auto;padding:0 16px 88px;background:var(--zp-bg)}
+.dispatch-page .topbar{z-index:10}
+@media(max-width:380px){.dispatch-page{padding-left:12px;padding-right:12px}}
+/* 2026-10-29 顶栏下方统一 20px（.zp-scroll 上内边距为 0，这里补 14） */
+.dispatch-intro{padding:14px 0 10px}
+.dispatch-intro h2{margin:0;font-size:var(--zp-fs-20);line-height:1.35}
+.dispatch-intro p{margin:6px 0 0;color:var(--zp-muted);font-size:var(--zp-fs-13)}
+.dispatch-section{margin:14px 0 0}
+.dispatch-section-title{margin:0 0 8px;font-size:var(--zp-fs-13);line-height:20px;color:var(--zp-muted);font-weight:var(--zp-fw-semibold)}
+.dispatch-current{background:var(--zp-card-translucent-2);border:1px solid var(--zp-tint);border-radius:var(--zp-r-card);padding:14px 16px;box-shadow:0 12px 30px var(--zp-shadow-md)}
+.dispatch-current-row{display:flex;align-items:center;gap:var(--zp-seg-btn-gap)}.dispatch-current-name{flex:none}.dispatch-current-status{flex:0 1 auto;min-width:0}
+.dispatch-current-name{font-size:22px;font-weight:var(--zp-fw-bold);line-height:1;color:var(--zp-text)}
+.dispatch-current-status{font-size:var(--zp-fs-12);color:var(--zp-muted);display:flex;align-items:baseline;gap:2px}
+.dispatch-current-count{margin-left:4px;font-size:var(--zp-fs-12);color:var(--zp-muted);font-weight:var(--zp-fw-semibold)}
+.dispatch-switch{margin-left:auto;flex:none;width:calc((100% - 2*var(--zp-seg-btn-gap))/3);min-width:72px;min-height:var(--zp-seg-btn-h);padding:var(--zp-seg-btn-pad,0 8px);border:1px solid var(--zp-tint-strong);border-radius:var(--zp-seg-btn-radius);background:var(--zp-primary);color:var(--zp-on-primary);font-size:var(--zp-seg-btn-font);font-weight:var(--zp-fw-semibold)}
+.dispatch-switch:active{opacity:.82}
+.dispatch-action-card{background:var(--zp-card-translucent-2);border:1px solid var(--zp-tint);border-radius:var(--zp-r-control);overflow:hidden;box-shadow:0 12px 30px var(--zp-shadow-md)}
+.dispatch-action{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:12px 14px;border:0;border-bottom:1px solid var(--zp-tint);background:transparent;color:var(--zp-text);text-align:left;cursor:pointer;text-decoration:none}
+.dispatch-action:last-child{border-bottom:0}
+.dispatch-action:active{background:var(--zp-tint)}
+.dispatch-action-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:var(--zp-r-mini);background:var(--zp-tint);color:var(--zp-muted);flex:none}
+.dispatch-action-icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.dispatch-action-main{min-width:0;flex:1}
+.dispatch-action-main strong{display:block;font-size:var(--zp-fs-15);font-weight:var(--zp-fw-semibold)}
+.dispatch-action-main small{display:block;margin-top:3px;color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:1.35}
+.dispatch-action-arrow{color:var(--zp-muted);font-size:var(--zp-fs-20);line-height:1}
+.dispatch-message,.dispatch-empty{padding:24px 12px;text-align:center;color:var(--zp-muted);font-size:var(--zp-fs-13);line-height:22px}
+.dispatch-retry{display:block;margin:12px auto 0;min-width:88px;height:36px;padding:0 18px;border:1px solid var(--zp-tint-strong);border-radius:var(--zp-r-mini);background:var(--zp-primary);color:var(--zp-on-primary);font-size:var(--zp-fs-13);font-weight:var(--zp-fw-semibold);cursor:pointer}
+.dispatch-retry:active{opacity:.82}
+.dispatch-sheet-backdrop{position:fixed;inset:0;z-index:50;display:none;place-items:end center;background:var(--zp-scrim);padding:0}
+.dispatch-sheet-backdrop.open{display:grid}
+.dispatch-sheet{width:100%;max-width:480px;padding:12px 16px calc(18px + env(safe-area-inset-bottom));background:var(--zp-surface-2);border-top:1px solid var(--zp-line);border-radius:20px 20px 0 0;box-shadow:0 -12px 36px var(--zp-shadow-md)}
+.dispatch-sheet-handle{width:34px;height:4px;margin:1px auto 14px;border-radius:4px;background:var(--zp-muted)}
+.dispatch-sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.dispatch-sheet h3{margin:0;font-size:var(--zp-fs-18)}
+.dispatch-sheet-confirm{height:36px;padding:0 14px;border:1px solid var(--zp-line);border-radius:var(--zp-r-dialog);background:var(--zp-secondary-active);color:var(--zp-text);font-size:var(--zp-fs-13);font-weight:var(--zp-fw-semibold)}
+.dispatch-sheet-confirm:disabled{opacity:.45}
+.dispatch-sheet-sub{margin:0 0 8px;color:var(--zp-muted);font-size:var(--zp-fs-12)}
+.dispatch-picker{position:relative;height:246px;overflow:hidden;border-top:1px solid var(--zp-line);border-bottom:1px solid var(--zp-line);background:var(--zp-secondary-bg)}
+.dispatch-picker::before,.dispatch-picker::after{content:"";position:absolute;left:0;right:0;height:78px;z-index:2;pointer-events:none}
+.dispatch-picker::before{top:0;background:linear-gradient(var(--zp-secondary-bg),transparent)}
+.dispatch-picker::after{bottom:0;background:linear-gradient(transparent,var(--zp-secondary-bg))}
+.dispatch-picker-selection{position:absolute;left:10px;right:10px;top:calc(50% - 27px);height:54px;border-top:1px solid var(--zp-line);border-bottom:1px solid var(--zp-line);border-radius:var(--zp-r-control);pointer-events:none;z-index:1}
+.dispatch-picker-list{height:100%;overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior:contain;scrollbar-width:none;padding:96px 10px}
+.dispatch-picker-list::-webkit-scrollbar{display:none}
+.dispatch-picker-option{height:54px;scroll-snap-align:center;display:flex;align-items:center;justify-content:center;border:0;background:transparent;color:var(--zp-muted);width:100%;font-size:var(--zp-fs-16);font-weight:var(--zp-fw-medium)}
+.dispatch-picker-option.is-selected{color:var(--zp-text);font-size:var(--zp-fs-18);font-weight:var(--zp-fw-bold)}
+.dispatch-picker-option small{margin-left:8px;color:var(--zp-muted);font-size:var(--zp-fs-12);font-weight:var(--zp-fw-regular)}
+.dispatch-picker-empty{display:grid;place-items:center;height:100%;color:var(--zp-muted);font-size:var(--zp-fs-13)}
+.dispatch-sheet-cancel{width:100%;height:46px;margin-top:10px;border:1px solid var(--zp-line);border-radius:var(--zp-r-dialog);background:var(--zp-secondary-active);color:var(--zp-text);font-size:var(--zp-fs-14)}
+.dispatch-confirm-backdrop{position:fixed;inset:0;z-index:60;display:none;place-items:center;padding:20px;background:var(--zp-scrim)}
+.dispatch-confirm-backdrop.open{display:grid}
+.dispatch-dialog{width:min(100%,360px);padding:20px;background:var(--zp-surface-2);border:1px solid var(--zp-line);border-radius:var(--zp-r-dialog)}
+.dispatch-dialog h3{margin:0;font-size:var(--zp-fs-18)}
+.dispatch-dialog p{margin:8px 0 18px;color:var(--zp-muted);font-size:var(--zp-fs-13);line-height:1.55}
+.dispatch-dialog-actions{display:flex;gap:10px}
+.dispatch-dialog-actions button{flex:1;height:46px;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);font-size:var(--zp-fs-14)}
+.dispatch-dialog-cancel{background:var(--zp-secondary-bg);color:var(--zp-muted)}
+.dispatch-dialog-ok{background:var(--zp-secondary-active);color:var(--zp-text)}
+
+/* 线路页常驻导航：独立于历史 icon/font 规则，避免字体/伪元素污染中文标签 */
+.dispatch-page + .zp-nope{}
+.dispatch-page .bottom-nav,
+.dispatch-page .bottom-nav *{
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC","Microsoft YaHei",sans-serif!important;
+  font-style:normal!important;
+  font-variant:normal!important;
+  text-transform:none!important;
+  letter-spacing:0!important;
+  writing-mode:horizontal-tb!important;
+}
+.dispatch-page .bottom-nav-item{
+  overflow:hidden!important;
+  white-space:nowrap!important;
+  word-break:keep-all!important;
+  word-wrap:normal!important;
+  text-rendering:auto!important;
+  /* 与首页静态导航对齐：标签基准 12px（home.css 不在此页加载，此处补回，
+     避免标签回退到 body 默认 16px 造成跨页字号不一致） */
+  font-size:var(--zp-fs-12)!important;
+  line-height:17px!important;
+}
+.dispatch-page .bottom-nav-item > span:last-child:not(.bottom-nav-icon){
+  display:block!important;
+  width:100%!important;
+  overflow:hidden!important;
+  text-align:center!important;
+  white-space:nowrap!important;
+  word-break:keep-all!important;
+}
+/* 中间上传加号：无文字标签（仅图标），且圆形需凸出导航条，
+   不能被 item 的 overflow:hidden 裁掉 */
+.dispatch-page .bottom-nav-item.bottom-nav-plus{overflow:visible!important}
+.dispatch-page .bottom-nav-icon,
+.dispatch-page .bottom-nav-icon svg{
+  flex:none!important;
+  display:block!important;
+  font-size:0!important;
+}
+/* 上面的守卫把图标容器改成 block 是为防字体污染；但加号的 52px 圆形容器
+   必须保持 flex 居中，否则 24px 的 + 会贴在圆形左上角（每边偏 14px）。
+   特异性更高（3 类 > 2 类）且同为 !important，稳定覆盖。 */
+.dispatch-page .bottom-nav-plus .bottom-nav-icon{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+}
+.dispatch-page .bottom-nav-icon svg *{
+  font-size:0!important;
+}
 
 
-/* 我的页最终统一：折叠箭头只保留 CSS Chevron，退出登录不再使用卡片容器，桌面安装入口轻量化。 */
+
+/* 2026-10-29 UI 专项整治：本节原有的 .account-collapse-*（手风琴箭头，4+2 条）
+   与旧 .account-logout 配色规则已删除 —— 前者全站无 DOM 引用（死样式），
+   后者被 css/account.css 的同名规则完全覆盖（旧值还是蓝底白字，与现设计不符）。
+   折叠箭头样式随 account.html 的改版一起作废。 */
 .account-page .account-collapse-icon{font-size:0!important;line-height:0!important;color:var(--zp-muted);display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;flex:0 0 32px}
-.account-page .account-collapse-icon::before{content:"";display:block;width:7px;height:7px;border-right:1.7px solid currentColor;border-bottom:1.7px solid currentColor;transform:rotate(45deg) translate(-1px,-1px);transition:transform .18s ease,color .18s ease}
-.account-page .account-collapse-head[aria-expanded="true"] .account-collapse-icon::before{transform:rotate(225deg) translate(-1px,-1px)}
-.account-page .account-logout-section{margin:16px 0 0;padding:0}
 .account-page .account-logout-section .account-logout{width:100%;min-height:var(--zp-control-height);margin:0;background:var(--zp-primary);border:1px solid var(--zp-primary);border-radius:var(--zp-r-card);color:var(--zp-on-primary);font-size:var(--zp-fs-15);font-weight:var(--zp-fw-semibold)}
-.account-page .account-logout-section .message{margin:8px 2px 0}
-@media(prefers-reduced-motion:reduce){.account-page .account-collapse-icon::before{transition:none}}
 
 /* 我的 · 外观与显示设置 */
 .account-page .appearance-card{padding:16px}

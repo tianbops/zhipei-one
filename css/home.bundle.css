@@ -758,6 +758,12 @@ body {
   --zp-surface-2:#F2F3F5;
   --zp-surface-3:#E8EAED;
   --zp-line:#EEEEEE;
+  /* 卡片内分隔线（列表行下边线、展开体上边线）：
+     浅色沿用 --zp-line #EEEEEE（白卡上的浅灰细线）；深色必须比 --zp-line #334155
+     更柔，否则深底上的行间线会亮得像描边。此前这类差异靠 5 条
+     :root[data-zp-theme="dark"] .acct-row{border-bottom-color:…} 专题补丁实现，
+     属于「组件里写两套主题」，现已收进令牌层：组件只写一次 --zp-line-inset。 */
+  --zp-line-inset:#EEEEEE;
   /* 登录输入框专用边框（2026-10-26 浅色对比度修复）：浅色默认边框需比 --zp-line
      深一档才能与白底/浅灰页面背景拉开层次（原 #EEEEEE 边在白底上几乎隐形）；
      深色覆盖见 ui-theme.css。取值刻意避开 retired 色板中的旧浅灰蓝灰族。 */
@@ -1320,6 +1326,18 @@ html[data-zp-native="1"]{--zp-safe-top:8px}
 .zp-btn--primary:active{background-color:var(--zp-primary-active);border-color:var(--zp-primary-active)}
 .zp-btn:disabled,.zp-btn[aria-disabled="true"]{opacity:.55;cursor:not-allowed;transform:none}
 
+/* ===== 密码框（含显隐按钮）原语 =====
+   2026-10-29 UI 专项整治：index.html / register.html / admin-bootstrap.html
+   三处各自内联了一份**逐字节相同**的 .password-field / .password-toggle
+   （6 行 × 3 份），属于「同一控件抄三遍」。现收进本层作为唯一来源，
+   三页各删内联块。类名与 DOM 结构未动，JS 选择器零改动。
+   显隐按钮高 48 与输入框同高、右内缩 6px，触控靶区 40×48。 */
+.password-field{position:relative}
+.password-field input{padding-right:52px}
+.password-toggle{position:absolute;right:6px;bottom:0;width:40px;height:48px;padding:0;border:0;background:transparent;color:var(--zp-muted);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.password-toggle:hover{color:var(--zp-text)}
+.password-toggle svg{width:20px;height:20px;pointer-events:none}
+
 /* ================================================================
  * 全局层级体系 3.0 · 落地规则
  * ----------------------------------------------------------------
@@ -1696,6 +1714,9 @@ textarea:disabled,
   --zp-surface-2:#253345;
   --zp-surface-3:#334155;
   --zp-line:#334155;
+  /* 卡片内分隔线在深色下取 --zp-surface-2 #253345：比 --zp-line 柔一档，
+     避免深底上的行间线亮成描边（浅色取值见 ui-base.css）。 */
+  --zp-line-inset:#253345;
   --zp-input-line:var(--zp-line);
   --zp-text:#F1F5F9;
   --zp-muted:#94A3B8;
@@ -1906,6 +1927,11 @@ main > .topbar .order-icon-btn::after{
 *::-webkit-scrollbar{display:none;width:0;height:0}
 /* 线路页：首项 dispatch-intro 自带 18px 上间距，避免与 .zp-scroll 的 14px 叠加 */
 main.zp-shell.dispatch-page .zp-scroll{padding-top:0}
+
+/* 登录首屏防闪（原 index.html 内联，2026-10-29 收编）：
+   App 壳在「判断是否已登录」的极短窗口内先隐藏登录壳，判断完成后由 JS 摘掉
+   data-zp-boot 属性。规则必须在首帧前就位，故与顶栏同层放在本文件。 */
+html[data-zp-boot="hop"] .login-shell{display:none!important}
 
 /* 智配One · 首页移动端 UI */
 /* 板块宽度对齐全局：与线路页 / 历史页同用 --zp-space-4（16px）。

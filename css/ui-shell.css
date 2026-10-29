@@ -79,3 +79,8 @@ main > .topbar .order-icon-btn::after{
 *::-webkit-scrollbar{display:none;width:0;height:0}
 /* 线路页：首项 dispatch-intro 自带 18px 上间距，避免与 .zp-scroll 的 14px 叠加 */
 main.zp-shell.dispatch-page .zp-scroll{padding-top:0}
+
+/* 登录首屏防闪（原 index.html 内联，2026-10-29 收编）：
+   App 壳在「判断是否已登录」的极短窗口内先隐藏登录壳，判断完成后由 JS 摘掉
+   data-zp-boot 属性。规则必须在首帧前就位，故与顶栏同层放在本文件。 */
+html[data-zp-boot="hop"] .login-shell{display:none!important}
