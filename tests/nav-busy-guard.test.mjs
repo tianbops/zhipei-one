@@ -9,12 +9,14 @@
  *   三、核对页「提交中禁止关闭」：单一关闭入口 + 三个 UI 入口都走它
  *   四、「取消处理」按钮已彻底删除（HTML/JS/CSS 三处都不许再出现）
  *   五、Tab 根页（历史/线路/我的）不显示返回箭头
+ *   六、原生返回入口 window.zpSystemBack
+ *   七、不提供草稿（ADR 0002：放弃确认只有两个选项）
  *
  * 实现方式与 nav-return.test.mjs 一致：截取 js/ui/back.js 的真实源码片段求值，
  * 注入假的 window/zpToast，因此改源码后本测试自动跟随。
  */
 
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const SRC = readFileSync(fileURLToPath(new URL("../js/ui/back.js", import.meta.url)), "utf8");
@@ -154,6 +156,35 @@ console.log("\n六、原生返回入口 window.zpSystemBack（3 条）");
   t("back.js 暴露 zpSystemBack", SRC.includes("window.zpSystemBack="));
   t("无工作区（登录/引导页）走原生退出", /if\(!zpZone\)\{/.test(entry) && /exitApp\(\)/.test(entry));
   t("工作区页转交 zpBackButton", /return zpBackButton\(\);/.test(entry));
+}
+
+/* ---------- 七、不提供草稿（ADR 0002） ---------- */
+console.log("\n七、不提供草稿（4 条）");
+{
+  // 决策见 docs/adr/0002：运单是单次线性流程，草稿只覆盖半条链路，
+  // 恢复后仍要重新核对，且陈旧门店/线路会直接导致错运单。
+  // 这里做反向断言——将来谁想加草稿，必须先推翻 ADR，而不是顺手写个 setItem。
+  t("back.js 无 draft 标识符", !/draft/i.test(SRC));
+  t("back.js 无草稿字样", !/草稿/.test(SRC));
+
+  const discard = SRC.slice(
+    SRC.indexOf("async function zpConfirmDiscard()"),
+    SRC.indexOf("/* ===== 不可中断操作守卫"),
+  );
+  t("放弃确认只调一次 zpConfirm（无第三个选项）", (discard.match(/zpConfirm\(/g) || []).length === 1);
+  t('放弃确认的动作按钮是「放弃」', /"放弃"\)/.test(discard));
+
+  // 全仓 js/ 不得出现草稿实现（排除打包产物）
+  const hits = [];
+  (function walk(dir) {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const p = dir + "/" + e.name;
+      if (e.isDirectory()) walk(p);
+      else if (e.name.endsWith(".js") && !e.name.includes("bundle") &&
+               /存草稿|saveDraft|zpDraft/.test(readFileSync(p, "utf8"))) hits.push(p);
+    }
+  })("js");
+  t("js/ 下无草稿实现", hits.length === 0, hits.join(","));
 }
 
 function finish() {
