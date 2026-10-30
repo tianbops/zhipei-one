@@ -51,7 +51,7 @@ for i=1,#ARGV,8 do
       local ok,phases=pcall(cjson.decode,phasesRaw)
       if ok and type(phases)=="table" then
         for name,dur in pairs(phases) do
-          if string.match(name,"^history%-[a-z0-9%-]+$") then
+          if string.match(name,"^history%-[a-z%-]+$") then
             local value=tonumber(dur)
             if value and value>=0 and value<=120000 then
               local phaseBase=base.."phase:"..name..":"
@@ -78,7 +78,7 @@ function validEvent(e) {
   if (!status || !Number.isFinite(duration) || duration < 0 || duration > 120000) return null;
   if (server !== null && (!Number.isFinite(server) || server < 0 || server > 120000)) return null;
   const allowedPhases = new Set(["history-auth","history-route","history-index","history-aggregate","history-search-index","history-search-read","history-detail-read","history-detail-enrich","history-response-build"]);
-  const isD1RoutingPhase = name => /^history-d1-(?:primary|replica|unknown)-queries$/.test(name) || /^history-d1-region-[a-z-]+-queries$/.test(name);
+  const isD1RoutingPhase = name => /^history-db-(?:primary|replica|unknown)-queries$/.test(name) || /^history-db-region-[a-z-]+-queries$/.test(name);
   const phases = {};
   if (e.phases && typeof e.phases === "object" && !Array.isArray(e.phases)) {
     for (const [name, value] of Object.entries(e.phases)) {
