@@ -24,6 +24,14 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
+      - name: Verify button and input touch targets
+        run: npm run verify:css-buttons
+      - name: Audit button visual parameters
+        run: npm run verify:css-button-audit
+      - name: Audit card and row visual parameters
+        run: npm run verify:css-cardrow
+      - name: Report potentially unused CSS selectors
+        run: npm run verify:css-deadcode
       - name: Install Chrome for Testing
         id: chrome
         uses: browser-actions/setup-chrome@v2
