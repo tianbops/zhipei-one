@@ -680,6 +680,10 @@ async function testRequestScopedSessionEnv() {
   eq(original.DB, db, "原始 D1 binding 保持不变");
   eq(original.__zpD1, cachedBackend, "原始 D1Backend 缓存保持不变");
 
+  const historySource = readFileSync(path.join(API, "history.js"), "utf8");
+  ok(historySource.includes("readDateWaybills(historyEnv,user,routeId,date,budget)"), "日期详情读取使用请求级 Session env");
+  ok(historySource.includes("readDates(historyEnv,routeId,range,budget)"), "历史搜索索引读取使用请求级 Session env");
+  ok(!historySource.includes("readDayAggregates(historyEnv"), "并发历史概览读取不接入 Session，避免未经验证的并发会话顺序");
   const second = createD1SessionEnv(original);
   ok(second.DB !== scoped.DB && sessions.length === 2, "不同请求获得独立 Session");
   const fallback = { DB: { prepare() {} }, __zpD1: null };
