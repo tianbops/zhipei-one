@@ -611,6 +611,53 @@ async function testD1Limits() {
   eq(pr3[2], "none", "pipeline 分组 TYPE 不存在键");
 }
 
+// ============ AUTH_READ 单 D1 batch 优化 ============
+async function testAuthReadFastPath() {
+  console.log("\\n[AUTH_READ] session + user 合并为一次 D1 batch");
+  const { raw, backend, metrics } = makeEngine();
+  const authSource = readFileSync(path.join(API, "_auth.js"), "utf8");
+  const authScript = extractScripts(authSource).find(s => /local session = redis.call/.test(s));
+  ok(!!authScript, "从 _auth.js 提取真实 AUTH_READ Lua 脚本");
+  if (!authScript) return;
+
+  const session = JSON.stringify({ userId: "U-AUTH", sessionVersion: 1 });
+  const user = JSON.stringify({ id: "U-AUTH", username: "auth-user", sessionVersion: 1 });
+  await backend.command(["SET", "zp:session:auth-fast", session]);
+  await backend.command(["SET", "zp:user:U-AUTH", user]);
+  metrics.prepare = 0; metrics.batch = 0;
+  const pair = await backend.command(["EVAL", authScript, "1", "zp:session:auth-fast", "zp:user:"]);
+  eq(pair, [session, user], "AUTH_READ 返回 session + user 原始值");
+  eq(backend.quota.statements + backend.quota.batches, 1, "AUTH_READ D1 配额消耗仅 1 次");
+  eq(metrics.batch, 1, "AUTH_READ 使用单次 D1 batch");
+  eq(metrics.prepare, 2, "AUTH_READ batch 内为过期清理 + JOIN 查询");
+
+  const missing = await backend.command(["EVAL", authScript, "1", "zp:session:missing", "zp:user:"]);
+  eq(missing, [null, null], "AUTH_READ 缺失 session 返回空对");
+
+  await backend.command(["SET", "zp:session:auth-bad", "{"]);
+  const malformed = await backend.command(["EVAL", authScript, "1", "zp:session:auth-bad", "zp:user:"]);
+  eq(malformed, ["{", null], "AUTH_READ 损坏 session 保留原值但不返回 user");
+
+  const noUserSession = JSON.stringify({ userId: "U-NOT-FOUND", sessionVersion: 1 });
+  await backend.command(["SET", "zp:session:auth-no-user", noUserSession]);
+  const noUser = await backend.command(["EVAL", authScript, "1", "zp:session:auth-no-user", "zp:user:"]);
+  eq(noUser, [noUserSession, null], "AUTH_READ 缺失 user 返回 session + null");
+
+  raw.exec("INSERT INTO kv(key,value,type,expires_at) VALUES('zp:session:auth-expired','x','string',1)");
+  const expired = await backend.command(["EVAL", authScript, "1", "zp:session:auth-expired", "zp:user:"]);
+  eq(expired, [null, null], "AUTH_READ 过期 session 不复活");
+  eq(raw.prepare("SELECT count(*) c FROM kv WHERE key='zp:session:auth-expired'").get().c, 0, "AUTH_READ 清理过期 session");
+
+  const pendingSession = JSON.stringify({ userId: "U-PENDING", sessionVersion: 1 });
+  const pendingUser = JSON.stringify({ id: "U-PENDING", sessionVersion: 1 });
+  const pipeline = await backend.pipeline([
+    ["SET", "zp:session:auth-pending", pendingSession],
+    ["SET", "zp:user:U-PENDING", pendingUser],
+    ["EVAL", authScript, "1", "zp:session:auth-pending", "zp:user:"],
+  ]);
+  eq(pipeline[2], [pendingSession, pendingUser], "pipeline 内 overlay session/user 仍可被 AUTH_READ 读取");
+}
+
 // ============ 主流程 ============
 (async () => {
   console.log("=== D1 引擎离线测试 ===");
@@ -626,6 +673,7 @@ async function testD1Limits() {
   await testConcurrency();
   await testRenameTypePing();
   await testExtraBranches();
+  await testAuthReadFastPath();
   await testD1Limits();
 
   console.log(`\n=== 结果：通过 ${pass} 项，失败 ${fail} 项 ===`);
