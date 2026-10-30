@@ -2611,6 +2611,8 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
   };
   const prefetch=raw=>{
     try{
+      // 统一入口守卫：空闲预热与 pointerdown/touchstart 意图预取都必须遵守弱网策略。
+      if(!allowed())return false;
       const path=normalize(raw);
       if(!path||done.has(path)||done.size>=MAX)return false;
       done.add(path);
