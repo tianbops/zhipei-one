@@ -4,12 +4,13 @@
  */
 (function(A){
 const { $, S, esc, rn, api, toast, open, close, page, sw, closeSwipes, dlg, dt, dp, db, dc, do_ } = A;
-/* 系统菜单开关 3.4：openMenu 压入一条历史记录，移动端"滑动返回"手势
-   触发 popstate 时先收起菜单而不是直接离开页面；hideMenu 负责收起并
-   清掉这条记录（幂等，重复调用无副作用）。 */
-let menuStacked=false;
-function openMenu(){const mb=$("menuBg");mb.hidden=false;if(!menuStacked){menuStacked=true;try{history.pushState({zpMenu:1},"")}catch{menuStacked=false}}}
-function hideMenu(){const mb=$("menuBg");if(!mb.hidden)mb.hidden=true;if(menuStacked){menuStacked=false;try{if(history.state&&history.state.zpMenu){window.zpSuppressPop=true;history.back()}}catch{}}}
+/* 系统菜单开关 3.4：菜单作为 rank 20 的返回层级注册（见下方 zpRegisterBackHook），
+   返回键/手势由 back.js 的 zpCloseTopLayer 统一收起，**不再压历史记录**。
+   旧实现 openMenu 里往历史压一条 zpMenu 记录、hideMenu 里再 back() 撤销，
+   看似自洽，实则一遇到「菜单开着直接跳页/自动关闭」就会把那条记录留成孤儿，
+   之后连按返回会退回已经离开的页面。层级已由 hook 表达，历史层就是多余的一层。 */
+function openMenu(){const mb=$("menuBg");mb.hidden=false}
+function hideMenu(){const mb=$("menuBg");if(!mb.hidden)mb.hidden=true}
 if(window.zpRegisterBackHook)window.zpRegisterBackHook({rank:20,probe:()=>{const mb=$("menuBg");return mb&&!mb.hidden?mb:null},close:()=>{hideMenu();return true}});
 function editUser(){hideMenu();open("修改用户名","保存后需要重新登录",'<div class="field username-field"><label for="nu">新用户名</label><div class="username-control"><input id="nu" autocomplete="username" aria-label="新用户名" placeholder="请输入新的管理员用户名"></div></div>',"保存",false,async()=>{const username=nu.value.trim();if(!username)return toast("请输入新的管理员用户名");await api("/api/admin/manage",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"rename",username})});close();toast("用户名已修改，请重新登录");setTimeout(()=>location.replace("/"),700)})}
 function editPass(){hideMenu();open("修改密码","修改后需要重新登录",'<div class="field reset-password-field"><label for="op">当前密码</label><input id="op" type="password" autocomplete="current-password" placeholder="请输入当前密码"></div><div class="field reset-password-field"><label for="np">新密码</label><input id="np" type="password" autocomplete="new-password" minlength="8" maxlength="128" placeholder="至少8位"></div><div class="field reset-password-field"><label for="cp">确认新密码</label><input id="cp" type="password" autocomplete="new-password" minlength="8" maxlength="128" placeholder="再次输入新密码"></div>',"保存",false,async()=>{if(!op.value||!np.value||!cp.value)return toast("请完整填写密码");if(np.value.length<8||np.value!==cp.value)return toast("请检查新密码");await api("/api/admin/manage",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"password",currentPassword:op.value,password:np.value})});close();toast("密码已修改，请重新登录");setTimeout(()=>location.replace("/"),700)})}

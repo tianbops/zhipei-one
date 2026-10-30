@@ -156,6 +156,11 @@ CI 只报「失败」不报「还有 30 个没跑」——回归后门。
    顶栏用 `class="topbar is-root"`（单列 grid，标题居中）。子页面仍显示箭头。
 8. 页面内返回箭头、Android 系统返回、浏览器后退走同一套 `zpHandleBack()`。
    壳侧入口是 `window.zpSystemBack()`（登录页返回 = 退出 App），改壳必须同时改这里。
+   **原生返回键不得走 `webView.goBack()`**（2026-10-30 定稿，v1.0.19，见 `docs/adr/0003`）：
+   goBack 只认「上一页文档」，看不到页面内还开着的确认框，会把弹层连同未处理内容一起丢掉。
+   壳里只做一件事——调 `window.zpSystemBack()`；JS 未就绪时才退回 `goBack/finish` 兜底。
+   退出也走原生：`zpDoExit()` 优先 `ZhipeiNative.exitApp()`（finish），浏览器里才 `history.back()`。
+   红线由 `tests/nav-back-channel.test.mjs`（Web）与 `scripts/check-back-channel.mjs`（客户端）守。
 9. 改返回逻辑必须同步 `tests/nav-return.test.mjs`（收口矩阵）、
    `tests/nav-admin-exit.test.mjs`（管理员出口）、`tests/nav-busy-guard.test.mjs`
    （忙碌守卫 / 取消按钮缺席 / 根页无箭头）；三者都是阻塞项。
@@ -163,14 +168,20 @@ CI 只报「失败」不报「还有 30 个没跑」——回归后门。
    走「继续编辑 / 放弃」确认，**不落本地、不可恢复**。不要新增 `localStorage`/`sessionStorage`
    草稿写入、不要加「存草稿并离开」按钮——`tests/nav-busy-guard.test.mjs` 会拦。
 11. **站内导航一律 `location.replace`，且占位只压在工作区根**（2026-10-30 定稿）。
-   多页架构下 `<a href>` 与 `location.href=...` 都会 push 一条历史，栈里压着历史页/详情页
-   之后，首页按返回就会「首页 → 详情 → 历史 → 才退出」，方向不可预期。
-   - `js/ui/back.js` 全局拦截站内 `<a>` 并改走 replace；新代码**禁止**写站内 `location.href=`。
+   多页架构下 `<a href>`、`location.href=...`、`location.assign()` 都会 push 一条历史，
+    栈里压着历史页/详情页之后，首页按返回就会「首页 → 详情 → 历史 → 才退出」，方向不可预期。
+   - `js/ui/back.js` 全局拦截站内 `<a>` 并改走 replace；新代码**禁止**写站内 `location.href=` / `location.assign()`。
    - 占位（`zpPushGuard`）**只允许在 `/home`、`/admin` 压**。子页面压占位会让 replace
      替换的是占位而不是页面本身，旧页面记录永久残留（实测：首页 → 首页 → 历史 → 首页）。
    - 子页面因此没有常驻占位：不可中断操作（保存等）开始时必须调 `window.zpArmGuard()`，
      否则返回键会直接离开页面、绕过 `zpBusyMessage`。
-   `tests/nav-no-history.test.mjs` 会拦；真浏览器回归见 `tests/e2e-nav-back-stack.cjs`。
+   - **补压只在「下面还压着弹层」时发生**（`if(zpTopHook())zpPushGuard()`）。顶部返回按钮与
+     原生返回键不消费历史，无条件补压会平白堆出一条记录，离开本页时 replace 只替换当前项，
+     这条记录就成了指向内页的孤儿。
+   - 菜单/抽屉**不得**自压历史记录（`history.pushState({zpMenu…})` 已删除）：层级由
+     `zpRegisterBackHook` 表达，历史里多一层就会在「菜单开着直接跳页」时留下孤儿。
+   `tests/nav-no-history.test.mjs` 与 `tests/nav-back-channel.test.mjs` 会拦；
+   真浏览器回归见 `tests/e2e-nav-back-stack.cjs`（序列应为 `/home → /home → 桌面`）。
 
 ## 9. 已知架构决策（勿轻改）
 

@@ -510,12 +510,14 @@ $("deleteConfirm").onclick=async()=>{
  if(helpMailBtn)helpMailBtn.addEventListener("click",()=>copyText("tianbops@live.com","反馈邮箱已复制"));
 })();
 const p=$("privacyLink"),t=$("termsLink");
-if(p)p.addEventListener("click",()=>location.assign("/pages/privacy"));
-if(t)t.addEventListener("click",()=>location.assign("/pages/terms"));
+/* 站内跳转一律 replace：assign/push 会往历史里多压一条内页记录，
+   离开后按返回就会退回到已经离开的页面（单根模型下历史栈只保留当前页一条）。 */
+if(p)p.addEventListener("click",()=>location.replace("/pages/privacy"));
+if(t)t.addEventListener("click",()=>location.replace("/pages/terms"));
 })();
 
 load();
-</script><script src="/js/ui/core.js?v=7c4e2f82"></script><script src="/js/ui/appearance.js?v=2661f74b"></script><script src="/js/ui/feedback.js?v=f8da0256"></script><script src="/js/ui/nav.js?v=0bf1d3c3"></script><script src="/js/ui/back.js?v=01d6ded4"></script><script src="/js/ui/nav-prefetch.js?v=7c589b89"></script>
+</script><script src="/js/ui/core.js?v=7c4e2f82"></script><script src="/js/ui/appearance.js?v=2661f74b"></script><script src="/js/ui/feedback.js?v=f8da0256"></script><script src="/js/ui/nav.js?v=0bf1d3c3"></script><script src="/js/ui/back.js?v=0ede91e9"></script><script src="/js/ui/nav-prefetch.js?v=7c589b89"></script>
 <script src="/js/pwa.js?v=68dbac73"></script>
 <nav class="zp-nav" aria-label="主要功能">
     <a class="zp-nav-item zp-nav-home" href="/home">
