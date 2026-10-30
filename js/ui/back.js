@@ -103,8 +103,26 @@
     return ok;
   }
 
+  /* ===== 不可中断操作守卫（ZP-NAV-2026-002 第五节）=====
+     运单正在 OCR/规划（首页）与核对页正在提交确认，都属于「已经发出写请求」的状态：
+     此时返回键既不能关弹层、也不能离开页面——离开会留下服务端已落库但用户以为放弃的运单，
+     或让客户端提前释放上传引用却不知道结果。统一在这里拦下并提示，只有一个出口：等结果。
+     请求本身有服务端超时兜底（OCR_TIMEOUT / PROCESS_*），不会永久卡死。 */
+  function zpBusyMessage(){
+    try{
+      if(typeof window.zpIsProcessing==="function"&&window.zpIsProcessing())return "运单正在处理，请稍候";
+      if(typeof window.zpIsConfirming==="function"&&window.zpIsConfirming())return "正在保存，请稍候";
+    }catch{}
+    return "";
+  }
+
   // 自上而下关闭一层 UI；返回 true 表示本次返回已被页面内消化
   async function zpCloseTopLayer(){
+    const busy=zpBusyMessage();
+    if(busy){
+      try{window.zpToast?window.zpToast(busy,"error"):0}catch{}
+      return true;   // 消费本次返回：不关弹层、不穿透、不导航
+    }
     const hooks=zpSortedHooks();
     for(const h of hooks){
       let el=null;try{el=h.probe()}catch{continue}
@@ -222,6 +240,21 @@
     if(r==="exit"){zpDoExit();return}
     // "leave"：非根页面的普通返回，location.replace 已发起页面导航，此处不做任何额外动作
   }
+
+  /* 原生壳在 WebView「无历史可退」时调用 window.zpSystemBack()（MainActivity 的
+     OnBackPressedCallback）。拆分 ui-unified.js 时这个入口被漏掉，导致登录/引导页按
+     返回毫无反应——这里补回来：登录页（未识别工作区）返回即退出 App；工作区页则完整
+     走一遍 zpBackButton（根页两次返回退桌面）。 */
+  window.zpSystemBack=function(){
+    if(!zpZone){
+      try{
+        const N=window.ZhipeiNative;
+        if(N&&typeof N.exitApp==="function"){N.exitApp();return}
+      }catch{}
+      return;
+    }
+    return zpBackButton();
+  };
 
   function zpBindPageBack(){
     document.querySelectorAll(".app-back,#backBtn").forEach(el=>{

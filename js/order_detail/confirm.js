@@ -1,6 +1,14 @@
 'use strict';
+/* 关闭「待确认」弹窗的唯一入口：提交在途时直接拒绝，只提示不关闭。 */
+function closeConfirmDialog(){
+  if(confirming){
+    try{zpToast("正在保存，请稍候","error")}catch{}
+    return;
+  }
+  $('confirmDialog').hidden=true;
+}
 function openConfirm(){
- const pending=order?.stores?.map((x,i)=>({x,i})).filter(v=>v.x?.pending)||[];
+const pending=order?.stores?.map((x,i)=>({x,i})).filter(v=>v.x?.pending)||[];
  const list=$('pendingList'), selected=new Map();list.innerHTML='';
  const updateSubmit=()=>{$('submitConfirm').disabled=selected.size!==pending.length;$('submitConfirm').textContent=selected.size===pending.length?'确认':'确认（'+selected.size+'/'+pending.length+'）'};
  // 临时线路（routeId=__temp__:<userId>）不建立线路数据资料，没有"已有门店"可指定，此时只保留「新增」
@@ -114,11 +122,13 @@ function openConfirm(){
  $('submitConfirm').onclick=async()=>{
    if(selected.size!==pending.length)return;
    const btn=$('submitConfirm');btn.disabled=true;btn.textContent='正在确认…';
+   confirming=true;
    try{
      const confirmations=pending.map(v=>({index:v.i,...selected.get(v.i)}));
      const r=await fetch('/api/waybills/confirm',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({waybillId:order.id,confirmations,confirmRequestId:crypto.randomUUID()})});
      const d=await r.json().catch(()=>({}));if(!r.ok||!d.success)throw Error(d.error||'确认失败');
      order=d.waybill;$('confirmDialog').hidden=true;render();
    }catch(e){btn.disabled=false;btn.textContent='确认';zpToast(e.message||'确认失败','error')}
+   finally{confirming=false}
  };
 }

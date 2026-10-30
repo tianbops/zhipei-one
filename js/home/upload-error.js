@@ -40,7 +40,6 @@ const PROCESS_ERROR_TEXT={
 };
 function showProcessingError(message, hint, action, recoverable, requestId){
   stopProcessingClock();
-  if(processingCancelBtn){processingCancelBtn.hidden=true;processingCancelBtn.disabled=false;}
   if(processingPanel)processingPanel.hidden=true;
   if(sourceMenu)sourceMenu.hidden=true;
   if(overlay)overlay.classList.add("processing-error-state");
@@ -60,8 +59,6 @@ function showProcessingUI(){
   sourceMenu.hidden=true;
   if(uploadTextPanelEl)uploadTextPanelEl.hidden=true;   // 文本面板与来源菜单互斥，处理期一并隐藏
   processingPanel.hidden=false;
-  processingCancelled=false;
-  if(processingCancelBtn){processingCancelBtn.hidden=true;processingCancelBtn.disabled=false;}
   setProcessingStage(STAGE_DEFAULT);
   if(processingElapsedEl)processingElapsedEl.textContent="已用时 0s";
   resetProcessingProgress();

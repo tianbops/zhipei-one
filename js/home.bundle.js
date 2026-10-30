@@ -346,7 +346,7 @@ const setRouteBadge=(route)=>{if(!dot)return;const type=route?.type||"";const na
    依赖 core 的 $；不伪造进度，百分比只来自后端真实 progress 事件。 */
 
 const processingPanel=$("uploadProcessing"),processingError=$("uploadProcessingError"),processingErrorMessage=$("processingErrorMessage"),processingRetry=$("processingRetry"),sourceMenu=$("uploadSourceMenu"),processingPercent=$("processingPercent"),processingProgress=$("processingProgressDot");
-const processingStageEl=$("processingStage"),processingElapsedEl=$("processingElapsed"),processingCancelBtn=$("processingCancel");
+const processingStageEl=$("processingStage"),processingElapsedEl=$("processingElapsed");
 const uploadTextPanelEl=$("uploadTextPanel"),waybillTextInputEl=$("waybillTextInput");
 let processingProgressValue=0;
 let processingProgressTarget=0;
@@ -362,16 +362,16 @@ let processingProgressDuration=0;
    这里补三件事，均不伪造进度：
      1) 展示后端真实阶段文案 + 已用时；
      2) 久无新进度但心跳仍到 → 进度条叠加流动微光（存活指示，不改数字）；
-     3) 处理超过 8 秒才给出"取消处理"出口（此前处理中无任何退出方式）。 */
+     3) 处理中不提供任何退出方式（2026-10-30 起删除「取消处理」按钮）：
+        处理一旦发出写请求就不可中断，取消只会留下「服务端已落库、用户以为放弃」的
+        运单，与返回机制「保存中禁止返回」保持同一口径。 */
 const STAGE_DEFAULT="正在准备…";
 const STALL_THRESHOLD=1200;   // 超过此毫秒没有新进度即视为停滞
 const ALIVE_THRESHOLD=3000;   // 心跳超过此毫秒未到即认为连接已断
-const CANCEL_REVEAL_MS=8000;  // 处理多久后才显示取消按钮
 let processingController=null;
 let processingStartedAt=0;
 let processingLastProgressAt=0;
 let processingLastSignalAt=0;
-let processingCancelled=false;
 let processingClockTimer=0;
 
 function setProcessingStage(text){
@@ -401,9 +401,6 @@ function startProcessingClock(){
   processingClockTimer=setInterval(()=>{
     refreshProcessingClock();
     refreshStalledState();
-    if(processingCancelBtn&&!processingCancelled&&(Date.now()-processingStartedAt)>=CANCEL_REVEAL_MS){
-      processingCancelBtn.hidden=false;
-    }
   },500);
 }
 function stopProcessingClock(){
@@ -467,8 +464,6 @@ function resetProcessingProgress(){
 function resetProcessingUI(){
   stopProcessingClock();
   processingStartedAt=0;
-  processingCancelled=false;
-  if(processingCancelBtn){processingCancelBtn.hidden=true;processingCancelBtn.disabled=false;}
   setProcessingStage(STAGE_DEFAULT);
   if(processingElapsedEl)processingElapsedEl.textContent="已用时 0s";
   if(!processingPanel||!sourceMenu)return;
@@ -526,7 +521,6 @@ const PROCESS_ERROR_TEXT={
 };
 function showProcessingError(message, hint, action, recoverable, requestId){
   stopProcessingClock();
-  if(processingCancelBtn){processingCancelBtn.hidden=true;processingCancelBtn.disabled=false;}
   if(processingPanel)processingPanel.hidden=true;
   if(sourceMenu)sourceMenu.hidden=true;
   if(overlay)overlay.classList.add("processing-error-state");
@@ -546,8 +540,6 @@ function showProcessingUI(){
   sourceMenu.hidden=true;
   if(uploadTextPanelEl)uploadTextPanelEl.hidden=true;   // 文本面板与来源菜单互斥，处理期一并隐藏
   processingPanel.hidden=false;
-  processingCancelled=false;
-  if(processingCancelBtn){processingCancelBtn.hidden=true;processingCancelBtn.disabled=false;}
   setProcessingStage(STAGE_DEFAULT);
   if(processingElapsedEl)processingElapsedEl.textContent="已用时 0s";
   resetProcessingProgress();
@@ -692,14 +684,8 @@ if(textPanelSubmitBtn&&waybillTextInput)textPanelSubmitBtn.addEventListener("cli
 $("uploadAction")?.addEventListener("click",()=>{if(overlay&&!overlay.hidden)closeUpload();else openUpload()});
 if(new URLSearchParams(location.search).get("openUpload")==="1")setTimeout(openUpload,0);
 cancel?.addEventListener("click",closeUpload);
-// 处理中的唯一退出方式：处理期间取消按钮被隐藏，等待超过 8 秒后才给出出口，
-// 既保留处理锁（防重复提交、防误触关闭），又不把用户永久锁在弹窗里。
-processingCancelBtn?.addEventListener("click",()=>{
-  if(!processingFile||!processingController)return;
-  processingCancelled=true;
-  processingCancelBtn.disabled=true;
-  try{processingController.abort()}catch{}
-});
+// 处理中不再提供「取消处理」：处理一旦发出写请求就不可中断。
+// 返回键同样被 js/ui/back.js 的忙碌守卫拦下并提示，处理结束前不关闭弹层。
 processingRetry?.addEventListener("click",()=>{
   if(processingFile)return;   // 处理中禁止重复触发
   const info=retryActionInfo(lastFailureAction);
@@ -798,7 +784,6 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
   lastProcessingFile=null;
   const controller=new AbortController();
   processingController=controller;
-  if(processingCancelBtn){processingCancelBtn.hidden=true;processingCancelBtn.disabled=false}
   try{
     if(!(await ensureDispatchRoute())){
       showProcessingError("DISPATCH_ROUTE_MISSING");
@@ -889,8 +874,8 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
       }
     }catch(e){
       if(e?.name==="AbortError"){
-        // 用户主动取消不算错误：静默收尾，由 finally 关闭面板并提示
-        if(processingCancelled)return;
+        // 没有「取消处理」按钮之后，Abort 只可能来自网络中断/页面卸载，
+        // 一律按超时提示，让用户有明确的重试动作。
         throw Object.assign(new Error("运单处理超时，请检查OCR服务后重试"),{code:"PROCESS_CLIENT_TIMEOUT"});
       }
       throw e;
@@ -902,17 +887,12 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
     stopProcessingClock();
     document.querySelectorAll(".source-option").forEach(b=>b.disabled=false);
     processingFile=false;
-    const wasCancelled=processingCancelled;
     processingController=null;
     // 释放前端对原图 File 对象的引用；历史记录只保留业务结果，不保留图片/文本。
     files.length=0;
     rawText="";
     lastProcessingFile=null;
     ["cameraInput","photoInput","documentInput"].forEach(id=>{const input=$(id);if(input)input.value="";});
-    if(wasCancelled){
-      closeUpload();
-      try{window.zpToast?.("已取消处理","success")}catch{}
-    }
   }
 }
 ["cameraInput","photoInput","documentInput"].forEach(id=>$(id)?.addEventListener("change",e=>{
@@ -2018,8 +1998,26 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
     return ok;
   }
 
+  /* ===== 不可中断操作守卫（ZP-NAV-2026-002 第五节）=====
+     运单正在 OCR/规划（首页）与核对页正在提交确认，都属于「已经发出写请求」的状态：
+     此时返回键既不能关弹层、也不能离开页面——离开会留下服务端已落库但用户以为放弃的运单，
+     或让客户端提前释放上传引用却不知道结果。统一在这里拦下并提示，只有一个出口：等结果。
+     请求本身有服务端超时兜底（OCR_TIMEOUT / PROCESS_*），不会永久卡死。 */
+  function zpBusyMessage(){
+    try{
+      if(typeof window.zpIsProcessing==="function"&&window.zpIsProcessing())return "运单正在处理，请稍候";
+      if(typeof window.zpIsConfirming==="function"&&window.zpIsConfirming())return "正在保存，请稍候";
+    }catch{}
+    return "";
+  }
+
   // 自上而下关闭一层 UI；返回 true 表示本次返回已被页面内消化
   async function zpCloseTopLayer(){
+    const busy=zpBusyMessage();
+    if(busy){
+      try{window.zpToast?window.zpToast(busy,"error"):0}catch{}
+      return true;   // 消费本次返回：不关弹层、不穿透、不导航
+    }
     const hooks=zpSortedHooks();
     for(const h of hooks){
       let el=null;try{el=h.probe()}catch{continue}
@@ -2137,6 +2135,21 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
     if(r==="exit"){zpDoExit();return}
     // "leave"：非根页面的普通返回，location.replace 已发起页面导航，此处不做任何额外动作
   }
+
+  /* 原生壳在 WebView「无历史可退」时调用 window.zpSystemBack()（MainActivity 的
+     OnBackPressedCallback）。拆分 ui-unified.js 时这个入口被漏掉，导致登录/引导页按
+     返回毫无反应——这里补回来：登录页（未识别工作区）返回即退出 App；工作区页则完整
+     走一遍 zpBackButton（根页两次返回退桌面）。 */
+  window.zpSystemBack=function(){
+    if(!zpZone){
+      try{
+        const N=window.ZhipeiNative;
+        if(N&&typeof N.exitApp==="function"){N.exitApp();return}
+      }catch{}
+      return;
+    }
+    return zpBackButton();
+  };
 
   function zpBindPageBack(){
     document.querySelectorAll(".app-back,#backBtn").forEach(el=>{

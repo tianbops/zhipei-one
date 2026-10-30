@@ -1,16 +1,5 @@
-/* UI 2.4：顶部返回键与运单详情统一
-   历史查询不显示右侧三横，仅保留与运单详情一致的返回箭头。 */
-.history-shell .app-back{color:var(--zp-text)}
-.history-shell .app-back:active{background:var(--zp-card-translucent);transform:none}
-.history-topbar-placeholder{
-  width:42px;
-  height:42px;
-  display:block;
-}
-
-/* Android 返回层 2.5：历史查询返回按钮沿用运单详情纯箭头。 */
-.history-shell .app-back{touch-action:manipulation}
-
+/* 2026-10-30：历史页是 Tab 根页，按 ZP-NAV-2026-002 表 3.1 不再显示返回箭头，
+   原先的 .app-back 配色/按压规则一并移除。 */
 /* 日历月份滑动切换：左滑下月（内容自右滑入）、右滑上月（内容自左滑入） */
 @keyframes historyCalInLeft{
   from{opacity:0;transform:translate3d(-10px,0,0)}

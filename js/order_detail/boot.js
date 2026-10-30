@@ -4,7 +4,7 @@
 (window.zpBackHooks=window.zpBackHooks||[]).push(
   {rank:10,probe:()=>document.querySelector('.pending-picker'),close:()=>{const p=document.querySelector('.pending-picker');if(p)p.hidden=true;return true}},
   // 待确认弹窗本身就是编辑态：有已选项未提交时，返回需先确认放弃
-  {rank:10,probe:()=>$('confirmDialog'),dirty:()=>!!document.querySelector('#confirmDialog .choice-btn.selected'),close:()=>{$('confirmDialog').hidden=true;return true}},
+  {rank:10,probe:()=>$('confirmDialog'),dirty:()=>!!document.querySelector('#confirmDialog .choice-btn.selected'),close:()=>{closeConfirmDialog();return true}},
   {rank:20,probe:()=>$('menuPanel'),close:()=>{setMenu(false);return true}}
 );
 if($('menuBtn'))$('menuBtn').onclick=e=>{e.stopPropagation();setMenu(!menuOpen)};
@@ -23,9 +23,9 @@ if($('shareBtn'))$('shareBtn').onclick=async()=>{
  try{if(navigator.share)await navigator.share({title:'当日运单',text});else{await navigator.clipboard?.writeText(text);zpToast('已复制运单清单','success')}}catch{}
 };
 if($('logoutBtn'))$('logoutBtn').onclick=async()=>{setMenu(false);if(!(await zpConfirm('退出登录','确定退出当前账号吗？')))return;try{await fetch('/api/logout',{method:'POST',credentials:'same-origin',cache:'no-store'})}finally{try{localStorage.removeItem('zpLastAuth');localStorage.removeItem('zpLastRole')}catch(e){}location.replace('/')}};
-if($('closeConfirm'))$('closeConfirm').onclick=()=>$('confirmDialog').hidden=true;
-if($('cancelConfirm'))$('cancelConfirm').onclick=()=>$('confirmDialog').hidden=true;
-$('confirmDialog')?.addEventListener('click',e=>{if(e.target===$('confirmDialog'))$('confirmDialog').hidden=true});
+if($('closeConfirm'))$('closeConfirm').onclick=()=>closeConfirmDialog();
+if($('cancelConfirm'))$('cancelConfirm').onclick=()=>closeConfirmDialog();
+$('confirmDialog')?.addEventListener('click',e=>{if(e.target===$('confirmDialog'))closeConfirmDialog()});
 document.addEventListener('click',e=>{if(menuOpen&&!$('menuPanel').contains(e.target)&&e.target!==$('menuBtn'))setMenu(false)});
 (async()=>{
   try{

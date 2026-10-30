@@ -76,7 +76,6 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
   lastProcessingFile=null;
   const controller=new AbortController();
   processingController=controller;
-  if(processingCancelBtn){processingCancelBtn.hidden=true;processingCancelBtn.disabled=false}
   try{
     if(!(await ensureDispatchRoute())){
       showProcessingError("DISPATCH_ROUTE_MISSING");
@@ -167,8 +166,8 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
       }
     }catch(e){
       if(e?.name==="AbortError"){
-        // 用户主动取消不算错误：静默收尾，由 finally 关闭面板并提示
-        if(processingCancelled)return;
+        // 没有「取消处理」按钮之后，Abort 只可能来自网络中断/页面卸载，
+        // 一律按超时提示，让用户有明确的重试动作。
         throw Object.assign(new Error("运单处理超时，请检查OCR服务后重试"),{code:"PROCESS_CLIENT_TIMEOUT"});
       }
       throw e;
@@ -180,17 +179,12 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
     stopProcessingClock();
     document.querySelectorAll(".source-option").forEach(b=>b.disabled=false);
     processingFile=false;
-    const wasCancelled=processingCancelled;
     processingController=null;
     // 释放前端对原图 File 对象的引用；历史记录只保留业务结果，不保留图片/文本。
     files.length=0;
     rawText="";
     lastProcessingFile=null;
     ["cameraInput","photoInput","documentInput"].forEach(id=>{const input=$(id);if(input)input.value="";});
-    if(wasCancelled){
-      closeUpload();
-      try{window.zpToast?.("已取消处理","success")}catch{}
-    }
   }
 }
 ["cameraInput","photoInput","documentInput"].forEach(id=>$(id)?.addEventListener("change",e=>{
