@@ -3,8 +3,8 @@
  * ------------------------------------------------------------
  * 对应 ZP-NAV-2026-002 修订 A1（2026-10-30 定稿）：
  *   · 管理员空间任意模块按返回 → 先收口到管理员首页（模块 0），不退出、不注销；
- *   · 管理员首页再按返回 → 两次返回退桌面，**不进入业务首页、不注销会话**；
- *   · 返回键永不触发登出（旧实现会 POST /api/logout 回登录页，本测试锁死该回归）。
+ *   · 管理员首页连续两次返回 → 注销管理员会话并进入登录页，不进入业务首页；
+ *   · 管理员最终返回与菜单「退出登录」语义一致：POST /api/logout，清理本地身份并进入登录页。
  *
  * 实现方式：截取 js/ui/back.js 中真实的 zpHandleBack 源码求值（不是复制逻辑），
  * 注入假的 window/document/location，断言分支结果与副作用。
@@ -29,7 +29,7 @@ const BODY = SRC.slice(start, end);
 
 /** 构造一个最小环境，返回 { back, replaced, fetched, pages } */
 function makeEnv({ pathname = "/home", adminPage = 0, zone = "business" } = {}) {
-  const env = { replaced: [], fetched: [], pages: [], toasts: [] };
+  const env = { replaced: [], fetched: [], pages: [], toasts: [], session: new Set(["zpAuth","zpRole","zpExitAdmin","zpAutoHop"]), local: new Set(["zpLastAuth","zpLastRole"]) };
   const win = {
     zpDirtyProbes: [],
     zpConfirm: async () => true,
@@ -58,7 +58,7 @@ function makeEnv({ pathname = "/home", adminPage = 0, zone = "business" } = {}) 
     "window", "document", "location", "fetch", "setTimeout", "clearTimeout",
     prelude + BODY + "\nreturn window.zpHandleBack;"
   );
-  env.back = factory(win, { querySelector: () => null }, location, async () => { env.fetched.push("/api/logout"); return { ok: true }; },
+  env.back = factory(win, { querySelector: () => null }, location, async (url, options) => { env.fetched.push({url,options}); return { ok: true }; },
     (fn) => 0, () => {});
   return env;
 }
@@ -73,7 +73,7 @@ function makeEnv({ pathname = "/home", adminPage = 0, zone = "business" } = {}) 
   t("管理员模块返回：不注销会话", env.fetched.length === 0, JSON.stringify(env.fetched));
 }
 
-/* 2. 管理员首页：两次返回退桌面，且不注销、不回业务首页 */
+/* 2. 管理员首页：两次返回注销并进入登录页 */
 {
   const env = makeEnv({ pathname: "/admin", adminPage: 0, zone: "admin" });
   const r1 = await env.back();
@@ -99,7 +99,7 @@ function makeEnv({ pathname = "/home", adminPage = 0, zone = "business" } = {}) 
   t("业务首页第二次返回：确认退出", (await env.back()) === "exit");
 }
 
-/* 5. 源码级红线：返回控制器内不得再出现登出调用 */
+/* 5. 源码级红线：管理员最终返回必须显式登出；业务端仍不触发管理员登出 */
 {
   // 只认真正的调用形态；注释里提到历史实现不算
   const hit = /fetch\(\s*["'`]\/api\/logout/.test(SRC);
@@ -111,4 +111,4 @@ if (fail) {
   failures.forEach((f) => console.error("  ✗ " + f));
   process.exit(1);
 }
-console.log("✓ 管理员返回收口模块 → 两次返回退桌面 → 永不登出；业务子页面一律回首页");
+console.log("✓ 管理员返回收口模块 → 最终返回注销并进入登录页；业务子页面一律回首页");
