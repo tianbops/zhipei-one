@@ -77,3 +77,17 @@
   .trend-summary{gap:10px}
 }
 
+
+/* ===== 启动骨架（2026-10-30）：月度统计卡首帧即出框架 =====
+   home.html 的 #trendCard 不再 hidden，初始带 is-skel：
+   图表位/汇总位显示骨架条、整卡禁交互；数据到达后 js/home-monthly.js
+   移除 is-skel；请求失败且无本地快照时回退 hidden（与旧行为一致）。 */
+.trend-card .trend-skel{display:none}
+.trend-card.is-skel .trend-skel{display:block}
+.trend-card.is-skel{pointer-events:none}
+.trend-card.is-skel .trend-bottom-row{display:none}
+.trend-card.is-skel .trend-controls{opacity:.6}
+.skel-chart{height:100%;border-radius:6px}
+.skel-stats{display:flex;align-items:center;gap:14px;margin-top:9px}
+.skel-stats .skel-bar{height:15px;width:46px}
+.skel-stats .skel-bar--wide{width:78px}

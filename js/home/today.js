@@ -1,8 +1,75 @@
 /* home/today.js —— 今日配送三层数据源（latest → 当日历史 → 月度索引）与卡片渲染
    依赖前面全部模块；末尾 loadHome() 自启。
-   window.zpHomeMonthlyDataPromise 由 js/home-monthly.js 提供（在 home/*.js 之后加载）。 */
+   window.zpHomeMonthlyDataPromise 由 js/home-monthly.js 提供（在 home/*.js 之后加载）。
+
+   本地今日快照（2026-10-30 启动显示优化）：渲染成功后缓存
+   {date,dayOrders,waybill} 到 localStorage；下次启动若快照仍是当天，
+   先用快照立即渲染（等待趋近 0），随后正常三层数据源返回后覆盖渲染——
+   数据有变则自然纠偏，当日无单/线路切换则走 setEmptyToday() 收敛为空态。
+   日期不一致自动失效；退出登录时由 home-bundle-glue.frag 清除，防止换账号串数据。 */
+const TODAY_SNAP_KEY="zp_home_today_v1";
+const zpTodayKey=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+function zpReadTodaySnap(){
+  try{
+    const s=JSON.parse(localStorage.getItem(TODAY_SNAP_KEY)||"null");
+    if(s&&s.date===zpTodayKey()&&s.waybill&&s.waybill.routeId)return s;
+  }catch{}
+  return null;
+}
+
+/* 今日卡渲染（摘要 + 门店明细 + 质量指标三块）。
+   摘要与门店明细分开容错：stores 异常绝不允许把今日数量/重量卡在“加载中”。
+   fromCache=true（快照渲染）时不回写快照，避免旧数据自我续命。 */
+function zpRenderTodayCard(w,dayOrders,fromCache){
+  const stores=Array.isArray(w.stores)?w.stores:[];
+  const total=Number(w.summary?.finalCount)||Number(w.summary?.total)||stores.length||0;
+  // 渲染辅助函数必须定义在两个渲染块的共享作用域：
+  // 此前 esc 等定义在 if(todayStoreList) 块内，todayMetrics 块引用时
+  // ReferenceError → 被外层 catch 静默吞掉 → 整卡「暂无运单」。
+  // 数量语义已统一：只显示最终门店数及必要的自动恢复数。
+  const navOf=x=>String(x?.navigation||x?.nav||"").trim();
+  const safeUrl=v=>{try{const u=new URL(String(v||"").trim(),location.origin);return /^(https?:)$/.test(u.protocol)?u.href:""}catch{return""}};
+  const esc=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const attr=v=>esc(v).replace(/'/g,"&#39;");
+  if(todayOrders)todayOrders.textContent=(dayOrders>0?dayOrders:1)+"单";
+  todayCount.textContent=total+"家";
+  // 重量统一 3 位小数（全局口径，见 AGENTS.md「统计口径」）
+  todayWeight.textContent=(Math.round((Number(w.totalWeight)||0)*1000)/1000).toFixed(3)+"t";
+
+  if(todayStoreList){
+    try{
+      todayStoreList.innerHTML=stores.length?stores.map((x,i)=>{
+        const name=esc(x?.name||x?.rawName||"未识别门店"),nav=safeUrl(navOf(x));
+        const body='<span class="today-store-index">'+(i+1)+'</span><span class="today-store-name">'+name+'</span>';
+        return nav?'<a class="today-store-row" href="'+attr(nav)+'" target="_self">'+body+'</a>':'<div class="today-store-row">'+body+'</div>';
+      }).join(""):'<div class="zp-empty zp-empty--tight">今日暂无配送门店</div>';
+    }catch{
+      todayStoreList.innerHTML='<div class="zp-empty zp-empty--tight">今日门店明细暂不可用</div>';
+    }
+  }
+
+  if(todayMetrics){
+    const s=w.summary||{},metrics=[];
+    if(Number(s.recoveredCount)>0)metrics.push("恢复"+s.recoveredCount+"家");
+    if(Number(s.correction)>0)metrics.push("更正"+s.correction+"家");
+    if(Number(s.merged)>0)metrics.push("合并"+s.merged+"家");
+    if(Number(s.newStores)>0)metrics.push("新增"+s.newStores+"家");
+    if(stores.some(x=>x?.pending))metrics.push("待定"+stores.filter(x=>x?.pending).length+"家");
+    if(w.quality?.level==="REVIEW")metrics.push("需复核");
+    todayMetrics.innerHTML=metrics.map(x=>'<span>'+esc(x)+'</span>').join("");
+  }
+
+  if(!fromCache){
+    try{localStorage.setItem(TODAY_SNAP_KEY,JSON.stringify({date:zpTodayKey(),dayOrders,waybill:w}))}catch{}
+  }
+}
 
 async function loadHome(){
+  // 快照先行：同日快照立即渲染（零网络等待），随后正常数据源返回后覆盖或纠偏
+  try{
+    const snap=zpReadTodaySnap();
+    if(snap)zpRenderTodayCard(snap.waybill,Number(snap.dayOrders)||0,true);
+  }catch{}
   const fetchJson=async(url,timeoutMs=8000)=>{
     const controller=new AbortController();
     const timer=setTimeout(()=>controller.abort(),timeoutMs);
@@ -120,45 +187,9 @@ async function loadHome(){
       }catch{}
     }
 
-    // 摘要与门店明细分开渲染：stores 异常绝不允许把今日数量/重量卡在“加载中”。
+    // 渲染统一走 zpRenderTodayCard（快照/新数据同一渲染路径，杜绝两份实现漂移）
     if(w&&w.routeId===cmpRouteId){
-      const stores=Array.isArray(w.stores)?w.stores:[];
-      const total=Number(w.summary?.finalCount)||Number(w.summary?.total)||stores.length||0;
-      // 渲染辅助函数必须定义在两个渲染块的共享作用域：
-      // 此前 esc 等定义在 if(todayStoreList) 块内，todayMetrics 块引用时
-      // ReferenceError → 被外层 catch 静默吞掉 → 整卡「暂无运单」。
-      // 数量语义已统一：只显示最终门店数及必要的自动恢复数。
-      const navOf=x=>String(x?.navigation||x?.nav||"").trim();
-      const safeUrl=v=>{try{const u=new URL(String(v||"").trim(),location.origin);return /^(https?:)$/.test(u.protocol)?u.href:""}catch{return""}};
-      const esc=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-      const attr=v=>esc(v).replace(/'/g,"&#39;");
-      if(todayOrders)todayOrders.textContent=(dayOrders>0?dayOrders:1)+"单";
-      todayCount.textContent=total+"家";
-      // 重量统一 3 位小数（全局口径，见 AGENTS.md「统计口径」）
-      todayWeight.textContent=(Math.round((Number(w.totalWeight)||0)*1000)/1000).toFixed(3)+"t";
-
-      if(todayStoreList){
-        try{
-          todayStoreList.innerHTML=stores.length?stores.map((x,i)=>{
-            const name=esc(x?.name||x?.rawName||"未识别门店"),nav=safeUrl(navOf(x));
-            const body='<span class="today-store-index">'+(i+1)+'</span><span class="today-store-name">'+name+'</span>';
-            return nav?'<a class="today-store-row" href="'+attr(nav)+'" target="_self">'+body+'</a>':'<div class="today-store-row">'+body+'</div>';
-          }).join(""):'<div class="zp-empty zp-empty--tight">今日暂无配送门店</div>';
-        }catch{
-          todayStoreList.innerHTML='<div class="zp-empty zp-empty--tight">今日门店明细暂不可用</div>';
-        }
-      }
-
-      if(todayMetrics){
-        const s=w.summary||{},metrics=[];
-        if(Number(s.recoveredCount)>0)metrics.push("恢复"+s.recoveredCount+"家");
-        if(Number(s.correction)>0)metrics.push("更正"+s.correction+"家");
-        if(Number(s.merged)>0)metrics.push("合并"+s.merged+"家");
-        if(Number(s.newStores)>0)metrics.push("新增"+s.newStores+"家");
-        if(stores.some(x=>x?.pending))metrics.push("待定"+stores.filter(x=>x?.pending).length+"家");
-        if(w.quality?.level==="REVIEW")metrics.push("需复核");
-        todayMetrics.innerHTML=metrics.map(x=>'<span>'+esc(x)+'</span>').join("");
-      }
+      zpRenderTodayCard(w,dayOrders,false);
     }else{
       setEmptyToday();
     }

@@ -911,9 +911,76 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
 ;
 /* home/today.js —— 今日配送三层数据源（latest → 当日历史 → 月度索引）与卡片渲染
    依赖前面全部模块；末尾 loadHome() 自启。
-   window.zpHomeMonthlyDataPromise 由 js/home-monthly.js 提供（在 home/*.js 之后加载）。 */
+   window.zpHomeMonthlyDataPromise 由 js/home-monthly.js 提供（在 home/*.js 之后加载）。
+
+   本地今日快照（2026-10-30 启动显示优化）：渲染成功后缓存
+   {date,dayOrders,waybill} 到 localStorage；下次启动若快照仍是当天，
+   先用快照立即渲染（等待趋近 0），随后正常三层数据源返回后覆盖渲染——
+   数据有变则自然纠偏，当日无单/线路切换则走 setEmptyToday() 收敛为空态。
+   日期不一致自动失效；退出登录时由 home-bundle-glue.frag 清除，防止换账号串数据。 */
+const TODAY_SNAP_KEY="zp_home_today_v1";
+const zpTodayKey=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+function zpReadTodaySnap(){
+  try{
+    const s=JSON.parse(localStorage.getItem(TODAY_SNAP_KEY)||"null");
+    if(s&&s.date===zpTodayKey()&&s.waybill&&s.waybill.routeId)return s;
+  }catch{}
+  return null;
+}
+
+/* 今日卡渲染（摘要 + 门店明细 + 质量指标三块）。
+   摘要与门店明细分开容错：stores 异常绝不允许把今日数量/重量卡在“加载中”。
+   fromCache=true（快照渲染）时不回写快照，避免旧数据自我续命。 */
+function zpRenderTodayCard(w,dayOrders,fromCache){
+  const stores=Array.isArray(w.stores)?w.stores:[];
+  const total=Number(w.summary?.finalCount)||Number(w.summary?.total)||stores.length||0;
+  // 渲染辅助函数必须定义在两个渲染块的共享作用域：
+  // 此前 esc 等定义在 if(todayStoreList) 块内，todayMetrics 块引用时
+  // ReferenceError → 被外层 catch 静默吞掉 → 整卡「暂无运单」。
+  // 数量语义已统一：只显示最终门店数及必要的自动恢复数。
+  const navOf=x=>String(x?.navigation||x?.nav||"").trim();
+  const safeUrl=v=>{try{const u=new URL(String(v||"").trim(),location.origin);return /^(https?:)$/.test(u.protocol)?u.href:""}catch{return""}};
+  const esc=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const attr=v=>esc(v).replace(/'/g,"&#39;");
+  if(todayOrders)todayOrders.textContent=(dayOrders>0?dayOrders:1)+"单";
+  todayCount.textContent=total+"家";
+  // 重量统一 3 位小数（全局口径，见 AGENTS.md「统计口径」）
+  todayWeight.textContent=(Math.round((Number(w.totalWeight)||0)*1000)/1000).toFixed(3)+"t";
+
+  if(todayStoreList){
+    try{
+      todayStoreList.innerHTML=stores.length?stores.map((x,i)=>{
+        const name=esc(x?.name||x?.rawName||"未识别门店"),nav=safeUrl(navOf(x));
+        const body='<span class="today-store-index">'+(i+1)+'</span><span class="today-store-name">'+name+'</span>';
+        return nav?'<a class="today-store-row" href="'+attr(nav)+'" target="_self">'+body+'</a>':'<div class="today-store-row">'+body+'</div>';
+      }).join(""):'<div class="zp-empty zp-empty--tight">今日暂无配送门店</div>';
+    }catch{
+      todayStoreList.innerHTML='<div class="zp-empty zp-empty--tight">今日门店明细暂不可用</div>';
+    }
+  }
+
+  if(todayMetrics){
+    const s=w.summary||{},metrics=[];
+    if(Number(s.recoveredCount)>0)metrics.push("恢复"+s.recoveredCount+"家");
+    if(Number(s.correction)>0)metrics.push("更正"+s.correction+"家");
+    if(Number(s.merged)>0)metrics.push("合并"+s.merged+"家");
+    if(Number(s.newStores)>0)metrics.push("新增"+s.newStores+"家");
+    if(stores.some(x=>x?.pending))metrics.push("待定"+stores.filter(x=>x?.pending).length+"家");
+    if(w.quality?.level==="REVIEW")metrics.push("需复核");
+    todayMetrics.innerHTML=metrics.map(x=>'<span>'+esc(x)+'</span>').join("");
+  }
+
+  if(!fromCache){
+    try{localStorage.setItem(TODAY_SNAP_KEY,JSON.stringify({date:zpTodayKey(),dayOrders,waybill:w}))}catch{}
+  }
+}
 
 async function loadHome(){
+  // 快照先行：同日快照立即渲染（零网络等待），随后正常数据源返回后覆盖或纠偏
+  try{
+    const snap=zpReadTodaySnap();
+    if(snap)zpRenderTodayCard(snap.waybill,Number(snap.dayOrders)||0,true);
+  }catch{}
   const fetchJson=async(url,timeoutMs=8000)=>{
     const controller=new AbortController();
     const timer=setTimeout(()=>controller.abort(),timeoutMs);
@@ -1031,45 +1098,9 @@ async function loadHome(){
       }catch{}
     }
 
-    // 摘要与门店明细分开渲染：stores 异常绝不允许把今日数量/重量卡在“加载中”。
+    // 渲染统一走 zpRenderTodayCard（快照/新数据同一渲染路径，杜绝两份实现漂移）
     if(w&&w.routeId===cmpRouteId){
-      const stores=Array.isArray(w.stores)?w.stores:[];
-      const total=Number(w.summary?.finalCount)||Number(w.summary?.total)||stores.length||0;
-      // 渲染辅助函数必须定义在两个渲染块的共享作用域：
-      // 此前 esc 等定义在 if(todayStoreList) 块内，todayMetrics 块引用时
-      // ReferenceError → 被外层 catch 静默吞掉 → 整卡「暂无运单」。
-      // 数量语义已统一：只显示最终门店数及必要的自动恢复数。
-      const navOf=x=>String(x?.navigation||x?.nav||"").trim();
-      const safeUrl=v=>{try{const u=new URL(String(v||"").trim(),location.origin);return /^(https?:)$/.test(u.protocol)?u.href:""}catch{return""}};
-      const esc=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-      const attr=v=>esc(v).replace(/'/g,"&#39;");
-      if(todayOrders)todayOrders.textContent=(dayOrders>0?dayOrders:1)+"单";
-      todayCount.textContent=total+"家";
-      // 重量统一 3 位小数（全局口径，见 AGENTS.md「统计口径」）
-      todayWeight.textContent=(Math.round((Number(w.totalWeight)||0)*1000)/1000).toFixed(3)+"t";
-
-      if(todayStoreList){
-        try{
-          todayStoreList.innerHTML=stores.length?stores.map((x,i)=>{
-            const name=esc(x?.name||x?.rawName||"未识别门店"),nav=safeUrl(navOf(x));
-            const body='<span class="today-store-index">'+(i+1)+'</span><span class="today-store-name">'+name+'</span>';
-            return nav?'<a class="today-store-row" href="'+attr(nav)+'" target="_self">'+body+'</a>':'<div class="today-store-row">'+body+'</div>';
-          }).join(""):'<div class="zp-empty zp-empty--tight">今日暂无配送门店</div>';
-        }catch{
-          todayStoreList.innerHTML='<div class="zp-empty zp-empty--tight">今日门店明细暂不可用</div>';
-        }
-      }
-
-      if(todayMetrics){
-        const s=w.summary||{},metrics=[];
-        if(Number(s.recoveredCount)>0)metrics.push("恢复"+s.recoveredCount+"家");
-        if(Number(s.correction)>0)metrics.push("更正"+s.correction+"家");
-        if(Number(s.merged)>0)metrics.push("合并"+s.merged+"家");
-        if(Number(s.newStores)>0)metrics.push("新增"+s.newStores+"家");
-        if(stores.some(x=>x?.pending))metrics.push("待定"+stores.filter(x=>x?.pending).length+"家");
-        if(w.quality?.level==="REVIEW")metrics.push("需复核");
-        todayMetrics.innerHTML=metrics.map(x=>'<span>'+esc(x)+'</span>').join("");
-      }
+      zpRenderTodayCard(w,dayOrders,false);
     }else{
       setEmptyToday();
     }
@@ -1158,6 +1189,10 @@ loadHome();
     }
     return d;
   };
+
+  // 骨架期月份标签：HTML 静态文案（"2026年10月"）会随月份过期，
+  // 模块初始化即写当前月；数据到达后 renderMonth() 会按序列再写一次。
+  try{if(monthEl)monthEl.textContent=label(cnMonth())}catch{}
 
   /* ---------- 月度数据（补齐缺勤日 = 0） ---------- */
   function buildMonthData(ym){
@@ -1418,23 +1453,47 @@ loadHome();
   })();
 
   /* ---------- 数据加载 ---------- */
+  /* 本地历史快照（2026-10-30 启动显示优化）：加载成功后整份缓存
+     /api/history?months=13 响应；下次启动先 hydrate 快照立即出图（SWR），
+     再请求新数据覆盖渲染。今日卡兜底（js/home/today.js 第三层）同样复用。 */
+  const HIST_CACHE_KEY="zp_home_hist_v1";
+  let hydrated=false;
+  function hydrate(d){
+    daily=d.history.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(String(x?.date||"")));
+    byMonth=new Map((Array.isArray(d.months)?d.months:[]).map(x=>[String(x.month),x]));
+    buildSeqs();   // 构建可滑动序列（有数据年/月 + 当前年/月）并定位到当前
+    card.hidden=false;
+    card.classList.remove("is-skel");   // 骨架态 → 数据态（解除整卡禁交互）
+    card.classList.add("is-in");
+    renderMonth();
+    syncYearBtn();
+    hydrated=true;
+  }
+  function readHistCache(){
+    try{
+      const c=JSON.parse(localStorage.getItem(HIST_CACHE_KEY)||"null");
+      if(c&&c.d&&c.d.success&&Array.isArray(c.d.history))return c.d;
+    }catch{}
+    return null;
+  }
   async function load(){
+    const cached=readHistCache();
+    if(cached){try{hydrate(cached)}catch{}}
     try{
       // 后端把 months 钳制在 13（history.js:Math.min(13,…)），请求 25 实际仍只返回 13 个月窗口；
       // 13 个月最早仅到 11 个月前，不含去年同月，同比恒为空。故按 13 如实请求（返回数据与原来一致）。
       const r=await zpFetch("/api/history?months=13",{credentials:"same-origin",cache:"no-store"});
-      if(!r.ok)return null;
+      if(!r.ok){if(!hydrated)card.hidden=true;return hydrated?cached:null;}   // 非 ok 同样回退，骨架不得停留
       const d=await r.json().catch(()=>null);
-      if(!d?.success||!Array.isArray(d.history))return null;
-      daily=d.history.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(String(x?.date||"")));
-      byMonth=new Map((Array.isArray(d.months)?d.months:[]).map(x=>[String(x.month),x]));
-      buildSeqs();   // 构建可滑动序列（有数据年/月 + 当前年/月）并定位到当前
-      card.hidden=false;
-      card.classList.add("is-in");
-      renderMonth();
-      syncYearBtn();
+      if(!d?.success||!Array.isArray(d.history)){if(!hydrated)card.hidden=true;return hydrated?cached:null;}
+      hydrate(d);
+      try{localStorage.setItem(HIST_CACHE_KEY,JSON.stringify({t:Date.now(),d}))}catch{}
       return d;
-    }catch{return null}
+    }catch{
+      // 无快照且请求失败：回退旧行为（整卡隐藏），绝不让骨架卡永久停留
+      if(!hydrated)card.hidden=true;
+      return hydrated?cached:null;
+    }
   }
   // 首页今日配送的最后一级兜底可复用这次历史响应，避免再请求一遍历史窗口。
   window.zpHomeMonthlyDataPromise=load();
@@ -1443,7 +1502,7 @@ loadHome();
 ;
 
 (()=>{const d=document.getElementById("todayDate");if(d){const f=new Intl.DateTimeFormat("zh-CN",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit",weekday:"short"});d.textContent=f.format(new Date()).replaceAll("/","-")}})();
-document.getElementById("logout")?.addEventListener("click",async()=>{const ok=window.zpConfirm?await window.zpConfirm("退出登录","确定要退出当前账号吗？","退出"):true;if(!ok)return;try{await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"})}finally{try{localStorage.removeItem("zpLastAuth");localStorage.removeItem("zpLastRole")}catch(e){}location.replace("/")}})
+document.getElementById("logout")?.addEventListener("click",async()=>{const ok=window.zpConfirm?await window.zpConfirm("退出登录","确定要退出当前账号吗？","退出"):true;if(!ok)return;try{await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"})}finally{try{localStorage.removeItem("zpLastAuth");localStorage.removeItem("zpLastRole");localStorage.removeItem("zp_home_today_v1");localStorage.removeItem("zp_home_hist_v1")}catch(e){}location.replace("/")}})
 
 ;
 /* 智配One · UI 内核（原 js/ui-unified.js 拆分 · 1/6）

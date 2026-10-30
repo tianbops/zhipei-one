@@ -2168,6 +2168,24 @@ html[data-zp-boot="hop"] .login-shell{display:none!important}
 /* 首页菜单轻入场：opacity + 轻微上移，弱化「Web Dropdown」观感 */
 
 
+/* ===== 启动骨架（2026-10-30）：首屏数据未就绪时的占位 =====
+   令牌复用全局 --zp-sk-a/b（深色主题由 ui-theme.css 覆盖为 slate 族）。
+   keyframes 独立命名 zpSkelHome：data.css 的 zpSkeleton 不在首页 bundle 内。
+   骨架行借用 .today-store-row 本体样式（min-height/边线/间距与真实行一致），
+   数据到达后 innerHTML 整体替换，无需 JS 清理。 */
+@keyframes zpSkelHome{from{background-position:200% 0}to{background-position:-200% 0}}
+.skel-bar{
+  display:inline-block;
+  border-radius:var(--zp-r-mini);
+  background:linear-gradient(90deg,var(--zp-sk-a) 25%,var(--zp-sk-b) 50%,var(--zp-sk-a) 75%);
+  background-size:200% 100%;
+  animation:zpSkelHome 1.4s ease-in-out infinite;
+}
+.today-store-list .skel-idx{width:22px;min-width:22px;height:13px;border-radius:4px}
+.today-store-list .skel-name{height:15px;width:58%;max-width:250px}
+.today-store-list .skel-name--short{width:42%;max-width:180px}
+@media(prefers-reduced-motion:reduce){.skel-bar{animation:none}}
+
 /* ===== 配送趋势 · Smart Trend：工业物流终端风（无渐变/发光/玻璃拟态） ===== */
 .trend-card{
   margin-top:10px;
@@ -2247,6 +2265,20 @@ html[data-zp-boot="hop"] .login-shell{display:none!important}
   .trend-summary{gap:10px}
 }
 
+
+/* ===== 启动骨架（2026-10-30）：月度统计卡首帧即出框架 =====
+   home.html 的 #trendCard 不再 hidden，初始带 is-skel：
+   图表位/汇总位显示骨架条、整卡禁交互；数据到达后 js/home-monthly.js
+   移除 is-skel；请求失败且无本地快照时回退 hidden（与旧行为一致）。 */
+.trend-card .trend-skel{display:none}
+.trend-card.is-skel .trend-skel{display:block}
+.trend-card.is-skel{pointer-events:none}
+.trend-card.is-skel .trend-bottom-row{display:none}
+.trend-card.is-skel .trend-controls{opacity:.6}
+.skel-chart{height:100%;border-radius:6px}
+.skel-stats{display:flex;align-items:center;gap:14px;margin-top:9px}
+.skel-stats .skel-bar{height:15px;width:46px}
+.skel-stats .skel-bar--wide{width:78px}
 
 /* ===== 首页新版信息架构：今日工作台 + 底部四入口 ===== */
 .home-app .topbar{justify-content:flex-start}
