@@ -51,7 +51,7 @@ for i=1,#ARGV,8 do
       local ok,phases=pcall(cjson.decode,phasesRaw)
       if ok and type(phases)=="table" then
         for name,dur in pairs(phases) do
-          if string.match(name,"^history%-[a-z%-]+$") then
+          if string.match(name,"^history%-[a-z0-9%-]+$") then
             local value=tonumber(dur)
             if value and value>=0 and value<=120000 then
               local phaseBase=base.."phase:"..name..":"
