@@ -57,6 +57,10 @@
     return d;
   };
 
+  // 骨架期月份标签：HTML 静态文案（"2026年10月"）会随月份过期，
+  // 模块初始化即写当前月；数据到达后 renderMonth() 会按序列再写一次。
+  try{if(monthEl)monthEl.textContent=label(cnMonth())}catch{}
+
   /* ---------- 月度数据（补齐缺勤日 = 0） ---------- */
   function buildMonthData(ym){
     const days=daysInMonth(ym),byDate=new Map(daily.map(x=>[x.date,x])),out=[];
@@ -316,23 +320,47 @@
   })();
 
   /* ---------- 数据加载 ---------- */
+  /* 本地历史快照（2026-10-30 启动显示优化）：加载成功后整份缓存
+     /api/history?months=13 响应；下次启动先 hydrate 快照立即出图（SWR），
+     再请求新数据覆盖渲染。今日卡兜底（js/home/today.js 第三层）同样复用。 */
+  const HIST_CACHE_KEY="zp_home_hist_v1";
+  let hydrated=false;
+  function hydrate(d){
+    daily=d.history.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(String(x?.date||"")));
+    byMonth=new Map((Array.isArray(d.months)?d.months:[]).map(x=>[String(x.month),x]));
+    buildSeqs();   // 构建可滑动序列（有数据年/月 + 当前年/月）并定位到当前
+    card.hidden=false;
+    card.classList.remove("is-skel");   // 骨架态 → 数据态（解除整卡禁交互）
+    card.classList.add("is-in");
+    renderMonth();
+    syncYearBtn();
+    hydrated=true;
+  }
+  function readHistCache(){
+    try{
+      const c=JSON.parse(localStorage.getItem(HIST_CACHE_KEY)||"null");
+      if(c&&c.d&&c.d.success&&Array.isArray(c.d.history))return c.d;
+    }catch{}
+    return null;
+  }
   async function load(){
+    const cached=readHistCache();
+    if(cached){try{hydrate(cached)}catch{}}
     try{
       // 后端把 months 钳制在 13（history.js:Math.min(13,…)），请求 25 实际仍只返回 13 个月窗口；
       // 13 个月最早仅到 11 个月前，不含去年同月，同比恒为空。故按 13 如实请求（返回数据与原来一致）。
       const r=await zpFetch("/api/history?months=13",{credentials:"same-origin",cache:"no-store"});
-      if(!r.ok)return null;
+      if(!r.ok){if(!hydrated)card.hidden=true;return hydrated?cached:null;}   // 非 ok 同样回退，骨架不得停留
       const d=await r.json().catch(()=>null);
-      if(!d?.success||!Array.isArray(d.history))return null;
-      daily=d.history.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(String(x?.date||"")));
-      byMonth=new Map((Array.isArray(d.months)?d.months:[]).map(x=>[String(x.month),x]));
-      buildSeqs();   // 构建可滑动序列（有数据年/月 + 当前年/月）并定位到当前
-      card.hidden=false;
-      card.classList.add("is-in");
-      renderMonth();
-      syncYearBtn();
+      if(!d?.success||!Array.isArray(d.history)){if(!hydrated)card.hidden=true;return hydrated?cached:null;}
+      hydrate(d);
+      try{localStorage.setItem(HIST_CACHE_KEY,JSON.stringify({t:Date.now(),d}))}catch{}
       return d;
-    }catch{return null}
+    }catch{
+      // 无快照且请求失败：回退旧行为（整卡隐藏），绝不让骨架卡永久停留
+      if(!hydrated)card.hidden=true;
+      return hydrated?cached:null;
+    }
   }
   // 首页今日配送的最后一级兜底可复用这次历史响应，避免再请求一遍历史窗口。
   window.zpHomeMonthlyDataPromise=load();
