@@ -20,6 +20,11 @@ Cloudflare Pages + Pages Functions 的**云端交付**配送单据系统。
 1. **零费用**：不得引入任何付费服务、试用期服务、需绑定支付方式的组件。
 2. **零人工代码审核**：CI 是唯一裁判。本仓库不设"等人 review"的流程。
 3. **不上架应用商店**：客户端通过 GitHub Releases + 站点 `downloads/` 分发。
+   镜像文件名**必须带版本号**（`zhipei-one-<ver>-release.apk`），目录只留当前版本，
+   `manifest.file` 指向它。固定名会让 Android `DownloadManager` 每次都写同一路径，
+   下载目录里留着上一版，用户点到哪个全凭运气（2026-10-30 的「装了 V1.0.19 还是旧版」）。
+   `tests/download-manifest.test.mjs` 会拦；App 内「更新到 Vx」只认 `manifest.version`，
+   不许拿 `version.json` 的网页版本号凑数。
 4. **权限判定只能在服务端**：任何"客户端隐藏按钮"都不构成安全边界。
 5. **不得降低覆盖率**：`npm run coverage` 四阈值（82/65/83/82）只升不降。
 6. **不得把密钥写入仓库**：`secrets.json`、`.env`、`*.pem`、`*.key` 一律不入库。
