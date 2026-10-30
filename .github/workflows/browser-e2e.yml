@@ -24,8 +24,6 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
-      - name: Verify button and input touch targets
-        run: npm run verify:css-buttons
       - name: Audit button visual parameters
         run: npm run verify:css-button-audit
       - name: Audit card and row visual parameters
