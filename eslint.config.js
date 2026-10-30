@@ -12,7 +12,7 @@
  *   · 只保留一组**高信号、零误报**的正确性规则；
  *   · 代码风格统一交给 Prettier（见 .prettierrc）。
  *
- * 本配置刻意不接入会阻断 CI 的链（test:node 不含 lint）；lint 作为可选提交前检查。
+ * 本配置只保留高信号正确性规则，已由 CI 的 npm run lint 执行；风格统一仍交给 Prettier。
  */
 
 // Node 全局（内联，避免依赖外部 globals 包的加载顺序问题）
