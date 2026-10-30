@@ -1,10 +1,12 @@
 {
   "name": "zhipei-one",
   "private": true,
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "test:unit": "node tests/unit-waybill-dedup-lua.test.cjs",
-    "test:nav": "node tests/nav-return.test.mjs",
+    "test:nav": "node tests/nav-return.test.mjs && node tests/nav-admin-exit.test.mjs",
     "test:lifecycle": "node tests/integration-waybill-lifecycle.cjs",
     "test:isolation": "node tests/integration-waybill-isolation.cjs",
     "test:quality": "node tests/unit-quality-gate.test.cjs && node tests/integration-waybill-quality-events.cjs",
