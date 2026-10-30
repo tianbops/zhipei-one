@@ -57,7 +57,7 @@ const findGroup = (report, page, endpoint, status) => {
     { page: "account", endpoint: "api-account-settings", status: "4xx", duration: 1500, server: 90, code: 403 },
     { page: "account", endpoint: "api-account-me", status: "network", duration: 78000, server: null },
     { page: "history", endpoint: "api-history", status: "2xx", duration: 87000, server: 1243,
-      phases: { "history-index": 12.3, "history-aggregate": 45.6, "history-bogus-phase": 9.9 } },
+      phases: { "history-index": 12.3, "history-aggregate": 45.6, "history-db-primary-queries": 3, "history-db-replica-queries": 2, "history-db-region-apac-queries": 2, "history-bogus-phase": 9.9 } },
     { page: "account", endpoint: "api-account", status: "4xx", duration: 1000, server: 30, code: 409 },
     { page: "account", endpoint: "api-account-me", status: "4xx", duration: 1000, server: 10, code: 999 },
     { page: "account", endpoint: "api-not-whitelisted", status: "2xx", duration: 100, server: 5 }
@@ -102,6 +102,9 @@ const findGroup = (report, page, endpoint, status) => {
   check("历史分组仍然携带阶段计时", gHist && gHist.phases && gHist.phases["history-index"] && gHist.phases["history-index"].avgMs === 12.3,
     JSON.stringify(gHist && gHist.phases));
   check("未授权阶段名被丢弃", gHist && gHist.phases && gHist.phases["history-bogus-phase"] === undefined);
+  check("D1 主库读取数被聚合", gHist && gHist.phases && gHist.phases["history-db-primary-queries"] && gHist.phases["history-db-primary-queries"].avgMs === 3);
+  check("D1 副本读取数被聚合", gHist && gHist.phases && gHist.phases["history-db-replica-queries"] && gHist.phases["history-db-replica-queries"].avgMs === 2);
+  check("D1 实际读取区域被聚合", gHist && gHist.phases && gHist.phases["history-db-region-apac-queries"] && gHist.phases["history-db-region-apac-queries"].avgMs === 2);
   check("2xx 的服务端平均耗时保留", gHist && gHist.serverAvgMs === 1243, JSON.stringify(gHist && gHist.serverAvgMs));
   check("旧格式字段 page|endpoint|status|metric 仍可解析", gHist && gHist.count === 1 && gHist.avgMs === 87000);
 

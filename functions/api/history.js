@@ -21,9 +21,18 @@ export {clean,historyRange,validDate,inRange,monthInRange} from "./_history-rang
 export {readWaybills,readDateWaybillsBatch,readDayAggregates,readDates,enrichFactory} from "./_history-read.js";
 
 async function historyGet({request,env}){
- const timing={};let phaseStart=performance.now();
+ const timing={};
+ const d1Routing={queries:0,primary:0,replica:0,unknown:0,regions:{}};
+ let phaseStart=performance.now();
  const mark=(name,started)=>{timing[name]=Math.max(0,Number((performance.now()-started).toFixed(1)));};
- const respond=(body,status=200)=>{const responseStart=performance.now();const response=json(body,status);mark("history-response-build",responseStart);const metrics=Object.entries(timing).map(([name,dur])=>name+";dur="+dur).join(", ");if(metrics)response.headers.set("Server-Timing",metrics);return response;};
+ const respond=(body,status=200)=>{const responseStart=performance.now();const response=json(body,status);mark("history-response-build",responseStart);const metrics=Object.entries(timing).map(([name,dur])=>name+";dur="+dur);
+  if(d1Routing.queries>0){
+   metrics.push("history-db-primary-queries;dur="+(Number(d1Routing.primary)||0));
+   metrics.push("history-db-replica-queries;dur="+(Number(d1Routing.replica)||0));
+   metrics.push("history-db-unknown-queries;dur="+(Number(d1Routing.unknown)||0));
+   for(const [region,count] of Object.entries(d1Routing.regions||{}))if(/^[a-z0-9-]{1,24}$/.test(region))metrics.push("history-db-region-"+region+"-queries;dur="+(Number(count)||0));
+  }
+  if(metrics.length)response.headers.set("Server-Timing",metrics.join(", "));return response;};
  try{
   const user=await currentUser(request,env);mark("history-auth",phaseStart);if(!user)return respond({success:false,error:"未登录"},401);
   if(user.role==="admin"||!canUseRoute(user))return respond({success:false,error:"无权查看配送业务"},403);
@@ -44,7 +53,7 @@ async function historyGet({request,env}){
    if(!inRange(date,range))return respond({success:false,code:"DATE_OUT_OF_RANGE",error:"日期不在历史查询范围内"},400);
    // 日期详情分支的 D1 读取按顺序执行，可安全使用请求级 Session；
    // 不复用共享 env 上可能存在的 D1Backend 缓存。
-   const historyEnv=createD1SessionEnv(env);
+   const historyEnv=createD1SessionEnv(env,"first-primary",d1Routing);
    const budget=new Budget();
    let waybills;phaseStart=performance.now();
    try{waybills=await readDateWaybills(historyEnv,user,routeId,date,budget);mark("history-detail-read",phaseStart)}catch(e){
@@ -60,7 +69,7 @@ async function historyGet({request,env}){
   if(searchQuery){
    if(searchQuery.length>80)return respond({success:false,code:"SEARCH_QUERY_TOO_LONG",error:"搜索内容最多 80 个字符"},400);
    // 搜索分支的索引扫描与分批读取为串行链路，可安全共享请求级 D1 Session。
-   const historyEnv=createD1SessionEnv(env);
+   const historyEnv=createD1SessionEnv(env,"first-primary",d1Routing);
    const budget=new Budget();
    let entries,batch;
    try{
@@ -95,8 +104,9 @@ async function historyGet({request,env}){
  // 而不是让 worker 在无预算的裸循环里撞上平台硬限（Error 1101）。
  const budget=new Budget();
  let entries;
+ const overviewEnv=createD1SessionEnv(env,"first-primary",d1Routing);
  try{
-  phaseStart=performance.now();entries=await readDates(env,routeId,range,budget);mark("history-index",phaseStart);
+  phaseStart=performance.now();entries=await readDates(overviewEnv,routeId,range,budget);mark("history-index",phaseStart);
  }catch(e){
   if(e?.code===SUBREQUEST_BUDGET_EXCEEDED)return respond({success:false,code:"PARTIAL_FAILURE",error:"历史查询范围过大，请缩小查询月份后重试",range,budgetUsed:budget.used,budgetMax:budget.max},503);
   throw e;
@@ -106,7 +116,7 @@ async function historyGet({request,env}){
  // 受同一 budget 约束；超限即转结构化 503「请缩小范围」，绝不谎报半截数据。
  let agg;
  try{
-  phaseStart=performance.now();agg=await readDayAggregates(env,{user,routeId,entries,budget});mark("history-aggregate",phaseStart);
+  phaseStart=performance.now();agg=await readDayAggregates(env,{user,routeId,entries,budget,routingObserver:d1Routing});mark("history-aggregate",phaseStart);
  }catch(e){
   if(e?.code===SUBREQUEST_BUDGET_EXCEEDED)return respond({success:false,code:"PARTIAL_FAILURE",error:"当前历史范围较大，请缩小月份范围后重试",range,budgetUsed:budget.used,budgetMax:budget.max},503);
   throw e;

@@ -31,11 +31,12 @@ class Stmt {
   run(...p) {
     const params = p.length ? p : this.params;
     const r = this.db._raw.prepare(this.sql).run(...params);
-    return { changes: r.changes };
+    return { changes: r.changes, meta: { ...this.db.routing, rows_read: 0, rows_written: r.changes } };
   }
   all(...p) {
     const params = p.length ? p : this.params;
-    return { results: this.db._raw.prepare(this.sql).all(...params) };
+    const results = this.db._raw.prepare(this.sql).all(...params);
+    return { results, meta: { ...this.db.routing, rows_read: results.length, rows_written: 0 } };
   }
   first(...p) {
     const params = p.length ? p : this.params;
@@ -44,7 +45,7 @@ class Stmt {
   }
 }
 class SqliteAdapter {
-  constructor(raw) { this._raw = raw; }
+  constructor(raw) { this._raw = raw; this.routing = { served_by_primary: true, served_by_region: "test-region" }; }
   prepare(sql) { return new Stmt(this, sql); }
   exec(sql) { this._raw.exec(sql); }
   // D1 batch：原子执行一批语句（这里用本地事务模拟真实 D1 的原子性语义）。
@@ -56,7 +57,9 @@ class SqliteAdapter {
       for (const s of stmts) {
         const prepared = this._raw.prepare(s.sql);
         const isRead = /^\s*(SELECT|WITH)\b/i.test(s.sql);
-        results.push(isRead ? { results: prepared.all(...s.params) } : { meta: { changes: prepared.run(...s.params).changes } });
+        results.push(isRead
+          ? { results: prepared.all(...s.params), meta: { ...this.routing, rows_read: 1, rows_written: 0 } }
+          : { meta: { ...this.routing, changes: prepared.run(...s.params).changes, rows_read: 0, rows_written: 1 } });
       }
       this._raw.exec("COMMIT");
       return results;
@@ -660,6 +663,29 @@ async function testAuthReadFastPath() {
 }
 
 
+
+async function testD1RoutingObserver() {
+  console.log("\n[D1 routing] 捕获主库/副本路由元数据");
+  const raw = new DatabaseSync(":memory:");
+  raw.exec("CREATE TABLE kv(key TEXT PRIMARY KEY, value TEXT NOT NULL, type TEXT NOT NULL, expires_at INTEGER)");
+  const adapter = new SqliteAdapter(raw);
+  const observer = { queries: 0, primary: 0, replica: 0, unknown: 0, regions: {} };
+  const backend = new D1Backend(adapter, { routingObserver: observer });
+  await backend.command(["SET", "routing-key", "value"]);
+  Object.assign(observer, { queries: 0, primary: 0, replica: 0, unknown: 0, regions: {} });
+  await backend.command(["GET", "routing-key"]);
+  eq(observer.primary, 1, "单条 SELECT 记录主库读取");
+  eq(observer.regions["test-region"], 1, "单条 SELECT 记录 served_by_region");
+  adapter.routing = { served_by_primary: false, served_by_region: "replica-region" };
+  await backend.pipeline([["GET", "routing-key"]]);
+  eq(observer.replica, 1, "batch SELECT 记录副本读取");
+  eq(observer.regions["replica-region"], 1, "batch SELECT 记录副本区域");
+  eq(observer.queries, 2, "只累计读结果，不累计写入");
+}
+
+
+
+
 async function testRequestScopedSessionEnv() {
   const sessions = [];
   const db = {
@@ -671,21 +697,26 @@ async function testRequestScopedSessionEnv() {
   };
   const cachedBackend = { shared: true };
   const original = { DB: db, __zpD1: cachedBackend, API_TOKEN: "kept" };
-  const scoped = createD1SessionEnv(original);
+  const routingObserver = { queries: 0, primary: 0, replica: 0, unknown: 0, regions: {} };
+  const scoped = createD1SessionEnv(original,"first-primary",routingObserver);
   ok(scoped !== original, "D1 Session 使用独立 env，不修改共享 env");
   eq(scoped.DB, sessions[0], "独立 env 使用本次请求创建的 D1 Session");
   eq(scoped.DB.constraint, "first-primary", "默认从主库启动 Session");
   eq(scoped.__zpD1, undefined, "不复用原 env 上的 D1Backend 缓存");
   eq(scoped.API_TOKEN, "kept", "复制其余环境绑定");
+  eq(scoped.__zpD1RoutingObserver, routingObserver, "请求级 Session 共享同一显式路由观测对象");
   eq(original.DB, db, "原始 D1 binding 保持不变");
   eq(original.__zpD1, cachedBackend, "原始 D1Backend 缓存保持不变");
 
   const historySource = readFileSync(path.join(API, "history.js"), "utf8");
   ok(historySource.includes("readDateWaybills(historyEnv,user,routeId,date,budget)"), "日期详情读取使用请求级 Session env");
   ok(historySource.includes("readDates(historyEnv,routeId,range,budget)"), "历史搜索索引读取使用请求级 Session env");
+  ok(historySource.includes("readDates(overviewEnv,routeId,range,budget)"), "历史概览索引读取使用请求级 Session env");
+  ok(historySource.includes("history-db-primary-queries"), "历史响应暴露 D1 主库读取计数");
+  ok(historySource.includes("history-db-replica-queries"), "历史响应暴露 D1 副本读取计数");
   const historyReadSource = readFileSync(path.join(API, "_history-read.js"), "utf8");
-  ok(historyReadSource.includes("const idsEnv=createD1SessionEnv(env);"), "历史概览索引流使用独立 Session");
-  ok(historyReadSource.includes("const metaEnv=createD1SessionEnv(env);"), "历史概览汇总流使用另一独立 Session");
+  ok(historyReadSource.includes('const idsEnv=createD1SessionEnv(env,"first-primary",routingObserver);'), "历史概览索引流使用独立 Session 并共享请求级观测");
+  ok(historyReadSource.includes('const metaEnv=createD1SessionEnv(env,"first-primary",routingObserver);'), "历史概览汇总流使用另一独立 Session 并共享请求级观测");
   ok(historyReadSource.includes('pipeline(idsEnv,chunk.map(x=>["SMEMBERS"'), "索引流只在自己的 Session 内串行读取");
   ok(historyReadSource.includes('command(metaEnv,["MGET"'), "汇总流只在自己的 Session 内串行读取");
   ok(historyReadSource.includes("readWaybills(idsEnv,allIds,budget)"), "legacy 运单体读取延续索引流的 Session bookmark");
@@ -716,6 +747,7 @@ async function testRequestScopedSessionEnv() {
   await testExtraBranches();
   await testAuthReadFastPath();
   await testRequestScopedSessionEnv();
+  await testD1RoutingObserver();
   await testD1Limits();
 
   console.log(`\n=== 结果：通过 ${pass} 项，失败 ${fail} 项 ===`);
