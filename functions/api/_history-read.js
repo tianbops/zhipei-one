@@ -9,7 +9,7 @@
  *   不得回退为无预算裸循环）。
  */
 
-import {get,command,pipeline} from "./_redis.js";
+import {get,command,pipeline,createD1SessionEnv} from "./_redis.js";
 import {canReadWaybill} from "./_waybill-acl.js";
 import {getRoute} from "./_route.js";
 import {dayMetaKey,parseMeta} from "./waybills/_waybill-meta.js";
@@ -71,7 +71,7 @@ export async function readDateWaybillsBatch(env,user,entries,budget=null){
  for(let i=0;i<valid.length;i+=50){
   const chunk=valid.slice(i,i+50);
   if(budget&&!budget.take(1))throwBudgetExceeded(budget.max,"history-read-dates-batch");
-  const results=await pipeline(env,chunk.map(x=>["SMEMBERS",waybillIndexKey(x.routeId,x.date)]));
+  const results=await pipeline(idsEnv,chunk.map(x=>["SMEMBERS",waybillIndexKey(x.routeId,x.date)]));
   const allIds=[];const idsByDate=new Map();
   for(let j=0;j<chunk.length;j++){const ids=Array.isArray(results?.[j])?results[j].map(clean).filter(Boolean):[];idsByDate.set(chunk[j].date,ids);allIds.push(...ids)}
   const waybills=await readWaybills(env,allIds,budget);
@@ -99,6 +99,10 @@ export async function readDayAggregates(env,{user,routeId,entries,budget=null}){
  //    分批再取大（200→500），13 个月(~390 天)每段各只需 1 次往返。
  const idsByDate=new Map();
  const metaByDate=new Map();
+ // 两条独立读取流各自持有 Session，避免并发共享同一个 D1 Session；
+ // 每条流内部仍按序执行，首读从主库开始，后续读由 D1 保证顺序一致性。
+ const idsEnv=createD1SessionEnv(env);
+ const metaEnv=createD1SessionEnv(env);
  const loadIds=async()=>{
   for(let i=0;i<entries.length;i+=500){
    if(budget&&!budget.take(1))throwBudgetExceeded(budget.max,"history-read-dates-ids");
@@ -112,7 +116,7 @@ export async function readDayAggregates(env,{user,routeId,entries,budget=null}){
   for(let i=0;i<metaKeys.length;i+=500){
    if(budget&&!budget.take(1))throwBudgetExceeded(budget.max,"history-read-meta");
    const chunk=metaKeys.slice(i,i+500);
-   const raws=await command(env,["MGET",...chunk]);
+   const raws=await command(metaEnv,["MGET",...chunk]);
    for(let j=0;j<chunk.length;j++){const o=parseMeta(raws?.[j]);if(o)metaByDate.set(chunk[j],o);}
   }
  };
@@ -132,7 +136,7 @@ export async function readDayAggregates(env,{user,routeId,entries,budget=null}){
   // 批量读 legacy 天全部运单体（一次聚合所有 id 后分批 MGET，受 budget 约束，超限抛 → 503）。
   const allIds=[];const idsOf=new Map();
   for(const e of legacy){const ids=idsByDate.get(e.date)||[];idsOf.set(e.date,ids);allIds.push(...ids);}
-  const bodies=await readWaybills(env,allIds,budget);
+  const bodies=await readWaybills(idsEnv,allIds,budget);
   const byId=new Map(bodies.map(w=>[w.id,w]));
   const metaWrites=[];
   for(const e of legacy){
