@@ -712,8 +712,8 @@ async function testRequestScopedSessionEnv() {
   ok(historySource.includes("readDateWaybills(historyEnv,user,routeId,date,budget)"), "日期详情读取使用请求级 Session env");
   ok(historySource.includes("readDates(historyEnv,routeId,range,budget)"), "历史搜索索引读取使用请求级 Session env");
   ok(historySource.includes("readDates(overviewEnv,routeId,range,budget)"), "历史概览索引读取使用请求级 Session env");
-  ok(historySource.includes("history-d1-primary-queries"), "历史响应暴露 D1 主库读取计数");
-  ok(historySource.includes("history-d1-replica-queries"), "历史响应暴露 D1 副本读取计数");
+  ok(historySource.includes("history-db-primary-queries"), "历史响应暴露 D1 主库读取计数");
+  ok(historySource.includes("history-db-replica-queries"), "历史响应暴露 D1 副本读取计数");
   const historyReadSource = readFileSync(path.join(API, "_history-read.js"), "utf8");
   ok(historyReadSource.includes('const idsEnv=createD1SessionEnv(env,"first-primary",routingObserver);'), "历史概览索引流使用独立 Session 并共享请求级观测");
   ok(historyReadSource.includes('const metaEnv=createD1SessionEnv(env,"first-primary",routingObserver);'), "历史概览汇总流使用另一独立 Session 并共享请求级观测");
