@@ -115,6 +115,39 @@ function check(name, cond, info) {
   const perRouteGets = cmds.filter(c => c[0] === "GET" && /^zp:route:R/.test(String(c[1] || ""))).length;
   check("逐条 GET zp:route:* ≤ 1（仅调度线路解析一次）", perRouteGets <= 1, "perRouteGets=" + perRouteGets);
 
+  console.log("【6A】聚合接口独立读取并发验证（避免存储往返串行叠加）");
+  const observeParallelGets = async (run, keys) => {
+    const original = global.fetch;
+    let active = 0, maximum = 0;
+    global.fetch = async (url, init) => {
+      let body = null;
+      try { body = init?.body ? JSON.parse(init.body) : null; } catch {}
+      const watched = Array.isArray(body) && body[0] === "GET" && keys.includes(body[1]);
+      if (!watched) return original(url, init);
+      active++;
+      maximum = Math.max(maximum, active);
+      try {
+        await new Promise(resolve => setTimeout(resolve, 8));
+        return await original(url, init);
+      } finally { active--; }
+    };
+    try {
+      const response = await run();
+      await response.json();
+      return maximum;
+    } finally { global.fetch = original; }
+  };
+  const dispatchOverlap = await observeParallelGets(
+    () => dsb.onRequestGet({ request: req("tok2"), env }),
+    ["zp:routes:index", "zp:route:R2"]
+  );
+  check("dispatch-bootstrap：线路列表与调度线路读取重叠执行", dispatchOverlap >= 2, "最大并发=" + dispatchOverlap);
+  const homeOverlap = await observeParallelGets(
+    () => hsb.onRequestGet({ request: req("tok2"), env }),
+    ["zp:route:R2", "zp:session:tok2"]
+  );
+  check("home-bootstrap：调度线路读取与会话续期读取重叠执行", homeOverlap >= 2, "最大并发=" + homeOverlap);
+
   console.log("【7】线路列表按名称自然序升序（产品要求「线路排列，升序排列」）");
   {
     // 全新 Redis 实例，索引刻意按「生产实测的降序」摆放（17→16→…→1 的索引方向），
