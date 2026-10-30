@@ -222,6 +222,13 @@
   // 记录上，再 back() 一步即越过去。即便历史里残留业务端首页，这一步会一并越过。
   function zpDoExit(){
     zpLeaving=true;
+    // 原生壳内：直接结束 Activity。v1.0.19 起壳层返回键已不看 canGoBack、不走 goBack，
+    // WebView 里的 history.back() 只会把页面退回上一页而退不出应用，唯一可靠出口是
+    // ZhipeiNative.exitApp()（原生 finish()）。存在壳就立即返回，不再碰历史。
+    try{
+      const N=window.ZhipeiNative;
+      if(N&&typeof N.exitApp==="function"){N.exitApp();return}
+    }catch{}
     // 独立 PWA / 浏览器：越过首条历史记录，由系统退出（退回上一站/桌面）。
     // 置位一次性退出标记：若历史里残留业务端首页，下一页加载时会继续后退，绝不停在司机首页
     try{sessionStorage.setItem("zpExitAdmin","1")}catch{}
@@ -236,7 +243,11 @@
   async function zpBackButton(){
     const r=await zpHandleBack();
     if(zpLeaving)return;
-    if(r==="handled"){zpPushGuard();return} // 关掉了一层 UI：补回占位，别让下一次返回滑出本页
+    // 只有「关掉一层后下面还压着弹层」才补占位。
+    // 顶部按钮与原生返回键都不消费历史记录（它们不触发 popstate），无脑补压会平白
+    // 多出一条记录：离开本页时 location.replace 只替换当前项，这条多余记录就成了
+    // 指向内页的孤儿，连按返回又会退回已经离开的页面（v1.0.18 之前的老毛病）。
+    if(r==="handled"){if(zpTopHook())zpPushGuard();return}
     if(r==="exit"){zpDoExit();return}
     // "leave"：非根页面的普通返回，location.replace 已发起页面导航，此处不做任何额外动作
   }
@@ -367,7 +378,7 @@
       }
       const r=await zpHandleBack();
       if(zpLeaving)return;
-      if(r==="handled"){zpPushGuard();return}   // 关掉了一层 UI：补回占位，别让下一次返回滑出本页
+      if(r==="handled"){if(zpTopHook())zpPushGuard();return} // 还有下一层要关才补占位；层关光了就不再补，免得堆出孤儿记录
       if(r==="exit-armed")return;               // 处于「再按一次退出」窗口：窗口内再按即离开
       // "leave" = 非根页面的普通返回。此时 location.replace 已把当前历史项换成目标页，
       // 绝不能再置跨区退出标记、也不能再 back() 一步：那会把「一次返回」变成退两层，
