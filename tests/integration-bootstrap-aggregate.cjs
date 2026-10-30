@@ -116,13 +116,13 @@ function check(name, cond, info) {
   check("逐条 GET zp:route:* ≤ 1（仅调度线路解析一次）", perRouteGets <= 1, "perRouteGets=" + perRouteGets);
 
   console.log("【6A】聚合接口独立读取并发验证（避免存储往返串行叠加）");
-  const observeParallelGets = async (run, keys) => {
+  const observeParallelCommands = async (run, keys) => {
     const original = global.fetch;
     let active = 0, maximum = 0;
     global.fetch = async (url, init) => {
       let body = null;
       try { body = init?.body ? JSON.parse(init.body) : null; } catch {}
-      const watched = Array.isArray(body) && body[0] === "GET" && keys.includes(body[1]);
+      const watched = Array.isArray(body) && ["GET", "EXPIRE"].includes(body[0]) && keys.includes(body[1]);
       if (!watched) return original(url, init);
       active++;
       maximum = Math.max(maximum, active);
@@ -137,16 +137,16 @@ function check(name, cond, info) {
       return maximum;
     } finally { global.fetch = original; }
   };
-  const dispatchOverlap = await observeParallelGets(
+  const dispatchOverlap = await observeParallelCommands(
     () => dsb.onRequestGet({ request: req("tok2"), env }),
     ["zp:routes:index", "zp:route:R2"]
   );
   check("dispatch-bootstrap：线路列表与调度线路读取重叠执行", dispatchOverlap >= 2, "最大并发=" + dispatchOverlap);
-  const homeOverlap = await observeParallelGets(
+  const homeOverlap = await observeParallelCommands(
     () => hsb.onRequestGet({ request: { url: "https://app.local/api/home-bootstrap", headers: { get: h => (String(h).toLowerCase() === "authorization" ? "Bearer tok2" : (String(h).toLowerCase() === "cookie" ? "zp_session=tok2" : null)) } }, env }),
     ["zp:route:R2", "zp:session:tok2"]
   );
-  check("home-bootstrap：调度线路读取与会话续期读取重叠执行", homeOverlap >= 2, "最大并发=" + homeOverlap);
+  check("home-bootstrap：调度线路读取与会话续期命令重叠执行", homeOverlap >= 2, "最大并发=" + homeOverlap);
 
   console.log("【7】线路列表按名称自然序升序（产品要求「线路排列，升序排列」）");
   {

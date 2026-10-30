@@ -62,6 +62,7 @@ end
 local user = redis.call('GET', ARGV[1] .. data.userId)
 return {session, user or false}`,
   async (ctx, keys, args) => {
+    if (typeof ctx.authRead === "function") return ctx.authRead(keys[0], args[0]);
     const session = await ctx.get(keys[0]);
     if (!session) return [null, null];
     const [ok, data] = parseJSON(session);

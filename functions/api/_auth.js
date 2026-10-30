@@ -1,4 +1,4 @@
-import {command, setEx, sessionCookie, SESSION_TTL_SECONDS} from "./_redis.js";
+import {command, sessionCookie, SESSION_TTL_SECONDS} from "./_redis.js";
 
 /* 会话鉴权：将原先两个串行 Redis REST 往返合并为一个 Lua 往返。
  * 原链路每个受保护 API 都先 GET session，再解析 userId，最后 GET user；
@@ -60,8 +60,9 @@ export function requireUser(request,env){
 export async function refreshSession(request, env){
  const token=readSession(request);
  if(!token) return null;
- const raw=await command(env,["GET","zp:session:"+token]);
- if(!raw) return null;
- await setEx(env,"session:"+token,raw,SESSION_TTL_SECONDS);
+ // currentUser 已先验证会话；EXPIRE 原子地完成「仅对仍存在的会话续期」，
+ // 与 GET + SETEX 的有效性语义一致，但少一次存储往返，也不必重写 session value。
+ const renewed=await command(env,["EXPIRE","zp:session:"+token,String(SESSION_TTL_SECONDS)]);
+ if(Number(renewed)!==1) return null;
  return sessionCookie(token);
 }

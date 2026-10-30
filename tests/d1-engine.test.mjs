@@ -69,8 +69,14 @@ class SqliteAdapter {
 function makeEngine() {
   const raw = new DatabaseSync(":memory:");
   raw.exec("CREATE TABLE kv(key TEXT PRIMARY KEY, value TEXT NOT NULL, type TEXT NOT NULL, expires_at INTEGER)");
-  const backend = new D1Backend(new SqliteAdapter(raw));
-  return { raw, backend };
+  const adapter = new SqliteAdapter(raw);
+  const metrics = { prepare: 0, batch: 0 };
+  const prepare = adapter.prepare.bind(adapter);
+  const batch = adapter.batch.bind(adapter);
+  adapter.prepare = sql => { metrics.prepare++; return prepare(sql); };
+  adapter.batch = stmts => { metrics.batch++; return batch(stmts); };
+  const backend = new D1Backend(adapter);
+  return { raw, backend, metrics };
 }
 
 // ============ 轻量断言 ============
@@ -490,6 +496,25 @@ async function testExtraBranches() {
   // EXPIRE 不存在键 → 0（expire miss 分支）
   eq(await c("EXPIRE", "dc:missing", "60"), 0, "EXPIRE 不存在键返回 0");
 
+  // 有效已落库键的 EXPIRE 必须只消耗一次 D1 batch（旧路径为 SELECT + batch）。
+  {
+    const { raw, backend: fast, metrics } = makeEngine();
+    await fast.command(["SET", "session-fast", "value", "EX", "100"]);
+    metrics.prepare = 0; metrics.batch = 0;
+    eq(await fast.command(["EXPIRE", "session-fast", "7776000"]), 1, "EXPIRE 有效会话返回 1");
+    eq(fast.quota.statements + fast.quota.batches, 1, "EXPIRE 单次 D1 查询配额 = 1");
+    eq(metrics.batch, 1, "EXPIRE 仅执行一个 D1 batch");
+    eq(metrics.prepare, 2, "EXPIRE batch 内仅 DELETE + UPDATE 两条语句");
+    const ttl = await fast.command(["TTL", "session-fast"]);
+    ok(ttl > 7775990 && ttl <= 7776000, "EXPIRE TTL 续期到 90 天（得到 " + ttl + "）");
+    raw.exec("INSERT INTO kv(key,value,type,expires_at) VALUES('session-expired','x','string',1)");
+    eq(await fast.command(["EXPIRE", "session-expired", "60"]), 0, "EXPIRE 不复活已过期键");
+    eq(raw.prepare("SELECT count(*) c FROM kv WHERE key='session-expired'").get().c, 0, "EXPIRE 顺手清理已过期键");
+    const pending = await fast.pipeline([["SET", "pending-expire", "v"], ["EXPIRE", "pending-expire", "60"]]);
+    eq(pending, ["OK", 1], "pipeline 内先 SET 后 EXPIRE 保持 overlay 语义");
+    ok((await fast.command(["TTL", "pending-expire"])) > 0, "pipeline 内 EXPIRE TTL 生效");
+  }
+
   // 未注册 EVAL → UNIMPLEMENTED_EVAL（含归一化脚本摘要，供补表定位）
   let unimpl = null;
   try { await c("EVAL", 'return redis.call("GET","no-such-script-for-registry")', "1", "k"); }
@@ -586,6 +611,53 @@ async function testD1Limits() {
   eq(pr3[2], "none", "pipeline 分组 TYPE 不存在键");
 }
 
+// ============ AUTH_READ 单 D1 batch 优化 ============
+async function testAuthReadFastPath() {
+  console.log("\\n[AUTH_READ] session + user 合并为一次 D1 batch");
+  const { raw, backend, metrics } = makeEngine();
+  const authSource = readFileSync(path.join(API, "_auth.js"), "utf8");
+  const authScript = extractScripts(authSource).find(s => /local session = redis.call/.test(s));
+  ok(!!authScript, "从 _auth.js 提取真实 AUTH_READ Lua 脚本");
+  if (!authScript) return;
+
+  const session = JSON.stringify({ userId: "U-AUTH", sessionVersion: 1 });
+  const user = JSON.stringify({ id: "U-AUTH", username: "auth-user", sessionVersion: 1 });
+  await backend.command(["SET", "zp:session:auth-fast", session]);
+  await backend.command(["SET", "zp:user:U-AUTH", user]);
+  metrics.prepare = 0; metrics.batch = 0;
+  const pair = await backend.command(["EVAL", authScript, "1", "zp:session:auth-fast", "zp:user:"]);
+  eq(pair, [session, user], "AUTH_READ 返回 session + user 原始值");
+  eq(backend.quota.statements + backend.quota.batches, 1, "AUTH_READ D1 配额消耗仅 1 次");
+  eq(metrics.batch, 1, "AUTH_READ 使用单次 D1 batch");
+  eq(metrics.prepare, 2, "AUTH_READ batch 内为过期清理 + JOIN 查询");
+
+  const missing = await backend.command(["EVAL", authScript, "1", "zp:session:missing", "zp:user:"]);
+  eq(missing, [null, null], "AUTH_READ 缺失 session 返回空对");
+
+  await backend.command(["SET", "zp:session:auth-bad", "{"]);
+  const malformed = await backend.command(["EVAL", authScript, "1", "zp:session:auth-bad", "zp:user:"]);
+  eq(malformed, ["{", null], "AUTH_READ 损坏 session 保留原值但不返回 user");
+
+  const noUserSession = JSON.stringify({ userId: "U-NOT-FOUND", sessionVersion: 1 });
+  await backend.command(["SET", "zp:session:auth-no-user", noUserSession]);
+  const noUser = await backend.command(["EVAL", authScript, "1", "zp:session:auth-no-user", "zp:user:"]);
+  eq(noUser, [noUserSession, null], "AUTH_READ 缺失 user 返回 session + null");
+
+  raw.exec("INSERT INTO kv(key,value,type,expires_at) VALUES('zp:session:auth-expired','x','string',1)");
+  const expired = await backend.command(["EVAL", authScript, "1", "zp:session:auth-expired", "zp:user:"]);
+  eq(expired, [null, null], "AUTH_READ 过期 session 不复活");
+  eq(raw.prepare("SELECT count(*) c FROM kv WHERE key='zp:session:auth-expired'").get().c, 0, "AUTH_READ 清理过期 session");
+
+  const pendingSession = JSON.stringify({ userId: "U-PENDING", sessionVersion: 1 });
+  const pendingUser = JSON.stringify({ id: "U-PENDING", sessionVersion: 1 });
+  const pipeline = await backend.pipeline([
+    ["SET", "zp:session:auth-pending", pendingSession],
+    ["SET", "zp:user:U-PENDING", pendingUser],
+    ["EVAL", authScript, "1", "zp:session:auth-pending", "zp:user:"],
+  ]);
+  eq(pipeline[2], [pendingSession, pendingUser], "pipeline 内 overlay session/user 仍可被 AUTH_READ 读取");
+}
+
 // ============ 主流程 ============
 (async () => {
   console.log("=== D1 引擎离线测试 ===");
@@ -601,6 +673,7 @@ async function testD1Limits() {
   await testConcurrency();
   await testRenameTypePing();
   await testExtraBranches();
+  await testAuthReadFastPath();
   await testD1Limits();
 
   console.log(`\n=== 结果：通过 ${pass} 项，失败 ${fail} 项 ===`);

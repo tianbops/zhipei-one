@@ -49,11 +49,19 @@ function check(name, cond, info) {
   check("续期前服务端 TTL 为短值 (≈100s)", ttlBefore > 0 && ttlBefore <= 100, "TTL=" + ttlBefore);
 
   // (3) /api/me 成功 → 刷新 Cookie + 续期
+  const originalFetch = global.fetch;
+  const refreshCommands = [];
+  global.fetch = async (url, init) => {
+    try { if (init?.body) refreshCommands.push(JSON.parse(init.body)); } catch {}
+    return originalFetch(url, init);
+  };
   const meRes = await meMod.onRequestGet({ request: cookieReq(TOK), env });
+  global.fetch = originalFetch;
   const meData = await meRes.json();
   check("/api/me 返回 success:true", meData.success === true, JSON.stringify(meData).slice(0, 80));
   const meCookie = meRes.headers.get("set-cookie") || "";
   check("/api/me 响应刷新 Cookie Max-Age=7776000", meCookie.includes("Max-Age=7776000"), meCookie.slice(0, 60));
+  check("滑动续期仅发出一次 EXPIRE（不再 GET 后 SETEX 两次往返）", refreshCommands.filter(c => Array.isArray(c) && c[0] === "EXPIRE" && c[1] === sessionKey).length === 1 && !refreshCommands.some(c => Array.isArray(c) && c[0] === "SET" && c[1] === sessionKey), JSON.stringify(refreshCommands.map(c => c[0])));
   const ttlAfterMe = await red.command(["TTL", sessionKey]);
   check("/api/me 后服务端 TTL 续到 90 天", ttlAfterMe >= TTL_90 - 5, "TTL=" + ttlAfterMe);
 
