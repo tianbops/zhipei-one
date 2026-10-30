@@ -9,7 +9,7 @@
  *   - 图片/字体       ：stale-while-revalidate（内容基本不变，秒开优先）
  * 资产缓存键用完整 URL（含 ?v=）精确匹配；页面缓存键用 pathname 规整（忽略 ?from 等查询）。
  */
-const VERSION = "zp-pwa-287";
+const VERSION = "zp-pwa-288";
 const STATIC_CACHE = VERSION + "-static";
 const PAGES_CACHE = VERSION + "-pages";
 const OFFLINE_URL = "/offline";
@@ -210,11 +210,13 @@ async function updatePageCache(req) {
 
 /* 静态资源（图片/字体）：先给缓存，后台更新 */
 async function swrStrategy(req) {
-  const key = cacheKeyOf(req.url);
+  // 图片/字体也必须使用完整 Request 作为缓存键（包含 ?v=）。
+  // PRECACHE 与浏览器请求都带版本参数；只取 pathname 会让预缓存无法命中，
+  // 并把同一路径不同版本的图片/字体混在同一个缓存条目里。
   const cache = await caches.open(STATIC_CACHE);
-  const hit = await cache.match(key);
+  const hit = await cache.match(req);
   const network = fetch(req)
-    .then(res => { if (res && res.ok) cache.put(key, res.clone()); return res; })
+    .then(res => { if (res && res.ok) cache.put(req, res.clone()); return res; })
     .catch(() => hit || Response.error());
   return hit || network;
 }

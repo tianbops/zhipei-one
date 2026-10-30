@@ -87,6 +87,12 @@ for (const entry of precache) {
   }
 }
 
+/* ---------- 图片/字体 SWR 缓存键 ---------- */
+const swrMatch = sw.match(/async function swrStrategy\(req\) \{([\s\S]*?)\n\}/);
+t("图片/字体缓存按完整 Request（含 ?v=）匹配", !!swrMatch && /cache\.match\(req\)/.test(swrMatch[1]));
+t("图片/字体缓存按完整 Request（含 ?v=）写入", !!swrMatch && /cache\.put\(req,\s*res\.clone\(\)\)/.test(swrMatch[1]));
+t("图片/字体缓存不再丢弃查询参数", !!swrMatch && !/cache\.(?:match|put)\(key/.test(swrMatch[1]));
+
 /* ---------- SW 版本号形态 ---------- */
 const vm = sw.match(/const VERSION = "(zp-pwa-\d+)";/);
 t("SW VERSION 形态正确", !!vm);
