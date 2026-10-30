@@ -73,8 +73,8 @@ console.log("\n【2】js/ui/nav-prefetch.js 预取实现的三条铁律");
   check(/__zpNavPrefetchInstalled/.test(ui), "安装一次，重复引入不会重复注册监听");
   check(/requestIdleCallback/.test(ui) && /setTimeout\(warmOnIdle,1500\)/.test(ui), "空闲才预热，首屏不受影响；无 rIC 时有兜底");
   check(/\(document\.head\|\|document\.documentElement\)\.appendChild\(link\)/.test(ui), "插入位置有兜底（head 缺失时不抛错）");
-  const prefetchBody = (ui.match(/const prefetch=raw=>\\{([\\s\\S]*?)\\n  \\};/) || ["", ""])[1];
-  check(/if\\(!allowed\\(\\)\\)return false;/.test(prefetchBody), "所有预取入口（含 pointerdown/touchstart）统一受弱网与省流量守卫控制");
+  const prefetchBody = (ui.match(/const prefetch=raw=>\{([\s\S]*?)\n  \};/) || ["", ""])[1];
+  check(/if\(!allowed\(\)\)return false;/.test(prefetchBody), "所有预取入口（含 pointerdown/touchstart）统一受弱网与省流量守卫控制");
   const pointerCount = (ui.match(/pointerdown|touchstart/g) || []).length;
   check(pointerCount >= 2, "支持意图预取（pointerdown / touchstart 早于 click 起跑）");
 }
