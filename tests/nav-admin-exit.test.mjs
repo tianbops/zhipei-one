@@ -42,7 +42,7 @@ function makeEnv({ pathname="/home", adminPage=0, zone="business" }={}) {
     window.zpResolveBack=zpResolveBack;
   `;
   const factory=new Function("window","document","location","fetch","setTimeout","clearTimeout","sessionStorage","localStorage",
-    prelude+BODY+"\\nreturn window.zpHandleBack;");
+    prelude+BODY+"\nreturn window.zpHandleBack;");
   env.back=factory(win,{querySelector:()=>null},location,async(url,options)=>{env.fetched.push({url,options});return{ok:true};},
     ()=>0,()=>{},sessionStorage,localStorage);
   return env;
