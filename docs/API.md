@@ -15,7 +15,7 @@
 | GET / POST | `/api/admin/global-learning` | 列出现有全局学习记录供管理员选择；只读，不改变学习状态。 |
 | POST | `/api/admin/manage` | — |
 | POST | `/api/admin/reset` | — |
-| GET / POST | `/api/admin/route-requests` | — |
+| GET / POST | `/api/admin/route-requests` | 管理端线路申请审核：列表透出申请人姓名 / 手机号（旧记录统一为空串）。 |
 | GET / POST | `/api/admin/users` | — |
 | POST | `/api/admin/waybill-recalc` | — |
 | GET / PUT | `/api/base` | — |
@@ -32,7 +32,7 @@
 | GET | `/api/redis-diag` | Redis 链路自检（临时诊断用）：确认 Cloudflare Pages 当前到底连的是哪个库、 Worker 落在哪个 PoP、Worker→Redi… |
 | POST | `/api/register` | — |
 | POST | `/api/route-binding` | — |
-| GET / POST | `/api/route-requests` | — |
+| GET / POST | `/api/route-requests` | 线路申请：GET 列本人申请，POST 提交；可选填申请人姓名 / 手机号（仅供管理员审核与联系，空值不落库）。 |
 | POST | `/api/route-unbind` | — |
 | POST | `/api/waybills/confirm` | 指纹漂移回收（2026-10-07 生产实测发现）。 businessFingerprint 的入参包含每个门店的 pending / routeOrde… |
 | POST | `/api/waybills/extract` | — |

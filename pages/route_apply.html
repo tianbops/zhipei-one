@@ -35,7 +35,7 @@
 <script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F6F7F9":"#121826");}catch(e){}</script><script src="/js/theme-sync.js?v=2c1a5bbc"></script>
 <link rel="stylesheet" href="/css/app.css?v=b5364547"><link rel="stylesheet" href="/css/ui-base.css?v=6d56cb33"><link rel="stylesheet" href="/css/ui-overlay.css?v=fe14de91"><link rel="stylesheet" href="/css/ui-theme.css?v=c306fcf7"><link rel="stylesheet" href="/css/ui-shell.css?v=2ab76df5">
 <link rel="stylesheet" href="/css/mobile-ui.css?v=3f9fab5a">
-<link rel="stylesheet" href="/css/business-pages.css?v=2f512c53">
+<link rel="stylesheet" href="/css/business-pages.css?v=0d74c33c">
 <link rel="stylesheet" href="/css/zp-picker.css?v=1fddfde6">
 </head>
 <body>
@@ -55,6 +55,12 @@
   <p class="message">选择你负责维护的线路和岗位，提交后由管理员审核。</p>
   <label class="page2-label">线路<select id="route"><option value="">加载中…</option></select></label>
   <label class="page2-label">岗位<select id="duty"><option value="driver">司机</option><option value="delivery">配送</option></select></label>
+  <div class="applicant-group">
+    <p class="applicant-title">申请人信息（选填）</p>
+    <label class="page2-label">姓名<textarea id="applicantName" rows="1" maxlength="20" placeholder="输入真实姓名" autocomplete="name" enterkeyhint="next"></textarea></label>
+    <label class="page2-label">手机号<input id="applicantPhone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="11" placeholder="输入手机号"></label>
+    <p class="page2-soft">填了姓名，管理员审批时能直接对上人；不填也可以提交。</p>
+  </div>
   <button id="submit" class="primary-btn" type="button">提交申请</button>
   <p id="message" class="message" aria-live="polite"></p>
   </div>
@@ -71,6 +77,43 @@ const maintainToggle=$("maintainToggle"),maintainBody=$("maintainBody");
 maintainToggle?.addEventListener("click",()=>{const open=maintainBody.hidden;maintainBody.hidden=!open;maintainToggle.setAttribute("aria-expanded",String(open));maintainToggle.querySelector(".collapse-icon").textContent=open?"⌃":"⌄"});
 async function api(u,o={}){const r=await zpFetch(u,{credentials:"same-origin",cache:"no-store",...o}),d=await r.json().catch(()=>({}));if(!r.ok){const x=new Error(d.error||d.message||"请求失败");x.code=d.code||"HTTP_"+r.status;throw x}return d}
 function msg(e){return (e.code?"["+e.code+"] ":"")+(e.message||"请求失败")}
+/* ===== 申请人信息（选填，2026-10-30）=====
+   姓名单排起步、随内容增高，封顶两行后框内滚动——姓名天然是一行，放开无限增高
+   只会把管理端审核卡片撑变形。提交时换行统一折成空格（后端也会再折一次）。
+   两个字段都选填，但填了就必须合法；空值不写字段，不存 ""。 */
+const nameEl=$("applicantName"),phoneEl=$("applicantPhone");
+const NAME_LH=22,NAME_PAD=26; /* 与 css 的 line-height:22px / padding:13px 对齐 */
+let applicantKey="zpApplicant:";
+function growName(){
+ const el=nameEl,cs=getComputedStyle(el);
+ const lh=parseFloat(cs.lineHeight)||NAME_LH,pad=(parseFloat(cs.paddingTop)||0)+(parseFloat(cs.paddingBottom)||0)||NAME_PAD;
+ const maxH=Math.round(lh*2+pad);
+ el.style.height="auto";
+ const need=el.scrollHeight;
+ el.style.height=Math.min(need,maxH)+"px";
+ el.style.overflowY=need>maxH?"auto":"hidden";
+}
+function applicantValue(){
+ const name=nameEl.value.replace(/\s+/g," ").trim();
+ const phone=phoneEl.value.replace(/[\s-]/g,"");
+ if([...name].length>20)return {error:"申请人姓名最多 20 个字"};
+ if(phone&&!/^1[3-9]\d{9}$/.test(phone))return {error:"手机号格式不正确，请填 11 位手机号"};
+ return {name,phone};
+}
+/* 记住上次填写：key 带 userId，同一台设备换账号不会串号。
+   不写回 user.name —— 那要动 sessionVersion 与并发控制，收益不值这个复杂度。 */
+function restoreApplicant(uid){
+ applicantKey="zpApplicant:"+(uid||"anon");
+ try{
+  const v=JSON.parse(localStorage.getItem(applicantKey)||"null");
+  if(v&&typeof v.name==="string"&&!nameEl.value)nameEl.value=v.name;
+  if(v&&typeof v.phone==="string"&&!phoneEl.value)phoneEl.value=v.phone;
+ }catch(e){}
+ growName();
+}
+function rememberApplicant(v){
+ try{localStorage.setItem(applicantKey,JSON.stringify({name:v.name,phone:v.phone}))}catch(e){}
+}
 async function load(){
  try{
   const [rs,me]=await Promise.all([api("/api/routes"),api("/api/me")]);
@@ -78,6 +121,7 @@ async function load(){
   const rName=v=>(window.zpRouteName?window.zpRouteName(v):v)||v;/* 全局标准：文本位置统一「X号线」 */
   const esc2=s=>String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
   const bound=me.user?.boundRouteId,duty=me.user?.routeDuty;
+  restoreApplicant(me.user?.id);
   $("binding").textContent=bound&&duty?"已绑定："+rName(routeMap[bound]||bound)+" · "+(duty==="driver"?"司机":"配送"):"当前未绑定线路";
   $("unbind").hidden=!(bound&&duty);
   $("route").innerHTML='<option value="">请选择线路</option>'+(rs.routes||[]).filter(r=>r.status==="active").map(r=>'<option value="'+String(r.id).replaceAll('"',"&quot;")+'">'+esc2(rName(String(r.name||r.id)))+"</option>").join("");
@@ -87,7 +131,7 @@ async function load(){
   try{
    const qs=await api("/api/route-requests");
    const statusText={pending:"待审核",approved:"已批准",rejected:"已驳回"};
-   $("requests").innerHTML=qs.requests?.length?qs.requests.slice().reverse().map(x=>'<div class="request-row"><strong>'+esc2(rName(routeMap[x.routeId]||x.routeId))+'</strong> · '+(x.duty==="driver"?"司机":"配送")+' · '+(statusText[x.status]||x.status)+(x.reviewedAt?" · "+new Date(x.reviewedAt).toLocaleString():"")+"</div>").join(""):'<div class="zp-empty">暂无线路申请记录</div>';
+   $("requests").innerHTML=qs.requests?.length?qs.requests.slice().reverse().map(x=>'<div class="request-row"><strong>'+esc2(rName(routeMap[x.routeId]||x.routeId))+'</strong> · '+(x.duty==="driver"?"司机":"配送")+(x.applicantName?"（"+esc2(x.applicantName)+"）":"")+' · '+(statusText[x.status]||x.status)+(x.reviewedAt?" · "+new Date(x.reviewedAt).toLocaleString():"")+"</div>").join(""):'<div class="zp-empty">暂无线路申请记录</div>';
   }catch(e){$("requests").textContent="申请记录加载失败："+msg(e)}
  }catch(e){if(e&&e.code==="HTTP_401"&&window.zpAuthFail){window.zpAuthFail("expired");return}$("route").innerHTML='<option value="">线路加载失败</option>';$("requests").textContent="线路加载失败："+msg(e);$("message").textContent=msg(e)}
 }
@@ -99,10 +143,16 @@ $("unbind").onclick=async()=>{
 };
 $("submit").onclick=async()=>{
  if(!$("route").value){$("message").textContent="请选择线路";return}
+ const applicant=applicantValue();
+ if(applicant.error){$("message").textContent=applicant.error;return}
  $("submit").disabled=true;$("message").textContent="提交中…";
- try{await api("/api/route-requests",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({routeId:$("route").value,duty:$("duty").value})});$("message").textContent="申请已提交，等待管理员审核";await load()}
+ const payload={routeId:$("route").value,duty:$("duty").value};
+ if(applicant.name)payload.applicantName=applicant.name;
+ if(applicant.phone)payload.applicantPhone=applicant.phone;
+ try{await api("/api/route-requests",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)});rememberApplicant(applicant);$("message").textContent="申请已提交，等待管理员审核";await load()}
  catch(e){$("message").textContent=msg(e);$("submit").disabled=!!($("route").disabled)}
 };
+nameEl.addEventListener("input",growName);
 load();
 </script>
 <script src="/js/ui/core.js?v=7c4e2f82"></script><script src="/js/ui/appearance.js?v=2661f74b"></script><script src="/js/ui/feedback.js?v=f8da0256"></script><script src="/js/ui/nav.js?v=0bf1d3c3"></script><script src="/js/ui/back.js?v=adce2823"></script><script src="/js/ui/nav-prefetch.js?v=7c589b89"></script><script src="/js/ui/zp-picker.js?v=1cdf0a93"></script>
