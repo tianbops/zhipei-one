@@ -145,8 +145,10 @@ export class D1Backend {
   __counting(db) {
     if (!db || typeof db !== "object") return db;
     const self = this;
+    const wrappedStatements = new WeakMap();
     try {
-      const wrapStatement = (statement) => new Proxy(statement, {
+      const wrapStatement = (statement) => {
+        const proxy = new Proxy(statement, {
         get(target, prop) {
           const value = Reflect.get(target, prop, target);
           if (prop === "bind" && typeof value === "function") return (...args) => wrapStatement(value.apply(target, args));
@@ -159,6 +161,9 @@ export class D1Backend {
           return typeof value === "function" ? value.bind(target) : value;
         },
       });
+        wrappedStatements.set(proxy, statement);
+        return proxy;
+      };
       return new Proxy(db, {
         get(target, prop) {
           if (prop === "prepare") {
@@ -173,7 +178,8 @@ export class D1Backend {
               const n = Array.isArray(stmts) ? stmts.length : 0;
               self.quota.statements = Math.max(0, self.quota.statements - n);
               self.__tick("batches");
-              return Promise.resolve(target.batch(stmts)).then(results => {
+              const nativeStatements = Array.isArray(stmts) ? stmts.map(statement => wrappedStatements.get(statement) || statement) : stmts;
+              return Promise.resolve(target.batch(nativeStatements)).then(results => {
                 if (Array.isArray(results)) for (const result of results) self.__recordRouting(result?.meta);
                 return results;
               });
