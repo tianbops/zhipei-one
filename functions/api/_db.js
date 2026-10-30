@@ -278,8 +278,12 @@ export class D1Backend {
             FROM kv AS s
             LEFT JOIN kv AS u
               ON u.key = ? || CASE
-                WHEN json_valid(s.value) AND json_extract(s.value,'$.userId') IS NOT NULL
-                THEN CAST(json_extract(s.value,'$.userId') AS TEXT)
+                WHEN json_valid(s.value) THEN
+                  CASE
+                    WHEN json_extract(s.value,'$.userId') IS NOT NULL
+                    THEN CAST(json_extract(s.value,'$.userId') AS TEXT)
+                    ELSE NULL
+                  END
                 ELSE NULL
               END
               AND (u.expires_at IS NULL OR u.expires_at > ?)
