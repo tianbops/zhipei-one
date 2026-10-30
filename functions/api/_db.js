@@ -49,7 +49,8 @@ function globToLike(pattern) {
 
 // ============ 低层行读（读路径共用；惰性 TTL 判死） ============
 async function rawGet(db, key) {
-  const row = await db.prepare("SELECT key,value,type,expires_at FROM kv WHERE key=?").bind(key).first();
+  const result = await db.prepare("SELECT key,value,type,expires_at FROM kv WHERE key=?").bind(key).all();
+  const row = result?.results?.[0] || null;
   if (!row) return null;
   if (row.expires_at != null && Number(row.expires_at) <= nowSec()) {
     await db.prepare("DELETE FROM kv WHERE key=?").bind(key).run();
@@ -60,6 +61,7 @@ async function rawGet(db, key) {
 
 export class D1Backend {
   constructor(db, options) {
+    this.routingObserver = options?.routingObserver || null;
     this.quota = {
       // statements：独立语句数（**不含**已进 batch 的语句，它们在 batch 提交时被抵扣）
       // batches：batch 次数（D1 按 1 次查询计）
@@ -124,36 +126,64 @@ export class D1Backend {
    *
    * 注意：只做旁路统计，**绝不拦截、绝不改行为**；代理本身出任何问题都退化为"（不计数）"。
    */
+  __recordRouting(meta) {
+    const observer = this.routingObserver;
+    if (!observer || !meta || typeof meta !== "object") return;
+    try {
+      observer.queries = (Number(observer.queries) || 0) + 1;
+      if (meta.served_by_primary === true) observer.primary = (Number(observer.primary) || 0) + 1;
+      else if (meta.served_by_primary === false) observer.replica = (Number(observer.replica) || 0) + 1;
+      else observer.unknown = (Number(observer.unknown) || 0) + 1;
+      const region = String(meta.served_by_region || "").toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 24);
+      if (region) {
+        if (!observer.regions || typeof observer.regions !== "object") observer.regions = {};
+        observer.regions[region] = (Number(observer.regions[region]) || 0) + 1;
+      }
+    } catch { /* routing telemetry must never affect D1 operations */ }
+  }
+
   __counting(db) {
     if (!db || typeof db !== "object") return db;
     const self = this;
     try {
+      const wrapStatement = (statement) => new Proxy(statement, {
+        get(target, prop) {
+          const value = Reflect.get(target, prop, target);
+          if (prop === "bind" && typeof value === "function") return (...args) => wrapStatement(value.apply(target, args));
+          if ((prop === "all" || prop === "run") && typeof value === "function") {
+            return (...args) => Promise.resolve(value.apply(target, args)).then(result => {
+              self.__recordRouting(result?.meta);
+              return result;
+            });
+          }
+          return typeof value === "function" ? value.bind(target) : value;
+        },
+      });
       return new Proxy(db, {
-        get(target, prop, receiver) {
+        get(target, prop) {
           if (prop === "prepare") {
             return (sql) => {
               self.__tick("statements");
-              return target.prepare(sql);
+              return wrapStatement(target.prepare(sql));
             };
           }
           if (prop === "batch") {
             return (stmts) => {
-              // 【口径修正】batch 内的每条语句在 prepare 时已经各计了一次 statements，
-              // 但 D1 侧一次 batch 只算 1 次查询配额。若不在提交时抵扣，一次含 10 条
-              // 写入的事务会被计成 11 —— 高估一个数量级，告警线形同虚设
-              // （真实验证：写 10 个键 → 抵扣前报 11，D1 实际消耗 1）。
+              // D1 batch counts as one query; preserve existing quota accounting.
               const n = Array.isArray(stmts) ? stmts.length : 0;
               self.quota.statements = Math.max(0, self.quota.statements - n);
               self.__tick("batches");
-              return target.batch(stmts);
+              return Promise.resolve(target.batch(stmts)).then(results => {
+                if (Array.isArray(results)) for (const result of results) self.__recordRouting(result?.meta);
+                return results;
+              });
             };
           }
-          const v = Reflect.get(target, prop, target);
-          return typeof v === "function" ? v.bind(target) : v;
+          const value = Reflect.get(target, prop, target);
+          return typeof value === "function" ? value.bind(target) : value;
         },
       });
     } catch {
-      // 代理不可用（极少见）时宁可不计数，也不能让存储层失效
       return db;
     }
   }
@@ -917,7 +947,7 @@ function execEval(ctx, parts) {
 // ============ 注入式后端工厂 ============
 // 检测 env.DB 是否存在，存在则返回 D1 后端（非破坏性：不存在时调用方应回退 Upstash）。
 export function createD1Backend(env) {
-  if (env && env.DB) return new D1Backend(env.DB);
+  if (env && env.DB) return new D1Backend(env.DB, { routingObserver: env.__zpD1RoutingObserver || null });
   return null;
 }
 
