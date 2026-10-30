@@ -1,12 +1,15 @@
 /* 历史运单页月份折叠：真浏览器验证（不进 npm test，需要本机 chromium）
  *
- * 背景（2026-10-30）：月份分组由「当月默认展开」改为「默认全部收起」。
+ * 背景（2026-10-30）：月份分组先由「当月默认展开」改为「默认全部收起」，
+ * 随后改为**手风琴**——同时只展开一个月，点 9 月时 10 月自动收起。
  *
  * 为什么还要 e2e：单测（tests/history-month-fold.test.mjs）用的是手写 DOM 桩，
  * 只能证明 JS 逻辑；证明不了三件真 DOM 才有的事——
  *   1. `.history-month-body{display:none}` 到底有没有把日期行藏起来（class 对了但 CSS 没中一样白改）；
- *   2. 真实页面加载顺序下 expandedMonths 与 core.js 的绑定关系；
- *   3. 真实 load() 重绘后展开状态是否还在（用户删一条记录，列表不该整个塌下去）。
+ *   2. 真实页面加载顺序下 expandedMonth（core.js 的单一状态）与 render.js 的绑定；
+ *   3. 真实 load() 重绘后展开状态是否还在（用户删一条记录，列表不该整个塌下去）；
+ *   4. 「同时只展开一个」在真 DOM 上成立——从「已有一个展开」的状态去点另一个月，
+ *      旧的那个必须自己收起（各月独立 toggle 也能凑出「数量 = 1」，所以要这样测）。
  * 上一轮触感的教训就是「夹具照想象搭」，这里直接加载 pages/history.html。
  *
  * 用法：
@@ -184,14 +187,27 @@ const check = (name, ok, detail) => {
   check('再点一次 → 收起', (await ev('document.querySelectorAll(".history-month.expanded").length')) === 0);
   check('收起后日期行又隐藏', (await bodyH(FX.ym)) === 0, String(await bodyH(FX.ym)));
 
-  /* ---- 5. 点其他月份也只在它自己身上展开 ---- */
+  /* ---- 5. 手风琴：先展开当月，再点 9 月，当月必须自己收起来 ----
+     这一条是「同时只展开一个月」的真正判据。只看「展开数量 === 1」不够：
+     各月独立 toggle 时，从 0 个展开点第一个也会是 1 个。必须从「已有一个展开」
+     的状态出发点另一个月，才能区分「手风琴」和「互不干涉」。 */
+  await ev(`document.querySelector('.history-month[data-month="${FX.ym}"] .history-month-main').click()`);
+  await sleep(350);
+  check('前置：当月重新展开', (await ev('document.querySelectorAll(".history-month.expanded").length')) === 1);
   await ev(`document.querySelector('.history-month[data-month="${FX.m1}"] .history-month-main').click()`);
   await sleep(350);
-  check('点 9 月 → 只有 9 月展开',
-    (await ev(`document.querySelector('.history-month[data-month="${FX.m1}"]').classList.contains('expanded')`)) === true &&
-    (await ev('document.querySelectorAll(".history-month.expanded").length')) === 1);
+  check('点 9 月 → 9 月展开',
+    (await ev(`document.querySelector('.history-month[data-month="${FX.m1}"]').classList.contains('expanded')`)) === true);
+  check('点 9 月 → 当月被自动收起（手风琴）',
+    (await ev(`document.querySelector('.history-month[data-month="${FX.ym}"]').classList.contains('expanded')`)) === false);
+  check('点 9 月 → 当月内容也真的藏起来', (await bodyH(FX.ym)) === 0, String(await bodyH(FX.ym)));
+  check('点 9 月 → 当月 aria-expanded 回到 false',
+    (await ev(`document.querySelector('.history-month[data-month="${FX.ym}"] .history-month-main').getAttribute('aria-expanded')`)) === 'false');
+  check('同一时刻始终只有一个月份展开',
+    (await ev('document.querySelectorAll(".history-month.expanded").length')) === 1,
+    String(await ev('document.querySelectorAll(".history-month.expanded").length')));
 
-  /* ---- 6. 冷启动（新文档、Set 为空）仍然全收起 ---- */
+  /* ---- 6. 冷启动（新文档、expandedMonth 为空）仍然全收起 ---- */
   await C('Page.navigate', { url: BASE + '/pages/history.html?fresh=1' });
   await waitReady();
   await sleep(1500);
