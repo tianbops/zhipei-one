@@ -58,9 +58,9 @@
     e.stopPropagation();
     if(typeof window.zpConfirm==="function"){
       const ok=await window.zpConfirm("正在处理运单","当前运单仍在识别与规划中，离开将中断本次处理。确定离开吗？","离开");
-      if(ok)location.href=href;
+      if(ok)location.replace(href);
     }else if(confirm("当前运单仍在处理中，离开将中断本次处理。确定离开吗？")){
-      location.href=href;
+      location.replace(href);
     }
   },true);
 

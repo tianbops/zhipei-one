@@ -64,8 +64,15 @@ test("迭代数写进哈希串：记录多少就按多少校验（未来调高�
 });
 
 test("单次哈希成本可控（Workers CPU 预算）", async () => {
+  // 决定 CPU 成本的是迭代数，不是墙钟。并行测试下用例互相抢 CPU，
+  // 原本 40ms 的墙钟断言会随机假红（实测单跑 4~11ms，满载可超 40ms）。
+  // 护栏改成「直接断言迭代数」——与环境负载无关，且正是要防的东西。
+  const out = await hashPassword("123456");
+  assert.equal(out.split("$")[1], "10000", "默认迭代数必须保持 10000");
+
+  // 再留一条宽松的墙钟断言，只拦「把迭代数配成几十万、Workers 直接超时」这类灾难。
   const t0 = performance.now();
   await hashPassword("123456");
   const ms = performance.now() - t0;
-  assert.ok(ms < 40, `单次哈希 ${ms.toFixed(1)}ms 应在 40ms 内（平台 CPU 预算约 10ms 量级，留余量给 Redis 往返）`);
+  assert.ok(ms < 200, `单次哈希 ${ms.toFixed(1)}ms 应在 200ms 内（迭代数护栏见上一条；此处只防灾难性配置）`);
 });
