@@ -682,6 +682,7 @@ async function testD1RoutingObserver() {
   eq(observer.regions["replica-region"], 1, "batch SELECT 记录副本区域");
   eq(observer.queries, 2, "只累计读结果，不累计写入");
 
+  adapter.routing = { served_by_primary: true, served_by_region: "test-region" };
   const factoryObserver = { queries: 0, primary: 0, replica: 0, unknown: 0, regions: {} };
   const factoryBackend = createD1Backend({ DB: adapter, __zpD1RoutingObserver: factoryObserver });
   await factoryBackend.command(["GET", "routing-key"]);
