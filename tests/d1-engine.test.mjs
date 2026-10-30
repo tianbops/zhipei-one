@@ -683,6 +683,26 @@ async function testD1RoutingObserver() {
   eq(observer.queries, 2, "只累计读结果，不累计写入");
 }
 
+
+async function testD1RoutingObserver() {
+  console.log("\n[D1 routing] 捕获主库/副本路由元数据");
+  const raw = new DatabaseSync(":memory:");
+  raw.exec("CREATE TABLE kv(key TEXT PRIMARY KEY, value TEXT NOT NULL, type TEXT NOT NULL, expires_at INTEGER)");
+  const adapter = new SqliteAdapter(raw);
+  const observer = { queries: 0, primary: 0, replica: 0, unknown: 0, regions: {} };
+  const backend = new D1Backend(adapter, { routingObserver: observer });
+  await backend.command(["SET", "routing-key", "value"]);
+  Object.assign(observer, { queries: 0, primary: 0, replica: 0, unknown: 0, regions: {} });
+  await backend.command(["GET", "routing-key"]);
+  eq(observer.primary, 1, "单条 SELECT 记录主库读取");
+  eq(observer.regions["test-region"], 1, "单条 SELECT 记录 served_by_region");
+  adapter.routing = { served_by_primary: false, served_by_region: "replica-region" };
+  await backend.pipeline([["GET", "routing-key"]]);
+  eq(observer.replica, 1, "batch SELECT 记录副本读取");
+  eq(observer.regions["replica-region"], 1, "batch SELECT 记录副本区域");
+  eq(observer.queries, 2, "只累计读结果，不累计写入");
+}
+
 async function testRequestScopedSessionEnv() {
   const sessions = [];
   const db = {
