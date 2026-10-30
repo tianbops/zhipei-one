@@ -127,7 +127,15 @@ const baseDir = pathToFileURL(__dirname + "/../functions/api/").href;
   // ============ 5. computeStats 真正纳入统一预算（大键空间优雅降级） ============
   console.log("【5】computeStats 统一预算：大键空间不 1101，优雅 truncated");
   const R1 = "R-budget-A", R2 = "R-budget-B";
-  const dates = ["2026-10-01", "2026-10-02", "2026-10-03"];
+  // 使用上海当前日期向前取 3 天，始终落在 days=30 窗口内。
+  // 固定写死 2026-10-01..03 会在 10 月 31 日后把首日排除，导致只扫描到 20/30 张。
+  const todayShanghai = new Date(Date.now() + 8 * 3600 * 1000);
+  const fmtDate = d => `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,"0")}-${String(d.getUTCDate()).padStart(2,"0")}`;
+  const dates = [0, 1, 2].map(offset => {
+    const d = new Date(todayShanghai);
+    d.setUTCDate(d.getUTCDate() - offset);
+    return fmtDate(d);
+  });
   function seedStats(route, n) {
     for (let i = 1; i <= n; i++) {
       const d = dates[i % dates.length];
