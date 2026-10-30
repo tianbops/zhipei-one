@@ -66,6 +66,12 @@ jobs:
       - name: 依赖安全审计
         run: npm audit --audit-level=high
 
+      # ESLint 只启用高信号正确性规则（重复键、不可达代码、常量误用等），
+      # 不包含风格规则或 no-unused-vars/no-undef 等经典脚本误报。
+      - if: steps.scope.outputs.docs_only != 'true'
+        name: JavaScript 正确性静态检查
+        run: npm run lint
+
       - if: steps.scope.outputs.docs_only != 'true'
         run: npm run test:node
       # D1 存储引擎离线测试（node:sqlite 充当 D1 形状适配器）：命令面 / 事务 / TTL /
