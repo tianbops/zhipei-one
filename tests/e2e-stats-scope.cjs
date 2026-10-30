@@ -193,10 +193,9 @@ const check = (name, ok, detail) => {
     // 不能用文本字形矩形是否垂直重叠判断 Flex 是否同排：baseline 对齐时，
     // 不同字号/字体的字形可有数像素垂直空隙，但仍属于同一条 Flex line。
     // 改用两个直接 Flex 子项的 border-box top/height 判断行位置。
-    const sumEl = document.querySelector('.trend-summary');
-    const hintEl = document.querySelector('#trendHint');
-    const sumBox = sumEl ? (() => { const r = sumEl.getBoundingClientRect(); return { t:r.top, b:r.bottom, h:r.height }; })() : null;
-    const hintBox = hintEl ? (() => { const r = hintEl.getBoundingClientRect(); return { t:r.top, b:r.bottom, h:r.height }; })() : null;
+    const flexBoxes = JSON.parse(await ev(`(()=>{const s=document.querySelector('.trend-summary');const h=document.querySelector('#trendHint');const a=s?.getBoundingClientRect();const b=h?.getBoundingClientRect();return JSON.stringify({sumBox:a?{t:a.top,b:a.bottom,h:a.height}:null,hintBox:b?{t:b.top,b:b.bottom,h:b.height}:null})})()`));
+    const sumBox = flexBoxes?.sumBox || null;
+    const hintBox = flexBoxes?.hintBox || null;
     const sameRow = !!sumBox && !!hintBox && Math.abs(sumBox.t - hintBox.t) <= Math.max(sumBox.h, hintBox.h) / 2;
     const gap = !!sum && !!hint ? Math.round(hint.l - sum.r) : null;
     return { hit, out, oneLine, sameRow, gap, sum, hint, sumBox, hintBox, card, statTops };
