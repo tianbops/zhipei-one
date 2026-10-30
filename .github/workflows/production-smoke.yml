@@ -5,10 +5,12 @@ on:
     branches: [main]
     paths:
       - "*.html"
+      - "pages/**"
       - "version.json"
       - "downloads/**"
       - "css/**"
       - "js/**"
+      - "sw.js"
       - "functions/**"
       - ".github/workflows/production-smoke.yml"
   schedule:
@@ -20,44 +22,88 @@ on:
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 6
     steps:
       - uses: actions/checkout@v7
-      - name: Check production homepage, version, assets and APK
+      - name: Check deployed pages, cache, assets and APK
         env:
           BASE_URL: https://tianyou-zhipei.pages.dev
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
         run: |
           node --input-type=module <<'NODE'
           import { readFile } from 'node:fs/promises';
           import { createHash } from 'node:crypto';
+
+          // A PR has not deployed to production. Keep its check side-effect-free;
+          // the push-to-main run performs the live verification after deployment.
+          if (process.env.GITHUB_EVENT_NAME === 'pull_request') {
+            console.log('SKIP live production smoke on pull_request; it runs after main deployment');
+            process.exit(0);
+          }
+
           const base = process.env.BASE_URL;
           const expectedVersion = JSON.parse(await readFile('version.json', 'utf8')).version;
-          const fail = (message) => { console.error(`FAIL: ${message}`); process.exitCode = 1; };
-          const fetchChecked = async (url) => {
+          const localHome = await readFile('home.html', 'utf8');
+          const localDispatch = await readFile('pages/dispatch.html', 'utf8');
+          const localSw = await readFile('sw.js', 'utf8');
+          const expectedHomeBundle = localHome.match(/(?:href|src)=["'](\/css\/home\.bundle\.css\?v=[^"']+)["']/i)?.[1];
+          const expectedBusinessCss = localDispatch.match(/(?:href|src)=["'](\/css\/business-pages\.css\?v=[^"']+)["']/i)?.[1];
+          const expectedCacheVersion = localSw.match(/const VERSION\s*=\s*["']([^"']+)["']/)?.[1];
+          if (!expectedHomeBundle || !expectedBusinessCss || !expectedCacheVersion) {
+            throw new Error('Local release is missing the expected home bundle, business stylesheet, or Service Worker version');
+          }
+
+          const fail = message => { console.error(`FAIL: ${message}`); process.exitCode = 1; };
+          const fetchChecked = async url => {
             const response = await fetch(url, { redirect: 'follow', signal: AbortSignal.timeout(15000) });
             if (!response.ok) throw new Error(`HTTP ${response.status} for ${url}`);
             return response;
           };
+          const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
           try {
-            let versionData, manifest;
+            let versionData, manifest, rootHtml, homeHtml, dispatchHtml, swText;
             let lastError;
-            for (let attempt = 1; attempt <= 18; attempt++) {
+            // Cloudflare Pages deploys asynchronously after GitHub accepts the push.
+            // Wait for the actual content fingerprint, not just an unchanged version.json.
+            for (let attempt = 1; attempt <= 30; attempt++) {
               try {
-                const [versionResponse, manifestResponse] = await Promise.all([
+                const [versionResponse, manifestResponse, rootResponse, homeResponse, dispatchResponse, swResponse] = await Promise.all([
                   fetchChecked(new URL('/version.json?smoke=' + Date.now(), base)),
-                  fetchChecked(new URL('/downloads/manifest.json?smoke=' + Date.now(), base))
+                  fetchChecked(new URL('/downloads/manifest.json?smoke=' + Date.now(), base)),
+                  fetchChecked(new URL('/?smoke=' + Date.now(), base)),
+                  fetchChecked(new URL('/home.html?smoke=' + Date.now(), base)),
+                  fetchChecked(new URL('/pages/dispatch.html?smoke=' + Date.now(), base)),
+                  fetchChecked(new URL('/sw.js?smoke=' + Date.now(), base))
                 ]);
                 versionData = await versionResponse.json();
                 manifest = await manifestResponse.json();
-                if (versionData.version === expectedVersion && manifest.version === expectedVersion) break;
-                lastError = new Error(`Production version mismatch; expected ${expectedVersion}, got version.json=${versionData.version}, manifest=${manifest.version}`);
-              } catch (error) { lastError = error; }
-              if (attempt === 18) throw lastError || new Error('Production version check timed out');
-              await new Promise(resolve => setTimeout(resolve, 5000));
+                rootHtml = await rootResponse.text();
+                homeHtml = await homeResponse.text();
+                dispatchHtml = await dispatchResponse.text();
+                swText = await swResponse.text();
+
+                if (versionData.version !== expectedVersion || manifest.version !== expectedVersion) {
+                  throw new Error(`Production version mismatch; expected ${expectedVersion}, got version.json=${versionData.version}, manifest=${manifest.version}`);
+                }
+                if (!homeHtml.includes(expectedHomeBundle)) {
+                  throw new Error(`Production home page has not switched to ${expectedHomeBundle}`);
+                }
+                if (!dispatchHtml.includes(expectedBusinessCss)) {
+                  throw new Error(`Production dispatch page has not switched to ${expectedBusinessCss}`);
+                }
+                if (!swText.includes(expectedCacheVersion) || !swText.includes(expectedHomeBundle) || !swText.includes(expectedBusinessCss)) {
+                  throw new Error(`Production Service Worker has not switched to ${expectedCacheVersion} and current CSS precache entries`);
+                }
+                break;
+              } catch (error) {
+                lastError = error;
+                if (attempt === 30) throw lastError;
+                console.log(`Waiting for Cloudflare Pages deployment (${attempt}/30): ${error.message}`);
+                await delay(5000);
+              }
             }
-            if (versionData.version !== expectedVersion || manifest.version !== expectedVersion) {
-              throw new Error(`Production version mismatch; expected ${expectedVersion}, got version.json=${versionData.version}, manifest=${manifest.version}`);
-            }
+
             if (!manifest.file || !Number.isSafeInteger(manifest.size) || manifest.size <= 0) {
               throw new Error('Download manifest is missing a valid APK filename or size');
             }
@@ -79,21 +125,30 @@ jobs:
             }
             console.log('OK unauthenticated admin API denied (HTTP 403)');
 
-            const pageResponse = await fetchChecked(new URL('/', base));
-            if (new URL(pageResponse.url).protocol !== 'https:') throw new Error('Homepage did not remain on HTTPS');
-            const html = await pageResponse.text();
-            if (!/<title>[^<]*智配One/i.test(html)) throw new Error('Expected 智配One page title was not found');
-            if (!/name=["']viewport["']/i.test(html)) throw new Error('Mobile viewport meta tag was not found');
-            const refs = [...html.matchAll(/(?:href|src)=["'](\/[^"'#?]+(?:\?[^"']*)?)["']/gi)]
-              .map(match => match[1])
-              .filter(path => /\.(?:css|js)$/.test(path.split('?')[0]))
-              .filter((path, index, all) => all.indexOf(path) === index)
-              .slice(0, 8);
-            if (refs.length === 0) throw new Error('No local CSS/JS assets were found in homepage HTML');
+            const pages = [
+              { path: '/', html: rootHtml },
+              { path: '/home.html', html: homeHtml },
+              { path: '/pages/dispatch.html', html: dispatchHtml }
+            ];
+            for (const page of pages) {
+              if (!/<title>[^<]*智配One/i.test(page.html)) {
+                throw new Error(`Expected 智配One page title was not found in ${page.path}`);
+              }
+              if (!/name=["']viewport["']/i.test(page.html)) {
+                throw new Error(`Mobile viewport meta tag was not found in ${page.path}`);
+              }
+            }
+            const refs = [...new Set(pages.flatMap(page =>
+              [...page.html.matchAll(/(?:href|src)=["'](\/[^"'#?]+(?:\?[^"']*)?)["']/gi)]
+                .map(match => match[1])
+                .filter(path => /\.(?:css|js)$/.test(path.split('?')[0]))
+            ))];
+            if (refs.length === 0) throw new Error('No local CSS/JS assets were found in production pages');
             for (const path of refs) {
               const response = await fetchChecked(new URL(path, base));
               console.log(`OK ${response.status} ${path}`);
             }
+
             const apkResponse = await fetchChecked(new URL('/downloads/' + encodeURIComponent(manifest.file), base));
             const apkBytes = await apkResponse.arrayBuffer();
             if (apkBytes.byteLength !== manifest.size) {
@@ -108,7 +163,7 @@ jobs:
             if (productionHash !== releaseHash) {
               throw new Error(`APK SHA-256 mismatch: production=${productionHash}, Android release=${releaseHash}`);
             }
-            console.log(`OK production version ${expectedVersion}; homepage ${pageResponse.status}; ${refs.length} local CSS/JS assets; APK size=${apkBytes.byteLength}; SHA-256 matches Android release (${productionHash})`);
+            console.log(`OK production version ${expectedVersion}; ${refs.length} CSS/JS assets across 3 pages; Service Worker ${expectedCacheVersion}; APK size=${apkBytes.byteLength}; SHA-256 matches Android release (${productionHash})`);
           } catch (error) {
             fail(error instanceof Error ? error.message : String(error));
           }
