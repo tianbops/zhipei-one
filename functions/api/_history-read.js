@@ -91,7 +91,7 @@ export async function readDateWaybillsBatch(env,user,entries,budget=null){
 // 受共享 budget 约束，超限即抛 → 调用方转结构化 503「请缩小范围」；meta 一回填，后续请求即走快路。
 // 严格 owner 模式（WAYBILL_STRICT_OWNER=1）不信 meta（全线路口径，含他人运单），逐日按 createdBy
 // 过滤读体，保证与单日详情口径一致，且绝不回写 meta（避免污染后续非严格读取）。
-export async function readDayAggregates(env,{user,routeId,entries,budget=null}){
+export async function readDayAggregates(env,{user,routeId,entries,budget=null,routingObserver=null}){
  const strictOwner=String(env?.WAYBILL_STRICT_OWNER||"")==="1";
  // 1) 索引 SMEMBERS（取每日运单 id，廉价）与 2) 每日汇总 meta（MGET）**互不依赖**：
  //    meta key 直接由 entries 派生，无需等 SMEMBERS 结果。故两段并发执行，
@@ -101,8 +101,8 @@ export async function readDayAggregates(env,{user,routeId,entries,budget=null}){
  const metaByDate=new Map();
  // 两条独立读取流各自持有 Session，避免并发共享同一个 D1 Session；
  // 每条流内部仍按序执行，首读从主库开始，后续读由 D1 保证顺序一致性。
- const idsEnv=createD1SessionEnv(env);
- const metaEnv=createD1SessionEnv(env);
+ const idsEnv=createD1SessionEnv(env,"first-primary",routingObserver);
+ const metaEnv=createD1SessionEnv(env,"first-primary",routingObserver);
  const loadIds=async()=>{
   for(let i=0;i<entries.length;i+=500){
    if(budget&&!budget.take(1))throwBudgetExceeded(budget.max,"history-read-dates-ids");
