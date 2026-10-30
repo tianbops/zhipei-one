@@ -13,7 +13,7 @@
  *
  * 断言分两层：源码红线（结构不能被改回去）+ vm 行为求值（真的调了该调的东西）。
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { createContext, runInContext } from "node:vm";
@@ -38,8 +38,43 @@ t("原生通道探测 ZhipeiNative.haptic", /window\.ZhipeiNative/.test(SRC) && 
 t("浏览器兜底走 navigator.vibrate", /navigator\.vibrate/.test(SRC));
 t("click 监听绑在 capture 阶段（业务 stopPropagation 吞不掉）",
   /document\.addEventListener\(\s*"click"[\s\S]{0,400}?\}\s*,\s*true\s*\)/.test(SRC));
-t("触发选择器覆盖底栏 .zp-nav a 与管理端 .admin-nav a",
-  /\.zp-nav a/.test(SRC) && /\.admin-nav a/.test(SRC) && /\[data-zp-haptic\]/.test(SRC));
+
+/* 选择器必须同时覆盖 <a> 和 <button>。
+ * 2026-10-30 线上回归：第一版只写 `.zp-nav a`，而首页中央加号是
+ * <button id="uploadAction">、管理端整条底栏都是 <button class="nav-item">——
+ * 表现为「在别的页点加号有触感，跳到首页后同一个加号再点就没感觉」。
+ * 只写 a 的版本不会报错，只会让一半底栏静默失效。 */
+const SEL = (SRC.match(/const SEL="([^"]+)"/) || [, ""])[1];
+t("选择器含 .zp-nav a", SEL.includes(".zp-nav a"), SEL);
+t("选择器含 .zp-nav button（首页加号）", SEL.includes(".zp-nav button"), SEL);
+t("选择器含 .admin-nav a", SEL.includes(".admin-nav a"), SEL);
+t("选择器含 .admin-nav button（管理端底栏）", SEL.includes(".admin-nav button"), SEL);
+t("选择器含 [data-zp-haptic] 扩展钩子", SEL.includes("[data-zp-haptic]"), SEL);
+
+/* 结构一致性：拿真实页面里的底栏项标签去对选择器。
+ * 以后谁把底栏项换成别的标签（如 <div role="tab">），这里会立刻红——
+ * 光靠夹具页测不出这种漂移，因为夹具是手写的（上一版就是这么漏的）。 */
+const NAV_PAGES = ["home.html", "admin.html"]
+  .concat(readdirSync(join(ROOT, "pages")).filter((f) => f.endsWith(".html")).map((f) => "pages/" + f));
+let navScanned = 0;
+for (const p of NAV_PAGES) {
+  const s = read(p);
+  if (/<a[^>]*class="zp-nav-item/.test(s)) {
+    navScanned++;
+    t(`${p}：底栏 <a> 被选择器覆盖`, SEL.includes(".zp-nav a"));
+  }
+  if (/<button[^>]*class="zp-nav-item/.test(s)) {
+    navScanned++;
+    t(`${p}：底栏 <button>（加号）被选择器覆盖`, SEL.includes(".zp-nav button"));
+  }
+  if (/<button[^>]*class="nav-item/.test(s)) {
+    navScanned++;
+    t(`${p}：管理端 <button> 被选择器覆盖`, SEL.includes(".admin-nav button"));
+  }
+}
+t("至少扫到 6 个页面的底栏项（防止页面改名/结构漂移后测试空跑）", navScanned >= 6, "命中 " + navScanned);
+t("nav.js 注入的底栏项是 <a>，已被选择器覆盖",
+  read("js/ui/nav.js").includes("'<a class=\"'+cls+'\"") && SEL.includes(".zp-nav a"));
 
 /* ===== 二、vm 行为求值 =====
  * 造一个最小运行环境：只有 document.addEventListener 与可拨动的 performance.now，

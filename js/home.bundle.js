@@ -1614,9 +1614,16 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
          只有「确实点在按钮上并抬起」才算一次操作——这也是系统控件的口径。
        - click 在现代浏览器没有 300ms 延迟，按下反馈由按钮自身的 :active 负责，
          触感补的是「这一下生效了」的确认感，时机正好。
-     绑在 capture 阶段：业务 handler 里的 stopPropagation/preventDefault 都吞不掉它
-     （底栏「处理中离开」守卫就是先 stopPropagation 再弹确认框的）。 */
-  const SEL=".zp-nav a,.admin-nav a,[data-zp-haptic]";
+  /* 绑在 capture 阶段：业务 handler 里的 stopPropagation/preventDefault 都吞不掉它
+     （底栏「处理中离开」守卫就是先 stopPropagation 再弹确认框的）。
+
+     ⚠ 选择器必须同时覆盖 <a> 和 <button>（2026-10-30 线上回归）：
+     底栏项**不是同一种元素**。首页中央加号是 <button id="uploadAction">（点了就地开
+     上传面板，不跳转），其他页的加号是 <a href="/home?openUpload=1">；管理端整条
+     底栏全是 <button class="nav-item">。第一版只写了 `.zp-nav a`，于是
+     「在别的页点加号有触感 → 跳到首页后，同一个加号变成按钮 → 再点就没感觉了」。
+     只写 a 的版本会让一半底栏静默失效，且没有任何报错。 */
+  const SEL=".zp-nav a,.zp-nav button,.admin-nav a,.admin-nav button,[data-zp-haptic]";
   document.addEventListener("click",e=>{
     const t=e.target;
     const el=t&&typeof t.closest==="function"?t.closest(SEL):null;
