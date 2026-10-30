@@ -256,6 +256,29 @@
     return zpBackButton();
   };
 
+  /* ===== 站内导航一律 replace（2026-10-30） =====
+     多页架构下每个 <a href> 都会 push 一条历史。收口模型要求「任何页面返回都回首页」，
+     但历史里仍压着历史页、详情页……于是首页按返回出现「首页 → 详情 → 历史 → 首页」
+     的反复横跳，用户连按多次才退得出去，方向完全不可预期。
+     单根模型下历史栈没有意义：站内跳转统一 replace，栈里只留当前页一条正式记录
+     （外加本控制器压的占位），返回方向恒为「往桌面走」，绝不回内页。
+     判定：同源 + 以 / 开头 + 无 target/download/修饰键；外链、下载、mailto/tel、
+     纯锚点一律放行。用冒泡阶段并检查 defaultPrevented，不抢业务自己处理的点击
+     （如处理中的离开确认、选中 tab 滚回顶部）。 */
+  document.addEventListener("click",function(e){
+    if(e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;
+    const a=e.target&&e.target.closest?e.target.closest("a[href]"):null;
+    if(!a||(a.target&&a.target!=="_self")||a.hasAttribute("download"))return;
+    const raw=a.getAttribute("href")||"";
+    if(!raw||raw.charAt(0)==="#"||/^(mailto:|tel:|javascript:)/i.test(raw))return;
+    let url;try{url=new URL(raw,a.baseURI)}catch{return}
+    if(url.origin!==location.origin)return;
+    e.preventDefault();
+    // 同页链接（当前 tab、页内跳转）：不重复导航，否则又会压一条同样的历史
+    if(url.pathname===location.pathname&&url.search===location.search)return;
+    location.replace(url.href);
+  },false);
+
   function zpBindPageBack(){
     document.querySelectorAll(".app-back,#backBtn").forEach(el=>{
       if(el.dataset.zpBackBound==="1")return;
