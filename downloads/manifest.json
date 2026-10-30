@@ -1,7 +1,7 @@
 {
-  "version": "1.0.20",
-  "file": "zhipei-one-1.0.20-release.apk",
-  "size": 3849806,
+  "version": "1.0.21",
+  "file": "zhipei-one-1.0.21-release.apk",
+  "size": 3850746,
   "updated": "2026-10-30",
   "note": "文件名必须带版本号：固定名会让手机把上次下载的旧包当成本次结果（同名文件），装上去还是旧版本"
 }
