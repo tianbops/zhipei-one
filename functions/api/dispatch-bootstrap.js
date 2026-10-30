@@ -16,14 +16,15 @@ async function bootstrapGet({request,env}){
  const user=await currentUser(request,env);
  if(!user)return json({success:false,error:"未登录"},401);
  if(!canUseRoute(user))return json({success:false,error:"管理员不参与业务调度"},403);
- let routesResult;
- try{
-  routesResult=await readRoutes(env,user);
- }catch(e){
+ // 线路列表读取与当前调度线路解析互不依赖：并行执行，减少串行存储往返。
+ const routesTask=readRoutes(env,user).then(value=>({value}),error=>({error}));
+ const [routesOutcome,dispatchRoute]=await Promise.all([routesTask,resolveDispatchRoute(env,user)]);
+ if(routesOutcome.error){
+  const e=routesOutcome.error;
   if(e&&(e.code==="ROUTES_INDEX_INVALID"||e.code==="ROUTE_DATA_INVALID"))return json({success:false,code:e.code,error:e.message||"线路数据异常，请联系管理员处理"},409);
   throw e;
  }
- const dispatchRoute=await resolveDispatchRoute(env,user);
+ const routesResult=routesOutcome.value;
  return json({success:true,dispatchRoute,routes:routesResult.routes});
 }
 export const onRequestGet=guard(bootstrapGet,"DISPATCH_BOOTSTRAP_FAILED");
