@@ -71,7 +71,7 @@ export async function readDateWaybillsBatch(env,user,entries,budget=null){
  for(let i=0;i<valid.length;i+=50){
   const chunk=valid.slice(i,i+50);
   if(budget&&!budget.take(1))throwBudgetExceeded(budget.max,"history-read-dates-batch");
-  const results=await pipeline(idsEnv,chunk.map(x=>["SMEMBERS",waybillIndexKey(x.routeId,x.date)]));
+  const results=await pipeline(env,chunk.map(x=>["SMEMBERS",waybillIndexKey(x.routeId,x.date)]));
   const allIds=[];const idsByDate=new Map();
   for(let j=0;j<chunk.length;j++){const ids=Array.isArray(results?.[j])?results[j].map(clean).filter(Boolean):[];idsByDate.set(chunk[j].date,ids);allIds.push(...ids)}
   const waybills=await readWaybills(env,allIds,budget);
