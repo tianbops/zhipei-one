@@ -1,7 +1,7 @@
 import {guard} from "./_safe.js";
 import {json} from "./_json.js";
 import {currentUser} from "./_auth.js";
-import {get,command,pipeline} from "./_redis.js";
+import {get,command,pipeline,createD1SessionEnv} from "./_redis.js";
 import {canUseRoute} from "./_permissions.js";
 import {canReadWaybill,canWriteWaybill} from "./_waybill-acl.js";
 import {getRoute} from "./_route.js";
@@ -42,25 +42,30 @@ async function historyGet({request,env}){
   if(date){
    if(!validDate(date))return respond({success:false,code:"DATE_INVALID",error:"日期无效"},400);
    if(!inRange(date,range))return respond({success:false,code:"DATE_OUT_OF_RANGE",error:"日期不在历史查询范围内"},400);
+   // 日期详情分支的 D1 读取按顺序执行，可安全使用请求级 Session；
+   // 不复用共享 env 上可能存在的 D1Backend 缓存。
+   const historyEnv=createD1SessionEnv(env);
    const budget=new Budget();
    let waybills;phaseStart=performance.now();
-   try{waybills=await readDateWaybills(env,user,routeId,date,budget);mark("history-detail-read",phaseStart)}catch(e){
+   try{waybills=await readDateWaybills(historyEnv,user,routeId,date,budget);mark("history-detail-read",phaseStart)}catch(e){
     if(e?.code===SUBREQUEST_BUDGET_EXCEEDED)return respond({success:false,code:"PARTIAL_FAILURE",error:"该日期运单查询资源不足，请稍后重试",date,budgetUsed:budget.used,budgetMax:budget.max},503);
     if(e?.code==="WAYBILL_HISTORY_INDEX_READ_FAILED")return respond({success:false,code:"WAYBILL_HISTORY_INDEX_READ_FAILED",error:"历史运单索引读取失败，请稍后重试",date},503);
     if(e?.code==="WAYBILL_HISTORY_STALE_INDEX")return respond({success:false,code:"WAYBILL_HISTORY_STALE_INDEX",error:"历史运单索引与运单数据不一致，请稍后重试",date,missingCount:e.missingCount},503);
     throw e;
    }
-   phaseStart=performance.now();const enrich=await enrichFactory(env,routeId);mark("history-route",phaseStart);
+   phaseStart=performance.now();const enrich=await enrichFactory(historyEnv,routeId);mark("history-route",phaseStart);
    phaseStart=performance.now();const enriched=[];for(const w of waybills)enriched.push(await enrich(w));mark("history-detail-enrich",phaseStart);
    return respond({success:true,routeId,date,waybills:enriched,count:enriched.length,waybillIds:enriched.map(w=>w.id),hasMultiple:enriched.length>1});
   }
   if(searchQuery){
    if(searchQuery.length>80)return respond({success:false,code:"SEARCH_QUERY_TOO_LONG",error:"搜索内容最多 80 个字符"},400);
+   // 搜索分支的索引扫描与分批读取为串行链路，可安全共享请求级 D1 Session。
+   const historyEnv=createD1SessionEnv(env);
    const budget=new Budget();
    let entries,batch;
    try{
-    phaseStart=performance.now();entries=await readDates(env,routeId,range,budget);mark("history-search-index",phaseStart);
-    phaseStart=performance.now();batch=await readDateWaybillsBatch(env,user,entries,budget);mark("history-search-read",phaseStart);
+    phaseStart=performance.now();entries=await readDates(historyEnv,routeId,range,budget);mark("history-search-index",phaseStart);
+    phaseStart=performance.now();batch=await readDateWaybillsBatch(historyEnv,user,entries,budget);mark("history-search-read",phaseStart);
    }catch(e){
     if(e?.code===SUBREQUEST_BUDGET_EXCEEDED)return respond({success:false,code:"PARTIAL_FAILURE",error:"当前历史范围较大，请缩小月份范围后重试",range,budgetUsed:budget.used,budgetMax:budget.max},503);
     throw e;

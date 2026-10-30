@@ -18,6 +18,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 import { D1Backend } from "../functions/api/_db.js";
+import { createD1SessionEnv } from "../functions/api/_redis.js";
 import { lookupEval, HANDLERS } from "../functions/api/_redis-eval.js";
 import { normalizeLua } from "../functions/api/_redis-norm.js";
 
@@ -658,6 +659,38 @@ async function testAuthReadFastPath() {
   eq(pipeline[2], [pendingSession, pendingUser], "pipeline 内 overlay session/user 仍可被 AUTH_READ 读取");
 }
 
+
+async function testRequestScopedSessionEnv() {
+  const sessions = [];
+  const db = {
+    withSession(constraint) {
+      const session = { constraint, id: sessions.length + 1 };
+      sessions.push(session);
+      return session;
+    },
+  };
+  const cachedBackend = { shared: true };
+  const original = { DB: db, __zpD1: cachedBackend, API_TOKEN: "kept" };
+  const scoped = createD1SessionEnv(original);
+  ok(scoped !== original, "D1 Session 使用独立 env，不修改共享 env");
+  eq(scoped.DB, sessions[0], "独立 env 使用本次请求创建的 D1 Session");
+  eq(scoped.DB.constraint, "first-primary", "默认从主库启动 Session");
+  eq(scoped.__zpD1, undefined, "不复用原 env 上的 D1Backend 缓存");
+  eq(scoped.API_TOKEN, "kept", "复制其余环境绑定");
+  eq(original.DB, db, "原始 D1 binding 保持不变");
+  eq(original.__zpD1, cachedBackend, "原始 D1Backend 缓存保持不变");
+
+  const historySource = readFileSync(path.join(API, "history.js"), "utf8");
+  ok(historySource.includes("readDateWaybills(historyEnv,user,routeId,date,budget)"), "日期详情读取使用请求级 Session env");
+  ok(historySource.includes("readDates(historyEnv,routeId,range,budget)"), "历史搜索索引读取使用请求级 Session env");
+  ok(!historySource.includes("readDayAggregates(historyEnv"), "并发历史概览读取不接入 Session，避免未经验证的并发会话顺序");
+  const second = createD1SessionEnv(original);
+  ok(second.DB !== scoped.DB && sessions.length === 2, "不同请求获得独立 Session");
+  const fallback = { DB: { prepare() {} }, __zpD1: null };
+  eq(createD1SessionEnv(fallback), fallback, "不支持 withSession 的环境原样回退");
+  eq(createD1SessionEnv(null), null, "无环境时安全回退");
+}
+
 // ============ 主流程 ============
 (async () => {
   console.log("=== D1 引擎离线测试 ===");
@@ -674,6 +707,7 @@ async function testAuthReadFastPath() {
   await testRenameTypePing();
   await testExtraBranches();
   await testAuthReadFastPath();
+  await testRequestScopedSessionEnv();
   await testD1Limits();
 
   console.log(`\n=== 结果：通过 ${pass} 项，失败 ${fail} 项 ===`);
