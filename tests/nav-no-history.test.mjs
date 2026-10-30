@@ -84,10 +84,10 @@ console.log("\n四、占位只在工作区根（2 条）");
   t("子页面不无条件压占位", !/if\(!\(history\.state&&history\.state\.zpGuard\)\)zpPushGuard\(\);/.test(src));
 }
 
-console.log("\n五、退出路径仍是「越过首条记录」（2 条）");
+console.log("\n五、工作区根退出路径（3 条）");
 {
   t("zpDoExit 用 history.back 越界", /function zpDoExit\(\)\{[\s\S]{0,400}?history\.back\(\)/.test(src));
-  t("根页两次返回才退桌面（有武装窗口）", /zpExitArmed=true/.test(src) && /if\(zpExitArmed\)return "exit"/.test(src));
+  t("业务根页仍保留两次返回退出分支", /zpExitArmed=true/.test(src) && /if\(zpExitArmed\)\{[\s\S]{0,900}return "exit"/.test(src));
 }
 
 console.log(`\n${failures.length === 0 ? "✅" : "❌"} 通过 ${pass} 项，失败 ${failures.length} 项`);
