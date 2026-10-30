@@ -17,7 +17,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
-import { D1Backend } from "../functions/api/_db.js";
+import { D1Backend, createD1Backend } from "../functions/api/_db.js";
 import { createD1SessionEnv } from "../functions/api/_redis.js";
 import { lookupEval, HANDLERS } from "../functions/api/_redis-eval.js";
 import { normalizeLua } from "../functions/api/_redis-norm.js";
@@ -681,6 +681,13 @@ async function testD1RoutingObserver() {
   eq(observer.replica, 1, "batch SELECT 记录副本读取");
   eq(observer.regions["replica-region"], 1, "batch SELECT 记录副本区域");
   eq(observer.queries, 2, "只累计读结果，不累计写入");
+
+  adapter.routing = { served_by_primary: true, served_by_region: "test-region" };
+  const factoryObserver = { queries: 0, primary: 0, replica: 0, unknown: 0, regions: {} };
+  const factoryBackend = createD1Backend({ DB: adapter, __zpD1RoutingObserver: factoryObserver });
+  await factoryBackend.command(["GET", "routing-key"]);
+  eq(factoryObserver.primary, 1, "D1 后端工厂传递请求级主库观测对象");
+  eq(factoryObserver.regions["test-region"], 1, "D1 后端工厂传递区域观测对象");
 }
 
 
