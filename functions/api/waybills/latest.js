@@ -104,7 +104,10 @@ async function latestGet({request,env}){
  // 最后用 id 做稳定并列排序，避免 Redis Set 无序导致同时间戳下结果随机。
  const timeOf=w=>String(w?.uploadedAt||w?.createdAt||"");
  list.sort((a,b)=>{const ta=timeOf(a),tb=timeOf(b);const t=ta.localeCompare(tb);return t||String(a?.id||"").localeCompare(String(b?.id||""))});
- const waybill=list[list.length-1]||null;
- return json({success:true,waybill:await withRouteData(waybill)});
+const waybill=list[list.length-1]||null;
+// dayCount：当日该线路的有效运单数。首页今日卡要显示「X单 X家 Xt」，
+// 单量不能由前端假定为 1——同一天上午/下午各上传一次就是 2 单。
+// 这里 list 已经过滤掉无效/无权/跨线路/跨日期的条目，长度即口径。
+return json({success:true,waybill:await withRouteData(waybill),dayCount:list.length});
 }
 export const onRequestGet=guard(latestGet,"WAYBILL_LATEST_READ_FAILED");

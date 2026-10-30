@@ -9,7 +9,7 @@
   const titleEl=$("trendTitle"),yearBtn=$("trendYearBtn"),monthRow=$("trendMonthRow");
   const prev=$("trendPrev"),next=$("trendNext"),monthEl=$("trendMonth");
   const metricWrap=$("trendMetric"),metricWeightBtn=$("metricWeight"),metricCountBtn=$("metricCount");
-  const waybillsEl=$("trendWaybills"),weightEl=$("trendWeight");
+  const waybillsEl=$("trendWaybills"),storesEl=$("trendStores"),weightEl=$("trendWeight");
   const wbDelta=$("trendWaybillsDelta"),wtDelta=$("trendWeightDelta");
   const wrap=$("trendChartWrap"),chart=$("trendChart");
   const grid=$("trendGrid"),area=$("trendArea"),line=$("trendLine"),points=$("trendPoints");
@@ -62,12 +62,13 @@
     const days=daysInMonth(ym),byDate=new Map(daily.map(x=>[x.date,x])),out=[];
     for(let d=1;d<=days;d++){
       const date=ym+"-"+String(d).padStart(2,"0"),item=byDate.get(date);
-      out.push({date,day:d,count:Number(item?.count)||0,weight:Number(item?.totalWeight)||0});
+      out.push({date,day:d,count:Number(item?.count)||0,stores:Number(item?.storeCount)||0,weight:Number(item?.totalWeight)||0});
     }
     return out;
   }
 
   function animateNumber(el,to,fmt){
+    if(!el)return;                 // HTML 与 JS 版本错位（旧页面 + 新脚本）时不让整卡挂掉
     const from=Number(el.dataset.v||0);
     el.dataset.v=String(to);
     if(prefersReduced){el.textContent=fmt(to);return;}
@@ -93,6 +94,7 @@
   function renderMonth(){
     const data=buildMonthData(currentMonth);
     const total=data.reduce((s,x)=>s+x.count,0);
+    const stores=data.reduce((s,x)=>s+x.stores,0);
     const weight=data.reduce((s,x)=>s+x.weight,0);
     const valOf=x=>metric==="weight"?x.weight:x.count;
     const safeMax=metric==="weight"?0.01:1;            // 重量为 0 时兜底，避免除零、保证基线可见
@@ -120,14 +122,14 @@
       c.setAttribute("r",isPeak?4.5:2.6);
       c.setAttribute("class","trend-point"+(isPeak?" is-peak":""));
       c.setAttribute("tabindex","0");
-      c.setAttribute("aria-label",x.date+" "+x.count+"单 · "+x.weight.toFixed(2)+"t");
-      c.addEventListener("click",()=>{hint.innerHTML=esc(x.date)+" · "+x.count+"单 · "+x.weight.toFixed(2)+"t";});
+      c.setAttribute("aria-label",x.date+" "+x.count+"单 · "+x.weight.toFixed(3)+"t");
+      c.addEventListener("click",()=>{hint.innerHTML=esc(x.date)+" · "+x.count+"单 · "+x.weight.toFixed(3)+"t";});
       points.appendChild(c);
     });
     if(total){
       const peak=data[peakIdx];
       hint.innerHTML=metric==="weight"
-        ? "峰值 "+peak.day+"日 · "+peak.weight.toFixed(2)+"t"
+        ? "峰值 "+peak.day+"日 · "+peak.weight.toFixed(3)+"t"
         : "峰值 "+peak.day+"日 · "+peak.count+"单";
     }else{
       hint.innerHTML="本月暂无配送记录";
@@ -140,7 +142,8 @@
     });
     // 汇总 + 同比（对比去年同月，比环比更能剥离季节性、看出真实增减）
     animateNumber(waybillsEl,total,v=>String(Math.round(v)));
-    animateNumber(weightEl,weight,v=>v.toFixed(2));
+    animateNumber(storesEl,stores,v=>String(Math.round(v)));
+    animateNumber(weightEl,weight,v=>v.toFixed(3));
     const lyKey=sameMonthLastYearKey(currentMonth);
     const ly=lyKey?byMonth.get(lyKey):null;
     setDelta(wbDelta,total,ly?Number(ly.waybills)||0:null);
@@ -169,6 +172,7 @@
     const vals=months.map(mk=>{const x=byMonth.get(mk);if(!x)return 0;return isW?(Number(x.totalWeight)||0):(Number(x.waybills)||0);});
     const total=months.reduce((s,mk)=>{const x=byMonth.get(mk);return s+(x?Number(x.waybills)||0:0);},0);
     const weight=months.reduce((s,mk)=>{const x=byMonth.get(mk);return s+(x?Number(x.totalWeight)||0:0);},0);
+    const stores=months.reduce((s,mk)=>{const x=byMonth.get(mk);return s+(x?Number(x.totalStores)||0:0);},0);
     const safeMax=isW?0.01:1;
     const max=Math.max(safeMax,...vals);
     // 12 月活动柱（工业风：细柱 + 峰值略亮）
@@ -178,7 +182,7 @@
     vals.forEach((v,i)=>{
       const x=left+slot*i+slot/2,hh=(v<=0?0.04:v/max)*(h-top-bottom),yy=h-bottom-hh;
       const isPeak=v===max&&v>0;
-      const fmtV=v=>isW?v.toFixed(2)+"t":v+"单";
+      const fmtV=v=>isW?v.toFixed(3)+"t":v+"单";
       bars+='<rect x="'+(x-barW/2).toFixed(1)+'" y="'+yy.toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+hh.toFixed(1)
         +'" rx="1.5" class="trend-year-bar'+(isPeak?" is-peak":"")+'"><title>'+label(months[i])+" · "+fmtV(v)+"</title></rect>";
     });
@@ -191,13 +195,14 @@
     [1,4,7,10,12].forEach(m=>{const s=document.createElement("span");s.textContent=m+"月";axis.appendChild(s);});
     // 汇总（无环比）
     animateNumber(waybillsEl,total,v=>String(Math.round(v)));
-    animateNumber(weightEl,weight,v=>v.toFixed(2));
+    animateNumber(storesEl,stores,v=>String(Math.round(v)));
+    animateNumber(weightEl,weight,v=>v.toFixed(3));
     wbDelta.textContent="";wtDelta.textContent="";
     // 峰值信息（随指标切换）：年度峰值月（重量口径显示 t）
     let peakMi=0;vals.forEach((v,i)=>{if(v>vals[peakMi])peakMi=i;});
     let busiest=null;
     for(const it of daily){if(!String(it.date).startsWith(yk))continue;if(!busiest||(Number(it.count)||0)>busiest.count)busiest={date:it.date,count:Number(it.count)||0};}
-    const fmtV=v=>isW?v.toFixed(2)+"t":Math.round(v)+"单";
+    const fmtV=v=>isW?v.toFixed(3)+"t":Math.round(v)+"单";
     const peakMonth=vals[peakMi]>safeMax?(peakMi+1)+"月":"—";
     let busiestTxt="";
     if(!isW&&busiest&&busiest.count>0){

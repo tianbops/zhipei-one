@@ -42,6 +42,9 @@ async function loadHome(){
 
     const todayKey=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
     let w=null;
+    // 当日该线路的运单数（"X单 X家 Xt" 里的 X）。一个运单覆盖一天一条线路，
+    // 但当天可能上午/下午各上传一次，所以它不恒等于 1，必须按数据来。
+    let dayOrders=0;
     // 比对键：默认用 effectiveRouteId，但一旦拿到服务端回显的 routeId 就以它为准。
     // 背景：data.dispatchRoute.id 来自 route:<id> 存储体内部的 id 字段，若与
     // Redis 键 id（即会话 dispatchRouteId、运单 routeId）发生数据漂移，前端用
@@ -60,6 +63,7 @@ async function loadHome(){
           const {res:lr,data:ld}=latest;
           if(lr.ok&&ld.success&&ld.waybill&&ld.waybill.routeId===cmpRouteId&&ld.waybill.date===todayKey){
             w=ld.waybill;
+            dayOrders=Number(ld.dayCount)||0;
           }
         }
       }catch{}
@@ -76,6 +80,7 @@ async function loadHome(){
           const usable=list.filter(x=>x&&x.routeId===cmpRouteId&&x.date===todayKey);
           usable.sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
           w=usable[usable.length-1]||null;
+          dayOrders=usable.length;
         }
       }catch{}
     }
@@ -105,6 +110,7 @@ async function loadHome(){
           const serverRoute=String(historyData.routeId||"").trim();
           if(serverRoute)cmpRouteId=serverRoute;
           const todayEntry=historyData.history.find(x=>x?.date===todayKey&&Number(x?.count)>0);
+          dayOrders=Number(todayEntry?.count)||0;
           const id=Array.isArray(todayEntry?.waybillIds)?todayEntry.waybillIds[todayEntry.waybillIds.length-1]:"";
           if(id){
             const {res:detailRes,data:detail}=await fetchJson("/api/waybills/latest?id="+encodeURIComponent(id),20000);
@@ -126,8 +132,10 @@ async function loadHome(){
       const safeUrl=v=>{try{const u=new URL(String(v||"").trim(),location.origin);return /^(https?:)$/.test(u.protocol)?u.href:""}catch{return""}};
       const esc=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
       const attr=v=>esc(v).replace(/'/g,"&#39;");
+      if(todayOrders)todayOrders.textContent=(dayOrders>0?dayOrders:1)+"单";
       todayCount.textContent=total+"家";
-      todayWeight.textContent=(Math.round((Number(w.totalWeight)||0)*100)/100).toFixed(2)+"t";
+      // 重量统一 3 位小数（全局口径，见 AGENTS.md「统计口径」）
+      todayWeight.textContent=(Math.round((Number(w.totalWeight)||0)*1000)/1000).toFixed(3)+"t";
 
       if(todayStoreList){
         try{

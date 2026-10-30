@@ -186,6 +186,12 @@ t("渲染出 3 个月份分组", secs.length === 3, String(secs.length));
 t("首屏所有月份都是收起态（含当月）", expandedOf().length === 0, expandedOf().join(","));
 t("当月分组确实在列表里（不是没渲染才「收起」）", secs.some((s) => s.dataset.month === curMonth));
 
+/* 月份条文案：「X单 · X家 · Xt」三项，且重量 3 位小数（与首页统计同一口径）。
+ * 造的数据：当月 3 天、每天 1 单、门店 6+5+4=15 家、重量 150+120+90=360。 */
+const monthText = sectionsOf().find((s) => s.dataset.month === curMonth).querySelector(".history-month-main").innerHTML;
+t("月份条是「3单 · 15家 · 360.000t」", monthText.includes("3单 · 15家 · 360.000t"), monthText);
+t("月份条不再出现「N天」口径", !/\d+天/.test(monthText), monthText);
+
 t("收起态 aria-expanded=false", mainOf(curMonth).getAttribute("aria-expanded") === "false");
 const curBody = sectionsOf().find((s) => s.dataset.month === curMonth).querySelector(".history-month-body");
 t("aria-controls 指向本月内容容器",

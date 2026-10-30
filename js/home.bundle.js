@@ -226,7 +226,7 @@
    可见性依据：经典脚本顶层 const/let 落在共享的全局词法环境，后续脚本可直接引用。 */
 const $=id=>document.getElementById(id);
 const overlay=$("uploadArea"),cancel=$("sourceCancel");
-const todayCount=$("todayCount"),todayWeight=$("todayWeight"),todayStoreList=$("todayStoreList"),todayMetrics=$("todayMetrics"),dot=$("statusDot");
+const todayOrders=$("todayOrders"),todayCount=$("todayCount"),todayWeight=$("todayWeight"),todayStoreList=$("todayStoreList"),todayMetrics=$("todayMetrics"),dot=$("statusDot");
 let dispatchRouteId="";
 let boundRouteId="";
 const TEMP_ROUTE_PREFIX="__temp__:";
@@ -245,7 +245,7 @@ const renderSubstituteBadge=()=>{
   const isSubstitute=!!dispatchRouteId&&!dispatchRouteId.startsWith(TEMP_ROUTE_PREFIX)&&dispatchRouteId!==boundRouteId;
   subBadge.hidden=!isSubstitute;
 };
-const setEmptyToday=()=>{todayCount.textContent="暂无运单";todayWeight.textContent="";if(todayStoreList)todayStoreList.innerHTML='<div class="zp-empty zp-empty--tight">今日暂无配送门店</div>';if(todayMetrics)todayMetrics.innerHTML=""};
+const setEmptyToday=()=>{if(todayOrders)todayOrders.textContent="";todayCount.textContent="暂无运单";todayWeight.textContent="";if(todayStoreList)todayStoreList.innerHTML='<div class="zp-empty zp-empty--tight">今日暂无配送门店</div>';if(todayMetrics)todayMetrics.innerHTML=""};
 const setRouteBadge=(route)=>{if(!dot)return;const type=route?.type||"";const name=String(route?.name||"").trim();
   /* 全局标准：圆点内只显示线路数字（临时线路显示「临」），「X号线」全名用于文字位置 */
   const badge=(type==="temporary"||/临时/.test(name))?"临":(window.zpRouteShort?window.zpRouteShort(name):(name.match(/\d+/)?.[0]||name.replace(/\s+/g,"").slice(0,2)||"—"));
@@ -953,6 +953,9 @@ async function loadHome(){
 
     const todayKey=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
     let w=null;
+    // 当日该线路的运单数（"X单 X家 Xt" 里的 X）。一个运单覆盖一天一条线路，
+    // 但当天可能上午/下午各上传一次，所以它不恒等于 1，必须按数据来。
+    let dayOrders=0;
     // 比对键：默认用 effectiveRouteId，但一旦拿到服务端回显的 routeId 就以它为准。
     // 背景：data.dispatchRoute.id 来自 route:<id> 存储体内部的 id 字段，若与
     // Redis 键 id（即会话 dispatchRouteId、运单 routeId）发生数据漂移，前端用
@@ -971,6 +974,7 @@ async function loadHome(){
           const {res:lr,data:ld}=latest;
           if(lr.ok&&ld.success&&ld.waybill&&ld.waybill.routeId===cmpRouteId&&ld.waybill.date===todayKey){
             w=ld.waybill;
+            dayOrders=Number(ld.dayCount)||0;
           }
         }
       }catch{}
@@ -987,6 +991,7 @@ async function loadHome(){
           const usable=list.filter(x=>x&&x.routeId===cmpRouteId&&x.date===todayKey);
           usable.sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
           w=usable[usable.length-1]||null;
+          dayOrders=usable.length;
         }
       }catch{}
     }
@@ -1016,6 +1021,7 @@ async function loadHome(){
           const serverRoute=String(historyData.routeId||"").trim();
           if(serverRoute)cmpRouteId=serverRoute;
           const todayEntry=historyData.history.find(x=>x?.date===todayKey&&Number(x?.count)>0);
+          dayOrders=Number(todayEntry?.count)||0;
           const id=Array.isArray(todayEntry?.waybillIds)?todayEntry.waybillIds[todayEntry.waybillIds.length-1]:"";
           if(id){
             const {res:detailRes,data:detail}=await fetchJson("/api/waybills/latest?id="+encodeURIComponent(id),20000);
@@ -1037,8 +1043,10 @@ async function loadHome(){
       const safeUrl=v=>{try{const u=new URL(String(v||"").trim(),location.origin);return /^(https?:)$/.test(u.protocol)?u.href:""}catch{return""}};
       const esc=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
       const attr=v=>esc(v).replace(/'/g,"&#39;");
+      if(todayOrders)todayOrders.textContent=(dayOrders>0?dayOrders:1)+"单";
       todayCount.textContent=total+"家";
-      todayWeight.textContent=(Math.round((Number(w.totalWeight)||0)*100)/100).toFixed(2)+"t";
+      // 重量统一 3 位小数（全局口径，见 AGENTS.md「统计口径」）
+      todayWeight.textContent=(Math.round((Number(w.totalWeight)||0)*1000)/1000).toFixed(3)+"t";
 
       if(todayStoreList){
         try{
@@ -1103,7 +1111,7 @@ loadHome();
   const titleEl=$("trendTitle"),yearBtn=$("trendYearBtn"),monthRow=$("trendMonthRow");
   const prev=$("trendPrev"),next=$("trendNext"),monthEl=$("trendMonth");
   const metricWrap=$("trendMetric"),metricWeightBtn=$("metricWeight"),metricCountBtn=$("metricCount");
-  const waybillsEl=$("trendWaybills"),weightEl=$("trendWeight");
+  const waybillsEl=$("trendWaybills"),storesEl=$("trendStores"),weightEl=$("trendWeight");
   const wbDelta=$("trendWaybillsDelta"),wtDelta=$("trendWeightDelta");
   const wrap=$("trendChartWrap"),chart=$("trendChart");
   const grid=$("trendGrid"),area=$("trendArea"),line=$("trendLine"),points=$("trendPoints");
@@ -1156,12 +1164,13 @@ loadHome();
     const days=daysInMonth(ym),byDate=new Map(daily.map(x=>[x.date,x])),out=[];
     for(let d=1;d<=days;d++){
       const date=ym+"-"+String(d).padStart(2,"0"),item=byDate.get(date);
-      out.push({date,day:d,count:Number(item?.count)||0,weight:Number(item?.totalWeight)||0});
+      out.push({date,day:d,count:Number(item?.count)||0,stores:Number(item?.storeCount)||0,weight:Number(item?.totalWeight)||0});
     }
     return out;
   }
 
   function animateNumber(el,to,fmt){
+    if(!el)return;                 // HTML 与 JS 版本错位（旧页面 + 新脚本）时不让整卡挂掉
     const from=Number(el.dataset.v||0);
     el.dataset.v=String(to);
     if(prefersReduced){el.textContent=fmt(to);return;}
@@ -1187,6 +1196,7 @@ loadHome();
   function renderMonth(){
     const data=buildMonthData(currentMonth);
     const total=data.reduce((s,x)=>s+x.count,0);
+    const stores=data.reduce((s,x)=>s+x.stores,0);
     const weight=data.reduce((s,x)=>s+x.weight,0);
     const valOf=x=>metric==="weight"?x.weight:x.count;
     const safeMax=metric==="weight"?0.01:1;            // 重量为 0 时兜底，避免除零、保证基线可见
@@ -1214,14 +1224,14 @@ loadHome();
       c.setAttribute("r",isPeak?4.5:2.6);
       c.setAttribute("class","trend-point"+(isPeak?" is-peak":""));
       c.setAttribute("tabindex","0");
-      c.setAttribute("aria-label",x.date+" "+x.count+"单 · "+x.weight.toFixed(2)+"t");
-      c.addEventListener("click",()=>{hint.innerHTML=esc(x.date)+" · "+x.count+"单 · "+x.weight.toFixed(2)+"t";});
+      c.setAttribute("aria-label",x.date+" "+x.count+"单 · "+x.weight.toFixed(3)+"t");
+      c.addEventListener("click",()=>{hint.innerHTML=esc(x.date)+" · "+x.count+"单 · "+x.weight.toFixed(3)+"t";});
       points.appendChild(c);
     });
     if(total){
       const peak=data[peakIdx];
       hint.innerHTML=metric==="weight"
-        ? "峰值 "+peak.day+"日 · "+peak.weight.toFixed(2)+"t"
+        ? "峰值 "+peak.day+"日 · "+peak.weight.toFixed(3)+"t"
         : "峰值 "+peak.day+"日 · "+peak.count+"单";
     }else{
       hint.innerHTML="本月暂无配送记录";
@@ -1234,7 +1244,8 @@ loadHome();
     });
     // 汇总 + 同比（对比去年同月，比环比更能剥离季节性、看出真实增减）
     animateNumber(waybillsEl,total,v=>String(Math.round(v)));
-    animateNumber(weightEl,weight,v=>v.toFixed(2));
+    animateNumber(storesEl,stores,v=>String(Math.round(v)));
+    animateNumber(weightEl,weight,v=>v.toFixed(3));
     const lyKey=sameMonthLastYearKey(currentMonth);
     const ly=lyKey?byMonth.get(lyKey):null;
     setDelta(wbDelta,total,ly?Number(ly.waybills)||0:null);
@@ -1263,6 +1274,7 @@ loadHome();
     const vals=months.map(mk=>{const x=byMonth.get(mk);if(!x)return 0;return isW?(Number(x.totalWeight)||0):(Number(x.waybills)||0);});
     const total=months.reduce((s,mk)=>{const x=byMonth.get(mk);return s+(x?Number(x.waybills)||0:0);},0);
     const weight=months.reduce((s,mk)=>{const x=byMonth.get(mk);return s+(x?Number(x.totalWeight)||0:0);},0);
+    const stores=months.reduce((s,mk)=>{const x=byMonth.get(mk);return s+(x?Number(x.totalStores)||0:0);},0);
     const safeMax=isW?0.01:1;
     const max=Math.max(safeMax,...vals);
     // 12 月活动柱（工业风：细柱 + 峰值略亮）
@@ -1272,7 +1284,7 @@ loadHome();
     vals.forEach((v,i)=>{
       const x=left+slot*i+slot/2,hh=(v<=0?0.04:v/max)*(h-top-bottom),yy=h-bottom-hh;
       const isPeak=v===max&&v>0;
-      const fmtV=v=>isW?v.toFixed(2)+"t":v+"单";
+      const fmtV=v=>isW?v.toFixed(3)+"t":v+"单";
       bars+='<rect x="'+(x-barW/2).toFixed(1)+'" y="'+yy.toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+hh.toFixed(1)
         +'" rx="1.5" class="trend-year-bar'+(isPeak?" is-peak":"")+'"><title>'+label(months[i])+" · "+fmtV(v)+"</title></rect>";
     });
@@ -1285,13 +1297,14 @@ loadHome();
     [1,4,7,10,12].forEach(m=>{const s=document.createElement("span");s.textContent=m+"月";axis.appendChild(s);});
     // 汇总（无环比）
     animateNumber(waybillsEl,total,v=>String(Math.round(v)));
-    animateNumber(weightEl,weight,v=>v.toFixed(2));
+    animateNumber(storesEl,stores,v=>String(Math.round(v)));
+    animateNumber(weightEl,weight,v=>v.toFixed(3));
     wbDelta.textContent="";wtDelta.textContent="";
     // 峰值信息（随指标切换）：年度峰值月（重量口径显示 t）
     let peakMi=0;vals.forEach((v,i)=>{if(v>vals[peakMi])peakMi=i;});
     let busiest=null;
     for(const it of daily){if(!String(it.date).startsWith(yk))continue;if(!busiest||(Number(it.count)||0)>busiest.count)busiest={date:it.date,count:Number(it.count)||0};}
-    const fmtV=v=>isW?v.toFixed(2)+"t":Math.round(v)+"单";
+    const fmtV=v=>isW?v.toFixed(3)+"t":Math.round(v)+"单";
     const peakMonth=vals[peakMi]>safeMax?(peakMi+1)+"月":"—";
     let busiestTxt="";
     if(!isW&&busiest&&busiest.count>0){

@@ -95,7 +95,7 @@ export async function onRequestGet({ request, env }) {
         clean(w.customerName || w.contactName || ""),
         clean(w.phone || w.mobile || ""),
         Number(w.summary?.finalCount || w.summary?.total || stores.length) || 0,
-        (Math.round((Number(w.totalWeight) || 0) * 100) / 100).toFixed(2),
+        (Math.round((Number(w.totalWeight) || 0) * 1000) / 1000).toFixed(3),
         storeNames,
       ]));
     }
