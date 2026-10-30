@@ -50,6 +50,10 @@ jobs:
         env:
           CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
         run: node tests/e2e-nav-back-stack.cjs
+      - name: Verify admin workspace cannot leak into business pages
+        env:
+          CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
+        run: node tests/e2e-admin-back-leak.cjs
       - name: Verify cross-page statistics and narrow layouts
         env:
           CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
