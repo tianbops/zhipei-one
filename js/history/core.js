@@ -2,9 +2,10 @@
 const stateEl=document.getElementById("historyState"),listEl=document.getElementById("historyList"),dialog=document.getElementById("historyDialog"),dialogText=document.getElementById("historyDialogText"),cancelBtn=document.getElementById("historyCancel"),confirmBtn=document.getElementById("historyConfirm");
 const picker=document.getElementById("historyPicker"),pickerPanel=document.querySelector(".history-picker-panel"),pickerClose=document.getElementById("historyPickerClose"),pickerTitle=document.getElementById("historyPickerTitle"),pickerGrid=document.getElementById("historyPickerGrid"),pickerPrev=document.getElementById("historyPickerPrev"),pickerNext=document.getElementById("historyPickerNext"),pickerBtn=document.getElementById("historyPickerBtn");
 let model={history:[],range:null},openRow=null,pendingDelete=null,pickerMonth="";
-/* 月份分组默认全部收起（见 render.js）。展开的月份记在这里：
-   render() 会因为删除/回收站恢复而整体重绘，状态存 DOM 上会丢。 */
-const expandedMonths=new Set();
+/* 月份分组默认全部收起，且**同时只展开一个月**（手风琴）：点 10 月展开 → 点 9 月则收起 10 月、展开 9 月。
+   展开的月份记在这里而不是 DOM 的 class 上：render() 会因删除 / 回收站恢复整体重绘，
+   挂在 DOM 上的状态会丢（用户删一条记录，列表整个塌下去）。空串 = 全收起。 */
+let expandedMonth="";
 const focusDate=new URLSearchParams(location.search).get("date")||"";
 
 const todayCN=()=>{const p=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());const v=Object.fromEntries(p.filter(x=>x.type!=="literal").map(x=>[x.type,x.value]));return `${v.year}-${v.month}-${v.day}`;};
