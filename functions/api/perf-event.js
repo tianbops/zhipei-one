@@ -78,11 +78,12 @@ function validEvent(e) {
   if (!status || !Number.isFinite(duration) || duration < 0 || duration > 120000) return null;
   if (server !== null && (!Number.isFinite(server) || server < 0 || server > 120000)) return null;
   const allowedPhases = new Set(["history-auth","history-route","history-index","history-aggregate","history-search-index","history-search-read","history-detail-read","history-detail-enrich","history-response-build"]);
+  const isD1RoutingPhase = name => /^history-d1-(?:primary|replica|unknown)-queries$/.test(name) || /^history-d1-region-[a-z-]+-queries$/.test(name);
   const phases = {};
   if (e.phases && typeof e.phases === "object" && !Array.isArray(e.phases)) {
     for (const [name, value] of Object.entries(e.phases)) {
       const n = Number(value);
-      if (allowedPhases.has(name) && Number.isFinite(n) && n >= 0 && n <= 120000) phases[name] = Math.round(n*10)/10;
+      if ((allowedPhases.has(name) || isD1RoutingPhase(name)) && Number.isFinite(n) && n >= 0 && n <= 120000) phases[name] = Math.round(n*10)/10;
     }
   }
   // 状态码只在非 2xx 时有效：2xx 不需要细分，network 事件本就没有状态码。
