@@ -13,7 +13,7 @@
  *
  * 断言分两层：源码红线（结构不能被改回去）+ vm 行为求值（真的调了该调的东西）。
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { createContext, runInContext } from "node:vm";
@@ -53,14 +53,26 @@ t("选择器含 [data-zp-haptic] 扩展钩子", SEL.includes("[data-zp-haptic]")
 
 /* 结构一致性：拿真实页面里的底栏项标签去对选择器。
  * 以后谁把底栏项换成别的标签（如 <div role="tab">），这里会立刻红——
- * 光靠夹具页测不出这种漂移，因为夹具是手写的。 */
-const NAV_PAGES = ["home.html", "pages/history.html", "pages/dispatch.html", "pages/account.html", "admin.html"];
+ * 光靠夹具页测不出这种漂移，因为夹具是手写的（上一版就是这么漏的）。 */
+const NAV_PAGES = ["home.html", "admin.html"]
+  .concat(readdirSync(join(ROOT, "pages")).filter((f) => f.endsWith(".html")).map((f) => "pages/" + f));
+let navScanned = 0;
 for (const p of NAV_PAGES) {
   const s = read(p);
-  if (/<a[^>]*class="zp-nav-item/.test(s)) t(`${p}：底栏 <a> 被选择器覆盖`, SEL.includes(".zp-nav a"));
-  if (/<button[^>]*class="zp-nav-item/.test(s)) t(`${p}：底栏 <button> 被选择器覆盖`, SEL.includes(".zp-nav button"));
-  if (/<button[^>]*class="nav-item/.test(s)) t(`${p}：管理端 <button> 被选择器覆盖`, SEL.includes(".admin-nav button"));
+  if (/<a[^>]*class="zp-nav-item/.test(s)) {
+    navScanned++;
+    t(`${p}：底栏 <a> 被选择器覆盖`, SEL.includes(".zp-nav a"));
+  }
+  if (/<button[^>]*class="zp-nav-item/.test(s)) {
+    navScanned++;
+    t(`${p}：底栏 <button>（加号）被选择器覆盖`, SEL.includes(".zp-nav button"));
+  }
+  if (/<button[^>]*class="nav-item/.test(s)) {
+    navScanned++;
+    t(`${p}：管理端 <button> 被选择器覆盖`, SEL.includes(".admin-nav button"));
+  }
 }
+t("至少扫到 6 个页面的底栏项（防止页面改名/结构漂移后测试空跑）", navScanned >= 6, "命中 " + navScanned);
 t("nav.js 注入的底栏项是 <a>，已被选择器覆盖",
   read("js/ui/nav.js").includes("'<a class=\"'+cls+'\"") && SEL.includes(".zp-nav a"));
 
