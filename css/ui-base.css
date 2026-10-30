@@ -669,10 +669,10 @@ html[data-zp-native="1"]{--zp-safe-top:8px}
   transition:background-color .16s ease,border-color .16s ease,color .16s ease,opacity .16s ease;
 }
 .zp-btn--secondary{background:var(--zp-surface-2);border-color:var(--zp-line);color:var(--zp-text)}
-.zp-btn--block{width:100%}
+
 /* 迷你档：行内动作、列表行右侧、菜单项，圆角退一档到 --zp-r-mini */
-.zp-btn--mini{min-height:34px;padding:0 var(--zp-sp-3);border-radius:var(--zp-r-mini);font-size:var(--zp-fs-13)}
-.zp-btn--icon{width:var(--zp-control-height);min-height:var(--zp-control-height);padding:0;border-color:transparent;background:transparent;color:var(--zp-muted)}
+
+
 .zp-btn:active{background-color:var(--zp-secondary-active)}
 .zp-btn:disabled,.zp-btn[aria-disabled="true"]{opacity:.55;cursor:not-allowed;transform:none}
 
