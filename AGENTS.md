@@ -199,7 +199,28 @@ CI 只报「失败」不报「还有 30 个没跑」——回归后门。
    `?from=admin` 曾能把业务页送进管理端，`?from=//evil.example/x` 能跳到站外。
    对抗用例在 `tests/nav-return.test.mjs`（`from=admin` / `constructor` / `../admin` / `//evil`）。
 
-## 9. 已知架构决策（勿轻改）
+## 9. 触感反馈约束（2026-10-30 定稿，v1.0.20）
+
+触感只有一个入口：`window.zpHaptic(kind)`（`js/ui/haptic.js`）。**禁止**在业务代码里直接调
+`navigator.vibrate()` 或 `ZhipeiNative.haptic()`——通道选择与降级只在这里做一次。
+
+1. 四档语义，别自创：`light`（底栏 tab、普通按钮）/ `medium`（主操作、底部悬浮按钮）/
+   `success`（成功确认）/ `warn`（失败警示）。未知值一律按 `light`——写错要能震，不能静默不震。
+2. 通道优先级：`ZhipeiNative.haptic`（壳内，`View.performHapticFeedback`）> `navigator.vibrate`（浏览器）。
+   **App 内只有原生桥能震**：WebView 不实现 Vibration API，指望网页兜底等于没有触感。
+   壳侧**不申请 VIBRATE 权限**，也不自己写震动时长——强度交给系统按机型马达标定。
+3. 尊重系统开关。用户关掉「触摸振动」时不震就是正确结果，不要为了「一定震」改用 `Vibrator`
+   强行震，也不要在页面上做「触感不可用」的提示。
+4. 触发点绑 `click`，不绑 `pointerdown/touchstart`：手指按下后在按钮上滑走（滚列表的常见动作）
+   不该震。监听在 capture 阶段，业务 handler 的 `stopPropagation` 吞不掉它。
+5. 节流：同类 120ms、异类 60ms，静默丢弃不排队——触感只有几毫秒时效，补震是错的。
+6. 新按钮要触感，加 `data-zp-haptic="medium"` 即可，**不要**改 `haptic.js` 加选择器。
+   常驻底栏（`.zp-nav a` / `.admin-nav a`）已自动覆盖。
+7. 新增或改名壳侧方法必须同步客户端仓 `scripts/check-bridge-contract.mjs` 的 `CONTRACT` 表：
+   网页调了个不存在的方法，表现只是「点了没反应」，构建与 CI 全绿。
+   红线由 `tests/haptic.test.mjs`（Web）与 `scripts/check-bridge-contract.mjs --web`（客户端）守。
+
+## 10. 已知架构决策（勿轻改）
 
 | 决策 | 理由 | 记录处 |
 |---|---|---|
@@ -212,7 +233,7 @@ CI 只报「失败」不报「还有 30 个没跑」——回归后门。
 | 返回按页面层级（不查历史、不一律回根） | 层级是产品的确定结构；站内导航已全 replace，历史栈里没有「上一页」可用 | `docs/adr/0004-返回按页面层级.md` |
 | 错误响应按「域内错误/未预期异常」二分 | 业务失败本身就是给用户看的中文提示，一刀切脱敏是体验倒退 | `docs/adr/0001-阶段三决策记录.md` 决策 1 |
 
-## 10. 提交与 PR 规范
+## 11. 提交与 PR 规范
 
 - 提交信息：`type(scope): 中文描述`，type ∈ `feat|fix|refactor|style|test|docs|chore`。
 - 一个提交只解决一件事。安全类改动**必须单独成 PR**，不得与功能改动混提。
