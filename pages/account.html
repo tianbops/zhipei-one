@@ -362,9 +362,12 @@ $("deleteConfirm").onclick=async()=>{
   const textEl=$("aboutVerText");if(!textEl)return;
   if(verBadge){verBadge.remove();verBadge=null;}
   const apkV=apkVersion();
+  /* 「有新版本」必须以「真有包可下」为准（manifest 的 version），
+     不能拿网页版本号凑数：web 已发版但 APK 没同步时，提示会指向一个下不到的版本。 */
+  const latest=state.apkVer||state.webVer;
   if(apkV){
    textEl.textContent="当前版本 V"+apkV;
-   if(state.webVer&&compareVer(apkV,state.webVer)<0){
+   if(latest&&compareVer(apkV,latest)<0){
     // 「有新版本」只作状态提示（静态角标）；真正的更新动作在下方「客户端」行
     verBadge=document.createElement("span");
     verBadge.className="acct-ver-badge";
@@ -379,7 +382,10 @@ $("deleteConfirm").onclick=async()=>{
  function applyAction(){
   if(isNativeApp){
    const v=apkVersion();
-   if(v&&state.webVer&&compareVer(v,state.webVer)<0)setAction("更新到 V"+state.webVer,true);
+   /* 只认可下载的包版本（manifest.version）。用 webVer 会在「网页已发版、APK 还没同步」
+      时提示更新到一个并不存在的版本，点下去只会又装回旧包。 */
+   const target=state.apkVer;
+   if(v&&target&&compareVer(v,target)<0)setAction("更新到 V"+target,true);
    else if(v)setAction("已是最新",false);
    return;
   }
@@ -402,11 +408,18 @@ $("deleteConfirm").onclick=async()=>{
   zpFetch("/downloads/manifest.json?ts="+Date.now(),{cache:"no-store"})
    .then(r=>r.ok?r.json():null)
    .then(m=>{
-    state.apkVer=(m&&m.version)||null;
-    setApk((m&&m.file)||"zhipei-one-latest-release.apk",m&&m.version);
+    const ver=(m&&m.version)||null;
+    state.apkVer=ver;
+    if(m&&m.file)setApk(m.file,ver);
+    else if(ver)setApk("zhipei-one-"+ver+"-release.apk",ver);
     render();
    })
-   .catch(()=>{setApk("zhipei-one-latest-release.apk");render();});
+   .catch(()=>{
+    // 拿不到清单时不猜固定名（那个名字已废弃，指过去就是 404）；
+    // 优先用网页版本号推出带版本的包名，推不出就不给链接。
+    if(state.webVer)setApk("zhipei-one-"+state.webVer+"-release.apk",state.webVer);
+    render();
+   });
  }
 
  /* 网页端地址：复制固定官网地址 */
@@ -430,11 +443,15 @@ $("deleteConfirm").onclick=async()=>{
  function copyWeb(){copyText(WEB_URL,"网页端地址已复制")}
  webCopyBtn.onclick=copyWeb;
 
- /* 最新安装包直链：App 壳内触发原生下载，浏览器内作为直链下载。 */
+ /* 最新安装包直链：App 壳内触发原生下载，浏览器内作为直链下载。
+    文件名必须带版本号（服务端文件本身也带版本）。固定名会让系统下载器/文件管理器
+    里堆着同名旧包，用户点开哪一个是随机的——2026-10-30 的「装了 V1.0.19 还是旧版」
+    就是这么来的：安装器读到的是上次那份 1.0.18。
+    ?v= 是第二道保险：即使文件名撞了，CDN/浏览器缓存键也不同。 */
  function setApk(file,ver){
   if(!installDlLink)return;
-  installDlLink.href="/downloads/"+file;
-  installDlLink.setAttribute("download","zhipei-one-v"+(ver||"latest")+".apk");
+  installDlLink.href="/downloads/"+file+(ver?"?v="+encodeURIComponent(ver):"");
+  installDlLink.setAttribute("download","zhipei-one-"+(ver||"latest")+"-release.apk");
  }
  function triggerApk(){
   if(!(installDlLink&&installDlLink.getAttribute("href"))){
