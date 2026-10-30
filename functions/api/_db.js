@@ -510,9 +510,23 @@ export class D1Backend {
       // ---- 通用 ----
       async exists(key) { return (await readRow(key)) ? 1 : 0; },
       async expire(key, ttlSeconds) {
+        const ttl = Math.floor(Number(ttlSeconds));
+        // 常规已落库键走单次 D1 batch：先清理已过期同名键，再对仍有效的键更新 TTL。
+        // 旧路径是 SELECT + 写入 batch（两次 D1 查询）；滑动会话续期属于高频路径，
+        // 直接批量 UPDATE 可减少为一次 D1 batch。若键在当前事务 overlay 中，仍走原逻辑，
+        // 保证 pipeline 内先 SET 再 EXPIRE 的读写可见性与顺序语义。
+        if (!pending.has(key) && Number.isFinite(ttl) && ttl > 0) {
+          const now = nowSec();
+          const result = await db.batch([
+            db.prepare("DELETE FROM kv WHERE key=? AND expires_at IS NOT NULL AND expires_at<=?").bind(key, now),
+            db.prepare("UPDATE kv SET expires_at=? WHERE key=? AND (expires_at IS NULL OR expires_at>?)").bind(now + ttl, key, now),
+          ]);
+          const changed = result?.[1]?.meta?.changes ?? result?.[1]?.changes ?? 0;
+          return Number(changed) > 0 ? 1 : 0;
+        }
         const row = await readRow(key);
         if (!row) return 0;
-        const expires_at = Math.floor(Number(ttlSeconds)) > 0 ? nowSec() + Math.floor(Number(ttlSeconds)) : null;
+        const expires_at = ttl > 0 ? nowSec() + ttl : null;
         bufSet(key, row.value, row.type, expires_at);
         return 1;
       },
