@@ -29,6 +29,11 @@
 .route-apply-page .page2-label{margin-top:10px}
 .route-apply-page .page2-label select,.route-apply-page .page2-label button.zp-pk-trigger{min-height:var(--zp-control-height);margin-top:5px}
 .route-apply-page .primary-btn,.route-apply-page .secondary-btn{min-height:var(--zp-control-height)}
+/* 申请人信息（2026-10-30，选填）：与上方字段同宽同高；姓名框单排起步、随内容增高，
+   封顶两行后框内滚动（高度由页面脚本算，这里只定基准外观与单行垂直居中）。 */
+.route-apply-page .applicant-group{margin-top:16px;padding-top:2px;border-top:1px solid var(--zp-divider)}
+.route-apply-page .applicant-title{margin:12px 0 0;color:var(--zp-text);font-size:var(--zp-fs-13);font-weight:var(--zp-fw-semibold)}
+.route-apply-page .page2-label textarea#applicantName{min-height:var(--zp-control-height);height:var(--zp-control-height);padding:13px 16px;line-height:22px;font-size:var(--zp-fs-16);resize:none;overflow-y:hidden}
 @media(max-width:380px){.route-apply-page .page2-card{padding:12px}.route-apply-page .maintain-card{padding:0}.route-apply-page .collapse-head{min-height:46px;padding:0 12px}.route-apply-page .collapse-body{padding:0 12px 12px}}
 
 /* 我的页：与线路申请页统一布局、颜色与密度。 */

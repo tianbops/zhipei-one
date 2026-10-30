@@ -14,7 +14,7 @@
 <script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F6F7F9":"#121826");}catch(e){}</script><script src="/js/theme-sync.js?v=2c1a5bbc"></script>
 <link rel="stylesheet" href="/css/app.css?v=b5364547"><link rel="stylesheet" href="/css/ui-base.css?v=6d56cb33"><link rel="stylesheet" href="/css/ui-overlay.css?v=fe14de91"><link rel="stylesheet" href="/css/ui-theme.css?v=c306fcf7"><link rel="stylesheet" href="/css/ui-shell.css?v=2ab76df5">
 <link rel="stylesheet" href="/css/mobile-ui.css?v=3f9fab5a">
-<link rel="stylesheet" href="/css/business-pages.css?v=2f512c53">
+<link rel="stylesheet" href="/css/business-pages.css?v=0d74c33c">
 <link rel="stylesheet" href="/css/doc-page.css?v=df84b894">
 </head>
 <body>
@@ -30,12 +30,13 @@
   <ul>
     <li><span class="doc-em">账号信息</span>：用户名、密码。密码经哈希（SHA-256）处理后存储，任何人不以明文保存和传输密码本身。</li>
     <li><span class="doc-em">业务数据</span>：你在使用中录入或识别产生的运单、订单等业务数据。</li>
+    <li><span class="doc-em">申请人信息（选填）</span>：申请线路绑定时可自愿填写真实姓名与手机号，仅用于管理员审核与联系；不填也能提交，任何时候可在该页改写后重新提交。</li>
     <li><span class="doc-em">本地设置</span>：外观主题、字体大小等偏好，仅存储在你的设备本地，不上传。</li>
   </ul>
   <p>我们不收集位置、通讯录、相册、短信等敏感权限，无用户行为追踪埋点。</p>
 
   <h3>二、信息的使用</h3>
-  <p>仅用于：账号登录与鉴权、提供运单识别与业务管理功能、保障服务安全。</p>
+  <p>仅用于：账号登录与鉴权、提供运单识别与业务管理功能、线路申请审核与联系、保障服务安全。</p>
 
   <h3>三、信息的存储与保护</h3>
   <ul>

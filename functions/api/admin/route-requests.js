@@ -1,3 +1,6 @@
+/**
+ * 管理端线路申请审核：列表透出申请人姓名 / 手机号（旧记录统一为空串）。
+ */
 import {json,body} from "../_json.js";
 import {currentUser} from "../_auth.js";
 import {get,command} from "../_redis.js";
@@ -30,7 +33,12 @@ export async function onRequestGet({request,env}){
  for(const x of pending){
   const u=userMap.get(x.userId),r=routeMap.get(x.routeId);
   if(!u||u.id!==x.userId||typeof u.username!=="string"||!r||r.id!==x.routeId||typeof r.name!=="string"||!r.name.trim())return json({success:false,code:"ROUTE_REQUEST_DATA_INVALID",error:"线路申请关联数据异常，请联系管理员处理"},409);
-  out.push({...x,username:u.username,name:u.name||"",routeName:r.name});
+  out.push({...x,username:u.username,name:u.name||"",routeName:r.name,
+   // 申请人姓名 / 手机号是 2026-10-30 新增的可选字段，旧记录没有 → 统一给空串，
+   // 前端只判「有没有值」，不用区分 undefined / null / ""。
+   // 截断是防御性的：绕过接口直写 Redis 的超长内容不该把审核卡片撑变形。
+   applicantName:typeof x.applicantName==="string"?x.applicantName.slice(0,40):"",
+   applicantPhone:typeof x.applicantPhone==="string"?x.applicantPhone.slice(0,20):""});
  }
  return json({success:true,requests:out});
 }

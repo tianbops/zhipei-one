@@ -439,7 +439,7 @@ reg(
 
 // ============ 18. 线路申请提交 route-requests submit ============
 reg(
-  `local cu=redis.call('GET',KEYS[1]); local cr=redis.call('GET',KEYS[2]); if not cu or not cr then return 2 end; local oku,u=pcall(cjson.decode,cu); local okr,r=pcall(cjson.decode,cr); if not oku or type(u)~='table' or not okr or type(r)~='table' then return 10 end; if u.disabled then return 7 end; if u.boundRouteId then return 4 end; if u.routeDuty then return 11 end; if r.status~='active' then return 8 end; if r.driverUserId==u.id or r.deliveryUserId==u.id then return 12 end; if ARGV[2]=='driver' and r.driverUserId then return 5 end; if ARGV[2]=='delivery' and r.deliveryUserId then return 6 end; local raw=redis.call('GET',KEYS[4]); local ids={}; if raw then local ok,v=pcall(cjson.decode,raw); if not ok or type(v)~='table' then return 9 end; ids=v end; for _,rid in ipairs(ids) do local rqraw=redis.call('GET','zp:route-request:'..rid); if rqraw then local ok,q=pcall(cjson.decode,rqraw); if ok and type(q)=='table' and q.userId==u.id and q.routeId==r.id and q.duty==ARGV[2] then if q.status=='pending' then return 3 end; if q.status=='approved' then return 13 end end end end; local q={id=ARGV[1],userId=u.id,routeId=r.id,duty=ARGV[2],status='pending',createdAt=ARGV[3]}; redis.call('SET',KEYS[3],cjson.encode(q)); table.insert(ids,ARGV[1]); redis.call('SET',KEYS[4],cjson.encode(ids)); return 1`,
+  `local cu=redis.call('GET',KEYS[1]); local cr=redis.call('GET',KEYS[2]); if not cu or not cr then return 2 end; local oku,u=pcall(cjson.decode,cu); local okr,r=pcall(cjson.decode,cr); if not oku or type(u)~='table' or not okr or type(r)~='table' then return 10 end; if u.disabled then return 7 end; if u.boundRouteId then return 4 end; if u.routeDuty then return 11 end; if r.status~='active' then return 8 end; if r.driverUserId==u.id or r.deliveryUserId==u.id then return 12 end; if ARGV[2]=='driver' and r.driverUserId then return 5 end; if ARGV[2]=='delivery' and r.deliveryUserId then return 6 end; local raw=redis.call('GET',KEYS[4]); local ids={}; if raw then local ok,v=pcall(cjson.decode,raw); if not ok or type(v)~='table' then return 9 end; ids=v end; for _,rid in ipairs(ids) do local rqraw=redis.call('GET','zp:route-request:'..rid); if rqraw then local ok,q=pcall(cjson.decode,rqraw); if ok and type(q)=='table' and q.userId==u.id and q.routeId==r.id and q.duty==ARGV[2] then if q.status=='pending' then return 3 end; if q.status=='approved' then return 13 end end end end; local q={id=ARGV[1],userId=u.id,routeId=r.id,duty=ARGV[2],status='pending',createdAt=ARGV[3]}; if ARGV[4]~='' then q.applicantName=ARGV[4] end; if ARGV[5]~='' then q.applicantPhone=ARGV[5] end; redis.call('SET',KEYS[3],cjson.encode(q)); table.insert(ids,ARGV[1]); redis.call('SET',KEYS[4],cjson.encode(ids)); return 1`,
   async (ctx, keys, args) => {
     const cu = await ctx.get(keys[0]);
     const cr = await ctx.get(keys[1]);
@@ -471,6 +471,10 @@ reg(
       }
     }
     const q = { id: args[0], userId: u.id, routeId: r.id, duty: args[1], status: "pending", createdAt: args[2] };
+    // 可选申请人姓名 / 手机号：空串不写字段，与 Redis 侧 Lua 的 `if ARGV[n]~=''` 同义。
+    // 写入顺序与 Lua 一致（name 在前），保证 D1 落库 JSON 的键序与 Redis 相同。
+    if (args[3] !== "" && args[3] != null) q.applicantName = args[3];
+    if (args[4] !== "" && args[4] != null) q.applicantPhone = args[4];
     await ctx.set(keys[2], JSON.stringify(q));
     ids.push(args[0]);
     await ctx.set(keys[3], JSON.stringify(ids));
