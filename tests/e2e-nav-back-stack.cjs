@@ -1,13 +1,14 @@
-/* 返回序列真浏览器验证：首页按返回只能往桌面走，不得回到内页。
+/* 返回序列真浏览器验证：返回只能「上一层」，不能跳级、不能回内页、不能停在半路。
  *
  * 背景（2026-10-30 线上录屏）：首页按返回出现「再按一次退出」后，继续按会依次
  * 回到运单详情 → 历史查询 → 才退出。根因是站内 <a href> 每次点击都 push 历史，
  * zpDoExit 的连续 back() 把残留页逐个穿过去。
  *
- * 修法：站内导航一律 location.replace。本脚本用真实 Chromium 验证三件事：
+ * 修法：站内导航一律 location.replace。本脚本用真实 Chromium 验证四件事：
  *   1. 点击底栏跳转后 history.length 不增长（replace 生效）；
- *   2. 连续返回的路径序列里不出现已经离开的内页（不回历史页/线路页）；
- *   3. 最终离开站点（等价退桌面）。
+ *   2. 功能根页（历史/线路）按返回直接回首页，序列里不出现已经离开的内页；
+ *   3. 细节页（隐私政策）按返回回到「我的」，再按才到首页（层级不含糊）；
+ *   4. 最终离开站点（等价退桌面）。
  *
  * 用法（需要本机 chromium，不进 npm test）：
  *   CHROMIUM=/usr/bin/chromium node tests/e2e-nav-back-stack.cjs
@@ -242,6 +243,25 @@ const check = (name, ok, detail) => {
     console.log('   第 ' + (i + 1) + ' 次返回 →', landed);
     if (landed === '(已离开站点)') break;
   }
+
+  console.log('\n3b) 层级返回（修订 G）：/pages/privacy 返回→我的，再返回→首页');
+  // 前面那段验证的是「功能根页只往首页走」；这里验证细节页不再被一刀切回首页。
+  // 用隐私政策页：纯静态、无接口依赖，能把 back.js 的层级表单独测出来。
+  await C('Page.navigate', { url: BASE + '/pages/privacy' });
+  await waitReady();
+  await sleep(700);
+  const pv0 = await where();
+  check('落在隐私政策页', String(pv0).indexOf('/pages/privacy') === 0, pv0);
+  await ev('document.querySelector(".app-back").click()');
+  await waitReady();
+  await sleep(800);
+  const pv1 = await where();
+  check('隐私政策返回→我的（不再一步跳首页）', String(pv1).indexOf('/pages/account') === 0, pv1);
+  await ev('window.zpSystemBack()');
+  await waitReady();
+  await sleep(800);
+  const pv2 = await where();
+  check('我的再返回→首页', String(pv2).indexOf('/home') === 0, pv2);
 
   console.log('\n4) 判定');
   check(

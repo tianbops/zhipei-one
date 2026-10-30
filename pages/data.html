@@ -82,12 +82,14 @@
 <script>
 const $=id=>document.getElementById(id);
 var dataBaseline="";// 门店资料基线：用于判断是否存在「暂存但未提交」的修改
-// 来源驱动返回：从运单详情内进入数据资料时，返回箭头应回到原运单而非首页
+// 来源驱动返回：从运单详情内进入数据资料时，返回箭头指向原运单。
+// 规则与 js/ui/back.js 的层级表同源（detail⇄data 是编辑往返，origin 记住详情页原来的来源），
+// 这里只写 href，让中键 / 无脚本场景也有正确目标；实际点击仍走 zpBackButton。
 (function(){
   const p=new URLSearchParams(location.search);
   if(p.get("from")==="order"){
-    const oid=p.get("id");
-    if(oid){const a=document.querySelector(".app-back");if(a)a.href="/pages/order_detail?id="+encodeURIComponent(oid)+"&source=process&from=process"}
+    const oid=p.get("id"),origin=p.get("origin")||"process",od=p.get("odate")||"";
+    if(oid){const a=document.querySelector(".app-back");if(a)a.href="/pages/order_detail?id="+encodeURIComponent(oid)+"&source=process&from="+encodeURIComponent(origin)+(od?"&date="+encodeURIComponent(od):"")}
   }
 })();
 async function api(u,o={}){const r=await zpFetch(u,{credentials:"same-origin",...o});const d=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(d.error||d.message||"请求失败");e.code=d.code||"HTTP_"+r.status;e.detail=d.detail||"";throw e}return d}
@@ -406,6 +408,6 @@ load();
   (window.zpDirtyProbes=window.zpDirtyProbes||[]).push(()=>
     filled(openPanel())||!!(dataBaseline&&dataBaseline!==JSON.stringify(stores)));
 })();
-</script><script src="/js/ui/core.js?v=7c4e2f82"></script><script src="/js/ui/appearance.js?v=2661f74b"></script><script src="/js/ui/feedback.js?v=f8da0256"></script><script src="/js/ui/nav.js?v=0bf1d3c3"></script><script src="/js/ui/back.js?v=0ede91e9"></script><script src="/js/ui/nav-prefetch.js?v=7c589b89"></script>
+</script><script src="/js/ui/core.js?v=7c4e2f82"></script><script src="/js/ui/appearance.js?v=2661f74b"></script><script src="/js/ui/feedback.js?v=f8da0256"></script><script src="/js/ui/nav.js?v=0bf1d3c3"></script><script src="/js/ui/back.js?v=a4e53e9b"></script><script src="/js/ui/nav-prefetch.js?v=7c589b89"></script>
 <script src="/js/pwa.js?v=68dbac73"></script>
 </body></html>

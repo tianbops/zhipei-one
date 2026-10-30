@@ -55,32 +55,62 @@ function resolve(url, fallback) {
   return factory(win, doc, loc)(fallback);
 }
 
-console.log("一、收口首页（业务端 19 条）");
+console.log("一、层级返回（业务端 34 条）");
 {
-  // 2026-10-30 模型变更（ZP-NAV-2026-002 修订 F）：不再按 from= 回跳来源页。
-  // 业务区任何页面返回都收口到 /home，来源、日期、运单 id 一律不参与解析。
+  // 2026-10-30 二次修订（ZP-NAV-2026-002 修订 G）：返回是「上一层界面」。
+  //   depth 0 /home、/admin        → 两次返回退桌面（本函数只解析到区根）
+  //   depth 1 功能根页             → 区根
+  //   depth 2 细节页               → 来源父级（from= 白名单），无来源回区根
+  // 修订 F 的「一律回 /home」被推翻：子页面返回直接跳首页，用户丢掉正在看的上下文。
   const cases = [
+    // —— depth 0：区根 ——
     ["/home", "", "/home", "首页即工作区根"],
+    ["/home?openUpload=1", "", "/home", "首页带上传参数→仍首页"],
+
+    // —— depth 1：功能根页一律回区根，彼此不回跳 ——
     ["/pages/today?from=home", "", "/home", "今日运单→首页"],
-    ["/pages/history?from=home", "", "/home", "历史→首页"],
-    ["/pages/data?from=home", "", "/home", "数据中心→首页"],
-    ["/pages/account?from=home", "", "/home", "账号设置→首页"],
-    ["/pages/dispatch?from=home", "", "/home", "线路→首页"],
-    ["/pages/route_apply?from=home", "", "/home", "绑定线路→首页"],
-    ["/pages/order_detail?id=W1&source=process&from=process", "", "/home", "运单详情→首页"],
-    // 关键行为变更：过去带 date 回历史，现在一律回首页（方案明确接受该体验代价）
-    ["/pages/order_detail?source=today&from=history&date=2026-10-02", "", "/home", "历史→详情→首页（不再回历史）"],
+    ["/pages/history?from=home", "", "/home", "首页→历史→首页"],
+    ["/pages/history?from=dispatch", "", "/home", "派单→历史→首页（不回到派单）"],
     ["/pages/history?from=home&date=2026-10-02", "", "/home", "历史带日期→首页"],
-    // 子页面之间不互通：详情→数据资料不再回到「原来那张运单」
-    ["/pages/data?from=order&id=W9&source=process", "", "/home", "详情→数据资料→首页（不回原运单）"],
-    ["/pages/data", "", "/home", "无来源→首页"],
-    ["/pages/order_detail?from=today", "", "/home", "今日运单→详情→首页"],
-    ["/pages/data?from=dispatch", "", "/home", "线路→数据资料→首页"],
-    ["/pages/route_apply?from=dispatch", "", "/home", "线路→线路申请→首页"],
-    ["/pages/account?from=dispatch", "", "/home", "线路→我的→首页"],
-    ["/pages/account?from=pages%2Fdispatch", "", "/home", "路径碎片来源不影响收口"],
-    ["/pages/account?from=constructor", "", "/home", "原型键来源不影响收口"],
-    ["/pages/order_detail?from=admin", "", "/home", "业务页带 from=admin 仍回首页，不进管理端"],
+    ["/pages/account?from=home", "", "/home", "账号设置→首页"],
+    ["/pages/account?from=dispatch", "", "/home", "派单→我的→首页"],
+    ["/pages/dispatch?from=home", "", "/home", "线路→首页"],
+    ["/pages/dispatch?from=dispatch", "", "/home", "线路自指来源→首页（不自我循环）"],
+    ["/pages/history.html", "", "/home", "带 .html 的写法同样识别"],
+    ["/pages/unknown-page", "", "/home", "未登记页面按一级处理→首页"],
+
+    // —— depth 2：回来源父级 ——
+    ["/pages/order_detail?source=today&from=history&date=2026-10-02", "", "/pages/history?date=2026-10-02",
+      "历史→运单详情→回历史（带原日期定位）"],
+    ["/pages/order_detail?source=today&from=history", "", "/pages/history",
+      "历史→详情→回历史（详情没带日期就不编造）"],
+    ["/pages/order_detail?id=W1&source=process&from=process", "", "/home",
+      "首页处理→详情→回首页"],
+    ["/pages/order_detail?id=W1", "", "/home", "详情无来源→首页"],
+    ["/pages/order_detail?from=today", "", "/home", "未登记来源 today→首页"],
+    ["/pages/data?from=dispatch", "", "/pages/dispatch", "派单→数据资料→回派单"],
+    ["/pages/data", "", "/home", "数据资料无来源→首页"],
+    ["/pages/data?from=order&id=W9&source=process", "", "/pages/order_detail?id=W9&source=process&from=process",
+      "详情→数据资料→回原运单"],
+    ["/pages/data?from=order&id=W9&origin=history", "", "/pages/order_detail?id=W9&source=process&from=history",
+      "编辑往返带上详情的原来源（再返回可继续回历史）"],
+    ["/pages/data?from=order&id=W9&origin=history&odate=2026-10-02", "",
+      "/pages/order_detail?id=W9&source=process&from=history&date=2026-10-02",
+      "编辑往返同时透传日期，回历史后仍能定位到当天"],
+    ["/pages/data?from=order&id=W9&origin=admin", "", "/pages/order_detail?id=W9&source=process&from=process",
+      "origin 非白名单→退回 process，不跨区"],
+    ["/pages/data?from=order&id=", "", "/home", "编辑往返缺 id→首页，不造死链"],
+    ["/pages/route_apply?from=dispatch", "", "/pages/dispatch", "派单→线路申请→回派单"],
+    ["/pages/route_apply", "", "/home", "线路申请无来源→首页"],
+    ["/pages/privacy", "", "/pages/account", "隐私政策→我的"],
+    ["/pages/terms", "", "/pages/account", "服务条款→我的"],
+
+    // —— 安全阀：from 是 URL 参数，必须挡得住被手改 ——
+    ["/pages/account?from=pages%2Fdispatch", "", "/home", "路径碎片来源→首页"],
+    ["/pages/account?from=constructor", "", "/home", "原型键来源→首页"],
+    ["/pages/order_detail?from=admin", "", "/home", "业务页带 from=admin 不进管理端"],
+    ["/pages/order_detail?from=../admin", "", "/home", "相对路径来源→首页"],
+    ["/pages/order_detail?from=//evil.example/x", "", "/home", "协议相对来源→首页"],
   ];
   for (const [url, fb, want, name] of cases) {
     const got = resolve(url, fb);
@@ -178,15 +208,25 @@ console.log("\n三、上下文清洗 zpMarkStale（3 条）");
   /** 删除类操作后调用 zpMarkStale，再解析：目标仍必须是本区根 */
   function resolveStale(url, fallback) {
     const u = new URL(url, "https://x.invalid");
-    const win = {}, doc = { body: { dataset: {} } }, loc = { pathname: u.pathname, search: u.search };
+    const win = {}, doc = { body: { dataset: {} } };
+    // 假 history.replaceState 必须真的改 location：zpMarkStale 摘掉 id/date 之后再解析，
+    // 若 location 是死对象，测出来的还是旧参数（线上浏览器是会变的）。
+    const loc = { pathname: u.pathname, search: u.search, href: u.href, origin: u.origin };
+    const hist = {
+      state: {},
+      replaceState(_s, _t, next) {
+        const nu = new URL(next, "https://x.invalid");
+        loc.pathname = nu.pathname; loc.search = nu.search; loc.href = nu.href;
+      },
+    };
     installCore(win, doc, loc);
-    const factory = new Function("window", "document", "location",
+    const factory = new Function("window", "document", "location", "history",
       "const UI=window.__zpUi;" + RESOLVE_BODY + "\nwindow.zpMarkStale();return window.zpResolveBack;");
-    return factory(win, doc, loc)(fallback);
+    return factory(win, doc, loc, hist)(fallback);
   }
   const cases = [
-    ["/pages/order_detail?id=W1&source=today&from=history&date=2026-10-02", "", "/home",
-      "删空运单后返回→回首页，不回已删运单/已删日期"],
+    ["/pages/order_detail?id=W1&source=today&from=history&date=2026-10-02", "", "/pages/history",
+      "删空运单后返回→回历史（id/date 已摘掉，from 仍在）"],
     ["/pages/history?from=home&date=2026-10-02", "", "/home", "历史页失效后→回本区根"],
     ["/admin?from=home", "", "/admin", "管理员端失效后仍回本区根（防火墙优先）"],
   ];
