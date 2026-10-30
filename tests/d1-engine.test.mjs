@@ -683,9 +683,17 @@ async function testRequestScopedSessionEnv() {
   const historySource = readFileSync(path.join(API, "history.js"), "utf8");
   ok(historySource.includes("readDateWaybills(historyEnv,user,routeId,date,budget)"), "日期详情读取使用请求级 Session env");
   ok(historySource.includes("readDates(historyEnv,routeId,range,budget)"), "历史搜索索引读取使用请求级 Session env");
-  ok(!historySource.includes("readDayAggregates(historyEnv"), "并发历史概览读取不接入 Session，避免未经验证的并发会话顺序");
+  const historyReadSource = readFileSync(path.join(API, "_history-read.js"), "utf8");
+  ok(historyReadSource.includes("const idsEnv=createD1SessionEnv(env);"), "历史概览索引流使用独立 Session");
+  ok(historyReadSource.includes("const metaEnv=createD1SessionEnv(env);"), "历史概览汇总流使用另一独立 Session");
+  ok(historyReadSource.includes('pipeline(idsEnv,chunk.map(x=>["SMEMBERS"'), "索引流只在自己的 Session 内串行读取");
+  ok(historyReadSource.includes('command(metaEnv,["MGET"'), "汇总流只在自己的 Session 内串行读取");
+  ok(historyReadSource.includes("readWaybills(idsEnv,allIds,budget)"), "legacy 运单体读取延续索引流的 Session bookmark");
   const second = createD1SessionEnv(original);
   ok(second.DB !== scoped.DB && sessions.length === 2, "不同请求获得独立 Session");
+  const idsEnv = createD1SessionEnv(original);
+  const metaEnv = createD1SessionEnv(original);
+  ok(idsEnv.DB !== metaEnv.DB && sessions.length === 4, "历史概览两条并行流使用不同 Session");
   const fallback = { DB: { prepare() {} }, __zpD1: null };
   eq(createD1SessionEnv(fallback), fallback, "不支持 withSession 的环境原样回退");
   eq(createD1SessionEnv(null), null, "无环境时安全回退");
