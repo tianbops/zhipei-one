@@ -1300,18 +1300,14 @@ loadHome();
     animateNumber(storesEl,stores,v=>String(Math.round(v)));
     animateNumber(weightEl,weight,v=>v.toFixed(3));
     wbDelta.textContent="";wtDelta.textContent="";
-    // 峰值信息（随指标切换）：年度峰值月（重量口径显示 t）
+    /* 峰值信息（随指标切换）：年度峰值月（重量口径显示 t）。
+       2026-10-30 去掉了「最忙 X月X日 · N单」：它与汇总三项挤在同一行放不下，
+       小屏上两块文字会叠在一起。留着的一句本身信息量也更低——
+       年度看的是峰值月，某一天忙不忙去月度视图点柱子更直观。 */
     let peakMi=0;vals.forEach((v,i)=>{if(v>vals[peakMi])peakMi=i;});
-    let busiest=null;
-    for(const it of daily){if(!String(it.date).startsWith(yk))continue;if(!busiest||(Number(it.count)||0)>busiest.count)busiest={date:it.date,count:Number(it.count)||0};}
     const fmtV=v=>isW?v.toFixed(3)+"t":Math.round(v)+"单";
     const peakMonth=vals[peakMi]>safeMax?(peakMi+1)+"月":"—";
-    let busiestTxt="";
-    if(!isW&&busiest&&busiest.count>0){
-      const [,bm,bd]=busiest.date.split("-").map(Number);
-      busiestTxt="　最忙 "+bm+"月"+bd+"日 · "+busiest.count+"单";
-    }
-    hint.innerHTML="年度峰值 <b>"+peakMonth+" · "+fmtV(vals[peakMi])+"</b>"+busiestTxt;
+    hint.innerHTML="年度峰值 <b>"+peakMonth+" · "+fmtV(vals[peakMi])+"</b>";
     titleEl.textContent="年度统计";
     monthEl.textContent=year+" 年度";
     metricWrap.hidden=false;   // 与月度画面统一：同样提供 重量/单量 切换

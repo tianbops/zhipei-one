@@ -51,9 +51,9 @@ const HISTORY = [
   { date: m1 + '-15', count: 1, storeCount: 7, totalWeight: 210.5 },
   { date: m2 + '-08', count: 1, storeCount: 3, totalWeight: 60.0625 },
 ];
-/* 前三个月给月度卡用；其余补满当年，好让**年度视图**也有真实长度：
-   「年度峰值 11月 · 63单　最忙 10月30日 · 1单」——这句长文案正是把汇总行挤重叠的元凶，
-   只造 3 个月的话永远进不到那个形态（上一版就是这么漏掉的）。 */
+/* 前三个月给月度卡用；其余补满当年，好让**年度视图**也有真实长度。
+   2026-10-30 起年度提示只剩「年度峰值 11月 · 63单」（「最忙 X月X日」已按用户要求去掉），
+   但数据仍要造满 12 个月，否则峰值月/汇总数都是假的，布局测不出真实形态。 */
 const MONTHS = [
   { month: ym, days: 3, waybills: 3, totalStores: 15, totalWeight: 360.75 },
   { month: m1, days: 1, waybills: 1, totalStores: 7, totalWeight: 210.5 },
@@ -230,18 +230,18 @@ const check = (name, ok, detail) => {
     (await ev('document.documentElement.scrollWidth<=document.documentElement.clientWidth+1')) === true,
     String(await ev('document.documentElement.scrollWidth+" / "+document.documentElement.clientWidth')));
 
-  /* ---------- 2. 年度视图：长文案不得压到汇总上 ----------
-     汇总从两项（单 / t）变成三项（单 / 家 / t）之后，右边那句
-     「年度峰值 11月 · 63单　最忙 10月30日 · 1单」在小屏上放不下；
+  /* ---------- 2. 年度视图：提示不得压到汇总上 ----------
+     汇总从两项（单 / t）变成三项（单 / 家 / t）后，右侧提示曾在小屏上放不下；
      旧样式（.trend-hint{flex:none} + summary min-width:0）的表现不是换行，而是
-     两块文字直接叠在一起。这里按 4 档宽度逐档量真实文字矩形。 */
+     两块文字直接叠在一起。「最忙」一句已去掉，这里仍按 4 档宽度量真实文字矩形，
+     防的是**以后再加内容**又把这一行撑爆。 */
   await ev('document.querySelector("#metricCount").click()');
   await sleep(350);
   await ev('document.querySelector("#trendYearBtn").click()');
   await sleep(800);
   const yearHint = String(await txt('#trendHint'));
-  check('年度（单量）提示是「年度峰值 … 最忙 …」长文案',
-    /年度峰值/.test(yearHint) && /最忙/.test(yearHint), yearHint);
+  check('年度（单量）提示只显示峰值', /^年度峰值\s*11月\s*·\s*63单$/.test(yearHint.trim()), yearHint);
+  check('年度提示不再显示「最忙」', !/最忙/.test(yearHint), yearHint);
 
   for (const w of [390, 360, 320, 430]) {
     await C('Emulation.setDeviceMetricsOverride', { width: w, height: 844, deviceScaleFactor: 1, mobile: true });
