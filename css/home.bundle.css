@@ -2206,9 +2206,13 @@ html[data-zp-boot="hop"] .login-shell{display:none!important}
 .trend-metric-btn{appearance:none;border:1px solid var(--zp-line);background:var(--zp-surface-3);color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:18px;padding:5px 11px;border-radius:var(--zp-r-pill);cursor:pointer;transition:background .15s,color .15s,border-color .15s}
 .trend-metric-btn.is-active{background:var(--zp-primary);color:var(--zp-on-primary);border-color:var(--zp-primary);font-weight:var(--zp-fw-semibold)}
 .trend-metric-btn:active{transform:translateY(.5px)}
-/* 底排：配送汇总（9 单 / 6.98 t）居左，环比提示居右，同排显示省一行高度 */
-.trend-bottom-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:1px}
-.trend-summary{display:flex;gap:12px;align-items:baseline;min-width:0}
+/* 底排：配送汇总（X 单 / X 家 / X t）居左，峰值提示居右。
+   空间够时同排省一行高度；不够时必须整块换行——曾经的写法是 .trend-hint{flex:none}
+   配 .trend-summary{min-width:0}，hint 不肯缩、summary 被迫缩，summary 的文字直接盖到
+   hint 上（年度单量视图三项汇总 + 「年度峰值 11月 · 63单　最忙 10月30日 · 1单」就会重叠）。
+   flex-wrap 让 hint 在放不下时落到第二行并靠右，短文案（月度视图）仍保持同排。 */
+.trend-bottom-row{display:flex;align-items:baseline;justify-content:space-between;gap:4px 10px;margin-top:1px;flex-wrap:wrap}
+.trend-summary{display:flex;gap:12px;align-items:baseline;min-width:0;flex-wrap:wrap}
 .trend-stat{display:flex;align-items:baseline;gap:2px;color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:15px}
 .trend-stat b{color:var(--zp-text);font-size:var(--zp-fs-15);font-weight:var(--zp-fw-semibold);font-variant-numeric:tabular-nums;letter-spacing:.5px}
 .trend-stat i{font-style:normal;color:var(--zp-muted);font-size:var(--zp-fs-11)}
@@ -2227,7 +2231,9 @@ html[data-zp-boot="hop"] .login-shell{display:none!important}
 .trend-year-bar{fill:var(--zp-tint-strong)}
 .trend-year-bar.is-peak{fill:var(--zp-primary)}
 .trend-axis{height:15px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 3px;color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:13px;font-variant-numeric:tabular-nums}
-.trend-hint{min-height:0;margin-top:0;flex:none;color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:14px;text-align:right}
+/* flex:0 1 auto（原来是 none）——单行放不下时允许收缩并在内部折行，
+   配合上面的 .trend-bottom-row{flex-wrap:wrap}，长文案不会横向压到汇总上。 */
+.trend-hint{min-width:0;flex:0 1 auto;margin-left:auto;min-height:0;margin-top:0;color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:14px;text-align:right}
 .trend-hint b{color:var(--zp-muted);font-weight:var(--zp-fw-semibold);font-variant-numeric:tabular-nums}
 @media(prefers-reduced-motion:reduce){
   .trend-card.is-in{animation:none}

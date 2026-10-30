@@ -51,10 +51,19 @@ const HISTORY = [
   { date: m1 + '-15', count: 1, storeCount: 7, totalWeight: 210.5 },
   { date: m2 + '-08', count: 1, storeCount: 3, totalWeight: 60.0625 },
 ];
+/* 前三个月给月度卡用；其余补满当年，好让**年度视图**也有真实长度：
+   「年度峰值 11月 · 63单　最忙 10月30日 · 1单」——这句长文案正是把汇总行挤重叠的元凶，
+   只造 3 个月的话永远进不到那个形态（上一版就是这么漏掉的）。 */
 const MONTHS = [
   { month: ym, days: 3, waybills: 3, totalStores: 15, totalWeight: 360.75 },
   { month: m1, days: 1, waybills: 1, totalStores: 7, totalWeight: 210.5 },
   { month: m2, days: 1, waybills: 1, totalStores: 3, totalWeight: 60.0625 },
+  ...Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'))
+    .filter((mm) => ![ym, m1, m2].includes(yy + '-' + mm))
+    .map((mm) => {
+      const peak = mm === '11';
+      return { month: yy + '-' + mm, days: 8, waybills: peak ? 63 : 4, totalStores: peak ? 900 : 120, totalWeight: peak ? 60 : 5.5 };
+    }),
 ];
 
 const WAYBILL = {
@@ -151,6 +160,40 @@ const check = (name, ok, detail) => {
   const txt = (sel) => ev(`(()=>{const e=document.querySelector(${JSON.stringify(sel)});return e?e.textContent.trim():null})()`);
   /* 横向溢出：元素内容比可视区宽 → 会被裁或顶掉邻居 */
   const overflow = (sel) => ev(`(()=>{const e=document.querySelector(${JSON.stringify(sel)});if(!e)return 'no-el';return (e.scrollWidth>e.clientWidth+1)?(e.scrollWidth+' > '+e.clientWidth):'ok'})()`);
+  /* 文字实际占据的矩形：遍历元素内**每个文本节点**逐个量，再求并集。
+     三条都不能省：
+       · 不用元素盒子（getBoundingClientRect）——元素被压窄时文字照样画到盒子外；
+       · 不用 Range.selectNodeContents(元素)——flex 容器返回的是子项盒子的并集，
+         子项也被压窄了，同样量不到溢出的字；
+       · 必须求并集——汇总三项里可能只有最后一项被挤出去。 */
+  const contentBox = (sel) => ev(`(()=>{const e=document.querySelector(${JSON.stringify(sel)});if(!e)return null;
+    const w=document.createTreeWalker(e, NodeFilter.SHOW_TEXT, null);
+    let l=1/0,t=1/0,r=-1/0,b=-1/0,n=0; const rg=document.createRange();
+    while(w.nextNode()){const tn=w.currentNode; if(!tn.nodeValue||!tn.nodeValue.trim())continue;
+      rg.selectNodeContents(tn); const bb=rg.getBoundingClientRect();
+      if(bb.width===0&&bb.height===0)continue;
+      l=Math.min(l,bb.left);t=Math.min(t,bb.top);r=Math.max(r,bb.right);b=Math.max(b,bb.bottom);n++;}
+    if(!n)return null;
+    return JSON.stringify({l,r,t,b})})()`).then((x) => (x ? JSON.parse(x) : null));
+  /* 汇总行状态。
+     · hit  = 两块文字真的交叠（用户报的「文字重叠」）；
+     · out  = 有文字跑出卡片内容区；
+     · oneLine = 汇总三项是否还在同一行——旧样式挤不下时的表现不是单纯重叠，
+       而是三项被压成两三行、和右侧提示挤成一坨，所以这条必须一起断言；
+     · gap  = 两块文字的实际水平间隙，同行时不得贴在一起。 */
+  const rowState = async () => {
+    const sum = await contentBox('.trend-summary');
+    const hint = await contentBox('#trendHint');
+    const card = JSON.parse(await ev(`(()=>{const b=document.querySelector('#trendCard').getBoundingClientRect();
+      return JSON.stringify({l:b.left,r:b.right})})()`));
+    const statTops = await ev(`[...document.querySelectorAll('.trend-summary .trend-stat')].map(e=>Math.round(e.getBoundingClientRect().top))`);
+    const hit = !!sum && !!hint && sum.r > hint.l + 0.5 && sum.l < hint.r - 0.5 && sum.b > hint.t + 0.5 && sum.t < hint.b - 0.5;
+    const out = !!sum && !!hint && Math.max(sum.r, hint.r) > card.r + 0.5;
+    const oneLine = Array.isArray(statTops) && statTops.length === 3 && statTops.every((t) => Math.abs(t - statTops[0]) <= 2);
+    const sameRow = !!sum && !!hint && hint.t < sum.b - 2;
+    const gap = !!sum && !!hint ? Math.round(hint.l - sum.r) : null;
+    return { hit, out, oneLine, sameRow, gap, sum, hint, card, statTops };
+  };
 
   /* ---------- 1. 首页 ---------- */
   await C('Page.navigate', { url: BASE + '/home.html' });
@@ -187,7 +230,47 @@ const check = (name, ok, detail) => {
     (await ev('document.documentElement.scrollWidth<=document.documentElement.clientWidth+1')) === true,
     String(await ev('document.documentElement.scrollWidth+" / "+document.documentElement.clientWidth')));
 
-  /* ---------- 2. 历史页：同一批数据必须同一组数字 ---------- */
+  /* ---------- 2. 年度视图：长文案不得压到汇总上 ----------
+     汇总从两项（单 / t）变成三项（单 / 家 / t）之后，右边那句
+     「年度峰值 11月 · 63单　最忙 10月30日 · 1单」在小屏上放不下；
+     旧样式（.trend-hint{flex:none} + summary min-width:0）的表现不是换行，而是
+     两块文字直接叠在一起。这里按 4 档宽度逐档量真实文字矩形。 */
+  await ev('document.querySelector("#metricCount").click()');
+  await sleep(350);
+  await ev('document.querySelector("#trendYearBtn").click()');
+  await sleep(800);
+  const yearHint = String(await txt('#trendHint'));
+  check('年度（单量）提示是「年度峰值 … 最忙 …」长文案',
+    /年度峰值/.test(yearHint) && /最忙/.test(yearHint), yearHint);
+
+  for (const w of [390, 360, 320, 430]) {
+    await C('Emulation.setDeviceMetricsOverride', { width: w, height: 844, deviceScaleFactor: 1, mobile: true });
+    await sleep(320);
+    const st = await rowState();
+    check(`年度 ${w}px：汇总三项仍在同一行`, st.oneLine === true,
+      JSON.stringify({ tops: st.statTops, sum: st.sum }));
+    check(`年度 ${w}px：提示与汇总不重叠`, st.hit === false,
+      JSON.stringify({ sum: st.sum, hint: st.hint }));
+    /* 同行则要留出可见间隙（≥8px，含 gap）；换行则整块落在下方，不算挤。 */
+    check(`年度 ${w}px：提示没有贴着汇总`,
+      st.hit === false && (st.sameRow ? st.gap >= 8 : st.hint.t >= st.sum.b - 1),
+      JSON.stringify({ sameRow: st.sameRow, gap: st.gap }));
+    check(`年度 ${w}px：两行文字都在卡片内`, st.out === false,
+      JSON.stringify({ sum: st.sum, hint: st.hint, card: st.card }));
+  }
+
+  await C('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+  await sleep(280);
+  await ev('document.querySelector("#trendYearBtn").click()');   // 回月度
+  await sleep(700);
+  const mRow = await rowState();
+  check('月度视图短文案仍与汇总同排（没白占一行高度）', mRow.sameRow === true && mRow.hint.t < mRow.sum.b,
+    JSON.stringify({ sum: mRow.sum, hint: mRow.hint }));
+  check('月度视图汇总三项同一行且不重叠', mRow.oneLine === true && mRow.hit === false,
+    JSON.stringify({ tops: mRow.statTops, gap: mRow.gap }));
+  check('月度视图提示与汇总留有间隙', (mRow.gap ?? 0) >= 8, String(mRow.gap));
+
+  /* ---------- 3. 历史页：同一批数据必须同一组数字 ---------- */
   await C('Page.navigate', { url: BASE + '/pages/history.html?fresh=1' });
   await waitReady();
   await sleep(1500);
@@ -207,7 +290,7 @@ const check = (name, ok, detail) => {
     (await ev('document.documentElement.scrollWidth<=document.documentElement.clientWidth+1')) === true,
     String(await ev('document.documentElement.scrollWidth+" / "+document.documentElement.clientWidth')));
 
-  /* ---------- 3. 日报行仍保留重量 3 位 ---------- */
+  /* ---------- 4. 日报行仍保留重量 3 位 ---------- */
   await ev(`document.querySelector('.history-month[data-month="${ym}"] .history-month-main').click()`);
   await sleep(400);
   const dayTexts = await ev(`[...document.querySelectorAll('.history-month[data-month="${ym}"] .history-date-main small')].map(s=>s.textContent.trim())`);
