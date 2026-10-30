@@ -107,7 +107,7 @@ export async function readDayAggregates(env,{user,routeId,entries,budget=null}){
   for(let i=0;i<entries.length;i+=500){
    if(budget&&!budget.take(1))throwBudgetExceeded(budget.max,"history-read-dates-ids");
    const chunk=entries.slice(i,i+500);
-   const results=await pipeline(env,chunk.map(x=>["SMEMBERS",waybillIndexKey(x.routeId,x.date)]));
+   const results=await pipeline(idsEnv,chunk.map(x=>["SMEMBERS",waybillIndexKey(x.routeId,x.date)]));
    for(let j=0;j<chunk.length;j++){const ids=Array.isArray(results?.[j])?results[j].map(clean).filter(Boolean):[];idsByDate.set(chunk[j].date,ids);}
   }
  };
