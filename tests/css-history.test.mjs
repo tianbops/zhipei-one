@@ -48,7 +48,9 @@ const reps = [
   ".history-dialog{",                      // shell：确认弹窗
   ".history-count-highlight{",             // shell：同日多次派送高亮
   ".history-list{",                        // list：UI 2.3 成熟列表重写
-  ".history-shell .app-back{",             // nav：返回键统一
+  // 2026-10-30：历史页是 Tab 根页，返回箭头已按 ZP-NAV-2026-002 移除，
+  // 代表选择器改为该文件仍承担的「滚动区为底栏留白」规则。
+  ".history-shell .zp-scroll{",            // nav：滚动区为四 Tab 底栏留白
   ".history-trash-item{",                  // overlays：回收站
   ".history-date-button{",                 // overlays：日期入口（原 overlay-light 合流）
   ".history-lookup-card{",                 // overlays：客户快查结果卡

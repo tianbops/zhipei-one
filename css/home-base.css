@@ -92,9 +92,6 @@
 .processing-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px}
 .processing-stage{min-width:0;overflow:hidden;color:var(--zp-muted);text-align:left;font-size:var(--zp-fs-14);line-height:20px;text-overflow:ellipsis;white-space:nowrap}
 .processing-elapsed{flex:none;color:var(--zp-muted);font-size:var(--zp-fs-13);line-height:20px;font-variant-numeric:tabular-nums}
-.processing-cancel-btn{display:block;width:100%;min-height:var(--zp-control-height);margin-top:12px;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-translucent-2);color:var(--zp-muted);font-size:var(--zp-fs-15);font-weight:var(--zp-fw-semibold);-webkit-tap-highlight-color:transparent}
-.processing-cancel-btn[hidden]{display:none}
-.processing-cancel-btn:active{background:var(--zp-card-translucent);color:var(--zp-text)}
 /* 停滞但存活：进度条叠加流动微光，表示"服务端仍在运行"而非卡死。
    仅在收到心跳（证明连接存活）且久无新进度时启用，不伪造百分比。 */
 .processing-progress.is-stalled .processing-progress-line:before{
@@ -106,8 +103,8 @@
 @media(prefers-reduced-motion:reduce){
   .processing-progress.is-stalled .processing-progress-line:before{animation:none}
 }
-.source-option:focus, .upload-cancel-btn:focus, .processing-retry-btn:focus, .processing-cancel-btn:focus{outline:none;box-shadow:none}
-.source-option:focus-visible, .upload-cancel-btn:focus-visible, .processing-retry-btn:focus-visible, .processing-cancel-btn:focus-visible{outline:2px solid var(--zp-focus-ring);outline-offset:2px}
+.source-option:focus, .upload-cancel-btn:focus, .processing-retry-btn:focus{outline:none;box-shadow:none}
+.source-option:focus-visible, .upload-cancel-btn:focus-visible, .processing-retry-btn:focus-visible{outline:2px solid var(--zp-focus-ring);outline-offset:2px}
 @media(max-width:380px){
  /* 左右内缩不再收紧到 12px：与全局 --zp-space-4 保持同一档，跨页一致 */
  .task-card{margin-top:14px;padding:13px 14px 12px;border-radius:var(--zp-r-card)}

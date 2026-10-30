@@ -341,6 +341,10 @@ button:active{transform:translateY(0)}
   min-height:var(--zp-header-height);
   position:relative;
 }
+/* 2026-10-30（ZP-NAV-2026-002 表 3.1）：Tab 根页（历史/线路/我的）不显示页面内返回箭头。
+   顶栏是三列 grid（按钮/标题/按钮），删掉箭头后若不改列定义，标题会掉进第一列窄格里；
+   根页改为单列，标题按 text-align:center 居中于整幅宽度。 */
+.topbar.is-root{grid-template-columns:1fr}
 .topbar strong,.order-title{font-weight:var(--zp-fw-semibold)}
 /* 2026-10-29：隐私政策 / 服务条款两页此前没有标题规则，h1 用的是浏览器默认
    32px + margin，把顶栏撑到 98px（全站唯一例外）。这里补上与其他页一致的

@@ -2,7 +2,7 @@
    依赖 core 的 $；不伪造进度，百分比只来自后端真实 progress 事件。 */
 
 const processingPanel=$("uploadProcessing"),processingError=$("uploadProcessingError"),processingErrorMessage=$("processingErrorMessage"),processingRetry=$("processingRetry"),sourceMenu=$("uploadSourceMenu"),processingPercent=$("processingPercent"),processingProgress=$("processingProgressDot");
-const processingStageEl=$("processingStage"),processingElapsedEl=$("processingElapsed"),processingCancelBtn=$("processingCancel");
+const processingStageEl=$("processingStage"),processingElapsedEl=$("processingElapsed");
 const uploadTextPanelEl=$("uploadTextPanel"),waybillTextInputEl=$("waybillTextInput");
 let processingProgressValue=0;
 let processingProgressTarget=0;
@@ -18,16 +18,16 @@ let processingProgressDuration=0;
    这里补三件事，均不伪造进度：
      1) 展示后端真实阶段文案 + 已用时；
      2) 久无新进度但心跳仍到 → 进度条叠加流动微光（存活指示，不改数字）；
-     3) 处理超过 8 秒才给出"取消处理"出口（此前处理中无任何退出方式）。 */
+     3) 处理中不提供任何退出方式（2026-10-30 起删除「取消处理」按钮）：
+        处理一旦发出写请求就不可中断，取消只会留下「服务端已落库、用户以为放弃」的
+        运单，与返回机制「保存中禁止返回」保持同一口径。 */
 const STAGE_DEFAULT="正在准备…";
 const STALL_THRESHOLD=1200;   // 超过此毫秒没有新进度即视为停滞
 const ALIVE_THRESHOLD=3000;   // 心跳超过此毫秒未到即认为连接已断
-const CANCEL_REVEAL_MS=8000;  // 处理多久后才显示取消按钮
 let processingController=null;
 let processingStartedAt=0;
 let processingLastProgressAt=0;
 let processingLastSignalAt=0;
-let processingCancelled=false;
 let processingClockTimer=0;
 
 function setProcessingStage(text){
@@ -57,9 +57,6 @@ function startProcessingClock(){
   processingClockTimer=setInterval(()=>{
     refreshProcessingClock();
     refreshStalledState();
-    if(processingCancelBtn&&!processingCancelled&&(Date.now()-processingStartedAt)>=CANCEL_REVEAL_MS){
-      processingCancelBtn.hidden=false;
-    }
   },500);
 }
 function stopProcessingClock(){
@@ -123,8 +120,6 @@ function resetProcessingProgress(){
 function resetProcessingUI(){
   stopProcessingClock();
   processingStartedAt=0;
-  processingCancelled=false;
-  if(processingCancelBtn){processingCancelBtn.hidden=true;processingCancelBtn.disabled=false;}
   setProcessingStage(STAGE_DEFAULT);
   if(processingElapsedEl)processingElapsedEl.textContent="已用时 0s";
   if(!processingPanel||!sourceMenu)return;

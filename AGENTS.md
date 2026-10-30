@@ -147,9 +147,17 @@ CI 只报「失败」不报「还有 30 个没跑」——回归后门。
 4. 返回键**永不**触发登出。登出只有两条路径：用户主动点、401/权限失效。
    `js/ui/back.js` 内出现 `fetch("/api/logout")` 视为回归，`tests/nav-admin-exit.test.mjs` 会拦。
 5. 弹层/未保存/保存中优先于页面导航：一层一返回，脏数据确认后不穿透。
-6. 页面内返回箭头、Android 系统返回、浏览器后退走同一套 `zpHandleBack()`。
-7. 改返回逻辑必须同步 `tests/nav-return.test.mjs`（收口矩阵）与
-   `tests/nav-admin-exit.test.mjs`（管理员出口）；两者都是阻塞项。
+6. **不可中断操作期间返回一律被拦下**（`zpBusyMessage()`）：运单 OCR/规划在途
+   （`window.zpIsProcessing`）、核对页确认提交在途（`window.zpIsConfirming`）时，
+   返回只提示、不关弹层、不离开页面。这类操作**不提供取消出口**——首页原「取消处理」
+   按钮已于 2026-10-30 删除，取消只会留下「服务端已落库、用户以为放弃」的运单。
+7. Tab 根页（`/pages/history`、`/pages/dispatch`、`/pages/account`）**不显示页面内返回箭头**，
+   顶栏用 `class="topbar is-root"`（单列 grid，标题居中）。子页面仍显示箭头。
+8. 页面内返回箭头、Android 系统返回、浏览器后退走同一套 `zpHandleBack()`。
+   壳侧入口是 `window.zpSystemBack()`（登录页返回 = 退出 App），改壳必须同时改这里。
+9. 改返回逻辑必须同步 `tests/nav-return.test.mjs`（收口矩阵）、
+   `tests/nav-admin-exit.test.mjs`（管理员出口）、`tests/nav-busy-guard.test.mjs`
+   （忙碌守卫 / 取消按钮缺席 / 根页无箭头）；三者都是阻塞项。
 
 ## 9. 已知架构决策（勿轻改）
 
