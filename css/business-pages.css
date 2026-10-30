@@ -132,7 +132,7 @@
 .dispatch-dialog h3{margin:0;font-size:var(--zp-fs-18)}
 .dispatch-dialog p{margin:8px 0 18px;color:var(--zp-muted);font-size:var(--zp-fs-13);line-height:1.55}
 .dispatch-dialog-actions{display:flex;gap:10px}
-.dispatch-dialog-actions button{flex:1;height:46px;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);font-size:var(--zp-fs-14)}
+.dispatch-dialog-actions button{flex:1;height:var(--zp-control-height);border:1px solid var(--zp-line);border-radius:var(--zp-r-control);font-size:var(--zp-fs-14)}
 .dispatch-dialog-cancel{background:var(--zp-secondary-bg);color:var(--zp-muted)}
 .dispatch-dialog-ok{background:var(--zp-secondary-active);color:var(--zp-text)}
 
