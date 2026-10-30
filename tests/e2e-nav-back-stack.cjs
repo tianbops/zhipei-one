@@ -180,6 +180,29 @@ const check = (name, ok, detail) => {
   const len0 = await hlen();
   console.log('   落位 :', p0, '| history.length =', len0);
 
+  console.log('\n0b) 原生返回键通道（v1.0.19）：首页开上传面板 → zpSystemBack 应只关面板、不导航');
+  // 直接用页面内的 openUpload()，不改 URL：换 URL 会新加载一份文档、多压一条根占位，
+  // 把后面「栈不增长」的基线带偏（那属于另一个问题，不该混进本用例）。
+  await ev('openUpload && openUpload()');
+  await sleep(600);
+  const vis = (sel) =>
+    ev(
+      `(()=>{const o=document.querySelector(${JSON.stringify(sel)});if(!o)return null;` +
+        'const cs=getComputedStyle(o);const r=o.getBoundingClientRect();' +
+        'return !o.hidden && cs.display!=="none" && cs.visibility!=="hidden" && r.height>0})()',
+    );
+  const sheetOpen = await vis('#uploadArea');
+  const pSheet = await where();
+  const lenSheet = await hlen();
+  await ev('window.zpSystemBack && window.zpSystemBack()');
+  await sleep(700);
+  const sheetClosed = await vis('#uploadArea');
+  const pAfter = await where();
+  const lenAfter = await hlen();
+  check('首页可打开上传面板', sheetOpen === true, String(sheetOpen));
+  check('zpSystemBack 关掉面板且不导航', sheetClosed === false && pAfter === pSheet, pAfter + ' | 可见=' + sheetClosed);
+  check('关面板不写历史（栈长不变）', lenAfter === lenSheet, lenSheet + ' → ' + lenAfter);
+
   console.log('\n1) 点底栏「历史」（<a href> 应被拦成 replace，栈不增长）');
   await ev('document.querySelector(\'a.zp-nav-item[href*="history"]\').click()');
   await waitReady();

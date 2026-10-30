@@ -133,7 +133,13 @@ if(textPanelSubmitBtn&&waybillTextInput)textPanelSubmitBtn.addEventListener("cli
 // 首页上传按钮 toggle（以首页为标准点）：第一次点击打开上传弹窗，
 // 弹窗已开时再点即关闭（回到首页标准态）。closeUpload 自带处理中保护。
 $("uploadAction")?.addEventListener("click",()=>{if(overlay&&!overlay.hidden)closeUpload();else openUpload()});
-if(new URLSearchParams(location.search).get("openUpload")==="1")setTimeout(openUpload,0);
+if(new URLSearchParams(location.search).get("openUpload")==="1"){
+  // 底栏「上传」是 <a href="/home?openUpload=1">，站内导航走 replace，于是首页会以
+  // 带参数的地址重新加载一次。打开面板后立刻把参数抹掉（replaceState 不增删记录）：
+  // 否则用户之后按返回又会落回带参数的地址、面板第二次弹出，看起来像「返回没生效」。
+  try{const u=new URL(location.href);u.searchParams.delete("openUpload");history.replaceState(history.state,"",u.pathname+u.search)}catch{}
+  setTimeout(openUpload,0);
+}
 cancel?.addEventListener("click",closeUpload);
 // 处理中不再提供「取消处理」：处理一旦发出写请求就不可中断。
 // 返回键同样被 js/ui/back.js 的忙碌守卫拦下并提示，处理结束前不关闭弹层。
