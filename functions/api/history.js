@@ -27,10 +27,10 @@ async function historyGet({request,env}){
  const mark=(name,started)=>{timing[name]=Math.max(0,Number((performance.now()-started).toFixed(1)));};
  const respond=(body,status=200)=>{const responseStart=performance.now();const response=json(body,status);mark("history-response-build",responseStart);const metrics=Object.entries(timing).map(([name,dur])=>name+";dur="+dur);
   if(d1Routing.queries>0){
-   metrics.push("history-d1-primary-queries;dur="+(Number(d1Routing.primary)||0));
-   metrics.push("history-d1-replica-queries;dur="+(Number(d1Routing.replica)||0));
-   metrics.push("history-d1-unknown-queries;dur="+(Number(d1Routing.unknown)||0));
-   for(const [region,count] of Object.entries(d1Routing.regions||{}))if(/^[a-z0-9-]{1,24}$/.test(region))metrics.push("history-d1-region-"+region+"-queries;dur="+(Number(count)||0));
+   metrics.push("history-db-primary-queries;dur="+(Number(d1Routing.primary)||0));
+   metrics.push("history-db-replica-queries;dur="+(Number(d1Routing.replica)||0));
+   metrics.push("history-db-unknown-queries;dur="+(Number(d1Routing.unknown)||0));
+   for(const [region,count] of Object.entries(d1Routing.regions||{}))if(/^[a-z0-9-]{1,24}$/.test(region))metrics.push("history-db-region-"+region+"-queries;dur="+(Number(count)||0));
   }
   if(metrics.length)response.headers.set("Server-Timing",metrics.join(", "));return response;};
  try{
