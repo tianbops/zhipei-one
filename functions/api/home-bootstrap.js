@@ -13,9 +13,11 @@ async function bootstrapGet({request,env}){
  const user=await currentUser(request,env);
  if(!user)return json({success:false,error:"未登录"},401);
  if(!canUseRoute(user))return json({success:false,error:"管理员不参与业务调度"},403);
- const dispatchRoute=await resolveDispatchRoute(env,user);
- // 滑动续期：首页首屏鉴权实际走本接口（乐观直达会跳过 /api/me），必须由这里续期并刷新 Cookie Max-Age
- const sc=await refreshSession(request,env);
+ // 调度线路读取与会话续期互不依赖：并行执行，避免两个 D1/Redis 往返串行叠加。
+ const [dispatchRoute,sc]=await Promise.all([
+  resolveDispatchRoute(env,user),
+  refreshSession(request,env)
+ ]);
  return json({success:true,dispatchRoute,user:{
   id:user.id,
   username:user.username,
