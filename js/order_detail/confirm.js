@@ -123,6 +123,8 @@ const pending=order?.stores?.map((x,i)=>({x,i})).filter(v=>v.x?.pending)||[];
    if(selected.size!==pending.length)return;
    const btn=$('submitConfirm');btn.disabled=true;btn.textContent='正在确认…';
    confirming=true;
+   // 子页面没有常驻占位，保存中必须临时申请一条，否则返回键会直接离开页面
+   try{window.zpArmGuard&&window.zpArmGuard()}catch{}
    try{
      const confirmations=pending.map(v=>({index:v.i,...selected.get(v.i)}));
      const r=await fetch('/api/waybills/confirm',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({waybillId:order.id,confirmations,confirmRequestId:crypto.randomUUID()})});
