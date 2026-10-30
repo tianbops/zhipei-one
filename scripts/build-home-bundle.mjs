@@ -40,6 +40,7 @@ const JS_SOURCES = [
   "js/home-monthly.js",
   "scripts/home-bundle-glue.frag",
   "js/ui/core.js",
+  "js/ui/haptic.js",
   "js/ui/appearance.js",
   "js/ui/feedback.js",
   "js/ui/nav.js",

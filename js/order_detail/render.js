@@ -111,5 +111,5 @@ function render(){
    return '<div class="order-store-item"><span class="order-store-index">'+String(i+1).padStart(2,'0')+'</span><div class="order-store-main">'+nameHtmlWithNote+'</div></div>';
  }).join(''):'<div class="zp-empty">当日暂无配送数据</div>';
  const old=$('confirmPendingBtn');if(old)old.remove();
- if(pending.length){const b=document.createElement('button');b.id='confirmPendingBtn';b.type='button';b.className='order-pending-fab';b.textContent='待确认'+pending.length+'家';b.onclick=openConfirm;const slot=$('pendingBtnSlot');slot?slot.appendChild(b):document.body.appendChild(b)}
+ if(pending.length){const b=document.createElement('button');b.id='confirmPendingBtn';b.type='button';b.className='order-pending-fab';b.dataset.zpHaptic='medium';b.textContent='待确认'+pending.length+'家';b.onclick=openConfirm;const slot=$('pendingBtnSlot');slot?slot.appendChild(b):document.body.appendChild(b)}
 }
