@@ -30,6 +30,8 @@ jobs:
         run: npm run verify:css-cardrow
       - name: Report potentially unused CSS selectors
         run: npm run verify:css-deadcode
+      - name: Verify light/dark popup and native picker contracts
+        run: npm run test:theme-popups
       - name: Install Chrome for Testing
         id: chrome
         uses: browser-actions/setup-chrome@v2
