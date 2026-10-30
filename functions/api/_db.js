@@ -257,6 +257,48 @@ export class D1Backend {
         const row = await readRow(key);
         return row ? row.value : null;
       },
+      // AUTH_READ 专用：把 session → user 的依赖读取合并为一次 D1 batch。
+      // Redis Lua 原子脚本在 D1 解释器里原本会顺序执行两个 SELECT；这里用 JOIN
+      // 在同一批次内完成，且先清理过期 session。overlay 命中时回退原读语义。
+      async authRead(sessionKey, userPrefix) {
+        if (pending.has(sessionKey)) {
+          const sessionRow = await readRow(sessionKey);
+          if (!sessionRow) return [null, null];
+          const session = sessionRow.value;
+          let data;
+          try { data = JSON.parse(session); } catch { return [session, null]; }
+          if (!data || typeof data !== "object" || !data.userId) return [session, null];
+          const userRow = await readRow(userPrefix + String(data.userId));
+          return [session, userRow ? userRow.value : null];
+        }
+        const now = nowSec();
+        const result = await db.batch([
+          db.prepare("DELETE FROM kv WHERE key=? AND expires_at IS NOT NULL AND expires_at<=?").bind(sessionKey, now),
+          db.prepare(`SELECT s.value AS session, u.value AS user
+            FROM kv AS s
+            LEFT JOIN kv AS u
+              ON u.key = ? || CASE
+                WHEN json_valid(s.value) AND json_extract(s.value,'$.userId') IS NOT NULL
+                THEN CAST(json_extract(s.value,'$.userId') AS TEXT)
+                ELSE NULL
+              END
+              AND (u.expires_at IS NULL OR u.expires_at > ?)
+            WHERE s.key=? AND (s.expires_at IS NULL OR s.expires_at > ?)
+            LIMIT 1`).bind(userPrefix, now, sessionKey, now),
+        ]);
+        const row = result?.[1]?.results?.[0] || null;
+        if (!row) return [null, null];
+        const session = row.session;
+        let data;
+        try { data = JSON.parse(session); } catch { return [session, null]; }
+        if (!data || typeof data !== "object" || !data.userId) return [session, null];
+        const userKey = userPrefix + String(data.userId);
+        if (pending.has(userKey)) {
+          const userRow = await readRow(userKey);
+          return [session, userRow ? userRow.value : null];
+        }
+        return [session, row.user ?? null];
+      },
       async getRow(key) {
         return readRow(key);
       },
