@@ -245,6 +245,13 @@
      OnBackPressedCallback）。拆分 ui-unified.js 时这个入口被漏掉，导致登录/引导页按
      返回毫无反应——这里补回来：登录页（未识别工作区）返回即退出 App；工作区页则完整
      走一遍 zpBackButton（根页两次返回退桌面）。 */
+  /* 子页面不压占位（见 zpBindPageBack 里的说明），所以「不可中断操作」开始时
+     必须显式申请一条：否则保存中按返回会直接离开页面，绕过 zpBusyMessage。
+     业务侧在 confirming=true / 长任务开始处调用；重复调用无副作用。 */
+  window.zpArmGuard=function(){
+    try{if(!(history.state&&history.state.zpGuard))zpPushGuard()}catch{}
+  };
+
   window.zpSystemBack=function(){
     if(!zpZone){
       try{
@@ -344,9 +351,13 @@
     // （管理员端最容易踩到），因此恢复时再过一次门禁。
     window.addEventListener("pageshow",e=>{zpBindPageBack();if(e.persisted)zpZoneGuard()});
     if(!zpZone)return; // 登录/引导页只统一按钮行为，不安装系统返回守卫
-    // 每次进入都要有 guard：没有它，「系统返回」会直接滑出本站（落在历史里
-    // 的上一页，管理员端就会被甩到业务首页），而不是先交给下面这段处理。
-    if(!(history.state&&history.state.zpGuard))zpPushGuard();
+    // 只有「工作区根」压占位（2026-10-30 修正）。
+    // 根页需要它：第一次系统返回先被本控制器接管，才有「再按一次退桌面」。
+    // 子页面**不能**压：location.replace 只替换「当前项」，多压一条占位会让
+    // 上一个页面的正式记录永久残留在栈里，连按返回就退回已经离开的内页
+    // （线上实测序列：首页 → 首页 → 历史查询 → 首页）。
+    // 子页面按返回直接落到栈里的根页，正是单根模型要的结果，不需要占位。
+    if(zpIsWorkspaceRoot&&!(history.state&&history.state.zpGuard))zpPushGuard();
     window.addEventListener("popstate",async()=>{
       if(window.zpSuppressPop){window.zpSuppressPop=false;return} // 自己触发的 back，吃掉
       // 业务端页上（含 bfcache 恢复）：消费跨区退出标记，继续后退直到真正退出

@@ -76,7 +76,15 @@ console.log("\n三、全仓不得再有站内 href 赋值（3 条）");
   );
 }
 
-console.log("\n四、退出路径仍是「越过首条记录」（2 条）");
+console.log("\n四、占位只在工作区根（2 条）");
+{
+  // 子页面压占位会让 replace 替换「占位」而不是页面本身，旧页面记录永久残留，
+  // 连按返回就退回已离开的内页（2026-10-30 实测：首页 → 首页 → 历史 → 首页）。
+  t("压占位以 zpIsWorkspaceRoot 为前提", /if\(zpIsWorkspaceRoot&&!\(history\.state&&history\.state\.zpGuard\)\)zpPushGuard\(\)/.test(src));
+  t("子页面不无条件压占位", !/if\(!\(history\.state&&history\.state\.zpGuard\)\)zpPushGuard\(\);/.test(src));
+}
+
+console.log("\n五、退出路径仍是「越过首条记录」（2 条）");
 {
   t("zpDoExit 用 history.back 越界", /function zpDoExit\(\)\{[\s\S]{0,400}?history\.back\(\)/.test(src));
   t("根页两次返回才退桌面（有武装窗口）", /zpExitArmed=true/.test(src) && /if\(zpExitArmed\)return "exit"/.test(src));

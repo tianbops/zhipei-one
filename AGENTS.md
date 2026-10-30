@@ -162,11 +162,15 @@ CI 只报「失败」不报「还有 30 个没跑」——回归后门。
 10. **不提供草稿**（2026-10-30 定稿，见 `docs/adr/0002`）。返回时未提交内容一律
    走「继续编辑 / 放弃」确认，**不落本地、不可恢复**。不要新增 `localStorage`/`sessionStorage`
    草稿写入、不要加「存草稿并离开」按钮——`tests/nav-busy-guard.test.mjs` 会拦。
-11. **站内导航一律 `location.replace`**（2026-10-30 定稿）。多页架构下 `<a href>` 与
-   `location.href=...` 都会 push 一条历史，栈里压着历史页/详情页之后，首页按返回就会
-   「首页 → 详情 → 历史 → 才退出」，方向不可预期。`js/ui/back.js` 全局拦截站内 `<a>`
-   并改走 replace；新代码**禁止**写站内 `location.href=`，用 `location.replace`。
-   `tests/nav-no-history.test.mjs` 会拦。
+11. **站内导航一律 `location.replace`，且占位只压在工作区根**（2026-10-30 定稿）。
+   多页架构下 `<a href>` 与 `location.href=...` 都会 push 一条历史，栈里压着历史页/详情页
+   之后，首页按返回就会「首页 → 详情 → 历史 → 才退出」，方向不可预期。
+   - `js/ui/back.js` 全局拦截站内 `<a>` 并改走 replace；新代码**禁止**写站内 `location.href=`。
+   - 占位（`zpPushGuard`）**只允许在 `/home`、`/admin` 压**。子页面压占位会让 replace
+     替换的是占位而不是页面本身，旧页面记录永久残留（实测：首页 → 首页 → 历史 → 首页）。
+   - 子页面因此没有常驻占位：不可中断操作（保存等）开始时必须调 `window.zpArmGuard()`，
+     否则返回键会直接离开页面、绕过 `zpBusyMessage`。
+   `tests/nav-no-history.test.mjs` 会拦；真浏览器回归见 `tests/e2e-nav-back-stack.cjs`。
 
 ## 9. 已知架构决策（勿轻改）
 
