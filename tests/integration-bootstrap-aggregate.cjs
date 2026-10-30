@@ -143,7 +143,7 @@ function check(name, cond, info) {
   );
   check("dispatch-bootstrap：线路列表与调度线路读取重叠执行", dispatchOverlap >= 2, "最大并发=" + dispatchOverlap);
   const homeOverlap = await observeParallelGets(
-    () => hsb.onRequestGet({ request: req("tok2"), env }),
+    () => hsb.onRequestGet({ request: { url: "https://app.local/api/home-bootstrap", headers: { get: h => (String(h).toLowerCase() === "authorization" ? "Bearer tok2" : (String(h).toLowerCase() === "cookie" ? "zp_session=tok2" : null)) } }, env }),
     ["zp:route:R2", "zp:session:tok2"]
   );
   check("home-bootstrap：调度线路读取与会话续期读取重叠执行", homeOverlap >= 2, "最大并发=" + homeOverlap);
