@@ -9,7 +9,7 @@ let expandedMonth="";
 const focusDate=new URLSearchParams(location.search).get("date")||"";
 
 const todayCN=()=>{const p=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());const v=Object.fromEntries(p.filter(x=>x.type!=="literal").map(x=>[x.type,x.value]));return `${v.year}-${v.month}-${v.day}`;};
-const monthKey=d=>String(d).slice(0,7),monthLabel=m=>{const [y,mo]=m.split("-");return y+"年"+Number(mo)+"月"},dateLabel=d=>{const [y,m,day]=d.split("-");return Number(m)+"月"+Number(day)+"日"},fmtWeight=v=>(Math.round((Number(v)||0)*100)/100).toFixed(2)+"t",esc=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const monthKey=d=>String(d).slice(0,7),monthLabel=m=>{const [y,mo]=m.split("-");return y+"年"+Number(mo)+"月"},dateLabel=d=>{const [y,m,day]=d.split("-");return Number(m)+"月"+Number(day)+"日"},fmtWeight=v=>(Math.round((Number(v)||0)*1000)/1000).toFixed(3)+"t",esc=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function closeOpen(){if(openRow){openRow.classList.remove("swiped");const s=openRow.querySelector(".history-row-surface");if(s){s.style.transition="";s.style.transform=""}openRow=null}}
 function openSwipe(row){if(openRow&&openRow!==row){openRow.classList.remove("swiped");const s=openRow.querySelector(".history-row-surface");if(s){s.style.transition="";s.style.transform=""}}row.classList.add("swiped");openRow=row}
 const SWIPE_W=84;

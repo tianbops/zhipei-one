@@ -59,7 +59,7 @@ function render(){
         // history?date=<已删日期>（只会落到空态/空列表），标记为失效直接回本区根。
         window.zpMarkStale?.();
         $('orderDate').textContent=targetDate||'历史运单';
-        $('storeCount').textContent='0';$('summaryUnit').textContent='张';$('totalWeight').textContent='0.00';$('metrics').innerHTML='';
+        $('storeCount').textContent='0';$('summaryUnit').textContent='张';$('totalWeight').textContent='0.000';$('metrics').innerHTML='';
         $('routeName').textContent='—';$('vehicle').textContent='—';$('driver').textContent='—';$('deliveryPerson').textContent='—';$('routeList').innerHTML='<div class="zp-empty">暂无配送数据</div>';
       }catch(err){btn.disabled=false;btn.textContent='删除';zpToast(err.message||'删除失败','error')}
     };

@@ -26,7 +26,7 @@
 <meta name="theme-color" content="#F6F7F9">
 <title>智配One</title>
 <link rel="manifest" href="/manifest.json">
-<link rel="stylesheet" href="/css/home.bundle.css?v=20b04c7f">
+<link rel="stylesheet" href="/css/home.bundle.css?v=1e4a19a3">
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png?v=25f1ad28">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -56,7 +56,7 @@
     </div>
     <div class="task-main">
       <div class="task-info">
-        <div class="today-summary"><strong id="todayCount">加载中…</strong><span id="todayWeight"></span><span id="substituteBadge" class="sub-badge" hidden>代班</span></div>
+        <div class="today-summary"><strong id="todayOrders"></strong><strong id="todayCount">加载中…</strong><span id="todayWeight"></span><span id="substituteBadge" class="sub-badge" hidden>代班</span></div>
       </div>
       <div class="delivery-man" aria-hidden="true"><img class="delivery-img-dark" src="/assets/delivery-route.webp?v=b872c885" width="336" height="220" decoding="async" alt=""><img class="delivery-img-light" src="/assets/delivery-route-light.webp?v=984a9455" width="336" height="220" decoding="async" alt="" loading="lazy"></div>
     </div>
@@ -116,7 +116,8 @@
     <div class="trend-bottom-row">
       <div class="trend-summary" aria-label="配送汇总">
         <div class="trend-stat"><b id="trendWaybills">0</b><i>单</i><em id="trendWaybillsDelta" class="trend-delta"></em></div>
-        <div class="trend-stat"><b id="trendWeight">0.00</b><i>t</i><em id="trendWeightDelta" class="trend-delta"></em></div>
+        <div class="trend-stat"><b id="trendStores">0</b><i>家</i></div>
+        <div class="trend-stat"><b id="trendWeight">0.000</b><i>t</i><em id="trendWeightDelta" class="trend-delta"></em></div>
       </div>
       <div id="trendHint" class="trend-hint" aria-live="polite"></div>
     </div>
@@ -172,6 +173,6 @@
 </div>
 </main>
 
-<script defer src="/js/home.bundle.js?v=41d90c8a"></script>
+<script defer src="/js/home.bundle.js?v=51a58ac5"></script>
 </body>
 </html>

@@ -2040,6 +2040,8 @@ html[data-zp-boot="hop"] .login-shell{display:none!important}
 .task-info{min-width:0;color:var(--zp-muted);font-size:var(--zp-fs-15);line-height:27px}
 .today-summary{display:flex;align-items:baseline;gap:9px;white-space:nowrap;line-height:29px}
 .today-summary strong{color:var(--zp-text);font-size:var(--zp-fs-20);line-height:29px;font-weight:var(--zp-fw-semibold)}
+/* 单量为空（加载中 / 无运单）时不占位，避免 flex gap 留下一个空档 */
+.today-summary strong:empty{display:none}
 .today-summary span{font-size:var(--zp-fs-16);line-height:29px;color:var(--zp-muted)}
 /* 插画容器与日期等宽(112px)且内容居中：容器右边界与日期右边界一致，
    两者宽度相同 → 插画水平中心恒等于日期中心（用户要求：对齐日期中心下方） */
