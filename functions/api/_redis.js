@@ -14,10 +14,10 @@ function d1Backend(env){
  * 不修改共享 env，也不复用其 D1Backend 缓存；缺少 Sessions API 时原样回退。
  * 默认 first-primary：首个查询从主库开始，后续查询由 Sessions API 保证顺序一致性。
  */
-export function createD1SessionEnv(env,constraint="first-primary"){
+export function createD1SessionEnv(env,constraint="first-primary",routingObserver=null){
   const db=env?.DB;
   if(!db||typeof db.withSession!=="function") return env;
-  return {...env,DB:db.withSession(constraint),__zpD1:undefined};
+  return {...env,DB:db.withSession(constraint),__zpD1:undefined,__zpD1RoutingObserver:routingObserver||env.__zpD1RoutingObserver||null};
 }
 
 export async function command(env,parts){
