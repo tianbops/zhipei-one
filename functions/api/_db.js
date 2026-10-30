@@ -128,7 +128,7 @@ export class D1Backend {
    */
   __recordRouting(meta) {
     const observer = this.routingObserver;
-    if (!observer || !meta || typeof meta !== "object") return;
+    if (!observer || !meta || typeof meta !== "object" || Number(meta.rows_written) > 0) return;
     try {
       observer.queries = (Number(observer.queries) || 0) + 1;
       if (meta.served_by_primary === true) observer.primary = (Number(observer.primary) || 0) + 1;
