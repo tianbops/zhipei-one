@@ -137,10 +137,17 @@ CI 只报「失败」不报「还有 30 个没跑」——回归后门。
 
 ## 8. 返回机制约束（ZP-NAV-2026-002，2026-10-30 定稿）
 
-模型：**单根收口**，不是来源驱动。
+模型：**层级返回 + 单根收口**（2026-10-30 二次修订，见 `docs/adr/0004`）。
+返回的语义是「上一层界面」，既不是「上一个文档」，也不是「一律回首页」。
 
-1. 业务区任何页面返回 → `/home`；不看 `from=`、不看 `date`、不看运单 `id`。
-   子页面之间不互通（历史→详情→返回是回首页，不回历史）。
+1. 按页面层级返回，层级表写死在 `js/ui/back.js` 的 `zpPageDepth`：
+   - **depth 0** 工作区根 `/home`、`/admin` → 两次返回退桌面；
+   - **depth 1** 功能根页 `history` / `dispatch` / `account` / `today` → 回区根，彼此**不**回跳；
+   - **depth 2** 细节页 `order_detail` / `data` / `route_apply` / `privacy` / `terms`
+     → 回来源父级（`from=` 白名单），无来源才回区根；详情回历史时带上原 `date` 定位。
+   目标深度必须**严格更小**，所以不会平级横跳、不会跨区。唯一例外是 detail⇄data 的编辑往返
+   （返回原运单），在 `zpParentOf` 里显式声明 `allowSameDepth`。
+   **新增页面必须登记层级**，未登记的按 depth 1 处理（只往区根走）。
 2. 业务首页再返回 → 两次返回退桌面；**不登出、不清本地登录态**。
 3. 管理员区任何模块返回 → 先收口到管理员首页（模块 0）；管理员首页再返回 → 退桌面。
    管理员**不得**返回业务首页（业务区门禁：admin 会话不停留业务页）。
@@ -161,7 +168,7 @@ CI 只报「失败」不报「还有 30 个没跑」——回归后门。
    壳里只做一件事——调 `window.zpSystemBack()`；JS 未就绪时才退回 `goBack/finish` 兜底。
    退出也走原生：`zpDoExit()` 优先 `ZhipeiNative.exitApp()`（finish），浏览器里才 `history.back()`。
    红线由 `tests/nav-back-channel.test.mjs`（Web）与 `scripts/check-back-channel.mjs`（客户端）守。
-9. 改返回逻辑必须同步 `tests/nav-return.test.mjs`（收口矩阵）、
+9. 改返回逻辑必须同步 `tests/nav-return.test.mjs`（层级矩阵）、
    `tests/nav-admin-exit.test.mjs`（管理员出口）、`tests/nav-busy-guard.test.mjs`
    （忙碌守卫 / 取消按钮缺席 / 根页无箭头）；三者都是阻塞项。
 10. **不提供草稿**（2026-10-30 定稿，见 `docs/adr/0002`）。返回时未提交内容一律
@@ -182,6 +189,10 @@ CI 只报「失败」不报「还有 30 个没跑」——回归后门。
      `zpRegisterBackHook` 表达，历史里多一层就会在「菜单开着直接跳页」时留下孤儿。
    `tests/nav-no-history.test.mjs` 与 `tests/nav-back-channel.test.mjs` 会拦；
    真浏览器回归见 `tests/e2e-nav-back-stack.cjs`（序列应为 `/home → /home → 桌面`）。
+12. `from=` 只是**父级提示**，不是跳转指令：只认 `zpFromParent` 白名单键
+   （`history` / `dispatch` / `account` / `process` / `home`）。**禁止**直接拿 `from` 拼路径——
+   `?from=admin` 曾能把业务页送进管理端，`?from=//evil.example/x` 能跳到站外。
+   对抗用例在 `tests/nav-return.test.mjs`（`from=admin` / `constructor` / `../admin` / `//evil`）。
 
 ## 9. 已知架构决策（勿轻改）
 
@@ -193,6 +204,7 @@ CI 只报「失败」不报「还有 30 个没跑」——回归后门。
 | CSP 用 hash 白名单而非 nonce | CF Pages 静态托管无逐请求 HTML 生成 | `docs/CSP-hardening.md` |
 | 首页走 bundle 打包而非模块化 | 减少首屏请求数 | `scripts/build-home-bundle.mjs` |
 | ACL 不做请求级中间件化 | 关键判定是数据级（这张运单归不归你），中间件只能覆盖登录/角色，重构 29 个端点无安全收益 | `docs/adr/0001-阶段三决策记录.md` 决策 2 |
+| 返回按页面层级（不查历史、不一律回根） | 层级是产品的确定结构；站内导航已全 replace，历史栈里没有「上一页」可用 | `docs/adr/0004-返回按页面层级.md` |
 | 错误响应按「域内错误/未预期异常」二分 | 业务失败本身就是给用户看的中文提示，一刀切脱敏是体验倒退 | `docs/adr/0001-阶段三决策记录.md` 决策 1 |
 
 ## 10. 提交与 PR 规范

@@ -8,7 +8,9 @@
   {rank:20,probe:()=>$('menuPanel'),close:()=>{setMenu(false);return true}}
 );
 if($('menuBtn'))$('menuBtn').onclick=e=>{e.stopPropagation();setMenu(!menuOpen)};
-if($('editRouteBtn'))$('editRouteBtn').onclick=()=>location.replace('/pages/data?from=order&id='+encodeURIComponent(order.id)+'&source=process');
+// 进数据资料编辑线路：把本页的来源（history/process…）一并带过去（origin），
+// 从数据页返回时才回得到这张运单，并且这张运单还记得自己是从哪来的（再由它继续往上返回）。
+if($('editRouteBtn'))$('editRouteBtn').onclick=()=>location.replace('/pages/data?from=order&id='+encodeURIComponent(order.id)+'&source=process'+(from?'&origin='+encodeURIComponent(from):'')+(targetDate?'&odate='+encodeURIComponent(targetDate):''));
 if($('shareBtn'))$('shareBtn').onclick=async()=>{
  setMenu(false);if(!order)return;
  const s=order.summary||{},list=Array.isArray(order.stores)?order.stores:[];

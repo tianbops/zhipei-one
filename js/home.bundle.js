@@ -1924,10 +1924,25 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
   const UI=window.__zpUi||(window.__zpUi={state:{}});
   const sharedState=UI.state||(UI.state={});
 
-  // 收口模型（ZP-NAV-2026-002 · 修订 F，2026-10-30 定稿）：
-  // 不再按 from= 回跳来源页。业务区任何页面返回 → /home；管理员区任何页面返回 → /admin。
-  // 旧 BACK_MAP（history→history、dispatch→dispatch、order→原运单）已删除：
-  // 来源驱动会让「历史→详情→返回」回到历史，与本方案「唯一根为首页」冲突。
+  /* 返回层级模型（ZP-NAV-2026-002 · 修订 G，2026-10-30 二次修订）：
+   *
+   *   depth 0  工作区根   /home、/admin                       → 两次返回退桌面
+   *   depth 1  功能根页   history / dispatch / account / today → 回区根
+   *   depth 2  细节页     order_detail / data / route_apply / privacy / terms
+   *                                                           → 回来源父级，无来源回区根
+   *
+   * 为什么不是「一律回区根」（修订 F）：子页面也收口到 /home 之后，
+   * 「历史 → 运单详情 → 返回」会直接跳回首页，用户丢掉「刚才看的是哪一天」；
+   * 数据资料、线路申请这类二级编辑页同理，返回等于放弃上下文。返回的语义是
+   * 「上一层界面」，只有**没有**上一层时才是区根。
+   *
+   * 为什么不用 history.back()：站内导航统一 replace（见文件末尾），栈里没有上一页；
+   * 且依赖浏览器历史会让「首页返回又退回内页」的老问题复发（v1.0.18 前的实测序列
+   * 首页 → 首页 → 历史 → 首页）。层级在这里显式声明，不猜 referrer、不猜 history.length。
+   *
+   * 单根保证不变：目标 depth 必须**严格小于**当前页，所以不会平级横跳
+   * （派单→历史→返回不会回到派单），也不可能跨区（业务区拿不到 /admin）。
+   */
   const zpZone=UI.detectZone();
   // 区根用无扩展名形态（省一次 308 跳转；带 .html 的旧写法依赖重定向也能到）
   const zpRoot=zpZone==="admin"?"/admin":"/home";
@@ -1935,7 +1950,6 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
 
   // 删除类操作（如删完当天最后一张运单）之后调用：把 URL 上的 id/date 摘掉，
   // 避免刷新或 bfcache 恢复时又落回已删除的对象（详情页变「读取失败」空态）。
-  // 单根模型下返回目标已恒为本区根，此处只剩历史项清洗职责。
   window.zpMarkStale=function(){
     // 同时把当前历史项里的失效 id/date 摘掉，避免刷新或 bfcache 恢复时又回到死链
     try{
@@ -1944,11 +1958,78 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
       history.replaceState(history.state,"",u.pathname+u.search);
     }catch{}
   };
-  // 返回目标解析（单根）。
+
+  // 页面层级表。未知页面按 1 处理（只往区根走），宁可保守也不给未登记页面编造层级。
+  const zpPageDepth={
+    "/home":0,"/admin":0,
+    "/pages/history":1,"/pages/dispatch":1,"/pages/account":1,"/pages/today":1,
+    "/pages/order_detail":2,"/pages/data":2,"/pages/route_apply":2,"/pages/privacy":2,"/pages/terms":2
+  };
+  function zpDepthOf(path){
+    const k=UI.normPath(path);
+    return Object.prototype.hasOwnProperty.call(zpPageDepth,k)?zpPageDepth[k]:1;
+  }
+  // from= → 父级。**只认白名单键**：from 由 URL 携带、任何人可改，不能当跳转指令用
+  // （历史实现直接拿 from 拼路径，`from=admin` 就能把业务页送进管理端）。
+  const zpFromParent={
+    history:"/pages/history",
+    dispatch:"/pages/dispatch",
+    account:"/pages/account",
+    process:"/home",
+    home:"/home"
+  };
+  // 静态父级：没有 from= 也能确定归属的页（页脚/条款都是账户页的下级）
+  const zpStaticParent={"/pages/privacy":"/pages/account","/pages/terms":"/pages/account"};
+
+  function zpParentOf(path,params){
+    // 详情 → 数据资料（编辑线路）：必须回到那张运单，否则用户丢掉正在改的单。
+    // 这是一对同级页的往返（2↔2），返回给 allowSameDepth 豁免；
+    // 回填的 from 取 origin（详情页原本的来源），保证再按返回还能继续往上一层走，
+    // 不会变成 detail⇄data 无限来回。
+    if(path==="/pages/data"&&params.get("from")==="order"){
+      const id=params.get("id")||"";
+      if(!id)return {url:zpRoot};
+      const origin=params.get("origin")||"";
+      const back=Object.prototype.hasOwnProperty.call(zpFromParent,origin)?origin:"process";
+      const od=params.get("odate")||"";
+      return {
+        url:"/pages/order_detail?id="+encodeURIComponent(id)+"&source=process&from="+back+(od?"&date="+encodeURIComponent(od):""),
+        allowSameDepth:true
+      };
+    }
+    const from=params.get("from")||"";
+    // 回历史列表时带上原日期：历史页用 date 参数定位到那一天（focusDate），
+    // 不带的话用户回来只看到默认区间，等于又得重新找一遍。
+    if(from==="history"){
+      const d=params.get("date")||"";
+      return {url:d?"/pages/history?date="+encodeURIComponent(d):"/pages/history"};
+    }
+    if(Object.prototype.hasOwnProperty.call(zpFromParent,from))return {url:zpFromParent[from]};
+    return {url:zpStaticParent[path]||zpRoot};
+  }
+
+  // 返回目标解析。
   window.zpResolveBack=function(){
-    // 单根模型：与来源、与上下文是否失效都无关，一律回本区根。
-    // 跨区防火墙由此天然成立——业务区只可能得到 /home，管理员区只可能得到 /admin。
-    return zpRoot;
+    let path=zpRoot;
+    try{path=UI.normPath(location.pathname)}catch{}
+    const depth=zpDepthOf(path);
+    // 区根与功能根页：只往区根走（功能根页之间是平级，不互相回跳）
+    if(depth<=1)return zpRoot;
+    let target=zpRoot,sameDepth=false;
+    try{
+      const r=zpParentOf(path,new URLSearchParams(location.search));
+      target=r.url;sameDepth=!!r.allowSameDepth;
+    }catch{}
+    // 安全阀一：本站绝对路径（拒绝 //evil、外链、相对路径）
+    if(typeof target!=="string"||target.charAt(0)!=="/"||target.charAt(1)==="/")return zpRoot;
+    let tpath;
+    try{tpath=UI.normPath(new URL(target,"https://x.invalid").pathname)}catch{return zpRoot}
+    // 安全阀二：深度必须严格更小（防 from 手改成同级页导致 A↔B 死循环）；
+    // 唯一例外是 detail⇄data 的编辑往返，已在 zpParentOf 里显式声明。
+    if(!sameDepth&&zpDepthOf(tpath)>=depth)return zpRoot;
+    // 安全阀三：跨区（管理员区不产生任何业务路径目标）
+    if(zpZone==="admin"&&tpath!=="/admin")return zpRoot;
+    return target;
   };
   window.zpGoBack=function(fallback){location.replace(zpResolveBack(fallback))};
 
