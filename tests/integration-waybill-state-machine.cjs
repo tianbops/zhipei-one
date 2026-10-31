@@ -44,7 +44,20 @@ function formReq(url, token, fields) {
 async function toJson(resp) { return await resp.json(); }
 
 (async () => {
-  const env = { UPSTASH_REDIS_REST_URL: "https://upstash.local", UPSTASH_REDIS_REST_TOKEN: "x", PADDLEOCR_ACCESS_TOKEN: "x" };
+  const tempR2Objects = new Map();
+  const env = {
+    UPSTASH_REDIS_REST_URL: "https://upstash.local",
+    UPSTASH_REDIS_REST_TOKEN: "x",
+    PADDLEOCR_ACCESS_TOKEN: "x",
+    WAYBILL_FILES: {
+      put: async (key, value) => { tempR2Objects.set(key, value); },
+      get: async (key) => {
+        const value = tempR2Objects.get(key);
+        return value ? { arrayBuffer: () => value.arrayBuffer() } : null;
+      },
+      delete: async (key) => { tempR2Objects.delete(key); }
+    }
+  };
   seed("route:" + ROUTE, { status: "active", name: "状态机测试线路", driverUserId: UA, deliveryUserId: "uSB" });
   seed("route:" + ROUTE + ":base", { stores: BASE });
   seed("user:" + UA, { id: UA, role: "user", boundRouteId: ROUTE, dispatchRouteId: ROUTE, routeDuty: "driver", sessionVersion: 1 });
@@ -134,6 +147,41 @@ async function toJson(resp) { return await resp.json(); }
   const ocrProc = ocrResult ? await procMod.getProc(env, ocrResult.requestId) : null;
   check("处理票据转 TIMEOUT", ocrProc && ocrProc.stage === "TIMEOUT");
   check("OCR失败票据保留阶段计时", ocrProc && ocrProc.timing && typeof ocrProc.timing.ocrSubmitMs === "number" && typeof ocrProc.timing.ocrStatusWaitMs === "number");
+  check("OCR失败图片留在R2临时区等待生命周期清理", tempR2Objects.size === 1 && [...tempR2Objects.keys()][0].startsWith("waybill-tmp/"));
+  const failedTempKeys = [...tempR2Objects.keys()];
+
+  console.log("【6】OCR成功 → R2临时图片立即删除");
+  const realFetchSuccess = global.fetch;
+  let r2PresentDuringOcr = false;
+  global.fetch = async (url, init) => {
+    const u = String(url);
+    if (u.startsWith(OCR_HOST)) {
+      if (u.endsWith("/api/v2/ocr/jobs") && (!init || init.method === "POST")) {
+        r2PresentDuringOcr = tempR2Objects.size > 0;
+        return new Response(JSON.stringify({ data: { jobId: "job-success-test" } }), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      if (u.endsWith("/job-success-test")) {
+        return new Response(JSON.stringify({ data: { state: "done", resultUrl: { jsonUrl: "https://ocr.test/result" } } }), { status: 200, headers: { "content-type": "application/json" } });
+      }
+    }
+    if (u === "https://ocr.test/result") {
+      return new Response(JSON.stringify({ rec_texts: RAW_GOOD.split("\\n") }) + "\\n", { status: 200, headers: { "content-type": "application/x-ndjson" } });
+    }
+    return realFetchSuccess(url, init);
+  };
+  let successWithFile;
+  try {
+    const FileCtor = global.File;
+    const file = new FileCtor(["dummy"], "waybill-success.png", { type: "image/png" });
+    const successResp = await processMod.onRequestPost({ request: formReq("https://t.zp/api/waybills/process", tokA, { routeId: ROUTE, file }), env });
+    successWithFile = await toJson(successResp);
+  } finally {
+    global.fetch = realFetchSuccess;
+  }
+  check("R2对象在OCR提交期间已存在", r2PresentDuringOcr);
+  check("带图片运单正常完成OCR和保存", successWithFile && successWithFile.success === true, "code=" + (successWithFile && successWithFile.code || ""));
+  check("成功处理后立即删除本次R2图片", tempR2Objects.size === failedTempKeys.length && failedTempKeys.every(k => tempR2Objects.has(k)));
+
   const diagOcr = await diagMod.onRequestGet({ request: getReq("https://t.zp/api/waybills/diagnostic?requestId=" + ocrResult.requestId, tokAdmin), env });
   const diagOcrJson = await toJson(diagOcr);
   check("requestId诊断可读取失败OCR计时", diagOcrJson.success === true && diagOcrJson.procTicket && diagOcrJson.procTicket.timing && typeof diagOcrJson.procTicket.timing.ocrStatusWaitMs === "number");
