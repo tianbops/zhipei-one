@@ -69,6 +69,7 @@ const BASE = 'http://127.0.0.1:' + PORT + '/';
 
   const len = await ev('history.length');
   console.log('管理员窗口 history.length =', len, '| path =', adminPath);
+  console.log('返回控制器诊断 =', await ev('({systemBack:typeof window.zpSystemBack,handleBack:typeof window.zpHandleBack,zone:window.__zpUi&&window.__zpUi.detectZone&&window.__zpUi.detectZone(),ready:document.readyState,backScript:[...document.scripts].some(x=>x.src.includes("/js/ui/back.js"))})'));
   await ev('window.zpSystemBack()'); await sleep(900);
   const firstBackPath = await ev('location.pathname');
   const firstToast = await ev('(()=>{const t=document.getElementById("zpToast");return t&&t.className.indexOf("show")>=0?t.textContent:""})()');
