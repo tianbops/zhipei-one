@@ -5,7 +5,7 @@ import { guard } from "./_safe.js";
 const PAGES = new Set(["home","history","routes","account","login"]);
 /* endpoint 白名单：账户类已细分为 -me / -settings / -other；
  * 保留旧的 "api-account" 是为了让尚未升级到新版诊断脚本的浏览器仍能被接收（旧数据不丢）。 */
-const ENDPOINTS = new Set(["page-load","api-home","api-history","api-history-detail","api-history-search","api-routes","api-account","api-account-me","api-account-settings","api-account-other","api-waybills","api-auth","api-other"]);
+const ENDPOINTS = new Set(["page-load","api-home","api-history","api-history-detail","api-history-search","api-routes","api-account","api-account-me","api-account-settings","api-account-other","api-waybills","api-waybill-process","home-today-ready-cache","home-today-ready-network","home-history-ready-cache","home-history-ready-network","api-auth","api-other"]);
 const LUA = `
 local rate = tonumber(redis.call("INCR", KEYS[2]))
 if rate == 1 then redis.call("EXPIRE", KEYS[2], 3600) end
@@ -51,7 +51,7 @@ for i=1,#ARGV,8 do
       local ok,phases=pcall(cjson.decode,phasesRaw)
       if ok and type(phases)=="table" then
         for name,dur in pairs(phases) do
-          if string.match(name,"^history%-[a-z%-]+$") then
+          if string.match(name,"^history%-[a-z%-]+$") or string.match(name,"^waybill%-[a-z%-]+$") then
             local value=tonumber(dur)
             if value and value>=0 and value<=120000 then
               local phaseBase=base.."phase:"..name..":"
@@ -77,7 +77,7 @@ function validEvent(e) {
   const server = e.server == null ? null : Number(e.server);
   if (!status || !Number.isFinite(duration) || duration < 0 || duration > 120000) return null;
   if (server !== null && (!Number.isFinite(server) || server < 0 || server > 120000)) return null;
-  const allowedPhases = new Set(["history-auth","history-route","history-index","history-aggregate","history-search-index","history-search-read","history-detail-read","history-detail-enrich","history-response-build"]);
+  const allowedPhases = new Set(["history-auth","history-route","history-index","history-aggregate","history-search-index","history-search-read","history-detail-read","history-detail-enrich","history-response-build","waybill-client-compress","waybill-client-first-response","waybill-client-stream","waybill-client-total","waybill-server-recognized","waybill-server-ocr","waybill-server-ocr-submit","waybill-server-ocr-status-wait","waybill-server-ocr-status-request","waybill-server-ocr-result-fetch","waybill-server-base","waybill-server-extract","waybill-server-match","waybill-server-dedupe","waybill-server-plan","waybill-server-total"]);
   const isD1RoutingPhase = name => /^history-db-(?:primary|replica|unknown)-queries$/.test(name) || /^history-db-region-[a-z-]+-queries$/.test(name);
   const phases = {};
   if (e.phases && typeof e.phases === "object" && !Array.isArray(e.phases)) {
