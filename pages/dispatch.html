@@ -118,17 +118,15 @@
 const $=id=>document.getElementById(id);
 const API_TIMEOUT=10000;
 async function api(url,opt={}){
-  const ctl=new AbortController();
-  const timer=setTimeout(()=>ctl.abort(),API_TIMEOUT);
   try{
-    const r=await zpFetch(url,{credentials:"same-origin",cache:"no-store",signal:ctl.signal,...opt});
+    const r=await zpFetch(url,{credentials:"same-origin",cache:"no-store",...opt},{timeoutMs:API_TIMEOUT});
     const d=await r.json().catch(()=>({}));
     if(!r.ok||!d.success)throw new Error(d.error||"请求失败");
     return d;
   }catch(e){
     if(e&&e.name==="AbortError")throw new Error("网络超时，请重试");
     throw e;
-  }finally{clearTimeout(timer)}
+  }
 }
 function esc(v){return String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 let routeState={current:"",routes:[]};

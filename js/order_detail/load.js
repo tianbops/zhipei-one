@@ -5,8 +5,9 @@ async function load(){
     ?'/api/history?date='+encodeURIComponent(targetDate)
     :(source==='today'?'/api/waybills/latest?confirmed=1':'/api/waybills/latest'));
 
+ // 单次 GET 超时由重试层管理；可选 signal 仅保留给真正的业务取消。
  const fetchJson=async(url,signal)=>{
-  const r=await zpFetch(url,{credentials:'same-origin',cache:'no-store',signal});
+  const r=await zpFetch(url,{credentials:'same-origin',cache:'no-store',...(signal?{signal}:{})},{timeoutMs:12000});
   const d=await r.json().catch(()=>({}));
   return {r,d};
  };
@@ -49,15 +50,13 @@ async function load(){
   }catch{}
   return null;
  };
- const controller=new AbortController();
- const timer=setTimeout(()=>controller.abort(),12000);
  try{
-  const {r,d}=await fetchJson(directUrl,controller.signal);
+  const {r,d}=await fetchJson(directUrl);
   let waybill=d.waybill||null;
   if(!r.ok||!d.success)throw Error(d.error||'运单读取失败');
   // 显式 ID 读取若因历史索引/线路上下文异常返回空，不能直接显示 0 家；
   // 既然历史查询是同一权限域内的已保存事实，则按 ID 从历史源恢复。
-  if(id&&!waybill)waybill=await findHistoryWaybill(controller.signal);
+  if(id&&!waybill)waybill=await findHistoryWaybill();
   if(id&&!waybill)throw Error('运单已保存，但详情读取失败，请稍后重试');
   if(!waybill&&!Array.isArray(d.waybills))throw Error(d.error||'暂无当日运单');
   if(source==='today'&&targetDate&&Array.isArray(d.waybills)&&d.waybills.length){
@@ -73,7 +72,7 @@ async function load(){
  }catch(e){
   if(e?.name==='AbortError')throw Error('运单读取超时，请重试');
   throw e;
- }finally{clearTimeout(timer)}
+ }
 }
 
 // 待定门店的"指定已有门店"入口需要线路基准库；按线路缓存，同一张运单多次打开只读一次
