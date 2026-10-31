@@ -78,6 +78,7 @@ export function mergeStoreEdges(imageTexts, extractFn = extract, { isKnownStore 
     return extended && identical <= 1;
   };
   const merged = [];
+  const processedPerImage = [];
   let edgeTrimmed = 0;
   /* 底部残条删除 = 证据规则（所有图生效）+ 位置式兜底（仅图序可靠时）。
      证据规则：有「以它开头的更长门店名」且无完整副本 → 残条。
@@ -92,22 +93,25 @@ export function mergeStoreEdges(imageTexts, extractFn = extract, { isKnownStore 
     let stores = perImage[idx];
     if (!stores.length) continue;
     if (idx > 0 && stores.length) {
-      const previousStores = perImage[idx - 1] || [];
+      // 必须使用前一张图经过边界处理后的条目，而不是原始 perImage：
+      // 前图底部残条已经被剔除，不能再参与后图的重叠匹配。
+      const previousStores = processedPerImage[idx - 1] || [];
       const keyOf = item => formatCompareKey(item?.rawName || item?.name || "");
-      // 截图滚动重叠区可能包含不止一家门店。寻找「前图后缀 = 本图前缀」
-      // 的最长连续序列，整段裁掉本图重复副本，而不是固定只删第一条。
-      // 只比较完整归一化键，不使用模糊相似度，避免把相邻不同门店误合并。
-      let overlapCount = 0;
-      const maxOverlap = Math.min(previousStores.length, stores.length);
-      for (let count = maxOverlap; count >= 1; count--) {
-        let equal = true;
-        for (let offset = 0; offset < count; offset++) {
-          const left = keyOf(previousStores[previousStores.length - count + offset]);
-          const right = keyOf(stores[offset]);
-          if (!left || left !== right) { equal = false; break; }
+      // 只匹配严格连续的「前图后缀 = 本图前缀」，不跨过任何不同门店。
+      const findOverlap = candidates => {
+        const maxOverlap = Math.min(previousStores.length, candidates.length);
+        for (let count = maxOverlap; count >= 1; count--) {
+          let equal = true;
+          for (let offset = 0; offset < count; offset++) {
+            const left = keyOf(previousStores[previousStores.length - count + offset]);
+            const right = keyOf(candidates[offset]);
+            if (!left || left !== right) { equal = false; break; }
+          }
+          if (equal) return count;
         }
-        if (equal) { overlapCount = count; break; }
-      }
+        return 0;
+      };
+      let overlapCount = findOverlap(stores);
       if (overlapCount > 0) {
         stores = stores.slice(overlapCount);
         edgeTrimmed += overlapCount;
@@ -119,10 +123,17 @@ export function mergeStoreEdges(imageTexts, extractFn = extract, { isKnownStore 
         // 底部残片由 isBottomResidue 根据「更长名称前缀」证据删除。
         const completesPrevious = !!previousKey && firstKey.startsWith(previousKey)
           && firstKey.length - previousKey.length >= 2;
-        // 没有可证明的多条重叠时，维持既有单条顶部残片兜底行为。
         if (!completesPrevious) {
+          // 保留既有顶部残条兜底行为。关键补充：移除首条后再检查一次连续重叠，
+          // 可处理「顶部残条 + 后续多家重复门店」；若中间插入不同门店，
+          // findOverlap 会因不连续而停止，绝不会跳过该门店跨项裁剪。
           stores = stores.slice(1);
           edgeTrimmed++;
+          overlapCount = findOverlap(stores);
+          if (overlapCount > 0) {
+            stores = stores.slice(overlapCount);
+            edgeTrimmed += overlapCount;
+          }
         }
       }
     }
@@ -133,6 +144,7 @@ export function mergeStoreEdges(imageTexts, extractFn = extract, { isKnownStore 
     if (stores.length && (positional || isBottomResidue(lastKey))) {
       stores = stores.slice(0, -1); edgeTrimmed++;                                // 底部残条
     }
+    processedPerImage[idx] = stores;
     for (const s of stores) merged.push(s);
   }
   return { stores: merged.length ? merged : null, edgeTrimmed };
