@@ -102,7 +102,6 @@
   window.zpPerfRecord=function(endpoint,status,duration,server,phases){
     if(typeof endpoint!=="string"||!endpoint)return;
     push(endpoint,status,duration,server,phases);
-    flush();
   };
   var nav=performance.getEntriesByType("navigation")[0];
   window.addEventListener("load",function(){
