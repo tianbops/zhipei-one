@@ -5,6 +5,17 @@ import { readFileSync } from "node:fs";
 const source = readFileSync(new URL("../functions/api/waybills/ocr.js", import.meta.url), "utf8");
 const processSource = readFileSync(new URL("../functions/api/waybills/process.js", import.meta.url), "utf8");
 const adminDiagnosticsSource = readFileSync(new URL("../js/admin/diagnostics.js", import.meta.url), "utf8");
+assert.match(adminDiagnosticsSource, /fieldEvidenceHtml/,
+  "管理员运单诊断必须展示字段证据关联");
+assert.match(adminDiagnosticsSource, /lineIndex/,
+  "管理员诊断必须通过行索引读取原始 OCR 证据");
+assert.match(adminDiagnosticsSource, /模型分数/,
+  "管理员诊断展示原始模型分数时必须明确其为模型分数");
+assert.match(adminDiagnosticsSource, /门店未关联原文/,
+  "管理员诊断必须指出缺少原文关联的门店");
+assert.match(adminDiagnosticsSource, /\.\.\.fieldEvidenceLines/,
+  "复制诊断时必须包含字段证据内容");
+
 const fieldEvidenceSource = readFileSync(new URL("../functions/api/waybills/_ocr-field-evidence.js", import.meta.url), "utf8");
 assert.match(fieldEvidenceSource, /export function associateFieldEvidence/,
   "字段证据关联模块必须导出纯函数");
