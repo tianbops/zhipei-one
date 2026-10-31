@@ -213,7 +213,7 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
       };
       for(const [name,key] of Object.entries(timingFields)){const value=Number(timing[key]);if(Number.isFinite(value)&&value>=0)phases[name]=value;}
       const server=Number.isFinite(Number(timing.totalMs))?Number(timing.totalMs):null;
-      const status=perfFailureStatus||(perfResponseStatus===null?"network":(!perfStreamComplete&&perfResponseStatus<400?"network":perfResponseStatus));
+      const status=perfFailureStatus||(perfResponseStatus===null?"network":(!perfStreamComplete&&perfResponseStatus<400?"network":(perfResult?.success===false&&Number.isInteger(perfResult?.httpStatus)?perfResult.httpStatus:perfResponseStatus)));
       try{window.zpPerfRecord?.("api-waybill-process",status,perfDuration,server,phases)}catch{}
       perfRecorded=true;
     }
