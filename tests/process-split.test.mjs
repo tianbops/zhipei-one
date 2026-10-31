@@ -6,9 +6,9 @@
  *   _process-extract.js   OCR 文本解析（extract）
  *   _process-plan.js      身份名 / 分段 / 校验 / 去重 / 规划
  *   _process-persist.js   生命周期事件（recordWaybillLifecycle）
- *   process.js            入口：base + runProcess（含嵌套 saveWaybill）+ onRequestPost
+ *   process.js            入口：base + runProcessCore（含嵌套 saveWaybill；外层 runProcess 负责临时图片清理）+ onRequestPost
  * ⚠ saveWaybill 在原文件中即为 runProcess 体内的函数声明，深度闭包依赖
- *   runProcess 局部量（stopIfClientCancelled / failProcess / emit / requestId…），
+ *   runProcessCore 局部量（stopIfClientCancelled / failProcess / emit / requestId…），
  *   按「零改写」原则留在线程入口内——守卫钉死这一点，防后人把它「顺手」外移改写。
  * 行为等价由 10 个集成套件背书（confirm-learning-rematch / diagnostic-auth /
  *   fingerprint-drift / retry-save-expiry / waybill-delete-cleanup / isolation /
@@ -42,9 +42,9 @@ assert.strictEqual(topExports.length, 1, `入口应只剩 1 个顶层 export，�
 assert.match(topExports[0], /export async function onRequestPost\(/, "唯一 export 必须是 onRequestPost");
 
 // 3) 零改写红线：saveWaybill 仍嵌套在 runProcess 体内（闭包耦合，不外移）
-const runIdx = entry.indexOf("async function runProcess(");
+const runIdx = entry.indexOf("async function runProcessCore(");
 const saveIdx = entry.indexOf("async function saveWaybill(");
-assert.ok(runIdx > 0 && saveIdx > runIdx, "saveWaybill 必须仍位于 runProcess 体内（零改写红线）");
+assert.ok(runIdx > 0 && saveIdx > runIdx, "saveWaybill 必须仍位于 runProcessCore 体内（零改写红线）");
 assert.ok(entry.includes("stopIfClientCancelled(\"SAVE\")"), "saveWaybill 的取消检查点应保持原样");
 
 // 4) import 无断链：入口/plan 的 import 名字在目标模块有 export（声明或 re-export 均可）

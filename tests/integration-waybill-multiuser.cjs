@@ -52,7 +52,20 @@ async function toJson(resp) { return await resp.json(); }
   const confirmMod = await import(baseDir + "waybills/confirm.js");
   const aclMod = await import(baseDir + "_waybill-acl.js");
 
-  const env = { UPSTASH_REDIS_REST_URL: "https://upstash.local", UPSTASH_REDIS_REST_TOKEN: "x", PADDLEOCR_ACCESS_TOKEN: "x" };
+  const tempR2Objects = new Map();
+  const env = {
+    UPSTASH_REDIS_REST_URL: "https://upstash.local",
+    UPSTASH_REDIS_REST_TOKEN: "x",
+    PADDLEOCR_ACCESS_TOKEN: "x",
+    WAYBILL_FILES: {
+      put: async (key, value) => { tempR2Objects.set(key, value); },
+      get: async (key) => {
+        const value = tempR2Objects.get(key);
+        return value ? { arrayBuffer: () => value.arrayBuffer() } : null;
+      },
+      delete: async (key) => { tempR2Objects.delete(key); }
+    }
+  };
 
   // 角色矩阵
   const mkUser = (id, bound, dispatch, duty, role = "user") => {
