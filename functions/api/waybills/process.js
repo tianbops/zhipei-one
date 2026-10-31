@@ -4,7 +4,8 @@
  * 上传运单 → OCR 识别 → 门店匹配 → 去重 → 线路规划 → 校验 → 落库。
  * 实现按职责拆至 _process-common / _process-extract / _process-plan /
  * _process-persist（P1-1g，函数体零改写）；本文件保留 base、runProcess
- * （含嵌套其内、与 runProcess 局部量闭包耦合的 saveWaybill）与 onRequestPost。
+ * （含嵌套其内、与 runProcessCore 局部量闭包耦合的 saveWaybill）与 onRequestPost；外层
+ * runProcess 负责成功后清理 R2 临时图片。
  * 纪律：客户端取消（AbortController）仅断连接，Worker 内任务在高成本阶段
  *   边界主动检查；失败统一经 failProcess 写状态机票据并返回可恢复提示。
  */
