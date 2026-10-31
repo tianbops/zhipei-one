@@ -15,7 +15,7 @@ function check(name, ok, info) {
   const requestId = "req-failure-archive-1";
   await beginProc(env, { requestId, routeId: "route-17", userId: "admin-test" });
   const order = {
-    routeId: "route-17", date: "2026-05-21", vehicle: "渝DK7692",
+    routeId: "route-17", date: "2026-05-21", uploadedAt: "2026-05-22T01:00:00.000Z", uploadedAtBeijing: "2026-05-22T09:00:00.000+08:00", vehicle: "渝DK7692",
     rawText: "must not be retained",
     stores: [{ name: "门店甲", storeId: "s1" }, { name: "门店甲", storeId: "s1" }],
     validation: { valid: false, errors: ["规划结果存在重复门店"] },
