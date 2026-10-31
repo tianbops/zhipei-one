@@ -174,6 +174,7 @@ export async function failProc(env, requestId, patch) {
     };
     if (patch.waybillId) next.waybillId = patch.waybillId;
     await command(env, ["SET", procKey(requestId), JSON.stringify(next), "EX", String(PROC_TTL)]);
+    if (["FAILED", "TIMEOUT", "CANCELLED"].includes(next.stage)) { try { await archiveFailure(env, next, patch); } catch {} }
     return next;
   } catch { return null; }
 }
