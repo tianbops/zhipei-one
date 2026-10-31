@@ -91,7 +91,7 @@ async function archiveFailure(env, rec, patch = {}) {
   const uploadedAt = order?.uploadedAt || rec.uploadedAt || rec.startedAt || nowISO();
   const uploadedAtBeijing = order?.uploadedAtBeijing || rec.uploadedAtBeijing || rec.startedAtBeijing || beijingISO(uploadedAt);
   const uploadDate = uploadedAtBeijing.slice(0, 10);
-  const businessDate = /^\d{4}-\d{2}-\d{2}$/.test(clean(patch.date || order?.date)) ? clean(patch.date || order.date) : uploadDate;
+  const businessDate = /^\d{4}-\d{2}-\d{2}$/.test(clean(patch.date || order?.date)) ? clean(patch.date || order.date) : null;
   const vehicle = clean(patch.vehicle || order?.vehicle).toUpperCase() || null;
   const record = {
     requestId: rec.requestId,
@@ -118,7 +118,8 @@ async function archiveFailure(env, rec, patch = {}) {
   };
   const serialized = JSON.stringify(record);
   await command(env, ["SET", failureKey(rec.requestId), serialized, "EX", String(FAILURE_TTL)]);
-  const dates = [...new Set([uploadDate, businessDate])].filter(x => /^\d{4}-\d{2}-\d{2}$/.test(x));
+  // 日期索引只对应运单业务日期；上传日单独保存在 uploadDate，不参与业务日期筛选。
+  const dates = businessDate ? [businessDate] : [];
   const keys = [routeFailureKey(routeId), ...dates.map(d => dateFailureKey(routeId, d))];
   for (const key of keys) {
     await command(env, ["RPUSH", key, rec.requestId]);
@@ -128,7 +129,7 @@ async function archiveFailure(env, rec, patch = {}) {
   return true;
 }
 
-/** 管理员失败列表：只按线路索引读取，不扫描全库；日期同时匹配上传日和运单业务日。 */
+/** 管理员失败列表：只按线路索引读取，不扫描全库；date 参数只匹配运单业务日期。 */
 export async function listFailureRecords(env, { routeId, date = "", vehicle = "", limit = 50 } = {}) {
   const rid = clean(routeId);
   if (!rid) return { failures: [], count: 0, truncated: false };
@@ -148,7 +149,7 @@ export async function listFailureRecords(env, { routeId, date = "", vehicle = ""
     }
   }
   const plate = clean(vehicle).toUpperCase();
-  const filtered = raw.filter(x => x && x.routeId === rid && (!plate || clean(x.vehicle).toUpperCase() === plate))
+  const filtered = raw.filter(x => x && x.routeId === rid && (!day || clean(x.date) === day) && (!plate || clean(x.vehicle).toUpperCase() === plate))
     .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
   const cap = Math.max(1, Math.min(100, Number(limit) || 50));
   return { failures: filtered.slice(0, cap), count: filtered.length, truncated: ids.length > unique.length || filtered.length > cap };
