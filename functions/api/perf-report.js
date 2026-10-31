@@ -76,5 +76,5 @@ export const onRequestGet = guard(async ({request,env}) => {
     }
     totals.hours.push(hour);
   }
-  return json({success:true,windowHours:24,generatedAt:now.toISOString(),totals});
+  return json({success:true,windowHours:24,generatedAt:now.toISOString(),generatedAtBeijing:beijingISO(now),totals});
 });
