@@ -29,7 +29,7 @@ function evidenceRef(line, lineIndex) {
   return {
     lineIndex,
     imageIndex: Number.isInteger(line?.imageIndex) && line.imageIndex > 0 ? line.imageIndex : null,
-    score: Number.isFinite(Number(line?.score)) ? Number(line.score) : null,
+    score: line?.score != null && Number.isFinite(Number(line.score)) ? Number(line.score) : null,
   };
 }
 
