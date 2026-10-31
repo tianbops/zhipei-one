@@ -904,7 +904,7 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
   }finally{
     if(perfRequestStartedAt&&!perfRecorded){
       const perfEndedAt=performance.now(),perfDuration=perfEndedAt-perfProcessStartedAt;
-      const timing=perfResult?.processingTiming&&typeof perfResult.processingTiming==="object"?perfResult.processingTiming:((!perfResult?.idempotent&&perfResult?.waybill?.timing&&typeof perfResult.waybill.timing==="object")?perfResult.waybill.timing:{});
+      const timing=perfResult?.processingTiming&&typeof perfResult.processingTiming==="object"?perfResult.processingTiming:(perfResult?.timing&&typeof perfResult.timing==="object"?perfResult.timing:((!perfResult?.idempotent&&perfResult?.waybill?.timing&&typeof perfResult.waybill.timing==="object")?perfResult.waybill.timing:{}));
       const phases={
         "waybill-client-compress":perfCompressMs,
         "waybill-client-first-response":Math.max(0,perfResponseAt-perfRequestStartedAt),
