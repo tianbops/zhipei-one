@@ -377,7 +377,7 @@ console.log("\n✅ waybill-multi-image 全部通过");
     const r = mergeStoreEdges([seq([A, B, C]), seq([B, X, C, D])], extract);
     const list = names(r.stores || []);
     assert.ok(list.some(n => formatCompareKey(n) === formatCompareKey(X)), "中间插入的 X 必须保留");
-    assert.ok(count(list, C) >= 1, "不得跨过 X 误删后续 C");
+    assert.equal(count(list, C), 2, "X 打断连续重叠后，第二图的 C 不得被跨项裁剪");
     assert.ok(list.some(n => formatCompareKey(n) === formatCompareKey(D)), "非重叠新增 D 必须保留");
   }
 
