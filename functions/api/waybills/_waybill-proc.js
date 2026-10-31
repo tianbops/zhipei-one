@@ -66,7 +66,7 @@ export async function beginProc(env, { requestId, routeId, userId, fileName = nu
   };
   try {
     await command(env, ["SET", procKey(requestId), JSON.stringify(rec), "EX", String(PROC_TTL)]);
-  } catch { /* best-effort */ }
+  } catch { return null; }
   return rec;
 }
 
@@ -196,12 +196,25 @@ export async function failProc(env, requestId, patch) {
  * 在正式保存前原子声明“保存权”。
  * 返回 false 表示该请求已经被取消/完成，调用方不得进入保存 EVAL。
  */
-export async function claimProcSave(env, requestId) {
-  if (!requestId) return false;
+export async function claimProcSaveDetailed(env, requestId) {
+  if (!requestId) return { ok: false, reason: "REQUEST_ID_MISSING" };
   try {
     const result = await command(env, ["EVAL", claimSaveScript, "1", procKey(requestId), nowISO(), beijingISO(new Date()), String(PROC_TTL)]);
-    return Number(result) === 1;
-  } catch { return false; }
+    if (Number(result) === 1) return { ok: true, reason: "CLAIMED" };
+    const raw = await command(env, ["GET", procKey(requestId)]);
+    const rec = raw ? (typeof raw === "string" ? JSON.parse(raw) : raw) : null;
+    if (!rec) return { ok: false, reason: "TICKET_MISSING" };
+    if (rec.stage === "CANCELLED") return { ok: false, reason: "CANCELLED", proc: rec };
+    if (rec.stage === "DONE") return { ok: false, reason: "DONE", proc: rec };
+    return { ok: false, reason: "STATE_CHANGED", proc: rec };
+  } catch (error) {
+    return { ok: false, reason: "REDIS_ERROR", detail: error?.message || String(error) };
+  }
+}
+
+export async function claimProcSave(env, requestId) {
+  const result = await claimProcSaveDetailed(env, requestId);
+  return result.ok;
 }
 
 /**
@@ -262,4 +275,4 @@ export function effectiveStage(proc, now = Date.now()) {
   return "PROCESSING";
 }
 
-export default { beginProc, failProc, getProc, finishProc, claimProcSave, cancelProc, effectiveStage, listFailureRecords, PROC_STALLED_MS, PROC_TIMEOUT_MS, PROC_STAGES };
+export default { beginProc, failProc, getProc, finishProc, claimProcSave, claimProcSaveDetailed, cancelProc, effectiveStage, listFailureRecords, PROC_STALLED_MS, PROC_TIMEOUT_MS, PROC_STAGES };
