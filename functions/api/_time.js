@@ -3,8 +3,6 @@
  * 持久化保留 UTC ISO 字段；新增同一时刻的北京时间 ISO 字段（显式 +08:00）。
  * 不用于业务日期推导；业务日期继续由各业务模块按 Asia/Shanghai 规则生成。
  */
-const pad = value => String(value).padStart(2, "0");
-
 export function beijingISO(value = new Date()) {
   const date = value instanceof Date ? value : new Date(value);
   if (!Number.isFinite(date.getTime())) return null;
@@ -18,13 +16,4 @@ export function beijingISO(value = new Date()) {
   );
   const millis = String(date.getUTCMilliseconds()).padStart(3, "0");
   return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}.${millis}+08:00`;
-}
-
-export function timeFields(value = new Date(), prefix = "") {
-  const date = value instanceof Date ? value : new Date(value);
-  if (!Number.isFinite(date.getTime())) throw new TypeError("INVALID_TIME");
-  return {
-    [`${prefix}At`]: date.toISOString(),
-    [`${prefix}AtBeijing`]: beijingISO(date)
-  };
 }
