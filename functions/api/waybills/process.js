@@ -144,7 +144,7 @@ async function runProcessCore({request,env,emit=()=>{},form:providedForm=null,us
       for(let i=0;i<files.length;i++){
         const source=files[i];
         const key=`waybill-tmp/${requestId}/${i+1}-${crypto.randomUUID()}`;
-        await bucket.put(key,source,{httpMetadata:{contentType:source.type||"application/octet-stream"}});
+        await bucket.put(key,source,{storageClass:"Standard",httpMetadata:{contentType:source.type||"application/octet-stream"}});
         tempKeys.push(key);
         const stored=await bucket.get(key);
         if(!stored)throw new Error("临时图片写入后无法读取");
