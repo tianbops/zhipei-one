@@ -39,3 +39,9 @@ console.log("Automatic anonymous performance diagnostics safeguards passed.");
 assert.match(source,/window\.zpPerfRecord/);
 assert.match(source,/p===\"\/api\/waybills\/process\"/);
 assert.match(source,/bodyMethods=\[\"json\",\"text\",\"arrayBuffer\",\"blob\",\"formData\"\]/);
+
+// Abort and timeout failures are separate from genuine network errors.
+assert.match(source,/classifyFetchFailure/);
+assert.match(source,/name==="AbortError"/);
+assert.match(source,/name==="TimeoutError"/);
+assert.match(source,/status==="network"\|\|status==="abort"\|\|status==="timeout"/);
