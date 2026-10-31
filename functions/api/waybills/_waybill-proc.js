@@ -198,7 +198,12 @@ export async function cancelProc(env, requestId, { action = "REPROCESS", hint = 
   if (!requestId) return false;
   try {
     const result = await command(env, ["EVAL", cancelScript, "1", procKey(requestId), action, hint, detail || "", nowISO(), String(PROC_TTL)]);
-    return Number(result) === 1;
+    if (Number(result) === 1) {
+      const rec = await getProc(env, requestId);
+      if (rec) { try { await archiveFailure(env, rec, {}); } catch {} }
+      return true;
+    }
+    return false;
   } catch { return false; }
 }
 
