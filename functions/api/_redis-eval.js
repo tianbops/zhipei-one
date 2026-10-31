@@ -297,8 +297,7 @@ reg(
 
 // ============ 12. 邀请码移除 ============
 reg(
-  `local raw=redis.call('GET',KEYS[1]); if not raw then return 2 end; local ok,ids=pcall(cjson.decode,raw); if not ok or type(ids)~='table' then return 3 end; local found=false; local next={}; for _,x in ipairs(ids) do if x==ARGV[1] then found=true else table.insert(next,x) end end; if not found then return 4 end; local main=redis.call('GET',KEYS[2]); local code=redis.call('GET',KEYS[3]); if not main or not code then return 5 end; local okm,m=pcall(cjson.decode,main); local okc,c=pcall(cjson.decode,code); if not okm or type(m)~='table' or not okc or type(c)~='table' then return 6 end; if m.id~=ARGV[1] or c.id~=ARGV[1] or m.code~=c.code or m.code~=ARGV[2] then return 7 end; m.enabled=false; m.removedAt=ARGV[3]; c.enabled=false; c.removedAt=ARGV[3]; redis.call('SET',KEYS[2],cjson.encode(m)); redis.call('SET',KEYS[3],cjson.encode(c)); redis.call('SET',KEYS[1],cjson.encode(next)); return 1`,
-  async (ctx, keys, args) => {
+  `local raw=redis.call('GET',KEYS[1]); if not raw then return 2 end; local ok,ids=pcall(cjson.decode,raw); if not ok or type(ids)~='table' then return 3 end; local found=false; local next={}; for _,x in ipairs(ids) do if x==ARGV[1] then found=true else table.insert(next,x) end end; if not found then return 4 end; local main=redis.call('GET',KEYS[2]); local code=redis.call('GET',KEYS[3]); if not main or not code then return 5 end; local okm,m=pcall(cjson.decode,main); local okc,c=pcall(cjson.decode,code); if not okm or type(m)~='table' or not okc or type(c)~='table' then return 6 end; if m.id~=ARGV[1] or c.id~=ARGV[1] or m.code~=c.code or m.code~=ARGV[2] then return 7 end; m.enabled=false; m.removedAt=ARGV[3]; c.enabled=false; c.removedAt=ARGV[3]; redis.call('SET',KEYS[2],cjson.encode(m)); redis.call('SET',KEYS[3],cjson.encode(c)); redis.call('SET',KEYS[1],cjson.encode(next)); return 1`,  async (ctx, keys, args) => {
     const raw = await ctx.get(keys[0]);
     if (!raw) return 2;
     const [ok, ids] = parseJSON(raw);
@@ -597,8 +596,7 @@ reg(
     if (!rr || !uu) return 2;
     const [okr, r] = parseJSON(rr);
     const [oku, old] = parseJSON(uu);
-    if (!okr || typeof r !== "object" || !oku || typeof old !== "object") return 3;
-    if (old.disabled === true) return 3;
+    if (!okr || typeof r !== "object" || !oku || typeof old !== "object") return 3;    if (old.disabled === true) return 3;
     if (old.boundRouteId !== args[2] || old.routeDuty !== args[3]) return 4;
     const [okIds, ids] = parseJSON(args[4]);
     if (!Array.isArray(ids)) return 5;
@@ -897,8 +895,7 @@ reg(
         if (!ok || typeof existing !== "object" || !existing.dailyDedupeKey) return ["VERIFY_DAILY", sigId];
         await ctx.del(dedupeKey);
       }
-      await ctx.del(dedupeKey);
-    }
+      await ctx.del(dedupeKey);    }
     const fpKey = keys[0];
     const fpId = await ctx.get(fpKey);
     if (fpId && fpId !== args[0]) {
@@ -1024,7 +1021,7 @@ return 1`,
 
 // ============ 38. 处理状态机 claimSave ============
 reg(
-  `local raw=redis.call("GET",KEYS[1]); if not raw then return 0 end; local ok,rec=pcall(cjson.decode,raw); if not ok or type(rec)~="table" then return 0 end; if rec.stage=="CANCELLED" or rec.stage=="DONE" then return 0 end; if rec.saveClaimedAt then return 1 end; rec.saveClaimedAt=ARGV[1]; rec.updatedAt=ARGV[1]; redis.call("SET",KEYS[1],cjson.encode(rec),"EX",ARGV[2]); return 1`,
+  `local raw=redis.call("GET",KEYS[1]); if not raw then return 0 end; local ok,rec=pcall(cjson.decode,raw); if not ok or type(rec)~="table" then return 0 end; if rec.stage=="CANCELLED" or rec.stage=="DONE" then return 0 end; if rec.saveClaimedAt then return 1 end; rec.saveClaimedAt=ARGV[1]; rec.updatedAt=ARGV[1]; rec.updatedAtBeijing=ARGV[2]; redis.call("SET",KEYS[1],cjson.encode(rec),"EX",ARGV[3]); return 1`,
   async (ctx, keys, args) => {
     const raw = await ctx.get(keys[0]);
     if (!raw) return 0;
@@ -1034,14 +1031,15 @@ reg(
     if (rec.saveClaimedAt) return 1;
     rec.saveClaimedAt = args[0];
     rec.updatedAt = args[0];
-    await ctx.set(keys[0], JSON.stringify(rec), args[1]);
+    rec.updatedAtBeijing = args[1];
+    await ctx.set(keys[0], JSON.stringify(rec), args[2]);
     return 1;
   }
 );
 
 // ============ 39. 处理状态机 cancel ============
 reg(
-  `local raw=redis.call("GET",KEYS[1]); if not raw then return 0 end; local ok,rec=pcall(cjson.decode,raw); if not ok or type(rec)~="table" then return 0 end; if rec.stage=="DONE" or rec.saveClaimedAt then return 0 end; rec.stage="CANCELLED"; rec.recoverable=true; rec.action=ARGV[1]; rec.hint=ARGV[2]; rec.detail=ARGV[3]; rec.updatedAt=ARGV[4]; redis.call("SET",KEYS[1],cjson.encode(rec),"EX",ARGV[5]); return 1`,
+  `local raw=redis.call("GET",KEYS[1]); if not raw then return 0 end; local ok,rec=pcall(cjson.decode,raw); if not ok or type(rec)~="table" then return 0 end; if rec.stage=="DONE" or rec.saveClaimedAt then return 0 end; rec.stage="CANCELLED"; rec.recoverable=true; rec.action=ARGV[1]; rec.hint=ARGV[2]; rec.detail=ARGV[3]; rec.updatedAt=ARGV[4]; rec.updatedAtBeijing=ARGV[5]; redis.call("SET",KEYS[1],cjson.encode(rec),"EX",ARGV[6]); return 1`,
   async (ctx, keys, args) => {
     const raw = await ctx.get(keys[0]);
     if (!raw) return 0;
@@ -1054,7 +1052,8 @@ reg(
     rec.hint = args[1];
     rec.detail = args[2];
     rec.updatedAt = args[3];
-    await ctx.set(keys[0], JSON.stringify(rec), args[4]);
+    rec.updatedAtBeijing = args[4];
+    await ctx.set(keys[0], JSON.stringify(rec), args[5]);
     return 1;
   }
 );
