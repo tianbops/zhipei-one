@@ -6,9 +6,11 @@ const source = readFileSync(new URL("../functions/api/waybills/ocr.js", import.m
 const processSource = readFileSync(new URL("../functions/api/waybills/process.js", import.meta.url), "utf8");
 const adminDiagnosticsSource = readFileSync(new URL("../js/admin/diagnostics.js", import.meta.url), "utf8");
 const fieldEvidenceSource = readFileSync(new URL("../functions/api/waybills/_ocr-field-evidence.js", import.meta.url), "utf8");
-assert.match(processSource, /associateFieldEvidence[\\s\\S]*?fieldEvidence/ ,
+assert.match(fieldEvidenceSource, /export function associateFieldEvidence/,
+  "字段证据关联模块必须导出纯函数");
+assert.match(processSource, /associateFieldEvidence[\s\S]*?fieldEvidence/,
   "运单处理必须把 OCR 行证据关联到提取字段");
-assert.match(processSource, /fieldEvidence}:null/ ,
+assert.match(processSource, /fieldEvidence}:null/,
   "字段证据必须随 OCR 诊断信息持久化");
 const { associateFieldEvidence } = await import(new URL("../functions/api/waybills/_ocr-field-evidence.js", import.meta.url));
 const fieldEvidenceFixture = associateFieldEvidence({
