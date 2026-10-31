@@ -45,6 +45,7 @@ async function toJson(resp) { return await resp.json(); }
 
 (async () => {
   const tempR2Objects = new Map();
+  let deleteFailures = 0, deleteCalls = 0;
   const env = {
     UPSTASH_REDIS_REST_URL: "https://upstash.local",
     UPSTASH_REDIS_REST_TOKEN: "x",
@@ -55,7 +56,7 @@ async function toJson(resp) { return await resp.json(); }
         const value = tempR2Objects.get(key);
         return value ? { arrayBuffer: () => value.arrayBuffer() } : null;
       },
-      delete: async (key) => { tempR2Objects.delete(key); }
+      delete: async (key) => { deleteCalls++; if (deleteFailures > 0) { deleteFailures--; throw new Error("simulated R2 delete failure"); } tempR2Objects.delete(key); }
     }
   };
   seed("route:" + ROUTE, { status: "active", name: "状态机测试线路", driverUserId: UA, deliveryUserId: "uSB" });
@@ -150,6 +151,7 @@ async function toJson(resp) { return await resp.json(); }
   check("OCR失败图片留在R2临时区等待生命周期清理", tempR2Objects.size === 1 && [...tempR2Objects.keys()][0].startsWith("waybill-tmp/"));
   const failedTempKeys = [...tempR2Objects.keys()];
 
+  deleteFailures = 1; // 首次删除故意失败，验证一次自动重试
   console.log("【6】OCR成功 → R2临时图片立即删除");
   const realFetchSuccess = global.fetch;
   let r2PresentDuringOcr = false;
@@ -181,7 +183,17 @@ async function toJson(resp) { return await resp.json(); }
   check("R2对象在OCR提交期间已存在", r2PresentDuringOcr);
   check("带图片运单正常完成OCR和保存", successWithFile && successWithFile.success === true, "code=" + (successWithFile && successWithFile.code || ""));
   check("成功处理后立即删除本次R2图片", tempR2Objects.size === failedTempKeys.length && failedTempKeys.every(k => tempR2Objects.has(k)));
+  check("R2删除失败后自动重试成功", deleteCalls >= 2 && tempR2Objects.size === failedTempKeys.length);
 
+  console.log("【7】R2暂存上传失败 → 阻止OCR继续");
+  const originalPut = env.WAYBILL_FILES.put;
+  env.WAYBILL_FILES.put = async () => { throw new Error("simulated R2 upload failure"); };
+  const FileCtorForFailure = global.File;
+  const failedFile = new FileCtorForFailure(["dummy"], "waybill-upload-fail.png", { type: "image/png" });
+  const storageFailureResponse = await processMod.onRequestPost({ request: formReq("https://t.zp/api/waybills/process", tokA, { routeId: ROUTE, file: failedFile }), env });
+  const storageFailure = await toJson(storageFailureResponse);
+  env.WAYBILL_FILES.put = originalPut;
+  check("R2暂存失败返回明确503", storageFailureResponse.status === 503 && storageFailure.code === "WAYBILL_TEMP_STORAGE_FAILED");
   const diagOcr = await diagMod.onRequestGet({ request: getReq("https://t.zp/api/waybills/diagnostic?requestId=" + ocrResult.requestId, tokAdmin), env });
   const diagOcrJson = await toJson(diagOcr);
   check("requestId诊断可读取失败OCR计时", diagOcrJson.success === true && diagOcrJson.procTicket && diagOcrJson.procTicket.timing && typeof diagOcrJson.procTicket.timing.ocrStatusWaitMs === "number");
