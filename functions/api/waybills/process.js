@@ -31,6 +31,10 @@ import {mergeStoreEdges} from "./_process-multimage.js";
 import {pickSupersededCandidates,applySupersede} from "./_process-supersede.js";
 import {recordWaybillLifecycle} from "./_process-persist.js";
 
+// R2 免费额度保护：限制单次临时暂存规模；图片仍按既有 OCR 两张并发策略处理。
+const WAYBILL_TEMP_MAX_FILES=20;
+const WAYBILL_TEMP_MAX_BYTES=80*1024*1024;
+
 /* 同日同线路「重传即替换」：找出同车辆、门店高度重叠的旧单并原子取代，
    返回实际被取代的列表（供响应与事件留痕）。
    读取受统一 Redis 预算保护——预算不足时跳过取代（不影响本次保存成功），
@@ -126,6 +130,10 @@ async function runProcessCore({request,env,emit=()=>{},form:providedForm=null,us
   const started=Date.now();let ocr=null,recognizedText=rawText,ocrMs=0;
   if(!recognizedText){
   if(!recognizedText&&files.length){
+    const totalBytes=files.reduce((sum,item)=>sum+(Number(item?.size)||0),0);
+    if(files.length>WAYBILL_TEMP_MAX_FILES||totalBytes>WAYBILL_TEMP_MAX_BYTES){
+      return failProcess("WAYBILL_TEMP_LIMIT_EXCEEDED","本次运单图片数量或总大小超出限制，请分批上传",413,{recoverable:true,action:"REPROCESS",hint:"请减少图片数量或分批上传后重试"});
+    }
     const bucket=env?.WAYBILL_FILES;
     if(!bucket||typeof bucket.put!=="function"||typeof bucket.get!=="function"||typeof bucket.delete!=="function"){
       return failProcess("WAYBILL_TEMP_STORAGE_UNAVAILABLE","运单临时存储暂不可用，请稍后重试",503,{recoverable:true,action:"REPROCESS",hint:"运单图片临时存储暂不可用，请稍后重试"});
