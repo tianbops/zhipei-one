@@ -1014,10 +1014,14 @@ function zpRenderTodayCard(w,dayOrders,fromCache){
 }
 
 async function loadHome(){
+  const perfReadyStartedAt=performance.now();
   // 快照先行：同日快照立即渲染（零网络等待），随后正常数据源返回后覆盖或纠偏
   try{
     const snap=zpReadTodaySnap();
-    if(snap)zpRenderTodayCard(snap.waybill,Number(snap.dayOrders)||0,true);
+    if(snap){
+      zpRenderTodayCard(snap.waybill,Number(snap.dayOrders)||0,true);
+      try{window.zpPerfRecord?.("home-today-ready-cache",200,performance.now()-perfReadyStartedAt,null)}catch{}
+    }
   }catch{}
   const fetchJson=async(url,timeoutMs=8000)=>{
     const controller=new AbortController();
@@ -1142,6 +1146,7 @@ async function loadHome(){
     }else{
       setEmptyToday();
     }
+    try{window.zpPerfRecord?.("home-today-ready-network",200,performance.now()-perfReadyStartedAt,null)}catch{}
   }catch(e){
     // 所有异常都必须结束 loading 状态，不能让首页永久停留在“加载中…”。
     console.error("[loadHome] 异常:",e&&e.stack||e);
@@ -1515,8 +1520,9 @@ loadHome();
     return null;
   }
   async function load(){
+    const perfReadyStartedAt=performance.now();
     const cached=readHistCache();
-    if(cached){try{hydrate(cached)}catch{}}
+    if(cached){try{hydrate(cached);window.zpPerfRecord?.("home-history-ready-cache",200,performance.now()-perfReadyStartedAt,null)}catch{}}
     try{
       // 后端把 months 钳制在 13（history.js:Math.min(13,…)），请求 25 实际仍只返回 13 个月窗口；
       // 13 个月最早仅到 11 个月前，不含去年同月，同比恒为空。故按 13 如实请求（返回数据与原来一致）。
@@ -1525,6 +1531,7 @@ loadHome();
       const d=await r.json().catch(()=>null);
       if(!d?.success||!Array.isArray(d.history)){if(!hydrated)card.hidden=true;return hydrated?cached:null;}
       hydrate(d);
+      try{window.zpPerfRecord?.("home-history-ready-network",200,performance.now()-perfReadyStartedAt,null)}catch{}
       try{localStorage.setItem(HIST_CACHE_KEY,JSON.stringify({t:Date.now(),d}))}catch{}
       return d;
     }catch{
