@@ -9,7 +9,7 @@
    “缺前缀的假门店”或与完整版并存造成重复。
 
    规则：
-     - 非首图：丢弃第一条（顶部残条；首图由「含表头」校正保证）
+     - 非首图：若首条与前图末条是同名重叠，丢弃重复项；若首条是前图残条的完整延续，则保留完整项
      - 每一张图的最后一条：仅当**证据**表明它是底部残条才丢弃（见下）
    重复合并与顺序规划交由后续 DEDUPE / PLAN 处理，本函数不做去重与排序。
 
@@ -91,7 +91,20 @@ export function mergeStoreEdges(imageTexts, extractFn = extract, { isKnownStore 
   for (let idx = 0; idx < perImage.length; idx++) {
     let stores = perImage[idx];
     if (!stores.length) continue;
-    if (idx > 0) { stores = stores.slice(1); edgeTrimmed++; }                     // 顶部残条
+    if (idx > 0 && stores.length) {
+      const first = stores[0];
+      const previous = perImage[idx - 1]?.[perImage[idx - 1].length - 1];
+      const firstKey = formatCompareKey(first?.rawName || first?.name || "");
+      const previousKey = formatCompareKey(previous?.rawName || previous?.name || "");
+      // 上一张底部被截断、下一张顶部出现完整名称时，必须保留完整项。
+      // 底部残条会由 isBottomResidue 根据“更长名称前缀”证据删除。
+      const completesPrevious = !!previousKey && firstKey.startsWith(previousKey)
+        && firstKey.length - previousKey.length >= 2;
+      if (!completesPrevious) {
+        stores = stores.slice(1);
+        edgeTrimmed++;
+      }
+    }
     const last = stores[stores.length - 1];
     const lastKey = last && (last.rawName || last.name);
     const positional = hasTailMarker && hasBase && idx < perImage.length - 1

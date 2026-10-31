@@ -54,6 +54,9 @@ const HISTORY = [
 /* 前三个月给月度卡用；其余补满当年，好让**年度视图**也有真实长度。
    2026-10-30 起年度提示只剩「年度峰值 11月 · 63单」（「最忙 X月X日」已按用户要求去掉），
    但数据仍要造满 12 个月，否则峰值月/汇总数都是假的，布局测不出真实形态。 */
+const excludedYearMonths = new Set([ym, m1, m2].map((value) => value.slice(5)));
+const peakMonth = Array.from({ length: 12 }, (_, i) => String(12 - i).padStart(2, '0'))
+  .find((month) => !excludedYearMonths.has(month));
 const MONTHS = [
   { month: ym, days: 3, waybills: 3, totalStores: 15, totalWeight: 360.75 },
   { month: m1, days: 1, waybills: 1, totalStores: 7, totalWeight: 210.5 },
@@ -61,7 +64,7 @@ const MONTHS = [
   ...Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'))
     .filter((mm) => ![ym, m1, m2].includes(yy + '-' + mm))
     .map((mm) => {
-      const peak = mm === '11';
+      const peak = mm === peakMonth;
       return { month: yy + '-' + mm, days: 8, waybills: peak ? 63 : 4, totalStores: peak ? 900 : 120, totalWeight: peak ? 60 : 5.5 };
     }),
 ];
@@ -246,7 +249,7 @@ const check = (name, ok, detail) => {
   await ev('document.querySelector("#trendYearBtn").click()');
   await sleep(800);
   const yearHint = String(await txt('#trendHint'));
-  check('年度（单量）提示只显示峰值', /^年度峰值\s*11月\s*·\s*63单$/.test(yearHint.trim()), yearHint);
+  check('年度（单量）提示只显示峰值', new RegExp('^年度峰值\\s*' + Number(peakMonth) + '月\\s*·\\s*63单$').test(yearHint.trim()), yearHint);
   check('年度提示不再显示「最忙」', !/最忙/.test(yearHint), yearHint);
 
   for (const w of [390, 360, 320, 430]) {
