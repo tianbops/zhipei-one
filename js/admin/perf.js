@@ -39,11 +39,12 @@ async function renderPerfReport(){
     }
     const isD1RoutingMetric=name=>/^history-db-(?:primary|replica|unknown)-queries$/.test(name)||/^history-db-region-[a-z-]+-queries$/.test(name);
     const sortPhases=list=>list.sort((a,b)=>(b[1].count?b[1].sum/b[1].count:0)-(a[1].count?a[1].sum/a[1].count:0));
-    const historyPhases=sortPhases([...pm.entries()].filter(([name])=>name.startsWith("history-")&&!isD1RoutingMetric(name)));
-    const waybillPhases=sortPhases([...pm.entries()].filter(([name])=>name.startsWith("waybill-")));
+    const historyPhases=sortPhases([...pm.entries()].filter(([name])=>name.startsWith("history-")&&!name.startsWith("history-waybill-")&&!isD1RoutingMetric(name)));
+    const waybillPhases=sortPhases([...pm.entries()].filter(([name])=>name.startsWith("history-waybill-")));
+    const phaseLabel=name=>name.startsWith("history-waybill-")?name.slice("history-".length):name;
     const otherPhases=sortPhases([...pm.entries()].filter(([name])=>!isD1RoutingMetric(name)&&!name.startsWith("history-")&&!name.startsWith("waybill-")));
     const d1Routes=[...pm.entries()].filter(([name])=>isD1RoutingMetric(name)).sort((a,b)=>a[0].localeCompare(b[0]));
-    const appendTimePhases=(title,list)=>{if(!list.length)return;reportLines.push("",title);for(const [name,x] of list)reportLines.push(name+"：样本 "+x.count+"，平均 "+(x.count?Math.round(x.sum/x.count):0)+" ms，峰值 "+Math.round(x.max)+" ms");};
+    const appendTimePhases=(title,list)=>{if(!list.length)return;reportLines.push("",title);for(const [name,x] of list)reportLines.push(phaseLabel(name)+"：样本 "+x.count+"，平均 "+(x.count?Math.round(x.sum/x.count):0)+" ms，峰值 "+Math.round(x.max)+" ms");};
     appendTimePhases("历史查询阶段耗时（平均 / 峰值）",historyPhases);
     appendTimePhases("运单上传与处理阶段耗时（平均 / 峰值）",waybillPhases);
     appendTimePhases("其他阶段耗时（平均 / 峰值）",otherPhases);
