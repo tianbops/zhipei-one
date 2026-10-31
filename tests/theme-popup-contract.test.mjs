@@ -9,6 +9,7 @@ const pickerCss = read("css/zp-picker.css");
 const pickerJs = read("js/ui/zp-picker.js");
 const themeSync = read("js/theme-sync.js");
 const admin = read("admin.html");
+const routeApply = read("pages/route_apply.html");
 
 function pass(label) { console.log("✓ " + label); }
 function has(re, source, label) { assert.match(source, re, label); pass(label); }
@@ -24,6 +25,13 @@ has(/:root\[data-zp-theme="dark"\]\s*\{[^}]*color-scheme\s*:\s*dark/s, dark, "�
 // Native select/date UI must be replaced by page-owned surfaces that inherit tokens.
 has(/zp-picker\.css/, admin, "管理员页加载统一选择器样式");
 has(/zp-picker\.js/, admin, "管理员页加载统一选择器逻辑");
+has(/zp-picker\.css/, routeApply, "线路申请页加载统一选择器样式");
+has(/zp-picker\.js/, routeApply, "线路申请页加载统一选择器逻辑");
+has(/<select\s+id="route"/, routeApply, "线路申请仍保留原生 select 数据语义");
+has(/<select\s+id="duty"/, routeApply, "岗位申请仍保留原生 select 数据语义");
+assert.equal((admin.match(/<select\b/g)||[]).length,3,"管理员页应只有 3 个原生选择控件，且统一升级");
+assert.equal((routeApply.match(/<select\b/g)||[]).length,2,"线路申请页应只有 2 个原生选择控件，且统一升级");
+pass("管理员与线路申请页全部 5 个 select 控件均纳入统一弹层");
 has(/<select\s+id="diagRoute"/, admin, "管理员线路筛选仍保留原生 select 数据语义");
 has(/<input\s+id="diagDate"\s+type="date"/, admin, "管理员日期筛选仍保留原生 date 数据语义");
 has(/function upgradeSelect\s*\(/, pickerJs, "select 自动升级为页内选择器");
