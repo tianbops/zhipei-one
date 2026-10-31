@@ -338,7 +338,7 @@ console.log("\n✅ waybill-multi-image 全部通过");
   const seq = xs => xs.join(" -> ");
   const count = (xs, name) => xs.filter(x => formatCompareKey(x) === formatCompareKey(name)).length;
 
-  // 两条连续重叠：第二张图的 A、B 是重复副本，必须各只出现一次。
+  // 两条连续重叠：第二张图开头的 B、C 是重复副本，必须各只出现一次。
   {
     const r = mergeStoreEdges([seq([A, B, C]), seq([B, C, D])], extract);
     const list = names(r.stores || []);
