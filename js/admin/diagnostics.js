@@ -116,7 +116,7 @@ async function renderDiagnostics(){
     const label=f.stage==="TIMEOUT"?"处理超时":f.stage==="CANCELLED"?"用户取消":"处理失败";
     return '<div class="row"><div class="content" style="display:block;width:100%"><div class="main"><strong>'+esc(f.date||f.uploadDate||"-")+' · '+esc(f.vehicle||"车牌未识别")+'</strong><span class="q-badge review">'+esc(label)+'</span></div><div class="meta">线路ID：'+esc(f.routeId||routeId)+' · 上传时间：'+esc(f.uploadedAt||"-")+'</div><div class="meta">失败原因：'+esc(f.detail||f.hint||f.code||"未记录")+'</div><div class="meta">错误代码：'+esc(f.code||"-")+' · requestId：'+esc(f.requestId||"-")+'</div><div class="meta">门店数量：提取 '+esc(dg.extractCount??"-")+' · 去重前 '+esc(dg.dedupeBefore??"-")+' · 去重后 '+esc(dg.dedupeAfter??"-")+' · 最终 '+esc(stores.length)+'</div><div class="meta">'+esc((v.errors||[]).join("、"))+'</div><div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="small-action diag-failure-copy" type="button">复制完整失败诊断</button></div></div></div>';
   }).join(""):"";
-  $("diagnostics").innerHTML += failureHtml;
+  $("diagnostics").innerHTML += (d.failureQueryError?'<div class="zp-empty">失败记录暂时无法读取，正常运单诊断仍可查看，请稍后刷新。</div>':"") + failureHtml;
   document.querySelectorAll("#diagnostics .diag-failure-copy").forEach((btn,index)=>btn.onclick=async()=>{
     const value="智配One 失败运单诊断 | "+JSON.stringify(failures[index],null,2);
     let copied=false;
