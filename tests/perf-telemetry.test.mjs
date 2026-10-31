@@ -76,6 +76,6 @@ assert.match(monthly,/home-history-ready-network/);
 // AbortError 与 TimeoutError 不得再混入 network。\nassert.match(ingest,/"network","abort","timeout"/);\nassert.match(perfDiag,/classifyFetchFailure/);\nassert.match(perfDiag,/name==="TimeoutError"/);\nassert.match(perfDiag,/name==="AbortError"/);\n
 // The streaming OCR path records abort and timeout independently of generic fetch telemetry.
 assert.match(upload,/perfFailureStatus/);
-assert.match(upload,/perfFailureStatus="abort"/);
+assert.match(upload,/\?"timeout":"abort"/);
 assert.match(upload,/perfFailureStatus="timeout"/);
 assert.match(upload,/perfFailureStatus\|\|\(perfResponseStatus===null/);
