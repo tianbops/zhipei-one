@@ -38,3 +38,13 @@ assert.match(adminHtml,/D1 路由统计口径/);
 assert.match(adminHtml,/读结果元数据条数/);
 assert.match(adminHtml,/不等于独立 SQL 请求数或用户请求数/);
 assert.match(adminHtml,/一次 batch 可能返回多条结果/);
+
+
+// D1 路由计数必须与毫秒耗时分开展示，避免把结果记录数误读为耗时。
+const perfUi=readFileSync(new URL("../js/admin/perf.js",import.meta.url),"utf8");
+assert.match(perfUi,/isD1RoutingMetric/);
+assert.match(perfUi,/D1 读路由统计 · 结果记录数/);
+assert.match(perfUi,/条\/次/);
+assert.match(perfUi,/累计 .* 条结果记录/);
+assert.match(perfUi,/filter\(\(\[name\]\)=>!isD1RoutingMetric\(name\)\)/);
+assert.match(perfUi,/filter\(\(\[name\]\)=>isD1RoutingMetric\(name\)\)/);
