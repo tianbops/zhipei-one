@@ -34,7 +34,7 @@
       return "api-other";
     }catch(e){return null}
   };
-  var statusClass=function(status){if(status==="network")return "network";if(status>=500)return "5xx";if(status>=400)return "4xx";if(status>=300)return "3xx";return "2xx"};
+  var statusClass=function(status){if(status==="network"||status==="abort"||status==="timeout")return status;if(status>=500)return "5xx";if(status>=400)return "4xx";if(status>=300)return "3xx";return "2xx"};
   var push=function(endpoint,status,duration,server,phases){
     if(rows.length>=25)return;
     var cls=statusClass(status);
@@ -46,6 +46,14 @@
     if(code!==null)row.code=code;
     rows.push(row);
     if(debug)console.info("[ZP-PERF]",row);
+  };
+  var classifyFetchFailure=function(error,input,init){
+    var signal=(init&&init.signal)||(input&&input.signal)||null;
+    var reason=signal&&signal.aborted?signal.reason:null;
+    var name=(reason&&reason.name)||(error&&error.name)||"";
+    if(name==="TimeoutError")return "timeout";
+    if(name==="AbortError"||(signal&&signal.aborted))return "abort";
+    return "network";
   };
   var originalFetch=window.fetch;
   window.fetch=function(input,init){
@@ -82,7 +90,7 @@
       }
       if(!wrapped)recordResponse();
       return response;
-    },function(error){push(endpoint,"network",performance.now()-t0,null);throw error});
+    },function(error){push(endpoint,classifyFetchFailure(error,input,init),performance.now()-t0,null);throw error});
   };
   var originalSend=originalFetch.bind(window);
   var flushing=false;
