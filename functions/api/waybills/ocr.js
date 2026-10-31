@@ -41,9 +41,12 @@ export function collectLineEvidence(value, out = [], limit = 500) {
       const text = clean(texts[i]); if (!text) continue;
       const n = scores[i] == null || scores[i] === "" ? null : Number(scores[i]);
       const score = Number.isFinite(n) && n >= 0 && n <= 1 ? n : null;
-      const polygon = Array.isArray(polys[i]) && polys[i].length
-        ? polys[i].slice(0, 8).map(point => Array.isArray(point) ? point.slice(0, 2).map(Number) : []) : null;
-      const box = Array.isArray(boxes[i]) && boxes[i].length >= 4 ? boxes[i].slice(0, 4).map(Number) : null;
+      const polygonPoints = Array.isArray(polys[i]) && polys[i].length
+        ? polys[i].slice(0, 8).map(point => Array.isArray(point) ? point.slice(0, 2).map(Number) : null)
+          .filter(point => point && point.length === 2 && point.every(Number.isFinite)) : [];
+      const polygon = polygonPoints.length >= 3 ? polygonPoints : null;
+      const boxValues = Array.isArray(boxes[i]) && boxes[i].length >= 4 ? boxes[i].slice(0, 4).map(Number) : null;
+      const box = boxValues && boxValues.every(Number.isFinite) ? boxValues : null;
       out.push({ text: text.slice(0, 240), score, polygon, box });
     }
   }
