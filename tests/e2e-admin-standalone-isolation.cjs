@@ -1,10 +1,10 @@
 /* 管理员端「独立工作区」隔离的真浏览器复现（standalone PWA 场景）。
  *
  * 验证点：独立 PWA 下以管理员身份登录，login.js / index.html 会以 window.open
- * 打开一个独立窗口，该窗口的历史栈只有 [admin.html]（headless 下多一条 about:blank
- * 初始条目，属测试假象），系统返回只在管理员历史内生效，绝不会穿越到司机首页。
+ * 打开独立管理窗口；系统返回不得穿越到司机首页，管理员根页连续两次返回的最终落点
+ * 必须是登录页（用户明确要求的退出登录语义），而不是司机首页或手机桌面。
  *
- * 用法（不算入 npm test 套件，需要本机 chromium）：
+ * 用法（由 browser-e2e.yml 在 Chromium 中执行）：
  *   python3 -m http.server 8099 --directory . &
  *   CHROMIUM=/usr/bin/chromium PORT=8099 node tests/e2e-admin-standalone-isolation.cjs
  */
@@ -18,10 +18,11 @@ try{var _m=sessionStorage.getItem('__ME');window.__ME=_m?JSON.parse(_m):null}cat
  const B=(t,ok)=>Promise.resolve({ok:ok!==false,status:ok===false?401:200,json:()=>Promise.resolve(JSON.parse(t)),text:()=>Promise.resolve(t)});
  if(s.indexOf('/api/me')===0){if(!window.__ME)return B('{"error":"unauthorized"}',false);return B(JSON.stringify({success:true,user:window.__ME}));}
  if(s.indexOf('/api/login')===0){const b=o&&o.body?JSON.parse(o.body):{};if(b.username==='root')return B(JSON.stringify({success:true,user:{id:1,username:'root',role:'system_admin'}}));return B('{"error":"bad"}',false);}
+ if(s.indexOf('/api/logout')===0)return B('{"success":true}');
  if(s.indexOf('/api/admin/users')===0)return B('{"success":true,"users":[]}');
  if(s.indexOf('/api/routes')===0)return B('{"success":true,"routes":[]}');
- if(s.indexOf('/api/admin/route-requests')===0)return B('{"success":true","requests":[]}');
- if(s.indexOf('/api/invite-codes')===0)return B('{"success":true","invites":[]}');
+ if(s.indexOf('/api/admin/route-requests')===0)return B('{"success":true,"requests":[]}');
+ if(s.indexOf('/api/invite-codes')===0)return B('{"success":true,"invites":[]}');
  return real(u,o)};})();`;
 
 const PORT = Number(process.env.PORT || 8099);
@@ -57,7 +58,7 @@ const BASE = 'http://127.0.0.1:' + PORT + '/';
   await sleep(2500);
 
   const targets = await send('Target.getTargets', {});
-  const adminT = targets.targetInfos.find(t => /admin\.html/.test(t.url || ''));
+  const adminT = targets.targetInfos.find(t => /admin\\.html/.test(t.url || ''));
   console.log('独立管理员窗口存在 :', !!adminT, '| url :', adminT && adminT.url);
   if (adminT) {
     const at2 = await send('Target.attachToTarget', { targetId: adminT.targetId, flatten: true });
@@ -68,13 +69,29 @@ const BASE = 'http://127.0.0.1:' + PORT + '/';
     const path = await ev2('location.pathname');
     console.log('管理员窗口 history.length =', len, '| path =', path);
     await ev2('history.back()'); await sleep(900);
-    const backPath = await ev2('location.pathname');
-    const toast = await ev2('(()=>{const t=document.getElementById("zpToast");return t&&t.className.indexOf("show")>=0?t.textContent:""})()');
-    console.log('返回后 path =', backPath, '| toast =', JSON.stringify(toast));
-    const isolated = backPath === '/admin.html' && !/home\.html/.test(backPath);
-    console.log(isolated ? '✅ 隔离成功：管理员窗口独立，返回停在管理端、绝无业务端可穿越' : '❌ 隔离失败');
+    const firstBackPath = await ev2('location.pathname');
+    const firstToast = await ev2('(()=>{const t=document.getElementById("zpToast");return t&&t.className.indexOf("show")>=0?t.textContent:""})()');
+    const firstBackSafe = firstBackPath === '/admin.html' && firstToast === '再按一次返回登录页';
+    console.log('第一次返回 path =', firstBackPath, '| toast =', JSON.stringify(firstToast));
+    if (!firstBackSafe) {
+      console.error('❌ 第一次返回未停留在管理员页或提示文案不正确');
+      ws.close(); proc.kill(); process.exit(1);
+    }
+
+    // 在两秒确认窗口内再次返回：必须注销管理员会话并回登录页。
+    await ev2('history.back()'); await sleep(1200);
+    const finalUrl = await ev2('location.href');
+    const finalPath = await ev2('location.pathname');
+    const finalParams = await ev2('(()=>{const u=new URL(location.href);return {reason:u.searchParams.get("reason"),manual:u.searchParams.get("manual")}})()');
+    const finalRole = await ev2('sessionStorage.getItem("zpRole")');
+    const returnedToLogin = (finalPath === '/' || finalPath === '/index.html') &&
+      finalParams.reason === 'logout' && finalParams.manual === '1' && finalRole === null;
+    console.log('第二次返回最终 URL =', finalUrl, '| zpRole =', finalRole);
+    console.log(returnedToLogin
+      ? '✅ 管理员返回闭环通过：首次留在管理端，第二次退出到登录页，角色标记已清理'
+      : '❌ 管理员最终返回未落到登录页');
     ws.close(); proc.kill();
-    process.exit(isolated ? 0 : 1);
+    process.exit(returnedToLogin ? 0 : 1);
   } else {
     console.log('⚠️ 未检测到独立窗口（window.open 被拦截），已退回同窗口 replace 路径（由跨区防火墙兜底）');
     ws.close(); proc.kill();
