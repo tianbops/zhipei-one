@@ -12,8 +12,8 @@ async function renderPerfReport(){
     const d=await api("/api/perf-report?adminView="+Date.now());
     if(!d.success||!d.totals)throw Error("性能报告格式异常");
     const t=d.totals,hours=Array.isArray(t.hours)?t.hours:[],groups=hours.flatMap(h=>Array.isArray(h.groups)?h.groups:[]);
-    const failures=Object.entries(t.statuses||{}).filter(([s])=>s==="4xx"||s==="5xx"||s==="network").reduce((n,[,v])=>n+(Number(v)||0),0);
-    const reportLines=["智配One 性能诊断报告","生成时间："+(d.generatedAt?new Date(d.generatedAt).toLocaleString():"时间未知"),"统计窗口：最近24小时","请求样本："+Number(t.events||0),"状态统计："+Object.entries(t.statuses||{}).map(([k,v])=>k+"="+v).join("，"),"失败/异常状态："+failures,"","接口与页面就绪耗时（平均 / 峰值 / 服务端平均）"];
+    const failures=Object.entries(t.statuses||{}).filter(([s])=>s==="4xx"||s==="5xx"||s==="network"||s==="timeout").reduce((n,[,v])=>n+(Number(v)||0),0);
+    const reportLines=["智配One 性能诊断报告","生成时间："+(d.generatedAt?new Date(d.generatedAt).toLocaleString():"时间未知"),"统计窗口：最近24小时","请求样本："+Number(t.events||0),"状态统计："+Object.entries(t.statuses||{}).map(([k,v])=>k+"="+v).join("，"),"失败/异常状态："+failures,"主动取消（单独统计，不计入故障）："+Number((t.statuses||{}).abort||0),"","接口与页面就绪耗时（平均 / 峰值 / 服务端平均）"];
     summary.innerHTML='<div class="perf-stat"><strong>'+Number(t.events||0)+'</strong><span>请求样本</span></div><div class="perf-stat"><strong class="'+(failures?'perf-warn':'')+'">'+failures+'</strong><span>失败/异常状态</span></div><div class="perf-stat"><strong>24h</strong><span>统计窗口</span></div>';
     updated.textContent="报告生成："+(d.generatedAt?new Date(d.generatedAt).toLocaleString():"时间未知")+" · 自动匿名汇总";
     const em=new Map();
@@ -21,7 +21,7 @@ async function renderPerfReport(){
       const key=String(g.endpoint||"未知接口"),x=em.get(key)||{count:0,sum:0,max:0,serverCount:0,serverSum:0,failures:0,codes:new Map()};
       const n=Number(g.count)||0;x.count+=n;x.sum+=(Number(g.avgMs)||0)*n;x.max=Math.max(x.max,Number(g.max)||0);
       const sc=Number(g.serverCount)||0;x.serverCount+=sc;x.serverSum+=(Number(g.serverAvgMs)||0)*sc;
-      if(["4xx","5xx","network"].includes(g.status))x.failures+=n;
+      if(["4xx","5xx","network","timeout"].includes(g.status))x.failures+=n;
       for(const [code,c] of Object.entries(g.codes||{})){const cn=Number(c.count)||0;const prev=x.codes.get(code)||{count:0,sum:0};prev.count+=cn;prev.sum+=(Number(c.avgMs)||0)*cn;x.codes.set(code,prev);}
       em.set(key,x);
     }

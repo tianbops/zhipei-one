@@ -56,6 +56,8 @@ const findGroup = (report, page, endpoint, status) => {
     { page: "account", endpoint: "api-account-me", status: "2xx", duration: 2500, server: 800, code: 200 },
     { page: "account", endpoint: "api-account-settings", status: "4xx", duration: 1500, server: 90, code: 403 },
     { page: "account", endpoint: "api-account-me", status: "network", duration: 78000, server: null },
+    { page: "account", endpoint: "api-account-me", status: "abort", duration: 12, server: null },
+    { page: "account", endpoint: "api-account-me", status: "timeout", duration: 30000, server: null },
     { page: "history", endpoint: "api-history", status: "2xx", duration: 87000, server: 1243,
       phases: { "history-index": 12.3, "history-aggregate": 45.6, "history-db-primary-queries": 3, "history-db-replica-queries": 2, "history-db-region-apac-queries": 2, "history-bogus-phase": 9.9 } },
     { page: "home", endpoint: "api-waybill-process", status: "2xx", duration: 56000, server: 32000,
@@ -64,7 +66,7 @@ const findGroup = (report, page, endpoint, status) => {
     { page: "account", endpoint: "api-account-me", status: "4xx", duration: 1000, server: 10, code: 999 },
     { page: "account", endpoint: "api-not-whitelisted", status: "2xx", duration: 100, server: 5 }
   ]), env })).json();
-  check("事件接收：合法 8 条被接受、非法端点被拒", ack.success === true && ack.accepted === 9, JSON.stringify(ack));
+  check("事件接收：合法 8 条被接受、非法端点被拒", ack.success === true && ack.accepted === 11, JSON.stringify(ack));
 
   console.log("\n[B] 读取管理员报告");
   const rep = await (await perfReport.onRequestGet({ request: getReq("https://app.local/api/perf-report", tok), env })).json();
@@ -97,6 +99,12 @@ const findGroup = (report, page, endpoint, status) => {
   check("network 单独成组", !!gNet, JSON.stringify(gNet && { count: gNet.count, avgMs: gNet.avgMs }));
   check("network 组没有状态码细分（连接层失败本就没有状态码）", gNet && !gNet.codes);
   check("network 峰值 78000ms 被记录", gNet && gNet.max === 78000);
+  const gAbort = findGroup(rep, "account", "api-account-me", "abort");
+  check("abort 主动取消独立成组", !!gAbort && gAbort.count === 1 && gAbort.max === 12, JSON.stringify(gAbort));
+  check("abort 组没有 HTTP 状态码", gAbort && !gAbort.codes);
+  const gTimeout = findGroup(rep, "account", "api-account-me", "timeout");
+  check("timeout 超时独立成组", !!gTimeout && gTimeout.count === 1 && gTimeout.max === 30000, JSON.stringify(gTimeout));
+  check("timeout 组没有 HTTP 状态码", gTimeout && !gTimeout.codes);
   const g2xx = findGroup(rep, "account", "api-account-me", "2xx");
   check("2xx 组不产生状态码细分（不无谓放大样本体积）", g2xx && !g2xx.codes);
 

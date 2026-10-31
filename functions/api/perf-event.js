@@ -72,7 +72,7 @@ return 1
 
 function validEvent(e) {
   if (!e || !PAGES.has(e.page) || !ENDPOINTS.has(e.endpoint)) return null;
-  const status = ["2xx","3xx","4xx","5xx","network"].includes(e.status) ? e.status : null;
+  const status = ["2xx","3xx","4xx","5xx","network","abort","timeout"].includes(e.status) ? e.status : null;
   const duration = Number(e.duration);
   const server = e.server == null ? null : Number(e.server);
   if (!status || !Number.isFinite(duration) || duration < 0 || duration > 120000) return null;
