@@ -24,6 +24,39 @@ assert.match(processSource, /associateFieldEvidence[\s\S]*?fieldEvidence/,
 assert.match(processSource, /fieldEvidence}:null/,
   "字段证据必须随 OCR 诊断信息持久化");
 const { associateFieldEvidence } = await import(new URL("../functions/api/waybills/_ocr-field-evidence.js", import.meta.url));
+const { collectLineEvidence } = await import(new URL("../functions/api/waybills/ocr.js", import.meta.url));
+const paddleResponseFixture = {
+  result: {
+    rec_texts: ["车牌：渝DK7692", "总重量：7.52吨"],
+    rec_scores: [0.987, 0.812],
+    rec_polys: [
+      [[10, 20], [110, 20], [110, 48], [10, 48]],
+      [[12, 60], [90, 60], [90, 88], [12, 88]]
+    ],
+    rec_boxes: [[10, 20, 110, 48], [12, 60, 90, 88]],
+    inputImage: "must-not-be-copied"
+  }
+};
+const collectedOcrLines = collectLineEvidence(paddleResponseFixture);
+assert.equal(collectedOcrLines.length, 2, "应从嵌套 PP-OCR 响应中提取逐行结果");
+assert.equal(collectedOcrLines[0].text, "车牌：渝DK7692");
+assert.equal(collectedOcrLines[0].score, 0.987);
+assert.deepEqual(collectedOcrLines[0].box, [10, 20, 110, 48]);
+assert.deepEqual(collectedOcrLines[0].polygon, [[10, 20], [110, 20], [110, 48], [10, 48]]);
+assert.equal(JSON.stringify(collectedOcrLines).includes("must-not-be-copied"), false,
+  "OCR 证据不能包含输入图片或 Base64 内容");
+const aliasOcrLines = collectLineEvidence({
+  recTexts: ["司机：田波"],
+  recScores: ["0.9"],
+  recPolys: [[[1, 2], [3, 2], [3, 4]]]
+});
+assert.equal(aliasOcrLines[0].score, 0.9, "应兼容驼峰字段别名");
+assert.equal(aliasOcrLines[0].box, null, "没有边界框时必须保留为空");
+assert.equal(collectLineEvidence({ rec_texts: ["越界分数"], rec_scores: [1.5] })[0].score, null,
+  "超出 0–1 的分数不得当作有效置信度");
+assert.equal(collectLineEvidence({ rec_texts: ["A", "B", "C"] }, [], 2).length, 2,
+  "逐行证据必须遵守数量上限");
+
 const fieldEvidenceFixture = associateFieldEvidence({
   fields: { date: "2026-10-31", vehicle: "渝DK7692", driver: "田波", deliveryPerson: "陈兴亚", totalWeight: 7.52 },
   stores: [{ rawName: "江北区鸿恩寺客服中心", name: "江北区鸿恩寺客服中心" }, { rawName: "未识别门店", name: "未识别门店" }],
