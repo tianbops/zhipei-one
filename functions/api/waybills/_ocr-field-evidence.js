@@ -3,8 +3,8 @@
  * Evidence is advisory only: it never changes extraction, matching, or planning.
  * Store references point into ocr.lineEvidence to avoid duplicating OCR payloads.
  */
-const compact = value => String(value ?? "").toUpperCase().replace(/[\\s\\p{P}\\p{S}\\u200b\\uFEFF]/gu, "");
-const digits = value => String(value ?? "").replace(/\\D/g, "");
+const compact = value => String(value ?? "").toUpperCase().replace(/[\s\p{P}\p{S}\u200b\uFEFF]/gu, "");
+const digits = value => String(value ?? "").replace(/\D/g, "");
 
 function fieldKey(value, kind) {
   if (kind === "date") return digits(value);
@@ -15,7 +15,7 @@ function matchesField(value, kind, text) {
   if (kind === "weight") {
     const target = Number(value);
     if (!Number.isFinite(target)) return false;
-    const tokens = String(text ?? "").match(/\\d+(?:[.,]\\d+)?/g) || [];
+    const tokens = String(text ?? "").match(/\d+(?:[.,]\d+)?/g) || [];
     return tokens.some(token => {
       const parsed = Number(token.replace(",", "."));
       return Number.isFinite(parsed) && Math.abs(parsed - target) < 1e-9;
