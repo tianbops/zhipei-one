@@ -219,14 +219,14 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
         }
         const unique = [...new Set(texts)].filter(Boolean);
         const lineEvidence = [];
-        for (const line of raw.split(/\\r?\\n/)) {
+        for (const line of raw.split(/\r?\n/)) {
           if (!line.trim() || lineEvidence.length >= 500) continue;
           try { collectLineEvidence(JSON.parse(line), lineEvidence, 500); } catch {}
         }
-        const lowConfidence = unique.length < 3 || unique.join("").replace(/\\s/g, "").length < 20;
+        const lowConfidence = unique.length < 3 || unique.join("").replace(/\s/g, "").length < 20;
         if (!unique.length) throw fail("OCR_EMPTY", "OCR未识别到文字", { jobId });
         onProgress(100);
-        return { jobId, provider: "aistudio", model: MODEL, rawText: unique.join("\\n"), lineCount: unique.length, lowConfidence, lineEvidence };
+        return { jobId, provider: "aistudio", model: MODEL, rawText: unique.join("\n"), lineCount: unique.length, lowConfidence, lineEvidence };
       };
 
       let url = url0, lastError = null;
