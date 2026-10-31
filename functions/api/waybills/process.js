@@ -25,7 +25,7 @@ import {findGlobalMatches} from "../_global-learning.js";
 import {clean,formatCompareKey,matchStores} from "./_store-match.js";
 import {evaluateQualityGates,countLines} from "./_quality-gate.js";
 import {appendWaybillEvent} from "./_waybill-events.js";
-import {beginProc,failProc,finishProc,getProc,claimProcSave,cancelProc} from "./_waybill-proc.js";
+import {beginProc,failProc,finishProc,getProc,claimProcSaveDetailed,cancelProc} from "./_waybill-proc.js";
 import {Budget,mgetBatchMap} from "../_redis-budget.js";
 import {waybillIndexKey,number,todayCN} from "./_process-common.js";
 import {extract} from "./_process-extract.js";
@@ -112,7 +112,8 @@ async function runProcessCore({request,env,emit=()=>{},form:providedForm=null,us
   const sessionRouteId=clean(user.dispatchRouteId||user.boundRouteId);
   const routeId=processingRouteId||sessionRouteId;
   // 处理票据：每次 process 请求一张 PROCESSING 票据落库（TTL 15min），失败时转 FAILED/TIMEOUT/CANCELLED 并携可恢复提示，成功转 DONE；运单仅成功保存后落库，避免脏运单污染索引/去重（P1 #18）。
-  await beginProc(env,{requestId,routeId,userId:user.id,fileName:null});
+  const procTicket=await beginProc(env,{requestId,routeId,userId:user.id,fileName:null});
+  if(!procTicket)return json({success:false,code:"WAYBILL_PROC_TICKET_CREATE_FAILED",error:"处理任务暂时无法建立，请稍后重试",message:"处理任务暂时无法建立，请稍后重试",requestId,recoverable:true,action:"REPROCESS",hint:"处理任务暂时无法建立，请稍后重试"},503);
   if(!routeId){emit(0,"等待配送线路");return failProcess("DISPATCH_ROUTE_MISSING","请先选择调度线路",400,{recoverable:true,action:"REPROCESS",hint:"请先在首页选择调度线路后重新处理运单"});}
   if(processingRouteId&&sessionRouteId&&processingRouteId!==sessionRouteId){emit(0,"线路已切换");return failProcess("DISPATCH_ROUTE_CHANGED","当前线路已发生变化，请重新处理运单",409,{recoverable:true,action:"REPROCESS",hint:"当前线路已发生变化，请重新处理运单"});}
   if(requestedRouteId&&requestedRouteId!==routeId){emit(0,"线路校验失败");return failProcess("DISPATCH_ROUTE_MISMATCH","提交线路与处理线路不一致，请刷新后重试",403,{recoverable:true,action:"REPROCESS",hint:"提交线路与处理线路不一致，请刷新后重试"});}
@@ -128,7 +129,8 @@ async function runProcessCore({request,env,emit=()=>{},form:providedForm=null,us
   if(resumeRequestId){
     const t=await getProc(env,resumeRequestId);
     if(!t||t.userId!==user.id||t.stage!=="FAILED"||t.action!=="RETRY_SAVE"||!t.order)return failProcess("RESUME_INVALID","保存任务已失效，请重新上传运单",422,{recoverable:true,action:"RESUBMIT",hint:"保存任务已失效，请重新上传运单"});
-    return await saveWaybill(t.order, requestId, true);
+    const resumedOrder={...t.order,requestId,retryOfRequestId:resumeRequestId};
+    return await saveWaybill(resumedOrder, requestId, true);
   }
   if(await stopIfClientCancelled("OCR"))return json({success:false,code:"PROCESS_CANCELLED",error:"已取消处理",message:"已取消处理",requestId,recoverable:true,action:"REPROCESS",hint:"本次处理已取消，可重新上传运单"},499);
   const started=Date.now();let ocr=null,recognizedText=rawText,ocrMs=0;
@@ -284,15 +286,18 @@ async function saveWaybill(order, requestId, resumed){
   if(await stopIfClientCancelled("SAVE"))return json({success:false,code:"PROCESS_CANCELLED",error:"已取消处理",message:"已取消处理",requestId,recoverable:true,action:"REPROCESS",hint:"本次处理已取消，可重新上传运单"},499);
   // 最终 Redis 保存 EVAL 前再做一次原子“保存声明”。
   // cancel 先赢则这里失败；claim 先赢则后续取消不再覆盖，保存完成后 DONE 胜出。
-  if(!await claimProcSave(env,requestId)){
-    const proc=await getProc(env,requestId);
-    if(proc?.stage==="CANCELLED")return json({success:false,code:"PROCESS_CANCELLED",error:"已取消处理",message:"已取消处理",requestId,recoverable:true,action:"REPROCESS",hint:"本次处理已取消，可重新上传运单"},499);
-    if(proc?.stage==="DONE"&&proc?.waybillId){
+  const claim=await claimProcSaveDetailed(env,requestId);
+  if(!claim.ok){
+    const proc=claim.proc||await getProc(env,requestId);
+    if(claim.reason==="CANCELLED"||proc?.stage==="CANCELLED")return json({success:false,code:"PROCESS_CANCELLED",error:"已取消处理",message:"已取消处理",requestId,recoverable:true,action:"REPROCESS",hint:"本次处理已取消，可重新上传运单"},499);
+    if((claim.reason==="DONE"||proc?.stage==="DONE")&&proc?.waybillId){
       const existingRaw=await command(env,["GET","zp:waybill:"+proc.waybillId]);
       const existing=existingRaw?(typeof existingRaw==="string"?JSON.parse(existingRaw):existingRaw):null;
       if(existing)return json({success:true,waybill:existing,idempotent:true,processingTiming:order.timing,requestId});
     }
-    return failProcess("WAYBILL_SAVE_CLAIM_FAILED","保存任务状态发生变化，请重试",409,{recoverable:true,action:"RETRY_SAVE",hint:"保存任务状态发生变化，请重试保存",order});
+    if(claim.reason==="REDIS_ERROR")return failProcess("WAYBILL_SAVE_CLAIM_UNAVAILABLE","保存服务暂时不可用，请重试保存",503,{recoverable:true,action:"RETRY_SAVE",hint:"保存服务暂时不可用，请重试保存",detail:claim.detail,order});
+    if(claim.reason==="TICKET_MISSING")return failProcess("WAYBILL_PROC_TICKET_MISSING","处理任务已过期，请重新上传运单",409,{recoverable:true,action:"RESUBMIT",hint:"处理任务已过期，请重新上传运单",order});
+    return failProcess("WAYBILL_SAVE_CLAIM_STATE_INVALID","保存任务状态异常，请重新上传运单",409,{recoverable:true,action:"RESUBMIT",hint:"保存任务状态异常，请重新上传运单",detail:claim.reason,order});
   }
   const routeId=order.routeId;
   // 方案C rollup：保存成功后重算当日汇总键（best-effort；读路径缺失 meta 会自动自愈）
