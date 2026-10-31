@@ -5,6 +5,40 @@ import { readFileSync } from "node:fs";
 const source = readFileSync(new URL("../functions/api/waybills/ocr.js", import.meta.url), "utf8");
 const processSource = readFileSync(new URL("../functions/api/waybills/process.js", import.meta.url), "utf8");
 const adminDiagnosticsSource = readFileSync(new URL("../js/admin/diagnostics.js", import.meta.url), "utf8");
+const fieldEvidenceSource = readFileSync(new URL("../functions/api/waybills/_ocr-field-evidence.js", import.meta.url), "utf8");
+assert.match(fieldEvidenceSource, /export function associateFieldEvidence/,
+  "字段证据关联模块必须导出纯函数");
+assert.match(processSource, /associateFieldEvidence[\s\S]*?fieldEvidence/,
+  "运单处理必须把 OCR 行证据关联到提取字段");
+assert.match(processSource, /fieldEvidence}:null/,
+  "字段证据必须随 OCR 诊断信息持久化");
+const { associateFieldEvidence } = await import(new URL("../functions/api/waybills/_ocr-field-evidence.js", import.meta.url));
+const fieldEvidenceFixture = associateFieldEvidence({
+  fields: { date: "2026-10-31", vehicle: "渝DK7692", driver: "田波", deliveryPerson: "陈兴亚", totalWeight: 7.52 },
+  stores: [{ rawName: "江北区鸿恩寺客服中心", name: "江北区鸿恩寺客服中心" }, { rawName: "未识别门店", name: "未识别门店" }],
+  lineEvidence: [
+    { imageIndex: 1, text: "运输日期：2026年10月31日", score: 0.96, box: [1, 2, 30, 12] },
+    { imageIndex: 1, text: "车牌：渝 D K 7692", score: 0.91, box: [2, 3, 40, 13] },
+    { imageIndex: 2, text: "司机：田波", score: 0.88 },
+    { imageIndex: 2, text: "送货员：陈兴亚", score: 0.84 },
+    { imageIndex: 2, text: "总重量 7.52 吨", score: 0.81 },
+    { imageIndex: 2, text: "江北区鸿恩寺客服中心", score: 0.93 }
+  ]
+});
+assert.equal(fieldEvidenceFixture.fields.find(x => x.field === "date").source, "ocr");
+assert.equal(fieldEvidenceFixture.fields.find(x => x.field === "date").evidence[0].imageIndex, 1);
+assert.equal(fieldEvidenceFixture.fields.find(x => x.field === "vehicle").evidence[0].lineIndex, 1);
+assert.equal(fieldEvidenceFixture.fields.find(x => x.field === "totalWeight").source, "ocr");
+assert.equal(fieldEvidenceFixture.stores[0].source, "ocr");
+assert.equal(fieldEvidenceFixture.stores[1].source, "unavailable", "无对应识别行时必须明确标记证据缺失");
+const manualEvidence = associateFieldEvidence({
+  fields: { vehicle: "渝DK7692" },
+  lineEvidence: [{ text: "渝DK7692", score: 0.99 }],
+  manualFields: ["vehicle"]
+});
+assert.equal(manualEvidence.fields.find(x => x.field === "vehicle").source, "manual",
+  "用户表单覆盖值应标记为人工来源，不能伪装成 OCR 证据");
+
 assert.match(processSource, /ocrResultFetchWaitMs:results\.reduce\(\(n,x\)=>n\+\(Number\(x\.ocrResultFetchWaitMs\)\|\|0\),0\)/,
   "成功处理时必须汇总 OCR 结果读取重试等待");
 assert.match(processSource, /ocrResultFetchWaitMs:ocr\.ocrResultFetchWaitMs/,
