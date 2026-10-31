@@ -33,7 +33,7 @@ function evidenceRef(line, lineIndex) {
   };
 }
 
-function findEvidence(value, kind, lines, limit = 3, allowAdjacent = false) {
+function findEvidence(value, kind, lines, limit = 3, allowAdjacent = false, maxAdjacentLines = 4) {
   if (value == null || value === "") return [];
   const matches = [];
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
@@ -43,28 +43,34 @@ function findEvidence(value, kind, lines, limit = 3, allowAdjacent = false) {
     matches.push(evidenceRef(line, lineIndex));
     if (matches.length >= limit) break;
   }
-  // Preserve exact single-row matches as the preferred evidence. Only store
-  // names may use a two-row match, and only across adjacent rows of one image.
-  if (matches.length || !allowAdjacent || kind !== "text" || limit < 2) return matches;
+  // Exact single-row matches always take precedence. Store-name fallback may
+  // join 2-4 consecutive OCR rows, but never rows from different screenshots.
+  if (matches.length || !allowAdjacent || kind !== "text" || maxAdjacentLines < 2) return matches;
 
   const target = fieldKey(value, kind);
-  for (let lineIndex = 0; lineIndex + 1 < lines.length; lineIndex++) {
-    const first = lines[lineIndex];
-    const second = lines[lineIndex + 1];
+  for (let start = 0; start < lines.length; start++) {
+    const first = lines[start];
     const imageIndex = Number.isInteger(first?.imageIndex) && first.imageIndex > 0
       ? first.imageIndex
       : null;
-    if (imageIndex == null || second?.imageIndex !== imageIndex) continue;
+    if (imageIndex == null) continue;
 
-    const firstKey = fieldKey(first?.text, kind);
-    const secondKey = fieldKey(second?.text, kind);
-    if (!firstKey || !secondKey || firstKey.includes(target) || secondKey.includes(target)) continue;
-    if (!(firstKey + secondKey).includes(target)) continue;
-
-    matches.push(evidenceRef(first, lineIndex), evidenceRef(second, lineIndex + 1));
-    break;
+    let combined = "";
+    const refs = [];
+    for (let length = 1; length <= maxAdjacentLines && start + length <= lines.length; length++) {
+      const lineIndex = start + length - 1;
+      const line = lines[lineIndex];
+      if (line?.imageIndex !== imageIndex) break;
+      const key = fieldKey(line?.text, kind);
+      if (!key) break;
+      combined += key;
+      refs.push(evidenceRef(line, lineIndex));
+      if (length >= 2 && combined.includes(target)) {
+        return refs.slice(0, limit);
+      }
+    }
   }
-  return matches.slice(0, limit);
+  return [];
 }
 
 function fieldRecord(field, value, kind, lines, manual = false) {
@@ -86,7 +92,7 @@ export function associateFieldEvidence({ fields = {}, stores = [], lineEvidence 
   ];
   const storeRecords = (Array.isArray(stores) ? stores : []).slice(0, 500).map((store, index) => {
     const value = store?.rawName || store?.name || store?.storeId || "";
-    const evidence = findEvidence(value, "text", lines, 2, true);
+    const evidence = findEvidence(value, "text", lines, 4, true, 4);
     return {
       index: index + 1,
       rawName: store?.rawName || null,
