@@ -14,6 +14,7 @@
  * 写入为 best-effort（失败不影响主流程），读取失败返回 [].
  */
 import { command } from "../_redis.js";
+import { beijingISO } from "../_time.js";
 
 const clean = v => String(v ?? "").trim();
 const EV_KEY = id => "zp:waybill:" + clean(id) + ":events";
@@ -26,7 +27,8 @@ export async function appendWaybillEvent(env, waybillId, evt) {
   try {
     const id = clean(waybillId);
     if (!id || !evt || !evt.event) return;
-    const record = { t: new Date().toISOString(), ...evt };
+    const now = new Date();
+    const record = { t: now.toISOString(), tBeijing: beijingISO(now), ...evt };
     await command(env, ["RPUSH", EV_KEY(id), JSON.stringify(record)]);
     await command(env, ["LTRIM", EV_KEY(id), "-1000", "-1"]);
   } catch {
