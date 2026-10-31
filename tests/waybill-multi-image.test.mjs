@@ -8,6 +8,7 @@ import assert from "node:assert/strict";
 import { mergeStoreEdges } from "../functions/api/waybills/_process-multimage.js";
 import { extract } from "../functions/api/waybills/_process-extract.js";
 import { formatCompareKey, normalizeForMatch, matchStores } from "../functions/api/waybills/_store-match.js";
+import { splitByRouteBase, dedupe, plan, validateResult } from "../functions/api/waybills/_process-plan.js";
 
 const HEADER = [
   "运单列表", "运输日期", "2026-10-27", "车牌号", "渝DK7692",
@@ -327,3 +328,143 @@ const isKnownStore = n => knownKeys.has(formatCompareKey(n));
 }
 
 console.log("\n✅ waybill-multi-image 全部通过");
+
+
+// --- 9) 连续重叠必须按出现次数精确断言（防止“存在即可”掩盖重复）---
+{
+  const A = "到家主城-江北区鸿恩寺客服中心（2026）";
+  const B = "到家主城-江北区加州客服中心（2026）";
+  const C = "江北亿达鲜观府国际店（客百年）";
+  const D = "江北亿达鲜半山华府店（客百年）";
+  const seq = xs => xs.join(" -> ");
+  const count = (xs, name) => xs.filter(x => formatCompareKey(x) === formatCompareKey(name)).length;
+
+  // 两条连续重叠：第二张图开头的 B、C 是重复副本，必须各只出现一次。
+  {
+    const r = mergeStoreEdges([seq([A, B, C]), seq([B, C, D])], extract);
+    const list = names(r.stores || []);
+    assert.equal(count(list, A), 1, "两图重叠 A 必须恰好保留一次");
+    assert.equal(count(list, B), 1, "两图重叠 B 必须恰好保留一次");
+    assert.equal(count(list, C), 1, "两图重叠 C 必须恰好保留一次");
+    assert.equal(count(list, D), 1, "第二图新增 D 必须完整保留一次");
+  }
+
+  // 三条连续重叠：验证最长连续后缀/前缀，不只验证门店“存在”。
+  {
+    const E = "谊品生鲜重庆北国风光店";
+    const r = mergeStoreEdges([seq([A, B, C, D]), seq([B, C, D, E])], extract);
+    const list = names(r.stores || []);
+    for (const store of [A, B, C, D, E]) {
+      assert.equal(count(list, store), 1, `三条连续重叠后 ${store} 必须恰好出现一次`);
+    }
+  }
+
+  // 括号全半角、空格差异：仅归一化后相等才允许裁剪。
+  {
+    const variant = "江北亿达鲜观府国际店 (客百年)";
+    assert.equal(formatCompareKey(variant), formatCompareKey(C), "括号/空格差异应归一化");
+    const E = "谊品生鲜重庆北国风光店";
+    const r = mergeStoreEdges([seq([A, B, C, D]), seq([B, variant, D, E])], extract);
+    const list = names(r.stores || []);
+    assert.equal(count(list, B), 1, "归一化后的 B 重叠副本必须裁剪");
+    assert.equal(count(list, C), 1, "归一化后的 C 重叠副本必须裁剪");
+    assert.equal(count(list, D), 1, "重叠门店 D 必须只保留一次");
+    assert.equal(count(list, E), 1, "新增门店 E 必须保留");
+  }
+
+  // 中间插入不同门店会打断连续重叠；不得跨过 X 把后面的 C 当成连续重叠裁掉。
+  {
+    const X = "江北重庆三峡融资担保集团有限公司";
+    const r = mergeStoreEdges([seq([A, B, C]), seq([B, X, C, D])], extract);
+    const list = names(r.stores || []);
+    assert.ok(list.some(n => formatCompareKey(n) === formatCompareKey(X)), "中间插入的 X 必须保留");
+    assert.equal(count(list, C), 2, "X 打断连续重叠后，第二图的 C 不得被跨项裁剪");
+    assert.ok(list.some(n => formatCompareKey(n) === formatCompareKey(D)), "非重叠新增 D 必须保留");
+  }
+
+  console.log("✅ 连续两条/三条重叠按精确次数校验；归一化与中间插入边界已覆盖");
+}
+
+
+// --- 10) 完整处理链：提取 → 多图合并 → 线路基准拆分 → 匹配 → 去重 → 规划 → 校验 ---
+{
+  const A = "到家主城-江北区鸿恩寺客服中心（2026）";
+  const B = "到家主城-江北区加州客服中心（2026）";
+  const C = "江北亿达鲜观府国际店（客百年）";
+  const D = "江北亿达鲜半山华府店（客百年）";
+  const E = "谊品生鲜重庆北国风光店";
+  const base = [A, B, C, D, E].map((name, index) => ({
+    storeId: `multi_pipeline_${index + 1}`,
+    name,
+    routeOrder: index + 1,
+  }));
+  const edge = mergeStoreEdges([
+    [A, B, C].join(" -> "),
+    [B, C, D, E].join(" -> "),
+  ], extract);
+  assert.ok(edge.stores?.length, "多图合并应输出门店");
+  const split = splitByRouteBase(edge.stores, base);
+  const matched = matchStores(split, base);
+  const d = dedupe(matched);
+  const planned = plan(d.items, true);
+  const validation = validateResult({
+    date: "2026-10-27",
+    vehicle: "渝DK7692",
+    stores: planned,
+  });
+  const count = (items, name) => items.filter(
+    item => formatCompareKey(item.rawName || item.name) === formatCompareKey(name)
+  ).length;
+  for (const name of [A, B, C, D, E]) {
+    assert.equal(count(planned, name), 1, `完整处理链中 ${name} 必须恰好保留一次`);
+  }
+  assert.equal(d.merged, 0, "边界合并已处理重叠，不应再发生意外二次合并");
+  assert.ok(planned.every(item => item.storeId), "基准门店应完成身份匹配");
+  assert.deepEqual(validation, { valid: true, errors: [] }, "最终规划必须通过保存前校验");
+  console.log("✅ 完整处理链通过：五家门店各一次、身份匹配完整、线路顺序与保存校验正常");
+}
+
+// --- 11) 完整处理链身份冲突保护：不同识别名不能因同一 storeId 被吞店 ---
+{
+  const rawA = "重庆渝商餐饮文化产业投资有限公司";
+  const rawB = "江北重庆渝商餐饮文化产业投资有限公司";
+  const tail = "江北亿达鲜观府国际店（客百年）";
+  const base = [
+    {
+      storeId: "shared_store_identity",
+      name: rawB,
+      aliases: [rawA],
+      routeOrder: 1,
+    },
+    {
+      storeId: "tail_store_identity",
+      name: tail,
+      routeOrder: 2,
+    },
+  ];
+  const edge = mergeStoreEdges([
+    rawA,
+    [ "顶部滚动残条", rawB, tail ].join(" -> "),
+  ], extract);
+  const split = splitByRouteBase(edge.stores || [], base);
+  const matched = matchStores(split, base);
+  const d = dedupe(matched);
+  const planned = plan(d.items, true);
+  assert.equal(planned.length, 3, "不同识别项冲突时必须保留条目，不得静默吞店");
+  assert.ok(planned.some(item => item.pending && !item.storeId &&
+    formatCompareKey(item.rawName || item.name) === formatCompareKey(rawB)),
+  "第二个不同识别项应转待定并保留原始识别名");
+  assert.ok(planned.some(item => item.storeId === "shared_store_identity" &&
+    formatCompareKey(item.rawName || item.name) === formatCompareKey(rawA)),
+  "第一个识别项应保留原门店身份");
+  assert.ok(planned.some(item => item.storeId === "tail_store_identity"),
+    "后续新增门店必须保留");
+  assert.equal(d.merged, 0, "身份冲突不能计为重复合并");
+  const validation = validateResult({
+    date: "2026-10-27",
+    vehicle: "渝DK7692",
+    stores: planned,
+  });
+  assert.equal(validation.valid, true, `身份冲突转待定后仍应通过保存校验：${validation.errors.join("；")}`);
+  console.log("✅ 不同原始识别项争用同一 storeId 时转待定保留，未吞店");
+}
