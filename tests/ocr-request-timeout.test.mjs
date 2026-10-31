@@ -85,10 +85,14 @@ assert.match(processSource, /lineEvidence:results\.flatMap[\s\S]*?imageIndex:ima
 assert.match(processSource, /lineEvidence:Array\.isArray\(ocr\.lineEvidence\)\?ocr\.lineEvidence:\[\]/,
   "逐行证据必须随运单记录保存");
 
-const testModule = source.replace("async function requestJson(", "export async function requestJson(");
+const testModule = source.replace("async function requestJson(", "export async function requestJson(").replace("function collectText(", "export function collectText(");
 assert.notEqual(testModule, source, "requestJson test hook target must exist");
 const moduleUrl = "data:text/javascript;base64," + Buffer.from(testModule).toString("base64");
-const { requestJson, collectLineEvidence } = await import(moduleUrl);
+const { requestJson, collectLineEvidence, collectText } = await import(moduleUrl);
+const stringTextResult = collectText({ text: "单字段字符串识别结果" });
+assert.deepEqual(stringTextResult, ["单字段字符串识别结果"], "OCR 适配器必须保留字符串格式的 text 字段");
+assert.deepEqual(collectText({ texts: ["数组行一", "数组行二"] }), ["数组行一", "数组行二"], "修复字符串分支不得影响数组行");
+assert.deepEqual(collectText({ result: { text: "嵌套字符串结果" } }), ["嵌套字符串结果"], "必须保留嵌套对象中的字符串识别结果");
 
 const paddleResponseFixture = {
   result: {

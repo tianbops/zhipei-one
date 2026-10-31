@@ -64,8 +64,13 @@ function collectText(value, out = []) {
   if (typeof value !== "object") return out;
   for (const key of ["rec_texts", "recTexts", "texts", "text"]) {
     const v = value[key];
-    if (Array.isArray(v)) for (const x of v) if (clean(x)) out.push(clean(x));
-    else if (typeof v === "string" && clean(v)) out.push(clean(v));
+    if (Array.isArray(v)) {
+      for (const item of v) {
+        if (clean(item)) out.push(clean(item));
+      }
+    } else if (typeof v === "string" && clean(v)) {
+      out.push(clean(v));
+    }
   }
   for (const key of ["ocrResults", "ocr_results", "prunedResult", "pruned_result", "result", "pages"]) {
     if (value[key]) collectText(value[key], out);
