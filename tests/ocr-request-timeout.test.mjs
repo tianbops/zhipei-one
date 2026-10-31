@@ -27,7 +27,7 @@ const fieldEvidenceFixture = associateFieldEvidence({
 });
 assert.equal(fieldEvidenceFixture.fields.find(x => x.field === "date").source, "ocr");
 assert.equal(fieldEvidenceFixture.fields.find(x => x.field === "date").evidence[0].imageIndex, 1);
-assert.equal(fieldEvidenceFixture.fields.find(x => x.field === "vehicle").evidence[0].score, 0.91);
+assert.equal(fieldEvidenceFixture.fields.find(x => x.field === "vehicle").evidence[0].lineIndex, 1);\nassert.equal(fieldEvidenceFixture.lineEvidence?.[1]?.score, 0.91);
 assert.equal(fieldEvidenceFixture.fields.find(x => x.field === "totalWeight").source, "ocr");
 assert.equal(fieldEvidenceFixture.stores[0].source, "ocr");
 assert.equal(fieldEvidenceFixture.stores[1].source, "unavailable", "无对应识别行时必须明确标记证据缺失");
