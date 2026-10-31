@@ -74,7 +74,7 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
   if((!files.length&&!rawText&&!resumeRequestId)||processingFile)return;
   processingFile=true;
   const perfProcessStartedAt=performance.now();
-  let perfCompressMs=0,perfRequestStartedAt=0,perfResponseAt=0,perfResponseStatus=null,perfStreamComplete=false,perfResult=null,perfRecorded=false;
+  let perfCompressMs=0,perfRequestStartedAt=0,perfResponseAt=0,perfResponseStatus=null,perfStreamComplete=false,perfResult=null,perfRecorded=false,perfFailureStatus=null;
   lastProcessingFile=null;
   const controller=new AbortController();
   processingController=controller;
@@ -175,10 +175,13 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
       }
     }catch(e){
       if(e?.name==="AbortError"){
+        const reason=controller.signal?.reason;
+        perfFailureStatus=reason?.name==="TimeoutError"?"timeout":"abort";
         // 没有「取消处理」按钮之后，Abort 只可能来自网络中断/页面卸载，
-        // 一律按超时提示，让用户有明确的重试动作。
+        // 一律按超时提示，让用户有明确的重试动作；遥测仍保留真实 Abort 分类。
         throw Object.assign(new Error("运单处理超时，请检查OCR服务后重试"),{code:"PROCESS_CLIENT_TIMEOUT"});
       }
+      if(e?.name==="TimeoutError")perfFailureStatus="timeout";
       throw e;
     }
   }catch(e){
@@ -187,7 +190,7 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
   }finally{
     if(perfRequestStartedAt&&!perfRecorded){
       const perfEndedAt=performance.now(),perfDuration=perfEndedAt-perfProcessStartedAt;
-      const timing=(!perfResult?.idempotent&&perfResult?.waybill?.timing&&typeof perfResult.waybill.timing==="object")?perfResult.waybill.timing:{};
+      const timing=perfResult?.processingTiming&&typeof perfResult.processingTiming==="object"?perfResult.processingTiming:((!perfResult?.idempotent&&perfResult?.waybill?.timing&&typeof perfResult.waybill.timing==="object")?perfResult.waybill.timing:{});
       const phases={
         "waybill-client-compress":perfCompressMs,
         "waybill-client-first-response":Math.max(0,perfResponseAt-perfRequestStartedAt),
@@ -210,7 +213,7 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
       };
       for(const [name,key] of Object.entries(timingFields)){const value=Number(timing[key]);if(Number.isFinite(value)&&value>=0)phases[name]=value;}
       const server=Number.isFinite(Number(timing.totalMs))?Number(timing.totalMs):null;
-      const status=perfResponseStatus===null?"network":(!perfStreamComplete&&perfResponseStatus<400?"network":perfResponseStatus);
+      const status=perfFailureStatus||(perfResponseStatus===null?"network":(!perfStreamComplete&&perfResponseStatus<400?"network":perfResponseStatus));
       try{window.zpPerfRecord?.("api-waybill-process",status,perfDuration,server,phases)}catch{}
       perfRecorded=true;
     }

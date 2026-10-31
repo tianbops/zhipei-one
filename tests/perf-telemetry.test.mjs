@@ -74,3 +74,13 @@ assert.match(monthly,/home-history-ready-cache/);
 assert.match(monthly,/home-history-ready-network/);
 
 // AbortError 与 TimeoutError 不得再混入 network。\nassert.match(ingest,/"network","abort","timeout"/);\nassert.match(perfDiag,/classifyFetchFailure/);\nassert.match(perfDiag,/name==="TimeoutError"/);\nassert.match(perfDiag,/name==="AbortError"/);\n
+// The streaming OCR path records abort and timeout independently of generic fetch telemetry.
+assert.match(upload,/perfFailureStatus/);
+assert.match(upload,/\?"timeout":"abort"/);
+assert.match(upload,/perfFailureStatus="timeout"/);
+assert.match(upload,/perfFailureStatus\|\|\(perfResponseStatus===null/);
+
+// Idempotent OCR submissions still expose the current processing timing, not the old saved waybill timing.
+const processApi=readFileSync(new URL("../functions/api/waybills/process.js",import.meta.url),"utf8");
+assert.equal((processApi.match(/processingTiming:order\.timing/g)||[]).length,4);
+assert.match(upload,/perfResult\?\.processingTiming/);
