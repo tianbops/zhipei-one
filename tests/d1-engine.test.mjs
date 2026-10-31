@@ -309,6 +309,17 @@ async function testDeleteRoute() {
   const q = (k) => raw.prepare("SELECT value FROM kv WHERE key=?").get(k);
   const jget = (k) => { const r = q(k); return r ? JSON.parse(r.value) : null; };
 
+  const DELETE_WAYBILL = registryScript((k) => k.includes("for i=2,#KEYS do") && k.includes("return 1"));
+  await c("SET", "zp:waybill:del-1", JSON.stringify({ id: "del-1" }));
+  await c("SET", "zp:waybill:dedupe:sig-1", "del-1");
+  await c("SET", "zp:waybill:fingerprint:fp-1", "del-1");
+  await c("SET", "zp:waybill:dedupe:sig-2", "newer");
+  eq(await c("EVAL", DELETE_WAYBILL, "3", "zp:waybill:del-1", "zp:waybill:dedupe:sig-1", "zp:waybill:fingerprint:fp-1", "del-1"), 1, "运单删除脚本返回成功");
+  eq(await c("GET", "zp:waybill:del-1"), null, "运单主记录原子删除");
+  eq(await c("GET", "zp:waybill:dedupe:sig-1"), null, "仍指向本单的日去重键清理");
+  eq(await c("GET", "zp:waybill:fingerprint:fp-1"), null, "仍指向本单的业务指纹键清理");
+  eq(await c("GET", "zp:waybill:dedupe:sig-2"), "newer", "已改派给新运单的去重键保留");
+
   // —— 场景 A：带 driver(U1) + delivery(U2) 的线路删除 ——
   await c("SET", "zp:route:R1", JSON.stringify({ id: "R1", driverUserId: "U1", deliveryUserId: "U2" }));
   await c("SET", "zp:routes:index", JSON.stringify(["R1"]));
