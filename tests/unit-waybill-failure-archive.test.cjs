@@ -15,7 +15,7 @@ function check(name, ok, info) {
   const requestId = "req-failure-archive-1";
   await beginProc(env, { requestId, routeId: "route-17", userId: "admin-test" });
   const order = {
-    routeId: "route-17", date: "2026-05-21", vehicle: "渝DK7692",
+    routeId: "route-17", date: "2026-05-21", uploadedAt: "2026-05-22T01:00:00.000Z", uploadedAtBeijing: "2026-05-22T09:00:00.000+08:00", vehicle: "渝DK7692",
     rawText: "must not be retained",
     stores: [{ name: "门店甲", storeId: "s1" }, { name: "门店甲", storeId: "s1" }],
     validation: { valid: false, errors: ["规划结果存在重复门店"] },
@@ -40,7 +40,8 @@ function check(name, ok, info) {
   check("车牌筛选无匹配时返回空", wrongPlate.count === 0);
   const uploadDay = archived.failures[0]?.uploadDate;
   const byUpload = await listFailureRecords(env, { routeId: "route-17", date: uploadDay });
-  check("同时支持按上传日期检索", byUpload.count === 1);
+  check("上传日为北京时间 2026-05-22", uploadDay === "2026-05-22");
+  check("按上传日查询不会命中业务日期不同的失败单", byUpload.count === 0);
   const normalId = "req-failure-archive-done";
   await beginProc(env, { requestId: normalId, routeId: "route-17", userId: "admin-test" });
   await finishProc(env, normalId, "waybill-1");

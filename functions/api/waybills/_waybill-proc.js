@@ -16,6 +16,7 @@
  *   全为新增键 zp:waybill:proc:<requestId>，best-effort 写入，不影响主流程，TTL 自动清理孤儿票据（无 Redis 重建）。
  */
 import { command } from "../_redis.js";
+import { beijingISO } from "../_time.js";
 
 const clean = v => String(v ?? "").trim();
 const PROC_TTL = 15 * 60; // 15 分钟；仅用于实时处理票据
@@ -35,14 +36,17 @@ const procKey = requestId => "zp:waybill:proc:" + clean(requestId);
 // cancel 与 claim 都在 Redis EVAL 内完成，二者谁先成功谁决定最终时序：
 //   CANCELLED 先成功 → 后续保存声明失败；
 //   SAVE_CLAIMED 先成功 → 取消不再抢占，保存完成后 DONE 胜出。
-const claimSaveScript = `local raw=redis.call("GET",KEYS[1]); if not raw then return 0 end; local ok,rec=pcall(cjson.decode,raw); if not ok or type(rec)~="table" then return 0 end; if rec.stage=="CANCELLED" or rec.stage=="DONE" then return 0 end; if rec.saveClaimedAt then return 1 end; rec.saveClaimedAt=ARGV[1]; rec.updatedAt=ARGV[1]; redis.call("SET",KEYS[1],cjson.encode(rec),"EX",ARGV[2]); return 1`;
-const cancelScript = `local raw=redis.call("GET",KEYS[1]); if not raw then return 0 end; local ok,rec=pcall(cjson.decode,raw); if not ok or type(rec)~="table" then return 0 end; if rec.stage=="DONE" or rec.saveClaimedAt then return 0 end; rec.stage="CANCELLED"; rec.recoverable=true; rec.action=ARGV[1]; rec.hint=ARGV[2]; rec.detail=ARGV[3]; rec.updatedAt=ARGV[4]; redis.call("SET",KEYS[1],cjson.encode(rec),"EX",ARGV[5]); return 1`;
+const claimSaveScript = `local raw=redis.call("GET",KEYS[1]); if not raw then return 0 end; local ok,rec=pcall(cjson.decode,raw); if not ok or type(rec)~="table" then return 0 end; if rec.stage=="CANCELLED" or rec.stage=="DONE" then return 0 end; if rec.saveClaimedAt then return 1 end; rec.saveClaimedAt=ARGV[1]; rec.updatedAt=ARGV[1]; rec.updatedAtBeijing=ARGV[2]; redis.call("SET",KEYS[1],cjson.encode(rec),"EX",ARGV[3]); return 1`;
+const cancelScript = `local raw=redis.call("GET",KEYS[1]); if not raw then return 0 end; local ok,rec=pcall(cjson.decode,raw); if not ok or type(rec)~="table" then return 0 end; if rec.stage=="DONE" or rec.saveClaimedAt then return 0 end; rec.stage="CANCELLED"; rec.recoverable=true; rec.action=ARGV[1]; rec.hint=ARGV[2]; rec.detail=ARGV[3]; rec.updatedAt=ARGV[4]; rec.updatedAtBeijing=ARGV[5]; redis.call("SET",KEYS[1],cjson.encode(rec),"EX",ARGV[6]); return 1`;
 
 function nowISO() { return new Date().toISOString(); }
+function nowFields() { const now = new Date(); return { at: now.toISOString(), atBeijing: beijingISO(now) }; }
+function beijingDate(value = new Date()) { const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(value); const p = Object.fromEntries(parts.filter(x => x.type !== "literal").map(x => [x.type, x.value])); return `${p.year}-${p.month}-${p.day}`; }
 
 /** 写入初始 PROCESSING 票据。best-effort：失败不影响主流程。 */
 export async function beginProc(env, { requestId, routeId, userId, fileName = null }) {
   if (!requestId) return null;
+  const stamp = nowFields();
   const rec = {
     requestId,
     routeId: clean(routeId),
@@ -50,8 +54,10 @@ export async function beginProc(env, { requestId, routeId, userId, fileName = nu
     fileName: fileName ? String(fileName) : null,
     stage: "PROCESSING",
     waybillId: null,
-    startedAt: nowISO(),
-    updatedAt: nowISO(),
+    startedAt: stamp.at,
+    startedAtBeijing: stamp.atBeijing,
+    updatedAt: stamp.at,
+    updatedAtBeijing: stamp.atBeijing,
     recoverable: false,
     action: null,
     hint: null,
@@ -68,7 +74,7 @@ export async function beginProc(env, { requestId, routeId, userId, fileName = nu
 function safeFailureOrder(order) {
   if (!order || typeof order !== "object" || Array.isArray(order)) return null;
   const out = {};
-  for (const key of ["id","routeId","routeName","date","vehicle","driver","deliveryPerson","stage","requestId","createdAt","uploadedAt","summary","validation","diagnostics","quality","timing","stores"]) {
+  for (const key of ["id","routeId","routeName","date","vehicle","driver","deliveryPerson","stage","requestId","createdAt","createdAtBeijing","uploadedAt","uploadedAtBeijing","summary","validation","diagnostics","quality","timing","stores"]) {
     if (order[key] !== undefined) out[key] = order[key];
   }
   if (order.ocr && typeof order.ocr === "object") {
@@ -81,10 +87,11 @@ function safeFailureOrder(order) {
 async function archiveFailure(env, rec, patch = {}) {
   const routeId = clean(rec.routeId || "");
   if (!routeId) return false;
-  const uploadedAt = rec.uploadedAt || rec.startedAt || nowISO();
-  const uploadDate = /^\d{4}-\d{2}-\d{2}/.test(uploadedAt) ? uploadedAt.slice(0, 10) : nowISO().slice(0, 10);
   const order = safeFailureOrder(patch.order || rec.order);
-  const businessDate = /^\d{4}-\d{2}-\d{2}$/.test(clean(patch.date || order?.date)) ? clean(patch.date || order.date) : uploadDate;
+  const uploadedAt = order?.uploadedAt || rec.uploadedAt || rec.startedAt || nowISO();
+  const uploadedAtBeijing = order?.uploadedAtBeijing || rec.uploadedAtBeijing || rec.startedAtBeijing || beijingISO(uploadedAt);
+  const uploadDate = uploadedAtBeijing.slice(0, 10);
+  const businessDate = /^\d{4}-\d{2}-\d{2}$/.test(clean(patch.date || order?.date)) ? clean(patch.date || order.date) : null;
   const vehicle = clean(patch.vehicle || order?.vehicle).toUpperCase() || null;
   const record = {
     requestId: rec.requestId,
@@ -97,18 +104,22 @@ async function archiveFailure(env, rec, patch = {}) {
     action: rec.action || null,
     recoverable: !!rec.recoverable,
     uploadedAt,
+    uploadedAtBeijing,
     uploadDate,
     date: businessDate,
     vehicle,
     createdAt: rec.startedAt || uploadedAt,
+    createdAtBeijing: rec.startedAtBeijing || beijingISO(rec.startedAt || uploadedAt),
     updatedAt: rec.updatedAt || nowISO(),
+    updatedAtBeijing: rec.updatedAtBeijing || beijingISO(rec.updatedAt || uploadedAt),
     timing: rec.timing || null,
     validation: patch.validation || order?.validation || null,
     order
   };
   const serialized = JSON.stringify(record);
   await command(env, ["SET", failureKey(rec.requestId), serialized, "EX", String(FAILURE_TTL)]);
-  const dates = [...new Set([uploadDate, businessDate])].filter(x => /^\d{4}-\d{2}-\d{2}$/.test(x));
+  // 日期索引只对应运单业务日期；上传日单独保存在 uploadDate，不参与业务日期筛选。
+  const dates = businessDate ? [businessDate] : [];
   const keys = [routeFailureKey(routeId), ...dates.map(d => dateFailureKey(routeId, d))];
   for (const key of keys) {
     await command(env, ["RPUSH", key, rec.requestId]);
@@ -118,7 +129,7 @@ async function archiveFailure(env, rec, patch = {}) {
   return true;
 }
 
-/** 管理员失败列表：只按线路索引读取，不扫描全库；日期同时匹配上传日和运单业务日。 */
+/** 管理员失败列表：只按线路索引读取，不扫描全库；date 参数只匹配运单业务日期。 */
 export async function listFailureRecords(env, { routeId, date = "", vehicle = "", limit = 50 } = {}) {
   const rid = clean(routeId);
   if (!rid) return { failures: [], count: 0, truncated: false };
@@ -138,7 +149,7 @@ export async function listFailureRecords(env, { routeId, date = "", vehicle = ""
     }
   }
   const plate = clean(vehicle).toUpperCase();
-  const filtered = raw.filter(x => x && x.routeId === rid && (!plate || clean(x.vehicle).toUpperCase() === plate))
+  const filtered = raw.filter(x => x && x.routeId === rid && (!day || clean(x.date) === day) && (!plate || clean(x.vehicle).toUpperCase() === plate))
     .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
   const cap = Math.max(1, Math.min(100, Number(limit) || 50));
   return { failures: filtered.slice(0, cap), count: filtered.length, truncated: ids.length > unique.length || filtered.length > cap };
@@ -160,6 +171,7 @@ export async function failProc(env, requestId, patch) {
     if (rec.stage === "DONE") return rec;
     if (rec.stage === "CANCELLED" && !patch.force) return rec;
 
+    const stamp = nowFields();
     const next = {
       ...rec,
       stage: patch.stage || "FAILED",
@@ -170,7 +182,8 @@ export async function failProc(env, requestId, patch) {
       detail: patch.detail || patch.message || null,
       timing: patch.timing && typeof patch.timing === "object" && !Array.isArray(patch.timing) ? patch.timing : rec.timing || null,
       order: patch.order || null,
-      updatedAt: nowISO(),
+      updatedAt: stamp.at,
+      updatedAtBeijing: stamp.atBeijing,
     };
     if (patch.waybillId) next.waybillId = patch.waybillId;
     await command(env, ["SET", procKey(requestId), JSON.stringify(next), "EX", String(PROC_TTL)]);
@@ -186,7 +199,7 @@ export async function failProc(env, requestId, patch) {
 export async function claimProcSave(env, requestId) {
   if (!requestId) return false;
   try {
-    const result = await command(env, ["EVAL", claimSaveScript, "1", procKey(requestId), nowISO(), String(PROC_TTL)]);
+    const result = await command(env, ["EVAL", claimSaveScript, "1", procKey(requestId), nowISO(), beijingISO(new Date()), String(PROC_TTL)]);
     return Number(result) === 1;
   } catch { return false; }
 }
@@ -197,7 +210,7 @@ export async function claimProcSave(env, requestId) {
 export async function cancelProc(env, requestId, { action = "REPROCESS", hint = "本次处理已取消，可重新上传运单", detail = null } = {}) {
   if (!requestId) return false;
   try {
-    const result = await command(env, ["EVAL", cancelScript, "1", procKey(requestId), action, hint, detail || "", nowISO(), String(PROC_TTL)]);
+    const result = await command(env, ["EVAL", cancelScript, "1", procKey(requestId), action, hint, detail || "", nowISO(), beijingISO(new Date()), String(PROC_TTL)]);
     if (Number(result) === 1) {
       const rec = await getProc(env, requestId);
       if (rec) { try { await archiveFailure(env, rec, {}); } catch {} }
@@ -225,7 +238,8 @@ export async function finishProc(env, requestId, waybillId) {
     const rec = raw ? (typeof raw === "string" ? JSON.parse(raw) : raw) : null;
     if (!rec) return null;
     if (rec.stage === "CANCELLED") return rec;
-    const next = { ...rec, stage: "DONE", waybillId: waybillId || null, updatedAt: nowISO() };
+    const stamp = nowFields();
+    const next = { ...rec, stage: "DONE", waybillId: waybillId || null, updatedAt: stamp.at, updatedAtBeijing: stamp.atBeijing };
     await command(env, ["SET", procKey(requestId), JSON.stringify(next), "EX", String(PROC_TTL)]);
     return next;
   } catch { return null; }

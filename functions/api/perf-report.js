@@ -2,6 +2,7 @@ import { json } from "./_json.js";
 import { currentUser } from "./_auth.js";
 import { pipeline } from "./_redis.js";
 import { guard } from "./_safe.js";
+import { beijingISO } from "./_time.js";
 
 const pad=n=>String(n).padStart(2,"0");
 const hourKey=d=>"zp:perf:hour:"+d.toISOString().slice(0,13).replace(/[-T:]/g,"");
@@ -17,7 +18,7 @@ export const onRequestGet = guard(async ({request,env}) => {
   for(let i=0;i<dates.length;i++){
     const arr=Array.isArray(raw?.[i])?raw[i]:[];
     const hash={};for(let j=0;j+1<arr.length;j+=2)hash[String(arr[j])]=arr[j+1];
-    const hour={at:dates[i].toISOString().slice(0,13)+":00Z",events:0,groups:[]};
+    const hour={at:dates[i].toISOString().slice(0,13)+":00Z",atBeijing:beijingISO(dates[i]),events:0,groups:[]};
     const groups=new Map();
     for(const [field,value] of Object.entries(hash)){
       // 兼容两种字段形状：page|endpoint|status|metric（原有）
@@ -75,5 +76,5 @@ export const onRequestGet = guard(async ({request,env}) => {
     }
     totals.hours.push(hour);
   }
-  return json({success:true,windowHours:24,generatedAt:now.toISOString(),totals});
+  return json({success:true,windowHours:24,generatedAt:now.toISOString(),generatedAtBeijing:beijingISO(now),totals});
 });
