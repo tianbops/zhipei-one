@@ -3,7 +3,7 @@ import { extract } from "../functions/api/waybills/_process-extract.js";
 import { mergeStoreEdges } from "../functions/api/waybills/_process-multimage.js";
 import { dedupe } from "../functions/api/waybills/_process-plan.js";
 
-const HEADER = "运输日期 2026-10-28\\n车牌号 渝DK7692\\n承运订单\\n总数量227";
+const HEADER = "运单列表\\n运输日期\\n2026-10-28\\n车牌号\\n渝DK7692\\n额定载重：18吨\\n额定装载\\n额定体积：40m³\\n主司机\\n田波\\n送货员\\n荣富强\\n承运订单\\n总数量227|总重量1.563121t(8.68%)|总体积3.462567m³(8.66%)";
 const names = items => (items || []).map(item => String(item.name || item.rawName || ""));
 
 // Case 1: the first screenshot ends in a clipped store name; the next screenshot
