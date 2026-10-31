@@ -11,7 +11,7 @@ function check(name, ok, info) {
   const red = new MiniRedis();
   makeUpstash(red);
   const env = { UPSTASH_REDIS_REST_URL: "https://upstash.local", UPSTASH_REDIS_REST_TOKEN: "x" };
-  const { beginProc, failProc, listFailureRecords, getProc, finishProc } = await import("../functions/api/waybills/_waybill-proc.js");
+  const { beginProc, failProc, cancelProc, listFailureRecords, getProc, finishProc } = await import("../functions/api/waybills/_waybill-proc.js");
   const requestId = "req-failure-archive-1";
   await beginProc(env, { requestId, routeId: "route-17", userId: "admin-test" });
   const order = {
@@ -44,8 +44,12 @@ function check(name, ok, info) {
   const normalId = "req-failure-archive-done";
   await beginProc(env, { requestId: normalId, routeId: "route-17", userId: "admin-test" });
   await finishProc(env, normalId, "waybill-1");
+  const cancelId = "req-failure-archive-cancel";
+  await beginProc(env, { requestId: cancelId, routeId: "route-17", userId: "admin-test" });
+  await cancelProc(env, cancelId, { action: "REPROCESS", hint: "用户取消处理", detail: "OCR" });
   const recent = await listFailureRecords(env, { routeId: "route-17" });
-  check("成功完成任务不会进入失败列表", recent.count === 1);
+  check("成功完成任务不会进入失败列表", recent.count === 2);
+  check("用户取消任务也会归档", recent.failures.some(x => x.requestId === cancelId && x.stage === "CANCELLED"));
   check("实时处理票据仍保留原15分钟生命周期", (await getProc(env, requestId))?.stage === "FAILED");
   console.log("失败归档测试：通过 " + pass + " / 失败 " + fail);
   process.exit(fail ? 1 : 0);
