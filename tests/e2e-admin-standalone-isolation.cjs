@@ -57,44 +57,39 @@ const BASE = 'http://127.0.0.1:' + PORT + '/';
   await ev('document.getElementById("loginForm").requestSubmit()');
   await sleep(2500);
 
-  const targets = await send('Target.getTargets', {});
-  const adminT = targets.targetInfos.find(t => /admin\.html/.test(t.url || ''));
-  console.log('独立管理员窗口存在 :', !!adminT, '| url :', adminT && adminT.url);
-  if (adminT) {
-    const at2 = await send('Target.attachToTarget', { targetId: adminT.targetId, flatten: true });
-    const s2 = at2.sessionId, C2 = (m, p) => send(m, p, s2);
-    await C2('Page.enable'); await C2('Runtime.enable');
-    const ev2 = async s => { const r = await C2('Runtime.evaluate', { expression: s, returnByValue: true, awaitPromise: true }); if (r.exceptionDetails) throw new Error('eval2:' + JSON.stringify(r.exceptionDetails).slice(0, 120)); return r.result.value; };
-    const len = await ev2('history.length');
-    const path = await ev2('location.pathname');
-    console.log('管理员窗口 history.length =', len, '| path =', path);
-    await ev2('history.back()'); await sleep(900);
-    const firstBackPath = await ev2('location.pathname');
-    const firstToast = await ev2('(()=>{const t=document.getElementById("zpToast");return t&&t.className.indexOf("show")>=0?t.textContent:""})()');
-    const firstBackSafe = firstBackPath === '/admin.html' && firstToast === '再按一次返回登录页';
-    console.log('第一次返回 path =', firstBackPath, '| toast =', JSON.stringify(firstToast));
-    if (!firstBackSafe) {
-      console.error('❌ 第一次返回未停留在管理员页或提示文案不正确');
-      ws.close(); proc.kill(); process.exit(1);
-    }
-
-    // 在两秒确认窗口内再次返回：必须注销管理员会话并回登录页。
-    await ev2('history.back()'); await sleep(1200);
-    const finalUrl = await ev2('location.href');
-    const finalPath = await ev2('location.pathname');
-    const finalParams = await ev2('(()=>{const u=new URL(location.href);return {reason:u.searchParams.get("reason"),manual:u.searchParams.get("manual")}})()');
-    const finalRole = await ev2('sessionStorage.getItem("zpRole")');
-    const returnedToLogin = (finalPath === '/' || finalPath === '/index.html') &&
-      finalParams.reason === 'logout' && finalParams.manual === '1' && finalRole === null;
-    console.log('第二次返回最终 URL =', finalUrl, '| zpRole =', finalRole);
-    console.log(returnedToLogin
-      ? '✅ 管理员返回闭环通过：首次留在管理端，第二次退出到登录页，角色标记已清理'
-      : '❌ 管理员最终返回未落到登录页');
-    ws.close(); proc.kill();
-    process.exit(returnedToLogin ? 0 : 1);
-  } else {
-    console.error('❌ 未检测到独立管理员窗口；本测试不能跳过管理员返回闭环验证');
-    ws.close(); proc.kill();
-    process.exit(1);
+  // 产品当前设计为同一 PWA 窗口内按角色 location.replace 进入管理员区，
+  // 不会调用 window.open 创建第二个 Chrome target。验证原登录窗口已切换到管理员根页。
+  const adminPath = await ev('location.pathname');
+  console.log('管理员工作区当前窗口 path =', adminPath);
+  if (adminPath !== '/admin' && adminPath !== '/admin.html') {
+    console.error('❌ 登录后没有进入管理员工作区；实际路径：', adminPath);
+    ws.close(); proc.kill(); process.exit(1);
   }
+
+  const len = await ev('history.length');
+  console.log('管理员窗口 history.length =', len, '| path =', adminPath);
+  await ev('history.back()'); await sleep(900);
+  const firstBackPath = await ev('location.pathname');
+  const firstToast = await ev('(()=>{const t=document.getElementById("zpToast");return t&&t.className.indexOf("show")>=0?t.textContent:""})()');
+  const firstBackSafe = (firstBackPath === '/admin' || firstBackPath === '/admin.html') && firstToast === '再按一次返回登录页';
+  console.log('第一次返回 path =', firstBackPath, '| toast =', JSON.stringify(firstToast));
+  if (!firstBackSafe) {
+    console.error('❌ 第一次返回未停留在管理员页或提示文案不正确');
+    ws.close(); proc.kill(); process.exit(1);
+  }
+
+  // 在两秒确认窗口内再次返回：必须注销管理员会话并回登录页。
+  await ev('history.back()'); await sleep(1200);
+  const finalUrl = await ev('location.href');
+  const finalPath = await ev('location.pathname');
+  const finalParams = await ev('(()=>{const u=new URL(location.href);return {reason:u.searchParams.get("reason"),manual:u.searchParams.get("manual")}})()');
+  const finalRole = await ev('sessionStorage.getItem("zpRole")');
+  const returnedToLogin = (finalPath === '/' || finalPath === '/index.html') &&
+    finalParams.reason === 'logout' && finalParams.manual === '1' && finalRole === null;
+  console.log('第二次返回最终 URL =', finalUrl, '| zpRole =', finalRole);
+  console.log(returnedToLogin
+    ? '✅ 管理员返回闭环通过：首次留在管理端，第二次退出到登录页，角色标记已清理'
+    : '❌ 管理员最终返回未落到登录页');
+  ws.close(); proc.kill();
+  process.exit(returnedToLogin ? 0 : 1);
 })().catch(e => { console.error('ERR', e.message); process.exit(1); });
