@@ -79,15 +79,40 @@ const BASE = 'http://127.0.0.1:' + PORT + '/';
     ws.close(); proc.kill(); process.exit(1);
   }
 
-  // 在两秒确认窗口内再次返回：必须注销管理员会话并回登录页。
-  await ev('history.back()'); await sleep(1200);
-  const finalUrl = await ev('location.href');
-  const finalPath = await ev('location.pathname');
-  const finalParams = await ev('(()=>{const u=new URL(location.href);return {reason:u.searchParams.get("reason"),manual:u.searchParams.get("manual")}})()');
-  const finalRole = await ev('sessionStorage.getItem("zpRole")');
-  const returnedToLogin = (finalPath === '/' || finalPath === '/index.html') &&
-    finalParams.reason === 'logout' && finalParams.manual === '1' && finalRole === null;
-  console.log('第二次返回最终 URL =', finalUrl, '| zpRole =', finalRole);
+  // 第二次返回会触发 location.replace，导致旧 execution context 被销毁。
+  // 不要在导航瞬间继续 Runtime.evaluate；改从 Browser target 层观察同一窗口的新 URL，
+  // 待导航完成后重新 attach，再检查登录页参数和角色标记。
+  await ev('history.back()');
+  let loginTarget = null;
+  for (let i = 0; i < 40; i++) {
+    const targets = await send('Target.getTargets', {});
+    loginTarget = (targets.targetInfos || []).find(t => t.targetId === tg.targetId &&
+      (t.url || '').startsWith(BASE) &&
+      /(?:\?|&)reason=logout(?:&|$)/.test(t.url) &&
+      /(?:\?|&)manual=1(?:&|$)/.test(t.url));
+    if (loginTarget) break;
+    await sleep(250);
+  }
+  if (!loginTarget) {
+    const targets = await send('Target.getTargets', {});
+    const observed = (targets.targetInfos || []).find(t => t.targetId === tg.targetId);
+    console.error('❌ 第二次返回后未观察到登录页导航；当前 target =', observed && observed.url);
+    ws.close(); proc.kill(); process.exit(1);
+  }
+
+  await send('Target.detachFromTarget', { sessionId: sid }).catch(() => {});
+  const attached = await send('Target.attachToTarget', { targetId: tg.targetId, flatten: true });
+  const finalSid = attached.sessionId;
+  await send('Runtime.enable', {}, finalSid);
+  const finalEval = await send('Runtime.evaluate', {
+    expression: '({href:location.href,path:location.pathname,reason:new URL(location.href).searchParams.get("reason"),manual:new URL(location.href).searchParams.get("manual"),role:sessionStorage.getItem("zpRole")})',
+    returnByValue: true,
+    awaitPromise: true
+  }, finalSid);
+  const finalState = finalEval.result.value;
+  const returnedToLogin = (finalState.path === '/' || finalState.path === '/index.html') &&
+    finalState.reason === 'logout' && finalState.manual === '1' && finalState.role === null;
+  console.log('第二次返回最终状态 =', finalState);
   console.log(returnedToLogin
     ? '✅ 管理员返回闭环通过：首次留在管理端，第二次退出到登录页，角色标记已清理'
     : '❌ 管理员最终返回未落到登录页');
