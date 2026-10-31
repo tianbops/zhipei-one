@@ -13,7 +13,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const getJSON = u => new Promise((res, rej) => { http.get(u, r => { let d = ''; r.on('data', c => d += c); r.on('end', () => res(JSON.parse(d))); }).on('error', rej); });
 const STUB = `
 try{var _m=sessionStorage.getItem('__ME');window.__ME=_m?JSON.parse(_m):null}catch(e){window.__ME=null}
-(function(){const real=window.fetch;window.fetch=function(u,o){const s=String(u);
+(function(){const real=window.fetch;window.__LOGIN_FETCHES=[];window.fetch=function(u,o){const s=String(u);window.__LOGIN_FETCHES.push(s);
  const B=(t,ok)=>Promise.resolve({ok:ok!==false,status:ok===false?401:200,json:()=>Promise.resolve(JSON.parse(t)),text:()=>Promise.resolve(t)});
  if(s.indexOf('/api/me')===0){if(!window.__ME)return B('{"error":"unauthorized"}',false);return B(JSON.stringify({success:true,user:window.__ME}));}
  if(s.indexOf('/api/login')===0){const b=o&&o.body?JSON.parse(o.body):{};if(b.username==='root')return B(JSON.stringify({success:true,user:{id:1,username:'root',role:'system_admin'}}));return B('{"error":"bad"}',false);}
@@ -53,8 +53,10 @@ const BASE = 'http://127.0.0.1:' + PORT + '/';
   await ev('sessionStorage.setItem("__ME",JSON.stringify({id:1,username:"root",role:"system_admin"}))');
   await ev('document.getElementById("username").value="root"');
   await ev('document.getElementById("password").value="x"');
+  console.log('登录表单状态 =', await ev('(()=>{const f=document.getElementById("loginForm"),u=document.getElementById("username"),p=document.getElementById("password");return {form:!!f,valid:f&&f.checkValidity(),username:u&&u.value,passwordLength:p&&p.value.length,loginScript:[...document.scripts].some(x=>x.src.includes("login.js"))}})()'));
   await ev('document.getElementById("loginForm").requestSubmit()');
   await sleep(2500);
+  console.log('登录诊断 =', await ev('({fetches:window.__LOGIN_FETCHES||[],message:document.getElementById("loginMessage")?.textContent||"",button:document.getElementById("loginButton")?.textContent||"",role:sessionStorage.getItem("zpRole")})'));
 
   // 产品当前设计为同一 PWA 窗口内按角色 location.replace 进入管理员区，
   // 不会调用 window.open 创建第二个 Chrome target。验证原登录窗口已切换到管理员根页。
