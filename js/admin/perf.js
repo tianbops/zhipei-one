@@ -13,7 +13,7 @@ async function renderPerfReport(){
     if(!d.success||!d.totals)throw Error("性能报告格式异常");
     const t=d.totals,hours=Array.isArray(t.hours)?t.hours:[],groups=hours.flatMap(h=>Array.isArray(h.groups)?h.groups:[]);
     const failures=Object.entries(t.statuses||{}).filter(([s])=>s==="4xx"||s==="5xx"||s==="network").reduce((n,[,v])=>n+(Number(v)||0),0);
-    const reportLines=["智配One 性能诊断报告","生成时间："+(d.generatedAt?new Date(d.generatedAt).toLocaleString():"时间未知"),"统计窗口：最近24小时","请求样本："+Number(t.events||0),"状态统计："+Object.entries(t.statuses||{}).map(([k,v])=>k+"="+v).join("，"),"失败/异常状态："+failures,"","接口耗时（平均 / 峰值 / 服务端平均）"];
+    const reportLines=["智配One 性能诊断报告","生成时间："+(d.generatedAt?new Date(d.generatedAt).toLocaleString():"时间未知"),"统计窗口：最近24小时","请求样本："+Number(t.events||0),"状态统计："+Object.entries(t.statuses||{}).map(([k,v])=>k+"="+v).join("，"),"失败/异常状态："+failures,"","接口与页面就绪耗时（平均 / 峰值 / 服务端平均）"];
     summary.innerHTML='<div class="perf-stat"><strong>'+Number(t.events||0)+'</strong><span>请求样本</span></div><div class="perf-stat"><strong class="'+(failures?'perf-warn':'')+'">'+failures+'</strong><span>失败/异常状态</span></div><div class="perf-stat"><strong>24h</strong><span>统计窗口</span></div>';
     updated.textContent="报告生成："+(d.generatedAt?new Date(d.generatedAt).toLocaleString():"时间未知")+" · 自动匿名汇总";
     const em=new Map();
@@ -28,24 +28,33 @@ async function renderPerfReport(){
     /* 异常状态码细分：把 4xx/5xx 汇总拆成具体 HTTP 状态码，
      * 便于区分「账户服务真的处理了并返回错误」与「网络层失败」。 */
     const codesText=function(x){const cs=[...x.codes.entries()].sort((a,b)=>b[1].count-a[1].count);return cs.length?"（"+cs.map(([c,v])=>c+"×"+v.count).join("，")+"）":""};
-    const top=[...em.entries()].sort((a,b)=>(b[1].count?b[1].sum/b[1].count:0)-(a[1].count?a[1].sum/a[1].count:0)).slice(0,8);
+    const top=[...em.entries()].sort((a,b)=>(b[1].count?b[1].sum/b[1].count:0)-(a[1].count?a[1].sum/a[1].count:0)).slice(0,12);
     for(const [name,x] of top)reportLines.push(name+"：样本 "+x.count+"，平均 "+(x.count?Math.round(x.sum/x.count):0)+" ms，峰值 "+Math.round(x.max)+" ms，服务端平均 "+(x.serverCount?Math.round(x.serverSum/x.serverCount)+" ms（"+x.serverCount+"次）":"暂无")+(x.failures?"，异常 "+x.failures+codesText(x):""));
     const codeLines=[];for(const [name,x] of [...em.entries()])if(x.codes.size)codeLines.push(name+"：异常 "+x.failures+" "+codesText(x)+"，平均响应 "+(x.count?Math.round(x.sum/x.count):0)+" ms，服务端平均 "+(x.serverCount?Math.round(x.serverSum/x.serverCount)+" ms":"暂无"));
     if(codeLines.length)reportLines.push("","异常状态码细分（HTTP 状态码×次数，用于区分服务端拒绝与网络失败）",...codeLines);
-    endpoints.innerHTML='<div class="perf-list-title">接口耗时 · 按平均耗时排序</div>'+(top.length?top.map(([name,x])=>'<div class="perf-row"><div class="perf-row-top"><span>'+esc(name)+'</span><span>'+(x.count?Math.round(x.sum/x.count):0)+' ms 平均</span></div><div class="perf-row-meta">样本 '+x.count+' · 峰值 '+Math.round(x.max)+' ms · 服务端 '+(x.serverCount?Math.round(x.serverSum/x.serverCount)+' ms 平均（'+x.serverCount+'次）':'暂无服务端计时')+(x.failures?' · 异常 '+x.failures+codesText(x):'')+'</div></div>').join(""):'<div class="zp-empty">最近24小时暂无接口样本</div>');
+    endpoints.innerHTML='<div class="perf-list-title">接口与页面就绪耗时 · 按平均耗时排序（前12项）</div>'+(top.length?top.map(([name,x])=>'<div class="perf-row"><div class="perf-row-top"><span>'+esc(name)+'</span><span>'+(x.count?Math.round(x.sum/x.count):0)+' ms 平均</span></div><div class="perf-row-meta">样本 '+x.count+' · 峰值 '+Math.round(x.max)+' ms · 服务端 '+(x.serverCount?Math.round(x.serverSum/x.serverCount)+' ms 平均（'+x.serverCount+'次）':'暂无服务端计时')+(x.failures?' · 异常 '+x.failures+codesText(x):'')+'</div></div>').join(""):'<div class="zp-empty">最近24小时暂无接口样本</div>');
     const pm=new Map();
     for(const g of groups)for(const [name,p] of Object.entries(g.phases||{})){
       const x=pm.get(name)||{count:0,sum:0,max:0},n=Number(p.count)||0;x.count+=n;x.sum+=(Number(p.avgMs)||0)*n;x.max=Math.max(x.max,Number(p.max)||0);pm.set(name,x);
     }
     const isD1RoutingMetric=name=>/^history-db-(?:primary|replica|unknown)-queries$/.test(name)||/^history-db-region-[a-z-]+-queries$/.test(name);
-    const ps=[...pm.entries()].filter(([name])=>!isD1RoutingMetric(name)).sort((a,b)=>(b[1].count?b[1].sum/b[1].count:0)-(a[1].count?a[1].sum/a[1].count:0));
+    const sortPhases=list=>list.sort((a,b)=>(b[1].count?b[1].sum/b[1].count:0)-(a[1].count?a[1].sum/a[1].count:0));
+    const historyPhases=sortPhases([...pm.entries()].filter(([name])=>name.startsWith("history-")&&!isD1RoutingMetric(name)));
+    const waybillPhases=sortPhases([...pm.entries()].filter(([name])=>name.startsWith("waybill-")));
+    const otherPhases=sortPhases([...pm.entries()].filter(([name])=>!isD1RoutingMetric(name)&&!name.startsWith("history-")&&!name.startsWith("waybill-")));
     const d1Routes=[...pm.entries()].filter(([name])=>isD1RoutingMetric(name)).sort((a,b)=>a[0].localeCompare(b[0]));
-    reportLines.push("","历史查询阶段耗时（平均 / 峰值）");for(const [name,x] of ps)reportLines.push(name+"：样本 "+x.count+"，平均 "+(x.count?Math.round(x.sum/x.count):0)+" ms，峰值 "+Math.round(x.max)+" ms");
+    const appendTimePhases=(title,list)=>{if(!list.length)return;reportLines.push("",title);for(const [name,x] of list)reportLines.push(name+"：样本 "+x.count+"，平均 "+(x.count?Math.round(x.sum/x.count):0)+" ms，峰值 "+Math.round(x.max)+" ms");};
+    appendTimePhases("历史查询阶段耗时（平均 / 峰值）",historyPhases);
+    appendTimePhases("运单上传与处理阶段耗时（平均 / 峰值）",waybillPhases);
+    appendTimePhases("其他阶段耗时（平均 / 峰值）",otherPhases);
     if(d1Routes.length){reportLines.push("","D1 读路由统计（读结果元数据条数；不是毫秒、独立 SQL 请求数或用户请求数）");for(const [name,x] of d1Routes)reportLines.push(name+"：样本 "+x.count+" 次，累计 "+Math.round(x.sum)+" 条结果记录，平均 "+(x.count?(x.sum/x.count).toFixed(1):"0")+" 条/次，单次最多 "+Math.round(x.max)+" 条");}
     reportLines.push("","说明：匿名聚合数据；不同时间段样本不一定可直接比较。");window.__zpPerfCopyText=reportLines.join("\n");
-    const timeHtml=ps.length?'<div class="perf-list-title">历史查询阶段耗时</div>'+ps.map(([name,x])=>'<div class="perf-row"><div class="perf-row-top"><span>'+esc(name)+'</span><span>'+(x.count?Math.round(x.sum/x.count):0)+' ms 平均</span></div><div class="perf-row-meta">样本 '+x.count+' · 峰值 '+Math.round(x.max)+' ms</div></div>').join(""):"";
+    const renderPhaseGroup=(title,list)=>list.length?'<div class="perf-list-title">'+title+'</div>'+list.map(([name,x])=>'<div class="perf-row"><div class="perf-row-top"><span>'+esc(name)+'</span><span>'+(x.count?Math.round(x.sum/x.count):0)+' ms 平均</span></div><div class="perf-row-meta">样本 '+x.count+' · 峰值 '+Math.round(x.max)+' ms</div></div>').join(""):"";
+    const historyHtml=renderPhaseGroup("历史查询阶段耗时",historyPhases);
+    const waybillHtml=renderPhaseGroup("运单上传与处理阶段耗时",waybillPhases);
+    const otherHtml=renderPhaseGroup("其他阶段耗时",otherPhases);
     const d1Html=d1Routes.length?'<div class="perf-list-title">D1 读路由统计 · 结果记录数</div>'+d1Routes.map(([name,x])=>'<div class="perf-row"><div class="perf-row-top"><span>'+esc(name)+'</span><span>'+Math.round(x.sum)+' 条结果记录</span></div><div class="perf-row-meta">样本 '+x.count+' 次 · 平均 '+(x.count?(x.sum/x.count).toFixed(1):"0")+' 条/次 · 单次最多 '+Math.round(x.max)+' 条</div></div>').join(""):"";
-    phases.innerHTML=timeHtml+d1Html;
+    phases.innerHTML=historyHtml+waybillHtml+otherHtml+d1Html;
   }catch(e){
     updated.textContent="读取失败："+(e.message||"请稍后重试");window.__zpPerfCopyText="智配One 性能诊断报告\n读取失败："+(e.message||"请稍后重试");
     summary.innerHTML='<div class="zp-empty">性能报告暂时不可用。请确认管理员会话有效后重试。</div>';
