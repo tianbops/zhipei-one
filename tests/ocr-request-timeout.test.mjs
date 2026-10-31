@@ -13,6 +13,14 @@ assert.match(adminDiagnosticsSource, /模型分数/,
   "管理员诊断展示原始模型分数时必须明确其为模型分数");
 assert.match(adminDiagnosticsSource, /门店未关联原文/,
   "管理员诊断必须指出缺少原文关联的门店");
+assert.match(adminDiagnosticsSource, /const allMissingStoreEvidence=fieldEvidence[\s\S]*?\.slice\(0,30\)/,
+  "复制诊断必须保留最多 30 条完整未关联门店清单");
+assert.match(adminDiagnosticsSource, /const missingStoreEvidence=allMissingStoreEvidence\.slice\(0,8\)/,
+  "页面紧凑展示仍限制为前 8 条，避免改变现有页面密度");
+assert.match(adminDiagnosticsSource, /另有[\s\S]*?条[\s\S]*?复制诊断/,
+  "页面必须提示未关联门店清单还有多少条，并提示复制完整诊断");
+assert.match(adminDiagnosticsSource, /门店未关联原文：["']?\+allMissingStoreEvidence\.join/,
+  "复制诊断必须导出完整未关联门店清单，而不是页面前 8 条");
 assert.match(adminDiagnosticsSource, /\.\.\.fieldEvidenceLines/,
   "复制诊断时必须包含字段证据内容");
 
