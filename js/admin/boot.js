@@ -57,7 +57,43 @@ async function load(){
     A.renderUsers();A.renderRoutes();A.renderRequests();A.renderInvites();renderOverview();
   }
 }$("search").oninput=A.renderUsers;document.addEventListener("click",e=>{if(!e.target.closest(".row,.route,.dialog"))closeSwipes()});document.querySelectorAll(".page").forEach(p=>p.addEventListener("scroll",closeSwipes,{passive:true}));$("addRoute").onclick=A.addRoute;$("menuBtn").onclick=()=>{const mb=$("menuBg");mb.hidden?A.openMenu():A.hideMenu()};$("menuBg").addEventListener("click",e=>{if(e.target===$("menuBg"))A.hideMenu()});document.addEventListener("keydown",e=>{if(e.key==="Escape")A.hideMenu()});/* popstate 已移交 ui-unified.js 中央控制器 zpHandleBack() */$("addInvite").onclick=A.addInvite;$("editUser").onclick=A.editUser;$("editPass").onclick=A.editPass;$("reset").onclick=A.resetData;$("diagQuery").onclick=A.renderDiagnostics;$("diagRefresh").onclick=A.renderDiagnostics;$("perfRefresh").onclick=A.renderPerfReport;
-$("perfCopy").onclick=async()=>{const text=window.__zpPerfCopyText||"智配One 性能诊断报告\n尚无数据，请先刷新性能报告。";let copied=false;try{if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(text);copied=true;}}catch(e){}if(!copied){const ta=document.createElement("textarea");ta.value=text;ta.setAttribute("readonly","");ta.style.position="fixed";ta.style.left="-9999px";ta.style.top="0";ta.style.opacity="0";document.body.appendChild(ta);try{ta.focus();ta.select();ta.setSelectionRange(0,ta.value.length);copied=document.execCommand("copy");}catch(e){}finally{ta.remove();}}toast(copied?"诊断报告已复制，可直接粘贴发送":"当前浏览器未允许复制，请检查剪贴板权限后重试")};$("learnQuery")&&($("learnQuery").onclick=A.renderLearningIsolation);$("learnRefresh").onclick=A.renderLearningIsolation;$("learnIsolate").onclick=A.learnIsolate;$("logout").onclick=async()=>{A.hideMenu();if(!(await zpConfirm("退出登录","确定要退出当前管理员账号吗？","退出")))return;try{await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"})}catch(e){}finally{try{sessionStorage.removeItem("zpAuth");sessionStorage.removeItem("zpRole");sessionStorage.removeItem("zpExitAdmin");sessionStorage.removeItem("zpAutoHop")}catch(e){}try{localStorage.removeItem("zpLastAuth");localStorage.removeItem("zpLastRole")}catch(e){}location.replace("/?reason=logout&manual=1")}};document.querySelectorAll(".nav-item").forEach(b=>b.onclick=()=>page(Number(b.dataset.i)));
+const perfCopyButton=$("perfCopy");
+if(perfCopyButton)perfCopyButton.onclick=async()=>{
+  let copied=false,ta=null;
+  try{
+    const report=typeof window.__zpPerfCopyText==="string"&&window.__zpPerfCopyText
+      ?window.__zpPerfCopyText
+      :"智配One 性能诊断报告\\n尚无数据，请先刷新性能报告。";
+    try{
+      const clipboard=window.navigator&&window.navigator.clipboard;
+      if(clipboard&&typeof clipboard.writeText==="function"){
+        await clipboard.writeText(report);
+        copied=true;
+      }
+    }catch(e){/* Clipboard API 不可用或权限拒绝，继续兼容回退 */}
+    if(!copied){
+      try{
+        ta=document.createElement("textarea");
+        ta.value=report;
+        ta.setAttribute("readonly","");
+        ta.style.cssText="position:fixed;left:-9999px;top:0;opacity:0";
+        const host=document.body||document.documentElement;
+        if(!host)throw Error("复制区域尚未就绪");
+        host.appendChild(ta);
+        ta.focus();
+        ta.select();
+        if(typeof ta.setSelectionRange==="function")ta.setSelectionRange(0,ta.value.length);
+        if(typeof document.execCommand==="function")copied=!!document.execCommand("copy");
+      }catch(e){copied=false;}
+      finally{try{if(ta&&ta.parentNode)ta.parentNode.removeChild(ta);}catch(e){}}
+    }
+  }catch(e){
+    copied=false;
+    try{console.warn("[zp-perf-copy] 复制操作异常",e);}catch(ignore){}
+  }
+  try{toast(copied?"诊断报告已复制，可直接粘贴发送":"复制未成功，请长按选择诊断内容或检查剪贴板权限");}
+  catch(e){try{console.warn("[zp-perf-copy] 提示显示失败",e);}catch(ignore){}}
+}$("learnQuery")&&($("learnQuery").onclick=A.renderLearningIsolation);$("learnRefresh").onclick=A.renderLearningIsolation;$("learnIsolate").onclick=A.learnIsolate;$("logout").onclick=async()=>{A.hideMenu();if(!(await zpConfirm("退出登录","确定要退出当前管理员账号吗？","退出")))return;try{await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"})}catch(e){}finally{try{sessionStorage.removeItem("zpAuth");sessionStorage.removeItem("zpRole");sessionStorage.removeItem("zpExitAdmin");sessionStorage.removeItem("zpAutoHop")}catch(e){}try{localStorage.removeItem("zpLastAuth");localStorage.removeItem("zpLastRole")}catch(e){}location.replace("/?reason=logout&manual=1")}};document.querySelectorAll(".nav-item").forEach(b=>b.onclick=()=>page(Number(b.dataset.i)));
   // BFCache 进入快照前先撤销可见授权；恢复时必须重新向服务端核验当前 Cookie 角色。
   window.addEventListener("pagehide",()=>document.documentElement.removeAttribute("data-zp-admin-authorized"));
   window.addEventListener("pageshow",ev=>{if(!ev.persisted)return;document.documentElement.removeAttribute("data-zp-admin-authorized");load()});
