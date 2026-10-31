@@ -89,3 +89,6 @@ assert.match(upload,/perfResult\?\.processingTiming/);
 assert.match(processApi,/type:"result",\.\.\.payload,httpStatus:response\.status/);
 assert.match(processApi,/httpStatus:500/);
 assert.match(upload,/perfResult\?\.success===false&&Number\.isInteger\(perfResult\?\.httpStatus\)/);
+
+// Failed OCR/process responses expose top-level timing; include those phases in the same telemetry pipeline.
+assert.match(upload,/perfResult\?\.timing&&typeof perfResult\.timing==="object"\?perfResult\.timing/);
