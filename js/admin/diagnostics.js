@@ -64,6 +64,18 @@ async function renderDiagnostics(){
       return label+"："+(f.value??"-")+" · "+(sourceLabels[f.source]||"未知来源")+(refs.length?" · "+refs.join("；"):"");
     }):[];
     const missingStoreEvidence=fieldEvidence&&Array.isArray(fieldEvidence.stores)?fieldEvidence.stores.filter(s=>s.source==="unavailable").map(s=>s.rawName||s.name||s.storeId||"未命名门店").slice(0,8):[];
+    const storeEvidenceLines=fieldEvidence&&Array.isArray(fieldEvidence.stores)?fieldEvidence.stores.slice(0,30).map(store=>{
+      const refs=(Array.isArray(store.evidence)?store.evidence:[]).map(ref=>{
+        const line=ocrLines[Number(ref.lineIndex)];
+        if(!line)return null;
+        const image=Number.isInteger(line.imageIndex)&&line.imageIndex>0?"图"+line.imageIndex:"图片未知";
+        const score=Number.isFinite(line.score)?" · 模型分数 "+line.score.toFixed(3):" · 无模型分数";
+        return "["+image+"] "+String(line.text||"").slice(0,120)+score;
+      }).filter(Boolean);
+      const name=store.rawName||store.name||store.storeId||"未命名门店";
+      return "门店#"+(store.index||"-")+"："+name+" · "+(sourceLabels[store.source]||"未知来源")+(refs.length?" · "+refs.join("；"):"");
+    }):[];
+
     const fieldEvidenceSummary=fieldEvidence&&fieldEvidence.summary
       ?"抬头字段 "+(fieldEvidence.summary.fieldsWithEvidence||0)+"/"+(fieldEvidence.summary.fieldCount||0)+" · 门店 "+(fieldEvidence.summary.storesWithEvidence||0)+"/"+(fieldEvidence.stores?.length||0)
       :null;
@@ -83,7 +95,7 @@ async function renderDiagnostics(){
       "质量："+lvl+(flags&&flags!=="正常"?" · "+flags:""),
       "耗时："+(timingParts.length?timingParts.join(" · "):"暂无阶段计时记录"),
       "OCR证据关联："+(fieldEvidenceSummary||"暂无"),
-      ...fieldEvidenceLines,
+      ...fieldEvidenceLines,\n      "门店证据（最多导出30条）：",\n      ...storeEvidenceLines,\n      ...(fieldEvidence&&Array.isArray(fieldEvidence.stores)&&fieldEvidence.stores.length>storeEvidenceLines.length?["其余门店证据未导出："+(fieldEvidence.stores.length-storeEvidenceLines.length)+"条"]:[]),
       ...(missingStoreEvidence.length?["门店未关联原文："+missingStoreEvidence.join("、")]:[]),
       "事件："+((w.events||[]).slice(-8).reverse().map(e=>(e.event||"-")+(e.t?" · "+String(e.t).slice(11,19):"")).join("；")||"无")
     ].join("\n");
