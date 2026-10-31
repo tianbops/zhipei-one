@@ -58,11 +58,13 @@ const findGroup = (report, page, endpoint, status) => {
     { page: "account", endpoint: "api-account-me", status: "network", duration: 78000, server: null },
     { page: "history", endpoint: "api-history", status: "2xx", duration: 87000, server: 1243,
       phases: { "history-index": 12.3, "history-aggregate": 45.6, "history-db-primary-queries": 3, "history-db-replica-queries": 2, "history-db-region-apac-queries": 2, "history-bogus-phase": 9.9 } },
+    { page: "home", endpoint: "api-waybill-process", status: "2xx", duration: 56000, server: 32000,
+      phases: { "waybill-client-compress": 300, "waybill-client-first-response": 5000, "waybill-client-stream": 50000, "waybill-server-ocr": 20000, "waybill-server-total": 32000 } },
     { page: "account", endpoint: "api-account", status: "4xx", duration: 1000, server: 30, code: 409 },
     { page: "account", endpoint: "api-account-me", status: "4xx", duration: 1000, server: 10, code: 999 },
     { page: "account", endpoint: "api-not-whitelisted", status: "2xx", duration: 100, server: 5 }
   ]), env })).json();
-  check("事件接收：合法 8 条被接受、非法端点被拒", ack.success === true && ack.accepted === 8, JSON.stringify(ack));
+  check("事件接收：合法 8 条被接受、非法端点被拒", ack.success === true && ack.accepted === 9, JSON.stringify(ack));
 
   console.log("\n[B] 读取管理员报告");
   const rep = await (await perfReport.onRequestGet({ request: getReq("https://app.local/api/perf-report", tok), env })).json();
@@ -72,6 +74,7 @@ const findGroup = (report, page, endpoint, status) => {
   const eps = Object.keys(rep.totals.endpoints || {});
   check("api-account-me 作为独立接口出现", eps.includes("api-account-me"), JSON.stringify(eps));
   check("api-account-settings 作为独立接口出现", eps.includes("api-account-settings"));
+  check("api-waybill-process 作为独立端到端指标出现", eps.includes("api-waybill-process"));
   check("旧标签 api-account 仍可读取（兼容未升级客户端的历史数据）", eps.includes("api-account"));
   check("未白名单的端点不出现在报告里", !eps.includes("api-not-whitelisted"));
 
@@ -105,6 +108,12 @@ const findGroup = (report, page, endpoint, status) => {
   check("D1 主库读取数被聚合", gHist && gHist.phases && gHist.phases["history-db-primary-queries"] && gHist.phases["history-db-primary-queries"].avgMs === 3);
   check("D1 副本读取数被聚合", gHist && gHist.phases && gHist.phases["history-db-replica-queries"] && gHist.phases["history-db-replica-queries"].avgMs === 2);
   check("D1 实际读取区域被聚合", gHist && gHist.phases && gHist.phases["history-db-region-apac-queries"] && gHist.phases["history-db-region-apac-queries"].avgMs === 2);
+  const gWaybill = findGroup(rep, "home", "api-waybill-process", "2xx");
+  check("运单端到端处理独立成组", !!gWaybill, JSON.stringify(gWaybill && gWaybill.endpoint));
+  check("waybill 阶段映射到既有 history 命名空间", gWaybill && gWaybill.phases && gWaybill.phases["history-waybill-server-total"] && gWaybill.phases["history-waybill-server-total"].avgMs === 32000,
+    JSON.stringify(gWaybill && gWaybill.phases));
+  check("OCR 阶段耗时可聚合", gWaybill && gWaybill.phases && gWaybill.phases["history-waybill-server-ocr"] && gWaybill.phases["history-waybill-server-ocr"].avgMs === 20000);
+  check("运单服务端总耗时被保留", gWaybill && gWaybill.serverAvgMs === 32000);
   check("2xx 的服务端平均耗时保留", gHist && gHist.serverAvgMs === 1243, JSON.stringify(gHist && gHist.serverAvgMs));
   check("旧格式字段 page|endpoint|status|metric 仍可解析", gHist && gHist.count === 1 && gHist.avgMs === 87000);
 

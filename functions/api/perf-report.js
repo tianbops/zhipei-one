@@ -51,7 +51,7 @@ export const onRequestGet = guard(async ({request,env}) => {
       else if(metric==="server_count")g.serverCount=n;
       else if(metric==="server_sum")g.serverSum=n;
       else if(metric==="server_max")g.serverMax=n;
-      else if(metric.startsWith("phase:")){const bits=metric.split(":");if(bits.length===3&&/^history-[a-z-]+$/.test(bits[1])&&["count","sum","max"].includes(bits[2])){const phase=bits[1];if(!g.phases[phase])g.phases[phase]={count:0,sum:0,max:0};if(bits[2]==="count")g.phases[phase].count=n;else if(bits[2]==="sum")g.phases[phase].sum=n;else g.phases[phase].max=n;}}
+      else if(metric.startsWith("phase:")){const bits=metric.split(":");if(bits.length===3&&/^(?:history|waybill)-[a-z-]+$/.test(bits[1])&&["count","sum","max"].includes(bits[2])){const phase=bits[1];if(!g.phases[phase])g.phases[phase]={count:0,sum:0,max:0};if(bits[2]==="count")g.phases[phase].count=n;else if(bits[2]==="sum")g.phases[phase].sum=n;else g.phases[phase].max=n;}}
     }
     for(const g of groups.values()){
       g.avgMs=g.count?Math.round(g.sum/g.count*10)/10:0;

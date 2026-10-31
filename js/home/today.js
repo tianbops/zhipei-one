@@ -65,10 +65,14 @@ function zpRenderTodayCard(w,dayOrders,fromCache){
 }
 
 async function loadHome(){
+  const perfReadyStartedAt=performance.now();
   // 快照先行：同日快照立即渲染（零网络等待），随后正常数据源返回后覆盖或纠偏
   try{
     const snap=zpReadTodaySnap();
-    if(snap)zpRenderTodayCard(snap.waybill,Number(snap.dayOrders)||0,true);
+    if(snap){
+      zpRenderTodayCard(snap.waybill,Number(snap.dayOrders)||0,true);
+      try{window.zpPerfRecord?.("home-today-ready-cache",200,performance.now()-perfReadyStartedAt,null)}catch{}
+    }
   }catch{}
   const fetchJson=async(url,timeoutMs=8000)=>{
     const controller=new AbortController();
@@ -193,6 +197,7 @@ async function loadHome(){
     }else{
       setEmptyToday();
     }
+    try{window.zpPerfRecord?.("home-today-ready-network",200,performance.now()-perfReadyStartedAt,null)}catch{}
   }catch(e){
     // 所有异常都必须结束 loading 状态，不能让首页永久停留在“加载中…”。
     console.error("[loadHome] 异常:",e&&e.stack||e);

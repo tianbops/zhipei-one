@@ -344,8 +344,9 @@
     return null;
   }
   async function load(){
+    const perfReadyStartedAt=performance.now();
     const cached=readHistCache();
-    if(cached){try{hydrate(cached)}catch{}}
+    if(cached){try{hydrate(cached);window.zpPerfRecord?.("home-history-ready-cache",200,performance.now()-perfReadyStartedAt,null)}catch{}}
     try{
       // 后端把 months 钳制在 13（history.js:Math.min(13,…)），请求 25 实际仍只返回 13 个月窗口；
       // 13 个月最早仅到 11 个月前，不含去年同月，同比恒为空。故按 13 如实请求（返回数据与原来一致）。
@@ -354,6 +355,7 @@
       const d=await r.json().catch(()=>null);
       if(!d?.success||!Array.isArray(d.history)){if(!hydrated)card.hidden=true;return hydrated?cached:null;}
       hydrate(d);
+      try{window.zpPerfRecord?.("home-history-ready-network",200,performance.now()-perfReadyStartedAt,null)}catch{}
       try{localStorage.setItem(HIST_CACHE_KEY,JSON.stringify({t:Date.now(),d}))}catch{}
       return d;
     }catch{
