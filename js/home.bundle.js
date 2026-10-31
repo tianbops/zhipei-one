@@ -787,6 +787,8 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
   files=files.filter(Boolean);
   if((!files.length&&!rawText&&!resumeRequestId)||processingFile)return;
   processingFile=true;
+  const perfProcessStartedAt=performance.now();
+  let perfCompressMs=0,perfRequestStartedAt=0,perfResponseAt=0,perfResponseStatus=null,perfStreamComplete=false,perfResult=null,perfRecorded=false;
   lastProcessingFile=null;
   const controller=new AbortController();
   processingController=controller;
@@ -801,6 +803,7 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
     showProcessingUI();
     document.querySelectorAll(".source-option").forEach(b=>b.disabled=true);
     const fd=new FormData();
+    const perfCompressStartedAt=performance.now();
     // 逐张压缩后再上传（串行处理，避免多张大图同时解码占满内存）
     if(files.length){
       setProcessingStage(files.length>1?`正在准备 ${files.length} 张截图…`:"正在准备运单图片…");
@@ -808,6 +811,7 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
       for(const f of files)prepared.push(await compressImageForUpload(f));
       prepared.forEach(file=>fd.append("file",file));
     }
+    perfCompressMs=performance.now()-perfCompressStartedAt;
     if(rawText)fd.append("rawText",rawText);
     fd.append("fileCount",String(files.length));
     fd.append("routeId",processingRouteIdLocal);
@@ -816,7 +820,10 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
     renderProcessingProgress(3);
     let r;
     try{
+      perfRequestStartedAt=performance.now();
       r=await fetch("/api/waybills/process?stream=1",{method:"POST",body:fd,credentials:"same-origin",signal:controller.signal});
+      perfResponseStatus=r.status;
+      perfResponseAt=performance.now();
       if(!r.ok){
         // HTTP 错误也可能携带后端的可恢复动作（例如 RETRY_SAVE / RESUBMIT）。
         // 不能只看状态码，否则 503 后端已明确允许重试时，前端会把动作信息丢掉。
@@ -861,6 +868,8 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
         try{const event=JSON.parse(buffer);if(event.type==="result")result=event}catch{}
       }
       if(!result)throw Object.assign(new Error("处理连接中断，请重试"),{code:"PROCESS_STREAM_INTERRUPTED"});
+      perfResult=result;
+      perfStreamComplete=true;
       if(!result.success){
         const code=result.code||result.errorCode||"PROCESS_FAILED";
         // 透传 action/recoverable：前者驱动「一键重试」按钮行为，后者决定按钮是否出现
@@ -890,6 +899,35 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
     // 优先展示服务端友好 message（与 code 不同时）；纯 code 场景走映射表
     showProcessingError(e?.message&&e.message!==e.code?e.message:(e?.code||"PROCESS_FAILED"), e?.hint, e?.action, e?.recoverable, e?.requestId);
   }finally{
+    if(perfRequestStartedAt&&!perfRecorded){
+      const perfEndedAt=performance.now(),perfDuration=perfEndedAt-perfProcessStartedAt;
+      const timing=(!perfResult?.idempotent&&perfResult?.waybill?.timing&&typeof perfResult.waybill.timing==="object")?perfResult.waybill.timing:{};
+      const phases={
+        "waybill-client-compress":perfCompressMs,
+        "waybill-client-first-response":Math.max(0,perfResponseAt-perfRequestStartedAt),
+        "waybill-client-stream":perfResponseAt?Math.max(0,perfEndedAt-perfResponseAt):0,
+        "waybill-client-total":perfDuration
+      };
+      const timingFields={
+        "waybill-server-recognized":"recognizedMs",
+        "waybill-server-ocr":"ocrMs",
+        "waybill-server-ocr-submit":"ocrSubmitMs",
+        "waybill-server-ocr-status-wait":"ocrStatusWaitMs",
+        "waybill-server-ocr-status-request":"ocrStatusRequestMs",
+        "waybill-server-ocr-result-fetch":"ocrResultFetchMs",
+        "waybill-server-base":"baseMs",
+        "waybill-server-extract":"extractMs",
+        "waybill-server-match":"matchMs",
+        "waybill-server-dedupe":"dedupeMs",
+        "waybill-server-plan":"planMs",
+        "waybill-server-total":"totalMs"
+      };
+      for(const [name,key] of Object.entries(timingFields)){const value=Number(timing[key]);if(Number.isFinite(value)&&value>=0)phases[name]=value;}
+      const server=Number.isFinite(Number(timing.totalMs))?Number(timing.totalMs):null;
+      const status=perfResponseStatus===null?"network":(!perfStreamComplete&&perfResponseStatus<400?"network":perfResponseStatus);
+      try{window.zpPerfRecord?.("api-waybill-process",status,perfDuration,server,phases)}catch{}
+      perfRecorded=true;
+    }
     stopProcessingClock();
     document.querySelectorAll(".source-option").forEach(b=>b.disabled=false);
     processingFile=false;
