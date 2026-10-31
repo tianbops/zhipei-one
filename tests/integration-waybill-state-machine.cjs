@@ -165,7 +165,7 @@ async function toJson(resp) { return await resp.json(); }
       }
     }
     if (u === "https://ocr.test/result") {
-      return new Response(JSON.stringify({ rec_texts: RAW_GOOD.split("\\n") }) + "\\n", { status: 200, headers: { "content-type": "application/x-ndjson" } });
+      return new Response(JSON.stringify({ rec_texts: RAW_GOOD.split("\n") }) + "\n", { status: 200, headers: { "content-type": "application/x-ndjson" } });
     }
     return realFetchSuccess(url, init);
   };
