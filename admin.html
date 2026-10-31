@@ -2,19 +2,23 @@
 <script src="/js/error-guard.js?v=da1b8353"></script>
 <script>
 (function(){
+  function hide(){try{document.documentElement.style.display="none"}catch(e){}}
   function goLogin(){
-    try{document.documentElement.style.display="none"}catch(e){}
+    hide();
     var p=location.pathname+location.search;
     location.replace("/?redirect="+encodeURIComponent(p)+"&reason=auth");
   }
-  try{
-    if(sessionStorage.getItem("zpAuth")!=="1"){goLogin();return;}
-  }catch(e){}
-  try{
-    window.addEventListener("pageshow",function(ev){
-      if(ev.persisted){try{if(sessionStorage.getItem("zpAuth")!=="1")location.replace("/?reason=auth");}catch(e){}}
-    });
-  }catch(e){}
+  function goHome(){hide();location.replace("/home");}
+  function guard(){
+    try{
+      if(sessionStorage.getItem("zpAuth")!=="1"){goLogin();return false;}
+      // 已登录普通用户不得先绘制管理界面，再等待 /api/me 异步纠正角色。
+      if(sessionStorage.getItem("zpRole")==="user"){goHome();return false;}
+      return true; // admin 或旧会话缺少角色标记时，继续由服务端 /api/me 最终核验。
+    }catch(e){goLogin();return false;}
+  }
+  if(!guard())return;
+  try{window.addEventListener("pageshow",function(ev){if(ev.persisted)guard();});}catch(e){}
 })();
 </script>
 
