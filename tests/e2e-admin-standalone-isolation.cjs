@@ -25,11 +25,28 @@ try{var _m=sessionStorage.getItem('__ME');window.__ME=_m?JSON.parse(_m):null}cat
  return real(u,o)};})();`;
 
 const PORT = Number(process.env.PORT || 8099);
+const PROXY_PORT = Number(process.env.PROXY_PORT || (PORT + 1));
 const PORT_CDP = Number(process.env.PORT_CDP || 9233);
 const CHROMIUM = process.env.CHROMIUM || '/usr/bin/chromium';
-const BASE = 'http://127.0.0.1:' + PORT + '/';
+// Python's static server does not implement Cloudflare Pages clean-URL rewrites.
+// Proxy /admin to admin.html so the test exercises the real admin document and its scripts.
+const proxy = http.createServer((req, res) => {
+  const url = new URL(req.url, 'http://localhost');
+  if (url.pathname === '/admin') url.pathname = '/admin.html';
+  const upstream = http.request({
+    hostname: '127.0.0.1', port: PORT, path: url.pathname + url.search,
+    method: req.method, headers: req.headers
+  }, response => {
+    res.writeHead(response.statusCode || 502, response.headers);
+    response.pipe(res);
+  });
+  upstream.on('error', error => { res.writeHead(502); res.end(String(error)); });
+  req.pipe(upstream);
+});
+const BASE = 'http://127.0.0.1:' + PROXY_PORT + '/';
 
 (async () => {
+  await new Promise((resolve, reject) => { proxy.once('error', reject); proxy.listen(PROXY_PORT, '127.0.0.1', resolve); });
   const proc = spawn(CHROMIUM, ['--headless=new', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--remote-debugging-port=' + PORT_CDP, 'about:blank'], { stdio: 'ignore' });
   await sleep(2500);
   const ver = await getJSON('http://127.0.0.1:' + PORT_CDP + '/json/version').catch(() => null);
@@ -64,7 +81,7 @@ const BASE = 'http://127.0.0.1:' + PORT + '/';
   console.log('管理员工作区当前窗口 path =', adminPath);
   if (adminPath !== '/admin' && adminPath !== '/admin.html') {
     console.error('❌ 登录后没有进入管理员工作区；实际路径：', adminPath);
-    ws.close(); proc.kill(); process.exit(1);
+    ws.close(); proc.kill(); proxy.close(); process.exit(1);
   }
 
   const len = await ev('history.length');
@@ -122,6 +139,6 @@ const BASE = 'http://127.0.0.1:' + PORT + '/';
   console.log(returnedToLogin
     ? '✅ 管理员返回闭环通过：首次留在管理端，第二次退出到登录页，角色标记已清理'
     : '❌ 管理员最终返回未落到登录页');
-  ws.close(); proc.kill();
+  ws.close(); proc.kill(); proxy.close();
   process.exit(returnedToLogin ? 0 : 1);
-})().catch(e => { console.error('ERR', e.message); process.exit(1); });
+})().catch(e => { console.error('ERR', e.message); proxy.close(); process.exit(1); });
