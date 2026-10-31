@@ -148,7 +148,7 @@ async function toJson(resp) { return await resp.json(); }
   const ocrProc = ocrResult ? await procMod.getProc(env, ocrResult.requestId) : null;
   check("处理票据转 TIMEOUT", ocrProc && ocrProc.stage === "TIMEOUT");
   check("OCR失败票据保留阶段计时", ocrProc && ocrProc.timing && typeof ocrProc.timing.ocrSubmitMs === "number" && typeof ocrProc.timing.ocrStatusWaitMs === "number");
-  check("OCR失败图片留在R2临时区等待生命周期清理", tempR2Objects.size === 1 && [...tempR2Objects.keys()][0].startsWith("waybill-tmp/"));
+  check("OCR失败结束后立即删除R2临时图片", tempR2Objects.size === 0);
   const failedTempKeys = [...tempR2Objects.keys()];
 
   deleteFailures = 1; // 首次删除故意失败，验证一次自动重试
