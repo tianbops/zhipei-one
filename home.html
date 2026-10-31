@@ -5,19 +5,24 @@
 
 <script>
 (function(){
+  function hide(){try{document.documentElement.style.display="none"}catch(e){}}
   function goLogin(){
-    try{document.documentElement.style.display="none"}catch(e){}
+    hide();
     var p=location.pathname+location.search;
     location.replace("/?redirect="+encodeURIComponent(p)+"&reason=auth");
   }
-  try{
-    if(sessionStorage.getItem("zpAuth")!=="1"){goLogin();return;}
-  }catch(e){}
-  try{
-    window.addEventListener("pageshow",function(ev){
-      if(ev.persisted){try{if(sessionStorage.getItem("zpAuth")!=="1")location.replace("/?reason=auth");}catch(e){}}
-    });
-  }catch(e){}
+  function goAdmin(){hide();location.replace("/admin");}
+  function guard(){
+    try{
+      if(sessionStorage.getItem("zpAuth")!=="1"){goLogin();return false;}
+      var role=sessionStorage.getItem("zpRole");
+      // 管理员会话不得先绘制业务首页，再由页面脚本异步跳回管理端。
+      if(role==="admin"||role==="system_admin"){goAdmin();return false;}
+      return true;
+    }catch(e){goLogin();return false;}
+  }
+  if(!guard())return;
+  try{window.addEventListener("pageshow",function(ev){if(ev.persisted)guard();});}catch(e){}
 })();
 </script>
 
