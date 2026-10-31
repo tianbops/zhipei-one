@@ -84,3 +84,8 @@ assert.match(upload,/perfFailureStatus\|\|\(perfResponseStatus===null/);
 const processApi=readFileSync(new URL("../functions/api/waybills/process.js",import.meta.url),"utf8");
 assert.equal((processApi.match(/processingTiming:order\.timing/g)||[]).length,4);
 assert.match(upload,/perfResult\?\.processingTiming/);
+
+// Streaming responses use HTTP 200 as the transport, so preserve the underlying process status for failure telemetry.
+assert.match(processApi,/type:"result",\.\.\.payload,httpStatus:response\.status/);
+assert.match(processApi,/httpStatus:500/);
+assert.match(upload,/perfResult\?\.success===false&&Number\.isInteger\(perfResult\?\.httpStatus\)/);
