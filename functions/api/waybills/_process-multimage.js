@@ -92,17 +92,38 @@ export function mergeStoreEdges(imageTexts, extractFn = extract, { isKnownStore 
     let stores = perImage[idx];
     if (!stores.length) continue;
     if (idx > 0 && stores.length) {
-      const first = stores[0];
-      const previous = perImage[idx - 1]?.[perImage[idx - 1].length - 1];
-      const firstKey = formatCompareKey(first?.rawName || first?.name || "");
-      const previousKey = formatCompareKey(previous?.rawName || previous?.name || "");
-      // 上一张底部被截断、下一张顶部出现完整名称时，必须保留完整项。
-      // 底部残条会由 isBottomResidue 根据“更长名称前缀”证据删除。
-      const completesPrevious = !!previousKey && firstKey.startsWith(previousKey)
-        && firstKey.length - previousKey.length >= 2;
-      if (!completesPrevious) {
-        stores = stores.slice(1);
-        edgeTrimmed++;
+      const previousStores = perImage[idx - 1] || [];
+      const keyOf = item => formatCompareKey(item?.rawName || item?.name || "");
+      // 截图滚动重叠区可能包含不止一家门店。寻找「前图后缀 = 本图前缀」
+      // 的最长连续序列，整段裁掉本图重复副本，而不是固定只删第一条。
+      // 只比较完整归一化键，不使用模糊相似度，避免把相邻不同门店误合并。
+      let overlapCount = 0;
+      const maxOverlap = Math.min(previousStores.length, stores.length);
+      for (let count = maxOverlap; count >= 1; count--) {
+        let equal = true;
+        for (let offset = 0; offset < count; offset++) {
+          const left = keyOf(previousStores[previousStores.length - count + offset]);
+          const right = keyOf(stores[offset]);
+          if (!left || left !== right) { equal = false; break; }
+        }
+        if (equal) { overlapCount = count; break; }
+      }
+      if (overlapCount > 0) {
+        stores = stores.slice(overlapCount);
+        edgeTrimmed += overlapCount;
+      } else {
+        const firstKey = keyOf(stores[0]);
+        const previous = previousStores[previousStores.length - 1];
+        const previousKey = keyOf(previous);
+        // 上一张底部是名称前缀残片、下一张顶部是完整名称时，保留完整项。
+        // 底部残片由 isBottomResidue 根据「更长名称前缀」证据删除。
+        const completesPrevious = !!previousKey && firstKey.startsWith(previousKey)
+          && firstKey.length - previousKey.length >= 2;
+        // 没有可证明的多条重叠时，维持既有单条顶部残片兜底行为。
+        if (!completesPrevious) {
+          stores = stores.slice(1);
+          edgeTrimmed++;
+        }
       }
     }
     const last = stores[stores.length - 1];
