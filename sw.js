@@ -9,7 +9,7 @@
  *   - 图片/字体       ：stale-while-revalidate（内容基本不变，秒开优先）
  * 资产缓存键用完整 URL（含 ?v=）精确匹配；页面缓存键用 pathname 规整（忽略 ?from 等查询）。
  */
-const VERSION = "zp-pwa-307";
+const VERSION = "zp-pwa-308";
 const STATIC_CACHE = VERSION + "-static";
 const PAGES_CACHE = VERSION + "-pages";
 const OFFLINE_URL = "/offline";
@@ -75,6 +75,7 @@ const PRECACHE = [
   "/js/history/overlay.js?v=65a2aeb7",
   "/js/history/render.js?v=69bdb943",
   "/js/home.bundle.js?v=f71b7234",
+  "/js/login-session-retry.js?v=0c436693",
   "/js/login.js?v=55c0f0f1",
   "/js/offline-queue.js?v=c255ca1f",
   "/js/order_detail/boot.js?v=b3a97b83",
