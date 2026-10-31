@@ -50,7 +50,7 @@ async function renderPerfReport(){
     appendTimePhases("其他阶段耗时（平均 / 峰值）",otherPhases);
     if(d1Routes.length){reportLines.push("","D1 读路由统计（读结果元数据条数；不是毫秒、独立 SQL 请求数或用户请求数）");for(const [name,x] of d1Routes)reportLines.push(name+"：样本 "+x.count+" 次，累计 "+Math.round(x.sum)+" 条结果记录，平均 "+(x.count?(x.sum/x.count).toFixed(1):"0")+" 条/次，单次最多 "+Math.round(x.max)+" 条");}
     reportLines.push("","说明：匿名聚合数据；不同时间段样本不一定可直接比较。");window.__zpPerfCopyText=reportLines.join("\n");
-    const renderPhaseGroup=(title,list)=>list.length?'<div class="perf-list-title">'+title+'</div>'+list.map(([name,x])=>'<div class="perf-row"><div class="perf-row-top"><span>'+esc(name)+'</span><span>'+(x.count?Math.round(x.sum/x.count):0)+' ms 平均</span></div><div class="perf-row-meta">样本 '+x.count+' · 峰值 '+Math.round(x.max)+' ms</div></div>').join(""):"";
+    const renderPhaseGroup=(title,list)=>list.length?'<div class="perf-list-title">'+title+'</div>'+list.map(([name,x])=>'<div class="perf-row"><div class="perf-row-top"><span>'+esc(phaseLabel(name))+'</span><span>'+(x.count?Math.round(x.sum/x.count):0)+' ms 平均</span></div><div class="perf-row-meta">样本 '+x.count+' · 峰值 '+Math.round(x.max)+' ms</div></div>').join(""):"";
     const historyHtml=renderPhaseGroup("历史查询阶段耗时",historyPhases);
     const waybillHtml=renderPhaseGroup("运单上传与处理阶段耗时",waybillPhases);
     const otherHtml=renderPhaseGroup("其他阶段耗时",otherPhases);
