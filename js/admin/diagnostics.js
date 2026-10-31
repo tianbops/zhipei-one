@@ -126,19 +126,24 @@ async function renderDiagnostics(){
   });
   document.querySelectorAll("#diagnostics .diag-copy").forEach(btn=>btn.onclick=async()=>{
     let copied=false;
-    const value="智配One 失败运单诊断 | "+JSON.stringify(failures[index],null,2);
+    let value="";
+    try{value=decodeURIComponent(btn.getAttribute("data-copy")||"");}catch(e){}
+    if(!value){try{toast("诊断内容读取失败，请刷新后重试");}catch(e){}return;}
     try{
       if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(value);copied=true;}
     }catch(e){}
     if(!copied){
-      const ta=document.createElement("textarea");
-      ta.value=value;ta.setAttribute("readonly","");
-      ta.style.position="fixed";ta.style.opacity="0";ta.style.left="-9999px";
-      document.body.appendChild(ta);ta.select();
-      try{copied=document.execCommand("copy")}catch(e){}
-      ta.remove();
+      let ta=null;
+      try{
+        ta=document.createElement("textarea");
+        ta.value=value;ta.setAttribute("readonly","");
+        ta.style.position="fixed";ta.style.opacity="0";ta.style.left="-9999px";
+        document.body.appendChild(ta);ta.select();
+        try{copied=document.execCommand("copy")}catch(e){}
+      }catch(e){}
+      finally{try{if(ta&&ta.parentNode)ta.parentNode.removeChild(ta);}catch(e){}}
     }
-    toast(copied?"诊断结果已复制":"复制失败，请长按文本手动复制");
+    try{toast(copied?"诊断结果已复制":"复制失败，请长按文本手动复制");}catch(e){}
   });
 }
 A.renderDiagnostics=renderDiagnostics;
