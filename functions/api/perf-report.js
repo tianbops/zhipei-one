@@ -18,7 +18,7 @@ export const onRequestGet = guard(async ({request,env}) => {
   for(let i=0;i<dates.length;i++){
     const arr=Array.isArray(raw?.[i])?raw[i]:[];
     const hash={};for(let j=0;j+1<arr.length;j+=2)hash[String(arr[j])]=arr[j+1];
-    const hour={at:dates[i].toISOString().slice(0,13)+":00Z",atBeijing:beijingISO(dates[i]).replace(/\\.\\d{3}/,""),events:0,groups:[]};
+    const hour={at:dates[i].toISOString().slice(0,13)+":00Z",atBeijing:beijingISO(dates[i]),events:0,groups:[]};
     const groups=new Map();
     for(const [field,value] of Object.entries(hash)){
       // 兼容两种字段形状：page|endpoint|status|metric（原有）
