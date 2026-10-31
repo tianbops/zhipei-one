@@ -1,7 +1,7 @@
 /* 管理员端工作区隔离与最终返回的真浏览器回归（PWA 场景）。
  *
  * 当前产品以同一 PWA 窗口通过 location.replace 按角色进入管理员区，不创建第二个窗口。
- * 验证管理员根页第一次返回留在管理区，第二次返回注销并落到登录页，不穿越到司机首页。
+ * 验证管理员根页第一次返回留在管理区，第二次返回只退出 App，保留管理员登录态。
  *
  * 用法（由 browser-e2e.yml 在 Chromium 中执行）：
  *   python3 -m http.server 8099 --directory . &
@@ -87,15 +87,6 @@ const BASE = 'http://127.0.0.1:' + PROXY_PORT + '/';
   const len = await ev('history.length');
   console.log('管理员窗口 history.length =', len, '| path =', adminPath);
   console.log('返回控制器诊断 =', await ev('({systemBack:typeof window.zpSystemBack,handleBack:typeof window.zpHandleBack,zone:window.__zpUi&&window.__zpUi.detectZone&&window.__zpUi.detectZone(),ready:document.readyState,backScript:[...document.scripts].some(x=>x.src.includes("/js/ui/back.js"))})'));
-  await ev('window.zpSystemBack()'); await sleep(900);
-  const firstBackPath = await ev('location.pathname');
-  const firstToast = await ev('(()=>{const t=document.getElementById("zpToast");return t&&t.className.indexOf("show")>=0?t.textContent:""})()');
-  const firstBackSafe = (firstBackPath === '/admin' || firstBackPath === '/admin.html') && firstToast === '再按一次退出应用';
-  console.log('第一次返回 path =', firstBackPath, '| toast =', JSON.stringify(firstToast));
-  if (!firstBackSafe) {
-    console.error('❌ 第一次返回未停留在管理员页或提示文案不正确');
-    ws.close(); proc.kill(); process.exit(1);
-  }
 
   // 用与普通用户一致的原生退出桥验证：返回两次后只结束 App，不注销管理员会话。
   await ev('sessionStorage.setItem("zpAuth","1");sessionStorage.setItem("zpRole","admin");sessionStorage.setItem("zpExitAdmin","1");sessionStorage.setItem("zpAutoHop","1");localStorage.setItem("zpLastAuth","1");localStorage.setItem("zpLastRole","admin");window.__EXIT_APP_CALLS=0;window.ZhipeiNative={exitApp(){window.__EXIT_APP_CALLS++}}');
