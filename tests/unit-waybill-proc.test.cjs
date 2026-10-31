@@ -15,7 +15,7 @@ function check(name, cond, info) {
   const red = makeUpstash(new MiniRedis());
   const env = { UPSTASH_REDIS_REST_URL: "https://upstash.local", UPSTASH_REDIS_REST_TOKEN: "x" };
   const mod = await import("../functions/api/waybills/_waybill-proc.js");
-  const { beginProc, failProc, getProc, finishProc, claimProcSave, cancelProc, PROC_STAGES } = mod;
+  const { beginProc, failProc, getProc, finishProc, claimProcSave, claimProcSaveDetailed, cancelProc, PROC_STAGES } = mod;
 
   console.log("【A】状态枚举与初始 PROCESSING");
   check("导出 PROC_STAGES 含 6 个状态（含视图态 STALLED）", PROC_STAGES.length === 6 && PROC_STAGES.includes("PROCESSING") && PROC_STAGES.includes("STALLED") && PROC_STAGES.includes("DONE") && PROC_STAGES.includes("TIMEOUT") && PROC_STAGES.includes("FAILED") && PROC_STAGES.includes("CANCELLED"));
@@ -57,6 +57,8 @@ function check(name, cond, info) {
   check("取消先成功", cancelledFirst === true);
   check("取消后保存声明失败", claimAfterCancel === false);
   check("取消终态保持 CANCELLED", (await getProc(env, rid4)).stage === "CANCELLED");
+  const cancelledDetail = await claimProcSaveDetailed(env, rid4);
+  check("详细保存声明识别 CANCELLED", cancelledDetail.ok === false && cancelledDetail.reason === "CANCELLED");
 
   console.log("【F】保存声明先赢 → 迟到取消不得覆盖，最终 DONE");
   const rid5 = "req-unit-race-save-first";
@@ -67,6 +69,8 @@ function check(name, cond, info) {
   check("保存声明成功", claimFirst === true);
   check("保存声明后迟到取消被拒绝", cancelledLate === false);
   check("保存完成后终态为 DONE", doneAfterClaim && doneAfterClaim.stage === "DONE" && doneAfterClaim.waybillId === "wb-race");
+  const doneDetail = await claimProcSaveDetailed(env, rid5);
+  check("详细保存声明识别 DONE", doneDetail.ok === false && doneDetail.reason === "DONE" && doneDetail.proc.waybillId === "wb-race");
 
   console.log("【G】终态保护：迟到失败不得覆盖 CANCELLED / DONE");
   const lateCancel = await failProc(env, rid4, { stage: "FAILED", recoverable: true, action: "RETRY_SAVE", hint: "迟到失败" });
@@ -77,6 +81,9 @@ function check(name, cond, info) {
   console.log("【G】边界：缺少 requestId 安全返回 null");
   check("beginProc(null) 返回 null", (await beginProc(env, { requestId: null, routeId: "r", userId: "u" })) === null);
   check("getProc(unknown) 返回 null", (await getProc(env, "nope")) === null);
+  const missingDetail = await claimProcSaveDetailed(env, "missing-ticket");
+  check("详细保存声明识别票据不存在", missingDetail.ok === false && missingDetail.reason === "TICKET_MISSING");
+  check("详细保存声明识别缺失 requestId", (await claimProcSaveDetailed(env, null)).reason === "REQUEST_ID_MISSING");
 
   console.log("─".repeat(50));
   console.log("状态机单元测试：通过 " + pass + " / 失败 " + fail);
