@@ -18,6 +18,7 @@ assert.ok(admin.indexOf("function guard()")<admin.indexOf("/js/admin/boot.js"));
 assert.ok(home.indexOf("function guard()")<home.indexOf("/js/home.bundle.js"));
 assert.ok(boot.indexOf('m.user?.role!=="system_admin"&&m.user?.role!=="admin"')<boot.indexOf('setAttribute("data-zp-admin-authorized","1")'));
 assert.match(boot,/sessionStorage\.removeItem\("zpAuth"\);sessionStorage\.removeItem\("zpRole"\);sessionStorage\.removeItem\("zpExitAdmin"\);sessionStorage\.removeItem\("zpAutoHop"\)/);
+assert.match(boot,/localStorage\.removeItem\("zpLastAuth"\);localStorage\.removeItem\("zpLastRole"\)/);
 assert.match(boot,/location\.replace\("\/\?reason=logout&manual=1"\)/);
 assert.match(login,/sessionStorage\.removeItem\("zpExitAdmin"\);sessionStorage\.removeItem\("zpAutoHop"\)/);
 assert.match(boot,/addEventListener\("pagehide",\(\)=>document\.documentElement\.removeAttribute\("data-zp-admin-authorized"\)\)/);
