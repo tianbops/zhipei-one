@@ -49,6 +49,30 @@ async function renderDiagnostics(){
     const t=w.timing&&typeof w.timing==="object"?w.timing:null;
     const timingParts=t?[["识别","recognizedMs"],["OCR","ocrMs"],["提交","ocrSubmitMs"],["轮询次数","ocrStatusPollCount"],["轮询等待","ocrStatusWaitMs"],["状态请求","ocrStatusRequestMs"],["结果读取","ocrResultFetchMs"],["结果重试等待","ocrResultFetchWaitMs"],["结果读取次数","ocrResultFetchAttempts"],["基准","baseMs"],["提取","extractMs"],["匹配","matchMs"],["去重","dedupeMs"],["规划","planMs"],["处理总计","totalMs"]].filter(x=>typeof t[x[1]]==="number"&&Number.isFinite(t[x[1]])&&t[x[1]]>=0).map(x=>x[0]+" "+Math.round(t[x[1]])+(/次数$/.test(x[0])?"":"ms")):[];
     const timingHtml=timingParts.length?'<div class="meta">耗时：'+esc(timingParts.join(" · "))+'</div>':'<div class="meta">暂无阶段计时记录（可能为旧运单，或该记录未保存计时）</div>';
+    const fieldEvidence=w.ocr&&w.ocr.fieldEvidence&&typeof w.ocr.fieldEvidence==="object"?w.ocr.fieldEvidence:null;
+    const ocrLines=Array.isArray(w.ocr?.lineEvidence)?w.ocr.lineEvidence:[];
+    const fieldLabels={date:"日期",vehicle:"车牌",driver:"司机",deliveryPerson:"送货员",totalWeight:"总重量"};
+    const sourceLabels={ocr:"OCR原文",manual:"人工填写",unavailable:"未关联原文"};
+    const fieldEvidenceLines=fieldEvidence&&Array.isArray(fieldEvidence.fields)?fieldEvidence.fields.map(f=>{
+      const label=fieldLabels[f.field]||f.field||"字段";
+      const refs=(Array.isArray(f.evidence)?f.evidence:[]).map(ref=>{
+        const line=ocrLines[Number(ref.lineIndex)];
+        if(!line)return null;
+        const score=Number.isFinite(line.score)?" · 模型分数 "+line.score.toFixed(3):" · 无模型分数";
+        return String(line.text||"").slice(0,120)+score;
+      }).filter(Boolean);
+      return label+"："+(f.value??"-")+" · "+(sourceLabels[f.source]||"未知来源")+(refs.length?" · "+refs.join("；"):"");
+    }):[];
+    const missingStoreEvidence=fieldEvidence&&Array.isArray(fieldEvidence.stores)?fieldEvidence.stores.filter(s=>s.source==="unavailable").map(s=>s.rawName||s.name||s.storeId||"未命名门店").slice(0,8):[];
+    const fieldEvidenceSummary=fieldEvidence&&fieldEvidence.summary
+      ?"抬头字段 "+(fieldEvidence.summary.fieldsWithEvidence||0)+"/"+(fieldEvidence.summary.fieldCount||0)+" · 门店 "+(fieldEvidence.summary.storesWithEvidence||0)+"/"+(fieldEvidence.stores?.length||0)
+      :null;
+    const fieldEvidenceHtml=fieldEvidence
+      ?'<div class="meta">OCR证据关联：'+esc(fieldEvidenceSummary||"暂无汇总")+'</div>'
+        +fieldEvidenceLines.map(line=>'<div class="meta">'+esc(line)+'</div>').join("")
+        +(missingStoreEvidence.length?'<div class="meta">门店未关联原文：'+esc(missingStoreEvidence.join("、"))+(fieldEvidence.summary?.storesWithoutEvidence>8?" 等":"")+'</div>':"")
+      :"";
+
     const copyLines=[
       "智配One 运单诊断",
       "日期："+(w.date||"-"),
@@ -58,12 +82,15 @@ async function renderDiagnostics(){
       "requestId："+(w.requestId||"-"),
       "质量："+lvl+(flags&&flags!=="正常"?" · "+flags:""),
       "耗时："+(timingParts.length?timingParts.join(" · "):"暂无阶段计时记录"),
+      "OCR证据关联："+(fieldEvidenceSummary||"暂无"),
+      ...fieldEvidenceLines,
+      ...(missingStoreEvidence.length?["门店未关联原文："+missingStoreEvidence.join("、")]:[]),
       "事件："+((w.events||[]).slice(-8).reverse().map(e=>(e.event||"-")+(e.t?" · "+String(e.t).slice(11,19):"")).join("；")||"无")
     ].join("\n");
     return '<div class="row"><div class="content" style="display:block;width:100%"><div class="main"><strong>'+esc(w.date||"-")+' · '+esc(w.vehicle||"-")+'</strong>'
       +'<span class="q-badge '+ql+'">'+esc(ql.toUpperCase())+(w.quality&&w.quality.flags&&w.quality.flags.length?(" · "+esc(flags)):"")+'</span></div>'
       +'<div class="meta">stage='+esc(w.stage||"-")+' · '+esc(w.routeId)+' · requestId '+esc(w.requestId||"-")+'</div>'
-      +timingHtml+(evs?'<div class="evt">'+evs+'</div>':'')
+      +timingHtml+fieldEvidenceHtml+(evs?'<div class="evt">'+evs+'</div>':'')
       +'<div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="small-action diag-copy" type="button" data-copy="'+encodeURIComponent(copyLines)+'">复制诊断</button></div></div></div>';
   }).join("");
   document.querySelectorAll("#diagnostics .diag-copy").forEach(btn=>btn.onclick=async()=>{
