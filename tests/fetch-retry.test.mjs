@@ -121,3 +121,21 @@ test("超时即中止（默认 12s 兜底在 cfg 里可调）", async () => {
   await assert.rejects(() => zpFetch("/api/x", {}, { retries: 0, timeoutMs: 60 }), e => e.name === "AbortError");
   assert.equal(calls.length, 1, "未配置重试时超时即抛，不再打第二次");
 });
+
+test("内部请求超时可重试；与调用方主动取消严格区分", async () => {
+  reset(async (n, opts) => {
+    if (n === 1) {
+      await new Promise((resolve, reject) => {
+        const timer = setTimeout(resolve, 500);
+        opts?.signal?.addEventListener("abort", () => {
+          clearTimeout(timer);
+          reject(Object.assign(new Error("The operation was aborted."), { name: "AbortError" }));
+        }, { once: true });
+      });
+    }
+    return new Response("{}", { status: 200 });
+  });
+  const res = await zpFetch("/api/x", {}, { retries: 1, timeoutMs: 60 });
+  assert.equal(res.status, 200);
+  assert.equal(calls.length, 2, "内部超时应触发一次安全 GET 重试");
+});
