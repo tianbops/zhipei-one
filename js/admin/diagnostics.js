@@ -95,7 +95,10 @@ async function renderDiagnostics(){
       "质量："+lvl+(flags&&flags!=="正常"?" · "+flags:""),
       "耗时："+(timingParts.length?timingParts.join(" · "):"暂无阶段计时记录"),
       "OCR证据关联："+(fieldEvidenceSummary||"暂无"),
-      ...fieldEvidenceLines,\n      "门店证据（最多导出30条）：",\n      ...storeEvidenceLines,\n      ...(fieldEvidence&&Array.isArray(fieldEvidence.stores)&&fieldEvidence.stores.length>storeEvidenceLines.length?["其余门店证据未导出："+(fieldEvidence.stores.length-storeEvidenceLines.length)+"条"]:[]),
+      ...fieldEvidenceLines,
+      "门店证据（最多导出30条）：",
+      ...storeEvidenceLines,
+      ...(fieldEvidence&&Array.isArray(fieldEvidence.stores)&&fieldEvidence.stores.length>storeEvidenceLines.length?["其余门店证据未导出："+(fieldEvidence.stores.length-storeEvidenceLines.length)+"条"]:[]),
       ...(missingStoreEvidence.length?["门店未关联原文："+missingStoreEvidence.join("、")]:[]),
       "事件："+((w.events||[]).slice(-8).reverse().map(e=>(e.event||"-")+(e.t?" · "+String(e.t).slice(11,19):"")).join("；")||"无")
     ].join("\n");
