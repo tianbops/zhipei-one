@@ -340,7 +340,7 @@ console.log("\n✅ waybill-multi-image 全部通过");
 
   // 两条连续重叠：第二张图的 A、B 是重复副本，必须各只出现一次。
   {
-    const r = mergeStoreEdges([seq([A, B, C]), seq([A, B, C, D])], extract);
+    const r = mergeStoreEdges([seq([A, B, C]), seq([B, C, D])], extract);
     const list = names(r.stores || []);
     assert.equal(count(list, A), 1, "两图重叠 A 必须恰好保留一次");
     assert.equal(count(list, B), 1, "两图重叠 B 必须恰好保留一次");
@@ -350,9 +350,10 @@ console.log("\n✅ waybill-multi-image 全部通过");
 
   // 三条连续重叠：验证最长连续后缀/前缀，不只验证门店“存在”。
   {
-    const r = mergeStoreEdges([seq([A, B, C]), seq([A, B, C, D])], extract);
+    const E = "江北JM03022谊品生鲜重庆北国风光店";
+    const r = mergeStoreEdges([seq([A, B, C, D]), seq([B, C, D, E])], extract);
     const list = names(r.stores || []);
-    for (const store of [A, B, C, D]) {
+    for (const store of [A, B, C, D, E]) {
       assert.equal(count(list, store), 1, `三条连续重叠后 ${store} 必须恰好出现一次`);
     }
   }
@@ -361,11 +362,13 @@ console.log("\n✅ waybill-multi-image 全部通过");
   {
     const variant = "江北亿达鲜观府国际店 (客百年)";
     assert.equal(formatCompareKey(variant), formatCompareKey(C), "括号/空格差异应归一化");
-    const r = mergeStoreEdges([seq([A, B, C]), seq([B, variant, D])], extract);
+    const E = "江北JM03022谊品生鲜重庆北国风光店";
+    const r = mergeStoreEdges([seq([A, B, C, D]), seq([B, variant, D, E])], extract);
     const list = names(r.stores || []);
     assert.equal(count(list, B), 1, "归一化后的 B 重叠副本必须裁剪");
     assert.equal(count(list, C), 1, "归一化后的 C 重叠副本必须裁剪");
-    assert.equal(count(list, D), 1, "新增门店 D 必须保留");
+    assert.equal(count(list, D), 1, "重叠门店 D 必须只保留一次");
+    assert.equal(count(list, E), 1, "新增门店 E 必须保留");
   }
 
   // 中间插入不同门店会打断连续重叠；不得跨过 X 把后面的 C 当成连续重叠裁掉。
