@@ -48,3 +48,23 @@ assert.match(perfUi,/条\/次/);
 assert.match(perfUi,/累计 .* 条结果记录/);
 assert.match(perfUi,/filter\(\(\[name\]\)=>!isD1RoutingMetric\(name\)\)/);
 assert.match(perfUi,/filter\(\(\[name\]\)=>isD1RoutingMetric\(name\)\)/);
+
+
+// ---- 完整响应与页面就绪 / 运单流式处理遥测 ----
+for(const endpoint of ["api-waybill-process","home-today-ready-cache","home-today-ready-network","home-history-ready-cache","home-history-ready-network"])assert.ok(ingest.includes('"'+endpoint+'"'),endpoint+" must be accepted by the telemetry endpoint");
+assert.match(ingest,/waybill%-\[a-z%-\]\+/,"server must accept waybill timing phases");
+assert.match(report,/\^\(\?:history\|waybill\)-\[a-z-\]\+\$/,"report must preserve waybill timing phases");
+const perfDiag=readFileSync(new URL("../js/perf-diagnostics.js",import.meta.url),"utf8");
+assert.match(perfDiag,/window\.zpPerfRecord/);
+assert.match(perfDiag,/p===\"\/api\/waybills\/process\"/);
+assert.match(perfDiag,/response\[methodName\]/,"JSON/body timing must wait for the actual response body reader");
+const upload=readFileSync(new URL("../js/home/upload-process.js",import.meta.url),"utf8");
+const today=readFileSync(new URL("../js/home/today.js",import.meta.url),"utf8");
+const monthly=readFileSync(new URL("../js/home-monthly.js",import.meta.url),"utf8");
+assert.match(upload,/api-waybill-process/);
+assert.match(upload,/waybill-server-total/);
+assert.match(upload,/perfStreamComplete/);
+assert.match(today,/home-today-ready-cache/);
+assert.match(today,/home-today-ready-network/);
+assert.match(monthly,/home-history-ready-cache/);
+assert.match(monthly,/home-history-ready-network/);
