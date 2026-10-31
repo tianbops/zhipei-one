@@ -597,8 +597,7 @@ reg(
     if (!rr || !uu) return 2;
     const [okr, r] = parseJSON(rr);
     const [oku, old] = parseJSON(uu);
-    if (!okr || typeof r !== "object" || !oku || typeof old !== "object") return 3;
-    if (old.disabled === true) return 3;
+    if (!okr || typeof r !== "object" || !oku || typeof old !== "object") return 3;    if (old.disabled === true) return 3;
     if (old.boundRouteId !== args[2] || old.routeDuty !== args[3]) return 4;
     const [okIds, ids] = parseJSON(args[4]);
     if (!Array.isArray(ids)) return 5;
@@ -1024,7 +1023,7 @@ return 1`,
 
 // ============ 38. 处理状态机 claimSave ============
 reg(
-  `local raw=redis.call("GET",KEYS[1]); if not raw then return 0 end; local ok,rec=pcall(cjson.decode,raw); if not ok or type(rec)~="table" then return 0 end; if rec.stage=="CANCELLED" or rec.stage=="DONE" then return 0 end; if rec.saveClaimedAt then return 1 end; rec.saveClaimedAt=ARGV[1]; rec.updatedAt=ARGV[1]; redis.call("SET",KEYS[1],cjson.encode(rec),"EX",ARGV[2]); return 1`,
+  `local raw=redis.call("GET",KEYS[1]); if not raw then return 0 end; local ok,rec=pcall(cjson.decode,raw); if not ok or type(rec)~="table" then return 0 end; if rec.stage=="CANCELLED" or rec.stage=="DONE" then return 0 end; if rec.saveClaimedAt then return 1 end; rec.saveClaimedAt=ARGV[1]; rec.updatedAt=ARGV[1]; rec.updatedAtBeijing=ARGV[2]; redis.call("SET",KEYS[1],cjson.encode(rec),"EX",ARGV[3]); return 1`,
   async (ctx, keys, args) => {
     const raw = await ctx.get(keys[0]);
     if (!raw) return 0;
@@ -1034,14 +1033,15 @@ reg(
     if (rec.saveClaimedAt) return 1;
     rec.saveClaimedAt = args[0];
     rec.updatedAt = args[0];
-    await ctx.set(keys[0], JSON.stringify(rec), args[1]);
+    rec.updatedAtBeijing = args[1];
+    await ctx.set(keys[0], JSON.stringify(rec), args[2]);
     return 1;
   }
 );
 
 // ============ 39. 处理状态机 cancel ============
 reg(
-  `local raw=redis.call("GET",KEYS[1]); if not raw then return 0 end; local ok,rec=pcall(cjson.decode,raw); if not ok or type(rec)~="table" then return 0 end; if rec.stage=="DONE" or rec.saveClaimedAt then return 0 end; rec.stage="CANCELLED"; rec.recoverable=true; rec.action=ARGV[1]; rec.hint=ARGV[2]; rec.detail=ARGV[3]; rec.updatedAt=ARGV[4]; redis.call("SET",KEYS[1],cjson.encode(rec),"EX",ARGV[5]); return 1`,
+  `local raw=redis.call("GET",KEYS[1]); if not raw then return 0 end; local ok,rec=pcall(cjson.decode,raw); if not ok or type(rec)~="table" then return 0 end; if rec.stage=="DONE" or rec.saveClaimedAt then return 0 end; rec.stage="CANCELLED"; rec.recoverable=true; rec.action=ARGV[1]; rec.hint=ARGV[2]; rec.detail=ARGV[3]; rec.updatedAt=ARGV[4]; rec.updatedAtBeijing=ARGV[5]; redis.call("SET",KEYS[1],cjson.encode(rec),"EX",ARGV[6]); return 1`,
   async (ctx, keys, args) => {
     const raw = await ctx.get(keys[0]);
     if (!raw) return 0;
@@ -1054,7 +1054,8 @@ reg(
     rec.hint = args[1];
     rec.detail = args[2];
     rec.updatedAt = args[3];
-    await ctx.set(keys[0], JSON.stringify(rec), args[4]);
+    rec.updatedAtBeijing = args[4];
+    await ctx.set(keys[0], JSON.stringify(rec), args[5]);
     return 1;
   }
 );
@@ -1198,260 +1199,3 @@ for i=0,boundCount-1 do
 end
 redis.call('DEL',KEYS[1])
 redis.call('DEL',KEYS[3])
-return 1`,
-  async (ctx, keys, args) => {
-    const rid = args[0];
-    const newIndex = args[1];
-    const boundCount = keys.length - 3;
-    const raw = await ctx.get(keys[0]);
-    const ri = await ctx.get(keys[1]);
-    if (!raw || !ri) return 2;
-    const [okr, r] = parseJSON(raw);
-    const [okids, ids] = parseJSON(ri);
-    if (!okr || typeof r !== "object" || !okids || !Array.isArray(ids)) return 3;
-    if (r.id !== rid) return 3;
-    for (let i = 0; i < boundCount; i++) {
-      const uraw = await ctx.get(keys[3 + i]);
-      if (!uraw) return 4;
-      const [oku, u] = parseJSON(uraw);
-      if (!oku || typeof u !== "object" || u.id !== args[2 + i] || u.boundRouteId !== rid || u.routeDuty !== args[2 + boundCount + i]) return 5;
-    }
-    await ctx.set(keys[1], newIndex);
-    // 写入循环从用户键起点开始（keys[3] 是 baseKey，由下方 DEL 删除，不在此写入）。
-    for (let i = 0; i < boundCount; i++) {
-      await ctx.set(keys[3 + i], args[2 + 2 * boundCount + i]);
-    }
-    await ctx.del(keys[0]);
-    await ctx.del(keys[2]);
-    return 1;
-  }
-);
-
-// ============ 48. 调度：分配临时线路（dispatch.js temp route assign） ============
-reg(
-  `local raw=redis.call("GET",KEYS[1]);if not raw then return -1 end;local ok,u=pcall(cjson.decode,raw);if not ok or type(u)~="table" then return -2 end;if u.id~=ARGV[1] or u.disabled==true or u.role=="admin" then return -3 end;u.dispatchRouteId=ARGV[2];redis.call("SET",KEYS[1],cjson.encode(u));return 1`,
-  async (ctx, keys, args) => {
-    const raw = await ctx.get(keys[0]);
-    if (!raw) return -1;
-    const [ok, u] = parseJSON(raw);
-    if (!ok || typeof u !== "object") return -2;
-    if (u.id !== args[0] || u.disabled === true || u.role === "admin") return -3;
-    u.dispatchRouteId = args[1];
-    await ctx.set(keys[0], JSON.stringify(u));
-    return 1;
-  }
-);
-
-// ============ 49. 登录：用户名 → 用户连读（login.js LOOKUP_SCRIPT） ============
-reg(
-  `local id = redis.call('GET', KEYS[1])
-if not id then return {false, false} end
-local raw = redis.call('GET', ARGV[1] .. tostring(id))
-if not raw then return {id, false} end
-return {id, raw}`,
-  async (ctx, keys, args) => {
-    const id = await ctx.get(keys[0]);
-    if (!id) return [null, null];
-    const raw = await ctx.get(args[0] + id);
-    if (!raw) return [id, null];
-    return [id, raw];
-  }
-);
-
-// ============ 50. 登录：存量账号哈希机会性升级（login.js UPGRADE_SCRIPT） ============
-reg(
-  `local raw=redis.call('GET',KEYS[1]); if not raw then return 0 end; local ok,u=pcall(cjson.decode,raw); if not ok or type(u)~='table' then return 0 end; if u.id~=ARGV[3] then return 0 end; if u.passwordHash~=ARGV[1] then return 0 end; u.passwordHash=ARGV[2]; redis.call('SET',KEYS[1],cjson.encode(u)); return 1`,
-  async (ctx, keys, args) => {
-    const raw = await ctx.get(keys[0]);
-    if (!raw) return 0;
-    const [ok, u] = parseJSON(raw);
-    if (!ok || typeof u !== "object") return 0;
-    if (u.id !== args[2]) return 0;
-    if (u.passwordHash !== args[0]) return 0;
-    u.passwordHash = args[1];
-    await ctx.set(keys[0], JSON.stringify(u));
-    return 1;
-  }
-);
-
-// ============ 51. 管理员启用用户（users.js ENABLE，禁用状态取反） ============
-reg(
-  `local raw=redis.call('GET',KEYS[1]); if not raw then return 2 end; local ok,x=pcall(cjson.decode,raw); if not ok then return 3 end; if x.id~=ARGV[2] then return 4 end; if x.disabled~=true then return 5 end; x.disabled=false; x.sessionVersion=(x.sessionVersion or 1)+1; redis.call('SET',KEYS[1],cjson.encode(x)); return 1`,
-  async (ctx, keys, args) => {
-    const raw = await ctx.get(keys[0]);
-    if (!raw) return 2;
-    const [ok, x] = parseJSON(raw);
-    if (!ok || typeof x !== "object") return 3;
-    if (x.id !== args[1]) return 4;
-    if (x.disabled !== true) return 5;
-    x.disabled = false;
-    x.sessionVersion = (Number(x.sessionVersion) || 1) + 1;
-    await ctx.set(keys[0], JSON.stringify(x));
-    return 1;
-  }
-);
-
-// ============ 52. 注册：消费邀请码创建用户（register.js） ============
-reg(
-  `local raw=redis.call('GET',KEYS[1]); if not raw then return -1 end; local ok,c=pcall(cjson.decode,raw); if not ok or type(c)~='table' or type(c.id)~='string' or type(c.code)~='string' then return -6 end; if string.upper(c.code)~=ARGV[5] then return -6 end; local main=redis.call('GET','zp:invite-code:'..c.id); if not main then return -6 end; local okm,m=pcall(cjson.decode,main); if not okm or type(m)~='table' or m.id~=c.id or m.code~=c.code then return -6 end; if c.enabled==false or m.enabled==false then return -2 end; if c.expiresAt and c.expiresAt~='' and ARGV[4] >= string.sub(c.expiresAt,1,19) then return -3 end; local used=tonumber(c.usedCount or 0) or 0; local max=tonumber(c.maxUses or 0) or 0; if max>0 and used>=max then return -4 end; if redis.call('GET',KEYS[2]) then return -5 end; local rawIds=redis.call('GET',KEYS[4]); local arr={}; if rawIds then local okIds,v=pcall(cjson.decode,rawIds); if not okIds or type(v)~='table' then return -7 end; arr=v; for _,uid in ipairs(arr) do if type(uid)~='string' or uid=='' then return -7 end end end; local next=used+1; c.usedCount=next; m.usedCount=next; redis.call('SET',KEYS[1],cjson.encode(c)); redis.call('SET','zp:invite-code:'..c.id,cjson.encode(m)); redis.call('SET',KEYS[3],ARGV[1]); redis.call('SET',KEYS[2],ARGV[3]); table.insert(arr,ARGV[3]); redis.call('SET',KEYS[4],cjson.encode(arr)); return 1`,
-  async (ctx, keys, args) => {
-    const raw = await ctx.get(keys[0]);
-    if (!raw) return -1;
-    const [ok, c] = parseJSON(raw);
-    if (!ok || typeof c !== "object" || typeof c.id !== "string" || typeof c.code !== "string") return -6;
-    if (String(c.code).toUpperCase() !== String(args[4])) return -6;
-    const main = await ctx.get("zp:invite-code:" + c.id);
-    if (!main) return -6;
-    const [okm, m] = parseJSON(main);
-    if (!okm || typeof m !== "object" || m.id !== c.id || m.code !== c.code) return -6;
-    if (c.enabled === false || m.enabled === false) return -2;
-    if (c.expiresAt && c.expiresAt !== "" && args[3] >= String(c.expiresAt).slice(0, 19)) return -3;
-    const used = Number(c.usedCount) || 0;
-    const max = Number(c.maxUses) || 0;
-    if (max > 0 && used >= max) return -4;
-    if (await ctx.get(keys[1])) return -5;
-    const rawIds = await ctx.get(keys[3]);
-    let arr = [];
-    if (rawIds) {
-      const [okIds, v] = parseJSON(rawIds);
-      if (!okIds || !Array.isArray(v)) return -7;
-      arr = v;
-      for (const uid of arr) if (typeof uid !== "string" || uid === "") return -7;
-    }
-    const next = used + 1;
-    c.usedCount = next;
-    m.usedCount = next;
-    await ctx.set(keys[0], JSON.stringify(c));
-    await ctx.set("zp:invite-code:" + c.id, JSON.stringify(m));
-    await ctx.set(keys[2], args[0]);
-    await ctx.set(keys[1], args[2]);
-    arr.push(args[2]);
-    await ctx.set(keys[3], JSON.stringify(arr));
-    return 1;
-  }
-);
-
-// ============ 53. 性能遥测聚合（perf-event.js LUA，含 HINCRBY / HINCRBYFLOAT） ============
-reg(
-  `local rate = tonumber(redis.call("INCR", KEYS[2]))
-if rate == 1 then redis.call("EXPIRE", KEYS[2], 3600) end
-if rate > 3000 then return -1 end
-for i=1,#ARGV,8 do
-  local page=ARGV[i]
-  local endpoint=ARGV[i+1]
-  local status=ARGV[i+2]
-  local duration=tonumber(ARGV[i+3])
-  local server=tonumber(ARGV[i+4])
-  local hasServer=tonumber(ARGV[i+5])
-  local phasesRaw=ARGV[i+6]
-  local codeRaw=ARGV[i+7]
-  if page and endpoint and status and duration then
-    local base=page.."|"..endpoint.."|"..status.."|"
-    redis.call("HINCRBY",KEYS[1],base.."count",1)
-    redis.call("HINCRBYFLOAT",KEYS[1],base.."sum",duration)
-    local old=tonumber(redis.call("HGET",KEYS[1],base.."max") or "0")
-    if duration>old then redis.call("HSET",KEYS[1],base.."max",duration) end
-    if hasServer==1 and server then
-      redis.call("HINCRBY",KEYS[1],base.."server_count",1)
-      redis.call("HINCRBYFLOAT",KEYS[1],base.."server_sum",server)
-      local so=tonumber(redis.call("HGET",KEYS[1],base.."server_max") or "0")
-      if server>so then redis.call("HSET",KEYS[1],base.."server_max",server) end
-    end
-    if (status=="4xx" or status=="5xx") and codeRaw and codeRaw~="" then
-      local cd=base.."code:"..codeRaw.."|"
-      redis.call("HINCRBY",KEYS[1],cd.."count",1)
-      redis.call("HINCRBYFLOAT",KEYS[1],cd.."sum",duration)
-      local cm=tonumber(redis.call("HGET",KEYS[1],cd.."max") or "0")
-      if duration>cm then redis.call("HSET",KEYS[1],cd.."max",duration) end
-      if hasServer==1 and server then
-        redis.call("HINCRBY",KEYS[1],cd.."server_count",1)
-        redis.call("HINCRBYFLOAT",KEYS[1],cd.."server_sum",server)
-        local csm=tonumber(redis.call("HGET",KEYS[1],cd.."server_max") or "0")
-        if server>csm then redis.call("HSET",KEYS[1],cd.."server_max",server) end
-      end
-    end
-    if phasesRaw and phasesRaw~="" then
-      local ok,phases=pcall(cjson.decode,phasesRaw)
-      if ok and type(phases)=="table" then
-        for name,dur in pairs(phases) do
-          if string.match(name,"^history%-[a-z%-]+$") then
-            local value=tonumber(dur)
-            if value and value>=0 and value<=120000 then
-              local phaseBase=base.."phase:"..name..":"
-              redis.call("HINCRBY",KEYS[1],phaseBase.."count",1)
-              redis.call("HINCRBYFLOAT",KEYS[1],phaseBase.."sum",value)
-              local phaseMax=tonumber(redis.call("HGET",KEYS[1],phaseBase.."max") or "0")
-              if value>phaseMax then redis.call("HSET",KEYS[1],phaseBase.."max",value) end
-            end
-          end
-        end
-      end
-    end
-  end
-end
-redis.call("EXPIRE",KEYS[1],1209600)
-return 1`,
-  async (ctx, keys, args) => {
-    const rate = await ctx.incr(keys[1]);
-    if (rate === 1) await ctx.expire(keys[1], 3600);
-    if (rate > 3000) return -1;
-    for (let i = 0; i + 7 < args.length; i += 8) {
-      const page = args[i], endpoint = args[i + 1], status = args[i + 2];
-      const duration = Number(args[i + 3]);
-      const server = Number(args[i + 4]);
-      const hasServer = Number(args[i + 5]);
-      const phasesRaw = args[i + 6];
-      const codeRaw = args[i + 7];
-      if (page && endpoint && status && duration) {
-        const base = page + "|" + endpoint + "|" + status + "|";
-        await ctx.hincrby(keys[0], base + "count", 1);
-        await ctx.hincrbyfloat(keys[0], base + "sum", duration);
-        const old = Number(await ctx.hget(keys[0], base + "max")) || 0;
-        if (duration > old) await ctx.hset(keys[0], [[base + "max", String(duration)]]);
-        if (hasServer === 1 && server) {
-          await ctx.hincrby(keys[0], base + "server_count", 1);
-          await ctx.hincrbyfloat(keys[0], base + "server_sum", server);
-          const so = Number(await ctx.hget(keys[0], base + "server_max")) || 0;
-          if (server > so) await ctx.hset(keys[0], [[base + "server_max", String(server)]]);
-        }
-        if ((status === "4xx" || status === "5xx") && codeRaw && codeRaw !== "") {
-          const cd = base + "code:" + codeRaw + "|";
-          await ctx.hincrby(keys[0], cd + "count", 1);
-          await ctx.hincrbyfloat(keys[0], cd + "sum", duration);
-          const cm = Number(await ctx.hget(keys[0], cd + "max")) || 0;
-          if (duration > cm) await ctx.hset(keys[0], [[cd + "max", String(duration)]]);
-          if (hasServer === 1 && server) {
-            await ctx.hincrby(keys[0], cd + "server_count", 1);
-            await ctx.hincrbyfloat(keys[0], cd + "server_sum", server);
-            const csm = Number(await ctx.hget(keys[0], cd + "server_max")) || 0;
-            if (server > csm) await ctx.hset(keys[0], [[cd + "server_max", String(server)]]);
-          }
-        }
-        if (phasesRaw && phasesRaw !== "") {
-          const [ok, phases] = parseJSON(phasesRaw);
-          if (ok && phases && typeof phases === "object") {
-            for (const name of Object.keys(phases)) {
-              if (/^history-[a-z-]+$/.test(name)) {
-                const value = Number(phases[name]);
-                if (value != null && value >= 0 && value <= 120000) {
-                  const phaseBase = base + "phase:" + name + ":";
-                  await ctx.hincrby(keys[0], phaseBase + "count", 1);
-                  await ctx.hincrbyfloat(keys[0], phaseBase + "sum", value);
-                  const phaseMax = Number(await ctx.hget(keys[0], phaseBase + "max")) || 0;
-                  if (value > phaseMax) await ctx.hset(keys[0], [[phaseBase + "max", String(value)]]);
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-    await ctx.expire(keys[0], 1209600);
-    return 1;
-  }
-);
-
-// 注册表统计（便于自测/排障）
-export const EVAL_HANDLER_COUNT = HANDLERS.size;
-export { HANDLERS };
-export default { lookupEval, EVAL_HANDLER_COUNT, HANDLERS };
