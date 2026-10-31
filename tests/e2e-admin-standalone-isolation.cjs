@@ -58,7 +58,7 @@ const BASE = 'http://127.0.0.1:' + PORT + '/';
   await sleep(2500);
 
   const targets = await send('Target.getTargets', {});
-  const adminT = targets.targetInfos.find(t => /admin\\.html/.test(t.url || ''));
+  const adminT = targets.targetInfos.find(t => /admin\.html/.test(t.url || ''));
   console.log('独立管理员窗口存在 :', !!adminT, '| url :', adminT && adminT.url);
   if (adminT) {
     const at2 = await send('Target.attachToTarget', { targetId: adminT.targetId, flatten: true });
@@ -93,8 +93,8 @@ const BASE = 'http://127.0.0.1:' + PORT + '/';
     ws.close(); proc.kill();
     process.exit(returnedToLogin ? 0 : 1);
   } else {
-    console.log('⚠️ 未检测到独立窗口（window.open 被拦截），已退回同窗口 replace 路径（由跨区防火墙兜底）');
+    console.error('❌ 未检测到独立管理员窗口；本测试不能跳过管理员返回闭环验证');
     ws.close(); proc.kill();
-    process.exit(0);
+    process.exit(1);
   }
 })().catch(e => { console.error('ERR', e.message); process.exit(1); });
