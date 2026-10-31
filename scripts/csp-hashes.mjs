@@ -111,6 +111,9 @@ export const cspWithInlineHashes = (base) =>
 if (CHECK) {
   const current = readFileSync(HASHES_PATH, "utf8");
   if (current !== MODULE_SRC) {
+    console.error("CSP_EXPECTED_MODULE_BEGIN");
+    console.error(MODULE_SRC);
+    console.error("CSP_EXPECTED_MODULE_END");
     console.error("✗ _csp-hashes.js 与当前 HTML 不一致（HTML 内联脚本已变，请跑 node scripts/csp-hashes.mjs）");
     process.exit(1);
   }
