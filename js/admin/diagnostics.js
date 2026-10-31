@@ -118,7 +118,7 @@ async function renderDiagnostics(){
   }).join(""):"";
   $("diagnostics").innerHTML += failureHtml;
   document.querySelectorAll("#diagnostics .diag-failure-copy").forEach((btn,index)=>btn.onclick=async()=>{
-    const value="智配One 失败运单诊断\\n"+JSON.stringify(failures[index],null,2);
+    const value="智配One 失败运单诊断 | "+JSON.stringify(failures[index],null,2);
     let copied=false;
     try{await navigator.clipboard.writeText(value);copied=true;}catch(e){}
     if(!copied){const ta=document.createElement("textarea");ta.value=value;document.body.appendChild(ta);ta.select();try{copied=document.execCommand("copy")}catch(e){}ta.remove();}
@@ -126,7 +126,7 @@ async function renderDiagnostics(){
   });
   document.querySelectorAll("#diagnostics .diag-copy").forEach(btn=>btn.onclick=async()=>{
     let copied=false;
-    const value=decodeURIComponent(btn.getAttribute("data-copy")||"");
+    const value="智配One 失败运单诊断 | "+JSON.stringify(failures[index],null,2);
     try{
       if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(value);copied=true;}
     }catch(e){}
