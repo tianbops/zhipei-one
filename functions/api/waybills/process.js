@@ -370,8 +370,8 @@ export async function onRequestPost({request,env}){
     // 避免 request.formData() 阻塞响应头和首个进度事件，导致客户端长时间停在 3%。
     emit(3,"运单已接收");
     runProcess({request,env,emit,user}).then(async response=>{
-      let payload={};try{payload=await response.clone().json()}catch(error){payload={success:false,error:"处理结果读取失败"}}
-      push(JSON.stringify({type:"result",...payload})+"\n");
+      let payload={};try{payload=await response.clone().json()}catch(error){payload={success:false,error:"处理结果读取失败",httpStatus:response.status}}
+      push(JSON.stringify({type:"result",...payload,httpStatus:response.status})+"\n");
       if(heartbeat)clearInterval(heartbeat);
       if(!closed){closed=true;try{controller.close()}catch{}}
     }).catch(error=>{
@@ -379,7 +379,7 @@ export async function onRequestPost({request,env}){
       // 现在未预期异常只回通用文案，完整 message + stack 仅进服务端日志。
       logServerError("waybills.process.stream", error);
       const message=clientMessage(error,"处理流程发生未捕获异常");
-      push(JSON.stringify({type:"result",success:false,code:error?.code||"PROCESS_UNHANDLED_ERROR",message,error:message,detail:clientDetail(error)})+"\n");
+      push(JSON.stringify({type:"result",success:false,code:error?.code||"PROCESS_UNHANDLED_ERROR",message,error:message,detail:clientDetail(error),httpStatus:500})+"\n");
       if(heartbeat)clearInterval(heartbeat);
       if(!closed){closed=true;try{controller.close()}catch{}}
     });
