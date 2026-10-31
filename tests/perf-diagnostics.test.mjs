@@ -33,3 +33,9 @@ for(const p of ["index.html","home.html","pages/account.html","pages/history.htm
     p+" 必须引用 /js/perf-diagnostics.js（移除引用会导致埋点静默失效）");
 }
 console.log("Automatic anonymous performance diagnostics safeguards passed.");
+
+
+// Full JSON response read timing and the streamed waybill completion hook.
+assert.match(source,/window\.zpPerfRecord/);
+assert.match(source,/p===\"\/api\/waybills\/process\"/);
+assert.match(source,/bodyMethods=\[\"json\",\"text\",\"arrayBuffer\",\"blob\",\"formData\"\]/);
