@@ -39,6 +39,12 @@ function check(name, cond, info) {
     jsAll.includes('const perfCopyButton=$("perfCopy")')
       && jsAll.includes("navigator.clipboard")
       && jsAll.includes('document.execCommand("copy")'));
+  const diagnosticsJs = fs.readFileSync(path.join(ROOT, "js", "admin", "diagnostics.js"), "utf8");
+  check("运单诊断复制从当前按钮 data-copy 读取完整诊断，不引用未定义 index",
+    /document\.querySelectorAll\("#diagnostics \.diag-copy"\)[\s\S]*?decodeURIComponent\(btn\.getAttribute\("data-copy"\)/.test(diagnosticsJs)
+      && !/diag-copy[\s\S]{0,500}failures\[index\]/.test(diagnosticsJs));
+  check("运单诊断复制的临时文本框清理具备异常保护",
+    /finally\{try\{if\(ta&&ta\.parentNode\)ta\.parentNode\.removeChild\(ta\);\}catch\(e\)\{\}\}/.test(diagnosticsJs));
   check("复制点击处理完整兜底：剪贴板、DOM回退和提示异常均不会向全局冒泡",
     jsAll.includes("if(perfCopyButton)perfCopyButton.onclick=async()=>{")
       && jsAll.includes("catch(e){copied=false;}")
