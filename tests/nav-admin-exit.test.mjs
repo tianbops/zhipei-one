@@ -72,7 +72,45 @@ function makeEnv({ pathname="/home", adminPage=0, zone="business" }={}) {
  t("业务子页面返回仍回业务首页",(await env.back())==="leave"&&env.replaced[0]==="/home",JSON.stringify(env.replaced));
  const root=makeEnv({pathname:"/home",zone:"business"});
  t("业务首页第一次返回仍武装",(await root.back())==="exit-armed");
- t("业务首页第二次返回仍按原逻辑退出",(await root.back())==="exit");
+ t("业务首页第二次返回只请求退出应用",(await root.back())==="exit");
+ t("普通用户返回不调用注销 API",root.fetched.length===0,JSON.stringify(root.fetched));
+ t("普通用户退出后保留 zpAuth 与 zpRole",root.session.has("zpAuth")&&root.session.has("zpRole"),JSON.stringify([...root.session]));
+ t("普通用户退出后不清除本地自动登录标记",root.local.has("zpLastAuth")&&root.local.has("zpLastRole"),JSON.stringify([...root.local]));
+}
+
+// 真实 zpDoExit 源码：原生 App 只结束 Activity，不清会话、不走 history.back。
+{
+ const start=SRC.indexOf("function zpDoExit()");
+ const end=SRC.indexOf("// 顶部返回按钮专用出口");
+ if(start<0||end<=start)throw new Error("切片失败：zpDoExit 源码未找到");
+ const body=SRC.slice(start,end);
+ const calls={nativeExit:0,historyBack:0};
+ const state=new Set(["zpAuth","zpRole","zpLastAuth","zpLastRole"]);
+ const storage={getItem:k=>state.has(k)?"1":null,setItem:k=>state.add(k),removeItem:k=>state.delete(k)};
+ const win={ZhipeiNative:{exitApp:()=>{calls.nativeExit++}},matchMedia:()=>({matches:false}),navigator:{}};
+ const fn=new Function("window","sessionStorage","history","location","let zpLeaving=false;"+body+";return zpDoExit;")(
+   win,storage,{back:()=>{calls.historyBack++}},{});
+ fn();
+ t("App 端调用原生 exitApp 退出",calls.nativeExit===1,JSON.stringify(calls));
+ t("App 端退出不回退 WebView 历史",calls.historyBack===0,JSON.stringify(calls));
+ t("App 端退出不清除用户登录凭证",state.has("zpAuth")&&state.has("zpRole"),JSON.stringify([...state]));
+}
+
+// Web/PWA 真实 zpDoExit 源码：允许浏览器接管离开，但保留当前站点登录态。
+{
+ const start=SRC.indexOf("function zpDoExit()");
+ const end=SRC.indexOf("// 顶部返回按钮专用出口");
+ const body=SRC.slice(start,end);
+ const calls={historyBack:0};
+ const state=new Set(["zpAuth","zpRole","zpLastAuth","zpLastRole"]);
+ const storage={getItem:k=>state.has(k)?"1":null,setItem:k=>state.add(k),removeItem:k=>state.delete(k)};
+ const win={matchMedia:()=>({matches:false}),navigator:{}};
+ const fn=new Function("window","sessionStorage","history","location","let zpLeaving=false;"+body+";return zpDoExit;")(
+   win,storage,{back:()=>{calls.historyBack++}},{});
+ fn();
+ t("Web 端交由浏览器返回离开",calls.historyBack===1,JSON.stringify(calls));
+ t("Web 端离开不清除用户登录凭证",state.has("zpAuth")&&state.has("zpRole"),JSON.stringify([...state]));
+ t("Web 端离开不清除本地自动登录标记",state.has("zpLastAuth")&&state.has("zpLastRole"),JSON.stringify([...state]));
 }
 console.log(`管理员返回出口契约：${pass} 通过 / ${fail} 失败`);
 if(fail){failures.forEach(x=>console.error("  ✗ "+x));process.exit(1);}
