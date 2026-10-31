@@ -14,7 +14,7 @@ const getJSON = u => new Promise((res, rej) => { http.get(u, r => { let d = ''; 
 const STUB = `
 try{var _m=sessionStorage.getItem('__ME');window.__ME=_m?JSON.parse(_m):null}catch(e){window.__ME=null}
 (function(){const real=window.fetch;window.__LOGIN_FETCHES=[];window.fetch=function(u,o){const s=String(u);window.__LOGIN_FETCHES.push(s);
- const B=(t,ok)=>Promise.resolve({ok:ok!==false,status:ok===false?401:200,json:()=>Promise.resolve(JSON.parse(t)),text:()=>Promise.resolve(t)});
+ const B=(t,ok)=>Promise.resolve(new Response(t,{status:ok===false?401:200,headers:{'content-type':'application/json'}}));
  if(s.indexOf('/api/me')===0){if(!window.__ME)return B('{"error":"unauthorized"}',false);return B(JSON.stringify({success:true,user:window.__ME}));}
  if(s.indexOf('/api/login')===0){const b=o&&o.body?JSON.parse(o.body):{};if(b.username==='root')return B(JSON.stringify({success:true,user:{id:1,username:'root',role:'system_admin'}}));return B('{"error":"bad"}',false);}
  if(s.indexOf('/api/logout')===0)return B('{"success":true}');
