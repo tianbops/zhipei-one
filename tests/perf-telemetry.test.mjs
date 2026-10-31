@@ -46,7 +46,7 @@ assert.match(perfUi,/isD1RoutingMetric/);
 assert.match(perfUi,/D1 读路由统计 · 结果记录数/);
 assert.match(perfUi,/条\/次/);
 assert.match(perfUi,/累计 .* 条结果记录/);
-assert.match(perfUi,/filter\(\(\[name\]\)=>!isD1RoutingMetric\(name\)\)/);
+assert.match(perfUi,/name\.startsWith\("history-"\)&&!isD1RoutingMetric\(name\)/);\nassert.match(perfUi,/name\.startsWith\("waybill-"\)/);\nassert.match(perfUi,/运单上传与处理阶段耗时/);\nassert.match(perfUi,/前12项/);
 assert.match(perfUi,/filter\(\(\[name\]\)=>isD1RoutingMetric\(name\)\)/);
 
 
