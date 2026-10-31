@@ -1196,7 +1196,8 @@ for i=0,boundCount-1 do
   redis.call('SET',KEYS[k],ARGV[jsonArg])
 end
 redis.call('DEL',KEYS[1])
-redis.call('DEL',KEYS[3])return 1`,
+redis.call('DEL',KEYS[3])
+return 1`,
   async (ctx, keys, args) => {
     const rid = args[0];
     const newIndex = args[1];
