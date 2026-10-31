@@ -201,7 +201,8 @@ export async function claimProcSaveDetailed(env, requestId) {
   try {
     const result = await command(env, ["EVAL", claimSaveScript, "1", procKey(requestId), nowISO(), beijingISO(new Date()), String(PROC_TTL)]);
     if (Number(result) === 1) return { ok: true, reason: "CLAIMED" };
-    const rec = await getProc(env, requestId);
+    const raw = await command(env, ["GET", procKey(requestId)]);
+    const rec = raw ? (typeof raw === "string" ? JSON.parse(raw) : raw) : null;
     if (!rec) return { ok: false, reason: "TICKET_MISSING" };
     if (rec.stage === "CANCELLED") return { ok: false, reason: "CANCELLED", proc: rec };
     if (rec.stage === "DONE") return { ok: false, reason: "DONE", proc: rec };
