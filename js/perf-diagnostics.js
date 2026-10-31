@@ -20,6 +20,7 @@
       var u=new URL(url,location.href);
       if(u.origin!==location.origin||!u.pathname.startsWith("/api/")||u.pathname==="/api/perf-event")return null;
       var p=u.pathname;
+      if(p==="/api/waybills/process")return null;
       if(p.indexOf("/api/home")===0)return "api-home";
       if(p.indexOf("/api/history")===0){if(u.searchParams.has("q"))return "api-history-search";if(u.searchParams.has("date"))return "api-history-detail";return "api-history";}
       if(p.indexOf("/api/dispatch")===0||p.indexOf("/api/routes")===0)return "api-routes";
@@ -58,7 +59,28 @@
       var server=match&&Number.isFinite(Number(match[1]))?Number(match[1]):null;
       var phases={},phaseParts=header.split(","),phasePattern=/^(history-auth|history-route|history-index|history-aggregate|history-search-index|history-search-read|history-detail-read|history-detail-enrich|history-response-build|history-db-(?:primary|replica|unknown)-queries|history-db-region-[a-z-]+-queries);dur=([\d.]+)$/,phaseMatch;
       for(var pi=0;pi<phaseParts.length;pi++){phaseMatch=phaseParts[pi].trim().match(phasePattern);if(phaseMatch){var phaseValue=Number(phaseMatch[2]);if(Number.isFinite(phaseValue)&&phaseValue>=0&&phaseValue<=120000)phases[phaseMatch[1]]=Math.round(phaseValue*10)/10;}}
-      push(endpoint,response.status,performance.now()-t0,server,phases);
+      var recordResponse=function(){push(endpoint,response.status,performance.now()-t0,server,phases);};
+      /* 记录完整响应读取时间，而不只记录 fetch 收到响应头的时间。
+       * 不复制/tee 响应流；只包装调用方本来就会使用的 body 方法，避免增加下载量和内存占用。
+       * 流式运单处理由 upload-process.js 在 reader.done 时单独记录端到端耗时。 */
+      if(response.status>=400||!response.body){recordResponse();return response;}
+      var bodyMethods=["json","text","arrayBuffer","blob","formData"],wrapped=false,recorded=false;
+      for(var bi=0;bi<bodyMethods.length;bi++){
+        var methodName=bodyMethods[bi],originalMethod=response[methodName];
+        if(typeof originalMethod!=="function")continue;
+        try{
+          response[methodName]=(function(method){
+            return function(){
+              var result;
+              try{result=method.apply(response,arguments);}
+              catch(error){if(!recorded){recorded=true;recordResponse();}throw error;}
+              return Promise.resolve(result).then(function(value){if(!recorded){recorded=true;recordResponse();}return value;},function(error){if(!recorded){recorded=true;recordResponse();}throw error;});
+            };
+          })(originalMethod);
+          wrapped=true;
+        }catch(e){}
+      }
+      if(!wrapped)recordResponse();
       return response;
     },function(error){push(endpoint,"network",performance.now()-t0,null);throw error});
   };
@@ -75,6 +97,12 @@
         .catch(function(){})
         .finally(function(){flushing=false;if(rows.length)flush()});
     }catch(e){flushing=false}
+  };
+  /* 供首页数据就绪和运单流式处理补充端到端计时；仅接收固定枚举和数值。 */
+  window.zpPerfRecord=function(endpoint,status,duration,server,phases){
+    if(typeof endpoint!=="string"||!endpoint)return;
+    push(endpoint,status,duration,server,phases);
+    flush();
   };
   var nav=performance.getEntriesByType("navigation")[0];
   window.addEventListener("load",function(){
