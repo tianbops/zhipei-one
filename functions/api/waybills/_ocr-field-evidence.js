@@ -2,15 +2,11 @@
  * Associate extracted business fields with the OCR lines that support them.
  * Evidence is advisory only: it never changes extraction, matching, or planning.
  */
-const compact = value => String(value ?? "").toUpperCase().replace(/[\\s\\p{P}\\p{S}\\u200b\\uFEFF]/gu, "");
-const digits = value => String(value ?? "").replace(/\\D/g, "");
+const compact = value => String(value ?? "").toUpperCase().replace(/[\s\p{P}\p{S}\u200b\uFEFF]/gu, "");
+const digits = value => String(value ?? "").replace(/\D/g, "");
 
 function fieldKey(value, kind) {
-  if (kind === "date") return digits(value);
-  if (kind === "weight") {
-    const n = Number(value);
-    return Number.isFinite(n) ? String(n) : compact(value);
-  }
+  if (kind === "date" || kind === "weight") return digits(value);
   return compact(value);
 }
 
