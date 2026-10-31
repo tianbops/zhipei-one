@@ -1,6 +1,7 @@
 /**
  * Associate extracted business fields with the OCR lines that support them.
  * Evidence is advisory only: it never changes extraction, matching, or planning.
+ * Store references point into ocr.lineEvidence to avoid duplicating OCR payloads.
  */
 const compact = value => String(value ?? "").toUpperCase().replace(/[\s\p{P}\p{S}\u200b\uFEFF]/gu, "");
 const digits = value => String(value ?? "").replace(/\D/g, "");
@@ -14,16 +15,14 @@ function findEvidence(value, kind, lines, limit = 3) {
   const target = fieldKey(value, kind);
   if (!target) return [];
   const matches = [];
-  for (const line of lines) {
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+    const line = lines[lineIndex];
     const text = String(line?.text || "");
     const haystack = fieldKey(text, kind);
     if (!haystack || !haystack.includes(target)) continue;
     matches.push({
+      lineIndex,
       imageIndex: Number.isInteger(line.imageIndex) && line.imageIndex > 0 ? line.imageIndex : null,
-      text: text.slice(0, 240),
-      score: Number.isFinite(line.score) && line.score >= 0 && line.score <= 1 ? line.score : null,
-      box: Array.isArray(line.box) ? line.box : null,
-      polygon: Array.isArray(line.polygon) ? line.polygon : null,
     });
     if (matches.length >= limit) break;
   }
