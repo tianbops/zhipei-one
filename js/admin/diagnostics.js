@@ -63,7 +63,9 @@ async function renderDiagnostics(){
       }).filter(Boolean);
       return label+"："+(f.value??"-")+" · "+(sourceLabels[f.source]||"未知来源")+(refs.length?" · "+refs.join("；"):"");
     }):[];
-    const missingStoreEvidence=fieldEvidence&&Array.isArray(fieldEvidence.stores)?fieldEvidence.stores.filter(s=>s.source==="unavailable").map(s=>s.rawName||s.name||s.storeId||"未命名门店").slice(0,8):[];
+    const allMissingStoreEvidence=fieldEvidence&&Array.isArray(fieldEvidence.stores)?fieldEvidence.stores.filter(s=>s.source==="unavailable").map(s=>s.rawName||s.name||s.storeId||"未命名门店").slice(0,30):[];
+    const missingStoreEvidence=allMissingStoreEvidence.slice(0,8);
+    const missingStoreEvidenceRemaining=Math.max(0,allMissingStoreEvidence.length-missingStoreEvidence.length);
     const storeEvidenceLines=fieldEvidence&&Array.isArray(fieldEvidence.stores)?fieldEvidence.stores.slice(0,30).map(store=>{
       const refs=(Array.isArray(store.evidence)?store.evidence:[]).map(ref=>{
         const line=ocrLines[Number(ref.lineIndex)];
@@ -82,7 +84,7 @@ async function renderDiagnostics(){
     const fieldEvidenceHtml=fieldEvidence
       ?'<div class="meta">OCR证据关联：'+esc(fieldEvidenceSummary||"暂无汇总")+'</div>'
         +fieldEvidenceLines.map(line=>'<div class="meta">'+esc(line)+'</div>').join("")
-        +(missingStoreEvidence.length?'<div class="meta">门店未关联原文：'+esc(missingStoreEvidence.join("、"))+(fieldEvidence.summary?.storesWithoutEvidence>8?" 等":"")+'</div>':"")
+        +(missingStoreEvidence.length?'<div class="meta">门店未关联原文（展示前8条'+(missingStoreEvidenceRemaining?"，另有 "+missingStoreEvidenceRemaining+" 条":"")+(missingStoreEvidenceRemaining?"；复制诊断可查看完整清单":"")+"）：'+esc(missingStoreEvidence.join("、"))+"</div>": "")
       :"";
 
     const copyLines=[
@@ -99,7 +101,7 @@ async function renderDiagnostics(){
       "门店证据（最多导出30条）：",
       ...storeEvidenceLines,
       ...(fieldEvidence&&Array.isArray(fieldEvidence.stores)&&fieldEvidence.stores.length>storeEvidenceLines.length?["其余门店证据未导出："+(fieldEvidence.stores.length-storeEvidenceLines.length)+"条"]:[]),
-      ...(missingStoreEvidence.length?["门店未关联原文："+missingStoreEvidence.join("、")]:[]),
+      ...(allMissingStoreEvidence.length?["门店未关联原文："+allMissingStoreEvidence.join("、")]:[]),
       "事件："+((w.events||[]).slice(-8).reverse().map(e=>(e.event||"-")+(e.t?" · "+String(e.t).slice(11,19):"")).join("；")||"无")
     ].join("\n");
     return '<div class="row"><div class="content" style="display:block;width:100%"><div class="main"><strong>'+esc(w.date||"-")+' · '+esc(w.vehicle||"-")+'</strong>'
