@@ -232,18 +232,39 @@ function renderLoadError(){
     load();
   });
 }
+let dispatchInitialLoadFailed=false;
+let dispatchLoadInFlight=false;
 async function load(){
+  if(dispatchLoadInFlight)return;
+  dispatchLoadInFlight=true;
   try{
     // 聚合接口：一次往返同时拿「调度线路 + 可选线路列表」（历史为 /api/routes 与
     // /api/dispatch 两次并行请求；服务端批量 MGET 后全程仅 6 条 Redis 命令）
     const d=await api("/api/dispatch-bootstrap");
     routeState.current=d.dispatchRoute?.id||"";
     routeState.routes=(d.routes||[]).filter(r=>r.status==="active");
+    dispatchInitialLoadFailed=false;
     renderCurrent();
   }catch(e){
+    dispatchInitialLoadFailed=true;
     renderLoadError();
+  }finally{
+    dispatchLoadInFlight=false;
   }
 }
+// 只恢复失败的只读初始化请求；选择/确认线路期间不刷新，也不重放 POST。
+function canRecoverDispatch(){
+  if(!dispatchInitialLoadFailed||dispatchLoadInFlight||navigator.onLine===false)return false;
+  if($("routeSheetBackdrop")?.classList.contains("open"))return false;
+  if($("confirmBackdrop")?.classList.contains("open")||pendingRoute)return false;
+  return true;
+}
+function recoverDispatch(){
+  if(canRecoverDispatch())load();
+}
+window.addEventListener("online",recoverDispatch);
+window.addEventListener("focus",recoverDispatch);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")recoverDispatch()});
 load();
 </script>
 <script src="/js/ui/core.js?v=7c4e2f82"></script><script src="/js/ui/haptic.js?v=a3a78c0a"></script><script src="/js/ui/appearance.js?v=2661f74b"></script><script src="/js/ui/feedback.js?v=f8da0256"></script><script src="/js/ui/nav.js?v=0bf1d3c3"></script><script src="/js/ui/back.js?v=8b26bbd1"></script><script src="/js/ui/nav-prefetch.js?v=968d1e0b"></script>
