@@ -166,7 +166,7 @@ export async function failProc(env, requestId, patch) {
       recoverable: patch.recoverable !== undefined ? !!patch.recoverable : false,
       action: patch.action || null,
       hint: patch.hint || null,
-      detail: patch.detail || null,
+      code: patch.code || rec.code || null,\n      detail: patch.detail || patch.message || null,
       timing: patch.timing && typeof patch.timing === "object" && !Array.isArray(patch.timing) ? patch.timing : rec.timing || null,
       order: patch.order || null,
       updatedAt: nowISO(),
