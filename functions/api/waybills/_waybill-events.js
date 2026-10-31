@@ -28,7 +28,7 @@ export async function appendWaybillEvent(env, waybillId, evt) {
     const id = clean(waybillId);
     if (!id || !evt || !evt.event) return;
     const now = new Date();
-    const record = { t: now.toISOString(), tBeijing: beijingISO(now), ...evt };
+    const record = { ...evt, t: now.toISOString(), tBeijing: beijingISO(now) };
     await command(env, ["RPUSH", EV_KEY(id), JSON.stringify(record)]);
     await command(env, ["LTRIM", EV_KEY(id), "-1000", "-1"]);
   } catch {
