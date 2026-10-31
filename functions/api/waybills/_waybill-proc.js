@@ -36,7 +36,7 @@ const procKey = requestId => "zp:waybill:proc:" + clean(requestId);
 // cancel 与 claim 都在 Redis EVAL 内完成，二者谁先成功谁决定最终时序：
 //   CANCELLED 先成功 → 后续保存声明失败；
 //   SAVE_CLAIMED 先成功 → 取消不再抢占，保存完成后 DONE 胜出。
-const claimSaveScript = `local raw=redis.call("GET",KEYS[1]); if not raw then return 0 end; local ok,rec=pcall(cjson.decode,raw); if not ok or type(rec)~="table" then return 0 end; if rec.stage=="CANCELLED" or rec.stage=="DONE" then return 0 end; if rec.saveClaimedAt then return 1 end; rec.saveClaimedAt=ARGV[1]; rec.updatedAt=ARGV[1]; rec.updatedAtBeijing=ARGV[2]; redis.call("SET",KEYS[1],cjson.encode(rec),"EX",ARGV[2]); return 1`;
+const claimSaveScript = `local raw=redis.call("GET",KEYS[1]); if not raw then return 0 end; local ok,rec=pcall(cjson.decode,raw); if not ok or type(rec)~="table" then return 0 end; if rec.stage=="CANCELLED" or rec.stage=="DONE" then return 0 end; if rec.saveClaimedAt then return 1 end; rec.saveClaimedAt=ARGV[1]; rec.updatedAt=ARGV[1]; rec.updatedAtBeijing=ARGV[2]; redis.call("SET",KEYS[1],cjson.encode(rec),"EX",ARGV[3]); return 1`;
 const cancelScript = `local raw=redis.call("GET",KEYS[1]); if not raw then return 0 end; local ok,rec=pcall(cjson.decode,raw); if not ok or type(rec)~="table" then return 0 end; if rec.stage=="DONE" or rec.saveClaimedAt then return 0 end; rec.stage="CANCELLED"; rec.recoverable=true; rec.action=ARGV[1]; rec.hint=ARGV[2]; rec.detail=ARGV[3]; rec.updatedAt=ARGV[4]; rec.updatedAtBeijing=ARGV[5]; redis.call("SET",KEYS[1],cjson.encode(rec),"EX",ARGV[6]); return 1`;
 
 function nowISO() { return new Date().toISOString(); }
@@ -46,6 +46,7 @@ function beijingDate(value = new Date()) { const parts = new Intl.DateTimeFormat
 /** 写入初始 PROCESSING 票据。best-effort：失败不影响主流程。 */
 export async function beginProc(env, { requestId, routeId, userId, fileName = null }) {
   if (!requestId) return null;
+  const stamp = nowFields();
   const rec = {
     requestId,
     routeId: clean(routeId),
@@ -53,10 +54,10 @@ export async function beginProc(env, { requestId, routeId, userId, fileName = nu
     fileName: fileName ? String(fileName) : null,
     stage: "PROCESSING",
     waybillId: null,
-    startedAt: nowFields().at,
-    startedAtBeijing: nowFields().atBeijing,
-    updatedAt: nowFields().at,
-    updatedAtBeijing: nowFields().atBeijing,
+    startedAt: stamp.at,
+    startedAtBeijing: stamp.atBeijing,
+    updatedAt: stamp.at,
+    updatedAtBeijing: stamp.atBeijing,
     recoverable: false,
     action: null,
     hint: null,
@@ -168,6 +169,7 @@ export async function failProc(env, requestId, patch) {
     if (rec.stage === "DONE") return rec;
     if (rec.stage === "CANCELLED" && !patch.force) return rec;
 
+    const stamp = nowFields();
     const next = {
       ...rec,
       stage: patch.stage || "FAILED",
@@ -178,9 +180,8 @@ export async function failProc(env, requestId, patch) {
       detail: patch.detail || patch.message || null,
       timing: patch.timing && typeof patch.timing === "object" && !Array.isArray(patch.timing) ? patch.timing : rec.timing || null,
       order: patch.order || null,
-      ...nowFields(),
-      updatedAt: nowFields().at,
-      updatedAtBeijing: nowFields().atBeijing,
+      updatedAt: stamp.at,
+      updatedAtBeijing: stamp.atBeijing,
     };
     if (patch.waybillId) next.waybillId = patch.waybillId;
     await command(env, ["SET", procKey(requestId), JSON.stringify(next), "EX", String(PROC_TTL)]);
