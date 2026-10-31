@@ -66,7 +66,7 @@ async function supersedeSameDay(env,order,indexKey){
 
 async function base(env,id){const raw=await get(env,"route:"+id+":base");if(!raw)throw Object.assign(new Error("线路数据资料尚未建立"),{code:"BASE_NOT_FOUND"});let x;try{x=typeof raw==="string"?JSON.parse(raw):raw}catch{throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"})}if(!x||!Array.isArray(x.stores))throw Object.assign(new Error("线路数据资料格式异常"),{code:"BASE_DATA_INVALID"});return x.stores}
 
-async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:providedUser=null}){
+async function runProcessCore({request,env,emit=()=>{},form:providedForm=null,user:providedUser=null,tempKeys=[]}){
   emit(3,"运单已接收");
   const requestId=newId();
   // 上传先后必须记录在请求入口，而不是用 OCR/规划完成后的 createdAt 代替。
@@ -111,7 +111,7 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
   let route=null;if(!isTempRoute(routeId)){emit(6,"正在校验配送线路");route=await getRoute(env,routeId);if(!route||route.status!=="active"){emit(6,"当前配送线路不可用");return failProcess("DISPATCH_ROUTE_INACTIVE","当前调度线路不存在或已停用，请重新选择线路",409,{recoverable:true,action:"REPROCESS",hint:"当前调度线路不存在或已停用，请重新选择线路"});}}
   if(await stopIfClientCancelled("INPUT"))return json({success:false,code:"PROCESS_CANCELLED",error:"已取消处理",message:"已取消处理",requestId,recoverable:true,action:"REPROCESS",hint:"本次处理已取消，可重新上传运单"},499);
   const rawText=clean(form.get("rawText"));
-  const files=typeof form.getAll==="function"?form.getAll("file").filter(x=>x instanceof File):[];
+  let files=typeof form.getAll==="function"?form.getAll("file").filter(x=>x instanceof File):[];
   const file=files[0]||null;
   if(!rawText&&!files.length&&!clean(form.get("resumeRequestId"))){emit(6,"未找到运单");return failProcess("WAYBILL_FILE_MISSING","请选择运单",400,{recoverable:true,action:"RESUBMIT",hint:"请选择运单文件后重试"});}
   emit(6,files.length>1?`已读取运单，共 ${files.length} 张截图`:"已读取运单");
@@ -125,6 +125,33 @@ async function runProcess({request,env,emit=()=>{},form:providedForm=null,user:p
   if(await stopIfClientCancelled("OCR"))return json({success:false,code:"PROCESS_CANCELLED",error:"已取消处理",message:"已取消处理",requestId,recoverable:true,action:"REPROCESS",hint:"本次处理已取消，可重新上传运单"},499);
   const started=Date.now();let ocr=null,recognizedText=rawText,ocrMs=0;
   if(!recognizedText){
+  if(!recognizedText&&files.length){
+    const bucket=env?.WAYBILL_FILES;
+    if(!bucket||typeof bucket.put!=="function"||typeof bucket.get!=="function"||typeof bucket.delete!=="function"){
+      return failProcess("WAYBILL_TEMP_STORAGE_UNAVAILABLE","运单临时存储暂不可用，请稍后重试",503,{recoverable:true,action:"REPROCESS",hint:"运单图片临时存储暂不可用，请稍后重试"});
+    }
+    const stagedFiles=[];
+    try{
+      for(let i=0;i<files.length;i++){
+        const source=files[i];
+        const key=`waybill-tmp/${requestId}/${i+1}-${crypto.randomUUID()}`;
+        await bucket.put(key,source,{httpMetadata:{contentType:source.type||"application/octet-stream"}});
+        tempKeys.push(key);
+        const stored=await bucket.get(key);
+        if(!stored)throw new Error("临时图片写入后无法读取");
+        const bytes=await stored.arrayBuffer();
+        stagedFiles.push(new File([bytes],source.name||`waybill-${i+1}`,{
+          type:source.type||"application/octet-stream",
+          lastModified:Number(source.lastModified)||Date.now()
+        }));
+      }
+      files=stagedFiles;
+    }catch(error){
+      logServerError("waybills.r2-temp-stage",error);
+      return failProcess("WAYBILL_TEMP_STORAGE_FAILED","运单图片临时存储失败，请重新上传",503,{recoverable:true,action:"REPROCESS",hint:"运单图片暂存失败，请重新上传后重试"});
+    }
+  }
+
     const ocrStarted=Date.now();const results=[];const totalFiles=Math.max(1,files.length);
     try{
       /* 多图并发识别：原实现逐张串行 await，N 张截图≈N×单张耗时（实测单张约 7s）；
@@ -352,6 +379,36 @@ async function saveWaybill(order, requestId, resumed){
 }
 }
 
+
+async function deleteTempWaybillObjects(env,keys){
+  const bucket=env?.WAYBILL_FILES;
+  if(!bucket||typeof bucket.delete!=="function")return;
+  for(const key of keys){
+    // 只允许清理本次请求生成的 waybill-tmp/ 对象。
+    if(typeof key!=="string"||!key.startsWith("waybill-tmp/"))continue;
+    let deleted=false;
+    for(let attempt=0;attempt<2&&!deleted;attempt++){
+      try{await bucket.delete(key);deleted=true}catch(error){
+        if(attempt===1)logServerError("waybills.r2-temp-delete",error);
+      }
+    }
+  }
+}
+
+async function runProcess(args){
+  const tempKeys=[];
+  let response=null;
+  try{
+    response=await runProcessCore({...args,tempKeys});
+    return response;
+  }finally{
+    if(response&&tempKeys.length){
+      let succeeded=false;
+      try{succeeded=(await response.clone().json())?.success===true}catch{}
+      if(succeeded)await deleteTempWaybillObjects(args.env,tempKeys);
+    }
+  }
+}
 
 export async function onRequestPost({request,env}){
   const user=await currentUser(request,env);if(!user)return json({success:false,error:"未登录"},401);
