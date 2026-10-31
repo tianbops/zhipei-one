@@ -16,13 +16,13 @@ export function beijingISO(value = new Date()) {
       hourCycle: "h23"
     }).formatToParts(date).filter(part => part.type !== "literal").map(part => [part.type, part.value])
   );
-  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}.${pad(date.getUTCMilliseconds())}${pad(date.getUTCMilliseconds())}${pad(date.getUTCMilliseconds())}+08:00`;
+  const millis = String(date.getUTCMilliseconds()).padStart(3, "0");
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}.${millis}+08:00`;
 }
 
 export function timeFields(value = new Date(), prefix = "") {
   const date = value instanceof Date ? value : new Date(value);
   if (!Number.isFinite(date.getTime())) throw new TypeError("INVALID_TIME");
-  const name = prefix ? prefix[0].toUpperCase() + prefix.slice(1) : "";
   return {
     [`${prefix}At`]: date.toISOString(),
     [`${prefix}AtBeijing`]: beijingISO(date)
