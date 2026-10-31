@@ -443,16 +443,13 @@ console.log("\n✅ waybill-multi-image 全部通过");
     },
   ];
   const edge = mergeStoreEdges([
-    [ "到家主城-江北区鸿恩寺客服中心（2026）", rawA ].join(" -> "),
+    rawA,
     [ "顶部滚动残条", rawB, tail ].join(" -> "),
   ], extract);
   const split = splitByRouteBase(edge.stores || [], base);
   const matched = matchStores(split, base);
   const d = dedupe(matched);
   const planned = plan(d.items, true);
-  const collision = planned.filter(item =>
-    formatCompareKey(item.rawName || item.name) === formatCompareKey(rawB)
-  );
   assert.equal(planned.length, 3, "不同识别项冲突时必须保留条目，不得静默吞店");
   assert.ok(planned.some(item => item.pending && !item.storeId &&
     formatCompareKey(item.rawName || item.name) === formatCompareKey(rawB)),
