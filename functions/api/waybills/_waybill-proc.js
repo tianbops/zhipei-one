@@ -87,9 +87,10 @@ function safeFailureOrder(order) {
 async function archiveFailure(env, rec, patch = {}) {
   const routeId = clean(rec.routeId || "");
   if (!routeId) return false;
-  const uploadedAt = rec.uploadedAt || rec.startedAt || nowISO();
-  const uploadDate = rec.uploadedAtBeijing ? rec.uploadedAtBeijing.slice(0, 10) : (rec.startedAtBeijing ? rec.startedAtBeijing.slice(0, 10) : beijingDate());
   const order = safeFailureOrder(patch.order || rec.order);
+  const uploadedAt = order?.uploadedAt || rec.uploadedAt || rec.startedAt || nowISO();
+  const uploadedAtBeijing = order?.uploadedAtBeijing || rec.uploadedAtBeijing || rec.startedAtBeijing || beijingISO(uploadedAt);
+  const uploadDate = uploadedAtBeijing.slice(0, 10);
   const businessDate = /^\d{4}-\d{2}-\d{2}$/.test(clean(patch.date || order?.date)) ? clean(patch.date || order.date) : uploadDate;
   const vehicle = clean(patch.vehicle || order?.vehicle).toUpperCase() || null;
   const record = {
@@ -103,7 +104,7 @@ async function archiveFailure(env, rec, patch = {}) {
     action: rec.action || null,
     recoverable: !!rec.recoverable,
     uploadedAt,
-    uploadedAtBeijing: rec.uploadedAtBeijing || rec.startedAtBeijing || beijingISO(uploadedAt),
+    uploadedAtBeijing,
     uploadDate,
     date: businessDate,
     vehicle,
