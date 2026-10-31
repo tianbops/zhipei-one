@@ -80,5 +80,5 @@ export async function deleteWaybill(env,routeId,date,waybillId,budget){
   mainOk=await deleteWaybillMainAndReferences(env,record,waybillId);
   refOk=mainOk;
  }catch(e){errors.push(e);mainOk=false;refOk=false}
- return {mainOk,indexOk,childrenOk,refOk,budgetExceeded:false,errors};
+ return {mainOk,indexOk,childrenOk,refOk,budgetExceeded:errors.some(e=>e?.code===SUBREQUEST_BUDGET_EXCEEDED),errors};
 }
