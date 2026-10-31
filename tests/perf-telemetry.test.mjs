@@ -72,3 +72,5 @@ assert.match(today,/home-today-ready-cache/);
 assert.match(today,/home-today-ready-network/);
 assert.match(monthly,/home-history-ready-cache/);
 assert.match(monthly,/home-history-ready-network/);
+
+// AbortError 与 TimeoutError 不得再混入 network。\nassert.match(ingest,/"network","abort","timeout"/);\nassert.match(perfDiag,/classifyFetchFailure/);\nassert.match(perfDiag,/name==="TimeoutError"/);\nassert.match(perfDiag,/name==="AbortError"/);\n
