@@ -88,7 +88,7 @@ async function archiveFailure(env, rec, patch = {}) {
   const routeId = clean(rec.routeId || "");
   if (!routeId) return false;
   const uploadedAt = rec.uploadedAt || rec.startedAt || nowISO();
-  const uploadDate = /^\d{4}-\d{2}-\d{2}/.test(uploadedAt) ? uploadedAt.slice(0, 10) : nowISO().slice(0, 10);
+  const uploadDate = rec.uploadedAtBeijing ? rec.uploadedAtBeijing.slice(0, 10) : (rec.startedAtBeijing ? rec.startedAtBeijing.slice(0, 10) : beijingDate());
   const order = safeFailureOrder(patch.order || rec.order);
   const businessDate = /^\d{4}-\d{2}-\d{2}$/.test(clean(patch.date || order?.date)) ? clean(patch.date || order.date) : uploadDate;
   const vehicle = clean(patch.vehicle || order?.vehicle).toUpperCase() || null;
