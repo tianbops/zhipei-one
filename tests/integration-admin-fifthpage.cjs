@@ -35,7 +35,13 @@ function check(name, cond, info) {
   const jsAll = concat(path.join(ROOT, "js", "admin"), /^.*\.js$/);
   const html = cssAll + "\n" + jsAll;
   const adminHtml = fs.readFileSync(path.join(ROOT, "admin.html"), "utf8");
-  check("性能诊断复制优先使用 Clipboard API，并保留 execCommand 兼容回退", /\$\("perfCopy"\)\.onclick=async\(\)=>\{[\s\S]*?navigator\.clipboard&&navigator\.clipboard\.writeText[\s\S]*?document\.execCommand\("copy"\)/.test(jsAll));
+  check("性能诊断复制优先使用 Clipboard API，并保留 execCommand 兼容回退",
+    /const perfCopyButton=\\$\\("perfCopy"\\)/.test(jsAll)
+      && /navigator\\.clipboard/.test(jsAll)
+      && /document\\.execCommand\\("copy"\\)/.test(jsAll));
+  check("复制点击处理完整兜底：剪贴板、DOM回退和提示异常均不会向全局冒泡",
+    /if\\(perfCopyButton\\)perfCopyButton\\.onclick=async\\(\\)=>\\{[\\s\\S]*?catch\\(e\\)\\{copied=false;\\}[\\s\\S]*?toast\\(copied\\?/.test(jsAll)
+      && /finally\\{try\\{if\\(ta&&ta\\.parentNode\\)ta\\.parentNode\\.removeChild\\(ta\\);\\}catch\\(e\\)\\{\\}\\}/.test(jsAll));
   check("失败记录自动归档说明独立于筛选输入行，避免窄屏挤压/重叠",
     /class="search diag-filters"[\s\S]*?<\/div><div class="meta diag-archive-hint" role="note">失败记录会自动归档，无需手动保存。<\/div>/.test(adminHtml)
       && !/<div class="search diag-filters"[\s\S]*?失败记录自动归档/.test(adminHtml));
