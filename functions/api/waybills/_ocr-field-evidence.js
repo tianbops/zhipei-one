@@ -7,19 +7,31 @@ const compact = value => String(value ?? "").toUpperCase().replace(/[\s\p{P}\p{S
 const digits = value => String(value ?? "").replace(/\D/g, "");
 
 function fieldKey(value, kind) {
-  if (kind === "date" || kind === "weight") return digits(value);
+  if (kind === "date") return digits(value);
   return compact(value);
 }
 
-function findEvidence(value, kind, lines, limit = 3) {
+function matchesField(value, kind, text) {
+  if (kind === "weight") {
+    const target = Number(value);
+    if (!Number.isFinite(target)) return false;
+    const tokens = String(text ?? "").match(/\d+(?:[.,]\d+)?/g) || [];
+    return tokens.some(token => {
+      const parsed = Number(token.replace(",", "."));
+      return Number.isFinite(parsed) && Math.abs(parsed - target) < 1e-9;
+    });
+  }
   const target = fieldKey(value, kind);
-  if (!target) return [];
+  return !!target && fieldKey(text, kind).includes(target);
+}
+
+function findEvidence(value, kind, lines, limit = 3) {
+  if (value == null || value === "") return [];
   const matches = [];
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex];
     const text = String(line?.text || "");
-    const haystack = fieldKey(text, kind);
-    if (!haystack || !haystack.includes(target)) continue;
+    if (!matchesField(value, kind, text)) continue;
     matches.push({
       lineIndex,
       imageIndex: Number.isInteger(line.imageIndex) && line.imageIndex > 0 ? line.imageIndex : null,
