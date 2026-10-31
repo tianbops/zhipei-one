@@ -82,9 +82,9 @@ async function archiveFailure(env, rec, patch = {}) {
   const routeId = clean(rec.routeId || "");
   if (!routeId) return false;
   const uploadedAt = rec.uploadedAt || rec.startedAt || nowISO();
-  const uploadDate = /^\\d{4}-\\d{2}-\\d{2}/.test(uploadedAt) ? uploadedAt.slice(0, 10) : nowISO().slice(0, 10);
+  const uploadDate = /^\d{4}-\d{2}-\d{2}/.test(uploadedAt) ? uploadedAt.slice(0, 10) : nowISO().slice(0, 10);
   const order = safeFailureOrder(patch.order || rec.order);
-  const businessDate = /^\\d{4}-\\d{2}-\\d{2}$/.test(clean(patch.date || order?.date)) ? clean(patch.date || order.date) : uploadDate;
+  const businessDate = /^\d{4}-\d{2}-\d{2}$/.test(clean(patch.date || order?.date)) ? clean(patch.date || order.date) : uploadDate;
   const vehicle = clean(patch.vehicle || order?.vehicle).toUpperCase() || null;
   const record = {
     requestId: rec.requestId,
@@ -108,7 +108,7 @@ async function archiveFailure(env, rec, patch = {}) {
   };
   const serialized = JSON.stringify(record);
   await command(env, ["SET", failureKey(rec.requestId), serialized, "EX", String(FAILURE_TTL)]);
-  const dates = [...new Set([uploadDate, businessDate])].filter(x => /^\\d{4}-\\d{2}-\\d{2}$/.test(x));
+  const dates = [...new Set([uploadDate, businessDate])].filter(x => /^\d{4}-\d{2}-\d{2}$/.test(x));
   const keys = [routeFailureKey(routeId), ...dates.map(d => dateFailureKey(routeId, d))];
   for (const key of keys) {
     await command(env, ["RPUSH", key, rec.requestId]);
@@ -123,7 +123,7 @@ export async function listFailureRecords(env, { routeId, date = "", vehicle = ""
   const rid = clean(routeId);
   if (!rid) return { failures: [], count: 0, truncated: false };
   const day = clean(date);
-  if (day && !/^\\d{4}-\\d{2}-\\d{2}$/.test(day)) throw new Error("DATE_INVALID");
+  if (day && !/^\d{4}-\d{2}-\d{2}$/.test(day)) throw new Error("DATE_INVALID");
   const keys = day ? [dateFailureKey(rid, day)] : [routeFailureKey(rid)];
   const idLists = await Promise.all(keys.map(key => command(env, ["LRANGE", key, "0", "-1"])));
   const ids = [...new Set(idLists.flatMap(x => Array.isArray(x) ? x.map(clean).filter(Boolean) : []))].reverse();
