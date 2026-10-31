@@ -31,10 +31,34 @@ assert.match(source, /ocrResultFetchWaitMs: 0/,
   "OCR 结果重试等待必须有独立计时字段");
 assert.match(source, /const retryWait = 800 \* attempt;[\s\S]*?timing\.ocrResultFetchWaitMs \+= Date\.now\(\) - waitStarted;/,
   "结果读取重试的退避等待必须独立计时");
+assert.match(source, /export function collectLineEvidence[\s\S]*?rec_scores[\s\S]*?rec_polys[\s\S]*?rec_boxes/,
+  "OCR 适配层必须保留 PP-OCRv6 逐行分数与文本框证据");
+assert.match(processSource, /lineEvidence:results\.flatMap[\s\S]*?imageIndex:imageIndex\+1/,
+  "多图 OCR 证据必须保留图片来源索引");
+assert.match(processSource, /lineEvidence:Array\.isArray\(ocr\.lineEvidence\)\?ocr\.lineEvidence:\[\]/,
+  "逐行证据必须随运单记录保存");
+
 const testModule = source.replace("async function requestJson(", "export async function requestJson(");
 assert.notEqual(testModule, source, "requestJson test hook target must exist");
 const moduleUrl = "data:text/javascript;base64," + Buffer.from(testModule).toString("base64");
-const { requestJson } = await import(moduleUrl);
+const { requestJson, collectLineEvidence } = await import(moduleUrl);
+
+const evidenceFixture = {
+  result: { ocrResults: [{ prunedResult: {
+    rec_texts: ["渝DK7692", "总重量 7.52 吨"],
+    rec_scores: [0.97, "0.81"],
+    rec_polys: [[[1, 2], [30, 2], [30, 12], [1, 12]], [[2, 20], [40, 20], [40, 30], [2, 30]]],
+    rec_boxes: [[1, 2, 30, 12], [2, 20, 40, 30]]
+  }}]}
+};
+const evidence = collectLineEvidence(evidenceFixture);
+assert.equal(evidence.length, 2, "应按识别行提取证据");
+assert.equal(evidence[0].text, "渝DK7692");
+assert.equal(evidence[0].score, 0.97);
+assert.deepEqual(evidence[0].box, [1, 2, 30, 12]);
+assert.equal(evidence[1].score, 0.81, "字符串形式的分数也应规范化");
+assert.equal(collectLineEvidence(evidenceFixture, [], 1).length, 1, "证据数量必须受上限保护");
+assert.equal(collectLineEvidence({rec_texts:["无分数"]})[0].score, null, "缺失分数不能伪造为高置信度");
 
 const originalFetch = globalThis.fetch;
 try {

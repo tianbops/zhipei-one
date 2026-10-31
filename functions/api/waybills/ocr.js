@@ -27,6 +27,37 @@ function withTiming(error, timing) {
   return error;
 }
 
+// 保留 PaddleOCR 原生逐行证据；不保存可视化图片、Base64 或远端临时 URL。
+export function collectLineEvidence(value, out = [], limit = 500) {
+  if (!value || out.length >= limit) return out;
+  if (Array.isArray(value)) { for (const item of value) collectLineEvidence(item, out, limit); return out; }
+  if (typeof value !== "object") return out;
+  const texts = Array.isArray(value.rec_texts) ? value.rec_texts : (Array.isArray(value.recTexts) ? value.recTexts : null);
+  if (texts) {
+    const scores = Array.isArray(value.rec_scores) ? value.rec_scores : (Array.isArray(value.recScores) ? value.recScores : []);
+    const polys = Array.isArray(value.rec_polys) ? value.rec_polys : (Array.isArray(value.recPolys) ? value.recPolys : []);
+    const boxes = Array.isArray(value.rec_boxes) ? value.rec_boxes : (Array.isArray(value.recBoxes) ? value.recBoxes : []);
+    for (let i = 0; i < texts.length && out.length < limit; i++) {
+      const text = clean(texts[i]); if (!text) continue;
+      const n = scores[i] == null || scores[i] === "" ? null : Number(scores[i]);
+      const score = Number.isFinite(n) && n >= 0 && n <= 1 ? n : null;
+      const polygonPoints = Array.isArray(polys[i]) && polys[i].length
+        ? polys[i].slice(0, 8).map(point => Array.isArray(point) ? point.slice(0, 2).map(Number) : null)
+          .filter(point => point && point.length === 2 && point.every(Number.isFinite)) : [];
+      const polygon = polygonPoints.length >= 3 ? polygonPoints : null;
+      const boxValues = Array.isArray(boxes[i]) && boxes[i].length >= 4 ? boxes[i].slice(0, 4).map(Number) : null;
+      const box = boxValues && boxValues.every(Number.isFinite) ? boxValues : null;
+      out.push({ text: text.slice(0, 240), score, polygon, box });
+    }
+  }
+  for (const [key, child] of Object.entries(value)) {
+    if (["ocrImage","inputImage","docPreprocessingImage","preprocessedImages","image","images"].includes(key)) continue;
+    if (child && typeof child === "object") collectLineEvidence(child, out, limit);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
 function collectText(value, out = []) {
   if (!value) return out;
   if (Array.isArray(value)) { for (const x of value) collectText(x, out); return out; }
@@ -190,10 +221,15 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
           try { collectText(JSON.parse(line), texts); } catch {}
         }
         const unique = [...new Set(texts)].filter(Boolean);
+        const lineEvidence = [];
+        for (const line of raw.split(/\r?\n/)) {
+          if (!line.trim() || lineEvidence.length >= 500) continue;
+          try { collectLineEvidence(JSON.parse(line), lineEvidence, 500); } catch {}
+        }
         const lowConfidence = unique.length < 3 || unique.join("").replace(/\s/g, "").length < 20;
         if (!unique.length) throw fail("OCR_EMPTY", "OCR未识别到文字", { jobId });
         onProgress(100);
-        return { jobId, provider: "aistudio", model: MODEL, rawText: unique.join("\n"), lineCount: unique.length, lowConfidence };
+        return { jobId, provider: "aistudio", model: MODEL, rawText: unique.join("\n"), lineCount: unique.length, lowConfidence, lineEvidence };
       };
 
       let url = url0, lastError = null;
