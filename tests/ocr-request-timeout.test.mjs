@@ -31,9 +31,9 @@ assert.match(source, /ocrResultFetchWaitMs: 0/,
   "OCR 结果重试等待必须有独立计时字段");
 assert.match(source, /const retryWait = 800 \* attempt;[\s\S]*?timing\.ocrResultFetchWaitMs \+= Date\.now\(\) - waitStarted;/,
   "结果读取重试的退避等待必须独立计时");
-assert.match(source, /export function collectLineEvidence[\\s\\S]*?rec_scores[\\s\\S]*?rec_polys[\\s\\S]*?rec_boxes/,
+assert.match(source, /export function collectLineEvidence[\s\S]*?rec_scores[\s\S]*?rec_polys[\s\S]*?rec_boxes/,
   "OCR 适配层必须保留 PP-OCRv6 逐行分数与文本框证据");
-assert.match(processSource, /lineEvidence:results\.flatMap[\\s\\S]*?imageIndex:imageIndex\+1/,
+assert.match(processSource, /lineEvidence:results\.flatMap[\s\S]*?imageIndex:imageIndex\+1/,
   "多图 OCR 证据必须保留图片来源索引");
 assert.match(processSource, /lineEvidence:Array\.isArray\(ocr\.lineEvidence\)\?ocr\.lineEvidence:\[\]/,
   "逐行证据必须随运单记录保存");
