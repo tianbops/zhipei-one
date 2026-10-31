@@ -69,7 +69,7 @@ const BASE = 'http://127.0.0.1:' + PORT + '/';
 
   const len = await ev('history.length');
   console.log('管理员窗口 history.length =', len, '| path =', adminPath);
-  await ev('history.back()'); await sleep(900);
+  await ev('window.zpSystemBack()'); await sleep(900);
   const firstBackPath = await ev('location.pathname');
   const firstToast = await ev('(()=>{const t=document.getElementById("zpToast");return t&&t.className.indexOf("show")>=0?t.textContent:""})()');
   const firstBackSafe = (firstBackPath === '/admin' || firstBackPath === '/admin.html') && firstToast === '再按一次返回登录页';
@@ -79,10 +79,10 @@ const BASE = 'http://127.0.0.1:' + PORT + '/';
     ws.close(); proc.kill(); process.exit(1);
   }
 
-  // 第二次返回会触发 location.replace，导致旧 execution context 被销毁。
+  // 使用 Android 原生壳实际调用的 zpSystemBack 入口；第二次返回会触发 location.replace，导致旧 execution context 被销毁。
   // 不要在导航瞬间继续 Runtime.evaluate；改从 Browser target 层观察同一窗口的新 URL，
   // 待导航完成后重新 attach，再检查登录页参数和角色标记。
-  await ev('history.back()');
+  await ev('window.zpSystemBack()');
   let loginTarget = null;
   for (let i = 0; i < 40; i++) {
     const targets = await send('Target.getTargets', {});
