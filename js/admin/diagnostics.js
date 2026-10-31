@@ -39,7 +39,8 @@ async function renderDiagnostics(){
   $("diagnostics").innerHTML='<div class="zp-empty">正在查询运单…</div>';
   let d;try{d=await api(q)}catch(e){$("diagnostics").innerHTML='<div class="zp-empty">查询失败：'+esc(e.message)+'</div>';return}
   const list=d.waybills||[];
-  if(!list.length){const scope=(date?"日期 "+date+" · ":"")+(vehicle?"车牌 "+vehicle+" · ":"");$("diagnostics").innerHTML='<div class="zp-empty">'+esc(scope)+(date?"该线路在所选日期没有匹配到运单。":"该线路暂无匹配运单。")+'<br>如确认当天已有运单，可继续检查运单索引一致性。</div>';return}
+  const failures=Array.isArray(d.failures)?d.failures:[];
+  if(!list.length&&!failures.length){const scope=(date?"日期 "+date+" · ":"")+(vehicle?"车牌 "+vehicle+" · ":"");$("diagnostics").innerHTML='<div class="zp-empty">'+esc(scope)+(date?"该线路在所选日期没有匹配到运单。":"该线路暂无匹配运单。")+'<br>如确认当天已有运单，可继续检查运单索引一致性。</div>';return}
   const truncHint=(d.truncated&&Number(d.count)>list.length)?'<div class="zp-empty" style="color:var(--zp-warning)">共 '+esc(d.count)+' 张运单，当前仅显示最近 20 张</div>':"";
   const timingNote='<div class="meta" style="margin:6px 2px 10px">阶段计时仅展示记录中已保存的数据；“处理总计”不包含最终保存阶段耗时。</div>';
   $("diagnostics").innerHTML=timingNote+truncHint+list.map(w=>{
@@ -110,6 +111,20 @@ async function renderDiagnostics(){
       +timingHtml+fieldEvidenceHtml+(evs?'<div class="evt">'+evs+'</div>':'')
       +'<div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="small-action diag-copy" type="button" data-copy="'+encodeURIComponent(copyLines)+'">复制诊断</button></div></div></div>';
   }).join("");
+  const failureHtml=failures.length?'<div class="meta" style="margin:12px 2px 8px;font-weight:600">失败处理记录（'+esc(failures.length)+'）</div>'+failures.map(f=>{
+    const o=f.order||{},dg=o.diagnostics||{},v=f.validation||o.validation||{},stores=Array.isArray(dg.finalItems)?dg.finalItems:(Array.isArray(o.stores)?o.stores:[]);
+    const label=f.stage==="TIMEOUT"?"处理超时":f.stage==="CANCELLED"?"用户取消":"处理失败";
+    return '<div class="row"><div class="content" style="display:block;width:100%"><div class="main"><strong>'+esc(f.date||f.uploadDate||"-")+' · '+esc(f.vehicle||"车牌未识别")+'</strong><span class="q-badge review">'+esc(label)+'</span></div><div class="meta">线路ID：'+esc(f.routeId||routeId)+' · 上传时间：'+esc(f.uploadedAt||"-")+'</div><div class="meta">失败原因：'+esc(f.detail||f.hint||f.code||"未记录")+'</div><div class="meta">错误代码：'+esc(f.code||"-")+' · requestId：'+esc(f.requestId||"-")+'</div><div class="meta">门店数量：提取 '+esc(dg.extractCount??"-")+' · 去重前 '+esc(dg.dedupeBefore??"-")+' · 去重后 '+esc(dg.dedupeAfter??"-")+' · 最终 '+esc(stores.length)+'</div><div class="meta">'+esc((v.errors||[]).join("、"))+'</div><div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="small-action diag-failure-copy" type="button">复制完整失败诊断</button></div></div></div>';
+  }).join(""):"";
+  $("diagnostics").innerHTML += failureHtml;
+  document.querySelectorAll("#diagnostics .diag-failure-copy").forEach((btn,index)=>btn.onclick=async()=>{
+    const value="智配One 失败运单诊断
+"+JSON.stringify(failures[index],null,2);
+    let copied=false;
+    try{await navigator.clipboard.writeText(value);copied=true;}catch(e){}
+    if(!copied){const ta=document.createElement("textarea");ta.value=value;document.body.appendChild(ta);ta.select();try{copied=document.execCommand("copy")}catch(e){}ta.remove();}
+    toast(copied?"失败诊断已复制":"复制失败，请长按文本手动复制");
+  });
   document.querySelectorAll("#diagnostics .diag-copy").forEach(btn=>btn.onclick=async()=>{
     let copied=false;
     const value=decodeURIComponent(btn.getAttribute("data-copy")||"");
