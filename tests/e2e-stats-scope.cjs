@@ -249,7 +249,7 @@ const check = (name, ok, detail) => {
   await ev('document.querySelector("#trendYearBtn").click()');
   await sleep(800);
   const yearHint = String(await txt('#trendHint'));
-  check('年度（单量）提示只显示峰值', new RegExp('^年度峰值\\\\s*' + Number(peakMonth) + '月\\\\s*·\\\\s*63单
+  check('年度（单量）提示只显示峰值', new RegExp('^年度峰值\\s*' + Number(peakMonth) + '月\\s*·\\s*63单$').test(yearHint.trim()), yearHint);
   check('年度提示不再显示「最忙」', !/最忙/.test(yearHint), yearHint);
 
   for (const w of [390, 360, 320, 430]) {
