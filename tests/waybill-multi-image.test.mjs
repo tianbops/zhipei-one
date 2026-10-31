@@ -350,7 +350,7 @@ console.log("\n✅ waybill-multi-image 全部通过");
 
   // 三条连续重叠：验证最长连续后缀/前缀，不只验证门店“存在”。
   {
-    const E = "江北JM03022谊品生鲜重庆北国风光店";
+    const E = "谊品生鲜重庆北国风光店";
     const r = mergeStoreEdges([seq([A, B, C, D]), seq([B, C, D, E])], extract);
     const list = names(r.stores || []);
     for (const store of [A, B, C, D, E]) {
@@ -362,7 +362,7 @@ console.log("\n✅ waybill-multi-image 全部通过");
   {
     const variant = "江北亿达鲜观府国际店 (客百年)";
     assert.equal(formatCompareKey(variant), formatCompareKey(C), "括号/空格差异应归一化");
-    const E = "江北JM03022谊品生鲜重庆北国风光店";
+    const E = "谊品生鲜重庆北国风光店";
     const r = mergeStoreEdges([seq([A, B, C, D]), seq([B, variant, D, E])], extract);
     const list = names(r.stores || []);
     assert.equal(count(list, B), 1, "归一化后的 B 重叠副本必须裁剪");
