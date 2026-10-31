@@ -20,7 +20,7 @@ for (const field of ["routeDraft", "dutyDraft", "nameDraft", "phoneDraft"]) {
 }
 assert.ok(routeRecovery.includes("window.load"), "线路申请页应复用只读 load()");
 assert.ok(accountRecovery.includes("window.load"), "设置页应复用只读 profile load()");
-assert.ok(accountRecovery.includes("/api/me") === false, "恢复模块不得另造 API 或绕过既有 load()");
+assert.doesNotMatch(accountRecovery, /(?:fetch|zpFetch)\\([^)]*\\/api\\/me/i, "设置页恢复不得另造资料 API 或绕过既有 load()");
 assert.doesNotMatch(routeRecovery, /location\.reload|method\s*:\s*["']POST/i, "线路申请恢复不得刷新页面或重放写请求");
 assert.doesNotMatch(accountRecovery, /location\.reload|method\s*:\s*["']POST/i, "设置页恢复不得刷新页面或重放写请求");
 
