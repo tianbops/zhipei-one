@@ -18,6 +18,15 @@ const TRASH_TTL_SECONDS=604800;
 const trashMainKey=id=>"zp:waybill:trash:"+id;
 const trashChildKey=id=>"zp:waybill:trash:"+id+":";
 const isTrashKey=k=>String(k).startsWith("zp:waybill:trash:");
+export async function deleteWaybillMainAndReferences(env,record,waybillId){
+ const refs=[];
+ if(record?.businessFingerprint)refs.push("zp:waybill:fingerprint:"+record.businessFingerprint);
+ if(record){const sig=await dailyWaybillKey(record);refs.push("zp:waybill:dedupe:"+sig)}
+ const keys=["zp:waybill:"+waybillId,...new Set(refs)];
+ const script='for i=2,#KEYS do if redis.call("GET",KEYS[i])==ARGV[1] then redis.call("DEL",KEYS[i]) end end; redis.call("DEL",KEYS[1]); return 1';
+ const result=await command(env,["EVAL",script,String(keys.length),...keys,waybillId]);
+ return Number(result)===1;
+}
 export async function deleteWaybill(env,routeId,date,waybillId,budget){
  const errors=[];let mainOk=false,indexOk=false,childrenOk=true,refOk=true;
  let record=null;
@@ -41,7 +50,7 @@ export async function deleteWaybill(env,routeId,date,waybillId,budget){
   return {mainOk:false,indexOk:true,childrenOk:false,refOk:true,budgetExceeded:e?.code===SUBREQUEST_BUDGET_EXCEEDED,errors:[e]};
  }
  // 预算：写 trash 主记录(1) + 每子键 RENAME+EXPIRE(2*N) + 索引 SREM(1) + 反引清理(2) + DEL 原主(1)
- const required=2+(childKeys.length?childKeys.length*2:0);
+ const required=4+(childKeys.length?childKeys.length*2:0);
  if(!budget.canTake(required)){
   return {mainOk:false,indexOk:true,childrenOk:false,refOk:true,budgetExceeded:true,errors:[Object.assign(new Error("历史删除资源预算不足"),{code:SUBREQUEST_BUDGET_EXCEEDED})]};
  }
@@ -65,20 +74,11 @@ export async function deleteWaybill(env,routeId,date,waybillId,budget){
  try{budget.take(1);await command(env,["SREM",indexKey,waybillId]);indexOk=true}catch(e){errors.push(e)}
  // 方案C rollup：删除后同步重算当日汇总键（best-effort；读路径缺失 meta 会自动自愈）
  try{await recomputeDayMeta(env,routeId,date)}catch{}
- // 4) 反向引用（指纹/日去重）按原逻辑清理：仅当仍指向本单才 DEL，已被覆盖/复用的键不动，保护重传幂等。
- const refKeys=[];
- if(record?.businessFingerprint)refKeys.push("zp:waybill:fingerprint:"+record.businessFingerprint);
- if(record){try{const sig=await dailyWaybillKey(record);refKeys.push("zp:waybill:dedupe:"+sig)}catch{}}
+ // 4) 原子清理反向引用并删除主记录：仅删除仍指向本单的键，保留已改派给新单的键。
  try{
-  for(const rk of refKeys){
-   if(!budget.canTake(1))break;
-   budget.take(1);
-   const v=await command(env,["GET",rk]);
-   if(String(v??"")===String(waybillId)){await command(env,["DEL",rk])}
-  }
-  refOk=!refKeys.length||refKeys.every(rk=>true);
- }catch(e){errors.push(e);refOk=false}
- // 5) 最后删除原主记录（若此前任一步失败，原主记录仍在，下次 DELETE 从读取阶段重新走完整流程）。
- try{budget.take(1);await command(env,["DEL",mainKey]);mainOk=true}catch(e){errors.push(e)}
- return {mainOk,indexOk,childrenOk,refOk,budgetExceeded:false,errors};
+  if(!budget.take(1))throwBudgetExceeded(budget.max,"history-delete-finalize");
+  mainOk=await deleteWaybillMainAndReferences(env,record,waybillId);
+  refOk=mainOk;
+ }catch(e){errors.push(e);mainOk=false;refOk=false}
+ return {mainOk,indexOk,childrenOk,refOk,budgetExceeded:errors.some(e=>e?.code===SUBREQUEST_BUDGET_EXCEEDED),errors};
 }

@@ -54,6 +54,7 @@ function getReq(url, token) {
   const tokM = "tok-M";
   const baseDir = pathToFileURL(__dirname + "/../functions/api/").href;
   const historyMod = await import(baseDir + "history.js");
+  const adminMod = await import(baseDir + "admin/waybill-recalc.js");
   const processMod = await import(baseDir + "waybills/process.js");
   const identityMod = await import(baseDir + "_waybill-identity.js");
   const { dailyWaybillKey, businessFingerprint } = identityMod;
@@ -200,6 +201,32 @@ function getReq(url, token) {
   check("重试后原主记录不可见(迁回收站)", readJson("zp:waybill:" + wC.id) === null && !!readJson(trashMainC));
   check("重试后日期索引清除", !existsMembers(indexKey).includes(wC.id));
   check("重试后反向键清除", getRaw(dedupeKeyC) === null && getRaw(fpKeyC) === null);
+
+  // ===================================================================
+  console.log("\\n【5】管理员运维删除：主记录与反向去重键原子清理");
+  const ADMIN = "admin1", tokAdmin = "tok-admin";
+  seedJson("zp:user:" + ADMIN, { id: ADMIN, role: "system_admin", sessionVersion: 1 });
+  seedJson("zp:session:" + tokAdmin, { userId: ADMIN, sessionVersion: 1 });
+  const wD = buildRecord("wD", M);
+  wD.businessFingerprint = await businessFingerprint(wD);
+  const sigD = await dailyWaybillKey(wD);
+  const dedupeKeyD = "zp:waybill:dedupe:" + sigD;
+  const fpKeyD = "zp:waybill:fingerprint:" + wD.businessFingerprint;
+  seedJson("zp:waybill:wD", wD);
+  red.command(["SADD", indexKey, "wD"]);
+  red.command(["SET", dedupeKeyD, "wD"]);
+  red.command(["SET", fpKeyD, "wD"]);
+  const adminReq = {
+    url: "https://app.local/api/admin/waybill-recalc",
+    headers: { get: (h) => (String(h).toLowerCase() === "authorization" ? "Bearer " + tokAdmin : null) },
+    json: async () => ({ waybillId: "wD", mode: "delete", apply: true })
+  };
+  const adminDelete = await toJson(await adminMod.onRequestPost({ request: adminReq, env }));
+  check("管理员运维删除成功", adminDelete.success === true && adminDelete.deleted?.total === 2, "code=" + adminDelete.code);
+  check("管理员删除主记录已清理", getRaw("zp:waybill:wD") === null);
+  check("管理员删除日去重键已清理", getRaw(dedupeKeyD) === null);
+  check("管理员删除业务指纹键已清理", getRaw(fpKeyD) === null);
+  check("管理员删除日期索引已清理", !existsMembers(indexKey).includes("wD"));
 
   // ===================================================================
   console.log("─".repeat(56));

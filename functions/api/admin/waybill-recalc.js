@@ -22,6 +22,7 @@ import { extract } from "../waybills/_process-extract.js";
 import { splitByRouteBase, dedupe, plan } from "../waybills/_process-plan.js";
 import { matchStores } from "../waybills/_store-match-engine.js";
 import { recomputeDayMeta } from "../waybills/_waybill-meta.js";
+import { deleteWaybillMainAndReferences } from "../_history-delete.js";
 
 const isAdmin = u => u && (u.role === "system_admin" || u.role === "admin");
 
@@ -73,7 +74,8 @@ export async function onRequestPost({ request, env }) {
       return json({ success: false, code: "BACKUP_FAILED", error: "备份失败，已中止（未删除）", detail: String(e?.message || e) }, 500);
     }
     try {
-      await command(env, ["DEL", "zp:waybill:" + waybillId]);
+      const deleted = await deleteWaybillMainAndReferences(env, order, waybillId);
+      if (!deleted) throw new Error("WAYBILL_DELETE_ATOMIC_FAILED");
     } catch (e) {
       return json({ success: false, code: "DELETE_FAILED", error: "删除运单失败（原记录已备份）", backupKey, detail: String(e?.message || e) }, 500);
     }

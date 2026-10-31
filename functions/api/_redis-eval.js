@@ -51,6 +51,18 @@ reg(
   }
 );
 
+// ============ 运单删除：主记录与反向去重键原子清理 ============
+reg(
+  `for i=2,#KEYS do if redis.call("GET",KEYS[i])==ARGV[1] then redis.call("DEL",KEYS[i]) end end; redis.call("DEL",KEYS[1]); return 1`,
+  async (ctx, keys, args) => {
+    for (const key of keys.slice(1)) {
+      if (await ctx.get(key) === args[0]) await ctx.del(key);
+    }
+    await ctx.del(keys[0]);
+    return 1;
+  }
+);
+
 // ============ 2. AUTH_READ：原子读取 session + user ============
 reg(
   `local session = redis.call('GET', KEYS[1])
