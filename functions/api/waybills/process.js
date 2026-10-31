@@ -5,7 +5,7 @@
  * 实现按职责拆至 _process-common / _process-extract / _process-plan /
  * _process-persist（P1-1g，函数体零改写）；本文件保留 base、runProcess
  * （含嵌套其内、与 runProcessCore 局部量闭包耦合的 saveWaybill）与 onRequestPost；外层
- * runProcess 负责成功后清理 R2 临时图片。
+ * runProcess 在成功、失败或异常结束后统一清理 R2 临时图片。
  * 纪律：客户端取消（AbortController）仅断连接，Worker 内任务在高成本阶段
  *   边界主动检查；失败统一经 failProcess 写状态机票据并返回可恢复提示。
  */
@@ -431,11 +431,9 @@ async function runProcess(args){
     response=await runProcessCore({...args,tempKeys});
     return response;
   }finally{
-    if(response&&tempKeys.length){
-      let succeeded=false;
-      try{succeeded=(await response.clone().json())?.success===true}catch{}
-      if(succeeded)await deleteTempWaybillObjects(args.env,tempKeys);
-    }
+    // 图片只在本次处理期间暂存；成功、失败或未捕获异常结束后均立即清理。
+    // 24 小时 R2 生命周期规则仅作为进程中断等极端情况的兜底。
+    if(tempKeys.length)await deleteTempWaybillObjects(args.env,tempKeys);
   }
 }
 
