@@ -64,6 +64,11 @@ t("today.js：快照渲染不回写（fromCache 时禁止旧数据自我续命�
   /if\(!fromCache\)\{[\s\S]*?TODAY_SNAP_KEY/.test(today));
 t("today.js：重量仍为 3 位小数口径", /toFixed\(3\)\+"t"/.test(today));
 
+t("首页首轮加载失败后才登记联网恢复", /zpHomeInitialLoadFailed=true/.test(today) && /if\(!zpHomeInitialLoadFailed\)return false/.test(today));
+t("联网恢复只补拉首页数据，不整页刷新", /window.addEventListener\("online",zpRecoverHomeAfterNetwork\)/.test(today) && !/location\.reload\(\)/.test(today));
+t("联网恢复避开运单处理中、上传弹层和正在编辑的输入框", /window\.zpIsProcessing\?\.\(\)/.test(today) && /classList\.contains\("sheet-open"\)/.test(today) && /active\.isContentEditable/.test(today));
+t("联网恢复监听在线、回前台和窗口重新聚焦", /addEventListener\("online",zpRecoverHomeAfterNetwork\)/.test(today) && /addEventListener\("focus",zpRecoverHomeAfterNetwork\)/.test(today) && /visibilitychange/.test(today));
+
 t("home-monthly.js：历史响应成功后写快照（zp_home_hist_v1）",
   /HIST_CACHE_KEY="zp_home_hist_v1"/.test(monthly) &&
   /localStorage\.setItem\(HIST_CACHE_KEY/.test(monthly));
