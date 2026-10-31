@@ -4,7 +4,8 @@
  */
 (function(A){
 const { $, S, esc, rn, api, toast, open, close, page, sw, closeSwipes, dlg, dt, dp, db, dc, do_ } = A;
-const eventText=e=>[(e?.event||"-"),(e?.reuse?"复用运单ID："+e.reuse:""),(e?.dedupe?"去重方式："+e.dedupe:""),(e?.t?String(e.t).slice(11,19):"")].filter(Boolean).join(" · ");
+const formatBeijingTime=(value,explicit)=>{const raw=explicit||value;if(!raw)return "-";const date=new Date(raw);if(!Number.isFinite(date.getTime()))return String(raw);return new Intl.DateTimeFormat("zh-CN",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"}).format(date)+"（北京时间）";};
+const eventText=e=>[(e?.event||"-"),(e?.reuse?"复用运单ID："+e.reuse:""),(e?.dedupe?"去重方式："+e.dedupe:""),(e?.t?formatBeijingTime(e.t,e.tBeijing):"")].filter(Boolean).join(" · ");
 async function renderDiagnostics(){
   const requestId=($("diagRequestId")?.value||"").trim();
   if(requestId){
@@ -17,8 +18,8 @@ async function renderDiagnostics(){
     const timing=t.timing&&typeof t.timing==="object"?t.timing:{};
     const timingLabels={ocrImageCount:"OCR图片数",ocrSubmitMs:"OCR提交累计",ocrStatusPollCount:"状态轮询次数",ocrStatusWaitMs:"轮询等待累计",ocrStatusRequestMs:"状态请求累计",ocrResultFetchMs:"结果读取累计",ocrResultRequestMs:"结果请求累计",ocrResultBodyMs:"正文读取累计",ocrResultParseMs:"结果解析累计",ocrResultChars:"结果字符数",ocrResultFetchWaitMs:"结果重试等待",ocrResultFetchAttempts:"结果读取尝试数",recognizedMs:"识别总计",ocrMs:"OCR墙钟总计",baseMs:"基准读取",extractMs:"文本提取",matchMs:"门店匹配",dedupeMs:"去重",planMs:"线路规划",totalMs:"处理总计"};
     const timingLines=Object.entries(timing).filter(([k,v])=>Object.prototype.hasOwnProperty.call(timingLabels,k)&&typeof v==="number"&&Number.isFinite(v)&&v>=0).map(([k,v])=>timingLabels[k]+"："+Math.round(v)+(k==="ocrImageCount"?"张":k==="ocrResultChars"?"字符":k.endsWith("Count")||k.endsWith("Attempts")?"次":"ms"));
-    const copyText=["智配One 失败/超时处理诊断","requestId："+(d.requestId||requestId),"处理阶段："+(t.stage||d.effectiveStage||"-"),"错误详情："+(t.detail||"-"),"线路ID："+(t.routeId||"-"),"创建时间："+(t.createdAt||"-"),"更新时间："+(t.updatedAt||"-"),"提示："+(t.hint||"-"),"阶段耗时："+(timingLines.join(" · ")||"暂无已保存阶段耗时")].join("\n");
-    $("diagnostics").innerHTML='<div class="row"><div class="content" style="display:block;width:100%"><div class="main"><strong>处理票据 · '+esc(t.stage||d.effectiveStage||"-")+'</strong></div><div class="meta">requestId：'+esc(d.requestId||requestId)+'</div><div class="meta">线路ID：'+esc(t.routeId||"-")+' · 更新时间：'+esc(t.updatedAt||"-")+'</div><div class="meta">错误详情：'+esc(t.detail||"-")+'</div><div class="meta">提示：'+esc(t.hint||"-")+'</div><div class="meta">阶段耗时：'+esc(timingLines.join(" · ")||"暂无已保存阶段耗时")+'</div><div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="small-action diag-ticket-copy" type="button">复制诊断</button></div></div></div>';
+    const copyText=["智配One 失败/超时处理诊断","requestId："+(d.requestId||requestId),"处理阶段："+(t.stage||d.effectiveStage||"-"),"错误详情："+(t.detail||"-"),"线路ID："+(t.routeId||"-"),"创建时间："+formatBeijingTime(t.createdAt,t.createdAtBeijing),"更新时间："+formatBeijingTime(t.updatedAt,t.updatedAtBeijing),"提示："+(t.hint||"-"),"阶段耗时："+(timingLines.join(" · ")||"暂无已保存阶段耗时")].join("\n");
+    $("diagnostics").innerHTML='<div class="row"><div class="content" style="display:block;width:100%"><div class="main"><strong>处理票据 · '+esc(t.stage||d.effectiveStage||"-")+'</strong></div><div class="meta">requestId：'+esc(d.requestId||requestId)+'</div><div class="meta">线路ID：'+esc(t.routeId||"-")+' · 更新时间：'+esc(formatBeijingTime(t.updatedAt,t.updatedAtBeijing))+'</div><div class="meta">错误详情：'+esc(t.detail||"-")+'</div><div class="meta">提示：'+esc(t.hint||"-")+'</div><div class="meta">阶段耗时：'+esc(timingLines.join(" · ")||"暂无已保存阶段耗时")+'</div><div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="small-action diag-ticket-copy" type="button">复制诊断</button></div></div></div>';
     const copyBtn=document.querySelector("#diagnostics .diag-ticket-copy");
     if(copyBtn)copyBtn.onclick=async()=>{
       let copied=false;
