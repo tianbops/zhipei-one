@@ -318,10 +318,7 @@ const check = (name, ok, detail) => {
   console.log(`\n真浏览器统计口径验证：${results.length - bad.length}/${results.length} 通过`);
   process.exit(bad.length ? 1 : 0);
 })();
-).test(yearHint.trim()), yearHint);
-  check('年度提示不再显示「最忙」', !/最忙/.test(yearHint), yearHint);
 
-  for (const w of [390, 360, 320, 430]) {
     await C('Emulation.setDeviceMetricsOverride', { width: w, height: 844, deviceScaleFactor: 1, mobile: true });
     await sleep(320);
     const st = await rowState();
