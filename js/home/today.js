@@ -64,6 +64,9 @@ function zpRenderTodayCard(w,dayOrders,fromCache){
   }
 }
 
+let zpHomeInitialLoadFailed=false;
+let zpHomeRecoveryInFlight=false;
+
 async function loadHome(){
   const perfReadyStartedAt=performance.now();
   // 快照先行：同日快照立即渲染（零网络等待），随后正常数据源返回后覆盖或纠偏
@@ -98,7 +101,7 @@ async function loadHome(){
     const latestPromise=fetchJson("/api/waybills/latest",20000).catch(()=>null);
     const {res,data}=await fetchJson("/api/home-bootstrap");
     // 会话失效：头部守卫之外的兜底（如登录态残留但服务端会话已过期）。清标记并回登录页。
-    if(res.status===401){if(window.zpAuthFail)window.zpAuthFail("expired");return;}
+    if(res.status===401){zpHomeInitialLoadFailed=false;if(window.zpAuthFail)window.zpAuthFail("expired");return;}
     if(res.ok)try{sessionStorage.setItem("zpAuth","1")}catch(e){}
     if(!res.ok||!data.success)throw Error(data.error||"当前配送线路读取失败");
     dispatchRouteId=data.dispatchRoute?.id||"";
@@ -194,11 +197,34 @@ async function loadHome(){
     }else{
       setEmptyToday();
     }
+    zpHomeInitialLoadFailed=false;
     try{window.zpPerfRecord?.("home-today-ready-network",200,performance.now()-perfReadyStartedAt,null)}catch{}
   }catch(e){
     // 所有异常都必须结束 loading 状态，不能让首页永久停留在“加载中…”。
+    zpHomeInitialLoadFailed=true;
     console.error("[loadHome] 异常:",e&&e.stack||e);
     setEmptyToday();
   }
 }
+
+// 仅在首页首轮数据加载失败后恢复联网时补拉；不整页刷新，也不打断用户操作。
+function zpHomeCanAutoRecover(){
+  if(!zpHomeInitialLoadFailed)return false;
+  try{if(navigator.onLine===false||document.visibilityState==="hidden")return false}catch{}
+  try{if(window.zpIsProcessing?.())return false}catch{}
+  try{if(document.body?.classList.contains("sheet-open"))return false}catch{}
+  const active=document.activeElement;
+  if(active&&(/^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)||active.isContentEditable))return false;
+  const dialog=document.querySelector('[role="dialog"][aria-modal="true"]');
+  if(dialog&&!dialog.closest("[hidden]"))return false;
+  return true;
+}
+function zpRecoverHomeAfterNetwork(){
+  if(zpHomeRecoveryInFlight||!zpHomeCanAutoRecover())return;
+  zpHomeRecoveryInFlight=true;
+  loadHome().finally(()=>{zpHomeRecoveryInFlight=false});
+}
+window.addEventListener("online",zpRecoverHomeAfterNetwork);
+window.addEventListener("focus",zpRecoverHomeAfterNetwork);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")zpRecoverHomeAfterNetwork()});
 loadHome();
