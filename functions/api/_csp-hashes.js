@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------
  * 生成方式：node scripts/csp-hashes.mjs（改任何 HTML 内联脚本后必须重跑；
  * 漂移由 tests/csp-hashes.test.mjs 常驻守卫）。
- * 覆盖：20 个文件 / 19 段可执行内联脚本。
+ * 覆盖：20 个文件 / 20 段可执行内联脚本。
  * _headers 对 Pages Functions 响应无效 → API 侧（_json.js）import 本表组装 CSP。
  */
 export const INLINE_SCRIPT_HASHES = [
@@ -16,6 +16,7 @@ export const INLINE_SCRIPT_HASHES = [
   "'sha256-NqNnnIlf48y38+szXPSBnVUY5R5L962YhtLfDmszbyk='",
   "'sha256-Olpv4WZyS2ww4ZTxshC1vGXZYa6gG40pXYAUgL+pvOM='",
   "'sha256-PM4M2AzDWmfYA9sOIB1k7Twu2pvKwWhepSpPitM+gGY='",
+  "'sha256-Ph9bc2fL8kNHZmUDaR2soxsgepG2qVkFG+CfeN8QbeM='",
   "'sha256-Ugr/ROWqz2c38q1IjBPexc6mwtLx8Ps2WXYPFdznT0U='",
   "'sha256-XA08JObdZbZVLasslDJ8CblQME6wINeX7rW15EbsqZw='",
   "'sha256-Y28G46ihptIs4f+k7vWxgOuq2+OH0feSgLaKEA7V3lk='",
