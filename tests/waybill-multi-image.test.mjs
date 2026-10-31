@@ -468,3 +468,45 @@ console.log("\n✅ waybill-multi-image 全部通过");
   assert.equal(validation.valid, true, `身份冲突转待定后仍应通过保存校验：${validation.errors.join("；")}`);
   console.log("✅ 不同原始识别项争用同一 storeId 时转待定保留，未吞店");
 }
+
+
+// --- 12) 顶部残条之后仍有连续重叠：剔除残条后必须重新匹配 ---
+{
+  const A = "到家主城-江北区鸿恩寺客服中心（2026）";
+  const B = "到家主城-江北区加州客服中心（2026）";
+  const C = "江北亿达鲜观府国际店（客百年）";
+  const D = "江北亿达鲜半山华府店（客百年）";
+  const E = "谊品生鲜重庆北国风光店";
+  const X = "江北重庆三峡融资担保集团有限公司";
+  const seq = xs => xs.join(" -> ");
+  const count = (xs, name) => xs.filter(x => formatCompareKey(x) === formatCompareKey(name)).length;
+
+  // 与10月28日诊断相似：图2顶部有一条残片，后面紧跟图1末尾的三家重复门店。
+  {
+    const r = mergeStoreEdges([
+      seq([A, B, C, D]),
+      seq(["顶部滚动残条", B, C, D, E]),
+    ], extract);
+    const list = names(r.stores || []);
+    for (const store of [A, B, C, D, E]) {
+      assert.equal(count(list, store), 1, `顶部残条后的连续重叠中 ${store} 必须恰好一次`);
+    }
+    assert.equal(r.edgeTrimmed, 4, "应裁掉1条顶部残条和3条连续重叠");
+  }
+
+  // 中间插入不同门店会打断重叠，不能越过 X 把后续 C/D 跨项裁掉。
+  {
+    const r = mergeStoreEdges([
+      seq([A, B, C, D]),
+      seq(["顶部滚动残条", B, X, C, D, E]),
+    ], extract);
+    const list = names(r.stores || []);
+    assert.equal(count(list, B), 2, "B之后插入X，不能把B跨项裁掉");
+    assert.equal(count(list, C), 2, "X打断连续性后C必须保留两条");
+    assert.equal(count(list, D), 2, "X打断连续性后D必须保留两条");
+    assert.equal(count(list, X), 1, "中间插入的X必须保留");
+    assert.equal(count(list, E), 1, "新增E必须保留");
+  }
+
+  console.log("✅ 顶部残条后连续重叠可裁剪；中间插入项仍阻断跨项裁剪");
+}
