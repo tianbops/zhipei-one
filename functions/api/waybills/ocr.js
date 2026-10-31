@@ -136,7 +136,7 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
   }));
   form.append("file", file, file.name || "waybill");
 
-  const timing = { ocrSubmitMs: 0, ocrStatusPollCount: 0, ocrStatusWaitMs: 0, ocrStatusRequestMs: 0, ocrResultFetchMs: 0, ocrResultFetchWaitMs: 0, ocrResultFetchAttempts: 0 };
+  const timing = { ocrSubmitMs: 0, ocrStatusPollCount: 0, ocrStatusWaitMs: 0, ocrStatusRequestMs: 0, ocrResultFetchMs: 0, ocrResultRequestMs: 0, ocrResultBodyMs: 0, ocrResultParseMs: 0, ocrResultChars: 0, ocrResultFetchWaitMs: 0, ocrResultFetchAttempts: 0 };
   let submitted;
   const submitStarted = Date.now();
   try {
@@ -201,8 +201,13 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
         let rr, raw;
         try {
           // 8 秒超时同时覆盖响应头和正文读取；正文卡住也必须进入可重试的超时分支。
-          rr = await fetch(u, { signal: AbortSignal.timeout(8000) });
-          raw = await rr.text();
+          const requestStarted = Date.now();
+          try { rr = await fetch(u, { signal: AbortSignal.timeout(8000) }); }
+          finally { timing.ocrResultRequestMs += Date.now() - requestStarted; }
+          const bodyStarted = Date.now();
+          try { raw = await rr.text(); }
+          finally { timing.ocrResultBodyMs += Date.now() - bodyStarted; }
+          timing.ocrResultChars += raw.length;
         } catch (e) {
           if (e?.name === "TimeoutError" || e?.name === "AbortError") {
             const err = fail("OCR_RESULT_TIMEOUT", "OCR结果读取超时", { jobId });
@@ -256,7 +261,11 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
           const resultStarted = Date.now();
           timing.ocrResultFetchAttempts++;
           try {
-            const parsed = await parseResult(await readResult(url));
+            const raw = await readResult(url);
+            const parseStarted = Date.now();
+            let parsed;
+            try { parsed = await parseResult(raw); }
+            finally { timing.ocrResultParseMs += Date.now() - parseStarted; }
             timing.ocrResultFetchMs += Date.now() - resultStarted;
             return { ...parsed, ...timing };
           } catch (e) {

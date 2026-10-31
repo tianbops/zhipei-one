@@ -66,6 +66,16 @@ assert.match(processSource, /ocrResultFetchWaitMs:ocr\.ocrResultFetchWaitMs/,
   "成功运单必须保存 OCR 结果读取重试等待");
 assert.match(adminDiagnosticsSource, /ocrResultFetchWaitMs:"结果重试等待"/,
   "按 requestId 查询时必须显示结果读取重试等待");
+assert.match(adminDiagnosticsSource, /ocrResultRequestMs:"结果请求累计"/,
+  "按 requestId 查询时必须拆分结果请求耗时");
+assert.match(adminDiagnosticsSource, /ocrResultBodyMs:"正文读取累计"/,
+  "按 requestId 查询时必须拆分响应正文读取耗时");
+assert.match(adminDiagnosticsSource, /ocrResultParseMs:"结果解析累计"/,
+  "按 requestId 查询时必须拆分 OCR 结果解析耗时");
+assert.match(adminDiagnosticsSource, /ocrImageCount:"OCR图片数"/,
+  "诊断必须展示多图 OCR 图片数，避免把累计请求次数误认为重试次数");
+assert.match(adminDiagnosticsSource, /多图 OCR 的提交、状态和结果耗时为各图片累计值/,
+  "诊断必须解释多图计时是累计值而非墙钟等待时间");
 assert.match(adminDiagnosticsSource, /\["结果重试等待","ocrResultFetchWaitMs"\]/,
   "线路/日期运单诊断也必须显示结果读取重试等待");
 assert.match(source, /const text = await r\.text\(\);[\s\S]*?finally\s*\{\s*clearTimeout\(timer\)/,
@@ -78,10 +88,30 @@ assert.match(source, /\}, 10000, signal\)/, "OCR 任务提交超时保持 10000m
 assert.match(source, /\},\s*6000, signal\s*\)/, "OCR 状态请求超时保持 6000ms");
 assert.match(source, /const refreshStarted = Date\.now\(\);[\s\S]*?finally\s*\{\s*timing\.ocrStatusPollCount\+\+;\s*timing\.ocrStatusRequestMs \+= Date\.now\(\) - refreshStarted;\s*\}/,
   "重试时刷新 OCR 结果地址必须单独计入状态请求耗时，失败时也要计时");
-assert.match(source, /const resultStarted = Date\.now\(\);\s*timing\.ocrResultFetchAttempts\+\+;\s*try\s*\{\s*const parsed = await parseResult\(await readResult\(url\)\);/,
-  "结果读取尝试计数必须只覆盖实际结果读取，不能包含结果地址刷新");
+assert.match(source, /const resultStarted = Date\.now\(\);\s*timing\.ocrResultFetchAttempts\+\+;\s*try\s*\{\s*const raw = await readResult\(url\);\s*const parseStarted = Date\.now\(\);\s*let parsed;/,
+  "结果读取尝试计数必须只覆盖实际结果读取，且解析阶段独立计时");
 assert.match(source, /timing\.ocrResultFetchMs \+= Date\.now\(\) - resultStarted;\s*throw e;/,
   "结果读取失败也必须累计独立的结果读取耗时");
+assert.match(source, /ocrResultRequestMs: 0/,
+  "OCR 结果请求阶段必须独立计时");
+assert.match(source, /ocrResultBodyMs: 0/,
+  "OCR 响应正文读取阶段必须独立计时");
+assert.match(source, /ocrResultParseMs: 0/,
+  "OCR 结果解析阶段必须独立计时");
+assert.match(source, /timing\.ocrResultRequestMs \+= Date\.now\(\) - requestStarted/,
+  "OCR 结果请求计时必须包含失败请求");
+assert.match(source, /timing\.ocrResultBodyMs \+= Date\.now\(\) - bodyStarted/,
+  "OCR 正文读取计时必须包含失败读取");
+assert.match(source, /timing\.ocrResultChars \+= raw\.length/,
+  "OCR 结果大小必须按字符数记录，不保存原文内容");
+assert.match(processSource, /ocrResultRequestMs:results\.reduce/,
+  "多图 OCR 请求阶段计时必须汇总");
+assert.match(processSource, /ocrResultBodyMs:results\.reduce/,
+  "多图 OCR 正文读取计时必须汇总");
+assert.match(processSource, /ocrResultParseMs:results\.reduce/,
+  "多图 OCR 解析计时必须汇总");
+assert.match(processSource, /ocrImageCount:ocr\.imageCount/,
+  "运单诊断必须持久化 OCR 图片数");
 assert.match(source, /ocrResultFetchWaitMs: 0/,
   "OCR 结果重试等待必须有独立计时字段");
 assert.match(source, /const retryWait = 800 \* attempt;[\s\S]*?timing\.ocrResultFetchWaitMs \+= Date\.now\(\) - waitStarted;/,
