@@ -24,7 +24,6 @@ assert.match(processSource, /associateFieldEvidence[\s\S]*?fieldEvidence/,
 assert.match(processSource, /fieldEvidence}:null/,
   "字段证据必须随 OCR 诊断信息持久化");
 const { associateFieldEvidence } = await import(new URL("../functions/api/waybills/_ocr-field-evidence.js", import.meta.url));
-const { collectLineEvidence } = await import(new URL("../functions/api/waybills/ocr.js", import.meta.url));
 const paddleResponseFixture = {
   result: {
     rec_texts: ["车牌：渝DK7692", "总重量：7.52吨"],
