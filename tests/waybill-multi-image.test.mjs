@@ -327,3 +327,56 @@ const isKnownStore = n => knownKeys.has(formatCompareKey(n));
 }
 
 console.log("\n✅ waybill-multi-image 全部通过");
+
+
+// --- 9) 连续重叠必须按出现次数精确断言（防止“存在即可”掩盖重复）---
+{
+  const A = "到家主城-江北区鸿恩寺客服中心（2026）";
+  const B = "到家主城-江北区加州客服中心（2026）";
+  const C = "江北亿达鲜观府国际店（客百年）";
+  const D = "江北亿达鲜半山华府店（客百年）";
+  const seq = xs => xs.join(" -> ");
+  const count = (xs, name) => xs.filter(x => formatCompareKey(x) === formatCompareKey(name)).length;
+
+  // 两条连续重叠：第二张图的 A、B 是重复副本，必须各只出现一次。
+  {
+    const r = mergeStoreEdges([seq([A, B, C]), seq([A, B, C, D])], extract);
+    const list = names(r.stores || []);
+    assert.equal(count(list, A), 1, "两图重叠 A 必须恰好保留一次");
+    assert.equal(count(list, B), 1, "两图重叠 B 必须恰好保留一次");
+    assert.equal(count(list, C), 1, "两图重叠 C 必须恰好保留一次");
+    assert.equal(count(list, D), 1, "第二图新增 D 必须完整保留一次");
+  }
+
+  // 三条连续重叠：验证最长连续后缀/前缀，不只验证门店“存在”。
+  {
+    const r = mergeStoreEdges([seq([A, B, C]), seq([A, B, C, D])], extract);
+    const list = names(r.stores || []);
+    for (const store of [A, B, C, D]) {
+      assert.equal(count(list, store), 1, `三条连续重叠后 ${store} 必须恰好出现一次`);
+    }
+  }
+
+  // 括号全半角、空格差异：仅归一化后相等才允许裁剪。
+  {
+    const variant = "江北亿达鲜观府国际店 (客百年)";
+    assert.equal(formatCompareKey(variant), formatCompareKey(C), "括号/空格差异应归一化");
+    const r = mergeStoreEdges([seq([A, B, C]), seq([B, variant, D])], extract);
+    const list = names(r.stores || []);
+    assert.equal(count(list, B), 1, "归一化后的 B 重叠副本必须裁剪");
+    assert.equal(count(list, C), 1, "归一化后的 C 重叠副本必须裁剪");
+    assert.equal(count(list, D), 1, "新增门店 D 必须保留");
+  }
+
+  // 中间插入不同门店会打断连续重叠；不得跨过 X 把后面的 C 当成连续重叠裁掉。
+  {
+    const X = "江北重庆三峡融资担保集团有限公司";
+    const r = mergeStoreEdges([seq([A, B, C]), seq([B, X, C, D])], extract);
+    const list = names(r.stores || []);
+    assert.ok(list.some(n => formatCompareKey(n) === formatCompareKey(X)), "中间插入的 X 必须保留");
+    assert.ok(count(list, C) >= 1, "不得跨过 X 误删后续 C");
+    assert.ok(list.some(n => formatCompareKey(n) === formatCompareKey(D)), "非重叠新增 D 必须保留");
+  }
+
+  console.log("✅ 连续两条/三条重叠按精确次数校验；归一化与中间插入边界已覆盖");
+}
