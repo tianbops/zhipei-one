@@ -51,7 +51,7 @@ for i=1,#ARGV,8 do
       local ok,phases=pcall(cjson.decode,phasesRaw)
       if ok and type(phases)=="table" then
         for name,dur in pairs(phases) do
-          if string.match(name,"^history%-[a-z%-]+$") or string.match(name,"^waybill%-[a-z%-]+$") then
+          if string.match(name,"^history%-[a-z%-]+$") then
             local value=tonumber(dur)
             if value and value>=0 and value<=120000 then
               local phaseBase=base.."phase:"..name..":"
@@ -83,7 +83,9 @@ function validEvent(e) {
   if (e.phases && typeof e.phases === "object" && !Array.isArray(e.phases)) {
     for (const [name, value] of Object.entries(e.phases)) {
       const n = Number(value);
-      if ((allowedPhases.has(name) || isD1RoutingPhase(name)) && Number.isFinite(n) && n >= 0 && n <= 120000) phases[name] = Math.round(n*10)/10;
+      /* D1 EVAL 注册表按 Lua 源码哈希匹配；waybill 阶段映射到既有 history 命名空间，保持 Lua 脚本不变。 */
+      const storedName = name.startsWith("waybill-") ? "history-" + name : name;
+      if ((allowedPhases.has(name) || isD1RoutingPhase(name)) && Number.isFinite(n) && n >= 0 && n <= 120000) phases[storedName] = Math.round(n*10)/10;
     }
   }
   // 状态码只在非 2xx 时有效：2xx 不需要细分，network 事件本就没有状态码。
