@@ -82,7 +82,12 @@ const BASE = 'http://127.0.0.1:' + PORT + '/';
   // 使用 Android 原生壳实际调用的 zpSystemBack 入口；第二次返回会触发 location.replace，导致旧 execution context 被销毁。
   // 不要在导航瞬间继续 Runtime.evaluate；改从 Browser target 层观察同一窗口的新 URL，
   // 待导航完成后重新 attach，再检查登录页参数和角色标记。
-  await ev('window.zpSystemBack()');
+  // 不等待异步返回 Promise：管理员分支会 location.replace，等待旧上下文会被导航销毁并抛出执行上下文异常。
+  await C('Runtime.evaluate', {
+    expression: 'window.zpSystemBack()',
+    returnByValue: true,
+    awaitPromise: false
+  });
   let loginTarget = null;
   for (let i = 0; i < 40; i++) {
     const targets = await send('Target.getTargets', {});
