@@ -273,25 +273,11 @@
         }
       }
       if(zpExitArmed){
-        if(zpZone==="admin"){
-          // 管理员工作区的最终返回点是登录页，而不是业务首页或手机桌面。
-          // 与菜单中的「退出登录」保持同一语义：服务端注销 + 清理本地工作区标记，
-          // manual=1 阻止登录页按本地角色自动跳回管理端。
-          try{
-            await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store",keepalive:true});
-          }catch{}
-          try{
-            sessionStorage.removeItem("zpAuth");sessionStorage.removeItem("zpRole");
-            sessionStorage.removeItem("zpExitAdmin");sessionStorage.removeItem("zpAutoHop");
-          }catch{}
-          try{localStorage.removeItem("zpLastAuth");localStorage.removeItem("zpLastRole")}catch{}
-          location.replace("/?reason=logout&manual=1");
-          return "admin-logout";
-        }
+        // 管理员与普通用户统一：第二次返回只退出 App，不注销、不清理任何登录凭证。
         return "exit";
       }
       zpExitArmed=true;
-      try{window.zpToast?window.zpToast(zpZone==="admin"?"再按一次返回登录页":"再按一次退出","info"):0}catch{}
+      try{window.zpToast?window.zpToast("再按一次退出应用","info"):0}catch{}
       clearTimeout(zpExitTimer);
       // 窗口过期：仅复位武装标记，不再补占位。
       // 安卓独立 PWA 下 window.close() 对「主页启动的顶层上下文」是空操作，

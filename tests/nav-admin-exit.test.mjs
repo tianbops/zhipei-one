@@ -1,7 +1,6 @@
 /**
- * 管理员工作区返回出口契约：
- * 模块返回先收口到管理员首页；管理员首页连续两次返回后注销会话并进入登录页。
- * 直接求值 js/ui/back.js 的真实 zpHandleBack 源码，锁定行为及副作用。
+ * 管理员与普通用户统一的返回出口契约。
+ * 模块返回先回本工作区首页；工作区首页连续两次返回只退出应用，不注销、不清理会话。
  */
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -47,38 +46,33 @@ function makeEnv({ pathname="/home", adminPage=0, zone="business" }={}) {
     ()=>0,()=>{},sessionStorage,localStorage);
   return env;
 }
-
-// 管理员任意模块返回先回管理员首页，不导航、不注销。
 {
  const env=makeEnv({pathname:"/admin",adminPage:2,zone:"admin"});
  const result=await env.back();
  t("管理员模块返回被消费",result==="handled",result);
- t("管理员模块回到模块 0",env.pages.length===1&&env.pages[0]===0,JSON.stringify(env.pages));
- t("模块返回不注销",env.fetched.length===0,JSON.stringify(env.fetched));
+ t("管理员模块回到管理员首页",env.pages.length===1&&env.pages[0]===0,JSON.stringify(env.pages));
+ t("模块返回不注销",env.fetched.length===0&&env.replaced.length===0);
 }
-// 管理员首页连续两次返回：服务端注销、本地身份清理、进入登录页。
 {
  const env=makeEnv({pathname:"/admin",adminPage:0,zone:"admin"});
- t("首次返回只武装确认",(await env.back())==="exit-armed");
- t("首次返回提示回登录页",env.toasts[0]==="再按一次返回登录页",JSON.stringify(env.toasts));
- t("第二次返回执行管理员退出",(await env.back())==="admin-logout");
- t("服务端注销 API 正确",env.fetched.length===1&&env.fetched[0].url==="/api/logout"&&env.fetched[0].options.method==="POST",JSON.stringify(env.fetched));
- t("最终进入登录页并阻止自动登录",env.replaced[0]==="/?reason=logout&manual=1",JSON.stringify(env.replaced));
- t("清理会话与本地自动登录标记",env.session.size===0&&env.local.size===0,JSON.stringify({session:[...env.session],local:[...env.local]}));
+ t("管理员首页第一次返回只武装",(await env.back())==="exit-armed");
+ t("管理员提示与普通用户一致",env.toasts[0]==="再按一次退出应用",JSON.stringify(env.toasts));
+ t("管理员第二次返回只退出应用",(await env.back())==="exit");
+ t("管理员返回不调用注销 API",env.fetched.length===0,JSON.stringify(env.fetched));
+ t("管理员返回不跳转登录页",env.replaced.length===0,JSON.stringify(env.replaced));
+ t("管理员会话凭证全部保留",env.session.has("zpAuth")&&env.session.has("zpRole"),JSON.stringify([...env.session]));
+ t("管理员自动登录标记保留",env.local.has("zpLastAuth")&&env.local.has("zpLastRole"),JSON.stringify([...env.local]));
 }
-// 业务端原有返回行为不变。
 {
  const env=makeEnv({pathname:"/pages/order_detail",zone:"business"});
- t("业务子页面返回仍回业务首页",(await env.back())==="leave"&&env.replaced[0]==="/home",JSON.stringify(env.replaced));
+ t("用户子页面仍逐级返回",(await env.back())==="leave"&&env.replaced[0]==="/home",JSON.stringify(env.replaced));
  const root=makeEnv({pathname:"/home",zone:"business"});
- t("业务首页第一次返回仍武装",(await root.back())==="exit-armed");
- t("业务首页第二次返回只请求退出应用",(await root.back())==="exit");
- t("普通用户返回不调用注销 API",root.fetched.length===0,JSON.stringify(root.fetched));
- t("普通用户退出后保留 zpAuth 与 zpRole",root.session.has("zpAuth")&&root.session.has("zpRole"),JSON.stringify([...root.session]));
- t("普通用户退出后不清除本地自动登录标记",root.local.has("zpLastAuth")&&root.local.has("zpLastRole"),JSON.stringify([...root.local]));
+ t("用户首页第一次返回只武装",(await root.back())==="exit-armed");
+ t("用户首页第二次返回只退出应用",(await root.back())==="exit");
+ t("用户返回不注销",root.fetched.length===0);
+ t("用户登录凭证保留",root.session.has("zpAuth")&&root.session.has("zpRole"));
+ t("用户自动登录标记保留",root.local.has("zpLastAuth")&&root.local.has("zpLastRole"));
 }
-
-// 真实 zpDoExit 源码：原生 App 只结束 Activity，不清会话、不走 history.back。
 {
  const start=SRC.indexOf("function zpDoExit()");
  const end=SRC.indexOf("// 顶部返回按钮专用出口");
@@ -87,16 +81,14 @@ function makeEnv({ pathname="/home", adminPage=0, zone="business" }={}) {
  const calls={nativeExit:0,historyBack:0};
  const state=new Set(["zpAuth","zpRole","zpLastAuth","zpLastRole"]);
  const storage={getItem:k=>state.has(k)?"1":null,setItem:k=>state.add(k),removeItem:k=>state.delete(k)};
- const win={ZhipeiNative:{exitApp:()=>{calls.nativeExit++}},matchMedia:()=>({matches:false}),navigator:{}};
+ const win={ZhipeiNative:{exitApp:()=>{calls.nativeExit++;}},matchMedia:()=>({matches:false}),navigator:{}};
  const fn=new Function("window","sessionStorage","history","location","let zpLeaving=false;"+body+";return zpDoExit;")(
-   win,storage,{back:()=>{calls.historyBack++}},{});
+   win,storage,{back:()=>{calls.historyBack++;}},{});
  fn();
- t("App 端调用原生 exitApp 退出",calls.nativeExit===1,JSON.stringify(calls));
- t("App 端退出不回退 WebView 历史",calls.historyBack===0,JSON.stringify(calls));
- t("App 端退出不清除用户登录凭证",state.has("zpAuth")&&state.has("zpRole"),JSON.stringify([...state]));
+ t("App 调用原生 exitApp",calls.nativeExit===1,JSON.stringify(calls));
+ t("App 不回退 WebView 历史",calls.historyBack===0,JSON.stringify(calls));
+ t("App 退出保留登录凭证",state.has("zpAuth")&&state.has("zpRole"),JSON.stringify([...state]));
 }
-
-// Web/PWA 真实 zpDoExit 源码：允许浏览器接管离开，但保留当前站点登录态。
 {
  const start=SRC.indexOf("function zpDoExit()");
  const end=SRC.indexOf("// 顶部返回按钮专用出口");
@@ -106,12 +98,11 @@ function makeEnv({ pathname="/home", adminPage=0, zone="business" }={}) {
  const storage={getItem:k=>state.has(k)?"1":null,setItem:k=>state.add(k),removeItem:k=>state.delete(k)};
  const win={matchMedia:()=>({matches:false}),navigator:{}};
  const fn=new Function("window","sessionStorage","history","location","let zpLeaving=false;"+body+";return zpDoExit;")(
-   win,storage,{back:()=>{calls.historyBack++}},{});
+   win,storage,{back:()=>{calls.historyBack++;}},{});
  fn();
- t("Web 端交由浏览器返回离开",calls.historyBack===1,JSON.stringify(calls));
- t("Web 端离开不清除用户登录凭证",state.has("zpAuth")&&state.has("zpRole"),JSON.stringify([...state]));
- t("Web 端离开不清除本地自动登录标记",state.has("zpLastAuth")&&state.has("zpLastRole"),JSON.stringify([...state]));
+ t("Web 交由浏览器历史返回",calls.historyBack===1,JSON.stringify(calls));
+ t("Web 离开保留登录凭证",state.has("zpAuth")&&state.has("zpRole")&&state.has("zpLastAuth")&&state.has("zpLastRole"),JSON.stringify([...state]));
 }
-console.log(`管理员返回出口契约：${pass} 通过 / ${fail} 失败`);
+console.log(`管理员/用户统一返回契约：${pass} 通过 / ${fail} 失败`);
 if(fail){failures.forEach(x=>console.error("  ✗ "+x));process.exit(1);}
-console.log("✓ 管理员模块返回收口；最终返回注销并进入登录页；业务端行为保持不变");
+console.log("✓ 管理员与普通用户返回规则一致：模块逐级返回，首页两次返回退出应用，登录态保留");
