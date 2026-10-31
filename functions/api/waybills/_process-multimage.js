@@ -78,7 +78,6 @@ export function mergeStoreEdges(imageTexts, extractFn = extract, { isKnownStore 
     return extended && identical <= 1;
   };
   const merged = [];
-  const processedPerImage = [];
   let edgeTrimmed = 0;
   /* 底部残条删除 = 证据规则（所有图生效）+ 位置式兜底（仅图序可靠时）。
      证据规则：有「以它开头的更长门店名」且无完整副本 → 残条。
@@ -93,9 +92,8 @@ export function mergeStoreEdges(imageTexts, extractFn = extract, { isKnownStore 
     let stores = perImage[idx];
     if (!stores.length) continue;
     if (idx > 0 && stores.length) {
-      // 必须使用前一张图经过边界处理后的条目，而不是原始 perImage：
-      // 前图底部残条已经被剔除，不能再参与后图的重叠匹配。
-      const previousStores = processedPerImage[idx - 1] || [];
+      // 保留原有的前图原始序列比较行为，避免改变既有边界判定。
+      const previousStores = perImage[idx - 1] || [];
       const keyOf = item => formatCompareKey(item?.rawName || item?.name || "");
       // 只匹配严格连续的「前图后缀 = 本图前缀」，不跨过任何不同门店。
       const findOverlap = candidates => {
@@ -144,7 +142,6 @@ export function mergeStoreEdges(imageTexts, extractFn = extract, { isKnownStore 
     if (stores.length && (positional || isBottomResidue(lastKey))) {
       stores = stores.slice(0, -1); edgeTrimmed++;                                // 底部残条
     }
-    processedPerImage[idx] = stores;
     for (const s of stores) merged.push(s);
   }
   return { stores: merged.length ? merged : null, edgeTrimmed };
