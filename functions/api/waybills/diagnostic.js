@@ -208,8 +208,9 @@ async function diagnosticGet({request,env}){
       }
     }
     const waybills=top.map(w=>{const {_key,...rest}=w;return {...rest,events:eventsByKey.get(_key)||[]}});
-    const failureData=isAdmin?await listFailureRecords(env,{routeId,date,vehicle,limit:50}):{failures:[],count:0,truncated:false};
-    return json({success:true,routeId,date:date||null,vehicle:vehicle||null,count:total,truncated,limit,waybills,failures:failureData.failures,failureCount:failureData.count,failuresTruncated:failureData.truncated});
+    let failureData={failures:[],count:0,truncated:false},failureQueryError=false;
+    if(isAdmin){try{failureData=await listFailureRecords(env,{routeId,date,vehicle,limit:50})}catch{failureQueryError=true}}
+    return json({success:true,routeId,date:date||null,vehicle:vehicle||null,count:total,truncated,limit,waybills,failures:failureData.failures,failureCount:failureData.count,failuresTruncated:failureData.truncated,failureQueryError});
   }catch(e){
     return json({success:false,code:"DIAG_LIST_FAILED",error:"运单诊断查询失败",detail:String(e?.message||e||"UNKNOWN_ERROR").slice(0,180)},500);
   }
