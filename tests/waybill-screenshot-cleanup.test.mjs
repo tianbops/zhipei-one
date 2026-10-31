@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { extract } from "../functions/api/waybills/_process-extract.js";
 import { mergeStoreEdges } from "../functions/api/waybills/_process-multimage.js";
 import { dedupe } from "../functions/api/waybills/_process-plan.js";
+import { formatCompareKey } from "../functions/api/waybills/_store-match.js";
 
 const HEADER = "运单列表\\n运输日期\\n2026-10-28\\n车牌号\\n渝DK7692\\n额定载重：18吨\\n额定装载\\n额定体积：40m³\\n主司机\\n田波\\n送货员\\n荣富强\\n承运订单\\n总数量227|总重量1.563121t(8.68%)|总体积3.462567m³(8.66%)";
 const names = items => (items || []).map(item => String(item.name || item.rawName || ""));
@@ -83,12 +84,12 @@ const formatKey = value => String(value || "").replace(/[（）()\s]/g, "").repl
   const result = mergeStoreEdges([first, second], extract);
   const list = names(result.stores);
   for (const needle of [
-    "渝北中景隆",
+    "渝北中景隆(重庆)贸易有限公司",
     "渝北钱大妈重庆东和春天店",
-    "江北重庆彩食鲜供应链发展有限公司"
+    "江北重庆彩食鲜供应链发展有限公司(重庆中法供水有限公司花园新村)"
   ]) {
-    assert.equal(list.filter(name => formatKey(name) === formatKey(needle)).length, 1,
-      `overlap store should be kept once: ${needle}`);
+    assert.equal(list.filter(name => formatCompareKey(name) === formatCompareKey(needle)).length, 1,
+      `overlap store should be kept once: ${needle}; actual: ${JSON.stringify(list)}`);
   }
   assert.ok(list.some(name => name.includes("江北胡汪洋经销商")), "second image unique store must remain");
   assert.ok(list.some(name => name.includes("锦绣北滨路店")), "last image unique store must remain");
