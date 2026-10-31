@@ -84,7 +84,7 @@ async function renderDiagnostics(){
     const fieldEvidenceHtml=fieldEvidence
       ?'<div class="meta">OCR证据关联：'+esc(fieldEvidenceSummary||"暂无汇总")+'</div>'
         +fieldEvidenceLines.map(line=>'<div class="meta">'+esc(line)+'</div>').join("")
-        +(missingStoreEvidence.length?'<div class="meta">门店未关联原文（展示前8条'+(missingStoreEvidenceRemaining?"，另有 "+missingStoreEvidenceRemaining+" 条":"")+(missingStoreEvidenceRemaining?"；复制诊断可查看完整清单":"")+"）：'+esc(missingStoreEvidence.join("、"))+"</div>": "")
+        +(missingStoreEvidence.length?'<div class="meta">门店未关联原文（展示前8条'+(missingStoreEvidenceRemaining?"，另有 "+missingStoreEvidenceRemaining+" 条":"")+(missingStoreEvidenceRemaining?"；复制诊断可查看完整清单":"")+'）：'+esc(missingStoreEvidence.join("、"))+"</div>": "")
       :"";
 
     const copyLines=[
