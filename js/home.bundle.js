@@ -1026,14 +1026,11 @@ async function loadHome(){
       try{window.zpPerfRecord?.("home-today-ready-cache",200,performance.now()-perfReadyStartedAt,null)}catch{}
     }
   }catch{}
+  // 超时由 zpFetch 内部管理，避免把超时误判为调用方取消而跳过安全 GET 重试。
   const fetchJson=async(url,timeoutMs=8000)=>{
-    const controller=new AbortController();
-    const timer=setTimeout(()=>controller.abort(),timeoutMs);
-    try{
-      const res=await zpFetch(url,{credentials:"same-origin",cache:"no-store",signal:controller.signal});
-      const data=await res.json().catch(()=>({}));
-      return {res,data};
-    }finally{clearTimeout(timer);}
+    const res=await zpFetch(url,{credentials:"same-origin",cache:"no-store"},{timeoutMs});
+    const data=await res.json().catch(()=>({}));
+    return {res,data};
   };
   try{
     // 首页依赖「有效线路」而非仅 dispatchRouteId：
