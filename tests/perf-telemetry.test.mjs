@@ -31,3 +31,10 @@ assert.match(ingest,/statusCode >= 100 && statusCode < 600/);
 assert.match(report,/metric\.startsWith\("code:"\)/,"报告需能解析状态码细分字段");
 assert.match(report,/parts\.length<4/,"字段名已变为可变段数，不能再用固定 4 段解析");
 console.log("Anonymous performance telemetry safeguards passed.");
+
+// ---- D1 路由指标展示口径 ----
+const adminHtml=readFileSync(new URL("../admin.html",import.meta.url),"utf8");
+assert.match(adminHtml,/D1 路由统计口径/);
+assert.match(adminHtml,/读结果元数据条数/);
+assert.match(adminHtml,/不等于独立 SQL 请求数或用户请求数/);
+assert.match(adminHtml,/一次 batch 可能返回多条结果/);
