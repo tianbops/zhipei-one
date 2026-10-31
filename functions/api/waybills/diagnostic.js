@@ -3,7 +3,7 @@ import {currentUser} from "../_auth.js";
 import {command,pipeline} from "../_redis.js";
 import {canUseRoute,isSystemAdmin} from "../_permissions.js";
 import {canReadWaybill} from "../_waybill-acl.js";
-import {getProc, failProc, effectiveStage} from "./_waybill-proc.js";
+import {getProc, failProc, effectiveStage, listFailureRecords} from "./_waybill-proc.js";
 import {scanConsistency,repairConsistency} from "./_consistency.js";
 import {rebuildAllMeta} from "./_waybill-meta.js";
 import {computeStats} from "./_stats.js";
@@ -208,7 +208,8 @@ async function diagnosticGet({request,env}){
       }
     }
     const waybills=top.map(w=>{const {_key,...rest}=w;return {...rest,events:eventsByKey.get(_key)||[]}});
-    return json({success:true,routeId,date:date||null,vehicle:vehicle||null,count:total,truncated,limit,waybills});
+    const failureData=isAdmin?await listFailureRecords(env,{routeId,date,vehicle,limit:50}):{failures:[],count:0,truncated:false};
+    return json({success:true,routeId,date:date||null,vehicle:vehicle||null,count:total,truncated,limit,waybills,failures:failureData.failures,failureCount:failureData.count,failuresTruncated:failureData.truncated});
   }catch(e){
     return json({success:false,code:"DIAG_LIST_FAILED",error:"运单诊断查询失败",detail:String(e?.message||e||"UNKNOWN_ERROR").slice(0,180)},500);
   }
