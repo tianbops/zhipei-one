@@ -4,6 +4,7 @@
  */
 (function(A){
 const { $, S, esc, rn, api, toast, open, close, page, sw, closeSwipes, dlg, dt, dp, db, dc, do_ } = A;
+const eventText=e=>[(e?.event||"-"),(e?.reuse?"复用运单ID："+e.reuse:""),(e?.dedupe?"去重方式："+e.dedupe:""),(e?.t?String(e.t).slice(11,19):"")].filter(Boolean).join(" · ");
 async function renderDiagnostics(){
   const requestId=($("diagRequestId")?.value||"").trim();
   if(requestId){
@@ -46,7 +47,7 @@ async function renderDiagnostics(){
   $("diagnostics").innerHTML=timingNote+truncHint+list.map(w=>{
     const lvl=(w.quality&&w.quality.level)||"OK";const ql=lvl==="REVIEW"?"review":"ok";
     const flags=(w.quality&&w.quality.flags||[]).join("、")||"正常";
-    const evs=(w.events||[]).slice(-8).reverse().map(e=>esc(e.event)+(e.t?" · "+esc(String(e.t).slice(11,19)):"")).join("<br>");
+    const evs=(w.events||[]).slice(-8).reverse().map(e=>esc(eventText(e))).join("<br>");
     const t=w.timing&&typeof w.timing==="object"?w.timing:null;
     const timingParts=t?[["OCR图片","ocrImageCount"],["识别","recognizedMs"],["OCR墙钟","ocrMs"],["提交累计","ocrSubmitMs"],["轮询次数","ocrStatusPollCount"],["轮询等待累计","ocrStatusWaitMs"],["状态请求累计","ocrStatusRequestMs"],["结果读取累计","ocrResultFetchMs"],["结果请求累计","ocrResultRequestMs"],["正文读取累计","ocrResultBodyMs"],["结果解析累计","ocrResultParseMs"],["结果字符","ocrResultChars"],["结果重试等待","ocrResultFetchWaitMs"],["结果读取尝试","ocrResultFetchAttempts"],["基准","baseMs"],["提取","extractMs"],["匹配","matchMs"],["去重","dedupeMs"],["规划","planMs"],["处理总计","totalMs"]].filter(x=>typeof t[x[1]]==="number"&&Number.isFinite(t[x[1]])&&t[x[1]]>=0).map(x=>x[0]+" "+Math.round(t[x[1]])+(x[0]==="OCR图片"?"张":x[0]==="结果字符"?"字符":(/次数$|尝试$/.test(x[0])?"次":"ms"))):[];
     const timingHtml=timingParts.length?'<div class="meta">耗时：'+esc(timingParts.join(" · "))+'</div>':'<div class="meta">暂无阶段计时记录（可能为旧运单，或该记录未保存计时）</div>';
@@ -103,7 +104,7 @@ async function renderDiagnostics(){
       ...storeEvidenceLines,
       ...(fieldEvidence&&Array.isArray(fieldEvidence.stores)&&fieldEvidence.stores.length>storeEvidenceLines.length?["其余门店证据未导出："+(fieldEvidence.stores.length-storeEvidenceLines.length)+"条"]:[]),
       ...(allMissingStoreEvidence.length?["门店未关联原文："+allMissingStoreEvidence.join("、")]:[]),
-      "事件："+((w.events||[]).slice(-8).reverse().map(e=>(e.event||"-")+(e.t?" · "+String(e.t).slice(11,19):"")).join("；")||"无")
+      "事件："+((w.events||[]).slice(-8).reverse().map(eventText).join("；")||"无")
     ].join("\n");
     return '<div class="row"><div class="content" style="display:block;width:100%"><div class="main"><strong>'+esc(w.date||"-")+' · '+esc(w.vehicle||"-")+'</strong>'
       +'<span class="q-badge '+ql+'">'+esc(ql.toUpperCase())+(w.quality&&w.quality.flags&&w.quality.flags.length?(" · "+esc(flags)):"")+'</span></div>'
