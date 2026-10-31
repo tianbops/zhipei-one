@@ -26,7 +26,8 @@ assert.match(boot,/addEventListener\("pageshow",ev=>\{if\(!ev\.persisted\)return
 // 否则每 bump 一次本测试就红一次（模式与 sw-precache.test.mjs 保持一致）。
 assert.match(index,/\/js\/login\.js\?v=[0-9a-f]{8}/);
 assert.match(admin,/\/css\/admin-base\.css\?v=[0-9a-f]{8}/);
-assert.match(admin,/\/js\/admin\/boot\.js\?v=[0-9a-f]{8}/);\nassert.match(home,/\/js\/home\.bundle\.js\?v=[0-9a-f]{8}/);
+assert.match(admin,/\/js\/admin\/boot\.js\?v=[0-9a-f]{8}/);
+assert.match(home,/\/js\/home\.bundle\.js\?v=[0-9a-f]{8}/);
 // SW 版本号由 scripts/bump_asset_versions.py 每次刷新，只校验格式不写死数值，
 // 否则每 bump 一次本测试就红一次（模式与 sw-precache.test.mjs 保持一致）。
 assert.match(sw,/const VERSION = "zp-pwa-\d+";/);
