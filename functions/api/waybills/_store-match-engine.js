@@ -218,7 +218,7 @@ export function matchOne(rawName, baseStores, matchIndex = null, rawPrepared = n
     store,
     fields: identityFields(store).map(name => {
       const normalized = normalizeForMatch(name);
-      return { name, normalized, pinyin: pinyinKey(normalized) };
+      return { name, normalized, pinyin: null };
     })
   }));
 
@@ -299,8 +299,6 @@ export function matchStores(items, baseStores, matchIndex = null) {
   return (items || []).map((item, index) => {
     const rawName = clean(item?.rawName || item?.name);
     const incomingId = clean(item?.storeId);
-    const rawNormalized = normalizeForMatch(rawName);
-    const rawCode = businessStoreCode(rawName) || "";
     const rawIdentityKey = formatCompareKey(rawName);
     const incomingCode =
       businessStoreCode(rawName) ||
@@ -331,7 +329,8 @@ export function matchStores(items, baseStores, matchIndex = null) {
     // 4. 受控相似度
     let confidence = null;
     if (!target) {
-      const r = matchOne(rawName, stores, index, { normalized: rawNormalized, businessCode: rawCode });
+      const rawCode = businessStoreCode(rawName) || "";
+      const r = matchOne(rawName, stores, index, { businessCode: rawCode });
       if (r.status === "matched") {
         target = r.store;
         method = "similarity";
@@ -378,7 +377,7 @@ export function matchStores(items, baseStores, matchIndex = null) {
       // 容错：两条原始识别仅差极小（≥0.95，如多图/重复粘贴造成的断行、空格、标点差异）
       // 时，判定为“同一门店的重复识别”，落到下面正常 matched 流程由 dedupe 合并；
       // 差异明显才保持待定，避免把两家不同门店误合并。
-      const sameStoreSim = editSim(prior.normalized, rawNormalized);
+      const sameStoreSim = editSim(normalizeForMatch(prior.rawName || ""), normalizeForMatch(rawName));
       if (sameStoreSim < 0.95) {
       return {
         ...item,
@@ -418,7 +417,7 @@ export function matchStores(items, baseStores, matchIndex = null) {
     }
 
     if (targetStoreId) {
-      occupiedStoreIds.set(targetStoreId, {identityKey: rawIdentityKey, rawName, normalized: rawNormalized});
+      occupiedStoreIds.set(targetStoreId, {identityKey: rawIdentityKey, rawName});
     }
 
     const targetMeta = index.storeMeta.get(target);
