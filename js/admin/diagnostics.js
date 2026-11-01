@@ -124,8 +124,14 @@ async function renderDiagnostics(){
     return '<div class="row diag-failure-card"><div class="content">'
       +'<div class="main"><strong>'+esc(f.date||"-")+' · '+esc(f.vehicle||"车牌未识别")+'</strong><span class="q-badge review">'+esc(label)+'</span></div>'
       +'<div class="diag-failure-reason"><span class="diag-failure-label">失败原因</span><span class="diag-failure-text">'+esc(reason)+'</span></div>'
-      +'<div class="diag-failure-meta"><span>上传时间：'+esc(formatBeijingTime(f.uploadedAt,f.uploadedAtBeijing))+'</span><span>错误代码：'+esc(f.code||"-")+'</span></div>'
-      +'<div class="diag-failure-stats">门店数量：提取 '+esc(dg.extractCount??"-")+' · 去重前 '+esc(dg.dedupeBefore??"-")+' · 去重后 '+esc(dg.dedupeAfter??"-")+' · 最终 '+esc(stores.length)+'</div>'
+      +'<div class="diag-failure-meta">'
+      +'<div class="diag-failure-field"><span class="diag-failure-label">上传时间</span><span class="diag-failure-value">'+esc(formatBeijingTime(f.uploadedAt,f.uploadedAtBeijing))+'</span></div>'
+      +'<div class="diag-failure-field"><span class="diag-failure-label">错误代码</span><span class="diag-failure-value diag-failure-code">'+esc(f.code||"-")+'</span></div></div>'
+      +'<div class="diag-failure-stats">'
+      +'<div class="diag-failure-stat"><span>提取门店</span><strong>'+esc(dg.extractCount??"-")+'</strong></div>'
+      +'<div class="diag-failure-stat"><span>去重前</span><strong>'+esc(dg.dedupeBefore??"-")+'</strong></div>'
+      +'<div class="diag-failure-stat"><span>去重后</span><strong>'+esc(dg.dedupeAfter??"-")+'</strong></div>'
+      +'<div class="diag-failure-stat is-final"><span>最终门店</span><strong>'+esc(stores.length)+'</strong></div></div>'
       +(validationErrors.length?'<details class="diag-details diag-failure-details"><summary>查看校验信息（'+esc(validationErrors.length)+'）</summary><div class="meta">'+esc(validationErrors.join("、"))+'</div></details>':"")
       +'<div class="diag-actions">'+(f.requestId?'<button class="small-action diag-ticket-open" data-ticket-index="'+index+'" type="button">查看处理票据</button>':'')+'<button class="small-action diag-failure-copy" type="button">复制完整失败诊断</button></div>'
       +'</div></div>';
