@@ -40,4 +40,8 @@ assert.ok(diag.includes('JSON.stringify(failures[index],null,2)'),"failure copy 
 assert.ok(diag.includes("diag-timing-note"));
 assert.ok(diag.includes("diag-failure-card"));
 assert.ok(css.includes(".diag-query-panel")&&css.includes(".diag-failure-heading")&&css.includes("var(--zp-"));
+assert.ok(css.includes(".diag-learning-tools select")&&css.includes(".diag-learning-tools .small-action"),"learning store selector and isolate action must share unified control sizing");
+assert.ok(css.includes(".diag-learning-reason input")&&css.includes(".diag-learning-reason select"),"learning reason selector and supplement input must share unified control styling");
+assert.ok(css.includes("grid-template-columns:minmax(0,1fr) minmax(0,1fr)"),"learning reason controls must align in equal columns");
+assert.ok(css.includes("var(--zp-input-bg)")&&css.includes("var(--zp-input-line)")&&css.includes("var(--zp-r-control)"),"learning isolation controls must use global UI tokens");
 console.log("管理员诊断页紧凑布局、无手工ID输入、完整复制与全局主题回归：通过");
