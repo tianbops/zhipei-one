@@ -159,10 +159,11 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
   onProgress(10);
 
   // OCR 上游排队偶发超过旧 19 秒截止线；将单图状态等待窗口放宽到 30 秒。
-  // 每次状态请求仍受整个窗口的剩余时间约束，绝不因最后一次轮询额外越过截止线。
+  // 首次轮询从 900ms 调整为 500ms，减少已快速完成任务的固定空等；后续按 1.35 倍退避，
+  // 避免长任务持续高频查询。每次请求仍受总截止时间约束。
   const OCR_STATUS_DEADLINE_MS = 30000;
   const deadline = Date.now() + OCR_STATUS_DEADLINE_MS;
-  let delay = 900;
+  let delay = 500;
   while (Date.now() < deadline) {
     const waitStarted = ocrPerfNow();
     await new Promise(r => setTimeout(r, Math.min(delay, Math.max(0, deadline - Date.now()))));
