@@ -145,7 +145,7 @@ function disableBatchStatus(batchId) {
 }
 function unsupportedBatchStatus(error) {
   return error?.code === "OCR_ENDPOINT" || error?.code === "OCR_BAD_RESPONSE"
-    || (error?.code === "OCR_API" && [400, 405, 501].includes(Number(error.status)));
+    || (error?.code === "OCR_API" && [400, 405, 422, 501].includes(Number(error.status)));
 }
 async function requestBatchStatus(base, token, batchId, timeoutMs, signal) {
   const now = Date.now();
