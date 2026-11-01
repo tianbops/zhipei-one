@@ -31,7 +31,8 @@ for(const path of ["js/admin/diagnostics.js","js/admin/learning.js","js/admin/ro
  assert.ok(htmlRef&&swRef&&htmlRef[1]===swRef[1],"HTML/SW cache hash mismatch for "+path);
 }
 assert.ok(!html.includes('id="diagRequestId"'));
-assert.ok(html.includes("选择线路和日期，无需填写 ID"));
+assert.ok(html.includes('id="diagRoute"')&&html.includes('id="diagDate"')&&html.includes('id="diagQuery"'),"route, date and query controls must remain directly visible");
+assert.ok(!html.includes("选择线路和日期，无需填写 ID")&&!html.includes("失败记录自动归档"),"remove redundant query helper copy");
 assert.ok(html.includes('class="diag-query-panel"'));
 assert.ok(!diag.includes("diagRequestId"));
 assert.ok(!html.includes("diagRequestId"));

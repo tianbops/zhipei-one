@@ -52,9 +52,10 @@ function check(name, cond, info) {
       && jsAll.includes("catch(e){copied=false;}")
       && jsAll.includes("if(ta&&ta.parentNode)ta.parentNode.removeChild(ta)")
       && jsAll.includes("[zp-perf-copy] 提示显示失败"));
-  check("失败记录自动归档提示收纳在独立查询面板底部，不挤压筛选控件",
-    /class="diag-query-panel"[\s\S]*?class="diag-filters"[\s\S]*?class="diag-query-foot"[\s\S]*?失败记录自动归档/.test(adminHtml)
-      && !/<div class="diag-filters"[\s\S]*?class="meta diag-archive-hint"/.test(adminHtml));
+  check("诊断查询线路、日期和查询控件常驻显示，外围提示文字已清理",
+    /class="diag-query-panel"[\s\S]*?id="diagRoute"[\s\S]*?id="diagDate"[\s\S]*?id="diagQuery"[\s\S]*?id="diagRouteMeta"/.test(adminHtml)
+      && !adminHtml.includes("选择线路和日期，无需填写 ID")
+      && !adminHtml.includes("失败记录自动归档"));
   check("拆分产物存在：css/admin-*.css 与 js/admin/*.js 均非空",
     cssAll.length > 1000 && jsAll.length > 1000,
     `css=${cssAll.length}B js=${jsAll.length}B`);
