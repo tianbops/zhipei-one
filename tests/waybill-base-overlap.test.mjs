@@ -19,7 +19,13 @@ assert.match(source, /baseResult\.error&&baseResult\.error\?\.code!=="BASE_NOT_F
   "non-missing base errors must remain fatal");
 assert.match(source, /baseResult\.stores;const baseAvailable=baseResult\.available;const baseMs=baseResult\.elapsedMs/,
   "the same base stores and elapsed time must feed existing planning and diagnostics");
-assert.match(source, /matchStores\(extracted\.stores,baseStores,baseIndex\?\.matchIndex\)/,\n  "the prepared matcher index must be reused for store matching");\nassert.match(source, /splitByRouteBase\(extracted\.stores,baseIndex\|\|baseStores\)/,\n  "the prepared identity keys must be reused for route-base segmentation");\nassert.match(source, /baseWaitMs,baseOverlapMs/,\n  "diagnostics must distinguish the residual wait from overlapped time");\nassert.doesNotMatch(source, /baseStores=await base\(env,routeId\)/,
+assert.match(source, /matchStores\(extracted\.stores,baseStores,baseIndex\?\.matchIndex\)/,
+  "the prepared matcher index must be reused for store matching");
+assert.match(source, /splitByRouteBase\(extracted\.stores,baseIndex\|\|baseStores\)/,
+  "the prepared identity keys must be reused for route-base segmentation");
+assert.match(source, /baseWaitMs,baseOverlapMs/,
+  "diagnostics must distinguish the residual wait from overlapped time");
+assert.doesNotMatch(source, /baseStores=await base\(env,routeId\)/,
   "the route base must not be fetched serially after OCR");
 
 console.log("✅ route base lookup overlaps OCR without changing matching order or error handling");
