@@ -88,6 +88,8 @@ assert.match(upload,/perfFailureStatus\|\|\(perfResponseStatus===null/);
 const processApi=readFileSync(new URL("../functions/api/waybills/process.js",import.meta.url),"utf8");
 assert.equal((processApi.match(/processingTiming:processingTiming\(\)/g)||[]).length,5);
 assert.match(processApi,/saveStages/);
+assert.equal(processApi.split('event:"WAYBILL_IDEMPOTENT"').length-1,3,"every idempotent reuse path must retain the current attempt timing");
+assert.match(processApi,/event:"WAYBILL_IDEMPOTENT"[^}]*timing:processingTiming/,"idempotent events must attach processing timing");
 assert.match(upload,/perfResult\?\.processingTiming/);
 
 // Streaming responses use HTTP 200 as the transport, so preserve the underlying process status for failure telemetry.
@@ -101,6 +103,7 @@ assert.match(upload,/perfResult\?\.timing&&typeof perfResult\.timing==="object"\
 // ---- 运单计时精度与诊断字段完整性回归 ----
 const diagnosticApi=readFileSync(new URL("../functions/api/waybills/diagnostic.js",import.meta.url),"utf8");
 const diagnosticUi=readFileSync(new URL("../js/admin/diagnostics.js",import.meta.url),"utf8");
+assert.match(diagnosticUi,/本次尝试耗时/,"idempotent event timing must be visible in copied and displayed event history");
 assert.match(processApi,/const waybillPerfDuration\s*=/,"运单处理阶段必须统一使用单调高精度计时");
 for(const marker of ["baseLookupStarted","indexStarted","started","r2StageStarted","ocrStarted","baseWaitStarted","extractedStarted","matchStarted","dedupeStarted","planStarted"]){
   assert.match(processApi,new RegExp("waybillPerfDuration\\("+marker+"\\)"),marker+" must use high-resolution duration");
@@ -110,6 +113,13 @@ for(const key of ["ocrImageCount","ocrResultRequestMs","ocrResultBodyMs","ocrRes
   assert.match(diagnosticApi,new RegExp('"'+key+'"'),key+" must survive diagnostic safeTiming filtering");
 }
 assert.match(diagnosticUi,/const formatTimingMs\s*=/,"sub-10ms timing values must remain visible");
+assert.ok(processApi.includes("const waybillPerfClock="),"diagnostics must disclose whether high-resolution timing is available");
+assert.ok(processApi.includes('timingResolutionMs:timingClock==="performance.now"?0.01:1'),"diagnostics must expose timer resolution when falling back to Date.now");
+assert.match(diagnosticApi,/"r2StageMs"/,"R2 staging duration must survive safeTiming filtering");
+assert.match(diagnosticApi,/"r2StageBytes"/,"R2 staging byte count must survive safeTiming filtering");
+assert.ok(diagnosticUi.includes("准备+识别累计"),"the cumulative recognition label must state its preparation boundary");
+assert.match(diagnosticUi,/R2暂存/,"R2 staging must be separately visible");
+assert.match(diagnosticUi,/计时分辨率/,"the diagnostic must explain timer resolution");
 for(const key of ["baseLookupMs","baseIndexMs","baseWaitMs","baseOverlapMs"]){
   assert.ok(diagnosticUi.includes('"'+key+'"'),key+" must be shown in full waybill diagnostics");
 }

@@ -132,6 +132,8 @@ async function toJson(resp) { return await resp.json(); }
   check("配送员 E 上传成功", !!wE_id);
   check("代班 S 在 ROUTE 上传成功(dispatch=ROUTE)", !!wS_id);
   check("外人 O 在本人线路 OTHER2 上传成功", !!wO_id);
+  const duplicateD = await upload(tokD, ROUTE, "粤B11111");
+  check("同日重复上传安全复用原运单", duplicateD.idempotent === true && duplicateD.waybill?.id === wD, "idempotent=" + duplicateD.idempotent);
 
   // ===================================================================
   console.log("\n【2】读取隔离：可见范围按线路、非按用户一刀切");
@@ -139,9 +141,12 @@ async function toJson(resp) { return await resp.json(); }
   check("司机 D 诊断可见 ROUTE 全部(3: 司机/配送员/代班)", dSee.success && (dSee.waybills || []).length === 3, "n=" + (dSee.waybills || []).length);
   const timedWaybill = (dSee.waybills || []).find(w => w.id === wE_id);
   const stageTiming = timedWaybill && timedWaybill.timing;
-  const allowedTimingKeys = ["recognizedMs","ocrMs","baseMs","baseLookupMs","baseIndexMs","baseWaitMs","baseOverlapMs","extractMs","matchMs","dedupeMs","planMs","totalMs"];
+  const allowedTimingKeys = ["timingClock","timingResolutionMs","recognizedMs","ocrMs","r2StageMs","r2StageBytes","baseMs","baseLookupMs","baseIndexMs","baseWaitMs","baseOverlapMs","extractMs","matchMs","dedupeMs","planMs","totalMs"];
   check("诊断列表包含合法阶段计时", !!stageTiming && typeof stageTiming.totalMs === "number" && stageTiming.totalMs >= 0);
-  check("诊断阶段计时仅含白名单非负数值", !!stageTiming && Object.keys(stageTiming).every(k => allowedTimingKeys.includes(k) && typeof stageTiming[k] === "number" && Number.isFinite(stageTiming[k]) && stageTiming[k] >= 0), JSON.stringify(stageTiming));
+  check("诊断阶段计时仅含白名单合法字段", !!stageTiming && Object.keys(stageTiming).every(k => allowedTimingKeys.includes(k) && (k === "timingClock" ? ["performance.now","Date.now"].includes(stageTiming[k]) : typeof stageTiming[k] === "number" && Number.isFinite(stageTiming[k]) && stageTiming[k] >= 0)), JSON.stringify(stageTiming));
+  const reusedWaybill = (dSee.waybills || []).find(w => w.id === wD);
+  const reuseEvent = (reusedWaybill?.events || []).find(e => e.event === "WAYBILL_IDEMPOTENT" && e.requestId === duplicateD.requestId);
+  check("幂等复用事件保存本次尝试耗时", !!reuseEvent && typeof reuseEvent.timing?.totalMs === "number" && reuseEvent.timing.totalMs >= 0, JSON.stringify(reuseEvent?.timing || null));
   const oSeeR = await toJson(await readLatest(tokO, wE_id));
   check("外人 O 读不到 ROUTE 运单(返回 null)", oSeeR.success && oSeeR.waybill === null);
   const oSeeOwn = await toJson(await readLatest(tokO, wO_id));
