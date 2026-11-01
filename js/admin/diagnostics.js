@@ -4,7 +4,7 @@
  */
 (function(A){
 const { $, S, esc, rn, api, toast, open, close, page, sw, closeSwipes, dlg, dt, dp, db, dc, do_ } = A;
-const formatTimingMs=value=>{const n=Number(value);if(!Number.isFinite(n)||n<0)return "-";return n<10?String(Number(n.toFixed(2))):String(Math.round(n));};
+const formatTimingMs=value=>{const n=Number(value);if(!Number.isFinite(n)||n<0)return "-";return n<10?String(Math.round(n*100)/100):String(Math.round(n));};
 const formatBeijingTime=(value,explicit)=>{const raw=explicit||value;if(!raw)return "-";const date=new Date(raw);if(!Number.isFinite(date.getTime()))return String(raw);return new Intl.DateTimeFormat("zh-CN",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"}).format(date)+"（北京时间）";};
 const eventText=e=>[(e?.event||"-"),(e?.reuse?"复用运单ID："+e.reuse:""),(e?.dedupe?"去重方式："+e.dedupe:""),(e?.t?formatBeijingTime(e.t,e.tBeijing):"")].filter(Boolean).join(" · ");
 async function renderProcTicket(requestId){
@@ -45,7 +45,7 @@ async function renderDiagnostics(){
     const flags=(w.quality&&w.quality.flags||[]).join("、")||"正常";
     const evs=(w.events||[]).slice(-8).reverse().map(e=>esc(eventText(e))).join("<br>");
     const t=w.timing&&typeof w.timing==="object"?w.timing:null;
-    const timingParts=t?[["OCR图片","ocrImageCount"],["识别","recognizedMs"],["OCR墙钟","ocrMs"],["提交累计","ocrSubmitMs"],["轮询次数","ocrStatusPollCount"],["轮询等待累计","ocrStatusWaitMs"],["状态请求累计","ocrStatusRequestMs"],["结果读取累计","ocrResultFetchMs"],["结果请求累计","ocrResultRequestMs"],["正文读取累计","ocrResultBodyMs"],["结果解析累计","ocrResultParseMs"],["结果字符","ocrResultChars"],["结果重试等待","ocrResultFetchWaitMs"],["结果读取尝试","ocrResultFetchAttempts"],["基准","baseMs"],["提取","extractMs"],["匹配","matchMs"],["去重","dedupeMs"],["规划","planMs"],["处理总计","totalMs"]].filter(x=>typeof t[x[1]]==="number"&&Number.isFinite(t[x[1]])&&t[x[1]]>=0).map(x=>x[0]+" "+formatTimingMs(t[x[1]])+(x[0]==="OCR图片"?"张":x[0]==="结果字符"?"字符":(/次数$|尝试$/.test(x[0])?"次":"ms"))):[];
+    const timingParts=t?[["OCR图片","ocrImageCount"],["识别","recognizedMs"],["OCR墙钟","ocrMs"],["提交累计","ocrSubmitMs"],["轮询次数","ocrStatusPollCount"],["轮询等待累计","ocrStatusWaitMs"],["状态请求累计","ocrStatusRequestMs"],["结果读取累计","ocrResultFetchMs"],["结果请求累计","ocrResultRequestMs"],["正文读取累计","ocrResultBodyMs"],["结果解析累计","ocrResultParseMs"],["结果字符","ocrResultChars"],["结果重试等待","ocrResultFetchWaitMs"],["结果读取尝试","ocrResultFetchAttempts"],["基准","baseMs"],["基准读取","baseLookupMs"],["索引编译","baseIndexMs"],["OCR后等待","baseWaitMs"],["OCR重叠","baseOverlapMs"],["提取","extractMs"],["匹配","matchMs"],["去重","dedupeMs"],["规划","planMs"],["处理总计","totalMs"]].filter(x=>typeof t[x[1]]==="number"&&Number.isFinite(t[x[1]])&&t[x[1]]>=0).map(x=>x[0]+" "+formatTimingMs(t[x[1]])+(x[0]==="OCR图片"?"张":x[0]==="结果字符"?"字符":(/次数$|尝试$/.test(x[0])?"次":"ms"))):[];
     const compactTimingKeys=["recognizedMs","ocrMs","extractMs","matchMs","dedupeMs","planMs","totalMs"];
     const compactTimingLabels={recognizedMs:"识别",ocrMs:"OCR",extractMs:"提取",matchMs:"匹配",dedupeMs:"去重",planMs:"规划",totalMs:"总计"};
     const compactTiming=compactTimingKeys.filter(k=>typeof t?.[k]==="number"&&Number.isFinite(t[k])&&t[k]>=0).map(k=>compactTimingLabels[k]+" "+formatTimingMs(t[k])+"ms");
