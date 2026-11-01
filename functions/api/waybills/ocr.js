@@ -136,7 +136,7 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
   }));
   form.append("file", file, file.name || "waybill");
 
-  const timing = { ocrSubmitMs: 0, ocrStatusPollCount: 0, ocrStatusWaitMs: 0, ocrStatusRequestMs: 0, ocrResultFetchMs: 0, ocrResultRequestMs: 0, ocrResultBodyMs: 0, ocrResultParseMs: 0, ocrResultChars: 0, ocrResultFetchWaitMs: 0, ocrResultFetchAttempts: 0 };
+  const timing = { ocrSubmitMs: 0, ocrStatusPollCount: 0, ocrStatusWaitMs: 0, ocrStatusRequestMs: 0, ocrResultFetchMs: 0, ocrResultRequestMs: 0, ocrResultBodyMs: 0, ocrResultParseMs: 0, ocrResultChars: 0, ocrResultFetchWaitMs: 0, ocrResultFetchAttempts: 0, ocrProviderState: null, ocrProviderProgress: null, ocrProviderTotalPages: null, ocrProviderExtractedPages: null, ocrProviderStartTime: null, ocrProviderEndTime: null, ocrProviderObservedMs: 0 };
   let submitted;
   const submitStarted = Date.now();
   try {
@@ -187,6 +187,20 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
 
     const data = status?.data || {};
     const state = clean(data.state || data.status).toLowerCase();
+    const providerProgress = data.extractProgress && typeof data.extractProgress === "object" ? data.extractProgress : {};
+    timing.ocrProviderState = state.slice(0, 32) || null;
+    const totalPages = Number(providerProgress.totalPages);
+    const extractedPages = Number(providerProgress.extractedPages);
+    timing.ocrProviderTotalPages = Number.isFinite(totalPages) && totalPages >= 0 ? totalPages : null;
+    timing.ocrProviderExtractedPages = Number.isFinite(extractedPages) && extractedPages >= 0 ? extractedPages : null;
+    timing.ocrProviderProgress = timing.ocrProviderTotalPages > 0 && timing.ocrProviderExtractedPages != null
+      ? Math.max(0, Math.min(100, Math.round((timing.ocrProviderExtractedPages / timing.ocrProviderTotalPages) * 100)))
+      : null;
+    const providerStart = providerProgress.startTime ?? providerProgress.start_time ?? null;
+    const providerEnd = providerProgress.endTime ?? providerProgress.end_time ?? null;
+    timing.ocrProviderStartTime = providerStart == null ? timing.ocrProviderStartTime : String(providerStart).slice(0, 64);
+    timing.ocrProviderEndTime = providerEnd == null ? timing.ocrProviderEndTime : String(providerEnd).slice(0, 64);
+    timing.ocrProviderObservedMs = Date.now() - submitStarted;
     onProgress(state === "failed" || state === "error"
       ? 100
       : Math.min(90, 10 + Math.round(((Date.now() - (deadline - OCR_STATUS_DEADLINE_MS)) / OCR_STATUS_DEADLINE_MS) * 80)));

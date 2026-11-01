@@ -47,6 +47,17 @@ assert.doesNotMatch(stagingBlock, /bucket\.get\(|arrayBuffer\(\)|stagedFiles/,
 assert.match(stagingBlock, /R2 仍按要求临时暂存并在请求结束后删除/,
   "R2 临时存储策略必须保持并明确记录");
 
+// 1c) OCR 性能诊断必须区分 R2 暂存与上游任务生命周期，且只记录耗时/状态元数据。
+const ocrAdapter = readFileSync(WB + "ocr.js", "utf8");
+assert.match(ocrAdapter, /ocrProviderState/, "OCR 适配层必须记录上游任务状态");
+assert.match(ocrAdapter, /ocrProviderStartTime/, "OCR 适配层必须保留上游开始时间");
+assert.match(ocrAdapter, /ocrProviderEndTime/, "OCR 适配层必须保留上游结束时间");
+assert.match(entry, /r2StageMs/, "处理入口必须记录 R2 暂存耗时");
+assert.match(entry, /r2StageBytes/, "处理入口必须记录 R2 暂存字节数");
+assert.match(entry, /ocrProviderStates/, "成功结果必须保留逐图上游状态");
+assert.match(entry, /ocrProviderObservedMs/, "成功结果必须保留上游观察时长");
+assert.match(entry, /timing:\{r2StageMs,r2StageBytes/, "失败结果也必须保留 R2 暂存计时");
+
 // 2) 入口公开面：只剩 onRequestPost（拆分前唯一公开出口）
 const topExports = entry.split("\n").filter((l) => /^export /.test(l));
 assert.strictEqual(topExports.length, 1, `入口应只剩 1 个顶层 export，实际：${topExports.length}`);
