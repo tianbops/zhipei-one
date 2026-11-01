@@ -123,6 +123,17 @@ assert.match(processSource, /lineEvidence:results\.flatMap[\s\S]*?imageIndex:ima
 assert.match(processSource, /lineEvidence:Array\.isArray\(ocr\.lineEvidence\)\?ocr\.lineEvidence:\[\]/,
   "逐行证据必须随运单记录保存");
 
+const parseResultBlock = source.match(/const parseResult = async \\(raw\\) => \\{([\\s\\S]*?)\\n      \\};/)?.[1] || "";
+assert.ok(parseResultBlock, "OCR 结果解析函数必须存在");
+assert.equal((parseResultBlock.match(/JSON\\.parse\\(/g) || []).length, 1,
+  "每行 JSONL 必须只 JSON.parse 一次，同时提取文本与行证据");
+assert.equal((parseResultBlock.match(/raw\\.split\\(/g) || []).length, 1,
+  "OCR 结果必须只拆行遍历一次");
+assert.match(parseResultBlock, /collectText[\\s\\S]*?collectLineEvidence/,
+  "单次遍历必须同时保留文本和原始行证据提取");
+assert.match(parseResultBlock, /new Set\\(/,
+  "文本去重必须保留且保持首次出现顺序");
+
 const testModule = source.replace("async function requestJson(", "export async function requestJson(").replace("function collectText(", "export function collectText(");
 assert.notEqual(testModule, source, "requestJson test hook target must exist");
 const moduleUrl = "data:text/javascript;base64," + Buffer.from(testModule).toString("base64");
