@@ -138,13 +138,13 @@ async function runProcessCore({request,env,emit=()=>{},form:providedForm=null,us
   }
   if(await stopIfClientCancelled("OCR"))return json({success:false,code:"PROCESS_CANCELLED",error:"已取消处理",message:"已取消处理",requestId,recoverable:true,action:"REPROCESS",hint:"本次处理已取消，可重新上传运单"},499);
   // Reject oversized uploads or missing temporary storage before spending a route-base read.
-  const uploadBucket=!recognizedText&&files.length?env?.WAYBILL_FILES:null;
-  if(!recognizedText&&files.length){
+  const bucket=!rawText&&files.length?env?.WAYBILL_FILES:null;
+  if(!rawText&&files.length){
     const totalBytes=files.reduce((sum,item)=>sum+(Number(item?.size)||0),0);
     if(files.length>WAYBILL_TEMP_MAX_FILES||totalBytes>WAYBILL_TEMP_MAX_BYTES){
       return failProcess("WAYBILL_TEMP_LIMIT_EXCEEDED","本次运单图片数量或总大小超出限制，请分批上传",413,{recoverable:true,action:"REPROCESS",hint:"请减少图片数量或分批上传后重试"});
     }
-    if(!uploadBucket||typeof uploadBucket.put!=="function"||typeof uploadBucket.delete!=="function"){
+    if(!bucket||typeof bucket.put!=="function"||typeof bucket.delete!=="function"){
       return failProcess("WAYBILL_TEMP_STORAGE_UNAVAILABLE","运单图片临时存储暂不可用，请稍后重试",503,{recoverable:true,action:"REPROCESS",hint:"运单图片临时存储暂不可用，请稍后重试"});
     }
   }
@@ -168,7 +168,7 @@ async function runProcessCore({request,env,emit=()=>{},form:providedForm=null,us
     try{     for(let i=0;i<files.length;i++){
         const source=files[i];
         const key=`waybill-tmp/${requestId}/${i+1}-${crypto.randomUUID()}`;
-        await uploadBucket.put(key,source,{storageClass:"Standard",httpMetadata:{contentType:source.type||"application/octet-stream"}});
+        await bucket.put(key,source,{storageClass:"Standard",httpMetadata:{contentType:source.type||"application/octet-stream"}});
         tempKeys.push(key);
         r2StageBytes+=Number(source.size)||0;
       }
