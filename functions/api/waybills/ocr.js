@@ -200,7 +200,7 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
   }));
   form.append("file", file, file.name || "waybill");
 
-  const timing = { ocrSubmitMs: 0, ocrStatusPollCount: 0, ocrStatusWaitMs: 0, ocrStatusRequestMs: 0, ocrResultFetchMs: 0, ocrResultRequestMs: 0, ocrResultBodyMs: 0, ocrResultParseMs: 0, ocrResultChars: 0, ocrResultFetchWaitMs: 0, ocrResultFetchAttempts: 0, ocrProviderState: null, ocrProviderProgress: null, ocrProviderTotalPages: null, ocrProviderExtractedPages: null, ocrProviderStartTime: null, ocrProviderEndTime: null, ocrProviderObservedMs: 0 };
+  const timing = { ocrSubmitMs: 0, ocrStatusPollCount: 0, ocrStatusWaitMs: 0, ocrStatusRequestMs: 0, ocrStatusBatchRequestCount: 0, ocrStatusFallbackRequestCount: 0, ocrStatusSingleRequestCount: 0, ocrStatusBatchResponseJobCount: 0, ocrStatusBatchMatchedJobCount: 0, ocrStatusBatchMissingJobCount: 0, ocrStatusMode: clean(batchId) ? "batch" : "single", ocrResultFetchMs: 0, ocrResultRequestMs: 0, ocrResultBodyMs: 0, ocrResultParseMs: 0, ocrResultChars: 0, ocrResultFetchWaitMs: 0, ocrResultFetchAttempts: 0, ocrProviderState: null, ocrProviderProgress: null, ocrProviderTotalPages: null, ocrProviderExtractedPages: null, ocrProviderStartTime: null, ocrProviderEndTime: null, ocrProviderObservedMs: 0 };
   let submitted;
   const submitStarted = ocrPerfNow();
   try {
@@ -240,10 +240,12 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
         if (!batchResult.shared) {
           timing.ocrStatusPollCount++;
           timing.ocrStatusRequestMs += ocrPerfDuration(statusStarted);
+          timing.ocrStatusBatchRequestCount++;
         }
         if (batchResult.error) {
           if (!unsupportedBatchStatus(batchResult.error)) throw batchResult.error;
           disableBatchStatus(clean(batchId));
+          timing.ocrStatusMode = "fallback";
           const fallbackStarted = ocrPerfNow();
           status = await requestJson(
             base + JOB_PATH + "/" + encodeURIComponent(jobId),
@@ -251,6 +253,7 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
             Math.max(1, Math.min(6000, deadline - Date.now())), signal
           );
           timing.ocrStatusPollCount++;
+          timing.ocrStatusFallbackRequestCount++;
           timing.ocrStatusRequestMs += ocrPerfDuration(fallbackStarted);
         } else {
           const jobs = batchResult.data?.data?.extractResult;
@@ -258,6 +261,7 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
             // An unexpected response shape is treated as an unsupported batch endpoint.
             // Fall back to the proven single-job endpoint instead of risking a lost result.
             disableBatchStatus(clean(batchId));
+            timing.ocrStatusMode = "fallback";
             const fallbackStarted = ocrPerfNow();
             status = await requestJson(
               base + JOB_PATH + "/" + encodeURIComponent(jobId),
@@ -265,9 +269,13 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
               Math.max(1, Math.min(6000, deadline - Date.now())), signal
             );
             timing.ocrStatusPollCount++;
+            timing.ocrStatusFallbackRequestCount++;
             timing.ocrStatusRequestMs += ocrPerfDuration(fallbackStarted);
           } else {
+            if (!batchResult.shared) timing.ocrStatusBatchResponseJobCount += jobs.length;
             const ownJob = jobs.find(item => clean(item?.jobId) === jobId);
+            if (ownJob) timing.ocrStatusBatchMatchedJobCount++;
+            else timing.ocrStatusBatchMissingJobCount++;
             // A sibling may reach its first poll just before this job has joined the batch.
             // Missing entries remain pending; the next shared snapshot will include them.
             status = { data: ownJob || { state: "pending" } };
@@ -280,6 +288,7 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
           Math.max(1, Math.min(6000, remainingMs)), signal
         );
         timing.ocrStatusPollCount++;
+        timing.ocrStatusSingleRequestCount++;
         timing.ocrStatusRequestMs += ocrPerfDuration(statusStarted);
       }
     } catch (e) {
