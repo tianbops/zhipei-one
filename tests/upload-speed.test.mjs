@@ -22,6 +22,10 @@ const frontend = readFileSync(new URL("../js/home/upload-process.js", import.met
     "每个双图并发批次必须有独立 batchId，单图仍走原有单任务状态查询");
   assert.ok(/request\?\.signal,batchId\)/.test(backend),
     "同批图片必须把同一个 batchId 传入 OCR 适配层");
+  assert.ok(/ocrStatusBatchRequestCount/.test(backend)&&/ocrStatusFallbackRequestCount/.test(backend),
+    "诊断必须区分真实批量状态请求与单任务回退请求");
+  assert.ok(/ocrImageTimings:results\.map/.test(backend),
+    "诊断必须保留每张图片独立的提交、状态与结果读取耗时");
   console.log("✅ 后端多图分批并发");
 }
 
@@ -54,6 +58,9 @@ const frontend = readFileSync(new URL("../js/home/upload-process.js", import.met
   console.log("✅ 非图片原样上传");
 }
 
+const diagnostics = readFileSync(new URL("../js/admin/diagnostics.js", import.meta.url), "utf8");
+assert.ok(/批量状态请求/.test(diagnostics)&&/单任务回退请求/.test(diagnostics), "管理员诊断必须展示批量请求与回退请求次数");
+assert.ok(/逐图OCR耗时/.test(diagnostics), "管理员复制诊断必须展示逐图 OCR 耗时");
 console.log("\n✅ upload-speed 全部通过");
 
 const r2StageBlock=backend.slice(backend.indexOf("const TEMP_STAGE_CONCURRENCY"),backend.indexOf("const ocrStarted"));
