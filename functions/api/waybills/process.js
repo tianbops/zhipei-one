@@ -289,7 +289,7 @@ async function saveWaybill(order, requestId, resumed){
   const saveStartedAt=waybillPerfNow();
   const saveStages={};
   const markSaveStage=(name,started)=>{saveStages[name]=Math.max(0,Number((waybillPerfNow()-started).toFixed(2)))};
-  const processingTiming=()=>({...order.timing,saveStages:{...saveStages,totalMs:Math.max(0,Number((waybillPerfNow()-saveStartedAt).toFixed(2)))});
+  const processingTiming=()=>({...order.timing,saveStages:{...saveStages,totalMs:Math.max(0,Number((waybillPerfNow()-saveStartedAt).toFixed(2)))}});
   const claimStarted=waybillPerfNow();
   if(await stopIfClientCancelled("SAVE"))return json({success:false,code:"PROCESS_CANCELLED",error:"已取消处理",message:"已取消处理",requestId,recoverable:true,action:"REPROCESS",hint:"本次处理已取消，可重新上传运单"},499);
   // 最终 Redis 保存 EVAL 前再做一次原子“保存声明”。
