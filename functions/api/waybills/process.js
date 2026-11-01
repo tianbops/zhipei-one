@@ -468,7 +468,7 @@ async function runProcess(args){
     if(tempKeys.length)await deleteTempWaybillObjects(args.env,tempKeys);
     const cleanupMs=Math.max(0,Math.round((waybillPerfNow()-cleanupStarted)*1e2)/1e2);
     const serverTotalMs=Math.max(0,Math.round((waybillPerfNow()-serverStarted)*1e2)/1e2);
-    if(response){try{const headers=new Headers(response.headers);const current=headers.get("Server-Timing");const extra=`waybill-r2-cleanup;dur=${cleanupMs}, waybill-server-end-to-end;dur=${serverTotalMs}`;headers.set("Server-Timing",current?current+", "+extra:extra);response=new Response(response.body,{status:response.status,statusText:response.statusText,headers})}catch{/* timing headers are diagnostic-only */}}
+    if(response){try{const headers=new Headers(response.headers);const current=headers.get("Server-Timing");const extra=`waybill-temp-cleanup;dur=${cleanupMs}, waybill-server-end-to-end;dur=${serverTotalMs}`;headers.set("Server-Timing",current?current+", "+extra:extra);response=new Response(response.body,{status:response.status,statusText:response.statusText,headers})}catch{/* timing headers are diagnostic-only */}}
   }
   return response;
 }
