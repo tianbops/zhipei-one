@@ -23,22 +23,24 @@ const ROUTE_BASE_INDEX_CACHE_MAX=16;
 export function createRouteBaseIndex(baseStores){
   const stores=Array.isArray(baseStores)?baseStores:[];
   const knownKeys=new Set();
-  const unique=new Map();
+  const segmentEntries=[];
   for(const store of stores){
+    const storeKeys=new Set();
     for(const name of baseIdentityNames(store)){
       const key=formatCompareKey(name);
       if(key)knownKeys.add(key);
-      if(key.length<4)continue;
-      const id=clean(store?.storeId)||key;
-      const old=unique.get(id);
-      if(!old||key.length>old.key.length)unique.set(id,{store,name,key});
+      if(key.length<4||storeKeys.has(key))continue;
+      storeKeys.add(key);
+      segmentEntries.push({store,name,key});
     }
   }
   return {
     kind:ROUTE_BASE_INDEX_KIND,
     stores,
     knownKeys,
-    segmentEntries:[...unique.values()],
+    // Keep every usable name/alias. The old splitter tests all identities,
+    // then selects the longest hit per store for each OCR line.
+    segmentEntries,
     matchIndex:createMatchIndex(stores)
   };
 }
@@ -72,12 +74,16 @@ export function splitByRouteBase(items,baseStoresOrIndex){
   return items.flatMap(item=>{
     const rawName=clean(item?.rawName||item?.name);
     const rawKey=formatCompareKey(rawName);
-    const hits=[];
+    const bestHitByStore=new Map();
     for(const entry of index.segmentEntries){
       const pos=rawKey.indexOf(entry.key);
-      if(pos>=0)hits.push({...entry,pos});
+      if(pos<0)continue;
+      const hit={...entry,pos};
+      const id=clean(entry.store?.storeId)||entry.key;
+      const previous=bestHitByStore.get(id);
+      if(!previous||hit.key.length>previous.key.length)bestHitByStore.set(id,hit);
     }
-    const candidates=[...hits].sort((a,b)=>b.key.length-a.key.length||a.pos-b.pos);
+    const candidates=[...bestHitByStore.values()].sort((a,b)=>b.key.length-a.key.length||a.pos-b.pos);
     const selected=[];
     for(const candidate of candidates){
       const start=candidate.pos;
