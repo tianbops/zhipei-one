@@ -6,7 +6,7 @@
 const { $, S, esc, rn, api, toast, open, close, page, sw, closeSwipes, dlg, dt, dp, db, dc, do_ } = A;
 const formatTimingMs=value=>{const n=Number(value);if(!Number.isFinite(n)||n<0)return "-";return n<10?new Intl.NumberFormat("en-US",{maximumFractionDigits:2}).format(n):String(Math.round(n));};
 const formatBeijingTime=(value,explicit)=>{const raw=explicit||value;if(!raw)return "-";const date=new Date(raw);if(!Number.isFinite(date.getTime()))return String(raw);return new Intl.DateTimeFormat("zh-CN",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"}).format(date)+"（北京时间）";};
-const eventText=e=>[(e?.event||"-"),(e?.reuse?"复用运单ID："+e.reuse:""),(e?.dedupe?"去重方式："+e.dedupe:""),(e?.t?formatBeijingTime(e.t,e.tBeijing):"")].filter(Boolean).join(" · ");
+const eventText=e=>{const t=e?.timing&&typeof e.timing==="object"?e.timing:null;const attempt=t?[["准备+识别",t.recognizedMs],["OCR",t.ocrMs],["提取",t.extractMs],["匹配",t.matchMs],["去重",t.dedupeMs],["规划",t.planMs],["保存",t.saveStages?.totalMs],["本次总计",t.totalMs]].filter(x=>typeof x[1]==="number"&&Number.isFinite(x[1])&&x[1]>=0).map(x=>x[0]+" "+formatTimingMs(x[1])+"ms").join(" · "):"";return [(e?.event||"-"),(e?.reuse?"复用运单ID："+e.reuse:""),(e?.dedupe?"去重方式："+e.dedupe:""),(attempt?"本次尝试耗时："+attempt:""),(e?.t?formatBeijingTime(e.t,e.tBeijing):"")].filter(Boolean).join(" · ");};
 async function renderProcTicket(requestId){
   if(!requestId)return;
   $("diagnostics").innerHTML='<div class="zp-empty">正在读取处理票据…</div>';
