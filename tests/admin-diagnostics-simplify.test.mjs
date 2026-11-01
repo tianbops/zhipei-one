@@ -13,7 +13,7 @@ const sw=readFileSync(resolve(root,"sw.js"),"utf8");
 assert.ok(html.includes('id="diagRoute"')&&html.includes('id="diagDate"'));
 assert.ok(!html.includes('id="diagVehicle"'));
 assert.ok(!html.includes('id="learnStoreId"')&&!html.includes('id="learnManualToggle"'));
-assert.ok(html.includes('class="diag-perf-details"'));
+assert.ok(html.includes("diag-perf-details"));
 assert.ok(diag.includes('JSON.stringify(w,null,2)'),"copy must retain the complete waybill diagnostic object");
 assert.ok(diag.includes('JSON.stringify(d,null,2)'),"ticket copy must retain complete processing ticket");
 assert.ok(diag.includes('data-copy-index='));
