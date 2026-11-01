@@ -30,4 +30,14 @@ for(const path of ["js/admin/diagnostics.js","js/admin/learning.js","js/admin/ro
  const htmlRef=html.match(re),swRef=sw.match(re);
  assert.ok(htmlRef&&swRef&&htmlRef[1]===swRef[1],"HTML/SW cache hash mismatch for "+path);
 }
+assert.ok(!html.includes('id="diagRequestId"'));
+assert.ok(html.includes("选择线路和日期，无需填写 ID"));
+assert.ok(html.includes('class="diag-query-panel"'));
+assert.ok(!diag.includes("diagRequestId"));
+assert.ok(!html.includes("diagRequestId"));
+assert.ok(!diag.includes("(vehicle?"));
+assert.ok(diag.includes('JSON.stringify(failures[index],null,2)'),"failure copy must retain the complete archived failure record");
+assert.ok(diag.includes("diag-timing-note"));
+assert.ok(diag.includes("diag-failure-card"));
+assert.ok(css.includes(".diag-query-panel")&&css.includes(".diag-failure-heading")&&css.includes("var(--zp-"));
 console.log("管理员诊断页紧凑布局、无手工ID输入、完整复制与全局主题回归：通过");

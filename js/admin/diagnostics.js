@@ -6,29 +6,22 @@
 const { $, S, esc, rn, api, toast, open, close, page, sw, closeSwipes, dlg, dt, dp, db, dc, do_ } = A;
 const formatBeijingTime=(value,explicit)=>{const raw=explicit||value;if(!raw)return "-";const date=new Date(raw);if(!Number.isFinite(date.getTime()))return String(raw);return new Intl.DateTimeFormat("zh-CN",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"}).format(date)+"（北京时间）";};
 const eventText=e=>[(e?.event||"-"),(e?.reuse?"复用运单ID："+e.reuse:""),(e?.dedupe?"去重方式："+e.dedupe:""),(e?.t?formatBeijingTime(e.t,e.tBeijing):"")].filter(Boolean).join(" · ");
+async function renderProcTicket(requestId){
+  if(!requestId)return;
+  $("diagnostics").innerHTML='<div class="zp-empty">正在读取处理票据…</div>';
+  let d;
+  try{d=await api("/api/waybills/diagnostic?requestId="+encodeURIComponent(requestId))}
+  catch(e){$("diagnostics").innerHTML='<div class="zp-empty">处理票据读取失败：'+esc(e.message)+'</div><button class="small-action" id="diagTicketBack" type="button">返回诊断列表</button>';const back=$("diagTicketBack");if(back)back.onclick=renderDiagnostics;return}
+  const t=d.procTicket||{},timing=t.timing&&typeof t.timing==="object"?t.timing:{};
+  const timingLabels={ocrImageCount:"OCR图片数",ocrSubmitMs:"OCR提交累计",ocrStatusPollCount:"状态轮询次数",ocrStatusWaitMs:"轮询等待累计",ocrStatusRequestMs:"状态请求累计",ocrResultFetchMs:"结果读取累计",ocrResultRequestMs:"结果请求累计",ocrResultBodyMs:"正文读取累计",ocrResultParseMs:"结果解析累计",ocrResultChars:"结果字符数",ocrResultFetchWaitMs:"结果重试等待",ocrResultFetchAttempts:"结果读取尝试数",recognizedMs:"识别总计",ocrMs:"OCR墙钟总计",baseMs:"基准读取",extractMs:"文本提取",matchMs:"门店匹配",dedupeMs:"去重",planMs:"线路规划",totalMs:"处理总计"};
+  const timingLines=Object.entries(timing).filter(([k,v])=>Object.prototype.hasOwnProperty.call(timingLabels,k)&&typeof v==="number"&&Number.isFinite(v)&&v>=0).map(([k,v])=>timingLabels[k]+"："+Math.round(v)+(k==="ocrImageCount"?"张":k==="ocrResultChars"?"字符":k.endsWith("Count")||k.endsWith("Attempts")?"次":"ms"));
+  const copyText=["智配One 失败/超时处理诊断","requestId："+(d.requestId||requestId),"处理阶段："+(t.stage||d.effectiveStage||"-"),"错误详情："+(t.detail||"-"),"线路ID："+(t.routeId||"-"),"创建时间："+formatBeijingTime(t.createdAt,t.createdAtBeijing),"更新时间："+formatBeijingTime(t.updatedAt,t.updatedAtBeijing),"提示："+(t.hint||"-"),"阶段耗时："+(timingLines.join(" · ")||"暂无已保存阶段耗时"),"完整处理票据数据：",JSON.stringify(d,null,2)].join("\n");
+  $("diagnostics").innerHTML='<div class="row diag-card"><div class="content"><div class="main"><strong>处理票据 · '+esc(t.stage||d.effectiveStage||"-")+'</strong></div><div class="meta">线路：'+esc(t.routeName||t.routeId||"-")+' · 更新时间：'+esc(formatBeijingTime(t.updatedAt,t.updatedAtBeijing))+'</div><div class="meta">失败详情：'+esc(t.detail||t.hint||"-")+'</div><div class="diag-timing">'+timingLines.map(x=>'<span>'+esc(x)+'</span>').join("")+'</div><div class="diag-actions"><button class="small-action" id="diagTicketCopy" type="button">复制完整诊断</button><button class="small-action" id="diagTicketBack" type="button">返回列表</button></div></div></div>';
+  const copy=$("diagTicketCopy");
+  if(copy)copy.onclick=async()=>{let copied=false;try{if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(copyText);copied=true}}catch(e){}if(!copied){const ta=document.createElement("textarea");ta.value=copyText;ta.setAttribute("readonly","");ta.style.position="fixed";ta.style.opacity="0";ta.style.left="-9999px";document.body.appendChild(ta);ta.select();try{copied=document.execCommand("copy")}catch(e){}ta.remove()}toast(copied?"诊断结果已复制":"复制失败，请长按文本手动复制")};
+  const back=$("diagTicketBack");if(back)back.onclick=renderDiagnostics;
+}
 async function renderDiagnostics(){
-  const requestId=($("diagRequestId")?.value||"").trim();
-  if(requestId){
-    $("diagRouteMeta").textContent="按 requestId 查询失败/超时处理票据";
-    $("diagnostics").innerHTML='<div class="zp-empty">正在查询处理票据…</div>';
-    let d;
-    try{d=await api("/api/waybills/diagnostic?requestId="+encodeURIComponent(requestId))}
-    catch(e){$("diagnostics").innerHTML='<div class="zp-empty">查询失败：'+esc(e.message)+'</div>';return}
-    const t=d.procTicket||{};
-    const timing=t.timing&&typeof t.timing==="object"?t.timing:{};
-    const timingLabels={ocrImageCount:"OCR图片数",ocrSubmitMs:"OCR提交累计",ocrStatusPollCount:"状态轮询次数",ocrStatusWaitMs:"轮询等待累计",ocrStatusRequestMs:"状态请求累计",ocrResultFetchMs:"结果读取累计",ocrResultRequestMs:"结果请求累计",ocrResultBodyMs:"正文读取累计",ocrResultParseMs:"结果解析累计",ocrResultChars:"结果字符数",ocrResultFetchWaitMs:"结果重试等待",ocrResultFetchAttempts:"结果读取尝试数",recognizedMs:"识别总计",ocrMs:"OCR墙钟总计",baseMs:"基准读取",extractMs:"文本提取",matchMs:"门店匹配",dedupeMs:"去重",planMs:"线路规划",totalMs:"处理总计"};
-    const timingLines=Object.entries(timing).filter(([k,v])=>Object.prototype.hasOwnProperty.call(timingLabels,k)&&typeof v==="number"&&Number.isFinite(v)&&v>=0).map(([k,v])=>timingLabels[k]+"："+Math.round(v)+(k==="ocrImageCount"?"张":k==="ocrResultChars"?"字符":k.endsWith("Count")||k.endsWith("Attempts")?"次":"ms"));
-    const copyText=["智配One 失败/超时处理诊断","requestId："+(d.requestId||requestId),"处理阶段："+(t.stage||d.effectiveStage||"-"),"错误详情："+(t.detail||"-"),"线路ID："+(t.routeId||"-"),"创建时间："+formatBeijingTime(t.createdAt,t.createdAtBeijing),"更新时间："+formatBeijingTime(t.updatedAt,t.updatedAtBeijing),"提示："+(t.hint||"-"),"阶段耗时："+(timingLines.join(" · ")||"暂无已保存阶段耗时"),"完整处理票据数据：",JSON.stringify(d,null,2)].join("\n");
-    $("diagnostics").innerHTML='<div class="row"><div class="content" style="display:block;width:100%"><div class="main"><strong>处理票据 · '+esc(t.stage||d.effectiveStage||"-")+'</strong></div><div class="meta">requestId：'+esc(d.requestId||requestId)+'</div><div class="meta">线路ID：'+esc(t.routeId||"-")+' · 更新时间：'+esc(formatBeijingTime(t.updatedAt,t.updatedAtBeijing))+'</div><div class="meta">错误详情：'+esc(t.detail||"-")+'</div><div class="meta">提示：'+esc(t.hint||"-")+'</div><div class="meta">阶段耗时：'+esc(timingLines.join(" · ")||"暂无已保存阶段耗时")+'</div><div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="small-action diag-ticket-copy" type="button">复制诊断</button></div></div></div>';
-    const copyBtn=document.querySelector("#diagnostics .diag-ticket-copy");
-    if(copyBtn)copyBtn.onclick=async()=>{
-      let copied=false;
-      try{if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(copyText);copied=true;}}catch(e){}
-      if(!copied){const ta=document.createElement("textarea");ta.value=copyText;ta.setAttribute("readonly","");ta.style.position="fixed";ta.style.opacity="0";ta.style.left="-9999px";document.body.appendChild(ta);ta.select();try{copied=document.execCommand("copy")}catch(e){}ta.remove();}
-      toast(copied?"诊断结果已复制":"复制失败，请长按文本手动复制");
-    };
-    return;
-  }
   const routeId=($("diagRoute").value||"").trim();
   const selectedRoute=(S.routes||[]).find(r=>String(r.id)===routeId);
   if(!routeId||!selectedRoute){$("diagnostics").innerHTML='<div class="zp-empty">'+(S.routes&&S.routes.length?"请选择一条有效线路":"线路列表尚未加载，或当前没有可选线路")+'</div>';return}
@@ -42,10 +35,10 @@ async function renderDiagnostics(){
   let d;try{d=await api(q)}catch(e){$("diagnostics").innerHTML='<div class="zp-empty">查询失败：'+esc(e.message)+'</div>';return}
   const list=d.waybills||[];
   const failures=Array.isArray(d.failures)?d.failures:[];
-  if(!list.length&&!failures.length){const scope=(date?"日期 "+date+" · ":"")+(vehicle?"车牌 "+vehicle+" · ":"");$("diagnostics").innerHTML='<div class="zp-empty">'+esc(scope)+(date?"该线路在所选日期没有匹配到运单。":"该线路暂无匹配运单。")+'<br>如确认当天已有运单，可继续检查运单索引一致性。</div>';return}
+  if(!list.length&&!failures.length){const scope=date?"日期 "+date+" · ":"";$("diagnostics").innerHTML='<div class="zp-empty">'+esc(scope)+(date?"该线路在所选日期没有匹配到运单。":"该线路暂无匹配运单。")+'<br>如确认当天已有运单，可继续检查运单索引一致性。</div>';return}
   const copyPayloads=[];
-  const truncHint=(d.truncated&&Number(d.count)>list.length)?'<div class="zp-empty" style="color:var(--zp-warning)">共 '+esc(d.count)+' 张运单，当前仅显示最近 20 张</div>':"";
-  const timingNote='<div class="meta" style="margin:6px 2px 10px">多图 OCR 的提交、状态和结果耗时为各图片累计值，不等于实际等待时间；结果读取累计包含请求、正文读取和解析。阶段计时仅展示已保存数据，“处理总计”不包含最终保存阶段耗时。</div>';
+  const truncHint=(d.truncated&&Number(d.count)>list.length)?'<div class="zp-empty" class="diag-trunc-hint">共 '+esc(d.count)+' 张运单，当前仅显示最近 20 张</div>':"";
+  const timingNote='<details class="diag-details diag-timing-note"><summary>计时口径说明</summary><div class="meta">多图 OCR 的提交、状态和结果耗时为各图片累计值，不等于实际等待时间；结果读取累计包含请求、正文读取和解析。阶段计时仅展示已保存数据，“处理总计”不包含最终保存阶段耗时。</div></details>';
   $("diagnostics").innerHTML=timingNote+truncHint+list.map(w=>{
     const lvl=(w.quality&&w.quality.level)||"OK";const ql=lvl==="REVIEW"?"review":"ok";
     const flags=(w.quality&&w.quality.flags||[]).join("、")||"正常";
@@ -123,14 +116,15 @@ async function renderDiagnostics(){
       +timingHtml+detailHtml
       +'<div class="diag-actions"><button class="small-action diag-copy" type="button" data-copy-index="'+copyIndex+'">复制完整诊断</button></div></div></div>';
   }).join("");
-  const failureHtml=failures.length?'<div class="meta" style="margin:12px 2px 8px;font-weight:600">失败处理记录（'+esc(failures.length)+'）</div>'+failures.map(f=>{
+  const failureHtml=failures.length?'<div class="meta diag-failure-heading">失败处理记录（'+esc(failures.length)+'）</div>'+failures.map((f,index)=>{
     const o=f.order||{},dg=o.diagnostics||{},v=f.validation||o.validation||{},stores=Array.isArray(dg.finalItems)?dg.finalItems:(Array.isArray(o.stores)?o.stores:[]);
     const label=f.stage==="TIMEOUT"?"处理超时":f.stage==="CANCELLED"?"用户取消":"处理失败";
-    return '<div class="row"><div class="content" style="display:block;width:100%"><div class="main"><strong>'+"运单日期："+esc(f.date||"-")+' · '+esc(f.vehicle||"车牌未识别")+'</strong><span class="q-badge review">'+esc(label)+'</span></div><div class="meta">上传时间：'+esc(formatBeijingTime(f.uploadedAt,f.uploadedAtBeijing))+'</div><div class="meta">失败原因：'+esc(f.detail||f.hint||f.code||"未记录")+'</div><div class="meta">错误代码：'+esc(f.code||"-")+'</div><div class="meta">门店数量：提取 '+esc(dg.extractCount??"-")+' · 去重前 '+esc(dg.dedupeBefore??"-")+' · 去重后 '+esc(dg.dedupeAfter??"-")+' · 最终 '+esc(stores.length)+'</div><div class="meta">'+esc((v.errors||[]).join("、"))+'</div><div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="small-action diag-failure-copy" type="button">复制完整失败诊断</button></div></div></div>';
+    return '<div class="row diag-failure-card"><div class="content"><div class="main"><strong>'+"运单日期："+esc(f.date||"-")+' · '+esc(f.vehicle||"车牌未识别")+'</strong><span class="q-badge review">'+esc(label)+'</span></div><div class="meta">上传时间：'+esc(formatBeijingTime(f.uploadedAt,f.uploadedAtBeijing))+'</div><div class="meta">失败原因：'+esc(f.detail||f.hint||f.code||"未记录")+'</div><div class="meta">错误代码：'+esc(f.code||"-")+'</div><div class="meta">门店数量：提取 '+esc(dg.extractCount??"-")+' · 去重前 '+esc(dg.dedupeBefore??"-")+' · 去重后 '+esc(dg.dedupeAfter??"-")+' · 最终 '+esc(stores.length)+'</div><div class="meta">'+esc((v.errors||[]).join("、"))+'</div><div class="diag-actions">'+(f.requestId?'<button class="small-action diag-ticket-open" data-ticket-index="'+index+'" type="button">查看处理票据</button>':'')+'<button class="small-action diag-failure-copy" type="button">复制完整失败诊断</button></div></div></div>';
   }).join(""):"";
   $("diagnostics").innerHTML += (d.failureQueryError?'<div class="zp-empty">失败记录暂时无法读取，正常运单诊断仍可查看，请稍后刷新。</div>':"") + failureHtml;
+  document.querySelectorAll("#diagnostics .diag-ticket-open").forEach(btn=>btn.onclick=()=>{const index=Number(btn.getAttribute("data-ticket-index"));const failure=failures[index];if(failure?.requestId)renderProcTicket(failure.requestId)});
   document.querySelectorAll("#diagnostics .diag-failure-copy").forEach((btn,index)=>btn.onclick=async()=>{
-    const value="智配One 失败运单诊断\\n完整失败记录（JSON）：\\n"+JSON.stringify(failures[index],null,2);
+    const value=["智配One 失败运单诊断","完整失败记录（JSON）：",JSON.stringify(failures[index],null,2)].join("\\n");
     let copied=false;
     try{await navigator.clipboard.writeText(value);copied=true;}catch(e){}
     if(!copied){const ta=document.createElement("textarea");ta.value=value;document.body.appendChild(ta);ta.select();try{copied=document.execCommand("copy")}catch(e){}ta.remove();}
@@ -160,4 +154,5 @@ async function renderDiagnostics(){
   });
 }
 A.renderDiagnostics=renderDiagnostics;
+A.renderProcTicket=renderProcTicket;
 })(window.ZPAdmin);
