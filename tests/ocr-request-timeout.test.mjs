@@ -104,6 +104,7 @@ assert.match(source, /timing\.ocrResultChars \+= raw\.length/,
 assert.match(processSource, /ocrResultRequestMs:results\.reduce/,
   "多图 OCR 请求阶段计时必须汇总");
 assert.match(processSource, /ocrResultBodyMs:results\.reduce/,
+  "多图 OCR 正文读取计时必须汇总");
 assert.match(processSource, /ocrResultParseMs:results\.reduce/,
   "多图 OCR 解析计时必须汇总");
 assert.match(processSource, /ocrImageCount:ocr\.imageCount/,
