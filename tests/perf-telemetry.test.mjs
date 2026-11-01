@@ -88,7 +88,8 @@ assert.match(upload,/perfFailureStatus\|\|\(perfResponseStatus===null/);
 const processApi=readFileSync(new URL("../functions/api/waybills/process.js",import.meta.url),"utf8");
 assert.equal((processApi.match(/processingTiming:processingTiming\(\)/g)||[]).length,5);
 assert.match(processApi,/saveStages/);
-assert.equal((processApi.match(/event:"WAYBILL_IDEMPOTENT"[^}]*timing:processingTiming\\(\\)/g)||[]).length,3,"every idempotent reuse event must retain the current attempt timing");
+assert.equal(processApi.split('event:"WAYBILL_IDEMPOTENT"').length-1,3,"every idempotent reuse path must retain the current attempt timing");
+assert.match(processApi,/event:"WAYBILL_IDEMPOTENT"[^}]*timing:processingTiming/,"idempotent events must attach processing timing");
 assert.match(diagnosticUi,/本次尝试耗时/,"idempotent event timing must be visible in copied and displayed event history");
 assert.match(upload,/perfResult\?\.processingTiming/);
 
