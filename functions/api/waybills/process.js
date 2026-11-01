@@ -112,7 +112,7 @@ async function runProcessCore({request,env,emit=()=>{},form:providedForm=null,us
   const sessionRouteId=clean(user.dispatchRouteId||user.boundRouteId);
   const routeId=processingRouteId||sessionRouteId;
   // 处理票据：每次 process 请求一张 PROCESSING 票据落库（TTL 15min），失败时转 FAILED/TIMEOUT/CANCELLED 并携可恢复提示，成功转 DONE；运单仅成功保存后落库，避免脏运单污染索引/去重（P1 #18）。
-  const procTicket=await beginProc(env,{requestId,routeId,userId:user.id,fileName:null});
+  const procTicket=await beginProc(env,{requestId,routeId,userId:user.id,fileName:null});\n  emit(5,"处理任务已建立",{requestId});
   if(!procTicket)return json({success:false,code:"WAYBILL_PROC_TICKET_CREATE_FAILED",error:"处理任务暂时无法建立，请稍后重试",message:"处理任务暂时无法建立，请稍后重试",requestId,recoverable:true,action:"REPROCESS",hint:"处理任务暂时无法建立，请稍后重试"},503);
   if(!routeId){emit(0,"等待配送线路");return failProcess("DISPATCH_ROUTE_MISSING","请先选择调度线路",400,{recoverable:true,action:"REPROCESS",hint:"请先在首页选择调度线路后重新处理运单"});}
   if(processingRouteId&&sessionRouteId&&processingRouteId!==sessionRouteId){emit(0,"线路已切换");return failProcess("DISPATCH_ROUTE_CHANGED","当前线路已发生变化，请重新处理运单",409,{recoverable:true,action:"REPROCESS",hint:"当前线路已发生变化，请重新处理运单"});}
@@ -455,7 +455,7 @@ export async function onRequestPost({request,env}){
       if(closed)return false;
       try{controller.enqueue(encoder.encode(value));return true}catch{closed=true;return false}
     };
-    const emit=(progress,message)=>push(JSON.stringify({type:"progress",progress,message})+"\n");
+    const emit=(progress,message,extra={})=>push(JSON.stringify({type:"progress",progress,message,...extra})+"\n");
     heartbeat=setInterval(()=>push(JSON.stringify({type:"heartbeat",ts:Date.now()})+"\n"),1000);
     // 先建立响应流并立即发送首个进度事件，再在流内部读取 multipart/form-data。
     // 避免 request.formData() 阻塞响应头和首个进度事件，导致客户端长时间停在 3%。
