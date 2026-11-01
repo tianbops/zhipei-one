@@ -36,7 +36,16 @@ const getReq = (url, token) => ({ url, headers: { get: (h) => (String(h).toLower
       stage: "CONFIRMED",
       pipeline: ["RECOGNIZED", "EXTRACTED", "MATCHED", "DEDUPED", "PLANNED", "VALIDATED", "CONFIRMED"],
       createdBy: uId, createdAt: TODAY + "T08:00:00.000Z",
-      quality: { level: "OK", flags: [] }, ocr: { provider: "PaddleOCR", lowConfidence: null }
+      quality: { level: "OK", flags: [] }, ocr: { provider: "PaddleOCR", lowConfidence: null },
+      timing: {
+        ocrStatusBatchRequestCount: 2, ocrStatusFallbackRequestCount: 0,
+        ocrStatusSingleRequestCount: 0, ocrStatusBatchResponseJobCount: 4,
+        ocrStatusBatchMatchedJobCount: 2, ocrStatusBatchMissingJobCount: 0,
+        ocrImageTimings: [
+          { imageIndex: 1, jobId: "job-one", statusMode: "batch", submitMs: 310, statusRequestMs: 230, batchStatusRequestCount: 1, resultFetchMs: 1100, resultChars: 7410, secret: "must-not-leak" },
+          { imageIndex: 2, jobId: "job-two", statusMode: "batch", submitMs: 1214, statusRequestMs: 230, batchStatusRequestCount: 1, resultFetchMs: 1201, resultChars: 9270 }
+        ]
+      }
     });
     red.command(["SADD", "zp:route:" + R + ":waybills:" + TODAY, "W" + i]);
   }
@@ -55,6 +64,10 @@ const getReq = (url, token) => ({ url, headers: { get: (h) => (String(h).toLower
   check("waybills 仅返回前 20 张", Array.isArray(d.waybills) && d.waybills.length === 20, "len=" + (d.waybills ? d.waybills.length : 0));
   check("返回内容含 waybillId 字段（前端可定位）", d.waybills && d.waybills[0] && !!d.waybills[0].id);
   check("事件链字段为数组（pipeline LRANGE 批量读取）", d.waybills && Array.isArray(d.waybills[0].events));
+  check("批量状态请求计数透传", d.waybills?.[0]?.timing?.ocrStatusBatchRequestCount === 2);
+  check("逐图 OCR 计时透传两张图片", Array.isArray(d.waybills?.[0]?.timing?.ocrImageTimings) && d.waybills[0].timing.ocrImageTimings.length === 2);
+  check("逐图批量模式和请求耗时透传", d.waybills?.[0]?.timing?.ocrImageTimings?.[0]?.statusMode === "batch" && d.waybills[0].timing.ocrImageTimings[0].statusRequestMs === 230);
+  check("逐图诊断过滤未授权附加字段", !("secret" in (d.waybills?.[0]?.timing?.ocrImageTimings?.[0] || {})));
 
   console.log("\nDIAG_TRUNCATION 集成：通过 " + pass + " / 失败 " + fail);
   process.exit(fail ? 1 : 0);
