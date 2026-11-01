@@ -110,6 +110,13 @@ for(const key of ["ocrImageCount","ocrResultRequestMs","ocrResultBodyMs","ocrRes
   assert.match(diagnosticApi,new RegExp('"'+key+'"'),key+" must survive diagnostic safeTiming filtering");
 }
 assert.match(diagnosticUi,/const formatTimingMs\s*=/,"sub-10ms timing values must remain visible");
+assert.match(processApi,/const waybillPerfClock\\s*=/,"diagnostics must disclose whether high-resolution timing is available");
+assert.match(processApi,/timingResolutionMs:timingClock==="performance\\.now"\\?0\\.01:1/,"diagnostics must expose timer resolution when falling back to Date.now");
+assert.match(diagnosticApi,/"r2StageMs"/,"R2 staging duration must survive safeTiming filtering");
+assert.match(diagnosticApi,/"r2StageBytes"/,"R2 staging byte count must survive safeTiming filtering");
+assert.match(diagnosticUi,/准备\\+识别累计/,"the cumulative recognition label must state its preparation boundary");
+assert.match(diagnosticUi,/R2暂存/,"R2 staging must be separately visible");
+assert.match(diagnosticUi,/计时分辨率/,"the diagnostic must explain timer resolution");
 for(const key of ["baseLookupMs","baseIndexMs","baseWaitMs","baseOverlapMs"]){
   assert.ok(diagnosticUi.includes('"'+key+'"'),key+" must be shown in full waybill diagnostics");
 }
