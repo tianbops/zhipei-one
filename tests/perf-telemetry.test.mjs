@@ -113,3 +113,12 @@ assert.match(diagnosticUi,/const formatTimingMs\s*=/,"sub-10ms timing values mus
 for(const key of ["baseLookupMs","baseIndexMs","baseWaitMs","baseOverlapMs"]){
   assert.ok(diagnosticUi.includes('"'+key+'"'),key+" must be shown in full waybill diagnostics");
 }
+
+// OCR request durations use the same monotonic high-resolution clock; wall-clock remains only for absolute deadlines.
+const ocrApi=readFileSync(new URL("../functions/api/waybills/ocr.js",import.meta.url),"utf8");
+assert.match(ocrApi,/const ocrPerfNow\s*=/);
+assert.match(ocrApi,/const ocrPerfDuration\s*=/);
+for(const marker of ["submitStarted","waitStarted","statusStarted","requestStarted","bodyStarted","refreshStarted","resultStarted","parseStarted"]){
+  assert.match(ocrApi,new RegExp("ocrPerfDuration\\("+marker+"\\)"),marker+" must use monotonic duration");
+  assert.doesNotMatch(ocrApi,new RegExp("Date\\.now\\(\\)\\s*-\\s*"+marker),marker+" must not use wall-clock subtraction");
+}
