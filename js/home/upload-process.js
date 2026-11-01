@@ -268,7 +268,7 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
       const serverTimingValue=name=>{const match=serverTiming.match(new RegExp(name+";dur=([0-9]+(?:\\.[0-9]+)?)"));return match?Number(match[1]):null;};
       const r2CleanupMs=serverTimingValue("waybill-temp-cleanup");
       const endToEndMs=serverTimingValue("waybill-server-end-to-end");
-      if(r2CleanupMs!==null)phases["waybill-server-r2-cleanup"]=r2CleanupMs;
+      if(r2CleanupMs!==null)phases["waybill-server-temp-cleanup"]=r2CleanupMs;
       if(endToEndMs!==null)phases["waybill-server-end-to-end"]=endToEndMs;
       const server=Number.isFinite(endToEndMs)?endToEndMs:(Number.isFinite(Number(timing.totalMs))?Number(timing.totalMs):null);
       const status=perfFailureStatus||(perfResponseStatus===null?"network":(!perfStreamComplete&&perfResponseStatus<400?"network":(perfResult?.success===false&&Number.isInteger(perfResult?.httpStatus)?perfResult.httpStatus:perfResponseStatus)));
