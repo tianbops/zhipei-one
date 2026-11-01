@@ -158,3 +158,27 @@ html[data-zp-theme="light"] select,html[data-zp-theme="light"] input[type="date"
 .dialog .zp-picker-options [role="option"]{display:block;width:100%;min-height:44px;padding:0 12px;text-align:left;font:inherit;font-size:var(--zp-fs-15);color:var(--zp-text);background:transparent;border:0;border-radius:var(--zp-r-control);-webkit-appearance:none;appearance:none}
 .dialog .zp-picker-options [role="option"][aria-selected="true"]{background:var(--zp-secondary-active);font-weight:var(--zp-fw-bold)}
 .dialog .zp-picker-trigger:focus-visible,.dialog .zp-picker-options [role="option"]:focus-visible{outline:2px solid var(--zp-focus-ring);outline-offset:2px}
+
+/* 管理员诊断页：紧凑信息层级，沿用全站颜色/字号/圆角令牌。 */
+.diag-filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;align-items:end;gap:8px;margin:0 0 10px}
+.diag-filter{display:flex;flex-direction:column;gap:4px;min-width:0;color:var(--zp-muted);font-size:var(--zp-fs-12)}
+.diag-filter select,.diag-filter input{width:100%;min-width:0;height:42px;padding:0 10px;border:1px solid var(--zp-input-line);border-radius:var(--zp-r-control);background:var(--zp-input-bg);color:var(--zp-text);font:inherit;font-size:var(--zp-fs-14)}
+.diag-query{height:42px;min-width:58px}
+.diag-card{margin-bottom:6px}
+.diag-card .content{padding:8px 10px;min-height:0}
+.diag-card .main{display:flex;align-items:center;gap:6px}
+.diag-card .main strong{font-size:var(--zp-fs-13);line-height:18px}
+.diag-card .meta{margin-top:2px;font-size:var(--zp-fs-11);line-height:15px}
+.diag-timing{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:5px}
+.diag-timing span{padding:2px 6px;border-radius:var(--zp-r-mini);background:var(--zp-secondary-bg);color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:15px;font-variant-numeric:tabular-nums}
+.diag-details{margin-top:6px;border-top:1px solid var(--zp-tint);color:var(--zp-muted);font-size:var(--zp-fs-12)}
+.diag-details summary{min-height:30px;display:flex;align-items:center;cursor:pointer;list-style:none;font-size:var(--zp-fs-12);font-weight:var(--zp-fw-semibold)}
+.diag-details summary::-webkit-details-marker{display:none}
+.diag-details summary::after{content:"展开";margin-left:auto;color:var(--zp-soft);font-weight:var(--zp-fw-normal)}
+.diag-details[open] summary::after{content:"收起"}
+.diag-details .meta{overflow-wrap:anywhere}
+.diag-full-timing{padding:5px 0}
+.diag-actions{display:flex;justify-content:flex-end;margin-top:6px}
+.diag-actions .small-action{min-height:32px;font-size:var(--zp-fs-12)}
+.diag-perf-details{margin-top:8px}
+@media(max-width:380px){.diag-filters{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.diag-query{grid-column:1/-1;width:100%}}
