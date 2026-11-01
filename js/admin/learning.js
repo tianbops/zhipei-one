@@ -58,7 +58,7 @@ async function learnIsolate(){
 async function learnRestore(storeId){
   try{await api("/api/admin/global-learning",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"restore",storeId})});toast("已恢复 "+storeId);renderLearningIsolation()}catch(e){toast(e.message)}
 }
-const storeSelect=$("learnStoreSelect");
+
 A.renderLearningStores=renderLearningStores;
 A.renderLearningIsolation=renderLearningIsolation;
 A.learnIsolate=learnIsolate;
