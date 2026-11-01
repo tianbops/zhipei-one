@@ -18,6 +18,10 @@ const frontend = readFileSync(new URL("../js/home/upload-process.js", import.met
     "批内应使用 Promise.allSettled 并发识别，并统一处理失败");
   assert.ok(/for\(const s of settled\)results\.push\(s\.value\)/.test(backend),
     "并发结果必须按文件顺序收集，保证 imageTexts 顺序与截图顺序一致");
+  assert.ok(/const batchId=batch\.length>1\?`zp-\$\{requestId\}-\$\{start\}`:null/.test(backend),
+    "每个双图并发批次必须有独立 batchId，单图仍走原有单任务状态查询");
+  assert.ok(/request\?\.signal,batchId\)/.test(backend),
+    "同批图片必须把同一个 batchId 传入 OCR 适配层");
   console.log("✅ 后端多图分批并发");
 }
 
@@ -51,3 +55,11 @@ const frontend = readFileSync(new URL("../js/home/upload-process.js", import.met
 }
 
 console.log("\n✅ upload-speed 全部通过");
+
+const r2StageBlock=backend.slice(backend.indexOf("const TEMP_STAGE_CONCURRENCY"),backend.indexOf("const ocrStarted"));
+assert.ok(!/const batchId/.test(r2StageBlock), "batchId 只能在 OCR 并发批次作用域创建，不能误放在 R2 暂存循环");
+const ocrBatchStart=backend.indexOf("const CONCURRENCY=files.length>1?2:1");
+const ocrBatchEnd=backend.indexOf("const failed=settled.find",ocrBatchStart);
+assert.ok(ocrBatchStart>=0&&ocrBatchEnd>ocrBatchStart, "OCR 并发批次边界必须存在");
+assert.match(backend.slice(ocrBatchStart,ocrBatchEnd), /const batchId=batch\.length>1\?\x60zp-\$\{requestId\}-\$\{start\}\x60:null/,
+  "batchId 必须在 OCR 并发批次内部声明，保证两个识别任务共享且不跨批次");
