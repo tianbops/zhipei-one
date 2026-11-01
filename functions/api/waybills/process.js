@@ -141,25 +141,18 @@ async function runProcessCore({request,env,emit=()=>{},form:providedForm=null,us
       return failProcess("WAYBILL_TEMP_LIMIT_EXCEEDED","本次运单图片数量或总大小超出限制，请分批上传",413,{recoverable:true,action:"REPROCESS",hint:"请减少图片数量或分批上传后重试"});
     }
     const bucket=env?.WAYBILL_FILES;
-    if(!bucket||typeof bucket.put!=="function"||typeof bucket.get!=="function"||typeof bucket.delete!=="function"){
+    if(!bucket||typeof bucket.put!=="function"||typeof bucket.delete!=="function"){
       return failProcess("WAYBILL_TEMP_STORAGE_UNAVAILABLE","运单临时存储暂不可用，请稍后重试",503,{recoverable:true,action:"REPROCESS",hint:"运单图片临时存储暂不可用，请稍后重试"});
     }
-    const stagedFiles=[];
     try{
       for(let i=0;i<files.length;i++){
         const source=files[i];
         const key=`waybill-tmp/${requestId}/${i+1}-${crypto.randomUUID()}`;
         await bucket.put(key,source,{storageClass:"Standard",httpMetadata:{contentType:source.type||"application/octet-stream"}});
         tempKeys.push(key);
-        const stored=await bucket.get(key);
-        if(!stored)throw new Error("临时图片写入后无法读取");
-        const bytes=await stored.arrayBuffer();
-        stagedFiles.push(new File([bytes],source.name||`waybill-${i+1}`,{
-          type:source.type||"application/octet-stream",
-          lastModified:Number(source.lastModified)||Date.now()
-        }));
       }
-      files=stagedFiles;
+      // R2 仍按要求临时暂存并在请求结束后删除；OCR 直接使用本次请求已接收的 File。
+      // 不再把刚写入 R2 的同一图片立即 GET 回来并复制成新 File，避免每张图多一次 R2 读请求和整图内存复制。
     }catch(error){
       logServerError("waybills.r2-temp-stage",error);
       return failProcess("WAYBILL_TEMP_STORAGE_FAILED","运单图片临时存储失败，请重新上传",503,{recoverable:true,action:"REPROCESS",hint:"运单图片暂存失败，请重新上传后重试"});
