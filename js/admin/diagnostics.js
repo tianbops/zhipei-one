@@ -4,7 +4,7 @@
  */
 (function(A){
 const { $, S, esc, rn, api, toast, open, close, page, sw, closeSwipes, dlg, dt, dp, db, dc, do_ } = A;
-const formatTimingMs=value=>{const n=Number(value);if(!Number.isFinite(n)||n<0)return "-";return n<10?String(Math.round(n*100)/100):String(Math.round(n));};
+const formatTimingMs=value=>{const n=Number(value);if(!Number.isFinite(n)||n<0)return "-";return n<10?new Intl.NumberFormat("en-US",{maximumFractionDigits:2}).format(n):String(Math.round(n));};
 const formatBeijingTime=(value,explicit)=>{const raw=explicit||value;if(!raw)return "-";const date=new Date(raw);if(!Number.isFinite(date.getTime()))return String(raw);return new Intl.DateTimeFormat("zh-CN",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"}).format(date)+"（北京时间）";};
 const eventText=e=>[(e?.event||"-"),(e?.reuse?"复用运单ID："+e.reuse:""),(e?.dedupe?"去重方式："+e.dedupe:""),(e?.t?formatBeijingTime(e.t,e.tBeijing):"")].filter(Boolean).join(" · ");
 async function renderProcTicket(requestId){
