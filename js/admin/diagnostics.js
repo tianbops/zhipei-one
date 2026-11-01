@@ -32,12 +32,12 @@ async function renderDiagnostics(){
   const routeId=($("diagRoute").value||"").trim();
   const selectedRoute=(S.routes||[]).find(r=>String(r.id)===routeId);
   if(!routeId||!selectedRoute){$("diagnostics").innerHTML='<div class="zp-empty">'+(S.routes&&S.routes.length?"请选择一条有效线路":"线路列表尚未加载，或当前没有可选线路")+'</div>';return}
-  const date=($("diagDate").value||"").trim(),vehicle=($("diagVehicle").value||"").trim();
+  const date=($("diagDate").value||"").trim();
   if(date&&!/^\d{4}-\d{2}-\d{2}$/.test(date)){$("diagnostics").innerHTML='<div class="zp-empty">日期格式无效，请选择有效日期</div>';return}
   $("diagRouteMeta").textContent="线路："+(rn(selectedRoute.name)||selectedRoute.name||routeId)+" · 线路ID："+routeId;
   let q="/api/waybills/diagnostic?routeId="+encodeURIComponent(routeId);
   if(date)q+="&date="+encodeURIComponent(date);
-  if(vehicle)q+="&vehicle="+encodeURIComponent(vehicle);
+
   $("diagnostics").innerHTML='<div class="zp-empty">正在查询运单…</div>';
   let d;try{d=await api(q)}catch(e){$("diagnostics").innerHTML='<div class="zp-empty">查询失败：'+esc(e.message)+'</div>';return}
   const list=d.waybills||[];
