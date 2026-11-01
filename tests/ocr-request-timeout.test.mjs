@@ -83,7 +83,14 @@ assert.match(source, /const text = await r\.text\(\);[\s\S]*?finally\s*\{\s*clea
 assert.match(source, /const readResult = async \(u\) => \{[\s\S]*?raw = await rr\.text\(\);[\s\S]*?const err = fail\("OCR_RESULT_TIMEOUT"[\s\S]*?err\.retryable = true;/,
   "OCR 结果正文超时必须归类为可重试的 OCR_RESULT_TIMEOUT");
 assert.match(source, /let delay = 900;/, "首次状态轮询等待应缩短到 900ms");
-assert.match(source, /const deadline = Date\.now\(\) \+ 19000;/, "首次轮询优化不得缩短整体 OCR 截止时间");
+assert.match(source, /const OCR_STATUS_DEADLINE_MS = 30000;[\\s\\S]*?const deadline = Date\\.now\\(\\) \\+ OCR_STATUS_DEADLINE_MS;/,
+  "OCR 状态等待窗口应扩展到 30 秒，并由单一常量驱动截止时间");
+assert.match(source, /Math\\.max\\(1, Math\\.min\\(6000, remainingMs\\)\\), signal/,
+  "每次状态请求超时必须受整个 OCR 截止时间的剩余预算约束");
+assert.match(source, /setTimeout\\(r, Math\\.min\\(delay, Math\\.max\\(0, deadline - Date\\.now\\(\\)\\)\\)\\)/,
+  "轮询等待不得越过 OCR 总截止时间");
+assert.match(source, /e\\?\\.code === "OCR_NETWORK_TIMEOUT" && Date\\.now\\(\\) >= deadline/,
+  "最后一次状态请求耗尽截止预算时应统一归类为 OCR_TIMEOUT");
 assert.match(source, /\}, 10000, signal\)/, "OCR 任务提交超时保持 10000ms");
 assert.match(source, /\},\s*6000, signal\s*\)/, "OCR 状态请求超时保持 6000ms");
 assert.match(source, /const refreshStarted = Date\.now\(\);[\s\S]*?finally\s*\{\s*timing\.ocrStatusPollCount\+\+;\s*timing\.ocrStatusRequestMs \+= Date\.now\(\) - refreshStarted;\s*\}/,
