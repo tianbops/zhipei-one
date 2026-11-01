@@ -2,12 +2,15 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const source = readFileSync(new URL("../functions/api/waybills/process.js", import.meta.url), "utf8");
+const preflight = source.indexOf("const uploadBucket=!recognizedText&&files.length?env?.WAYBILL_FILES:null;");
 const start = source.indexOf("const baseLookupStarted=Date.now();");
 const indexPrepared = source.indexOf("getCachedRouteBaseIndex(user.id,routeId,data.version,data.stores)");
 const ocr = source.indexOf("const ocrStarted=Date.now();");
 const wait = source.indexOf("const baseResult=await baseLookupPromise;");
 const extract = source.indexOf("const extractedStarted=Date.now();");
 
+assert.ok(preflight >= 0 && preflight < start, "upload size and R2 availability must be checked before route-base lookup");
+assert.ok(source.indexOf("if(files.length>WAYBILL_TEMP_MAX_FILES") < start, "invalid uploads must fail before spending the route-base read");
 assert.ok(start >= 0, "route base lookup must be started");
 assert.ok(ocr > start, "route base lookup must start before OCR begins");
 assert.ok(indexPrepared > start && indexPrepared < ocr, "route-base MatchIndex must be prepared during the OCR wait");
