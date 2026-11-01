@@ -964,7 +964,27 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
         "waybill-server-total":"totalMs"
       };
       for(const [name,key] of Object.entries(timingFields)){const value=Number(timing[key]);if(Number.isFinite(value)&&value>=0)phases[name]=value;}
-      const server=Number.isFinite(Number(timing.totalMs))?Number(timing.totalMs):null;
+      const saveStageFields={
+        "waybill-server-save-claim":"saveClaimMs",
+        "waybill-server-save-fingerprint":"saveFingerprintMs",
+        "waybill-server-save-daily-signature":"saveDailySignatureMs",
+        "waybill-server-save-dedupe-scan":"saveDedupeScanMs",
+        "waybill-server-save-atomic":"saveAtomicMs",
+        "waybill-server-save-supersede":"saveSupersedeMs",
+        "waybill-server-save-lifecycle-events":"saveLifecycleEventsMs",
+        "waybill-server-save-day-meta":"saveDayMetaMs",
+        "waybill-server-save-finish-proc":"saveFinishProcMs",
+        "waybill-server-save-total":"totalMs"
+      };
+      const saveStages=timing.saveStages&&typeof timing.saveStages==="object"?timing.saveStages:{};
+      for(const [name,key] of Object.entries(saveStageFields)){const value=Number(saveStages[key]);if(Number.isFinite(value)&&value>=0)phases[name]=value;}
+      const serverTiming=String(perfResult?.serverTiming||"");
+      const serverTimingValue=name=>{const match=serverTiming.match(new RegExp(name+";dur=([0-9]+(?:\\.[0-9]+)?)"));return match?Number(match[1]):null;};
+      const r2CleanupMs=serverTimingValue("waybill-r2-cleanup");
+      const endToEndMs=serverTimingValue("waybill-server-end-to-end");
+      if(r2CleanupMs!==null)phases["waybill-server-r2-cleanup"]=r2CleanupMs;
+      if(endToEndMs!==null)phases["waybill-server-end-to-end"]=endToEndMs;
+      const server=Number.isFinite(endToEndMs)?endToEndMs:(Number.isFinite(Number(timing.totalMs))?Number(timing.totalMs):null);
       const status=perfFailureStatus||(perfResponseStatus===null?"network":(!perfStreamComplete&&perfResponseStatus<400?"network":(perfResult?.success===false&&Number.isInteger(perfResult?.httpStatus)?perfResult.httpStatus:perfResponseStatus)));
       try{window.zpPerfRecord?.("api-waybill-process",status,perfDuration,server,phases)}catch{}
       perfRecorded=true;
