@@ -25,8 +25,32 @@ function chooseFile(source){
 document.querySelectorAll(".source-option").forEach(btn=>btn.addEventListener("click",()=>chooseFile(btn.dataset.source)));
 
 let processingFile=false;
+let processingRequestId=null;
 // 供统一业务导航判断：处理中的运单离开当前工作流前必须经过确认。
 window.zpIsProcessing=()=>!!processingFile||!!processingController;
+window.zpLeaveProcessing=async function(href){
+  if(!window.zpIsProcessing())return false;
+  const ok=await window.zpConfirm("退出本次处理？","本次识别与规划将中止，尚未保存的结果不会保留。","退出本次处理");
+  if(!ok)return false;
+  if(processingRequestId){
+    let response=null;
+    try{
+      response=await fetch("/api/waybills/cancel",{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",cache:"no-store",body:JSON.stringify({requestId:processingRequestId})});
+    }catch{
+      try{window.zpToast?.("暂时无法确认取消状态，请保持当前页面","error")}catch{}
+      return false;
+    }
+    const state=await response.json().catch(()=>({}));
+    if(!response.ok||state.state!=="cancelled"){
+      try{window.zpToast?.(state.message||(state.state==="saving"?"运单正在保存，请等待结果":"当前处理暂不能退出，请等待结果"),"info")}catch{}
+      return false;
+    }
+  }
+  if(processingController&&!processingController.signal.aborted)processingController.abort({code:"USER_CANCELLED"});
+  processingRequestId=null;
+  location.replace(href||"/home");
+  return true;
+};
 let lastProcessingFile=null;   // 兼容旧状态；处理结束后立即清空，不用于图片重试
 let lastFailureAction=null;    // 最近一次失败的处理动作（action）；null 表示不可重试，按钮作关闭用
 let lastFailureRequestId=null; // 最近一次失败的处理票据 requestId（RETRY_SAVE 仅重保存时回传后端 resume）
@@ -73,6 +97,7 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
   files=files.filter(Boolean);
   if((!files.length&&!rawText&&!resumeRequestId)||processingFile)return;
   processingFile=true;
+  processingRequestId=null;
   const perfProcessStartedAt=performance.now();
   let perfCompressMs=0,perfRequestStartedAt=0,perfResponseAt=0,perfResponseStatus=null,perfStreamComplete=false,perfResult=null,perfRecorded=false,perfFailureStatus=null;
   lastProcessingFile=null;
@@ -94,7 +119,7 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
     if(files.length){
       setProcessingStage(files.length>1?`正在准备 ${files.length} 张截图…`:"正在准备运单图片…");
       const prepared=[];
-      for(const f of files)prepared.push(await compressImageForUpload(f));
+      for(const f of files){if(controller.signal.aborted)throw Object.assign(new Error("本次处理已中止"),{code:"USER_CANCELLED"});prepared.push(await compressImageForUpload(f));}
       prepared.forEach(file=>fd.append("file",file));
     }
     perfCompressMs=performance.now()-perfCompressStartedAt;
@@ -138,6 +163,7 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
           let event;
           try{event=JSON.parse(line)}catch{continue}
           if(event.type==="progress"){
+            if(event.requestId)processingRequestId=String(event.requestId);
             renderProcessingProgress(event.progress);
             // 后端每个阶段都带了中文说明，此前被前端丢弃，导致全程只有一句固定文案
             if(event.message)setProcessingStage(event.message);
@@ -176,6 +202,7 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
     }catch(e){
       if(e?.name==="AbortError"){
         const reason=controller.signal?.reason;
+        if(reason?.code==="USER_CANCELLED"){perfFailureStatus="cancelled";throw Object.assign(new Error("本次处理已中止"),{code:"USER_CANCELLED"})}
         perfFailureStatus=reason?.name==="TimeoutError"?"timeout":"abort";
         // 没有「取消处理」按钮之后，Abort 只可能来自网络中断/页面卸载，
         // 一律按超时提示，让用户有明确的重试动作；遥测仍保留真实 Abort 分类。
@@ -185,6 +212,7 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
       throw e;
     }
   }catch(e){
+    if(e?.code==="USER_CANCELLED")return;
     // 优先展示服务端友好 message（与 code 不同时）；纯 code 场景走映射表
     showProcessingError(e?.message&&e.message!==e.code?e.message:(e?.code||"PROCESS_FAILED"), e?.hint, e?.action, e?.recoverable, e?.requestId);
   }finally{
@@ -221,6 +249,7 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
     document.querySelectorAll(".source-option").forEach(b=>b.disabled=false);
     processingFile=false;
     processingController=null;
+    processingRequestId=null;
     // 释放前端对原图 File 对象的引用；历史记录只保留业务结果，不保留图片/文本。
     files.length=0;
     rawText="";
