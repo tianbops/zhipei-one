@@ -93,10 +93,7 @@ assert.match(source, /e\?\.code === "OCR_NETWORK_TIMEOUT" && Date\.now\(\) >= de
   "最后一次状态请求耗尽截止预算时应统一归类为 OCR_TIMEOUT");
 assert.match(source, /\}, 10000, signal\)/, "OCR 任务提交超时保持 10000ms");
 assert.match(source, /Math\.max\(1, Math\.min\(6000, remainingMs\)\)/, "OCR 状态请求单次超时上限保持 6000ms，并受剩余预算约束");
-  "重试时刷新 OCR 结果地址必须单独计入状态请求耗时，失败时也要计时");
-  "结果读取尝试计数必须只覆盖实际结果读取，且解析阶段独立计时");
 assert.match(source, /timing\.ocrResultFetchMs \+= Date\.now\(\) - resultStarted;\s*throw e;/,
-  "结果读取失败也必须累计独立的结果读取耗时");
 assert.match(source, /ocrResultRequestMs: 0/,
   "OCR 结果请求阶段必须独立计时");
 assert.match(source, /ocrResultBodyMs: 0/,
@@ -104,9 +101,7 @@ assert.match(source, /ocrResultBodyMs: 0/,
 assert.match(source, /ocrResultParseMs: 0/,
   "OCR 结果解析阶段必须独立计时");
 assert.match(source, /timing\.ocrResultRequestMs \+= Date\.now\(\) - requestStarted/,
-  "OCR 结果请求计时必须包含失败请求");
 assert.match(source, /timing\.ocrResultBodyMs \+= Date\.now\(\) - bodyStarted/,
-  "OCR 正文读取计时必须包含失败读取");
 assert.match(source, /timing\.ocrResultChars \+= raw\.length/,
   "OCR 结果大小必须按字符数记录，不保存原文内容");
 assert.match(processSource, /ocrResultRequestMs:results\.reduce/,
@@ -120,7 +115,6 @@ assert.match(processSource, /ocrImageCount:ocr\.imageCount/,
 assert.match(source, /ocrResultFetchWaitMs: 0/,
   "OCR 结果重试等待必须有独立计时字段");
 assert.match(source, /const retryWait = 800 \* attempt;[\s\S]*?timing\.ocrResultFetchWaitMs \+= Date\.now\(\) - waitStarted;/,
-  "结果读取重试的退避等待必须独立计时");
 assert.match(source, /export function collectLineEvidence[\s\S]*?rec_scores[\s\S]*?rec_polys[\s\S]*?rec_boxes/,
   "OCR 适配层必须保留 PP-OCRv6 逐行分数与文本框证据");
 assert.match(processSource, /lineEvidence:results\.flatMap[\s\S]*?imageIndex:imageIndex\+1/,
@@ -244,3 +238,9 @@ assert.match(source,/const ocrPerfNow\s*=/);
 assert.match(source,/const ocrPerfDuration\s*=/);
 for(const marker of ["submitStarted","waitStarted","statusStarted","requestStarted","bodyStarted","refreshStarted","resultStarted","parseStarted"]){assert.match(source,new RegExp("const "+marker+" = ocrPerfNow\\(\\)"),marker+" must use monotonic start time");assert.match(source,new RegExp("ocrPerfDuration\\("+marker+"\\)"),marker+" must use monotonic elapsed time");}
 assert.match(source,/finally\s*\{\s*\/\/ Count each result-read attempt exactly once[\s\S]*?ocrResultFetchMs \+= ocrPerfDuration\(resultStarted\)/,"result read attempt timing must be counted once on success and failure");
+
+assert.match(source,/const refreshStarted = ocrPerfNow\(\);[\s\S]*?timing\.ocrStatusRequestMs \+= ocrPerfDuration\(refreshStarted\)/,"retry URL refresh must use monotonic timing");
+assert.match(source,/const resultStarted = ocrPerfNow\(\);[\s\S]*?finally \{[\s\S]*?ocrResultFetchMs \+= ocrPerfDuration\(resultStarted\)/,"each result read attempt must be timed once");
+assert.match(source,/timing\.ocrResultRequestMs \+= ocrPerfDuration\(requestStarted\)/,"result request timing includes failures");
+assert.match(source,/timing\.ocrResultBodyMs \+= ocrPerfDuration\(bodyStarted\)/,"result body timing includes failures");
+assert.match(source,/ocrResultFetchWaitMs \+= ocrPerfDuration\(waitStarted\)/,"retry backoff uses monotonic timing");

@@ -300,6 +300,9 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
             // Count each result-read attempt exactly once, including failures.
             timing.ocrResultFetchMs += ocrPerfDuration(resultStarted);
           }
+        } catch (e) {
+          lastError = e;
+          if (!e?.retryable) throw withTiming(e, timing);
         }
       }
       throw withTiming(lastError || fail("OCR_RESULT_FETCH", "OCR结果读取失败", { jobId }), timing);
