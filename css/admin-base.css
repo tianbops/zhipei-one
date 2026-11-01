@@ -304,7 +304,7 @@ html[data-zp-theme="light"] select,html[data-zp-theme="light"] input[type="date"
 .diag-failure-code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
 .diag-failure-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:10px}
 .diag-failure-stat{display:flex;flex-direction:column;gap:3px;min-width:0;padding:7px 6px;border-radius:var(--zp-r-control);background:var(--zp-panel,var(--zp-input-bg));font-size:var(--zp-fs-10);line-height:1.35;color:var(--zp-muted)}
-.diag-failure-stat strong{font-size:var(--zp-fs-13);font-weight:650;line-height:1.3;color:var(--zp-text);font-variant-numeric:tabular-nums}
+.diag-failure-stat strong{font-size:var(--zp-fs-13);font-weight:var(--zp-fw-semibold);line-height:1.3;color:var(--zp-text);font-variant-numeric:tabular-nums}
 .diag-failure-stat.is-final strong{color:var(--zp-success,var(--zp-text))}
 .diag-failure-details{margin-top:7px}
 .diag-failure-details summary{min-height:28px}
