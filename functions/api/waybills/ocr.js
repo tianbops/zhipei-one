@@ -14,6 +14,9 @@ const JOB_PATH = "/api/v2/ocr/jobs";
 const MODEL = "PP-OCRv6";
 const clean = v => String(v ?? "").trim();
 
+const ocrPerfNow=()=>{try{const fn=globalThis.performance?.now;if(typeof fn==="function")return fn.call(globalThis.performance)}catch{}return Date.now()};
+const ocrPerfDuration=started=>Math.max(0,Math.round((ocrPerfNow()-started)*1e2)/1e2);
+
 function fail(code, message, extra = {}) {
   const e = new Error(message);
   e.code = code;
@@ -138,7 +141,7 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
 
   const timing = { ocrSubmitMs: 0, ocrStatusPollCount: 0, ocrStatusWaitMs: 0, ocrStatusRequestMs: 0, ocrResultFetchMs: 0, ocrResultRequestMs: 0, ocrResultBodyMs: 0, ocrResultParseMs: 0, ocrResultChars: 0, ocrResultFetchWaitMs: 0, ocrResultFetchAttempts: 0, ocrProviderState: null, ocrProviderProgress: null, ocrProviderTotalPages: null, ocrProviderExtractedPages: null, ocrProviderStartTime: null, ocrProviderEndTime: null, ocrProviderObservedMs: 0 };
   let submitted;
-  const submitStarted = Date.now();
+  const submitStarted = ocrPerfNow();
   try {
     submitted = await requestJson(base + JOB_PATH, {
       method: "POST",
@@ -146,11 +149,11 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
       body: form,
     }, 10000, signal);
   } catch (e) {
-    timing.ocrSubmitMs = Date.now() - submitStarted;
+    timing.ocrSubmitMs = ocrPerfDuration(submitStarted);
     throw fail(e?.code || "OCR_API", e?.message || "OCR服务请求失败", { status: e?.status, detail: e?.detail, base, ...timing });
   }
 
-  timing.ocrSubmitMs = Date.now() - submitStarted;
+  timing.ocrSubmitMs = ocrPerfDuration(submitStarted);
   const jobId = clean(submitted?.data?.jobId);
   if (!jobId) throw fail("OCR_SUBMIT_FAILED", "OCR任务提交失败", { ...timing });
   onProgress(10);
@@ -161,13 +164,13 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
   const deadline = Date.now() + OCR_STATUS_DEADLINE_MS;
   let delay = 900;
   while (Date.now() < deadline) {
-    const waitStarted = Date.now();
+    const waitStarted = ocrPerfNow();
     await new Promise(r => setTimeout(r, Math.min(delay, Math.max(0, deadline - Date.now()))));
-    timing.ocrStatusWaitMs += Date.now() - waitStarted;
+    timing.ocrStatusWaitMs += ocrPerfDuration(waitStarted);
     const remainingMs = deadline - Date.now();
     if (remainingMs <= 0) break;
     let status;
-    const statusStarted = Date.now();
+    const statusStarted = ocrPerfNow();
     try {
       status = await requestJson(
         base + JOB_PATH + "/" + encodeURIComponent(jobId),
@@ -175,10 +178,10 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
         Math.max(1, Math.min(6000, remainingMs)), signal
       );
       timing.ocrStatusPollCount++;
-      timing.ocrStatusRequestMs += Date.now() - statusStarted;
+      timing.ocrStatusRequestMs += ocrPerfDuration(statusStarted);
     } catch (e) {
       timing.ocrStatusPollCount++;
-      timing.ocrStatusRequestMs += Date.now() - statusStarted;
+      timing.ocrStatusRequestMs += ocrPerfDuration(statusStarted);
       if (e?.code === "OCR_NETWORK_TIMEOUT" && Date.now() >= deadline) {
         throw fail("OCR_TIMEOUT", "OCR识别超时，请稍后重试", { jobId, ...timing });
       }
@@ -200,7 +203,7 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
     const providerEnd = providerProgress.endTime ?? providerProgress.end_time ?? null;
     timing.ocrProviderStartTime = providerStart == null ? timing.ocrProviderStartTime : String(providerStart).slice(0, 64);
     timing.ocrProviderEndTime = providerEnd == null ? timing.ocrProviderEndTime : String(providerEnd).slice(0, 64);
-    timing.ocrProviderObservedMs = Date.now() - submitStarted;
+    timing.ocrProviderObservedMs = ocrPerfDuration(submitStarted);
     onProgress(state === "failed" || state === "error"
       ? 100
       : Math.min(90, 10 + Math.round(((Date.now() - (deadline - OCR_STATUS_DEADLINE_MS)) / OCR_STATUS_DEADLINE_MS) * 80)));
@@ -221,12 +224,12 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
         let rr, raw;
         try {
           // 8 秒超时同时覆盖响应头和正文读取；正文卡住也必须进入可重试的超时分支。
-          const requestStarted = Date.now();
+          const requestStarted = ocrPerfNow();
           try { rr = await fetch(u, { signal: AbortSignal.timeout(8000) }); }
-          finally { timing.ocrResultRequestMs += Date.now() - requestStarted; }
-          const bodyStarted = Date.now();
+          finally { timing.ocrResultRequestMs += ocrPerfDuration(requestStarted); }
+          const bodyStarted = ocrPerfNow();
           try { raw = await rr.text(); }
-          finally { timing.ocrResultBodyMs += Date.now() - bodyStarted; }
+          finally { timing.ocrResultBodyMs += ocrPerfDuration(bodyStarted); }
           timing.ocrResultChars += raw.length;
         } catch (e) {
           if (e?.name === "TimeoutError" || e?.name === "AbortError") {
@@ -267,36 +270,37 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
 
       let url = url0, lastError = null;
       for (let attempt = 0; attempt < 3; attempt++) {
-        if (attempt) { const retryWait = 800 * attempt; const waitStarted = Date.now(); await new Promise(r => setTimeout(r, retryWait)); timing.ocrResultFetchWaitMs += Date.now() - waitStarted; }
+        if (attempt) { const retryWait = 800 * attempt; const waitStarted = ocrPerfNow(); await new Promise(r => setTimeout(r, retryWait)); timing.ocrResultFetchWaitMs += ocrPerfDuration(waitStarted); }
         try {
           // 刷新结果地址属于状态请求，单独计时；不能混入结果 JSON 读取耗时。
           // 刷新失败也必须走统一错误出口，保留已有阶段计时。
           if (attempt > 0 && lastError?.refreshUrl) {
-            const refreshStarted = Date.now();
+            const refreshStarted = ocrPerfNow();
             try {
               const again = await requestJson(STATUS_PATH, { headers: { Authorization: "Bearer " + token, Accept: "application/json" } }, 6000);
               url = clean(again?.data?.resultUrl?.jsonUrl) || url;
             } finally {
               timing.ocrStatusPollCount++;
-              timing.ocrStatusRequestMs += Date.now() - refreshStarted;
+              timing.ocrStatusRequestMs += ocrPerfDuration(refreshStarted);
             }
           }
-          const resultStarted = Date.now();
+          const resultStarted = ocrPerfNow();
           timing.ocrResultFetchAttempts++;
+          let parsed;
           try {
             const raw = await readResult(url);
-            const parseStarted = Date.now();
-            let parsed;
+            const parseStarted = ocrPerfNow();
             try { parsed = await parseResult(raw); }
-            finally { timing.ocrResultParseMs += Date.now() - parseStarted; }
-            timing.ocrResultFetchMs += Date.now() - resultStarted;
-            return { ...parsed, ...timing };
+            finally { timing.ocrResultParseMs += ocrPerfDuration(parseStarted); }
           } catch (e) {
-            timing.ocrResultFetchMs += Date.now() - resultStarted;
-            throw e;
+            lastError = e;
+            if (!e?.retryable) throw withTiming(e, timing);
+          } finally {
+            // Count each result-read attempt exactly once, including failures.
+            timing.ocrResultFetchMs += ocrPerfDuration(resultStarted);
           }
+          if (parsed) return { ...parsed, ...timing };
         } catch (e) {
-          timing.ocrResultFetchMs += Date.now() - resultStarted;
           lastError = e;
           if (!e?.retryable) throw withTiming(e, timing);
         }

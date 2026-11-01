@@ -3,11 +3,11 @@ import { readFileSync } from "node:fs";
 
 const source = readFileSync(new URL("../functions/api/waybills/process.js", import.meta.url), "utf8");
 const preflight = source.indexOf("const bucket=!rawText&&files.length?env?.WAYBILL_FILES:null;");
-const start = source.indexOf("const baseLookupStarted=Date.now();");
+const start = source.indexOf("const baseLookupStarted=waybillPerfNow();");
 const indexPrepared = source.indexOf("getCachedRouteBaseIndex(user.id,routeId,data.version,data.stores)");
-const ocr = source.indexOf("const ocrStarted=Date.now();");
+const ocr = source.indexOf("const ocrStarted=waybillPerfNow();");
 const wait = source.indexOf("const baseResult=await baseLookupPromise;");
-const extract = source.indexOf("const extractedStarted=Date.now();");
+const extract = source.indexOf("const extractedStarted=waybillPerfNow();");
 
 assert.ok(preflight >= 0 && preflight < start, "upload size and R2 availability must be checked before route-base lookup");
 assert.ok(source.indexOf("if(files.length>WAYBILL_TEMP_MAX_FILES") < start, "invalid uploads must fail before spending the route-base read");
