@@ -288,7 +288,14 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
           Math.max(1, Math.min(6000, remainingMs)), signal
         );
         timing.ocrStatusPollCount++;
-        timing.ocrStatusSingleRequestCount++;
+        if (clean(batchId)) {
+          // A sibling may already have detected that this batch endpoint is unsupported.
+          // Its per-job request is still a batch fallback, not an ordinary single-image flow.
+          timing.ocrStatusMode = "fallback";
+          timing.ocrStatusFallbackRequestCount++;
+        } else {
+          timing.ocrStatusSingleRequestCount++;
+        }
         timing.ocrStatusRequestMs += ocrPerfDuration(statusStarted);
       }
     } catch (e) {
