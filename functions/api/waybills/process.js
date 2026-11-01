@@ -197,10 +197,10 @@ async function runProcessCore({request,env,emit=()=>{},form:providedForm=null,us
     r2StageMs=waybillPerfDuration(r2StageStarted);
     const ocrStarted=waybillPerfNow();const results=[];const totalFiles=Math.max(1,files.length);
     try{
-      /* 多图并发识别：原实现逐张串行 await，N 张截图≈N×单张耗时（实测单张约 7s）；
-         改为每批 2 张并发（OCR 服务有 QPS 限制，不一次全发），多图总耗时≈单张×批数。
-         单图时批大小=1，行为与原来完全一致。 */
-      const CONCURRENCY=files.length>1?2:1;
+      /* 多图并发识别：受控试验将每批上限提高到 4 张，避免一次性提交全部图片。
+         R2 暂存仍独立限制为 2 张并发；单图行为保持不变，多图按 4 张分批。
+         试验期间重点监测上游 QPS 限制、超时率和识别质量，必要时回退到 2。 */
+      const CONCURRENCY=files.length>1?4:1;
       for(let start=0;start<files.length;start+=CONCURRENCY){
         const batch=[];
         for(let k=0;k<CONCURRENCY&&start+k<files.length;k++)batch.push(start+k);
