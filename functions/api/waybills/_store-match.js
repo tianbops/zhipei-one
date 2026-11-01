@@ -26,5 +26,5 @@
 export {clean, formatCompareKey, businessStoreCode, normalizeForMatch,
   stripGenericSuffix, stripRegionPrefix, DIGIT_SEQ} from "./_store-match-normalize.js";
 export {editDistance, editSim, ngramSim, lcsRatio, pinyinKey} from "./_store-match-similarity.js";
-export {scoreNames, MATCH_CONFIG, evaluate, matchOne, matchStores} from "./_store-match-engine.js";
+export {scoreNames, MATCH_CONFIG, evaluate, matchOne, matchStores, createMatchIndex} from "./_store-match-engine.js";
 export {default} from "./_store-match-engine.js";
