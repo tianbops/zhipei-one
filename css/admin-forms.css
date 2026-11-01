@@ -18,10 +18,7 @@
 .search{position:relative;display:block}
 .search>span{position:absolute;right:12px;top:50%;z-index:2;transform:translateY(-50%);margin:0;color:var(--zp-soft);font-size:var(--zp-fs-20);line-height:1;pointer-events:none}
 .search input{width:100%;padding-left:12px;padding-right:42px}
-/* 运单诊断筛选行（日期框遮挡报障）：行内输入无 ⌕ 图标，收回 padding-right；日期框最小宽度兜底，行内放不下时整体换行也不裁字。
-   .zp-pk-date-trigger：zp-picker 升级 #diagDate 后的触发器，镜像同一弹性占位（原生弹层不跟随全局字号/主题，故升级为页内弹层）。 */
-.diag-filters input{padding-right:10px}
-#diagDate,.zp-pk-date-trigger{flex:1 1 150px;min-width:150px}
+/* 诊断筛选器尺寸由 admin-base.css 的 .diag-filter 统一管理，避免旧的 150px 最小宽度挤压小屏。 */
 #users .row .content{align-items:center}
 #users .row .main{display:flex;align-items:center;justify-content:space-between;width:100%;min-width:0}
 #users .row .main strong{flex:1;min-width:0}
