@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { matchStores, formatCompareKey } from "../functions/api/waybills/_store-match.js";
+import { readFileSync } from "node:fs";
 import { createRouteBaseIndex, getCachedRouteBaseIndex, splitByRouteBase } from "../functions/api/waybills/_process-plan.js";
+
+const baseApi = readFileSync(new URL("../functions/api/base.js", import.meta.url), "utf8");
+assert.match(baseApi, /version:\(old\.version\|\|1\)\+1/, "every base write must increment the cache version");
 
 const baseStores = [
   { storeId: "S001", name: "渝北JM03131谊品生鲜长安锦绣城店", originalName: "谊品生鲜长安锦绣城店", aliases: ["长安锦绣城谊品"], businessStoreCode: "JM03131", routeOrder: 1, navigation: "nav-1" },
