@@ -21,7 +21,8 @@ assert.ok(learning.includes('请先从门店列表中选择门店'));
 assert.ok(!learning.includes('手动输入')&&!learning.includes('learnStoreId'));
 assert.ok(routes.includes('当前线路：')&&!routes.includes('线路ID：'));
 assert.ok(css.includes('.diag-card')&&css.includes('.diag-timing')&&css.includes('var(--zp-'));
-for(const [path,hash] of Object.entries({
+for(const path of ["js/admin/diagnostics.js","js/admin/learning.js","js/admin/routes.js","css/admin-base.css","css/admin-forms.css"]){
+ const escaped=path.replace(/[.*+?^${}()|[\\]\\\\]/g,"\\\\for(const [path,hash] of Object.entries({
  "js/admin/diagnostics.js":"fd81d158",
  "js/admin/learning.js":"22c21bc8",
  "js/admin/routes.js":"9963910a",
@@ -29,5 +30,9 @@ for(const [path,hash] of Object.entries({
 })){
  assert.ok(html.includes('/'+path+'?v='+hash), 'HTML cache hash mismatch for '+path);
  assert.ok(sw.includes('/'+path+'?v='+hash), 'SW precache hash mismatch for '+path);
+}");
+ const re=new RegExp(escaped+"\\\\?v=([a-f0-9]{8})");
+ const htmlRef=html.match(re),swRef=sw.match(re);
+ assert.ok(htmlRef&&swRef&&htmlRef[1]===swRef[1],"HTML/SW cache hash mismatch for "+path);
 }
 console.log("管理员诊断页紧凑布局、无手工ID输入、完整复制与全局主题回归：通过");
