@@ -316,3 +316,29 @@ html[data-zp-theme="light"] select,html[data-zp-theme="light"] input[type="date"
  .diag-failure-stat{padding:6px 4px}
  .diag-failure-card .diag-actions{gap:5px}
 }
+
+
+/* 管理员失败记录：手机窄屏适配，统计卡片两列排列，操作按钮保证易点按。 */
+@media(max-width:560px){
+  .diag-failure-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .diag-failure-stat{min-height:52px;padding:8px 9px}
+  .diag-failure-card .diag-actions{justify-content:stretch;gap:7px}
+  .diag-failure-card .diag-actions .small-action{
+    display:inline-flex;
+    flex:1 1 120px;
+    min-width:0;
+    min-height:44px;
+    align-items:center;
+    justify-content:center;
+    padding:7px 9px;
+    white-space:normal;
+    text-align:center;
+    line-height:1.3;
+  }
+}
+@media(max-width:360px){
+  .diag-failure-reason,.diag-failure-field{grid-template-columns:54px minmax(0,1fr);gap:5px}
+  .diag-failure-meta{gap:6px}
+  .diag-failure-stats{gap:6px}
+  .diag-failure-stat{padding:7px}
+}
