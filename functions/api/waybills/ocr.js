@@ -225,17 +225,20 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
         return raw;
       };
       const parseResult = async (raw) => {
-        const texts = [];
-        for (const line of raw.split(/\r?\n/)) {
-          if (!line.trim()) continue;
-          try { collectText(JSON.parse(line), texts); } catch {}
-        }
-        const unique = [...new Set(texts)].filter(Boolean);
+        // JSONL 每行只解析一次，同时提取文本与原始行证据，避免双重 JSON.parse 和双重拆行。
+        const textSet = new Set();
         const lineEvidence = [];
         for (const line of raw.split(/\r?\n/)) {
-          if (!line.trim() || lineEvidence.length >= 500) continue;
-          try { collectLineEvidence(JSON.parse(line), lineEvidence, 500); } catch {}
+          if (!line.trim()) continue;
+          try {
+            const value = JSON.parse(line);
+            const texts = [];
+            collectText(value, texts);
+            for (const text of texts) if (text) textSet.add(text);
+            if (lineEvidence.length < 500) collectLineEvidence(value, lineEvidence, 500);
+          } catch {}
         }
+        const unique = [...textSet];
         const lowConfidence = unique.length < 3 || unique.join("").replace(/\s/g, "").length < 20;
         if (!unique.length) throw fail("OCR_EMPTY", "OCR未识别到文字", { jobId });
         onProgress(100);
