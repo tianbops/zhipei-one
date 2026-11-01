@@ -206,3 +206,91 @@ html[data-zp-theme="light"] select,html[data-zp-theme="light"] input[type="date"
 }
 
 .diag-failure-heading{margin:8px 2px 5px;font-size:var(--zp-fs-12);line-height:16px;font-weight:var(--zp-fw-semibold);color:var(--zp-text)}
+
+
+/* 学习隔离表单：选择、补充说明与操作按钮统一使用全站控件规格。 */
+.diag-learning-tools{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto auto;
+  align-items:center;
+  gap:8px;
+  margin-bottom:8px;
+}
+.diag-learning-tools select,
+.diag-learning-tools .zp-pk-trigger,
+.diag-learning-reason select,
+.diag-learning-reason .zp-pk-trigger,
+.diag-learning-reason input{
+  width:100%;
+  min-width:0;
+  height:42px;
+  min-height:42px;
+  padding:0 11px;
+  border:1px solid var(--zp-input-line);
+  border-radius:var(--zp-r-control);
+  background:var(--zp-input-bg);
+  color:var(--zp-text);
+  font:inherit;
+  font-size:var(--zp-fs-13);
+  line-height:normal;
+  box-shadow:none;
+}
+.diag-learning-tools select,
+.diag-learning-reason select{
+  appearance:none;
+  -webkit-appearance:none;
+}
+.diag-learning-tools .small-action{
+  min-width:68px;
+  height:42px;
+  min-height:42px;
+  padding:0 13px;
+  border:1px solid var(--zp-line);
+  border-radius:var(--zp-r-control);
+  background:var(--zp-secondary-bg);
+  color:var(--zp-text);
+  font-size:var(--zp-fs-13);
+  font-weight:var(--zp-fw-semibold);
+}
+.diag-learning-tools .add{
+  width:42px;
+  height:42px;
+  border:1px solid var(--zp-line);
+  border-radius:var(--zp-r-control);
+  background:var(--zp-secondary-bg);
+  color:var(--zp-text);
+  font-size:var(--zp-fs-18);
+}
+.diag-learning-reason{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  align-items:center;
+  gap:8px;
+  margin-bottom:7px;
+}
+.diag-learning-reason input{
+  appearance:none;
+  -webkit-appearance:none;
+}
+.diag-learning-reason input::placeholder{
+  color:var(--zp-input-placeholder);
+  opacity:1;
+}
+#learnStoreHint{
+  margin:2px 1px 8px;
+  line-height:16px;
+}
+.diag-learning-tools select:focus-visible,
+.diag-learning-reason select:focus-visible,
+.diag-learning-reason input:focus-visible,
+.diag-learning-tools .zp-pk-trigger:focus-visible,
+.diag-learning-reason .zp-pk-trigger:focus-visible{
+  outline:2px solid var(--zp-focus-ring);
+  outline-offset:2px;
+}
+@media(max-width:380px){
+  .diag-learning-tools{gap:6px}
+  .diag-learning-tools .small-action{min-width:62px;padding:0 10px}
+  .diag-learning-tools .add{width:40px;height:42px}
+  .diag-learning-reason{gap:6px}
+}
