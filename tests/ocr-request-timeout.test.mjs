@@ -132,7 +132,7 @@ assert.match(parseResultBlock, /new Set\(/,
 const testModule = source.replace("async function requestJson(", "export async function requestJson(").replace("function collectText(", "export function collectText(");
 assert.notEqual(testModule, source, "requestJson test hook target must exist");
 const moduleUrl = "data:text/javascript;base64," + Buffer.from(testModule).toString("base64");
-const { requestJson, collectLineEvidence, collectText } = await import(moduleUrl);
+const { requestJson, collectLineEvidence, collectText, recognizeImage } = await import(moduleUrl);
 const stringTextResult = collectText({ text: "单字段字符串识别结果" });
 assert.deepEqual(stringTextResult, ["单字段字符串识别结果"], "OCR 适配器必须保留字符串格式的 text 字段");
 assert.deepEqual(collectText({ texts: ["数组行一", "数组行二"] }), ["数组行一", "数组行二"], "修复字符串分支不得影响数组行");
@@ -227,6 +227,44 @@ try {
   console.log("OCR request timeout regression tests passed.");
 } finally {
   globalThis.fetch = originalFetch;
+}
+
+// Execute the real job flow with a mocked provider and capture the first poll delay.
+// This proves the 500ms schedule without making a real network call or slowing CI.
+{
+  const savedFetch = globalThis.fetch;
+  const savedSetTimeout = globalThis.setTimeout;
+  const requestedDelays = [];
+  globalThis.setTimeout = (fn, ms, ...args) => {
+    if (ms === 500) {
+      requestedDelays.push(ms);
+      return savedSetTimeout(fn, 0, ...args);
+    }
+    return savedSetTimeout(fn, ms, ...args);
+  };
+  globalThis.fetch = async (url, init = {}) => {
+    const target = String(url);
+    if (target.endsWith("/api/v2/ocr/jobs") && init.method === "POST") {
+      return new Response(JSON.stringify({ data: { jobId: "poll-fast" } }), { status: 200 });
+    }
+    if (target.endsWith("/api/v2/ocr/jobs/poll-fast")) {
+      return new Response(JSON.stringify({ data: { state: "done", resultUrl: { jsonUrl: "https://ocr.example.invalid/result" } } }), { status: 200 });
+    }
+    if (target === "https://ocr.example.invalid/result") {
+      return new Response(JSON.stringify({ result: { rec_texts: ["江北区鸿恩寺客服中心", "总重量 7.52 吨"], rec_scores: [0.98, 0.92] } }), { status: 200 });
+    }
+    throw new Error("Unexpected mocked OCR request: " + target);
+  };
+  try {
+    const file = new File([new Uint8Array([1, 2, 3])], "waybill.jpg", { type: "image/jpeg" });
+    const result = await recognizeImage({ PADDLEOCR_ACCESS_TOKEN: "test-token", PADDLEOCR_BASE_URL: "https://ocr.example.invalid" }, file);
+    assert.deepEqual(requestedDelays, [500], "the first completed-job poll must wait 500ms, not 900ms");
+    assert.equal(result.ocrStatusPollCount, 1, "completed job should require only one status request");
+    assert.ok(result.rawText.includes("江北区鸿恩寺客服中心"), "mock OCR text must be parsed successfully");
+  } finally {
+    globalThis.fetch = savedFetch;
+    globalThis.setTimeout = savedSetTimeout;
+  }
 }
 
 // Monotonic timing assertions: Date.now is reserved for absolute deadlines, never elapsed durations.
