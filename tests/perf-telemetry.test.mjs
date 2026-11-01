@@ -82,7 +82,8 @@ assert.match(upload,/perfFailureStatus\|\|\(perfResponseStatus===null/);
 
 // Idempotent OCR submissions still expose the current processing timing, not the old saved waybill timing.
 const processApi=readFileSync(new URL("../functions/api/waybills/process.js",import.meta.url),"utf8");
-assert.equal((processApi.match(/processingTiming:order\.timing/g)||[]).length,4);
+assert.equal((processApi.match(/processingTiming:processingTiming\(\)/g)||[]).length,4);
+assert.match(processApi,/saveStages/);
 assert.match(upload,/perfResult\?\.processingTiming/);
 
 // Streaming responses use HTTP 200 as the transport, so preserve the underlying process status for failure telemetry.
