@@ -122,7 +122,7 @@ const findGroup = (report, page, endpoint, status) => {
     JSON.stringify(gWaybill && gWaybill.phases));
   check("OCR 阶段耗时可聚合", gWaybill && gWaybill.phases && gWaybill.phases["history-waybill-server-ocr"] && gWaybill.phases["history-waybill-server-ocr"].avgMs === 20000);
   check("保存阶段耗时可聚合", gWaybill && gWaybill.phases && gWaybill.phases["history-waybill-server-save-lifecycle-events"] && gWaybill.phases["history-waybill-server-save-lifecycle-events"].avgMs === 3.5);
-  check("R2 清理耗时可聚合", gWaybill && gWaybill.phases && gWaybill.phases["history-waybill-server-temp-cleanup"] && gWaybill.phases["history-waybill-server-r2-cleanup"].avgMs === 5.5);
+  check("R2 清理耗时可聚合", gWaybill && gWaybill.phases && gWaybill.phases["history-waybill-server-temp-cleanup"] && gWaybill.phases["history-waybill-server-temp-cleanup"].avgMs === 5.5);
   check("上传至服务端清理完成总耗时可聚合", gWaybill && gWaybill.phases && gWaybill.phases["history-waybill-server-end-to-end"] && gWaybill.phases["history-waybill-server-end-to-end"].avgMs === 36000);
   check("运单服务端总耗时被保留", gWaybill && gWaybill.serverAvgMs === 32000);
   check("2xx 的服务端平均耗时保留", gHist && gHist.serverAvgMs === 1243, JSON.stringify(gHist && gHist.serverAvgMs));
