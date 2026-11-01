@@ -16,12 +16,27 @@ const parse=v=>{try{return typeof v==="string"?JSON.parse(v):v}catch{return null
 const safeTiming=value=>{
   if(!value||typeof value!=="object"||Array.isArray(value))return null;
   const out={};
-  for(const key of ["timingClock","timingResolutionMs","recognizedMs","ocrMs","r2StageMs","r2StageBytes","baseMs","baseLookupMs","baseIndexMs","baseWaitMs","baseOverlapMs","extractMs","matchMs","dedupeMs","planMs","totalMs","ocrImageCount","ocrSubmitMs","ocrStatusPollCount","ocrStatusWaitMs","ocrStatusRequestMs","ocrResultFetchMs","ocrResultRequestMs","ocrResultBodyMs","ocrResultParseMs","ocrResultChars","ocrResultFetchWaitMs","ocrResultFetchAttempts"]){
+  for(const key of ["timingClock","timingResolutionMs","recognizedMs","ocrMs","r2StageMs","r2StageBytes","baseMs","baseLookupMs","baseIndexMs","baseWaitMs","baseOverlapMs","extractMs","matchMs","dedupeMs","planMs","totalMs","ocrImageCount","ocrSubmitMs","ocrStatusPollCount","ocrStatusWaitMs","ocrStatusRequestMs","ocrStatusBatchRequestCount","ocrStatusFallbackRequestCount","ocrStatusSingleRequestCount","ocrStatusBatchResponseJobCount","ocrStatusBatchMatchedJobCount","ocrStatusBatchMissingJobCount","ocrResultFetchMs","ocrResultRequestMs","ocrResultBodyMs","ocrResultParseMs","ocrResultChars","ocrResultFetchWaitMs","ocrResultFetchAttempts"]){
     const n=value[key];
     if(typeof n==="number"&&Number.isFinite(n)&&n>=0)out[key]=n;
   }
   if(value.timingClock==="performance.now"||value.timingClock==="Date.now")out.timingClock=value.timingClock;
   if(typeof value.timingResolutionMs==="number"&&Number.isFinite(value.timingResolutionMs)&&value.timingResolutionMs>0)out.timingResolutionMs=value.timingResolutionMs;
+  if(Array.isArray(value.ocrImageTimings)){
+    const numericFields=["submitMs","statusPollCount","statusWaitMs","statusRequestMs","batchStatusRequestCount","fallbackStatusRequestCount","singleStatusRequestCount","batchResponseJobCount","batchMatchedJobCount","batchMissingJobCount","resultFetchMs","resultRequestMs","resultBodyMs","resultParseMs","resultChars","resultFetchAttempts","resultFetchWaitMs"];
+    out.ocrImageTimings=value.ocrImageTimings.slice(0,20).map(item=>{
+      if(!item||typeof item!=="object"||Array.isArray(item))return null;
+      const row={};
+      if(Number.isInteger(item.imageIndex)&&item.imageIndex>0)row.imageIndex=item.imageIndex;
+      if(typeof item.jobId==="string"&&item.jobId.length<=128)row.jobId=item.jobId;
+      if(["batch","fallback","single","unknown"].includes(item.statusMode))row.statusMode=item.statusMode;
+      for(const key of numericFields){
+        const n=item[key];
+        if(typeof n==="number"&&Number.isFinite(n)&&n>=0)row[key]=n;
+      }
+      return Object.keys(row).length?row:null;
+    }).filter(Boolean);
+  }
   return Object.keys(out).length?out:null;
 };
 
