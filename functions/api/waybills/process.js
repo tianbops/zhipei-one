@@ -137,6 +137,11 @@ async function runProcessCore({request,env,emit=()=>{},form:providedForm=null,us
     return await saveWaybill(resumedOrder, requestId, true);
   }
   if(await stopIfClientCancelled("OCR"))return json({success:false,code:"PROCESS_CANCELLED",error:"已取消处理",message:"已取消处理",requestId,recoverable:true,action:"REPROCESS",hint:"本次处理已取消，可重新上传运单"},499);
+  // 线路基准读取与图片暂存/OCR 独立：提前发起并在 OCR 期间并行等待，不改变匹配输入与错误语义。
+  const baseLookupStarted=Date.now();
+  const baseLookupPromise=isTempRoute(routeId)
+    ? Promise.resolve({stores:[],available:false,error:null,elapsedMs:0})
+    : base(env,routeId).then(stores=>({stores,available:Array.isArray(stores)&&stores.length>0,error:null,elapsedMs:Date.now()-baseLookupStarted}),error=>({stores:[],available:false,error,elapsedMs:Date.now()-baseLookupStarted}));
   const started=Date.now();let ocr=null,recognizedText=rawText,ocrMs=0;
   if(!recognizedText){
   let r2StageMs=0;
@@ -237,7 +242,7 @@ async function runProcessCore({request,env,emit=()=>{},form:providedForm=null,us
     }catch(e){throw e}
   }
   if(await stopIfClientCancelled("POST_OCR"))return json({success:false,code:"PROCESS_CANCELLED",error:"已取消处理",message:"已取消处理",requestId,recoverable:true,action:"REPROCESS",hint:"本次处理已取消，可重新上传运单"},499);
-  const recognizedMs=Date.now()-started;const baseStarted=Date.now();let baseStores=[];let baseAvailable=false;if(!isTempRoute(routeId)){try{baseStores=await base(env,routeId);baseAvailable=Array.isArray(baseStores)&&baseStores.length>0}catch(e){if(e?.code!=="BASE_NOT_FOUND")return failProcess(e.code||"BASE_DATA_INVALID",e.message||"线路数据资料读取失败",409,{recoverable:false,hint:"线路数据资料读取失败，请联系管理员",detail:e.message||null});}}const baseMs=Date.now()-baseStarted;emit(56,baseAvailable?"已读取线路基准":"未建立线路基准，转入全局学习");
+  const recognizedMs=Date.now()-started;const baseResult=await baseLookupPromise;const baseStores=baseResult.stores;const baseAvailable=baseResult.available;const baseMs=baseResult.elapsedMs;if(baseResult.error&&baseResult.error?.code!=="BASE_NOT_FOUND"){const e=baseResult.error;return failProcess(e.code||"BASE_DATA_INVALID",e.message||"线路数据资料读取失败",409,{recoverable:false,hint:"线路数据资料读取失败，请联系管理员",detail:e.message||null});}emit(56,baseAvailable?"已读取线路基准":"未建立线路基准，转入全局学习");
   if(await stopIfClientCancelled("EXTRACT"))return json({success:false,code:"PROCESS_CANCELLED",error:"已取消处理",message:"已取消处理",requestId,recoverable:true,action:"REPROCESS",hint:"本次处理已取消，可重新上传运单"},499);
   const extractedStarted=Date.now();const extracted=extract(recognizedText);
   /* 多张截图（同一运单分段拍摄）：逐图提取门店条目后再合并。
