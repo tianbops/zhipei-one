@@ -186,7 +186,7 @@ export function createMatchIndex(baseStores) {
     }
     const preparedFields = fields.map(name => {
       const normalized = normalizeForMatch(name);
-      return { name, normalized, pinyin: pinyinKey(normalized) };
+      return { name, normalized, pinyin: null };
     });
     storeMeta.set(store, { fields, exactKeys, preparedFields });
     scoringStores.push({ store, fields: preparedFields });
@@ -212,8 +212,8 @@ export function matchOne(rawName, baseStores, matchIndex = null, rawPrepared = n
   const scored = [];
   const usableIndex = matchIndex?.stores === stores ? matchIndex : null;
   const rawNormalized = rawPrepared?.normalized ?? normalizeForMatch(rawName);
-  const rawCode = rawPrepared?.businessCode ?? null;
-  const rawPinyin = rawPrepared?.pinyin ?? pinyinKey(rawNormalized);
+  const rawCode = rawPrepared ? (rawPrepared.businessCode || "") : (businessStoreCode(rawName) || "");
+  const rawPinyin = rawPrepared?.pinyin ?? null;
   const preparedStores = usableIndex?.scoringStores || stores.map(store => ({
     store,
     fields: identityFields(store).map(name => {
@@ -225,7 +225,8 @@ export function matchOne(rawName, baseStores, matchIndex = null, rawPrepared = n
   for (const entry of preparedStores) {
     let best = null;
     for (const field of entry.fields) {
-      const r = evaluatePrepared(rawName, rawNormalized, field.normalized, rawCode, rawPinyin, field.pinyin);
+      const targetPinyin = field.pinyin ?? (field.pinyin = pinyinKey(field.normalized));
+      const r = evaluatePrepared(rawName, rawNormalized, field.normalized, rawCode, rawPinyin ?? pinyinKey(rawNormalized), targetPinyin);
       if (!best || r.score > best.score) best = { ...r, matchedName: field.name };
     }
     if (!best || best.blocked) continue;
@@ -300,8 +301,8 @@ export function matchStores(items, baseStores, matchIndex = null) {
     const rawName = clean(item?.rawName || item?.name);
     const incomingId = clean(item?.storeId);
     const rawNormalized = normalizeForMatch(rawName);
-    const rawPinyin = pinyinKey(rawNormalized);
-    const rawCode = businessStoreCode(rawName);
+    const rawPinyin = null;
+    const rawCode = businessStoreCode(rawName) || "";
     const rawIdentityKey = formatCompareKey(rawName);
     const incomingCode =
       businessStoreCode(rawName) ||
