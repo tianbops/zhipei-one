@@ -294,3 +294,18 @@ html[data-zp-theme="light"] select,html[data-zp-theme="light"] input[type="date"
   .diag-learning-tools .add{width:40px;height:42px}
   .diag-learning-reason{gap:6px}
 }
+/* 失败诊断卡片与正常运单卡片统一信息层级，保留完整诊断与操作入口。 */
+.diag-failure-reason{display:grid;grid-template-columns:52px minmax(0,1fr);gap:7px;margin-top:4px;font-size:var(--zp-fs-11);line-height:15px}
+.diag-failure-label{color:var(--zp-muted);white-space:nowrap}
+.diag-failure-text{min-width:0;color:var(--zp-text);overflow-wrap:anywhere}
+.diag-failure-meta{display:flex;flex-wrap:wrap;gap:2px 12px;margin-top:3px;color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:14px}
+.diag-failure-stats{margin-top:3px;color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:14px;overflow-wrap:anywhere}
+.diag-failure-details{margin-top:3px}
+.diag-failure-details summary{min-height:26px}
+.diag-failure-card .diag-actions{justify-content:flex-end;flex-wrap:wrap;gap:6px;margin-top:5px}
+.diag-failure-card .diag-actions .small-action{min-height:30px}
+@media(max-width:380px){
+ .diag-failure-reason{grid-template-columns:48px minmax(0,1fr);gap:5px}
+ .diag-failure-meta{gap:2px 8px}
+ .diag-failure-card .diag-actions{gap:5px}
+}
