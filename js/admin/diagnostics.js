@@ -119,9 +119,18 @@ async function renderDiagnostics(){
   const failureHtml=failures.length?'<div class="meta diag-failure-heading">失败处理记录（'+esc(failures.length)+'）</div>'+failures.map((f,index)=>{
     const o=f.order||{},dg=o.diagnostics||{},v=f.validation||o.validation||{},stores=Array.isArray(dg.finalItems)?dg.finalItems:(Array.isArray(o.stores)?o.stores:[]);
     const label=f.stage==="TIMEOUT"?"处理超时":f.stage==="CANCELLED"?"用户取消":"处理失败";
-    return '<div class="row diag-failure-card"><div class="content"><div class="main"><strong>'+"运单日期："+esc(f.date||"-")+' · '+esc(f.vehicle||"车牌未识别")+'</strong><span class="q-badge review">'+esc(label)+'</span></div><div class="meta">上传时间：'+esc(formatBeijingTime(f.uploadedAt,f.uploadedAtBeijing))+'</div><div class="meta">失败原因：'+esc(f.detail||f.hint||f.code||"未记录")+'</div><div class="meta">错误代码：'+esc(f.code||"-")+'</div><div class="meta">门店数量：提取 '+esc(dg.extractCount??"-")+' · 去重前 '+esc(dg.dedupeBefore??"-")+' · 去重后 '+esc(dg.dedupeAfter??"-")+' · 最终 '+esc(stores.length)+'</div><div class="meta">'+esc((v.errors||[]).join("、"))+'</div><div class="diag-actions">'+(f.requestId?'<button class="small-action diag-ticket-open" data-ticket-index="'+index+'" type="button">查看处理票据</button>':'')+'<button class="small-action diag-failure-copy" type="button">复制完整失败诊断</button></div></div></div>';
+    const reason=f.detail||f.hint||f.code||"未记录";
+    const validationErrors=Array.isArray(v.errors)?v.errors:[];
+    return '<div class="row diag-failure-card"><div class="content">'
+      +'<div class="main"><strong>'+esc(f.date||"-")+' · '+esc(f.vehicle||"车牌未识别")+'</strong><span class="q-badge review">'+esc(label)+'</span></div>'
+      +'<div class="diag-failure-reason"><span class="diag-failure-label">失败原因</span><span class="diag-failure-text">'+esc(reason)+'</span></div>'
+      +'<div class="diag-failure-meta"><span>上传时间：'+esc(formatBeijingTime(f.uploadedAt,f.uploadedAtBeijing))+'</span><span>错误代码：'+esc(f.code||"-")+'</span></div>'
+      +'<div class="diag-failure-stats">门店数量：提取 '+esc(dg.extractCount??"-")+' · 去重前 '+esc(dg.dedupeBefore??"-")+' · 去重后 '+esc(dg.dedupeAfter??"-")+' · 最终 '+esc(stores.length)+'</div>'
+      +(validationErrors.length?'<details class="diag-details diag-failure-details"><summary>查看校验信息（'+esc(validationErrors.length)+'）</summary><div class="meta">'+esc(validationErrors.join("、"))+'</div></details>':"")
+      +'<div class="diag-actions">'+(f.requestId?'<button class="small-action diag-ticket-open" data-ticket-index="'+index+'" type="button">查看处理票据</button>':'')+'<button class="small-action diag-failure-copy" type="button">复制完整失败诊断</button></div>'
+      +'</div></div>';
   }).join(""):"";
-  $("diagnostics").innerHTML += (d.failureQueryError?'<div class="zp-empty">失败记录暂时无法读取，正常运单诊断仍可查看，请稍后刷新。</div>':"") + failureHtml;
+    $("diagnostics").innerHTML += (d.failureQueryError?'<div class="zp-empty">失败记录暂时无法读取，正常运单诊断仍可查看，请稍后刷新。</div>':"") + failureHtml;
   document.querySelectorAll("#diagnostics .diag-ticket-open").forEach(btn=>btn.onclick=()=>{const index=Number(btn.getAttribute("data-ticket-index"));const failure=failures[index];if(failure?.requestId)renderProcTicket(failure.requestId)});
   document.querySelectorAll("#diagnostics .diag-failure-copy").forEach((btn,index)=>btn.onclick=async()=>{
     const value=["智配One 失败运单诊断","完整失败记录（JSON）：",JSON.stringify(failures[index],null,2)].join("\\n");

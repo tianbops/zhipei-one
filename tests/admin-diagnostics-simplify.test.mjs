@@ -40,6 +40,11 @@ assert.ok(!diag.includes("(vehicle?"));
 assert.ok(diag.includes('JSON.stringify(failures[index],null,2)'),"failure copy must retain the complete archived failure record");
 assert.ok(diag.includes("diag-timing-note"));
 assert.ok(diag.includes("diag-failure-card"));
+assert.ok(diag.includes("diag-failure-reason")&&diag.includes("diag-failure-meta")&&diag.includes("diag-failure-stats"),"failure cards must use compact, structured information hierarchy");
+assert.ok(diag.includes('class="diag-details diag-failure-details"')&&diag.includes("validationErrors.join"),"validation details remain available in a collapsible section");
+assert.ok(diag.includes("查看处理票据")&&diag.includes("复制完整失败诊断"),"failure ticket and full-copy actions remain available");
+assert.ok(css.includes(".diag-failure-reason")&&css.includes(".diag-failure-card .diag-actions")&&css.includes("var(--zp-"),"failure cards use global theme tokens and compact action layout");
+
 assert.ok(css.includes(".diag-query-panel")&&css.includes(".diag-failure-heading")&&css.includes("var(--zp-"));
 assert.ok(css.includes(".diag-learning-tools select")&&css.includes(".diag-learning-tools .small-action"),"learning store selector and isolate action must share unified control sizing");
 assert.ok(css.includes(".diag-learning-reason input")&&css.includes(".diag-learning-reason select"),"learning reason selector and supplement input must share unified control styling");
