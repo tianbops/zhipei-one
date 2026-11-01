@@ -167,12 +167,23 @@ async function runProcessCore({request,env,emit=()=>{},form:providedForm=null,us
   const r2StageStarted=waybillPerfNow();
   let r2StageBytes=0;
   if(!recognizedText&&files.length){
-    try{     for(let i=0;i<files.length;i++){
-        const source=files[i];
-        const key=`waybill-tmp/${requestId}/${i+1}-${crypto.randomUUID()}`;
-        await bucket.put(key,source,{storageClass:"Standard",httpMetadata:{contentType:source.type||"application/octet-stream"}});
-        tempKeys.push(key);
-        r2StageBytes+=Number(source.size)||0;
+    try{
+      // R2 暂存使用独立的两张并发上限；不提高 PP-OCRv6 的请求并发。
+      // allSettled 等待同批全部结束，确保部分成功对象在失败返回前已登记并可由 finally 清理。
+      const TEMP_STAGE_CONCURRENCY=files.length>1?2:1;
+      for(let start=0;start<files.length;start+=TEMP_STAGE_CONCURRENCY){
+        const batch=[];
+        for(let k=0;k<TEMP_STAGE_CONCURRENCY&&start+k<files.length;k++)batch.push(start+k);
+        const settled=await Promise.allSettled(batch.map(async i=>{
+          const source=files[i];
+          const key=`waybill-tmp/${requestId}/${i+1}-${crypto.randomUUID()}`;
+          await bucket.put(key,source,{storageClass:"Standard",httpMetadata:{contentType:source.type||"application/octet-stream"}});
+          tempKeys.push(key);
+          return Number(source.size)||0;
+        }));
+        const failed=settled.find(x=>x.status==="rejected");
+        if(failed)throw failed.reason||new Error("R2 temporary staging failed");
+        for(const result of settled)r2StageBytes+=result.value;
       }
       // R2 仍按要求临时暂存并在请求结束后删除；OCR 直接使用本次请求已接收的 File。
       // 不再把刚写入 R2 的同一图片立即 GET 回来并复制成新 File，避免每张图多一次 R2 读请求和整图内存复制。
