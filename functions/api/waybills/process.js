@@ -145,7 +145,7 @@ async function runProcessCore({request,env,emit=()=>{},form:providedForm=null,us
       return failProcess("WAYBILL_TEMP_LIMIT_EXCEEDED","本次运单图片数量或总大小超出限制，请分批上传",413,{recoverable:true,action:"REPROCESS",hint:"请减少图片数量或分批上传后重试"});
     }
     if(!uploadBucket||typeof uploadBucket.put!=="function"||typeof uploadBucket.delete!=="function"){
-      return failProcess("WAYBILL_TEMP_STORAGE_UNAVAILABLE","运单图片临时存储暂不可用，请稍后重试",503,{recoverable:true,action:"REPROCESS",hint:"运单图片暂存失败，请稍后重试"});
+      return failProcess("WAYBILL_TEMP_STORAGE_UNAVAILABLE","运单图片临时存储暂不可用，请稍后重试",503,{recoverable:true,action:"REPROCESS",hint:"运单图片临时存储暂不可用，请稍后重试"});
     }
   }
   // 线路基准读取与索引预热和图片暂存/OCR 并行，不改变匹配输入与错误语义。
