@@ -68,7 +68,15 @@ const items = [
 
 const ordinary = matchStores(items, baseStores);
 const routeIndex = createRouteBaseIndex(baseStores);
+assert.ok(
+  routeIndex.matchIndex.scoringStores.every(entry => entry.fields.every(field => field.normalized === null && field.pinyin === null)),
+  "building the reusable matcher index must not eagerly normalize candidate names"
+);
 const compiled = matchStores(items, routeIndex.stores, routeIndex.matchIndex);
+assert.ok(
+  routeIndex.matchIndex.scoringStores.every(entry => entry.fields.every(field => typeof field.normalized === "string" && typeof field.pinyin === "string")),
+  "fuzzy matching should lazily prepare candidate normalization and pinyin once"
+);
 assert.deepStrictEqual(compiled, ordinary, "compiled MatchIndex must preserve every match field and result");
 assert.strictEqual(routeIndex.matchIndex.stores, baseStores, "route index must reference the exact base snapshot");
 assert.equal(routeIndex.matchIndex.byId.size, baseStores.length, "the standard identity map must be prebuilt");
