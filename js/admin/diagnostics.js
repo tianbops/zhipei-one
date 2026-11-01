@@ -18,7 +18,7 @@ async function renderDiagnostics(){
     const timing=t.timing&&typeof t.timing==="object"?t.timing:{};
     const timingLabels={ocrImageCount:"OCR图片数",ocrSubmitMs:"OCR提交累计",ocrStatusPollCount:"状态轮询次数",ocrStatusWaitMs:"轮询等待累计",ocrStatusRequestMs:"状态请求累计",ocrResultFetchMs:"结果读取累计",ocrResultRequestMs:"结果请求累计",ocrResultBodyMs:"正文读取累计",ocrResultParseMs:"结果解析累计",ocrResultChars:"结果字符数",ocrResultFetchWaitMs:"结果重试等待",ocrResultFetchAttempts:"结果读取尝试数",recognizedMs:"识别总计",ocrMs:"OCR墙钟总计",baseMs:"基准读取",extractMs:"文本提取",matchMs:"门店匹配",dedupeMs:"去重",planMs:"线路规划",totalMs:"处理总计"};
     const timingLines=Object.entries(timing).filter(([k,v])=>Object.prototype.hasOwnProperty.call(timingLabels,k)&&typeof v==="number"&&Number.isFinite(v)&&v>=0).map(([k,v])=>timingLabels[k]+"："+Math.round(v)+(k==="ocrImageCount"?"张":k==="ocrResultChars"?"字符":k.endsWith("Count")||k.endsWith("Attempts")?"次":"ms"));
-    const copyText=["智配One 失败/超时处理诊断","requestId："+(d.requestId||requestId),"处理阶段："+(t.stage||d.effectiveStage||"-"),"错误详情："+(t.detail||"-"),"线路ID："+(t.routeId||"-"),"创建时间："+formatBeijingTime(t.createdAt,t.createdAtBeijing),"更新时间："+formatBeijingTime(t.updatedAt,t.updatedAtBeijing),"提示："+(t.hint||"-"),"阶段耗时："+(timingLines.join(" · ")||"暂无已保存阶段耗时")].join("\n");
+    const copyText=["智配One 失败/超时处理诊断","requestId："+(d.requestId||requestId),"处理阶段："+(t.stage||d.effectiveStage||"-"),"错误详情："+(t.detail||"-"),"线路ID："+(t.routeId||"-"),"创建时间："+formatBeijingTime(t.createdAt,t.createdAtBeijing),"更新时间："+formatBeijingTime(t.updatedAt,t.updatedAtBeijing),"提示："+(t.hint||"-"),"阶段耗时："+(timingLines.join(" · ")||"暂无已保存阶段耗时"),"完整处理票据数据：",JSON.stringify(d,null,2)].join("\n");
     $("diagnostics").innerHTML='<div class="row"><div class="content" style="display:block;width:100%"><div class="main"><strong>处理票据 · '+esc(t.stage||d.effectiveStage||"-")+'</strong></div><div class="meta">requestId：'+esc(d.requestId||requestId)+'</div><div class="meta">线路ID：'+esc(t.routeId||"-")+' · 更新时间：'+esc(formatBeijingTime(t.updatedAt,t.updatedAtBeijing))+'</div><div class="meta">错误详情：'+esc(t.detail||"-")+'</div><div class="meta">提示：'+esc(t.hint||"-")+'</div><div class="meta">阶段耗时：'+esc(timingLines.join(" · ")||"暂无已保存阶段耗时")+'</div><div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="small-action diag-ticket-copy" type="button">复制诊断</button></div></div></div>';
     const copyBtn=document.querySelector("#diagnostics .diag-ticket-copy");
     if(copyBtn)copyBtn.onclick=async()=>{
@@ -32,17 +32,18 @@ async function renderDiagnostics(){
   const routeId=($("diagRoute").value||"").trim();
   const selectedRoute=(S.routes||[]).find(r=>String(r.id)===routeId);
   if(!routeId||!selectedRoute){$("diagnostics").innerHTML='<div class="zp-empty">'+(S.routes&&S.routes.length?"请选择一条有效线路":"线路列表尚未加载，或当前没有可选线路")+'</div>';return}
-  const date=($("diagDate").value||"").trim(),vehicle=($("diagVehicle").value||"").trim();
+  const date=($("diagDate").value||"").trim();
   if(date&&!/^\d{4}-\d{2}-\d{2}$/.test(date)){$("diagnostics").innerHTML='<div class="zp-empty">日期格式无效，请选择有效日期</div>';return}
-  $("diagRouteMeta").textContent="线路："+(rn(selectedRoute.name)||selectedRoute.name||routeId)+" · 线路ID："+routeId;
+  $("diagRouteMeta").textContent="当前线路："+(rn(selectedRoute.name)||selectedRoute.name||"未命名线路");
   let q="/api/waybills/diagnostic?routeId="+encodeURIComponent(routeId);
   if(date)q+="&date="+encodeURIComponent(date);
-  if(vehicle)q+="&vehicle="+encodeURIComponent(vehicle);
+
   $("diagnostics").innerHTML='<div class="zp-empty">正在查询运单…</div>';
   let d;try{d=await api(q)}catch(e){$("diagnostics").innerHTML='<div class="zp-empty">查询失败：'+esc(e.message)+'</div>';return}
   const list=d.waybills||[];
   const failures=Array.isArray(d.failures)?d.failures:[];
   if(!list.length&&!failures.length){const scope=(date?"日期 "+date+" · ":"")+(vehicle?"车牌 "+vehicle+" · ":"");$("diagnostics").innerHTML='<div class="zp-empty">'+esc(scope)+(date?"该线路在所选日期没有匹配到运单。":"该线路暂无匹配运单。")+'<br>如确认当天已有运单，可继续检查运单索引一致性。</div>';return}
+  const copyPayloads=[];
   const truncHint=(d.truncated&&Number(d.count)>list.length)?'<div class="zp-empty" style="color:var(--zp-warning)">共 '+esc(d.count)+' 张运单，当前仅显示最近 20 张</div>':"";
   const timingNote='<div class="meta" style="margin:6px 2px 10px">多图 OCR 的提交、状态和结果耗时为各图片累计值，不等于实际等待时间；结果读取累计包含请求、正文读取和解析。阶段计时仅展示已保存数据，“处理总计”不包含最终保存阶段耗时。</div>';
   $("diagnostics").innerHTML=timingNote+truncHint+list.map(w=>{
@@ -51,7 +52,11 @@ async function renderDiagnostics(){
     const evs=(w.events||[]).slice(-8).reverse().map(e=>esc(eventText(e))).join("<br>");
     const t=w.timing&&typeof w.timing==="object"?w.timing:null;
     const timingParts=t?[["OCR图片","ocrImageCount"],["识别","recognizedMs"],["OCR墙钟","ocrMs"],["提交累计","ocrSubmitMs"],["轮询次数","ocrStatusPollCount"],["轮询等待累计","ocrStatusWaitMs"],["状态请求累计","ocrStatusRequestMs"],["结果读取累计","ocrResultFetchMs"],["结果请求累计","ocrResultRequestMs"],["正文读取累计","ocrResultBodyMs"],["结果解析累计","ocrResultParseMs"],["结果字符","ocrResultChars"],["结果重试等待","ocrResultFetchWaitMs"],["结果读取尝试","ocrResultFetchAttempts"],["基准","baseMs"],["提取","extractMs"],["匹配","matchMs"],["去重","dedupeMs"],["规划","planMs"],["处理总计","totalMs"]].filter(x=>typeof t[x[1]]==="number"&&Number.isFinite(t[x[1]])&&t[x[1]]>=0).map(x=>x[0]+" "+Math.round(t[x[1]])+(x[0]==="OCR图片"?"张":x[0]==="结果字符"?"字符":(/次数$|尝试$/.test(x[0])?"次":"ms"))):[];
-    const timingHtml=timingParts.length?'<div class="meta">耗时：'+esc(timingParts.join(" · "))+'</div>':'<div class="meta">暂无阶段计时记录（可能为旧运单，或该记录未保存计时）</div>';
+    const compactTimingKeys=["recognizedMs","ocrMs","extractMs","matchMs","dedupeMs","planMs","totalMs"];
+    const compactTimingLabels={recognizedMs:"识别",ocrMs:"OCR",extractMs:"提取",matchMs:"匹配",dedupeMs:"去重",planMs:"规划",totalMs:"总计"};
+    const compactTiming=compactTimingKeys.filter(k=>typeof t?.[k]==="number"&&Number.isFinite(t[k])&&t[k]>=0).map(k=>compactTimingLabels[k]+" "+Math.round(t[k])+"ms");
+    const timingHtml=compactTiming.length?'<div class="diag-timing">'+compactTiming.map(x=>'<span>'+esc(x)+'</span>').join("")+'</div>':'<div class="meta">暂无阶段计时</div>';
+    const detailTimingHtml=timingParts.length?'<div class="meta diag-full-timing">完整阶段耗时：'+esc(timingParts.join(" · "))+'</div>':'<div class="meta">暂无完整阶段计时</div>';
     const fieldEvidence=w.ocr&&w.ocr.fieldEvidence&&typeof w.ocr.fieldEvidence==="object"?w.ocr.fieldEvidence:null;
     const ocrLines=Array.isArray(w.ocr?.lineEvidence)?w.ocr.lineEvidence:[];
     const fieldLabels={date:"日期",vehicle:"车牌",driver:"司机",deliveryPerson:"送货员",totalWeight:"总重量"};
@@ -101,26 +106,31 @@ async function renderDiagnostics(){
       "耗时："+(timingParts.length?timingParts.join(" · "):"暂无阶段计时记录"),
       "OCR证据关联："+(fieldEvidenceSummary||"暂无"),
       ...fieldEvidenceLines,
-      "门店证据（最多导出30条）：",
+      "门店证据摘要（完整数据见JSON）：",
       ...storeEvidenceLines,
       ...(fieldEvidence&&Array.isArray(fieldEvidence.stores)&&fieldEvidence.stores.length>storeEvidenceLines.length?["其余门店证据未导出："+(fieldEvidence.stores.length-storeEvidenceLines.length)+"条"]:[]),
       ...(allMissingStoreEvidence.length?["门店未关联原文："+allMissingStoreEvidence.join("、")]:[]),
-      "事件："+((w.events||[]).slice(-8).reverse().map(eventText).join("；")||"无")
+      "事件："+((w.events||[]).slice(-8).reverse().map(eventText).join("；")||"无"),
+      "",
+      "完整诊断数据（JSON）：",
+      JSON.stringify(w,null,2)
     ].join("\n");
-    return '<div class="row"><div class="content" style="display:block;width:100%"><div class="main"><strong>'+esc(w.date||"-")+' · '+esc(w.vehicle||"-")+'</strong>'
+    const copyIndex=copyPayloads.push(copyLines)-1;
+    const detailHtml='<details class="diag-details"><summary>查看完整诊断详情</summary>'+detailTimingHtml+fieldEvidenceHtml+(evs?'<div class="evt">'+evs+'</div>':'')+'</details>';
+    return '<div class="row diag-card"><div class="content" style="display:block;width:100%"><div class="main"><strong>'+esc(w.date||"-")+' · '+esc(w.vehicle||"-")+'</strong>'
       +'<span class="q-badge '+ql+'">'+esc(ql.toUpperCase())+(w.quality&&w.quality.flags&&w.quality.flags.length?(" · "+esc(flags)):"")+'</span></div>'
-      +'<div class="meta">stage='+esc(w.stage||"-")+' · '+esc(w.routeId)+' · requestId '+esc(w.requestId||"-")+'</div>'
-      +timingHtml+fieldEvidenceHtml+(evs?'<div class="evt">'+evs+'</div>':'')
-      +'<div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="small-action diag-copy" type="button" data-copy="'+encodeURIComponent(copyLines)+'">复制诊断</button></div></div></div>';
+      +'<div class="meta">'+esc(w.stage||"处理阶段未知")+'</div>'
+      +timingHtml+detailHtml
+      +'<div class="diag-actions"><button class="small-action diag-copy" type="button" data-copy-index="'+copyIndex+'">复制完整诊断</button></div></div></div>';
   }).join("");
   const failureHtml=failures.length?'<div class="meta" style="margin:12px 2px 8px;font-weight:600">失败处理记录（'+esc(failures.length)+'）</div>'+failures.map(f=>{
     const o=f.order||{},dg=o.diagnostics||{},v=f.validation||o.validation||{},stores=Array.isArray(dg.finalItems)?dg.finalItems:(Array.isArray(o.stores)?o.stores:[]);
     const label=f.stage==="TIMEOUT"?"处理超时":f.stage==="CANCELLED"?"用户取消":"处理失败";
-    return '<div class="row"><div class="content" style="display:block;width:100%"><div class="main"><strong>'+"运单日期："+esc(f.date||"-")+' · '+esc(f.vehicle||"车牌未识别")+'</strong><span class="q-badge review">'+esc(label)+'</span></div><div class="meta">线路ID：'+esc(f.routeId||routeId)+' · 上传时间：'+esc(formatBeijingTime(f.uploadedAt,f.uploadedAtBeijing))+'</div><div class="meta">失败原因：'+esc(f.detail||f.hint||f.code||"未记录")+'</div><div class="meta">错误代码：'+esc(f.code||"-")+' · requestId：'+esc(f.requestId||"-")+'</div><div class="meta">门店数量：提取 '+esc(dg.extractCount??"-")+' · 去重前 '+esc(dg.dedupeBefore??"-")+' · 去重后 '+esc(dg.dedupeAfter??"-")+' · 最终 '+esc(stores.length)+'</div><div class="meta">'+esc((v.errors||[]).join("、"))+'</div><div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="small-action diag-failure-copy" type="button">复制完整失败诊断</button></div></div></div>';
+    return '<div class="row"><div class="content" style="display:block;width:100%"><div class="main"><strong>'+"运单日期："+esc(f.date||"-")+' · '+esc(f.vehicle||"车牌未识别")+'</strong><span class="q-badge review">'+esc(label)+'</span></div><div class="meta">上传时间：'+esc(formatBeijingTime(f.uploadedAt,f.uploadedAtBeijing))+'</div><div class="meta">失败原因：'+esc(f.detail||f.hint||f.code||"未记录")+'</div><div class="meta">错误代码：'+esc(f.code||"-")+'+'</div><div class="meta">门店数量：提取 '+esc(dg.extractCount??"-")+' · 去重前 '+esc(dg.dedupeBefore??"-")+' · 去重后 '+esc(dg.dedupeAfter??"-")+' · 最终 '+esc(stores.length)+'</div><div class="meta">'+esc((v.errors||[]).join("、"))+'</div><div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="small-action diag-failure-copy" type="button">复制完整失败诊断</button></div></div></div>';
   }).join(""):"";
   $("diagnostics").innerHTML += (d.failureQueryError?'<div class="zp-empty">失败记录暂时无法读取，正常运单诊断仍可查看，请稍后刷新。</div>':"") + failureHtml;
   document.querySelectorAll("#diagnostics .diag-failure-copy").forEach((btn,index)=>btn.onclick=async()=>{
-    const value="智配One 失败运单诊断 | "+JSON.stringify(failures[index],null,2);
+    const value="智配One 失败运单诊断\\n完整失败记录（JSON）：\\n"+JSON.stringify(failures[index],null,2);
     let copied=false;
     try{await navigator.clipboard.writeText(value);copied=true;}catch(e){}
     if(!copied){const ta=document.createElement("textarea");ta.value=value;document.body.appendChild(ta);ta.select();try{copied=document.execCommand("copy")}catch(e){}ta.remove();}
@@ -129,8 +139,9 @@ async function renderDiagnostics(){
   document.querySelectorAll("#diagnostics .diag-copy").forEach(btn=>btn.onclick=async()=>{
     let copied=false;
     let value="";
-    try{value=decodeURIComponent(btn.getAttribute("data-copy")||"");}catch(e){}
-    if(!value){try{toast("诊断内容读取失败，请刷新后重试");}catch(e){}return;}
+    const copyIndex=Number(btn.getAttribute("data-copy-index"));
+    if(!Number.isInteger(copyIndex)||copyIndex<0||copyIndex>=copyPayloads.length){try{toast("诊断内容读取失败，请刷新后重试");}catch(e){}return;}
+    value=copyPayloads[copyIndex];
     try{
       if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(value);copied=true;}
     }catch(e){}
