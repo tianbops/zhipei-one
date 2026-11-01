@@ -60,6 +60,8 @@ for(const endpoint of ["api-waybill-process","home-today-ready-cache","home-toda
 assert.match(ingest,/const storedName = name\.startsWith\("waybill-"\) \? "history-" \+ name : name/,"waybill phases must map into the existing registered Lua namespace");
 assert.ok(report.includes("[a-z0-9-]+$"),"report must preserve waybill timing phases");
 const perfDiag=readFileSync(new URL("../js/perf-diagnostics.js",import.meta.url),"utf8");
+const perfUiLabels=readFileSync(new URL("../js/admin/perf.js",import.meta.url),"utf8");
+for(const label of ["线路基准读取耗时","线路基准索引编译耗时","OCR 后基准剩余等待","OCR 期间重叠耗时"])assert.ok(perfUiLabels.includes(label),label+" must be understandable in the admin performance view");
 assert.match(perfDiag,/window\.zpPerfRecord/);
 assert.match(perfDiag,/p===\"\/api\/waybills\/process\"/);
 assert.match(perfDiag,/response\[methodName\]/,"JSON/body timing must wait for the actual response body reader");
