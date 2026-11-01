@@ -40,9 +40,11 @@ function check(name, cond, info) {
       && jsAll.includes("navigator.clipboard")
       && jsAll.includes('document.execCommand("copy")'));
   const diagnosticsJs = fs.readFileSync(path.join(ROOT, "js", "admin", "diagnostics.js"), "utf8");
-  check("运单诊断复制从当前按钮 data-copy 读取完整诊断，不引用未定义 index",
-    /document\.querySelectorAll\("#diagnostics \.diag-copy"\)[\s\S]*?decodeURIComponent\(btn\.getAttribute\("data-copy"\)/.test(diagnosticsJs)
-      && !/diag-copy[\s\S]{0,500}failures\[index\]/.test(diagnosticsJs));
+  check("运单诊断复制从 payload 索引读取完整诊断，不将大段 JSON 塞入 DOM",
+    /document\.querySelectorAll\("#diagnostics \.diag-copy"\)[\s\S]*?copyPayloads\[copyIndex\]/.test(diagnosticsJs)
+      && diagnosticsJs.includes('data-copy-index="')
+      && diagnosticsJs.includes("JSON.stringify(w,null,2)")
+      && !diagnosticsJs.includes('data-copy="'));
   check("运单诊断复制的临时文本框清理具备异常保护",
     /finally\{try\{if\(ta&&ta\.parentNode\)ta\.parentNode\.removeChild\(ta\);\}catch\(e\)\{\}\}/.test(diagnosticsJs));
   check("复制点击处理完整兜底：剪贴板、DOM回退和提示异常均不会向全局冒泡",
@@ -51,8 +53,8 @@ function check(name, cond, info) {
       && jsAll.includes("if(ta&&ta.parentNode)ta.parentNode.removeChild(ta)")
       && jsAll.includes("[zp-perf-copy] 提示显示失败"));
   check("失败记录自动归档说明独立于筛选输入行，避免窄屏挤压/重叠",
-    /class="search diag-filters"[\s\S]*?<\/div><div class="meta diag-archive-hint" role="note">失败记录会自动归档，无需手动保存。<\/div>/.test(adminHtml)
-      && !/<div class="search diag-filters"[\s\S]*?失败记录自动归档/.test(adminHtml));
+    /class="diag-filters"[\s\S]*?<\/div><div class="meta diag-archive-hint" role="note">失败记录会自动归档，无需手动保存。<\/div>/.test(adminHtml)
+      && !/<div class="diag-filters"[\s\S]*?失败记录自动归档/.test(adminHtml));
   check("拆分产物存在：css/admin-*.css 与 js/admin/*.js 均非空",
     cssAll.length > 1000 && jsAll.length > 1000,
     `css=${cssAll.length}B js=${jsAll.length}B`);
