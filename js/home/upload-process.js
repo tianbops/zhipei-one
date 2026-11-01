@@ -266,7 +266,7 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
       for(const [name,key] of Object.entries(saveStageFields)){const value=Number(saveStages[key]);if(Number.isFinite(value)&&value>=0)phases[name]=value;}
       const serverTiming=String(perfResult?.serverTiming||"");
       const serverTimingValue=name=>{const match=serverTiming.match(new RegExp(name+";dur=([0-9]+(?:\\.[0-9]+)?)"));return match?Number(match[1]):null;};
-      const r2CleanupMs=serverTimingValue("waybill-r2-cleanup");
+      const r2CleanupMs=serverTimingValue("waybill-temp-cleanup");
       const endToEndMs=serverTimingValue("waybill-server-end-to-end");
       if(r2CleanupMs!==null)phases["waybill-server-r2-cleanup"]=r2CleanupMs;
       if(endToEndMs!==null)phases["waybill-server-end-to-end"]=endToEndMs;
