@@ -90,7 +90,6 @@ assert.equal((processApi.match(/processingTiming:processingTiming\(\)/g)||[]).le
 assert.match(processApi,/saveStages/);
 assert.equal(processApi.split('event:"WAYBILL_IDEMPOTENT"').length-1,3,"every idempotent reuse path must retain the current attempt timing");
 assert.match(processApi,/event:"WAYBILL_IDEMPOTENT"[^}]*timing:processingTiming/,"idempotent events must attach processing timing");
-assert.match(diagnosticUi,/本次尝试耗时/,"idempotent event timing must be visible in copied and displayed event history");
 assert.match(upload,/perfResult\?\.processingTiming/);
 
 // Streaming responses use HTTP 200 as the transport, so preserve the underlying process status for failure telemetry.
@@ -104,6 +103,7 @@ assert.match(upload,/perfResult\?\.timing&&typeof perfResult\.timing==="object"\
 // ---- 运单计时精度与诊断字段完整性回归 ----
 const diagnosticApi=readFileSync(new URL("../functions/api/waybills/diagnostic.js",import.meta.url),"utf8");
 const diagnosticUi=readFileSync(new URL("../js/admin/diagnostics.js",import.meta.url),"utf8");
+assert.match(diagnosticUi,/本次尝试耗时/,"idempotent event timing must be visible in copied and displayed event history");
 assert.match(processApi,/const waybillPerfDuration\s*=/,"运单处理阶段必须统一使用单调高精度计时");
 for(const marker of ["baseLookupStarted","indexStarted","started","r2StageStarted","ocrStarted","baseWaitStarted","extractedStarted","matchStarted","dedupeStarted","planStarted"]){
   assert.match(processApi,new RegExp("waybillPerfDuration\\("+marker+"\\)"),marker+" must use high-resolution duration");
