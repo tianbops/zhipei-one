@@ -293,8 +293,8 @@ export function matchStores(items, baseStores, matchIndex = null) {
   const occupiedStoreIds = new Map();
 
   // Reuse a route-base snapshot index when supplied; otherwise build one for this call.
-  const index = matchIndex?.stores === stores ? matchIndex : createMatchIndex(stores);
-  const { byId, byCode, byExactKey } = index;
+  const matcherIndex = matchIndex?.stores === stores ? matchIndex : createMatchIndex(stores);
+  const { byId, byCode, byExactKey } = matcherIndex;
 
   return (items || []).map((item, index) => {
     const rawName = clean(item?.rawName || item?.name);
@@ -330,7 +330,7 @@ export function matchStores(items, baseStores, matchIndex = null) {
     let confidence = null;
     if (!target) {
       const rawCode = businessStoreCode(rawName) || "";
-      const r = matchOne(rawName, stores, index, { businessCode: rawCode });
+      const r = matchOne(rawName, stores, matcherIndex, { businessCode: rawCode });
       if (r.status === "matched") {
         target = r.store;
         method = "similarity";
@@ -420,7 +420,7 @@ export function matchStores(items, baseStores, matchIndex = null) {
       occupiedStoreIds.set(targetStoreId, {identityKey: rawIdentityKey, rawName});
     }
 
-    const targetMeta = index.storeMeta.get(target);
+    const targetMeta = matcherIndex.storeMeta.get(target);
     const isFormatOnly =
       rawIdentityKey === formatCompareKey(standard) ||
       (targetMeta ? targetMeta.exactKeys.has(rawIdentityKey) : identityFields(target).some(f => formatCompareKey(f) === rawIdentityKey));
