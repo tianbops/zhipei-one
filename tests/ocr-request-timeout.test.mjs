@@ -92,7 +92,7 @@ assert.match(source, /setTimeout\(r, Math\.min\(delay, Math\.max\(0, deadline - 
 assert.match(source, /e\?\.code === "OCR_NETWORK_TIMEOUT" && Date\.now\(\) >= deadline/,
   "最后一次状态请求耗尽截止预算时应统一归类为 OCR_TIMEOUT");
 assert.match(source, /\}, 10000, signal\)/, "OCR 任务提交超时保持 10000ms");
-assert.match(source, /\},\s*6000, signal\s*\)/, "OCR 状态请求超时保持 6000ms");
+assert.match(source, /Math\.max\(1, Math\.min\(6000, remainingMs\)\)/, "OCR 状态请求单次超时上限保持 6000ms，并受剩余预算约束");
 assert.match(source, /const refreshStarted = Date\.now\(\);[\s\S]*?finally\s*\{\s*timing\.ocrStatusPollCount\+\+;\s*timing\.ocrStatusRequestMs \+= Date\.now\(\) - refreshStarted;\s*\}/,
   "重试时刷新 OCR 结果地址必须单独计入状态请求耗时，失败时也要计时");
 assert.match(source, /const resultStarted = Date\.now\(\);\s*timing\.ocrResultFetchAttempts\+\+;\s*try\s*\{\s*const raw = await readResult\(url\);\s*const parseStarted = Date\.now\(\);\s*let parsed;/,
