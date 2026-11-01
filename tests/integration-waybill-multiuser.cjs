@@ -139,9 +139,9 @@ async function toJson(resp) { return await resp.json(); }
   check("司机 D 诊断可见 ROUTE 全部(3: 司机/配送员/代班)", dSee.success && (dSee.waybills || []).length === 3, "n=" + (dSee.waybills || []).length);
   const timedWaybill = (dSee.waybills || []).find(w => w.id === wE_id);
   const stageTiming = timedWaybill && timedWaybill.timing;
-  const allowedTimingKeys = ["recognizedMs","ocrMs","baseMs","baseLookupMs","baseIndexMs","baseWaitMs","baseOverlapMs","extractMs","matchMs","dedupeMs","planMs","totalMs"];
+  const allowedTimingKeys = ["timingClock","timingResolutionMs","recognizedMs","ocrMs","r2StageMs","r2StageBytes","baseMs","baseLookupMs","baseIndexMs","baseWaitMs","baseOverlapMs","extractMs","matchMs","dedupeMs","planMs","totalMs"];
   check("诊断列表包含合法阶段计时", !!stageTiming && typeof stageTiming.totalMs === "number" && stageTiming.totalMs >= 0);
-  check("诊断阶段计时仅含白名单非负数值", !!stageTiming && Object.keys(stageTiming).every(k => allowedTimingKeys.includes(k) && typeof stageTiming[k] === "number" && Number.isFinite(stageTiming[k]) && stageTiming[k] >= 0), JSON.stringify(stageTiming));
+  check("诊断阶段计时仅含白名单合法字段", !!stageTiming && Object.keys(stageTiming).every(k => allowedTimingKeys.includes(k) && (k === "timingClock" ? ["performance.now","Date.now"].includes(stageTiming[k]) : typeof stageTiming[k] === "number" && Number.isFinite(stageTiming[k]) && stageTiming[k] >= 0)), JSON.stringify(stageTiming));
   const oSeeR = await toJson(await readLatest(tokO, wE_id));
   check("外人 O 读不到 ROUTE 运单(返回 null)", oSeeR.success && oSeeR.waybill === null);
   const oSeeOwn = await toJson(await readLatest(tokO, wO_id));
