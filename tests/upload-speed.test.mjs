@@ -64,7 +64,7 @@ assert.ok(/逐图OCR耗时/.test(diagnostics), "管理员复制诊断必须展�
 console.log("\n✅ upload-speed 全部通过");
 
 const r2StageBlock=backend.slice(backend.indexOf("const TEMP_STAGE_CONCURRENCY"),backend.indexOf("const ocrStarted"));
-assert.ok(/const TEMP_STAGE_CONCURRENCY=files.length>1\\?2:1/.test(r2StageBlock), "R2 暂存并发仍必须保持 2 张上限");
+assert.ok(/const TEMP_STAGE_CONCURRENCY=files.length>1\?2:1/.test(r2StageBlock), "R2 暂存并发仍必须保持 2 张上限");
 assert.ok(!/const batchId/.test(r2StageBlock), "batchId 只能在 OCR 并发批次作用域创建，不能误放在 R2 暂存循环");
 const ocrBatchStart=backend.indexOf("const CONCURRENCY=files.length>1?4:1");
 const ocrBatchEnd=backend.indexOf("const failed=settled.find",ocrBatchStart);
