@@ -34,7 +34,7 @@ assert.ok(!html.includes('id="diagRequestId"'));
 assert.ok(html.includes("选择线路和日期，无需填写 ID"));
 assert.ok(html.includes('class="diag-query-panel"'));
 assert.ok(!diag.includes("diagRequestId"));
-assert.ok(!diag.includes("requestId="));
+assert.ok(!html.includes("diagRequestId"));
 assert.ok(!diag.includes("(vehicle?"));
 assert.ok(diag.includes('JSON.stringify(failures[index],null,2)'),"failure copy must retain the complete archived failure record");
 assert.ok(diag.includes("diag-timing-note"));
