@@ -55,3 +55,11 @@ const frontend = readFileSync(new URL("../js/home/upload-process.js", import.met
 }
 
 console.log("\n✅ upload-speed 全部通过");
+
+const r2StageBlock=backend.slice(backend.indexOf("const TEMP_STAGE_CONCURRENCY"),backend.indexOf("const ocrStarted"));
+assert.ok(!/const batchId/.test(r2StageBlock), "batchId 只能在 OCR 并发批次作用域创建，不能误放在 R2 暂存循环");
+const ocrBatchStart=backend.indexOf("const CONCURRENCY=files.length>1?2:1");
+const ocrBatchEnd=backend.indexOf("const failed=settled.find",ocrBatchStart);
+assert.ok(ocrBatchStart>=0&&ocrBatchEnd>ocrBatchStart, "OCR 并发批次边界必须存在");
+assert.match(backend.slice(ocrBatchStart,ocrBatchEnd), /const batchId=batch\.length>1\?\x60zp-\$\{requestId\}-\$\{start\}\x60:null/,
+  "batchId 必须在 OCR 并发批次内部声明，保证两个识别任务共享且不跨批次");
