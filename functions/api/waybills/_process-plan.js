@@ -7,7 +7,7 @@
  *   plan 的 routeOrder 全排序（tie 用名称 localeCompare）均为基准顺序契约。
  */
 
-import {clean,formatCompareKey,matchStores} from "./_store-match.js";
+import {clean,formatCompareKey,matchStores,createMatchIndex} from "./_store-match.js";
 import {number} from "./_process-common.js";
 
 export function baseIdentityNames(store){
@@ -15,22 +15,69 @@ export function baseIdentityNames(store){
     .map(v=>clean(v).split('•')[0].split('·')[0].trim()).filter(v=>v.length>=2);
 }
 
-export function splitByRouteBase(items,baseStores){
-  const bases=Array.isArray(baseStores)?baseStores:[];
-  if(!bases.length)return items;
+const ROUTE_BASE_INDEX_KIND="zp-route-base-match-index";
+const ROUTE_BASE_INDEX_CACHE=new Map();
+const ROUTE_BASE_INDEX_CACHE_MAX=16;
+
+/** Compile route-base identity keys and the store matcher once per versioned snapshot. */
+export function createRouteBaseIndex(baseStores){
+  const stores=Array.isArray(baseStores)?baseStores:[];
+  const knownKeys=new Set();
+  const unique=new Map();
+  for(const store of stores){
+    for(const name of baseIdentityNames(store)){
+      const key=formatCompareKey(name);
+      if(key)knownKeys.add(key);
+      if(key.length<4)continue;
+      const id=clean(store?.storeId)||key;
+      const old=unique.get(id);
+      if(!old||key.length>old.key.length)unique.set(id,{store,name,key});
+    }
+  }
+  return {
+    kind:ROUTE_BASE_INDEX_KIND,
+    stores,
+    knownKeys,
+    segmentEntries:[...unique.values()],
+    matchIndex:createMatchIndex(stores)
+  };
+}
+
+/** Isolate-local LRU cache. Never stores global-learning records; max 16 route-base versions. */
+export function getCachedRouteBaseIndex(userId,routeId,baseVersion,baseStores){
+  const version=Number(baseVersion);
+  if(!clean(userId)||!clean(routeId)||!Number.isSafeInteger(version)||version<1){
+    return createRouteBaseIndex(baseStores);
+  }
+  const key=clean(userId)+"|"+clean(routeId)+"|"+String(version);
+  if(ROUTE_BASE_INDEX_CACHE.has(key)){
+    const hit=ROUTE_BASE_INDEX_CACHE.get(key);
+    ROUTE_BASE_INDEX_CACHE.delete(key);
+    ROUTE_BASE_INDEX_CACHE.set(key,hit);
+    return hit;
+  }
+  const index=createRouteBaseIndex(baseStores);
+  ROUTE_BASE_INDEX_CACHE.set(key,index);
+  while(ROUTE_BASE_INDEX_CACHE.size>ROUTE_BASE_INDEX_CACHE_MAX){
+    ROUTE_BASE_INDEX_CACHE.delete(ROUTE_BASE_INDEX_CACHE.keys().next().value);
+  }
+  return index;
+}
+
+export function splitByRouteBase(items,baseStoresOrIndex){
+  const index=baseStoresOrIndex?.kind===ROUTE_BASE_INDEX_KIND
+    ?baseStoresOrIndex
+    :createRouteBaseIndex(baseStoresOrIndex);
+  if(!index.stores.length)return items;
   return items.flatMap(item=>{
     const rawName=clean(item?.rawName||item?.name);
     const rawKey=formatCompareKey(rawName);
     const hits=[];
-    for(const store of bases){
-      for(const name of baseIdentityNames(store)){
-        const key=formatCompareKey(name);
-        if(key.length>=4&&rawKey.includes(key))hits.push({store,name,key,pos:rawKey.indexOf(key)});
-      }
+    for(const entry of index.segmentEntries){
+      const pos=rawKey.indexOf(entry.key);
+      if(pos>=0)hits.push({...entry,pos});
     }
-    const unique=new Map();
-    for(const hit of hits){const id=clean(hit.store?.storeId)||hit.key;const old=unique.get(id);if(!old||hit.key.length>old.key.length)unique.set(id,hit);}
-    const candidates=[...unique.values()].sort((a,b)=>b.key.length-a.key.length||a.pos-b.pos);
+    const candidates=[...hits].sort((a,b)=>b.key.length-a.key.length||a.pos-b.pos);
     const selected=[];
     for(const candidate of candidates){
       const start=candidate.pos;
@@ -38,13 +85,13 @@ export function splitByRouteBase(items,baseStores){
       const overlaps=selected.some(hit=>{
         const hitStart=hit.pos;
         const hitEnd=hitStart+hit.key.length;
-        return start< hitEnd && hitStart<end;
+        return start<hitEnd&&hitStart<end;
       });
       if(!overlaps)selected.push(candidate);
     }
     selected.sort((a,b)=>a.pos-b.pos||b.key.length-a.key.length);
     if(selected.length<2)return [item];
-    return selected.map((hit,index)=>({...item,rawName:hit.name,name:hit.name,storeId:clean(hit.store?.storeId)||null,extractionMethod:'route-base-segment',extractionSegment:index+1,extractionSegments:selected.length}));
+    return selected.map((hit,index)=>({...item,rawName:hit.name,name:hit.name,storeId:clean(hit.store?.storeId)||null,extractionMethod:"route-base-segment",extractionSegment:index+1,extractionSegments:selected.length}));
   });
 }
 
