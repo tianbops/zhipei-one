@@ -290,18 +290,16 @@ export function matchStores(items, baseStores, matchIndex = null) {
   // 同一张运单内的身份占用保护：
   // 不同原始识别项如果最终争用同一个 storeId，不能让后续 dedupe
   // 因标准化 name 相同而把它们吞掉。真正相同的 OCR 重复项仍允许正常去重。
-  const occupiedStor  // Reuse a route-base snapshot index when supplied; otherwise build one for this call.
+  const occupiedStoreIds = new Map();
+
+  // Reuse a route-base snapshot index when supplied; otherwise build one for this call.
   const index = matchIndex?.stores === stores ? matchIndex : createMatchIndex(stores);
   const { byId, byCode, byExactKey } = index;
-, store);
-    }
-  }
 
   return (items || []).map((item, index) => {
     const rawName = clean(item?.rawName || item?.name);
     const incomingId = clean(item?.storeId);
     const rawNormalized = normalizeForMatch(rawName);
-    const rawPinyin = null;
     const rawCode = businessStoreCode(rawName) || "";
     const rawIdentityKey = formatCompareKey(rawName);
     const incomingCode =
@@ -333,7 +331,7 @@ export function matchStores(items, baseStores, matchIndex = null) {
     // 4. 受控相似度
     let confidence = null;
     if (!target) {
-      const r = matchOne(rawName, stores, index, { normalized: rawNormalized, pinyin: rawPinyin, businessCode: rawCode });
+      const r = matchOne(rawName, stores, index, { normalized: rawNormalized, businessCode: rawCode });
       if (r.status === "matched") {
         target = r.store;
         method = "similarity";
@@ -458,6 +456,7 @@ export function matchStores(items, baseStores, matchIndex = null) {
 
 export default {
   matchStores,
+  createMatchIndex,
   matchOne,
   evaluate,
   scoreNames,
