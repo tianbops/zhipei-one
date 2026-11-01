@@ -34,7 +34,7 @@ async function renderDiagnostics(){
   if(!routeId||!selectedRoute){$("diagnostics").innerHTML='<div class="zp-empty">'+(S.routes&&S.routes.length?"请选择一条有效线路":"线路列表尚未加载，或当前没有可选线路")+'</div>';return}
   const date=($("diagDate").value||"").trim();
   if(date&&!/^\d{4}-\d{2}-\d{2}$/.test(date)){$("diagnostics").innerHTML='<div class="zp-empty">日期格式无效，请选择有效日期</div>';return}
-  $("diagRouteMeta").textContent="线路："+(rn(selectedRoute.name)||selectedRoute.name||routeId)+" · 线路ID："+routeId;
+  $("diagRouteMeta").textContent="当前线路："+(rn(selectedRoute.name)||selectedRoute.name||"未命名线路");
   let q="/api/waybills/diagnostic?routeId="+encodeURIComponent(routeId);
   if(date)q+="&date="+encodeURIComponent(date);
 
@@ -106,7 +106,7 @@ async function renderDiagnostics(){
       "耗时："+(timingParts.length?timingParts.join(" · "):"暂无阶段计时记录"),
       "OCR证据关联："+(fieldEvidenceSummary||"暂无"),
       ...fieldEvidenceLines,
-      "门店证据（最多导出30条）：",
+      "门店证据摘要（完整数据见JSON）：",
       ...storeEvidenceLines,
       ...(fieldEvidence&&Array.isArray(fieldEvidence.stores)&&fieldEvidence.stores.length>storeEvidenceLines.length?["其余门店证据未导出："+(fieldEvidence.stores.length-storeEvidenceLines.length)+"条"]:[]),
       ...(allMissingStoreEvidence.length?["门店未关联原文："+allMissingStoreEvidence.join("、")]:[]),
@@ -126,7 +126,7 @@ async function renderDiagnostics(){
   const failureHtml=failures.length?'<div class="meta" style="margin:12px 2px 8px;font-weight:600">失败处理记录（'+esc(failures.length)+'）</div>'+failures.map(f=>{
     const o=f.order||{},dg=o.diagnostics||{},v=f.validation||o.validation||{},stores=Array.isArray(dg.finalItems)?dg.finalItems:(Array.isArray(o.stores)?o.stores:[]);
     const label=f.stage==="TIMEOUT"?"处理超时":f.stage==="CANCELLED"?"用户取消":"处理失败";
-    return '<div class="row"><div class="content" style="display:block;width:100%"><div class="main"><strong>'+"运单日期："+esc(f.date||"-")+' · '+esc(f.vehicle||"车牌未识别")+'</strong><span class="q-badge review">'+esc(label)+'</span></div><div class="meta">线路ID：'+esc(f.routeId||routeId)+' · 上传时间：'+esc(formatBeijingTime(f.uploadedAt,f.uploadedAtBeijing))+'</div><div class="meta">失败原因：'+esc(f.detail||f.hint||f.code||"未记录")+'</div><div class="meta">错误代码：'+esc(f.code||"-")+' · requestId：'+esc(f.requestId||"-")+'</div><div class="meta">门店数量：提取 '+esc(dg.extractCount??"-")+' · 去重前 '+esc(dg.dedupeBefore??"-")+' · 去重后 '+esc(dg.dedupeAfter??"-")+' · 最终 '+esc(stores.length)+'</div><div class="meta">'+esc((v.errors||[]).join("、"))+'</div><div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="small-action diag-failure-copy" type="button">复制完整失败诊断</button></div></div></div>';
+    return '<div class="row"><div class="content" style="display:block;width:100%"><div class="main"><strong>'+"运单日期："+esc(f.date||"-")+' · '+esc(f.vehicle||"车牌未识别")+'</strong><span class="q-badge review">'+esc(label)+'</span></div><div class="meta">上传时间：'+esc(formatBeijingTime(f.uploadedAt,f.uploadedAtBeijing))+'</div><div class="meta">失败原因：'+esc(f.detail||f.hint||f.code||"未记录")+'</div><div class="meta">错误代码：'+esc(f.code||"-")+' · requestId：'+esc(f.requestId||"-")+'</div><div class="meta">门店数量：提取 '+esc(dg.extractCount??"-")+' · 去重前 '+esc(dg.dedupeBefore??"-")+' · 去重后 '+esc(dg.dedupeAfter??"-")+' · 最终 '+esc(stores.length)+'</div><div class="meta">'+esc((v.errors||[]).join("、"))+'</div><div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="small-action diag-failure-copy" type="button">复制完整失败诊断</button></div></div></div>';
   }).join(""):"";
   $("diagnostics").innerHTML += (d.failureQueryError?'<div class="zp-empty">失败记录暂时无法读取，正常运单诊断仍可查看，请稍后刷新。</div>':"") + failureHtml;
   document.querySelectorAll("#diagnostics .diag-failure-copy").forEach((btn,index)=>btn.onclick=async()=>{
