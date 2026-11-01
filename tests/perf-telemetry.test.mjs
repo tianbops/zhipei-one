@@ -119,6 +119,7 @@ assert.match(diagnosticApi,/"r2StageMs"/,"R2 staging duration must survive safeT
 assert.match(diagnosticApi,/"r2StageBytes"/,"R2 staging byte count must survive safeTiming filtering");
 assert.ok(diagnosticUi.includes("准备+识别累计"),"the cumulative recognition label must state its preparation boundary");
 assert.match(diagnosticUi,/R2暂存/,"R2 staging must be separately visible");
+assert.match(diagnosticUi,/x\[1\]==="r2StageBytes"\?" bytes"/,"R2 staged bytes must be labeled as bytes, never milliseconds");
 assert.match(diagnosticUi,/计时分辨率/,"the diagnostic must explain timer resolution");
 for(const key of ["baseLookupMs","baseIndexMs","baseWaitMs","baseOverlapMs"]){
   assert.ok(diagnosticUi.includes('"'+key+'"'),key+" must be shown in full waybill diagnostics");
