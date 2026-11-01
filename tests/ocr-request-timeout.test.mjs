@@ -399,8 +399,8 @@ assert.match(source,/ocrResultFetchWaitMs \+= ocrPerfDuration\(waitStarted\)/,"r
     assert.equal(individualStatusCalls, 2, "each task must fall back to its own status endpoint");
     assert.match(results[0].rawText, /回退图片一门店甲/);
     assert.match(results[1].rawText, /回退图片二门店丙/);
-    assert.equal(results.reduce((sum, item) => sum + item.ocrStatusPollCount, 0), 2,
-      "fallback diagnostics must count both real per-job status requests");
+    assert.equal(results.reduce((sum, item) => sum + item.ocrStatusPollCount, 0), 3,
+      "fallback diagnostics must count the one shared unsupported batch request plus both per-job status requests");
   } finally {
     globalThis.fetch = savedFetch;
     globalThis.setTimeout = savedSetTimeout;
