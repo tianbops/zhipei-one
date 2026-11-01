@@ -6,11 +6,10 @@
 **统一响应格式**：`{ success: boolean, error?: string, code?: string }`（失败时 `success:false`）。
 鉴权走 `credentials: "same-origin"` 的会话 Cookie；写操作（POST/PUT/DELETE）前端默认不做自动重试。
 
-**端点数：28**
+**端点数：27**
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| POST | `/api/account-settings` | — |
 | POST | `/api/admin/bootstrap` | — |
 | GET / POST | `/api/admin/global-learning` | 列出现有全局学习记录供管理员选择；只读，不改变学习状态。 |
 | POST | `/api/admin/manage` | — |
