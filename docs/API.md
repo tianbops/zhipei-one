@@ -6,7 +6,7 @@
 **统一响应格式**：`{ success: boolean, error?: string, code?: string }`（失败时 `success:false`）。
 鉴权走 `credentials: "same-origin"` 的会话 Cookie；写操作（POST/PUT/DELETE）前端默认不做自动重试。
 
-**端点数：27**
+**端点数：28**
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
@@ -34,6 +34,7 @@
 | POST | `/api/route-binding` | — |
 | GET / POST | `/api/route-requests` | 线路申请：GET 列本人申请，POST 提交；可选填申请人姓名 / 手机号（仅供管理员审核与联系，空值不落库）。 |
 | POST | `/api/route-unbind` | — |
+| POST | `/api/waybills/cancel` | — |
 | POST | `/api/waybills/confirm` | 指纹漂移回收（2026-10-07 生产实测发现）。 businessFingerprint 的入参包含每个门店的 pending / routeOrde… |
 | POST | `/api/waybills/extract` | — |
 | POST | `/api/waybills/process` | 智配One · 运单处理入口（POST /api/waybills/process） ----------------------------------… |
