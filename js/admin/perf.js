@@ -41,7 +41,7 @@ async function renderPerfReport(){
     const sortPhases=list=>list.sort((a,b)=>(b[1].count?b[1].sum/b[1].count:0)-(a[1].count?a[1].sum/a[1].count:0));
     const historyPhases=sortPhases([...pm.entries()].filter(([name])=>name.startsWith("history-")&&!name.startsWith("history-waybill-")&&!isD1RoutingMetric(name)));
     const waybillPhases=sortPhases([...pm.entries()].filter(([name])=>name.startsWith("history-waybill-")));
-    const phaseLabel=name=>name.startsWith("history-waybill-")?name.slice("history-".length):name;
+    const phaseLabel=name=>{const key=name.startsWith("history-waybill-")?name.slice("history-".length):name;const labels={"waybill-server-base-lookup":"线路基准读取耗时","waybill-server-base-index":"线路基准索引编译耗时","waybill-server-base-wait":"OCR 后基准剩余等待","waybill-server-base-overlap":"OCR 期间重叠耗时"};return labels[key]||key;};
     const otherPhases=sortPhases([...pm.entries()].filter(([name])=>!isD1RoutingMetric(name)&&!name.startsWith("history-")&&!name.startsWith("waybill-")));
     const d1Routes=[...pm.entries()].filter(([name])=>isD1RoutingMetric(name)).sort((a,b)=>a[0].localeCompare(b[0]));
     const appendTimePhases=(title,list)=>{if(!list.length)return;reportLines.push("",title);for(const [name,x] of list)reportLines.push(phaseLabel(name)+"：样本 "+x.count+"，平均 "+(x.count?Math.round(x.sum/x.count):0)+" ms，峰值 "+Math.round(x.max)+" ms");};
