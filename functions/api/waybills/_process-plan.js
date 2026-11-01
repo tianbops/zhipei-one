@@ -49,7 +49,7 @@ export function getCachedRouteBaseIndex(userId,routeId,baseVersion,baseStores){
   if(!clean(userId)||!clean(routeId)||!Number.isSafeInteger(version)||version<1){
     return createRouteBaseIndex(baseStores);
   }
-  const key=clean(userId)+"|"+clean(routeId)+"|"+String(version);
+  const key=JSON.stringify([clean(userId),clean(routeId),version]);
   if(ROUTE_BASE_INDEX_CACHE.has(key)){
     const hit=ROUTE_BASE_INDEX_CACHE.get(key);
     ROUTE_BASE_INDEX_CACHE.delete(key);
