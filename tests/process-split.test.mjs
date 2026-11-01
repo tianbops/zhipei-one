@@ -40,8 +40,9 @@ const entry = readFileSync(ENTRY, "utf8");
  //     避免每张图片再 GET 一次并复制完整二进制；请求结束仍由统一清理逻辑删除对象。
 assert.match(entry, /await bucket\.put\(key,source,[\s\S]*?tempKeys\.push\(key\)/,
   "运单图片必须先写入 R2 临时存储");
-const stagingBlock = entry.match(/const bucket=env\?\.WAYBILL_FILES;([\s\S]*?)const ocrStarted=/)?.[1] || "";
+const stagingBlock = entry.match(/const bucket=[^;]+;([\s\S]*?)const ocrStarted=/)?.[1] || "";
 assert.ok(stagingBlock, "R2 暂存区块必须存在");
+assert.match(entry, /if\(!rawText&&files\.length\)[\s\S]*?WAYBILL_TEMP_LIMIT_EXCEEDED/, "图片大小预检必须在启动线路基准读取前执行");
 assert.doesNotMatch(stagingBlock, /bucket\.get\(|arrayBuffer\(\)|stagedFiles/,
   "R2 暂存后不得立即回读图片并复制，OCR 应复用原始 File");
 assert.match(stagingBlock, /R2 仍按要求临时暂存并在请求结束后删除/,
