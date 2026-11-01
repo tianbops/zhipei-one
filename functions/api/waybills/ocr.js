@@ -124,7 +124,64 @@ async function requestJson(url, init, timeoutMs = 8000, abortSignal = null) {
   }
 }
 
-export async function recognizeImage(env, file, onProgress = () => {}, signal = null) {
+
+/* Batch polling is scoped by a per-upload batchId. Concurrent image workers share
+   one in-flight request and a very short post-response snapshot window; the cache
+   never crosses batches and is bounded to avoid isolate-local memory growth. */
+const batchStatusCache = new Map();
+const batchStatusUnsupported = new Map();
+function batchStatusDisabled(batchId) {
+  const expiresAt = batchStatusUnsupported.get(batchId);
+  if (!expiresAt) return false;
+  if (expiresAt > Date.now()) return true;
+  batchStatusUnsupported.delete(batchId);
+  return false;
+}
+function disableBatchStatus(batchId) {
+  batchStatusUnsupported.set(batchId, Date.now() + 60000);
+  while (batchStatusUnsupported.size > 64) {
+    batchStatusUnsupported.delete(batchStatusUnsupported.keys().next().value);
+  }
+}
+function unsupportedBatchStatus(error) {
+  return error?.code === "OCR_ENDPOINT" || error?.code === "OCR_BAD_RESPONSE"
+    || (error?.code === "OCR_API" && [400, 405, 501].includes(Number(error.status)));
+}
+async function requestBatchStatus(base, token, batchId, timeoutMs, signal) {
+  const now = Date.now();
+  for (const [key, entry] of batchStatusCache) {
+    if (entry.settled && entry.expiresAt <= now) batchStatusCache.delete(key);
+  }
+  const existing = batchStatusCache.get(batchId);
+  if (existing && (!existing.settled || existing.expiresAt > now)) {
+    try { return { data: await existing.promise, shared: true }; }
+    catch (error) { return { error, shared: true }; }
+  }
+  const entry = { settled: false, expiresAt: Number.POSITIVE_INFINITY, promise: null };
+  entry.promise = requestJson(
+    base + JOB_PATH + "/batch/" + encodeURIComponent(batchId),
+    { headers: { Authorization: "Bearer " + token, Accept: "application/json" } },
+    timeoutMs,
+    signal
+  ).then(data => {
+    entry.settled = true;
+    entry.expiresAt = Date.now() + 100;
+    return data;
+  }, error => {
+    batchStatusCache.delete(batchId);
+    throw error;
+  });
+  batchStatusCache.set(batchId, entry);
+  while (batchStatusCache.size > 32) {
+    const oldestKey = batchStatusCache.keys().next().value;
+    if (oldestKey === batchId) break;
+    batchStatusCache.delete(oldestKey);
+  }
+  try { return { data: await entry.promise, shared: false }; }
+  catch (error) { return { error, shared: false }; }
+}
+
+export async function recognizeImage(env, file, onProgress = () => {}, signal = null, batchId = null) {
   onProgress(0);
   const token = clean(env?.PADDLEOCR_ACCESS_TOKEN);
   if (!token) throw fail("OCR_NOT_CONFIGURED", "OCR服务尚未配置");
@@ -132,6 +189,7 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
 
   const form = new FormData();
   form.append("model", MODEL);
+  if (clean(batchId)) form.append("batchId", clean(batchId));
   form.append("optionalPayload", JSON.stringify({
     useDocOrientationClassify: false,
     useDocUnwarping: false,
@@ -173,16 +231,55 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
     let status;
     const statusStarted = ocrPerfNow();
     try {
-      status = await requestJson(
-        base + JOB_PATH + "/" + encodeURIComponent(jobId),
-        { headers: { Authorization: "Bearer " + token, Accept: "application/json" } },
-        Math.max(1, Math.min(6000, remainingMs)), signal
-      );
-      timing.ocrStatusPollCount++;
-      timing.ocrStatusRequestMs += ocrPerfDuration(statusStarted);
+      if (clean(batchId) && !batchStatusDisabled(clean(batchId))) {
+        const batchResult = await requestBatchStatus(base, token, clean(batchId),
+          Math.max(1, Math.min(6000, remainingMs)), signal);
+        if (!batchResult.shared) {
+          timing.ocrStatusPollCount++;
+          timing.ocrStatusRequestMs += ocrPerfDuration(statusStarted);
+        }
+        if (batchResult.error) {
+          if (!unsupportedBatchStatus(batchResult.error)) throw batchResult.error;
+          disableBatchStatus(clean(batchId));
+          const fallbackStarted = ocrPerfNow();
+          status = await requestJson(
+            base + JOB_PATH + "/" + encodeURIComponent(jobId),
+            { headers: { Authorization: "Bearer " + token, Accept: "application/json" } },
+            Math.max(1, Math.min(6000, deadline - Date.now())), signal
+          );
+          timing.ocrStatusPollCount++;
+          timing.ocrStatusRequestMs += ocrPerfDuration(fallbackStarted);
+        } else {
+          const jobs = batchResult.data?.data?.extractResult;
+          if (!Array.isArray(jobs)) {
+            // An unexpected response shape is treated as an unsupported batch endpoint.
+            // Fall back to the proven single-job endpoint instead of risking a lost result.
+            disableBatchStatus(clean(batchId));
+            const fallbackStarted = ocrPerfNow();
+            status = await requestJson(
+              base + JOB_PATH + "/" + encodeURIComponent(jobId),
+              { headers: { Authorization: "Bearer " + token, Accept: "application/json" } },
+              Math.max(1, Math.min(6000, deadline - Date.now())), signal
+            );
+            timing.ocrStatusPollCount++;
+            timing.ocrStatusRequestMs += ocrPerfDuration(fallbackStarted);
+          } else {
+            const ownJob = jobs.find(item => clean(item?.jobId) === jobId);
+            // A sibling may reach its first poll just before this job has joined the batch.
+            // Missing entries remain pending; the next shared snapshot will include them.
+            status = { data: ownJob || { state: "pending" } };
+          }
+        }
+      } else {
+        status = await requestJson(
+          base + JOB_PATH + "/" + encodeURIComponent(jobId),
+          { headers: { Authorization: "Bearer " + token, Accept: "application/json" } },
+          Math.max(1, Math.min(6000, remainingMs)), signal
+        );
+        timing.ocrStatusPollCount++;
+        timing.ocrStatusRequestMs += ocrPerfDuration(statusStarted);
+      }
     } catch (e) {
-      timing.ocrStatusPollCount++;
-      timing.ocrStatusRequestMs += ocrPerfDuration(statusStarted);
       if (e?.code === "OCR_NETWORK_TIMEOUT" && Date.now() >= deadline) {
         throw fail("OCR_TIMEOUT", "OCR识别超时，请稍后重试", { jobId, ...timing });
       }
