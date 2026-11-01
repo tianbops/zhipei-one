@@ -11,7 +11,7 @@
     "test:isolation": "node tests/integration-waybill-isolation.cjs",
     "test:quality": "node tests/unit-quality-gate.test.cjs && node tests/integration-waybill-quality-events.cjs",
     "test:state": "node tests/unit-waybill-proc.test.cjs && node tests/unit-waybill-failure-archive.test.cjs && node tests/integration-waybill-state-machine.cjs",
-    "test:time": "node tests/unit-waybill-events-time.test.cjs",
+    "test:time": "node tests/unit-waybill-events-time.test.cjs && node tests/admin-swipe-cancel.test.mjs",
     "test:consistency": "node tests/integration-waybill-consistency.cjs",
     "test:stats": "node tests/integration-waybill-stats.cjs",
     "test:multiuser": "node tests/integration-waybill-multiuser.cjs",
