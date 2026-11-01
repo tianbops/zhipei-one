@@ -353,7 +353,7 @@ html[data-zp-theme="light"] select,html[data-zp-theme="light"] input[type="date"
   .diag-failure-field{gap:4px}
   .diag-failure-stats{gap:4px}
   .diag-failure-stat{min-height:46px;padding:5px 2px}
-  .diag-failure-stat>span{font-size:9px}
+  .diag-failure-stat>span{font-size:var(--zp-fs-11)}
   .diag-failure-card .diag-actions{gap:6px}
   .diag-failure-card .diag-actions .small-action{padding:6px 4px}
 }
