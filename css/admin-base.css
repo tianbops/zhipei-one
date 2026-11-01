@@ -163,6 +163,7 @@ html[data-zp-theme="light"] select,html[data-zp-theme="light"] input[type="date"
 .diag-filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;align-items:end;gap:8px;margin:0 0 10px}
 .diag-filter{display:flex;flex-direction:column;gap:4px;min-width:0;color:var(--zp-muted);font-size:var(--zp-fs-12)}
 .diag-filter select,.diag-filter input{width:100%;min-width:0;height:42px;padding:0 10px;border:1px solid var(--zp-input-line);border-radius:var(--zp-r-control);background:var(--zp-input-bg);color:var(--zp-text);font:inherit;font-size:var(--zp-fs-14)}
+.diag-filter .zp-pk-trigger,.diag-filter .zp-pk-date-trigger{width:100%;min-width:0;min-height:42px;flex:1 1 auto;padding:0 10px;font-size:var(--zp-fs-14)}
 .diag-query{height:42px;min-width:58px}
 .diag-card{margin-bottom:6px}
 .diag-card .content{padding:8px 10px;min-height:0}
