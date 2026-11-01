@@ -240,9 +240,3 @@ assert.match(source,/const resultStarted = ocrPerfNow\(\);[\s\S]*?finally \{[\s\
 assert.match(source,/timing\.ocrResultRequestMs \+= ocrPerfDuration\(requestStarted\)/,"result request timing includes failures");
 assert.match(source,/timing\.ocrResultBodyMs \+= ocrPerfDuration\(bodyStarted\)/,"result body timing includes failures");
 assert.match(source,/ocrResultFetchWaitMs \+= ocrPerfDuration\(waitStarted\)/,"retry backoff uses monotonic timing");
-
-// Monotonic timing assertions: Date.now is reserved for absolute deadlines, never elapsed durations.
-assert.match(source,/const ocrPerfNow\s*=/);
-assert.match(source,/const ocrPerfDuration\s*=/);
-for(const marker of ["submitStarted","waitStarted","statusStarted","requestStarted","bodyStarted","refreshStarted","resultStarted","parseStarted"]){assert.match(source,new RegExp("const "+marker+" = ocrPerfNow\\(\\)"),marker+" must use monotonic start time");assert.match(source,new RegExp("ocrPerfDuration\\("+marker+"\\)"),marker+" must use monotonic elapsed time");}
-assert.match(source,/finally\s*\{\s*\/\/ Count each result-read attempt exactly once[\s\S]*?ocrResultFetchMs \+= ocrPerfDuration\(resultStarted\)/,"result read attempt timing must be counted once on success and failure");

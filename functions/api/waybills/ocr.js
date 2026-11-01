@@ -286,13 +286,12 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
           }
           const resultStarted = ocrPerfNow();
           timing.ocrResultFetchAttempts++;
+          let parsed;
           try {
             const raw = await readResult(url);
             const parseStarted = ocrPerfNow();
-            let parsed;
             try { parsed = await parseResult(raw); }
             finally { timing.ocrResultParseMs += ocrPerfDuration(parseStarted); }
-            return { ...parsed, ...timing };
           } catch (e) {
             lastError = e;
             if (!e?.retryable) throw withTiming(e, timing);
@@ -300,6 +299,7 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
             // Count each result-read attempt exactly once, including failures.
             timing.ocrResultFetchMs += ocrPerfDuration(resultStarted);
           }
+          if (parsed) return { ...parsed, ...timing };
         } catch (e) {
           lastError = e;
           if (!e?.retryable) throw withTiming(e, timing);
