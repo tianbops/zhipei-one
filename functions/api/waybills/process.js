@@ -137,7 +137,18 @@ async function runProcessCore({request,env,emit=()=>{},form:providedForm=null,us
     return await saveWaybill(resumedOrder, requestId, true);
   }
   if(await stopIfClientCancelled("OCR"))return json({success:false,code:"PROCESS_CANCELLED",error:"已取消处理",message:"已取消处理",requestId,recoverable:true,action:"REPROCESS",hint:"本次处理已取消，可重新上传运单"},499);
-  // 线路基准读取与图片暂存/OCR 独立：提前发起并在 OCR 期间并行等待，不改变匹配输入与错误语义。
+  // Reject oversized uploads or missing temporary storage before spending a route-base read.
+  const uploadBucket=!recognizedText&&files.length?env?.WAYBILL_FILES:null;
+  if(!recognizedText&&files.length){
+    const totalBytes=files.reduce((sum,item)=>sum+(Number(item?.size)||0),0);
+    if(files.length>WAYBILL_TEMP_MAX_FILES||totalBytes>WAYBILL_TEMP_MAX_BYTES){
+      return failProcess("WAYBILL_TEMP_LIMIT_EXCEEDED","本次运单图片数量或总大小超出限制，请分批上传",413,{recoverable:true,action:"REPROCESS",hint:"请减少图片数量或分批上传后重试"});
+    }
+    if(!uploadBucket||typeof uploadBucket.put!=="function"||typeof uploadBucket.delete!=="function"){
+      return failProcess("WAYBILL_TEMP_STORAGE_UNAVAILABLE","运单图片临时存储暂不可用，请稍后重试",503,{recoverable:true,action:"REPROCESS",hint:"运单图片暂存失败，请稍后重试"});
+    }
+  }
+  // 线路基准读取与索引预热和图片暂存/OCR 并行，不改变匹配输入与错误语义。
   const baseLookupStarted=Date.now();
   const baseLookupPromise=isTempRoute(routeId)
     ? Promise.resolve({stores:[],available:false,error:null,elapsedMs:0,lookupMs:0,indexMs:0,index:null})
@@ -154,19 +165,10 @@ async function runProcessCore({request,env,emit=()=>{},form:providedForm=null,us
   const r2StageStarted=Date.now();
   let r2StageBytes=0;
   if(!recognizedText&&files.length){
-    const totalBytes=files.reduce((sum,item)=>sum+(Number(item?.size)||0),0);
-    if(files.length>WAYBILL_TEMP_MAX_FILES||totalBytes>WAYBILL_TEMP_MAX_BYTES){
-      return failProcess("WAYBILL_TEMP_LIMIT_EXCEEDED","本次运单图片数量或总大小超出限制，请分批上传",413,{recoverable:true,action:"REPROCESS",hint:"请减少图片数量或分批上传后重试"});
-    }
-    const bucket=env?.WAYBILL_FILES;
-    if(!bucket||typeof bucket.put!=="function"||typeof bucket.delete!=="function"){
-      return failProcess("WAYBILL_TEMP_STORAGE_UNAVAILABLE","运单临时存储暂不可用，请稍后重试",503,{recoverable:true,action:"REPROCESS",hint:"运单图片临时存储暂不可用，请稍后重试"});
-    }
-    try{
-      for(let i=0;i<files.length;i++){
+    try{     for(let i=0;i<files.length;i++){
         const source=files[i];
         const key=`waybill-tmp/${requestId}/${i+1}-${crypto.randomUUID()}`;
-        await bucket.put(key,source,{storageClass:"Standard",httpMetadata:{contentType:source.type||"application/octet-stream"}});
+        await uploadBucket.put(key,source,{storageClass:"Standard",httpMetadata:{contentType:source.type||"application/octet-stream"}});
         tempKeys.push(key);
         r2StageBytes+=Number(source.size)||0;
       }
