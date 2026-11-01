@@ -186,7 +186,7 @@ export function createMatchIndex(baseStores) {
     }
     const preparedFields = fields.map(name => {
       const normalized = normalizeForMatch(name);
-      return { name, normalized, pinyin: null };
+      return { name, normalized: null, pinyin: null };
     });
     storeMeta.set(store, { fields, exactKeys, preparedFields });
     scoringStores.push({ store, fields: preparedFields });
@@ -225,8 +225,9 @@ export function matchOne(rawName, baseStores, matchIndex = null, rawPrepared = n
   for (const entry of preparedStores) {
     let best = null;
     for (const field of entry.fields) {
-      const targetPinyin = field.pinyin ?? (field.pinyin = pinyinKey(field.normalized));
-      const r = evaluatePrepared(rawName, rawNormalized, field.normalized, rawCode, rawPinyin, targetPinyin);
+      const targetNormalized = field.normalized ?? (field.normalized = normalizeForMatch(field.name));
+      const targetPinyin = field.pinyin ?? (field.pinyin = pinyinKey(targetNormalized));
+      const r = evaluatePrepared(rawName, rawNormalized, targetNormalized, rawCode, rawPinyin, targetPinyin);
       if (!best || r.score > best.score) best = { ...r, matchedName: field.name };
     }
     if (!best || best.blocked) continue;
