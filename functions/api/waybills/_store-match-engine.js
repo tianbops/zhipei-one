@@ -213,7 +213,7 @@ export function matchOne(rawName, baseStores, matchIndex = null, rawPrepared = n
   const usableIndex = matchIndex?.stores === stores ? matchIndex : null;
   const rawNormalized = rawPrepared?.normalized ?? normalizeForMatch(rawName);
   const rawCode = rawPrepared ? (rawPrepared.businessCode || "") : (businessStoreCode(rawName) || "");
-  const rawPinyin = rawPrepared?.pinyin ?? null;
+  const rawPinyin = rawPrepared?.pinyin ?? pinyinKey(rawNormalized);
   const preparedStores = usableIndex?.scoringStores || stores.map(store => ({
     store,
     fields: identityFields(store).map(name => {
@@ -226,7 +226,7 @@ export function matchOne(rawName, baseStores, matchIndex = null, rawPrepared = n
     let best = null;
     for (const field of entry.fields) {
       const targetPinyin = field.pinyin ?? (field.pinyin = pinyinKey(field.normalized));
-      const r = evaluatePrepared(rawName, rawNormalized, field.normalized, rawCode, rawPinyin ?? pinyinKey(rawNormalized), targetPinyin);
+      const r = evaluatePrepared(rawName, rawNormalized, field.normalized, rawCode, rawPinyin, targetPinyin);
       if (!best || r.score > best.score) best = { ...r, matchedName: field.name };
     }
     if (!best || best.blocked) continue;
