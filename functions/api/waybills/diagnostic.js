@@ -20,6 +20,8 @@ const safeTiming=value=>{
     const n=value[key];
     if(typeof n==="number"&&Number.isFinite(n)&&n>=0)out[key]=n;
   }
+  if(value.timingClock==="performance.now"||value.timingClock==="Date.now")out.timingClock=value.timingClock;
+  if(typeof value.timingResolutionMs==="number"&&Number.isFinite(value.timingResolutionMs)&&value.timingResolutionMs>0)out.timingResolutionMs=value.timingResolutionMs;
   return Object.keys(out).length?out:null;
 };
 
