@@ -9,7 +9,7 @@
  *   - 图片/字体       ：stale-while-revalidate（内容基本不变，秒开优先）
  * 资产缓存键用完整 URL（含 ?v=）精确匹配；页面缓存键用 pathname 规整（忽略 ?from 等查询）。
  */
-const VERSION = "zp-pwa-317";
+const VERSION = "zp-pwa-318";
 const STATIC_CACHE = VERSION + "-static";
 const PAGES_CACHE = VERSION + "-pages";
 const OFFLINE_URL = "/offline";
@@ -34,7 +34,7 @@ const PRECACHE = [
   "/assets/icons/apple-touch-icon.png?v=25f1ad28",
   "/assets/icons/icon-192.png?v=4d3f7fd9",
   "/css/account.css?v=f707bce7",
-  "/css/admin-base.css?v=65ba43e0",
+  "/css/admin-base.css?v=2ef99677",
   "/css/admin-forms.css?v=4afab52f",
   "/css/admin-overlay.css?v=5361c69e",
   "/css/admin-perf.css?v=5b3c0761",
@@ -59,12 +59,12 @@ const PRECACHE = [
   "/js/admin/account.js?v=28c05d19",
   "/js/admin/boot.js?v=7dbc6281",
   "/js/admin/core.js?v=c8f9a0ee",
-  "/js/admin/diagnostics.js?v=ef8c09ee",
+  "/js/admin/diagnostics.js?v=fd81d158",
   "/js/admin/invites.js?v=0926014b",
-  "/js/admin/learning.js?v=033dde41",
+  "/js/admin/learning.js?v=22c21bc8",
   "/js/admin/perf.js?v=207301b7",
   "/js/admin/requests.js?v=335eb478",
-  "/js/admin/routes.js?v=8c57a71d",
+  "/js/admin/routes.js?v=9963910a",
   "/js/admin/shell.js?v=c9d5f0e8",
   "/js/admin/users.js?v=d71263de",
   "/js/boot-ready.js?v=3224a28d",
