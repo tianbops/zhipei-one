@@ -18,6 +18,10 @@ const frontend = readFileSync(new URL("../js/home/upload-process.js", import.met
     "批内应使用 Promise.allSettled 并发识别，并统一处理失败");
   assert.ok(/for\(const s of settled\)results\.push\(s\.value\)/.test(backend),
     "并发结果必须按文件顺序收集，保证 imageTexts 顺序与截图顺序一致");
+  assert.ok(/const batchId=batch\.length>1\?`zp-\$\{requestId\}-\$\{start\}`:null/.test(backend),
+    "每个双图并发批次必须有独立 batchId，单图仍走原有单任务状态查询");
+  assert.ok(/request\?\.signal,batchId\)/.test(backend),
+    "同批图片必须把同一个 batchId 传入 OCR 适配层");
   console.log("✅ 后端多图分批并发");
 }
 
