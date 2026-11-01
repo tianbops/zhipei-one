@@ -61,7 +61,7 @@ const findGroup = (report, page, endpoint, status) => {
     { page: "history", endpoint: "api-history", status: "2xx", duration: 87000, server: 1243,
       phases: { "history-index": 12.3, "history-aggregate": 45.6, "history-db-primary-queries": 3, "history-db-replica-queries": 2, "history-db-region-apac-queries": 2, "history-bogus-phase": 9.9 } },
     { page: "home", endpoint: "api-waybill-process", status: "2xx", duration: 56000, server: 32000,
-      phases: { "waybill-client-compress": 300, "waybill-client-first-response": 5000, "waybill-client-stream": 50000, "waybill-server-ocr": 20000, "waybill-server-total": 32000, "waybill-server-save-lifecycle-events": 3.5, "waybill-server-end-to-end": 36000, "waybill-server-r2-cleanup": 5.5 } },
+      phases: { "waybill-client-compress": 300, "waybill-client-first-response": 5000, "waybill-client-stream": 50000, "waybill-server-ocr": 20000, "waybill-server-total": 32000, "waybill-server-save-lifecycle-events": 3.5, "waybill-server-end-to-end": 36000, "waybill-server-temp-cleanup": 5.5 } },
     { page: "account", endpoint: "api-account", status: "4xx", duration: 1000, server: 30, code: 409 },
     { page: "account", endpoint: "api-account-me", status: "4xx", duration: 1000, server: 10, code: 999 },
     { page: "account", endpoint: "api-not-whitelisted", status: "2xx", duration: 100, server: 5 }
