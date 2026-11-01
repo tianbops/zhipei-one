@@ -204,3 +204,5 @@ html[data-zp-theme="light"] select,html[data-zp-theme="light"] input[type="date"
  .diag-query-foot{align-items:flex-start;flex-direction:column;gap:2px}
  .perf-actions{gap:4px}
 }
+
+.diag-failure-heading{margin:8px 2px 5px;font-size:var(--zp-fs-12);line-height:16px;font-weight:var(--zp-fw-semibold);color:var(--zp-text)}
