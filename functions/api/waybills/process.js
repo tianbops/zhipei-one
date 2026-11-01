@@ -288,8 +288,8 @@ async function runProcessCore({request,env,emit=()=>{},form:providedForm=null,us
 async function saveWaybill(order, requestId, resumed){
   const saveStartedAt=waybillPerfNow();
   const saveStages={};
-  const markSaveStage=(name,started)=>{saveStages[name]=Math.max(0,Math.round((waybillPerfNow()-started)*100)/100)};
-  const processingTiming=()=>({...order.timing,saveStages:{...saveStages,totalMs:Math.max(0,Math.round((waybillPerfNow()-saveStartedAt)*100)/100)}});
+  const markSaveStage=(name,started)=>{saveStages[name]=Math.max(0,Math.round((waybillPerfNow()-started)*1e2)/1e2)};
+  const processingTiming=()=>({...order.timing,saveStages:{...saveStages,totalMs:Math.max(0,Math.round((waybillPerfNow()-saveStartedAt)*1e2)/1e2)}});
   const claimStarted=waybillPerfNow();
   if(await stopIfClientCancelled("SAVE"))return json({success:false,code:"PROCESS_CANCELLED",error:"已取消处理",message:"已取消处理",requestId,recoverable:true,action:"REPROCESS",hint:"本次处理已取消，可重新上传运单"},499);
   // 最终 Redis 保存 EVAL 前再做一次原子“保存声明”。
@@ -466,8 +466,8 @@ async function runProcess(args){
     // 24 小时 R2 生命周期规则仅作为进程中断等极端情况的兜底。
     const cleanupStarted=waybillPerfNow();
     if(tempKeys.length)await deleteTempWaybillObjects(args.env,tempKeys);
-    const cleanupMs=Math.max(0,Math.round((waybillPerfNow()-cleanupStarted)*100)/100);
-    const serverTotalMs=Math.max(0,Math.round((waybillPerfNow()-serverStarted)*100)/100);
+    const cleanupMs=Math.max(0,Math.round((waybillPerfNow()-cleanupStarted)*1e2)/1e2);
+    const serverTotalMs=Math.max(0,Math.round((waybillPerfNow()-serverStarted)*1e2)/1e2);
     if(response){try{const headers=new Headers(response.headers);const current=headers.get("Server-Timing");const extra=`waybill-r2-cleanup;dur=${cleanupMs}, waybill-server-end-to-end;dur=${serverTotalMs}`;headers.set("Server-Timing",current?current+", "+extra:extra);response=new Response(response.body,{status:response.status,statusText:response.statusText,headers})}catch{/* timing headers are diagnostic-only */}}
   }
   return response;
