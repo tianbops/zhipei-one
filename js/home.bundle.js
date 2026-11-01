@@ -740,12 +740,19 @@ document.querySelectorAll(".source-option").forEach(btn=>btn.addEventListener("c
 
 let processingFile=false;
 let processingRequestId=null;
+let processingRequestStarted=false;
 // 供统一业务导航判断：处理中的运单离开当前工作流前必须经过确认。
 window.zpIsProcessing=()=>!!processingFile||!!processingController;
 window.zpLeaveProcessing=async function(href){
   if(!window.zpIsProcessing())return false;
   const ok=await window.zpConfirm("退出本次处理？","本次识别与规划将中止，尚未保存的结果不会保留。","退出本次处理");
   if(!ok)return false;
+  // 请求已经发出但服务端任务编号尚未到达时，不能跳过服务端取消确认。
+  // 留在当前页等待首个带 requestId 的进度事件，再由用户重新发起退出。
+  if(processingRequestStarted&&!processingRequestId){
+    try{window.zpToast?.("处理状态正在建立，请稍候再退出","info")}catch{}
+    return false;
+  }
   if(processingRequestId){
     let response=null;
     try{
@@ -812,6 +819,7 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
   if((!files.length&&!rawText&&!resumeRequestId)||processingFile)return;
   processingFile=true;
   processingRequestId=null;
+  processingRequestStarted=false;
   const perfProcessStartedAt=performance.now();
   let perfCompressMs=0,perfRequestStartedAt=0,perfResponseAt=0,perfResponseStatus=null,perfStreamComplete=false,perfResult=null,perfRecorded=false,perfFailureStatus=null;
   lastProcessingFile=null;
@@ -846,6 +854,7 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
     if(controller.signal.aborted)throw Object.assign(new Error("本次处理已中止"),{code:"USER_CANCELLED"});
     let r;
     try{
+      processingRequestStarted=true;
       perfRequestStartedAt=performance.now();
       r=await fetch("/api/waybills/process?stream=1",{method:"POST",body:fd,credentials:"same-origin",signal:controller.signal});
       perfResponseStatus=r.status;
@@ -963,6 +972,7 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
     stopProcessingClock();
     document.querySelectorAll(".source-option").forEach(b=>b.disabled=false);
     processingFile=false;
+    processingRequestStarted=false;
     processingController=null;
     processingRequestId=null;
     // 释放前端对原图 File 对象的引用；历史记录只保留业务结果，不保留图片/文本。
