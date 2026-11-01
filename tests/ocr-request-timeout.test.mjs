@@ -93,9 +93,7 @@ assert.match(source, /e\?\.code === "OCR_NETWORK_TIMEOUT" && Date\.now\(\) >= de
   "最后一次状态请求耗尽截止预算时应统一归类为 OCR_TIMEOUT");
 assert.match(source, /\}, 10000, signal\)/, "OCR 任务提交超时保持 10000ms");
 assert.match(source, /Math\.max\(1, Math\.min\(6000, remainingMs\)\)/, "OCR 状态请求单次超时上限保持 6000ms，并受剩余预算约束");
-assert.match(source, /const refreshStarted = Date\.now\(\);[\s\S]*?finally\s*\{\s*timing\.ocrStatusPollCount\+\+;\s*timing\.ocrStatusRequestMs \+= Date\.now\(\) - refreshStarted;\s*\}/,
   "重试时刷新 OCR 结果地址必须单独计入状态请求耗时，失败时也要计时");
-assert.match(source, /const resultStarted = Date\.now\(\);\s*timing\.ocrResultFetchAttempts\+\+;\s*try\s*\{\s*const raw = await readResult\(url\);\s*const parseStarted = Date\.now\(\);\s*let parsed;/,
   "结果读取尝试计数必须只覆盖实际结果读取，且解析阶段独立计时");
 assert.match(source, /timing\.ocrResultFetchMs \+= Date\.now\(\) - resultStarted;\s*throw e;/,
   "结果读取失败也必须累计独立的结果读取耗时");
@@ -240,3 +238,9 @@ try {
 } finally {
   globalThis.fetch = originalFetch;
 }
+
+// Monotonic timing assertions: Date.now is reserved for absolute deadlines, never elapsed durations.
+assert.match(source,/const ocrPerfNow\s*=/);
+assert.match(source,/const ocrPerfDuration\s*=/);
+for(const marker of ["submitStarted","waitStarted","statusStarted","requestStarted","bodyStarted","refreshStarted","resultStarted","parseStarted"]){assert.match(source,new RegExp("const "+marker+" = ocrPerfNow\\(\\)"),marker+" must use monotonic start time");assert.match(source,new RegExp("ocrPerfDuration\\("+marker+"\\)"),marker+" must use monotonic elapsed time");}
+assert.match(source,/finally\s*\{\s*\/\/ Count each result-read attempt exactly once[\s\S]*?ocrResultFetchMs \+= ocrPerfDuration\(resultStarted\)/,"result read attempt timing must be counted once on success and failure");
