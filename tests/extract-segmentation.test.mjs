@@ -11,7 +11,7 @@ if(start<0||end<=start)throw new Error('extract segmentation helpers not found')
 const helperSource=source.slice(start,end);
 const clean=v=>String(v??'').trim();
 // P1-1g：模块内函数带 export 前缀，eval 前剥掉（factory 显式 return，语义不变）
-const factory=new Function('clean','formatCompareKey','number',helperSource.replace(/^export /gm,'')+'\nreturn {splitByRouteBase,dedupe,plan};');
+const factory=new Function('clean','formatCompareKey','number','createMatchIndex',helperSource.replace(/^export /gm,'')+'\nreturn {splitByRouteBase,dedupe,plan};');
 const number=v=>{const n=Number(v);return Number.isFinite(n)?n:null;};
 const {splitByRouteBase,dedupe,plan}=factory(clean,formatCompareKey,number,createMatchIndex);
 
