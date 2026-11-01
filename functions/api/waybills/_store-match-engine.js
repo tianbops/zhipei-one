@@ -14,28 +14,19 @@ import {editDistance, editSim, ngramSim, lcsRatio, pinyinKey} from "./_store-mat
  * 第 3 层：综合评分
  * ================================================================ */
 
-export function scoreNames(raw, target) {
-  const A = normalizeForMatch(raw);
-  const B = normalizeForMatch(target);
+function scoreNamesPrepared(raw, A, B, rawCode = null, rawPinyin = null, targetPinyin = null) {
   if (!A || !B) return { score: 0, signals: {} };
   if (A === B) return { score: 1, signals: { exact: 1 } };
 
   const aBody = stripGenericSuffix(stripRegionPrefix(A));
   const bBody = stripGenericSuffix(stripRegionPrefix(B));
-
-  // 主体完全一致（仅业态后缀差异）→ 同一门店
-  // 主体长度需 >= 3，避免 "A店" vs "B店" 退化情形
   if (aBody && bBody && aBody === bBody && aBody.length >= 3) {
     return { score: 0.97, signals: { bodyExact: 1 } };
   }
 
-  // 互相包含（OCR 漏字 / 带路线段前缀，如
-  //   "渝北JM03050谊品生鲜温馨家园南门店" ⊃ "谊品生鲜温馨家园南门店"）
-  // 短串 >= 4 字时视为同一门店的强信号，直接给到自动匹配档；
-  // 空格 / 断行已在归一层剥离，不参与差异。
   const containedAt = A.indexOf(B);
   const containedPrefix = containedAt >= 0 ? A.slice(0, containedAt) : "";
-  const safeContainmentPrefix = Boolean(businessStoreCode(raw)) ||
+  const safeContainmentPrefix = Boolean(rawCode ?? businessStoreCode(raw)) ||
     (Boolean(containedPrefix) && stripRegionPrefix(containedPrefix) === "") ||
     /(?:运输日期|运单日期|配送日期|日期|车牌号|车牌|总重量|重量|司机|配送员|驾驶员|送货员)/.test(containedPrefix);
   if (A.length >= B.length && B.length >= 4 && containedAt >= 0 &&
@@ -48,9 +39,8 @@ export function scoreNames(raw, target) {
   const sGram   = ngramSim(A, B, 2);
   const sGram3  = ngramSim(A, B, 3);
   const sLcs    = lcsRatio(A, B);
-  const pa = pinyinKey(A), pb = pinyinKey(B);
+  const pa = rawPinyin ?? pinyinKey(A), pb = targetPinyin ?? pinyinKey(B);
   const sPinyin = (pa && pb) ? editSim(pa, pb) : 0;
-
   const score =
       0.20 * sEdit
     + 0.22 * sBody
@@ -58,8 +48,13 @@ export function scoreNames(raw, target) {
     + 0.14 * sGram3
     + 0.20 * sLcs
     + 0.08 * sPinyin;
-
   return { score, signals: { sEdit, sBody, sGram, sGram3, sLcs, sPinyin } };
+}
+
+export function scoreNames(raw, target) {
+  const A = normalizeForMatch(raw);
+  const B = normalizeForMatch(target);
+  return scoreNamesPrepared(raw, A, B);
 }
 
 /* ================================================================
@@ -120,22 +115,17 @@ export const MATCH_CONFIG = {
 };
 
 /** 单对评分 + 守门 */
-export function evaluate(raw, target) {
-  const A = normalizeForMatch(raw);
-  const B = normalizeForMatch(target);
-  const { score, signals } = scoreNames(raw, target);
-
+function evaluatePrepared(raw, A, B, rawCode = null, rawPinyin = null, targetPinyin = null) {
+  const { score, signals } = scoreNamesPrepared(raw, A, B, rawCode, rawPinyin, targetPinyin);
   const numberKind = divergentNumberKind(A, B);
   const flags = {
     shuffled: looksLikeShuffled(A, B),
     numberDiff: numberKind === "core",
     suffixNumber: numberKind === "suffix",
   };
-
   let final = score;
   let blocked = false;
   let blockReason = null;
-
   if (flags.shuffled) {
     blocked = true;
     blockReason = "字符顺序严重不一致（疑似识别乱序或不同门店）";
@@ -144,11 +134,15 @@ export function evaluate(raw, target) {
     final = Math.min(final, 0.65);
     blockReason = "主体编号不一致，需人工确认";
   } else if (flags.suffixNumber) {
-    // 末尾序号差异（同店别称写法）小幅加分，但仍须满足阈值
     final = Math.min(1, final + 0.10);
   }
-
   return { score: final, rawScore: score, signals, flags, blocked, blockReason };
+}
+
+export function evaluate(raw, target) {
+  const A = normalizeForMatch(raw);
+  const B = normalizeForMatch(target);
+  return evaluatePrepared(raw, A, B);
 }
 
 /* ================================================================
@@ -163,6 +157,43 @@ const identityFields = s => [
   ...(Array.isArray(s?.aliases) ? s.aliases : []),
 ].map(identityValue).filter(Boolean);
 
+/** Build a reusable, immutable-by-convention index for one route-base snapshot. */
+export function createMatchIndex(baseStores) {
+  const stores = Array.isArray(baseStores) ? baseStores : [];
+  const byId = new Map();
+  const byCode = new Map();
+  const byExactKey = new Map();
+  const storeMeta = new Map();
+  const scoringStores = [];
+  const markUnique = (map, key, store) => {
+    if (!key) return;
+    if (!map.has(key)) { map.set(key, store); return; }
+    const cur = map.get(key);
+    if (cur && clean(cur.storeId) !== clean(store.storeId)) map.set(key, null);
+  };
+  for (const store of stores) {
+    const id = clean(store?.storeId);
+    if (id) byId.set(id, store);
+    const fields = identityFields(store);
+    const exactKeys = new Set();
+    for (const field of fields) {
+      const key = formatCompareKey(field);
+      if (key) exactKeys.add(key);
+      markUnique(byExactKey, key, store);
+    }
+    for (const field of [store?.storeId, store?.name, store?.originalName, store?.businessStoreCode, ...(Array.isArray(store?.aliases) ? store.aliases : [])]) {
+      markUnique(byCode, businessStoreCode(field), store);
+    }
+    const preparedFields = fields.map(name => {
+      const normalized = normalizeForMatch(name);
+      return { name, normalized, pinyin: pinyinKey(normalized) };
+    });
+    storeMeta.set(store, { fields, exactKeys, preparedFields });
+    scoringStores.push({ store, fields: preparedFields });
+  }
+  return { stores, byId, byCode, byExactKey, storeMeta, scoringStores };
+}
+
 const fmtCandidate = x => ({
   storeId: clean(x.store?.storeId),
   name: clean(x.store?.name || x.store?.originalName),
@@ -176,23 +207,33 @@ const fmtCandidate = x => ({
  * 返回 { status:"matched", store, score, signals, candidates }
  *   或 { status:"pending", reason, candidates }
  */
-export function matchOne(rawName, baseStores) {
+export function matchOne(rawName, baseStores, matchIndex = null, rawPrepared = null) {
   const stores = Array.isArray(baseStores) ? baseStores : [];
   const scored = [];
+  const usableIndex = matchIndex?.stores === stores ? matchIndex : null;
+  const rawNormalized = rawPrepared?.normalized ?? normalizeForMatch(rawName);
+  const rawCode = rawPrepared?.businessCode ?? null;
+  const rawPinyin = rawPrepared?.pinyin ?? pinyinKey(rawNormalized);
+  const preparedStores = usableIndex?.scoringStores || stores.map(store => ({
+    store,
+    fields: identityFields(store).map(name => {
+      const normalized = normalizeForMatch(name);
+      return { name, normalized, pinyin: pinyinKey(normalized) };
+    })
+  }));
 
-  for (const store of stores) {
+  for (const entry of preparedStores) {
     let best = null;
-    for (const n of identityFields(store)) {
-      const r = evaluate(rawName, n);
-      if (!best || r.score > best.score) best = { ...r, matchedName: n };
+    for (const field of entry.fields) {
+      const r = evaluatePrepared(rawName, rawNormalized, field.normalized, rawCode, rawPinyin, field.pinyin);
+      if (!best || r.score > best.score) best = { ...r, matchedName: field.name };
     }
     if (!best || best.blocked) continue;
     if (best.score < MATCH_CONFIG.CANDIDATE_FLOOR) continue;
-    scored.push({ store, ...best });
+    scored.push({ store: entry.store, ...best });
   }
 
   scored.sort((a, b) => b.score - a.score);
-
   const top1 = scored[0] || null;
   const top2 = scored[1] || null;
   const candidates = scored.slice(0, MATCH_CONFIG.MAX_CANDIDATES).map(fmtCandidate);
@@ -200,7 +241,6 @@ export function matchOne(rawName, baseStores) {
   const secondScore = top2 ? Number(top2.score.toFixed(3)) : null;
   const scoreGap = top1 ? Number((top1.score - (top2?.score ?? 0)).toFixed(3)) : null;
   const candidateCount = candidates.length;
-
   if (!top1) {
     return { status: "pending", reason: "no_candidate", candidateCount: 0, topScore: null, secondScore: null, scoreGap: null, candidates: [], confidence: { level: "PENDING", reason: "no_candidate", score: null, candidateCount: 0, topScore: null, secondScore: null, scoreGap: null } };
   }
@@ -243,44 +283,26 @@ export function matchOne(rawName, baseStores) {
  *   3. 精确名称 / 别名（格式归一后相等）
  *   4. 受控相似度 + 守门 + 置信差，否则进入待定
  */
-export function matchStores(items, baseStores) {
+export function matchStores(items, baseStores, matchIndex = null) {
   const stores = Array.isArray(baseStores) ? baseStores : [];
 
   // 同一张运单内的身份占用保护：
   // 不同原始识别项如果最终争用同一个 storeId，不能让后续 dedupe
   // 因标准化 name 相同而把它们吞掉。真正相同的 OCR 重复项仍允许正常去重。
-  const occupiedStoreIds = new Map();
-
-  // ---- 索引构建 ----
-  const byId = new Map();
-  const byCode = new Map();
-  const byExactKey = new Map();
-
-  /** 同名冲突（指向不同 storeId）时置 null，避免错误收敛 */
-  const markUnique = (map, key, store) => {
-    if (!key) return;
-    if (!map.has(key)) { map.set(key, store); return; }
-    const cur = map.get(key);
-    if (cur && clean(cur.storeId) !== clean(store.storeId)) map.set(key, null);
-  };
-
-  for (const store of stores) {
-    const id = clean(store?.storeId);
-    if (id) byId.set(id, store);
-
-    for (const field of identityFields(store)) {
-      markUnique(byExactKey, formatCompareKey(field), store);
-    }
-    // 业务门店编码索引：必须同时覆盖 store.businessStoreCode 正式字段
-    // （base.js 会写入该字段；旧版遗漏此项，导致带编码的门店无法按编码匹配）
-    for (const field of [store?.storeId, store?.name, store?.originalName, store?.businessStoreCode, ...(Array.isArray(store?.aliases) ? store.aliases : [])]) {
-      markUnique(byCode, businessStoreCode(field), store);
+  const occupiedStor  // Reuse a route-base snapshot index when supplied; otherwise build one for this call.
+  const index = matchIndex?.stores === stores ? matchIndex : createMatchIndex(stores);
+  const { byId, byCode, byExactKey } = index;
+, store);
     }
   }
 
   return (items || []).map((item, index) => {
     const rawName = clean(item?.rawName || item?.name);
     const incomingId = clean(item?.storeId);
+    const rawNormalized = normalizeForMatch(rawName);
+    const rawPinyin = pinyinKey(rawNormalized);
+    const rawCode = businessStoreCode(rawName);
+    const rawIdentityKey = formatCompareKey(rawName);
     const incomingCode =
       businessStoreCode(rawName) ||
       businessStoreCode(item?.name) ||
@@ -310,7 +332,7 @@ export function matchStores(items, baseStores) {
     // 4. 受控相似度
     let confidence = null;
     if (!target) {
-      const r = matchOne(rawName, stores);
+      const r = matchOne(rawName, stores, index, { normalized: rawNormalized, pinyin: rawPinyin, businessCode: rawCode });
       if (r.status === "matched") {
         target = r.store;
         method = "similarity";
@@ -339,7 +361,7 @@ export function matchStores(items, baseStores) {
           matchDiagnostics: {
             baseStoreCount: stores.length,
             reason: r.reason || "no_candidate",
-            compareKey: formatCompareKey(rawName),
+            compareKey: rawIdentityKey,
           },
         };
       }
@@ -347,7 +369,6 @@ export function matchStores(items, baseStores) {
 
     const standard = clean(target.name) || rawName;
     const targetStoreId = clean(target.storeId);
-    const rawIdentityKey = formatCompareKey(rawName);
     const prior = targetStoreId ? occupiedStoreIds.get(targetStoreId) : null;
 
     // 关键安全规则：
@@ -358,7 +379,7 @@ export function matchStores(items, baseStores) {
       // 容错：两条原始识别仅差极小（≥0.95，如多图/重复粘贴造成的断行、空格、标点差异）
       // 时，判定为“同一门店的重复识别”，落到下面正常 matched 流程由 dedupe 合并；
       // 差异明显才保持待定，避免把两家不同门店误合并。
-      const sameStoreSim = editSim(normalizeForMatch(prior.rawName || ""), normalizeForMatch(rawName));
+      const sameStoreSim = editSim(prior.normalized, rawNormalized);
       if (sameStoreSim < 0.95) {
       return {
         ...item,
@@ -398,12 +419,13 @@ export function matchStores(items, baseStores) {
     }
 
     if (targetStoreId) {
-      occupiedStoreIds.set(targetStoreId, {identityKey: rawIdentityKey, rawName});
+      occupiedStoreIds.set(targetStoreId, {identityKey: rawIdentityKey, rawName, normalized: rawNormalized});
     }
 
+    const targetMeta = index.storeMeta.get(target);
     const isFormatOnly =
-      formatCompareKey(rawName) === formatCompareKey(standard) ||
-      identityFields(target).some(f => formatCompareKey(f) === formatCompareKey(rawName));
+      rawIdentityKey === formatCompareKey(standard) ||
+      (targetMeta ? targetMeta.exactKeys.has(rawIdentityKey) : identityFields(target).some(f => formatCompareKey(f) === rawIdentityKey));
 
     return {
       ...item,
