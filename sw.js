@@ -74,7 +74,7 @@ const PRECACHE = [
   "/js/history/data.js?v=9cf1ad84",
   "/js/history/overlay.js?v=65a2aeb7",
   "/js/history/render.js?v=69bdb943",
-  "/js/home.bundle.js?v=f71b7234",
+  "/js/home.bundle.js?v=7a19c22a",
   "/js/login-session-retry.js?v=0c436693",
   "/js/login.js?v=55c0f0f1",
   "/js/offline-queue.js?v=c255ca1f",
@@ -90,12 +90,12 @@ const PRECACHE = [
   "/js/route-apply-recovery.js?v=aaaf3cdd",
   "/js/theme-sync.js?v=2c1a5bbc",
   "/js/ui/appearance.js?v=2661f74b",
-  "/js/ui/back.js?v=8b26bbd1",
+  "/js/ui/back.js?v=6c6cbd5d",
   "/js/ui/core.js?v=7c4e2f82",
   "/js/ui/feedback.js?v=f8da0256",
   "/js/ui/haptic.js?v=a3a78c0a",
   "/js/ui/nav-prefetch.js?v=968d1e0b",
-  "/js/ui/nav.js?v=0bf1d3c3",
+  "/js/ui/nav.js?v=83cc75d0",
   "/js/ui/zp-picker.js?v=1cdf0a93",
 ];
 /* PRECACHE-END */

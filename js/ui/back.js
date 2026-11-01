@@ -201,8 +201,12 @@
   async function zpCloseTopLayer(){
     const busy=zpBusyMessage();
     if(busy){
+      if(typeof window.zpIsProcessing==="function"&&window.zpIsProcessing()&&typeof window.zpLeaveProcessing==="function"){
+        await window.zpLeaveProcessing();
+        return true;
+      }
       try{window.zpToast?window.zpToast(busy,"error"):0}catch{}
-      return true;   // 消费本次返回：不关弹层、不穿透、不导航
+      return true;   // 保存中仍禁止离开，处理中则走统一取消确认
     }
     const hooks=zpSortedHooks();
     for(const h of hooks){
