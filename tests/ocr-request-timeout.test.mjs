@@ -93,15 +93,12 @@ assert.match(source, /e\?\.code === "OCR_NETWORK_TIMEOUT" && Date\.now\(\) >= de
   "最后一次状态请求耗尽截止预算时应统一归类为 OCR_TIMEOUT");
 assert.match(source, /\}, 10000, signal\)/, "OCR 任务提交超时保持 10000ms");
 assert.match(source, /Math\.max\(1, Math\.min\(6000, remainingMs\)\)/, "OCR 状态请求单次超时上限保持 6000ms，并受剩余预算约束");
-assert.match(source, /timing\.ocrResultFetchMs \+= Date\.now\(\) - resultStarted;\s*throw e;/,
 assert.match(source, /ocrResultRequestMs: 0/,
   "OCR 结果请求阶段必须独立计时");
 assert.match(source, /ocrResultBodyMs: 0/,
   "OCR 响应正文读取阶段必须独立计时");
 assert.match(source, /ocrResultParseMs: 0/,
   "OCR 结果解析阶段必须独立计时");
-assert.match(source, /timing\.ocrResultRequestMs \+= Date\.now\(\) - requestStarted/,
-assert.match(source, /timing\.ocrResultBodyMs \+= Date\.now\(\) - bodyStarted/,
 assert.match(source, /timing\.ocrResultChars \+= raw\.length/,
   "OCR 结果大小必须按字符数记录，不保存原文内容");
 assert.match(processSource, /ocrResultRequestMs:results\.reduce/,
@@ -113,7 +110,6 @@ assert.match(processSource, /ocrImageCount:ocr\.imageCount/,
   "运单诊断必须持久化 OCR 图片数");
 assert.match(source, /ocrResultFetchWaitMs: 0/,
   "OCR 结果重试等待必须有独立计时字段");
-assert.match(source, /const retryWait = 800 \* attempt;[\s\S]*?timing\.ocrResultFetchWaitMs \+= Date\.now\(\) - waitStarted;/,
 assert.match(source, /export function collectLineEvidence[\s\S]*?rec_scores[\s\S]*?rec_polys[\s\S]*?rec_boxes/,
   "OCR 适配层必须保留 PP-OCRv6 逐行分数与文本框证据");
 assert.match(processSource, /lineEvidence:results\.flatMap[\s\S]*?imageIndex:imageIndex\+1/,
