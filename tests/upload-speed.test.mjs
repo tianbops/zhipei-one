@@ -13,7 +13,7 @@ const frontend = readFileSync(new URL("../js/home/upload-process.js", import.met
 // 1) 后端：多图分批并发（单图批大小=1，行为不变）
 {
   assert.ok(/const CONCURRENCY=files\.length>1\?4:1/.test(backend),
-    "多图应使用每批 2 张并发（单图批大小必须为 1，保持原行为）");
+    "多图应使用每批最多 4 张并发（单图批大小必须为 1，保持原行为）");
   assert.ok(/Promise\.allSettled\(batch\.map/.test(backend),
     "批内应使用 Promise.allSettled 并发识别，并统一处理失败");
   assert.ok(/for\(const s of settled\)results\.push\(s\.value\)/.test(backend),
