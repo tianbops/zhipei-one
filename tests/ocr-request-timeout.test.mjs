@@ -406,3 +406,67 @@ assert.match(source,/ocrResultFetchWaitMs \+= ocrPerfDuration\(waitStarted\)/,"r
     globalThis.setTimeout = savedSetTimeout;
   }
 }
+
+
+// A batch snapshot may arrive before a slower sibling submission joins the batch.
+// The missing sibling must remain pending and be picked up by the next fresh snapshot.
+{
+  const savedFetch = globalThis.fetch;
+  const savedSetTimeout = globalThis.setTimeout;
+  const originalSetTimeout = globalThis.setTimeout;
+  let submitCount = 0;
+  let batchStatusCalls = 0;
+  let individualStatusCalls = 0;
+  const batchId = "zp-test-batch-late-sibling";
+  globalThis.setTimeout = (fn, ms, ...args) => ms === 500
+    ? originalSetTimeout(fn, 0, ...args)
+    : originalSetTimeout(fn, ms, ...args);
+  globalThis.fetch = async (url, init = {}) => {
+    const target = String(url);
+    if (target.endsWith("/api/v2/ocr/jobs") && init.method === "POST") {
+      submitCount++;
+      if (submitCount === 2) await new Promise(resolve => originalSetTimeout(resolve, 30));
+      assert.equal(init.body.get("batchId"), batchId);
+      return new Response(JSON.stringify({ data: { jobId: "late-job-" + submitCount } }), { status: 200 });
+    }
+    if (target.endsWith("/api/v2/ocr/jobs/batch/" + batchId)) {
+      batchStatusCalls++;
+      const jobs = batchStatusCalls === 1
+        ? [{ jobId: "late-job-1", state: "done", resultUrl: { jsonUrl: "https://ocr.example.invalid/late-1" } }]
+        : [
+            { jobId: "late-job-1", state: "done", resultUrl: { jsonUrl: "https://ocr.example.invalid/late-1" } },
+            { jobId: "late-job-2", state: "done", resultUrl: { jsonUrl: "https://ocr.example.invalid/late-2" } }
+          ];
+      return new Response(JSON.stringify({ data: { extractResult: jobs } }), { status: 200 });
+    }
+    if (target.includes("/api/v2/ocr/jobs/late-job-")) {
+      individualStatusCalls++;
+      throw new Error("Late batch sibling must remain on shared batch status polling");
+    }
+    if (target === "https://ocr.example.invalid/late-1") {
+      return new Response(JSON.stringify({ result: { rec_texts: ["先提交图片门店甲", "先提交图片门店乙"] } }), { status: 200 });
+    }
+    if (target === "https://ocr.example.invalid/late-2") {
+      return new Response(JSON.stringify({ result: { rec_texts: ["后提交图片门店丙", "后提交图片门店丁"] } }), { status: 200 });
+    }
+    throw new Error("Unexpected mocked late-sibling OCR request: " + target);
+  };
+  try {
+    const env = { PADDLEOCR_ACCESS_TOKEN: "test-token", PADDLEOCR_BASE_URL: "https://ocr.example.invalid" };
+    const files = [
+      new File([new Uint8Array([1])], "late-1.jpg", { type: "image/jpeg" }),
+      new File([new Uint8Array([2])], "late-2.jpg", { type: "image/jpeg" })
+    ];
+    const results = await Promise.all(files.map(file => recognizeImage(env, file, () => {}, null, batchId)));
+    assert.equal(submitCount, 2);
+    assert.equal(batchStatusCalls, 2, "the late sibling must be observed in a fresh batch status snapshot");
+    assert.equal(individualStatusCalls, 0);
+    assert.match(results[0].rawText, /先提交图片门店甲/);
+    assert.match(results[1].rawText, /后提交图片门店丙/);
+    assert.equal(results.reduce((sum, item) => sum + item.ocrStatusPollCount, 0), 2,
+      "shared snapshots must count each actual batch status request once");
+  } finally {
+    globalThis.fetch = savedFetch;
+    globalThis.setTimeout = savedSetTimeout;
+  }
+}
