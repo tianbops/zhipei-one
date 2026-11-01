@@ -29,7 +29,13 @@ function check(name, ok, info) {
   check("北京时间墙钟相对 UTC 正好 +8 小时", Number.isFinite(utcMs) && created.tBeijing.slice(11, 19) === new Date(utcMs + 8 * 3600000).toISOString().slice(11, 19));
   check("beijingISO 可将 UTC 时间显式转换为 +08:00", beijingISO("2026-10-31T15:08:30.000Z") === "2026-10-31T23:08:30.000+08:00");
 
-  // 批量事件必须保持顺序、字段与时间格式，且单次 pipeline 写入。 
+  // 批量事件必须保持顺序、字段与时间格式，且单次 pipeline 写入。
+  let pipelineRequests = 0;
+  const originalFetch = global.fetch;
+  global.fetch = async (...args) => {
+    if (String(args[0]).endsWith("/pipeline")) pipelineRequests++;
+    return originalFetch(...args);
+  };
   const batchId = "batch-event-regression";
   const batchCount = await appendWaybillEvents(env, batchId, [
     { event: "WAYBILL_CREATED", stage: "CREATED", requestId: "req-batch-1" },
@@ -40,7 +46,7 @@ function check(name, ok, info) {
     { event: "WAYBILL_SAVED", stage: "SAVED", requestId: "req-batch-1" }
   ]);
   const batchEvents = await listWaybillEvents(env, batchId);
-  check("批量生命周期事件一次提交 6 条", batchCount === 6 && batchEvents.length === 6);
+  check("批量生命周期事件一次 pipeline 提交 6 条", batchCount === 6 && batchEvents.length === 6 && pipelineRequests === 1, "pipelineRequests=" + pipelineRequests);
   check("批量生命周期事件保持既有顺序", batchEvents.map(e => e.event).join(",") === "WAYBILL_CREATED,EXTRACT_COMPLETED,MATCH_COMPLETED,DEDUPE_COMPLETED,PLAN_COMPLETED,WAYBILL_SAVED");
   check("批量事件保留 requestId 与 stage", batchEvents.every(e => e.requestId === "req-batch-1" && !!e.stage));
   check("批量事件仍同时保存 UTC 与北京时间", batchEvents.every(e => !!e.t && /\\+08:00$/.test(e.tBeijing || "")));
