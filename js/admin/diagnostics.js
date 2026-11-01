@@ -45,13 +45,14 @@ async function renderDiagnostics(){
     const flags=(w.quality&&w.quality.flags||[]).join("、")||"正常";
     const evs=(w.events||[]).slice(-8).reverse().map(e=>esc(eventText(e))).join("<br>");
     const t=w.timing&&typeof w.timing==="object"?w.timing:null;
-    const timingParts=t?[["OCR图片","ocrImageCount"],["准备+识别累计","recognizedMs"],["R2暂存","r2StageMs"],["R2暂存字节","r2StageBytes"],["OCR墙钟","ocrMs"],["提交累计","ocrSubmitMs"],["轮询次数","ocrStatusPollCount"],["轮询等待累计","ocrStatusWaitMs"],["状态请求累计","ocrStatusRequestMs"],["结果读取累计","ocrResultFetchMs"],["结果请求累计","ocrResultRequestMs"],["正文读取累计","ocrResultBodyMs"],["结果解析累计","ocrResultParseMs"],["结果字符","ocrResultChars"],["结果重试等待","ocrResultFetchWaitMs"],["结果读取尝试","ocrResultFetchAttempts"],["基准","baseMs"],["基准读取","baseLookupMs"],["索引编译","baseIndexMs"],["OCR后等待","baseWaitMs"],["OCR重叠","baseOverlapMs"],["提取","extractMs"],["匹配","matchMs"],["去重","dedupeMs"],["规划","planMs"],["处理总计","totalMs"]].filter(x=>typeof t[x[1]]==="number"&&Number.isFinite(t[x[1]])&&t[x[1]]>=0).map(x=>x[0]+" "+formatTimingMs(t[x[1]])+(x[1]==="r2StageBytes"?" bytes":x[0]==="OCR图片"?"张":x[0]==="结果字符"?"字符":(/次数$|尝试$/.test(x[0])?"次":"ms"))):[];
+    const timingParts=t?[["OCR图片","ocrImageCount"],["准备+识别累计","recognizedMs"],["R2暂存","r2StageMs"],["R2暂存字节","r2StageBytes"],["OCR墙钟","ocrMs"],["提交累计","ocrSubmitMs"],["轮询次数","ocrStatusPollCount"],["轮询等待累计","ocrStatusWaitMs"],["状态请求累计","ocrStatusRequestMs"],["批量状态请求","ocrStatusBatchRequestCount"],["单任务回退请求","ocrStatusFallbackRequestCount"],["普通单任务请求","ocrStatusSingleRequestCount"],["批量响应任务数","ocrStatusBatchResponseJobCount"],["批量命中任务数","ocrStatusBatchMatchedJobCount"],["批量缺失任务数","ocrStatusBatchMissingJobCount"],["结果读取累计","ocrResultFetchMs"],["结果请求累计","ocrResultRequestMs"],["正文读取累计","ocrResultBodyMs"],["结果解析累计","ocrResultParseMs"],["结果字符","ocrResultChars"],["结果重试等待","ocrResultFetchWaitMs"],["结果读取尝试","ocrResultFetchAttempts"],["基准","baseMs"],["基准读取","baseLookupMs"],["索引编译","baseIndexMs"],["OCR后等待","baseWaitMs"],["OCR重叠","baseOverlapMs"],["提取","extractMs"],["匹配","matchMs"],["去重","dedupeMs"],["规划","planMs"],["处理总计","totalMs"]].filter(x=>typeof t[x[1]]==="number"&&Number.isFinite(t[x[1]])&&t[x[1]]>=0).map(x=>x[0]+" "+formatTimingMs(t[x[1]])+(x[1]==="r2StageBytes"?" bytes":x[0]==="OCR图片"?"张":x[0]==="结果字符"?"字符":(/次数$|尝试$/.test(x[0])?"次":"ms"))):[];
     const compactTimingKeys=["recognizedMs","ocrMs","extractMs","matchMs","dedupeMs","planMs","totalMs"];
     const compactTimingLabels={recognizedMs:"准备+识别累计",ocrMs:"OCR",extractMs:"提取",matchMs:"匹配",dedupeMs:"去重",planMs:"规划",totalMs:"总计"};
     const compactTiming=compactTimingKeys.filter(k=>typeof t?.[k]==="number"&&Number.isFinite(t[k])&&t[k]>=0).map(k=>compactTimingLabels[k]+" "+formatTimingMs(t[k])+"ms");
     const timingHtml=compactTiming.length?'<div class="diag-timing">'+compactTiming.map(x=>'<span>'+esc(x)+'</span>').join("")+'</div>':'<div class="meta">暂无阶段计时</div>';
     const timingResolution=typeof t?.timingResolutionMs==="number"?" · 计时分辨率约 "+formatTimingMs(t.timingResolutionMs)+"ms（"+(t.timingClock==="performance.now"?"高精度单调时钟":"毫秒墙钟回退")+"）":"";
     const detailTimingHtml=timingParts.length?'<div class="meta diag-full-timing">完整阶段耗时：'+esc(timingParts.map(([label,key])=>label+" "+(key==="r2StageBytes"?(Number(t[key])||0)+" bytes":formatTimingMs(t[key])+(key==="ocrImageCount"?"张":key==="ocrResultChars"?"字符":(/次数$|尝试$/.test(label)?"次":"ms")))).join(" · ")+timingResolution)+'</div>':'<div class="meta">暂无完整阶段计时</div>';
+    const imageTimingLines=Array.isArray(t?.ocrImageTimings)?t.ocrImageTimings.map(x=>"图"+(x.imageIndex||"-")+"："+(x.statusMode==="batch"?"批量状态":x.statusMode==="fallback"?"单任务回退":"普通单任务")+" · 提交 "+formatTimingMs(x.submitMs)+"ms · 状态请求 "+formatTimingMs(x.statusRequestMs)+"ms（"+(Number(x.batchStatusRequestCount)||0)+"批量/"+(Number(x.fallbackStatusRequestCount)||0)+"回退） · 结果读取 "+formatTimingMs(x.resultFetchMs)+"ms · 结果字符 "+(Number(x.resultChars)||0)).slice(0,20):[];
     const fieldEvidence=w.ocr&&w.ocr.fieldEvidence&&typeof w.ocr.fieldEvidence==="object"?w.ocr.fieldEvidence:null;
     const ocrLines=Array.isArray(w.ocr?.lineEvidence)?w.ocr.lineEvidence:[];
     const fieldLabels={date:"日期",vehicle:"车牌",driver:"司机",deliveryPerson:"送货员",totalWeight:"总重量"};
@@ -99,6 +100,7 @@ async function renderDiagnostics(){
       "requestId："+(w.requestId||"-"),
       "质量："+lvl+(flags&&flags!=="正常"?" · "+flags:""),
       "耗时："+(timingParts.length?timingParts.join(" · "):"暂无阶段计时记录"),
+      "逐图OCR耗时："+(imageTimingLines.join("；")||"暂无逐图计时"),
       "OCR证据关联："+(fieldEvidenceSummary||"暂无"),
       ...fieldEvidenceLines,
       "门店证据摘要（完整数据见JSON）：",
@@ -111,7 +113,7 @@ async function renderDiagnostics(){
       JSON.stringify(w,null,2)
     ].join("\n");
     const copyIndex=copyPayloads.push(copyLines)-1;
-    const detailHtml='<details class="diag-details"><summary>查看完整诊断详情</summary>'+detailTimingHtml+fieldEvidenceHtml+(evs?'<div class="evt">'+evs+'</div>':'')+'</details>';
+    const detailHtml='<details class="diag-details"><summary>查看完整诊断详情</summary>'+detailTimingHtml+(imageTimingLines.length?'<div class="meta diag-full-timing">逐图OCR耗时：'+esc(imageTimingLines.join("；"))+'</div>':"")+fieldEvidenceHtml+(evs?'<div class="evt">'+evs+'</div>':'')+'</details>';
     return '<div class="row diag-card"><div class="content" style="display:block;width:100%"><div class="main"><strong>'+esc(w.date||"-")+' · '+esc(w.vehicle||"-")+'</strong>'
       +'<span class="q-badge '+ql+'">'+esc(ql.toUpperCase())+(w.quality&&w.quality.flags&&w.quality.flags.length?(" · "+esc(flags)):"")+'</span></div>'
       +'<div class="meta">'+esc(w.stage||"处理阶段未知")+'</div>'
