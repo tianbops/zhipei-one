@@ -173,7 +173,7 @@ const newOrder = { id: "NEW1", routeId: ROUTE, date: DATE, vehicle: VEH, stage: 
   );
   // 必须在重算汇总之前（否则被取代的单仍计入当日统计）
   const idxSuper = proc.indexOf("supersedeSameDay(env,order,indexKey)");
-  const idxMeta = proc.indexOf("await touchMeta(); await finishProc(env, requestId, order.id); return json({success:true,waybill:order");
+  const idxMeta = proc.indexOf('await touchMeta(); markSaveStage("saveDayMetaMs"');
   assert.ok(idxSuper > 0 && idxMeta > idxSuper, "取代必须发生在重算当日汇总之前");
 
   // 原子脚本：标记状态 + 移出索引 + 清理去重/指纹键
