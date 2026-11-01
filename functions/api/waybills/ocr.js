@@ -155,27 +155,33 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
   if (!jobId) throw fail("OCR_SUBMIT_FAILED", "OCR任务提交失败", { ...timing });
   onProgress(10);
 
-  // 给 Cloudflare Worker 后续的提取、匹配、去重、规划和保存留出时间，避免 OCR 长时间占用整个同步请求。
-  const deadline = Date.now() + 19000;
-  // 首次状态检查提前到 900ms；19 秒截止时间、单次超时与后续退避策略保持不变。
+  // OCR 上游排队偶发超过旧 19 秒截止线；将单图状态等待窗口放宽到 30 秒。
+  // 每次状态请求仍受整个窗口的剩余时间约束，绝不因最后一次轮询额外越过截止线。
+  const OCR_STATUS_DEADLINE_MS = 30000;
+  const deadline = Date.now() + OCR_STATUS_DEADLINE_MS;
   let delay = 900;
   while (Date.now() < deadline) {
     const waitStarted = Date.now();
-    await new Promise(r => setTimeout(r, delay));
+    await new Promise(r => setTimeout(r, Math.min(delay, Math.max(0, deadline - Date.now()))));
     timing.ocrStatusWaitMs += Date.now() - waitStarted;
+    const remainingMs = deadline - Date.now();
+    if (remainingMs <= 0) break;
     let status;
     const statusStarted = Date.now();
     try {
       status = await requestJson(
         base + JOB_PATH + "/" + encodeURIComponent(jobId),
         { headers: { Authorization: "Bearer " + token, Accept: "application/json" } },
-        6000, signal
+        Math.max(1, Math.min(6000, remainingMs)), signal
       );
       timing.ocrStatusPollCount++;
       timing.ocrStatusRequestMs += Date.now() - statusStarted;
     } catch (e) {
       timing.ocrStatusPollCount++;
       timing.ocrStatusRequestMs += Date.now() - statusStarted;
+      if (e?.code === "OCR_NETWORK_TIMEOUT" && Date.now() >= deadline) {
+        throw fail("OCR_TIMEOUT", "OCR识别超时，请稍后重试", { jobId, ...timing });
+      }
       throw fail(e?.code || "OCR_API", e?.message || "OCR服务请求失败", { status: e?.status, detail: e?.detail, jobId, base, ...timing });
     }
 
@@ -183,7 +189,7 @@ export async function recognizeImage(env, file, onProgress = () => {}, signal = 
     const state = clean(data.state || data.status).toLowerCase();
     onProgress(state === "failed" || state === "error"
       ? 100
-      : Math.min(90, 10 + Math.round(((Date.now() - (deadline - 19000)) / 19000) * 80)));
+      : Math.min(90, 10 + Math.round(((Date.now() - (deadline - OCR_STATUS_DEADLINE_MS)) / OCR_STATUS_DEADLINE_MS) * 80)));
 
     if (state === "failed" || state === "error") {
       throw fail("OCR_JOB_FAILED", data.errorMsg || data.msg || "OCR识别失败", { jobId, ...timing });
