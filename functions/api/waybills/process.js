@@ -378,7 +378,7 @@ async function saveWaybill(order, requestId, resumed){
             w=typeof finalRaw==="string"?JSON.parse(finalRaw):finalRaw;
           }
         }
-        try { await appendWaybillEvent(env, finalId, {event:"WAYBILL_IDEMPOTENT",stage:"SAVED",requestId,reuse:finalId,dedupe:"DAILY_MATCH"}); } catch { /* best-effort */ }
+        try { await appendWaybillEvent(env, finalId, {event:"WAYBILL_IDEMPOTENT",stage:"SAVED",requestId,reuse:finalId,dedupe:"DAILY_MATCH",timing:processingTiming()}); } catch { /* best-effort */ }
         await touchMeta(); await finishProc(env, requestId, finalId); return json({success:true,waybill:w,idempotent:true,dedupe:"DAILY_MATCH",indexSync:"OK",quality,processingTiming:processingTiming(),requestId});
       }
     }
@@ -409,7 +409,7 @@ async function saveWaybill(order, requestId, resumed){
       const repair=await command(env,["EVAL",'if redis.call("GET",KEYS[1])==ARGV[1] then redis.call("SADD",KEYS[2],ARGV[1]); return 1 end; return 0',"2",repairKey,indexKey,verifyId]);
       if(Number(repair)===1){
         await touchMeta(); await finishProc(env, requestId, verifyId);
-        try{await appendWaybillEvent(env,verifyId,{event:"WAYBILL_IDEMPOTENT",stage:"SAVED",requestId,reuse:verifyId,dedupe:reason==="VERIFY_DAILY"?"DAILY_MATCH_LEGACY":"FINGERPRINT_LEGACY"});}catch{}
+        try{await appendWaybillEvent(env,verifyId,{event:"WAYBILL_IDEMPOTENT",stage:"SAVED",requestId,reuse:verifyId,dedupe:reason==="VERIFY_DAILY"?"DAILY_MATCH_LEGACY":"FINGERPRINT_LEGACY",timing:processingTiming()});}catch{}
         return json({success:true,waybill:verifyOrder,idempotent:true,dedupe:reason==="VERIFY_DAILY"?"DAILY_MATCH_LEGACY":"FINGERPRINT_LEGACY",indexSync:"OK",quality,processingTiming:processingTiming(),requestId});
       }
       return failProcess("WAYBILL_DEDUPE_RETRY","去重键正在变化，请重试保存",409,{recoverable:true,action:"RETRY_SAVE",hint:"去重键正在变化，请重试保存",order});
@@ -446,7 +446,7 @@ async function saveWaybill(order, requestId, resumed){
   if(existingRaw){
     const existingOrder=typeof existingRaw==="string"?JSON.parse(existingRaw):existingRaw;
     await command(env,["SADD",indexKey,existingOrder.id]);
-    try { await appendWaybillEvent(env, existingOrder.id, {event:"WAYBILL_IDEMPOTENT",stage:"SAVED",requestId,reuse:existingOrder.id,dedupe:reason}); } catch { /* best-effort */ }
+    try { await appendWaybillEvent(env, existingOrder.id, {event:"WAYBILL_IDEMPOTENT",stage:"SAVED",requestId,reuse:existingOrder.id,dedupe:reason,timing:processingTiming()}); } catch { /* best-effort */ }
     await touchMeta(); await finishProc(env, requestId, existingOrder.id); return json({success:true,waybill:existingOrder,idempotent:true,dedupe:reason,indexSync:"OK",quality,processingTiming:processingTiming(),requestId});
   }
   return failProcess("WAYBILL_DEDUPE_LOOKUP_FAILED","已存在的运单记录丢失，请重试",409,{recoverable:true,action:"RETRY_SAVE",hint:"已存在的运单记录丢失，请重试保存",order});
