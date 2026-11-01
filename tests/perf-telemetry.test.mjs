@@ -97,3 +97,19 @@ assert.match(upload,/perfResult\?\.success===false&&Number\.isInteger\(perfResul
 
 // Failed OCR/process responses expose top-level timing; include those phases in the same telemetry pipeline.
 assert.match(upload,/perfResult\?\.timing&&typeof perfResult\.timing==="object"\?perfResult\.timing/);
+
+// ---- 运单计时精度与诊断字段完整性回归 ----
+const diagnosticApi=readFileSync(new URL("../functions/api/waybills/diagnostic.js",import.meta.url),"utf8");
+const diagnosticUi=readFileSync(new URL("../js/admin/diagnostics.js",import.meta.url),"utf8");
+assert.match(processApi,/const waybillPerfDuration\s*=/,"运单处理阶段必须统一使用单调高精度计时");
+for(const marker of ["baseLookupStarted","indexStarted","started","r2StageStarted","ocrStarted","baseWaitStarted","extractedStarted","matchStarted","dedupeStarted","planStarted"]){
+  assert.match(processApi,new RegExp("waybillPerfDuration\\("+marker+"\\)"),marker+" must use high-resolution duration");
+  assert.doesNotMatch(processApi,new RegExp("Date\\.now\\(\\)\\s*-\\s*"+marker),marker+" must not use millisecond-resolution Date.now");
+}
+for(const key of ["ocrImageCount","ocrResultRequestMs","ocrResultBodyMs","ocrResultParseMs","ocrResultChars"]){
+  assert.match(diagnosticApi,new RegExp('"'+key+'"'),key+" must survive diagnostic safeTiming filtering");
+}
+assert.match(diagnosticUi,/const formatTimingMs\s*=/,"sub-10ms timing values must remain visible");
+for(const key of ["baseLookupMs","baseIndexMs","baseWaitMs","baseOverlapMs"]){
+  assert.ok(diagnosticUi.includes('"'+key+'"'),key+" must be shown in full waybill diagnostics");
+}
