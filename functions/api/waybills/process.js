@@ -174,7 +174,6 @@ async function runProcessCore({request,env,emit=()=>{},form:providedForm=null,us
       for(let start=0;start<files.length;start+=TEMP_STAGE_CONCURRENCY){
         const batch=[];
         for(let k=0;k<TEMP_STAGE_CONCURRENCY&&start+k<files.length;k++)batch.push(start+k);
-        const batchId=batch.length>1?`zp-${requestId}-${start}`:null;
         const settled=await Promise.allSettled(batch.map(async i=>{
           const source=files[i];
           const key=`waybill-tmp/${requestId}/${i+1}-${crypto.randomUUID()}`;
@@ -205,6 +204,7 @@ async function runProcessCore({request,env,emit=()=>{},form:providedForm=null,us
       for(let start=0;start<files.length;start+=CONCURRENCY){
         const batch=[];
         for(let k=0;k<CONCURRENCY&&start+k<files.length;k++)batch.push(start+k);
+        const batchId=batch.length>1?`zp-${requestId}-${start}`:null;
         const settled=await Promise.allSettled(batch.map(async i=>{
           const fileIndex=i+1;
           if(await stopIfClientCancelled("OCR")){const ce=new Error("cancelled");ce.code="PROCESS_CANCELLED";throw ce}
