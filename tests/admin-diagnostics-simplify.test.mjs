@@ -51,7 +51,8 @@ assert.ok(css.includes(".diag-learning-reason input")&&css.includes(".diag-learn
 assert.ok(css.includes("grid-template-columns:minmax(0,1fr) minmax(0,1fr)"),"learning reason controls must align in equal columns");
 assert.ok(css.includes("var(--zp-input-bg)")&&css.includes("var(--zp-input-line)")&&css.includes("var(--zp-r-control)"),"learning isolation controls must use global UI tokens");
 
-assert.ok(css.includes("@media(max-width:560px)")&&css.includes("grid-template-columns:repeat(2,minmax(0,1fr))"),"mobile failure statistics must reflow into two columns");
-assert.ok(css.includes("min-height:44px")&&css.includes("flex:1 1 120px"),"mobile failure actions must remain comfortably tappable and wrap without overflow");
-assert.ok(css.includes("@media(max-width:360px)")&&css.includes("minmax(0,1fr)"),"very narrow phones must keep failure labels and values within the card");
+assert.ok(css.includes("@media(max-width:560px)")&&css.includes("grid-template-columns:repeat(4,minmax(0,1fr))"),"mobile failure statistics must remain in one horizontal app-style row");
+assert.ok(css.includes("flex:1 1 0")&&css.includes("min-height:44px")&&css.includes("flex-wrap:nowrap"),"mobile failure actions must stay side-by-side with comfortable tap targets");
+assert.ok(css.includes(".diag-failure-meta{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)"),"mobile failure metadata must use a compact two-column horizontal layout");
+assert.ok(css.includes("@media(max-width:360px)")&&css.includes("overflow-wrap:anywhere"),"very narrow phones must keep failure labels and values within the card");
 console.log("管理员诊断页紧凑布局、手机适配、无手工ID输入、完整复制与全局主题回归：通过");
