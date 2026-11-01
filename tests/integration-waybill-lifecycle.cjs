@@ -85,7 +85,7 @@ async function toJson(resp) {
   check("保存阶段计时覆盖声明、指纹、去重、原子保存、生命周期事件、汇总和完成票据",
     ["saveClaimMs","saveFingerprintMs","saveDailySignatureMs","saveDedupeScanMs","saveAtomicMs","saveLifecycleEventsMs","saveDayMetaMs","saveFinishProcMs","totalMs"].every(k => Number.isFinite(A.processingTiming?.saveStages?.[k]) && A.processingTiming.saveStages[k] >= 0));
   check("响应头记录 R2 清理与服务端端到端耗时",
-    /waybill-r2-cleanup;dur=/.test(resp.headers.get("Server-Timing") || "") && /waybill-server-end-to-end;dur=/.test(resp.headers.get("Server-Timing") || ""));
+    /waybill-temp-cleanup;dur=/.test(resp.headers.get("Server-Timing") || "") && /waybill-server-end-to-end;dur=/.test(resp.headers.get("Server-Timing") || ""));
 
   check("提取门店数=3", A.waybill && A.waybill.stores.length === 3, "stores=" + (A.waybill?.stores.length));
   check("stage=CONFIRMED（无待定）", A.waybill?.stage === "CONFIRMED", A.waybill?.stage);
