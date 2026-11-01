@@ -341,6 +341,13 @@ assert.match(source,/ocrResultFetchWaitMs \+= ocrPerfDuration\(waitStarted\)/,"r
     assert.match(results[1].rawText, /第二张图片门店丙/);
     assert.equal(results.reduce((sum, item) => sum + item.ocrStatusPollCount, 0), 1,
       "diagnostic poll count must count the actual shared HTTP request only once");
+    assert.equal(results.reduce((sum, item) => sum + item.ocrStatusBatchRequestCount, 0), 1,
+      "batch status diagnostics must count the actual shared HTTP request once");
+    assert.equal(results.reduce((sum, item) => sum + item.ocrStatusBatchMatchedJobCount, 0), 2,
+      "batch status diagnostics must prove both jobs mapped to their own results");
+    assert.equal(results.reduce((sum, item) => sum + item.ocrStatusBatchResponseJobCount, 0), 2,
+      "batch response task count must be recorded once per actual snapshot");
+    assert.ok(results.every(item => item.ocrStatusMode === "batch"), "both images must report batch status mode");
     assert.deepEqual(requestedDelays, [500, 500], "both jobs must retain the existing 500ms initial poll delay");
   } finally {
     globalThis.fetch = savedFetch;
@@ -401,6 +408,10 @@ assert.match(source,/ocrResultFetchWaitMs \+= ocrPerfDuration\(waitStarted\)/,"r
     assert.match(results[1].rawText, /回退图片二门店丙/);
     assert.equal(results.reduce((sum, item) => sum + item.ocrStatusPollCount, 0), 3,
       "fallback diagnostics must count the one shared unsupported batch request plus both per-job status requests");
+    assert.equal(results.reduce((sum, item) => sum + item.ocrStatusBatchRequestCount, 0), 1);
+    assert.equal(results.reduce((sum, item) => sum + item.ocrStatusFallbackRequestCount, 0), 2,
+      "fallback diagnostics must count each individual status request");
+    assert.ok(results.every(item => item.ocrStatusMode === "fallback"), "both images must report fallback mode");
   } finally {
     globalThis.fetch = savedFetch;
     globalThis.setTimeout = savedSetTimeout;
@@ -465,6 +476,10 @@ assert.match(source,/ocrResultFetchWaitMs \+= ocrPerfDuration\(waitStarted\)/,"r
     assert.match(results[1].rawText, /后提交图片门店丙/);
     assert.equal(results.reduce((sum, item) => sum + item.ocrStatusPollCount, 0), 2,
       "shared snapshots must count each actual batch status request once");
+    assert.equal(results.reduce((sum, item) => sum + item.ocrStatusBatchRequestCount, 0), 2);
+    assert.equal(results.reduce((sum, item) => sum + item.ocrStatusBatchMissingJobCount, 0), 1,
+      "the first snapshot must record the late sibling as missing without losing it");
+    assert.equal(results.reduce((sum, item) => sum + item.ocrStatusBatchMatchedJobCount, 0), 2);
   } finally {
     globalThis.fetch = savedFetch;
     globalThis.setTimeout = savedSetTimeout;
