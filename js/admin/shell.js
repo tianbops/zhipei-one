@@ -43,6 +43,14 @@ const { $, S, esc, rn, api, toast, open, close, page, sw, closeSwipes, dlg, dt, 
   }
   function end(e,commit){
     if(axis==="skip"||axis!=="x"||!live){axis="";live=false;return}
+    // 浏览器因系统边缘手势、原生滚动或 WebView 仲裁触发 touchcancel 时，
+    // 必须把跟手中的面板动画归位；否则会永久停在两页之间（尤其屏幕左右边缘）。
+    if(!commit){
+      pg.style.transition="";
+      pg.style.transform="translateX(-"+from*20+"%)";
+      live=false;axis="";
+      return;
+    }
     const t=e.changedTouches&&e.changedTouches[0];
     const last=t?t.clientX-sx:0;
     const dt=Math.max(1,(e.timeStamp||Date.now())-t0),vel=Math.abs(last)/dt,w=W();
