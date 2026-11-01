@@ -49,7 +49,7 @@ function check(name, ok, info) {
   check("批量生命周期事件一次 pipeline 提交 6 条", batchCount === 6 && batchEvents.length === 6 && pipelineRequests === 1, "pipelineRequests=" + pipelineRequests);
   check("批量生命周期事件保持既有顺序", batchEvents.map(e => e.event).join(",") === "WAYBILL_CREATED,EXTRACT_COMPLETED,MATCH_COMPLETED,DEDUPE_COMPLETED,PLAN_COMPLETED,WAYBILL_SAVED");
   check("批量事件保留 requestId 与 stage", batchEvents.every(e => e.requestId === "req-batch-1" && !!e.stage));
-  check("批量事件仍同时保存 UTC 与北京时间", batchEvents.every(e => !!e.t && /\+08:00$/.test(e.tBeijing || "")));
+  check("批量事件仍同时保存 UTC 与北京时间", batchEvents.every(e => !!e.t && /\+08:00$/.test(e.tBeijing || "")), JSON.stringify(batchEvents.map(e => ({ t: e.t, tBeijing: e.tBeijing }))));
 
   // 模拟历史 Redis 事件：旧数据只有 t，不进行写回或迁移。
   await redis.command(["RPUSH", "zp:waybill:" + id + ":events", JSON.stringify({ event: "WAYBILL_CREATED", t: "2026-10-31T15:08:28.000Z" })]);
