@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { createMatchIndex, matchStores, formatCompareKey } from "../functions/api/waybills/_store-match.js";
+import { matchStores, formatCompareKey } from "../functions/api/waybills/_store-match.js";
 import { createRouteBaseIndex, getCachedRouteBaseIndex, splitByRouteBase } from "../functions/api/waybills/_process-plan.js";
 
 const baseStores = [
