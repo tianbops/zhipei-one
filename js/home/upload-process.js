@@ -129,6 +129,7 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
     fd.append("processingRouteId",processingRouteIdLocal);
     if(resumeRequestId)fd.append("resumeRequestId",resumeRequestId);
     renderProcessingProgress(3);
+    if(controller.signal.aborted)throw Object.assign(new Error("本次处理已中止"),{code:"USER_CANCELLED"});
     let r;
     try{
       perfRequestStartedAt=performance.now();
