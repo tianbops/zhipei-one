@@ -40,6 +40,7 @@ const WAYBILL_TEMP_MAX_BYTES=80*1024*1024;
 
 // 单调高精度计时：仅记录现有处理阶段，不增加请求或数据库写入。
 const waybillPerfNow=()=>{try{const fn=globalThis.performance?.now;if(typeof fn==="function")return fn.call(globalThis.performance)}catch{}return Date.now()};
+const waybillPerfDuration=started=>Math.max(0,Math.round((waybillPerfNow()-started)*1e2)/1e2);
 
 /* 同日同线路「重传即替换」：找出同车辆、门店高度重叠的旧单并原子取代，
    返回实际被取代的列表（供响应与事件留痕）。
@@ -149,15 +150,15 @@ async function runProcessCore({request,env,emit=()=>{},form:providedForm=null,us
     }
   }
   // 线路基准读取与索引预热和图片暂存/OCR 并行，不改变匹配输入与错误语义。
-  const baseLookupStarted=Date.now();
+  const baseLookupStarted=waybillPerfNow();
   const baseLookupPromise=isTempRoute(routeId)
     ? Promise.resolve({stores:[],available:false,error:null,elapsedMs:0,lookupMs:0,indexMs:0,index:null})
     : base(env,routeId).then(data=>{
-        const lookupMs=Date.now()-baseLookupStarted;
-        const indexStarted=Date.now();
+        const lookupMs=waybillPerfDuration(baseLookupStarted);
+        const indexStarted=waybillPerfNow();
         const index=getCachedRouteBaseIndex(user.id,routeId,data.version,data.stores);
-        const indexMs=Date.now()-indexStarted;
-        return {stores:index.stores,available:index.stores.length>0,error:null,elapsedMs:Date.now()-baseLookupStarted,lookupMs,indexMs,index};
+        const indexMs=waybillPerfDuration(indexStarted);
+        return {stores:index.stores,available:index.stores.length>0,error:null,elapsedMs:waybillPerfDuration(baseLookupStarted),lookupMs,indexMs,index};
       },error=>({stores:[],available:false,error,elapsedMs:Date.now()-baseLookupStarted,lookupMs:Date.now()-baseLookupStarted,indexMs:0,index:null}));
   const started=Date.now();let ocr=null,recognizedText=rawText,ocrMs=0;
   if(!recognizedText){
