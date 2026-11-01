@@ -82,6 +82,11 @@ async function toJson(resp) {
   let A = await toJson(resp);
   if (!A.success) console.log("DEBUG A =", JSON.stringify(A).slice(0, 500));
   check("处理成功", A.success === true);
+  check("保存阶段计时覆盖声明、指纹、去重、原子保存、生命周期事件、汇总和完成票据",
+    ["saveClaimMs","saveFingerprintMs","saveDailySignatureMs","saveDedupeScanMs","saveAtomicMs","saveLifecycleEventsMs","saveDayMetaMs","saveFinishProcMs","totalMs"].every(k => Number.isFinite(A.processingTiming?.saveStages?.[k]) && A.processingTiming.saveStages[k] >= 0));
+  check("响应头记录 R2 清理与服务端端到端耗时",
+    /waybill-temp-cleanup;dur=/.test(resp.headers.get("Server-Timing") || "") && /waybill-server-end-to-end;dur=/.test(resp.headers.get("Server-Timing") || ""));
+
   check("提取门店数=3", A.waybill && A.waybill.stores.length === 3, "stores=" + (A.waybill?.stores.length));
   check("stage=CONFIRMED（无待定）", A.waybill?.stage === "CONFIRMED", A.waybill?.stage);
   check("匹配方式含 data-exact/identity", A.waybill?.stores.every(s => s.matchStatus === "matched"), JSON.stringify(A.waybill?.stores.map(s => ({rawName:s.rawName,name:s.name,storeId:s.storeId,pending:s.pending,matchMethod:s.matchMethod,reason:s.matchDiagnostics?.reason,confidence:s.matchConfidence?.reason}))));

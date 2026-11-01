@@ -38,6 +38,9 @@ import {recordWaybillLifecycle} from "./_process-persist.js";
 const WAYBILL_TEMP_MAX_FILES=20;
 const WAYBILL_TEMP_MAX_BYTES=80*1024*1024;
 
+// 单调高精度计时：仅记录现有处理阶段，不增加请求或数据库写入。
+const waybillPerfNow=()=>{try{const fn=globalThis.performance?.now;if(typeof fn==="function")return fn.call(globalThis.performance)}catch{}return Date.now()};
+
 /* 同日同线路「重传即替换」：找出同车辆、门店高度重叠的旧单并原子取代，
    返回实际被取代的列表（供响应与事件留痕）。
    读取受统一 Redis 预算保护——预算不足时跳过取代（不影响本次保存成功），
@@ -283,6 +286,11 @@ async function runProcessCore({request,env,emit=()=>{},form:providedForm=null,us
   order.diagnostics={matchMode:hasRouteBase?"ROUTE_BASE":"GLOBAL_LEARNING",baseStoreCount:baseStores.length,rawExtractCount,extractCount:splitExtractCount,recoveredCount,rawExtractItems,extractItems:extracted.stores.map((s,i)=>({index:i+1,rawName:s.rawName,name:s.name,storeId:s.storeId||null})),localMatchedCount:locallyMatched.filter(x=>!x.pending).length,localPendingCount:locallyMatched.filter(x=>x.pending).length,localPendingItems:locallyMatched.filter(x=>x.pending).map(x=>({rawName:x.rawName,candidates:x.candidates||[]})),globalMatchedCount:matched.filter(x=>!x.pending&&(x.matchMethod==="global-alias"||x.matchMethod==="global-identity")).length,globalPendingCount:hasRouteBase?0:matched.filter(x=>x.pending).length,finalPendingCount:pending.length,dedupeBefore:matched.length,dedupeAfter:d.items.length,merged:d.merged,dedupeConflicts:d.conflicts,dedupeRemoved:d.removed,correctionItems:planned.filter(x=>x.correction).map((s,i)=>({rawName:s.rawName,name:s.name,storeId:s.storeId||null,matchMethod:s.matchMethod||null})),plannedCount:planned.length,finalCount:order.stores.length,finalItems:planned.map((s,i)=>({index:i+1,rawName:s.rawName,name:s.name,storeId:s.storeId||null,pending:!!s.pending,matchMethod:s.matchMethod||null,routeOrder:s.routeOrder,matchConfidence:s.matchConfidence||null})),requestId,quality,edgeTrimmed};const validation=validateResult(order);order.validation=validation;if(!validation.valid){const first=validation.errors?.[0]||"校验失败";const codeMap={"缺少运单日期":"WAYBILL_VALIDATION_DATE_MISSING","缺少车辆信息":"WAYBILL_VALIDATION_VEHICLE_MISSING","没有规划门店":"WAYBILL_VALIDATION_STORES_EMPTY","规划结果存在重复门店":"WAYBILL_VALIDATION_DUPLICATE_STORE","规划结果存在无效线路顺序":"WAYBILL_VALIDATION_ROUTE_ORDER_INVALID","规划结果存在重复线路顺序":"WAYBILL_VALIDATION_ROUTE_ORDER_DUPLICATE","线路顺序不连续":"WAYBILL_VALIDATION_ROUTE_ORDER_GAP"};return failProcess(codeMap[first]||"WAYBILL_VALIDATION_FAILED","运单规划结果校验失败："+first,422,{recoverable:true,action:"RESUBMIT",hint:"运单规划结果校验失败："+first,validation,order:{...order,rawText:undefined}})}
   return await saveWaybill(order, requestId, false);
 async function saveWaybill(order, requestId, resumed){
+  const saveStartedAt=waybillPerfNow();
+  const saveStages={};
+  const markSaveStage=(name,started)=>{saveStages[name]=Math.max(0,Math.round((waybillPerfNow()-started)*1e2)/1e2)};
+  const processingTiming=()=>({...order.timing,saveStages:{...saveStages,totalMs:Math.max(0,Math.round((waybillPerfNow()-saveStartedAt)*1e2)/1e2)}});
+  const claimStarted=waybillPerfNow();
   if(await stopIfClientCancelled("SAVE"))return json({success:false,code:"PROCESS_CANCELLED",error:"已取消处理",message:"已取消处理",requestId,recoverable:true,action:"REPROCESS",hint:"本次处理已取消，可重新上传运单"},499);
   // 最终 Redis 保存 EVAL 前再做一次原子“保存声明”。
   // cancel 先赢则这里失败；claim 先赢则后续取消不再覆盖，保存完成后 DONE 胜出。
@@ -293,28 +301,34 @@ async function saveWaybill(order, requestId, resumed){
     if((claim.reason==="DONE"||proc?.stage==="DONE")&&proc?.waybillId){
       const existingRaw=await command(env,["GET","zp:waybill:"+proc.waybillId]);
       const existing=existingRaw?(typeof existingRaw==="string"?JSON.parse(existingRaw):existingRaw):null;
-      if(existing)return json({success:true,waybill:existing,idempotent:true,processingTiming:order.timing,requestId});
+      if(existing)return json({success:true,waybill:existing,idempotent:true,processingTiming:processingTiming(),requestId});
     }
     if(claim.reason==="REDIS_ERROR")return failProcess("WAYBILL_SAVE_CLAIM_UNAVAILABLE","保存服务暂时不可用，请重试保存",503,{recoverable:true,action:"RETRY_SAVE",hint:"保存服务暂时不可用，请重试保存",detail:claim.detail,order});
     if(claim.reason==="TICKET_MISSING")return failProcess("WAYBILL_PROC_TICKET_MISSING","处理任务已过期，请重新上传运单",409,{recoverable:true,action:"RESUBMIT",hint:"处理任务已过期，请重新上传运单",order});
     return failProcess("WAYBILL_SAVE_CLAIM_STATE_INVALID","保存任务状态异常，请重新上传运单",409,{recoverable:true,action:"RESUBMIT",hint:"保存任务状态异常，请重新上传运单",detail:claim.reason,order});
   }
+  markSaveStage("saveClaimMs",claimStarted);
   const routeId=order.routeId;
   // 方案C rollup：保存成功后重算当日汇总键（best-effort；读路径缺失 meta 会自动自愈）
   const touchMeta=async()=>{try{await recomputeDayMeta(env,routeId,clean(order.date))}catch{}};
   const quality=order.quality;
   emit(96,"正在保存运单");
+  let stageStarted=waybillPerfNow();
   order.businessFingerprint=await businessFingerprint(order);
+  markSaveStage("saveFingerprintMs",stageStarted);
   const fingerprintKey="zp:waybill:fingerprint:"+order.businessFingerprint;
   const indexKey=waybillIndexKey(routeId,clean(order.date));
   // 当日业务去重键：线路 + 日期 + 车辆 + 重量 + 门店名称(归一化排序) + 门店数量。
   // 同一车辆当天多趟（门店/重量不同）→ 签名不同 → 视为不同运单，不会被误合并。
+  stageStarted=waybillPerfNow();
   const dailySig=await dailyWaybillKey(order);
+  markSaveStage("saveDailySignatureMs",stageStarted);
   const sigString=dailyWaybillSignatureString(order);
   // 将当日业务签名显式固化到主记录，供保存 EVAL 校验反向去重键，防止“键指向错误运单”时被误判为幂等。
   order.dailyDedupeKey=dailySig;
   const dedupeKey="zp:waybill:dedupe:"+dailySig;
   // 历史运单未写入 dedupeKey，这里兜底扫描当日索引里「业务签名一致」的运单，命中即复用旧单（不新增）。
+  stageStarted=waybillPerfNow();
   let dailyDupId=null;
   const hasDedupe=await command(env,["GET",dedupeKey]);
   if(!hasDedupe){
@@ -334,6 +348,7 @@ async function saveWaybill(order, requestId, resumed){
       if(dailyWaybillSignatureString(w)===sigString){dailyDupId=id;break}
     }
   }
+  markSaveStage("saveDedupeScanMs",stageStarted);
   if(dailyDupId&&dailyDupId!==order.id){
     const raw=await command(env,["GET","zp:waybill:"+dailyDupId]);
     if(raw){
@@ -350,7 +365,7 @@ async function saveWaybill(order, requestId, resumed){
           }
         }
         try { await appendWaybillEvent(env, finalId, {event:"WAYBILL_IDEMPOTENT",stage:"SAVED",requestId,reuse:finalId,dedupe:"DAILY_MATCH"}); } catch { /* best-effort */ }
-        await touchMeta(); await finishProc(env, requestId, finalId); return json({success:true,waybill:w,idempotent:true,dedupe:"DAILY_MATCH",indexSync:"OK",quality,processingTiming:order.timing,requestId});
+        await touchMeta(); await finishProc(env, requestId, finalId); return json({success:true,waybill:w,idempotent:true,dedupe:"DAILY_MATCH",indexSync:"OK",quality,processingTiming:processingTiming(),requestId});
       }
     }
   }
@@ -358,11 +373,13 @@ async function saveWaybill(order, requestId, resumed){
   // 命中旧单返回 {"DAILY"|"FINGERPRINT", id}，新单返回 {"NEW", id}。业务签名已含车辆+门店+重量，故同车多趟天然区分。
   const saveScript='local fpKey=KEYS[1]; local wbKey=KEYS[2]; local idxKey=KEYS[3]; local dedupeKey=KEYS[4]; local sigId=redis.call("GET",dedupeKey); if sigId and sigId~="" then local raw=redis.call("GET","zp:waybill:"..sigId); if raw then local ok,existing=pcall(cjson.decode,raw); if ok and type(existing)=="table" and existing.dailyDedupeKey==ARGV[3] then redis.call("SADD",idxKey,sigId); return {"DAILY",sigId} end; if not ok or type(existing)~="table" or not existing.dailyDedupeKey then return {"VERIFY_DAILY",sigId} end; redis.call("DEL",dedupeKey) end; redis.call("DEL",dedupeKey) end; local fpId=redis.call("GET",fpKey); if fpId and fpId~=ARGV[1] then local raw=redis.call("GET","zp:waybill:"..fpId); if raw then local ok,existing=pcall(cjson.decode,raw); if ok and type(existing)=="table" and existing.businessFingerprint==ARGV[4] then redis.call("SADD",idxKey,fpId); return {"FINGERPRINT",fpId} end; if not ok or type(existing)~="table" or not existing.businessFingerprint then return {"VERIFY_FINGERPRINT",fpId} end; redis.call("DEL",fpKey) end; redis.call("DEL",fpKey) end; redis.call("SET",fpKey,ARGV[1]); redis.call("SET",wbKey,ARGV[2]); redis.call("SADD",idxKey,ARGV[1]); redis.call("SET",dedupeKey,ARGV[1]); return {"NEW",ARGV[1]}';
   let saveResult;
+  stageStarted=waybillPerfNow();
   try{
     saveResult=await command(env,["EVAL",saveScript,"4",fingerprintKey,"zp:waybill:"+order.id,indexKey,dedupeKey,order.id,JSON.stringify(order),dailySig,order.businessFingerprint]);
   }catch(e){
     return failProcess("WAYBILL_SAVE_FAILED","运单保存失败",500,{recoverable:true,action:"RETRY_SAVE",hint:"运单保存失败，可重试保存",detail:e?.message||String(e)});
   }
+  markSaveStage("saveAtomicMs",stageStarted);
   let reason="NEW",savedId=order.id;
   if(Array.isArray(saveResult)&&saveResult.length>=2){reason=String(saveResult[0]);savedId=String(saveResult[1])}
   else if(typeof saveResult==="string"&&saveResult!==order.id){reason="FINGERPRINT";savedId=saveResult}
@@ -379,7 +396,7 @@ async function saveWaybill(order, requestId, resumed){
       if(Number(repair)===1){
         await touchMeta(); await finishProc(env, requestId, verifyId);
         try{await appendWaybillEvent(env,verifyId,{event:"WAYBILL_IDEMPOTENT",stage:"SAVED",requestId,reuse:verifyId,dedupe:reason==="VERIFY_DAILY"?"DAILY_MATCH_LEGACY":"FINGERPRINT_LEGACY"});}catch{}
-        return json({success:true,waybill:verifyOrder,idempotent:true,dedupe:reason==="VERIFY_DAILY"?"DAILY_MATCH_LEGACY":"FINGERPRINT_LEGACY",indexSync:"OK",quality,processingTiming:order.timing,requestId});
+        return json({success:true,waybill:verifyOrder,idempotent:true,dedupe:reason==="VERIFY_DAILY"?"DAILY_MATCH_LEGACY":"FINGERPRINT_LEGACY",indexSync:"OK",quality,processingTiming:processingTiming(),requestId});
       }
       return failProcess("WAYBILL_DEDUPE_RETRY","去重键正在变化，请重试保存",409,{recoverable:true,action:"RETRY_SAVE",hint:"去重键正在变化，请重试保存",order});
     }
@@ -398,19 +415,25 @@ async function saveWaybill(order, requestId, resumed){
        只用「交集/较大集合」而非内嵌度，故"只补拍了一小段"不会覆盖全单，
        同车第二趟（不同门店）也不会被误删。
        取代后再重算当日汇总，统计立即回到单张口径。 */
+    stageStarted=waybillPerfNow();
     const superseded=await supersedeSameDay(env,order,indexKey);
+    markSaveStage("saveSupersedeMs",stageStarted);
     if(superseded.length)emit(99,`已替换当日同车辆旧运单 ${superseded.length} 张`);
-    emit(100,"处理完成");
+    stageStarted=waybillPerfNow();
     if(resumed){ try { await appendWaybillEvent(env, order.id, {event:"WAYBILL_RESUMED_SAVE",stage:"SAVED",requestId,id:order.id,qualityLevel:order.quality?.level,qualityFlags:order.quality?.flags||[]}); } catch { /* best-effort */ } }
     else { await recordWaybillLifecycle(env, order, {requestId, rawExtractCount, extractCount:order.summary?.extractCount, recoveredCount:order.summary?.recoveredCount, matched, pending, d}); }
-    await touchMeta(); await finishProc(env, requestId, order.id); return json({success:true,waybill:order,pipeline:order.pipeline,summary:order.summary,indexSync:"OK",quality,superseded,requestId});
+    markSaveStage("saveLifecycleEventsMs",stageStarted);
+    stageStarted=waybillPerfNow(); await touchMeta(); markSaveStage("saveDayMetaMs",stageStarted);
+    stageStarted=waybillPerfNow(); await finishProc(env, requestId, order.id); markSaveStage("saveFinishProcMs",stageStarted);
+    emit(100,"处理完成");
+    return json({success:true,waybill:order,pipeline:order.pipeline,summary:order.summary,indexSync:"OK",quality,superseded,processingTiming:processingTiming(),requestId});
   }
   const existingRaw=await command(env,["GET","zp:waybill:"+savedId]);
   if(existingRaw){
     const existingOrder=typeof existingRaw==="string"?JSON.parse(existingRaw):existingRaw;
     await command(env,["SADD",indexKey,existingOrder.id]);
     try { await appendWaybillEvent(env, existingOrder.id, {event:"WAYBILL_IDEMPOTENT",stage:"SAVED",requestId,reuse:existingOrder.id,dedupe:reason}); } catch { /* best-effort */ }
-    await touchMeta(); await finishProc(env, requestId, existingOrder.id); return json({success:true,waybill:existingOrder,idempotent:true,dedupe:reason,indexSync:"OK",quality,processingTiming:order.timing,requestId});
+    await touchMeta(); await finishProc(env, requestId, existingOrder.id); return json({success:true,waybill:existingOrder,idempotent:true,dedupe:reason,indexSync:"OK",quality,processingTiming:processingTiming(),requestId});
   }
   return failProcess("WAYBILL_DEDUPE_LOOKUP_FAILED","已存在的运单记录丢失，请重试",409,{recoverable:true,action:"RETRY_SAVE",hint:"已存在的运单记录丢失，请重试保存",order});
 }
@@ -434,15 +457,20 @@ async function deleteTempWaybillObjects(env,keys){
 
 async function runProcess(args){
   const tempKeys=[];
+  const serverStarted=waybillPerfNow();
   let response=null;
   try{
     response=await runProcessCore({...args,tempKeys});
-    return response;
   }finally{
     // 图片只在本次处理期间暂存；成功、失败或未捕获异常结束后均立即清理。
     // 24 小时 R2 生命周期规则仅作为进程中断等极端情况的兜底。
+    const cleanupStarted=waybillPerfNow();
     if(tempKeys.length)await deleteTempWaybillObjects(args.env,tempKeys);
+    const cleanupMs=Math.max(0,Math.round((waybillPerfNow()-cleanupStarted)*1e2)/1e2);
+    const serverTotalMs=Math.max(0,Math.round((waybillPerfNow()-serverStarted)*1e2)/1e2);
+    if(response){try{const headers=new Headers(response.headers);const current=headers.get("Server-Timing");const extra=`waybill-temp-cleanup;dur=${cleanupMs}, waybill-server-end-to-end;dur=${serverTotalMs}`;headers.set("Server-Timing",current?current+", "+extra:extra);response=new Response(response.body,{status:response.status,statusText:response.statusText,headers})}catch{/* timing headers are diagnostic-only */}}
   }
+  return response;
 }
 
 export async function onRequestPost({request,env}){
@@ -463,7 +491,8 @@ export async function onRequestPost({request,env}){
     emit(3,"运单已接收");
     runProcess({request,env,emit,user}).then(async response=>{
       let payload={};try{payload=await response.clone().json()}catch(error){payload={success:false,error:"处理结果读取失败",httpStatus:response.status}}
-      push(JSON.stringify({type:"result",...payload,httpStatus:response.status})+"\n");
+      const serverTiming=response.headers.get("Server-Timing");
+      push(JSON.stringify({type:"result",...payload,httpStatus:response.status,...(serverTiming?{serverTiming}:{})})+"\n");
       if(heartbeat)clearInterval(heartbeat);
       if(!closed){closed=true;try{controller.close()}catch{}}
     }).catch(error=>{

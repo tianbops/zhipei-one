@@ -8,7 +8,7 @@
  *   仅在仍指向本单时清理，保护重传幂等。
  */
 
-import {appendWaybillEvent} from "./_waybill-events.js";
+import {appendWaybillEvents} from "./_waybill-events.js";
 
 export async function recordWaybillLifecycle(env, order, ctx) {
   const { requestId, rawExtractCount, extractCount, recoveredCount, matched, pending, d } = ctx;
@@ -20,8 +20,5 @@ export async function recordWaybillLifecycle(env, order, ctx) {
     { event: "PLAN_COMPLETED", stage: "PLAN", requestId, count: order.stores.length },
     { event: "WAYBILL_SAVED", stage: "SAVED", requestId, id: order.id, qualityLevel: order.quality?.level, qualityFlags: order.quality?.flags || [] },
   ];
-  for (const ev of events) {
-    try { await appendWaybillEvent(env, order.id, ev); } catch { /* best-effort: lifecycle events never invalidate a successful save */ }
-  }
+  await appendWaybillEvents(env, order.id, events);
 }
-
