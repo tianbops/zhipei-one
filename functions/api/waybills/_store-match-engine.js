@@ -217,8 +217,7 @@ export function matchOne(rawName, baseStores, matchIndex = null, rawPrepared = n
   const preparedStores = usableIndex?.scoringStores || stores.map(store => ({
     store,
     fields: identityFields(store).map(name => {
-      const normalized = normalizeForMatch(name);
-      return { name, normalized, pinyin: null };
+      return { name, normalized: null, pinyin: null };
     })
   }));
 
