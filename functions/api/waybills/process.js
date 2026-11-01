@@ -174,6 +174,7 @@ async function runProcessCore({request,env,emit=()=>{},form:providedForm=null,us
       for(let start=0;start<files.length;start+=TEMP_STAGE_CONCURRENCY){
         const batch=[];
         for(let k=0;k<TEMP_STAGE_CONCURRENCY&&start+k<files.length;k++)batch.push(start+k);
+        const batchId=batch.length>1?`zp-${requestId}-${start}`:null;
         const settled=await Promise.allSettled(batch.map(async i=>{
           const source=files[i];
           const key=`waybill-tmp/${requestId}/${i+1}-${crypto.randomUUID()}`;
@@ -212,7 +213,7 @@ async function runProcessCore({request,env,emit=()=>{},form:providedForm=null,us
             const v=Math.max(0,Math.min(100,Number(p)||0));
             const base=8+(i/totalFiles)*44;
             emit(Math.round(base+(v/100)*(44/totalFiles)),totalFiles>1?`正在识别第 ${fileIndex}/${totalFiles} 张截图…`:(v<=10?"运单已上传，正在排队识别…":"正在识别运单…"));
-          },request?.signal);
+          },request?.signal,batchId);
         }));
         const failed=settled.find(x=>x.status==="rejected");
         if(failed){
