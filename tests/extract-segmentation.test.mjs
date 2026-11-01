@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { formatCompareKey } from '../functions/api/waybills/_store-match.js';
+import { formatCompareKey, createMatchIndex } from '../functions/api/waybills/_store-match.js';
 import { businessFingerprint, dailyWaybillKey } from '../functions/api/_waybill-identity.js';
 
 // P1-1g：helper 区已拆至 _process-plan.js（baseIdentityNames→plan 连续字节不变），
@@ -11,9 +11,9 @@ if(start<0||end<=start)throw new Error('extract segmentation helpers not found')
 const helperSource=source.slice(start,end);
 const clean=v=>String(v??'').trim();
 // P1-1g：模块内函数带 export 前缀，eval 前剥掉（factory 显式 return，语义不变）
-const factory=new Function('clean','formatCompareKey','number',helperSource.replace(/^export /gm,'')+'\nreturn {splitByRouteBase,dedupe,plan};');
+const factory=new Function('clean','formatCompareKey','number','createMatchIndex',helperSource.replace(/^export /gm,'')+'\nreturn {splitByRouteBase,dedupe,plan};');
 const number=v=>{const n=Number(v);return Number.isFinite(n)?n:null;};
-const {splitByRouteBase,dedupe,plan}=factory(clean,formatCompareKey,number);
+const {splitByRouteBase,dedupe,plan}=factory(clean,formatCompareKey,number,createMatchIndex);
 
 const base=[
  {storeId:'S1',name:'重庆门店甲',originalName:'重庆门店甲',aliases:['甲店'],routeOrder:1},

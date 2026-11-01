@@ -61,7 +61,7 @@ const findGroup = (report, page, endpoint, status) => {
     { page: "history", endpoint: "api-history", status: "2xx", duration: 87000, server: 1243,
       phases: { "history-index": 12.3, "history-aggregate": 45.6, "history-db-primary-queries": 3, "history-db-replica-queries": 2, "history-db-region-apac-queries": 2, "history-bogus-phase": 9.9 } },
     { page: "home", endpoint: "api-waybill-process", status: "2xx", duration: 56000, server: 32000,
-      phases: { "waybill-client-compress": 300, "waybill-client-first-response": 5000, "waybill-client-stream": 50000, "waybill-server-ocr": 20000, "waybill-server-total": 32000, "waybill-server-save-lifecycle-events": 3.5, "waybill-server-end-to-end": 36000, "waybill-server-temp-cleanup": 5.5 } },
+      phases: { "waybill-client-compress": 300, "waybill-client-first-response": 5000, "waybill-client-stream": 50000, "waybill-server-ocr": 20000, "waybill-server-base": 150, "waybill-server-base-lookup": 120, "waybill-server-base-index": 2, "waybill-server-base-wait": 0, "waybill-server-base-overlap": 122, "waybill-server-total": 32000, "waybill-server-save-lifecycle-events": 3.5, "waybill-server-end-to-end": 36000, "waybill-server-temp-cleanup": 5.5 } },
     { page: "account", endpoint: "api-account", status: "4xx", duration: 1000, server: 30, code: 409 },
     { page: "account", endpoint: "api-account-me", status: "4xx", duration: 1000, server: 10, code: 999 },
     { page: "account", endpoint: "api-not-whitelisted", status: "2xx", duration: 100, server: 5 }
@@ -120,6 +120,10 @@ const findGroup = (report, page, endpoint, status) => {
   check("运单端到端处理独立成组", !!gWaybill, JSON.stringify(gWaybill && gWaybill.endpoint));
   check("waybill 阶段映射到既有 history 命名空间", gWaybill && gWaybill.phases && gWaybill.phases["history-waybill-server-total"] && gWaybill.phases["history-waybill-server-total"].avgMs === 32000,
     JSON.stringify(gWaybill && gWaybill.phases));
+  check("线路基准读取耗时可聚合", gWaybill && gWaybill.phases && gWaybill.phases["history-waybill-server-base-lookup"] && gWaybill.phases["history-waybill-server-base-lookup"].avgMs === 120);
+  check("线路基准索引编译耗时可聚合", gWaybill && gWaybill.phases && gWaybill.phases["history-waybill-server-base-index"] && gWaybill.phases["history-waybill-server-base-index"].avgMs === 2);
+  check("OCR 后剩余等待可聚合", gWaybill && gWaybill.phases && gWaybill.phases["history-waybill-server-base-wait"] && gWaybill.phases["history-waybill-server-base-wait"].avgMs === 0);
+  check("OCR 期间重叠耗时可聚合", gWaybill && gWaybill.phases && gWaybill.phases["history-waybill-server-base-overlap"] && gWaybill.phases["history-waybill-server-base-overlap"].avgMs === 122);
   check("OCR 阶段耗时可聚合", gWaybill && gWaybill.phases && gWaybill.phases["history-waybill-server-ocr"] && gWaybill.phases["history-waybill-server-ocr"].avgMs === 20000);
   check("保存阶段耗时可聚合", gWaybill && gWaybill.phases && gWaybill.phases["history-waybill-server-save-lifecycle-events"] && gWaybill.phases["history-waybill-server-save-lifecycle-events"].avgMs === 3.5);
   check("R2 清理耗时可聚合", gWaybill && gWaybill.phases && gWaybill.phases["history-waybill-server-temp-cleanup"] && gWaybill.phases["history-waybill-server-temp-cleanup"].avgMs === 5.5);

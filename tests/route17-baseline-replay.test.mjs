@@ -18,6 +18,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { matchStores, formatCompareKey } from "../functions/api/waybills/_store-match.js";
+import { createRouteBaseIndex } from "../functions/api/waybills/_process-plan.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, "..");
@@ -82,6 +83,7 @@ const baseStores = ROUTE17_BASELINE.map(([name, nav, note], i) => ({
   routeOrder: i + 1,
   note,
 }));
+const route17MatchIndex = createRouteBaseIndex(baseStores);
 
 /* ================================================================
  * 夹具 2：三天运单的门店排列（原始运单图片顺序 = 输入，NOT 配送顺序）
@@ -202,6 +204,8 @@ const dayStoreName = {}; // storeId -> 基准标准名
 for (const [date, seq] of Object.entries(WAYBILL_INPUT_DAYS)) {
   const items = seq.map((rawName, i) => ({ index: i + 1, rawName }));
   const matched = matchStores(items, baseStores);
+  const indexedMatched = matchStores(items, route17MatchIndex.stores, route17MatchIndex.matchIndex);
+  ok(JSON.stringify(indexedMatched) === JSON.stringify(matched), `${date}：复用 MatchIndex 与原匹配输出逐字段一致`);
   dayMatched[date] = matched;
   for (const s of matched) dayStoreName[s.storeId] = s.name;
   const pend = matched.filter(x => x.pending);

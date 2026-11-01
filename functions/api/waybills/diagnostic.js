@@ -16,7 +16,7 @@ const parse=v=>{try{return typeof v==="string"?JSON.parse(v):v}catch{return null
 const safeTiming=value=>{
   if(!value||typeof value!=="object"||Array.isArray(value))return null;
   const out={};
-  for(const key of ["recognizedMs","ocrMs","baseMs","extractMs","matchMs","dedupeMs","planMs","totalMs","ocrSubmitMs","ocrStatusPollCount","ocrStatusWaitMs","ocrStatusRequestMs","ocrResultFetchMs","ocrResultFetchWaitMs","ocrResultFetchAttempts"]){
+  for(const key of ["recognizedMs","ocrMs","baseMs","baseLookupMs","baseIndexMs","baseWaitMs","baseOverlapMs","extractMs","matchMs","dedupeMs","planMs","totalMs","ocrSubmitMs","ocrStatusPollCount","ocrStatusWaitMs","ocrStatusRequestMs","ocrResultFetchMs","ocrResultFetchWaitMs","ocrResultFetchAttempts"]){
     const n=value[key];
     if(typeof n==="number"&&Number.isFinite(n)&&n>=0)out[key]=n;
   }
