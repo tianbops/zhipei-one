@@ -168,7 +168,10 @@ async function requestBatchStatus(base, token, batchId, timeoutMs, signal) {
     entry.expiresAt = Date.now() + 100;
     return data;
   }, error => {
-    batchStatusCache.delete(batchId);
+    // Cache the failed in-flight request briefly too, so sibling workers share one
+    // unsupported-endpoint probe instead of multiplying the same failing request.
+    entry.settled = true;
+    entry.expiresAt = Date.now() + 100;
     throw error;
   });
   batchStatusCache.set(batchId, entry);
