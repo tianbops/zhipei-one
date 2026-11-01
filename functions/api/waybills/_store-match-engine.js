@@ -184,10 +184,7 @@ export function createMatchIndex(baseStores) {
     for (const field of [store?.storeId, store?.name, store?.originalName, store?.businessStoreCode, ...(Array.isArray(store?.aliases) ? store.aliases : [])]) {
       markUnique(byCode, businessStoreCode(field), store);
     }
-    const preparedFields = fields.map(name => {
-      const normalized = normalizeForMatch(name);
-      return { name, normalized: null, pinyin: null };
-    });
+    const preparedFields = fields.map(name => ({ name, normalized: null, pinyin: null }));
     storeMeta.set(store, { fields, exactKeys, preparedFields });
     scoringStores.push({ store, fields: preparedFields });
   }
