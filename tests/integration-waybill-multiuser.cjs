@@ -144,7 +144,8 @@ async function toJson(resp) { return await resp.json(); }
   const allowedTimingKeys = ["timingClock","timingResolutionMs","recognizedMs","ocrMs","r2StageMs","r2StageBytes","baseMs","baseLookupMs","baseIndexMs","baseWaitMs","baseOverlapMs","extractMs","matchMs","dedupeMs","planMs","totalMs"];
   check("诊断列表包含合法阶段计时", !!stageTiming && typeof stageTiming.totalMs === "number" && stageTiming.totalMs >= 0);
   check("诊断阶段计时仅含白名单合法字段", !!stageTiming && Object.keys(stageTiming).every(k => allowedTimingKeys.includes(k) && (k === "timingClock" ? ["performance.now","Date.now"].includes(stageTiming[k]) : typeof stageTiming[k] === "number" && Number.isFinite(stageTiming[k]) && stageTiming[k] >= 0)), JSON.stringify(stageTiming));
-  const reuseEvent = (timedWaybill?.events || []).find(e => e.event === "WAYBILL_IDEMPOTENT" && e.requestId === duplicateD.requestId);
+  const reusedWaybill = (dSee.waybills || []).find(w => w.id === wD);
+  const reuseEvent = (reusedWaybill?.events || []).find(e => e.event === "WAYBILL_IDEMPOTENT" && e.requestId === duplicateD.requestId);
   check("幂等复用事件保存本次尝试耗时", !!reuseEvent && typeof reuseEvent.timing?.totalMs === "number" && reuseEvent.timing.totalMs >= 0, JSON.stringify(reuseEvent?.timing || null));
   const oSeeR = await toJson(await readLatest(tokO, wE_id));
   check("外人 O 读不到 ROUTE 运单(返回 null)", oSeeR.success && oSeeR.waybill === null);
