@@ -22,7 +22,9 @@ const ordinary = matchStores(items, baseStores);
 const routeIndex = createRouteBaseIndex(baseStores);
 const compiled = matchStores(items, routeIndex.stores, routeIndex.matchIndex);
 assert.deepStrictEqual(compiled, ordinary, "compiled MatchIndex must preserve every match field and result");
-assert.deepStrictEqual(routeIndex.matchIndex, createMatchIndex(baseStores), "route index must contain the standard matcher index");
+assert.strictEqual(routeIndex.matchIndex.stores, baseStores, "route index must reference the exact base snapshot");
+assert.equal(routeIndex.matchIndex.byId.size, baseStores.length, "the standard identity map must be prebuilt");
+assert.ok(routeIndex.matchIndex.scoringStores.every(entry => entry.fields.every(field => typeof field.normalized === "string")), "normalized candidate names must be precomputed");
 
 const segmentItems = [
   { rawName: "渝北JM03131谊品生鲜长安锦绣城店-江北重庆三峡融资担保集团有限公司" },
