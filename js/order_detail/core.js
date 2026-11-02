@@ -4,7 +4,7 @@ const esc=v=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const attr=v=>esc(v).replace(/'/g,'&#39;');
 const navOf=x=>String(x?.navigation||x?.nav||'').trim();
 const params=new URLSearchParams(location.search), id=params.get('id')||'', source=params.get('source')||'', targetDate=params.get('date')||'', from=params.get('from')||'', supersededN=Number(params.get('superseded'))||0;
-let order=null,menuOpen=false,historyChoices=null;let baseStoreCache=null,baseStoreRoute=null;
+let order=null,historyChoices=null;let baseStoreCache=null,baseStoreRoute=null;
 /* 确认提交进行中（核对页）：点「确认」后请求在途，此时返回/关闭弹窗都必须被拦下——
    否则会出现「服务端已落库、用户以为没保存」的分裂状态。由 confirm.js 置位，
    js/ui/back.js 的 zpBusyMessage 与 boot.js 的弹窗关闭入口读取。 */
