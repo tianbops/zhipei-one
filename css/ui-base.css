@@ -375,13 +375,13 @@ button:active{transform:translateY(0)}
 /* 全站纯图标按钮：只保留图形，不绘制外围方框/底板。
    覆盖业务页历史遗留的高优先级单页定义；触控尺寸、定位与 aria 标签不变。
    键盘 focus-visible 焦点环仍由 ui-overlay.css 保留。 */
-:root body :is(.app-back,.order-icon-btn,.data-page-menu-btn,.data-import-close,.history-picker-head button,.order-dialog-head button,.zp-pk-close,.zp-pk-nav){
+html body :is(.app-back,.order-icon-btn,.data-page-menu-btn,.data-import-close,.history-picker-head button,.order-dialog-head button,.zp-pk-close,.zp-pk-nav){
   border:0;
   border-radius:0;
   background:transparent;
   box-shadow:none;
 }
-:root body :is(.app-back,.order-icon-btn,.data-page-menu-btn,.data-import-close,.history-picker-head button,.order-dialog-head button,.zp-pk-close,.zp-pk-nav):active{
+html body :is(.app-back,.order-icon-btn,.data-page-menu-btn,.data-import-close,.history-picker-head button,.order-dialog-head button,.zp-pk-close,.zp-pk-nav):active{
   border:0;
   background:transparent;
   color:var(--zp-text);
