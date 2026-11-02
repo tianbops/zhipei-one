@@ -113,7 +113,8 @@ for (const b of lightBlocks) {
 // C. 设计令牌：用户 spec 的浅色默认 + 深色覆盖（token 名沿用现有 --zp-* 体系）
 const LIGHT_TOKENS = [
   ["--zp-bg", "#F6F7F9"], ["--zp-surface", "#FFFFFF"], ["--zp-text", "#111111"],
-  ["--zp-muted", "#666666"], ["--zp-soft", "#999999"], ["--zp-line", "#EEEEEE"],
+  ["--zp-muted", "#666666"], ["--zp-soft", "#999999"], ["--zp-line", "#D9DDE3"],
+  ["--zp-line-inset", "#E1E4E8"], ["--zp-divider", "#DDE1E6"], ["--zp-tint", "rgba(0,0,0,.08)"],
   ["--zp-primary", "#1677FF"], ["--zp-on-primary", "#FFFFFF"],
   ["--zp-success", "#00B42A"], ["--zp-warning", "#FF7D00"], ["--zp-error", "#F53F3F"],
   ["--zp-shadow", "0 2px 8px rgba(0,0,0,.06)"],

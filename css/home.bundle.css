@@ -702,13 +702,13 @@ body {
   --zp-surface:#FFFFFF;
   --zp-surface-2:#F2F3F5;
   --zp-surface-3:#E8EAED;
-  --zp-line:#EEEEEE;
+  --zp-line:#D9DDE3;
   /* 卡片内分隔线（列表行下边线、展开体上边线）：
-     浅色沿用 --zp-line #EEEEEE（白卡上的浅灰细线）；深色必须比 --zp-line #334155
+     浅色 --zp-line-inset #E1E4E8（白卡内的柔和分隔线）；深色必须比 --zp-line #334155
      更柔，否则深底上的行间线会亮得像描边。此前这类差异靠 5 条
      :root[data-zp-theme="dark"] .acct-row{border-bottom-color:…} 专题补丁实现，
      属于「组件里写两套主题」，现已收进令牌层：组件只写一次 --zp-line-inset。 */
-  --zp-line-inset:#EEEEEE;
+  --zp-line-inset:#E1E4E8;
   /* 登录输入框专用边框（2026-10-26 浅色对比度修复）：浅色默认边框需比 --zp-line
      深一档才能与白底/浅灰页面背景拉开层次（原 #EEEEEE 边在白底上几乎隐形）；
      深色覆盖见 ui-theme.css。取值刻意避开 retired 色板中的旧浅灰蓝灰族。 */
@@ -796,7 +796,7 @@ body {
   --zp-card-translucent-2:rgba(242,243,245,.88);
   --zp-card:var(--zp-surface);
   /* 列表分隔线（方案第十五章 Row，统一为 .10 单一来源） */
-  --zp-divider:rgba(0,0,0,.10);
+  --zp-divider:#DDE1E6;
   /* ===== 功能状态色（成功 / 警告 / 错误 / 提示）=====
      -strong 用于边框 / 图标 / 危险操作；-soft 用于底色微染；
      --zp-danger 专用于「错误正文」（浅色用深红保对比度、深色用浅红），随主题翻转。 */
@@ -825,9 +825,9 @@ body {
   --zp-nav-text:#666666;
   --zp-nav-text-active:#111111;
   --zp-nav-active-bg:#F2F3F5;
-  /* 中性微染：弱描边/分隔线（原 .075/.07/.065 三档归一为 .05 浅色 / .07 深色）；
+  /* 中性微染：弱描边/分隔线（原 .075/.07/.065 三档归一为 .08 浅色 / .07 深色）；
      -strong 为强调描边（登录徽章边框 .10 / .16）。 */
-  --zp-tint:rgba(0,0,0,.05);
+  --zp-tint:rgba(0,0,0,.08);
   --zp-tint-strong:rgba(0,0,0,.10);
   /* 模态遮罩：业务弹窗/二次确认（原 .58 与 .62 两档归一为 .40 浅色 / .58 深色）。 */
   --zp-scrim-dialog:rgba(15,23,42,.40);
