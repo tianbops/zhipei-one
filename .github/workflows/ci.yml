@@ -32,7 +32,7 @@ jobs:
         run: |
           set -eu
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            git fetch --no-tags --depth=50 origin "${{ github.base_ref }}"
+            git fetch --no-tags origin "${{ github.base_ref }}"
             BASE="origin/${{ github.base_ref }}"
             FILES=$(git diff --name-only "$BASE"...HEAD)
           else
