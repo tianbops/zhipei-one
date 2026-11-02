@@ -71,8 +71,8 @@ t("订单详情 fmtWeight 3 位",
 
 const MONTHLY = read("js/home-monthly.js");
 t("月度统计汇总 3 位", /animateNumber\(weightEl,weight,v=>v\.toFixed\(3\)\)/.test(MONTHLY));
-t("月度统计图表提示 3 位", /x\.weight\.toFixed\(3\)\+"t"/.test(MONTHLY) && /peak\.weight\.toFixed\(3\)\+"t"/.test(MONTHLY));
-t("年度视图 3 位（两处 fmtV）", (MONTHLY.match(/isW\?v\.toFixed\(3\)\+"t"/g) || []).length === 2);
+t("月度统计图表提示 3 位（每日数据点 aria-label）", /x\.weight\.toFixed\(3\)\+"t"/.test(MONTHLY));
+t("年度视图 3 位（统一 fmtV 格式化器）", /const fmtV=v=>isW\?v\.toFixed\(3\)\+"t":v\+"单"/.test(MONTHLY) && /\+fmtV\(v\)\+"<\/title><\/rect>"/.test(MONTHLY));
 
 const TODAY = read("js/home/today.js");
 t("今日卡重量 3 位", /Math\.round\(\(Number\(w\.totalWeight\)\|\|0\)\*1000\)\/1000\)\.toFixed\(3\)\+"t"/.test(TODAY));
