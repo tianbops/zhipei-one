@@ -1821,7 +1821,7 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
 
 ;
 /* 智配One · 外观偏好 + 线路名显示标准（原 js/ui-unified.js 拆分 · 2/6）
- * 固定深色主题 + 全局字号缩放，外加线路名的全局显示口径。
+ * 主题（system/dark/light）与全局字号缩放，外加线路名的全局显示口径。
  * 依赖：无（core.js 只被 nav/back 需要，本模块自洽）。
  */
 (function(){
@@ -1854,13 +1854,22 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
     const root=document.documentElement;
     const THEME_KEY="zp_appearance_theme";
     const SCALE_KEY="zp_appearance_font_scale";
+    const validThemes=["system","dark","light"];
     const read=(key,fallback)=>{try{return localStorage.getItem(key)||fallback}catch{return fallback}};
-    const applyTheme=()=>{
-      root.dataset.zpTheme="dark";
-      root.dataset.zpThemeChoice="dark";
+    const applyTheme=theme=>{
+      const chosen=validThemes.includes(theme)?theme:"system";
+      const resolved=chosen==="system"?(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):chosen;
+      root.dataset.zpTheme=resolved;
+      root.dataset.zpThemeChoice=chosen;
+      const dark=resolved!=="light";
+      /* 主题底色严格成对：深色 #121826 ↔ 浅色 #F6F7F9。
+         映射表是 meta theme-color 的唯一真值来源（浅色取映射值，深色取键本身），
+         杜绝多处各写一半对不齐。 */
+      const SHELL_BG={"#121826":"#F6F7F9"};
+      const bg=dark?"#121826":SHELL_BG["#121826"];
       const meta=document.querySelector('meta[name="theme-color"]');
-      if(meta)meta.setAttribute("content","#121826");
-      document.dispatchEvent(new CustomEvent("zp:appearancechange",{detail:{theme:"dark",resolved:"dark"}}));
+      if(meta)meta.setAttribute("content",bg);
+      document.dispatchEvent(new CustomEvent("zp:appearancechange",{detail:{theme:chosen,resolved}}));
     };
     // 全局字号缩放的目标标签：必须覆盖所有可能直接包裹文本的标签。
     // 历史教训：原先漏了 div（及 em/i/b/h5/h6 等文字级标签），导致如
@@ -1937,17 +1946,21 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
       }
       document.dispatchEvent(new CustomEvent("zp:fontscalechange",{detail:{scale:n}}));
     };
-    window.zpSetAppearanceTheme=()=>{try{localStorage.setItem(THEME_KEY,"dark")}catch{}applyTheme()};
-    window.zpGetAppearanceTheme=()=>"dark";
+    window.zpSetAppearanceTheme=theme=>{const v=validThemes.includes(theme)?theme:"system";try{localStorage.setItem(THEME_KEY,v)}catch{}applyTheme(v)};
+    window.zpGetAppearanceTheme=()=>read(THEME_KEY,"system");
     window.zpSetFontScale=value=>{const n=Math.max(.85,Math.min(1.3,Number(value)||1));try{localStorage.setItem(SCALE_KEY,String(n))}catch{}applyScale(n)};
     window.zpGetFontScale=()=>Math.max(.85,Math.min(1.3,Number(read(SCALE_KEY,"1"))||1));
-    applyTheme();
+    applyTheme(window.zpGetAppearanceTheme());
     applyScale(window.zpGetFontScale());
     // 首帧后再开启过渡：避免初始渲染从浏览器默认色「闪」到主题色；
     // 此后主题切换与 :active 状态变化的颜色/背景才平滑过渡。
     try{requestAnimationFrame(()=>requestAnimationFrame(()=>root.classList.add("zp-ui-ready")))}catch(e){root.classList.add("zp-ui-ready")}
     if(window.matchMedia){
-      // 仅监听布局断点；外观不再跟随系统切换。
+      const media=window.matchMedia("(prefers-color-scheme: light)");
+      const onChange=()=>{if(window.zpGetAppearanceTheme()==="system")applyTheme("system")};
+      media.addEventListener?media.addEventListener("change",onChange):media.addListener?.(onChange);
+      // 布局断点切换（屏幕旋转/窗口缩放跨过 @media）会改变固定 px 字号的基准；
+      // 若用户已开启非 100% 字号缩放，需重算基准，否则缩放值会停留在旧断点基准上。
       ["(max-width:430px)","(max-width:380px)","(max-width:360px)"].forEach(q=>{
         const mq=window.matchMedia(q);
         const onLayoutChange=()=>{if(textScaleActive){resetTextScale();scanText()}};
