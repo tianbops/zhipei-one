@@ -18,7 +18,7 @@
  */
 (function () {
   "use strict";
-  var COLORS = { dark: "#121826", light: "#F6F7F9" };
+  var COLORS = { dark: "#121826" };
 
   /* App 壳标记：安卓壳用 WebView 外边距把状态栏区域整体让开（MainActivity
      .applyInsetsMargins），所以页面内的顶部 padding 与状态栏并不重叠，可以压到很小
@@ -36,15 +36,7 @@
     }
   } catch (e) {}
 
-  function currentTheme() {
-    var t = document.documentElement.getAttribute("data-zp-theme");
-    if (t === "dark" || t === "light") return t;
-    try {
-      return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    } catch (e) {
-      return "light";
-    }
-  }
+  function currentTheme() { return "dark"; }
 
   function syncMeta(color) {
     var meta = document.querySelector('meta[name="theme-color"]');
@@ -95,7 +87,7 @@
 
   function apply() {
     var theme = currentTheme();
-    var color = COLORS[theme] || COLORS.light;
+    var color = COLORS.dark;
     var key = theme + "|" + color;
     if (key === lastKey) return;
     lastKey = key;
@@ -103,6 +95,7 @@
     syncNative(theme, color);
   }
 
+  document.documentElement.setAttribute("data-zp-theme", "dark");
   apply();
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", apply);
   try {
