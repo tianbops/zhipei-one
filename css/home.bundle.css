@@ -1048,6 +1048,23 @@ button:active{transform:translateY(0)}
    （合成恰为页面底色，按压反馈会被抹平）。浅色下随令牌翻为微妙提亮。 */
 .app-back:active{background:var(--zp-card-translucent);color:var(--zp-text)}
 
+/* 全站纯图标按钮：只保留图形，不绘制外围方框/底板。
+   覆盖业务页历史遗留的高优先级单页定义；触控尺寸、定位与 aria 标签不变。
+   键盘 focus-visible 焦点环仍由 ui-overlay.css 保留。 */
+html body :is(.app-back,.order-icon-btn,.data-page-menu-btn,.data-import-close,.history-picker-head button,.order-dialog-head button,.zp-pk-close,.zp-pk-nav){
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+html body :is(.app-back,.order-icon-btn,.data-page-menu-btn,.data-import-close,.history-picker-head button,.order-dialog-head button,.zp-pk-close,.zp-pk-nav):active{
+  border:0;
+  background:transparent;
+  color:var(--zp-text);
+  opacity:.65;
+  transform:none;
+}
+
 /* 菜单统一为单层浮层 */
 .data-page-menu, .order-menu{
   border:1px solid var(--zp-line);
