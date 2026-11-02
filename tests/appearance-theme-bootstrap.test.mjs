@@ -188,7 +188,7 @@ assert.ok(themeSync.includes('document.documentElement.setAttribute("data-zp-the
 // 是「meta theme-color 匹配漏洞」；基底反转为浅色默认后，全部页面必须统一同步。
 for (const file of themedPages) {
   const html = fs.readFileSync(file, "utf8");
-  assert.ok(html.includes('meta[name="theme-color"]'),
+  assert.ok(html.includes('<meta name="theme-color"'),
     path.relative(root, file) + " 缺少 meta[name=theme-color]");
   const expectedThemeColor = path.relative(root, file) === "index.html" ? "#05070A" : "#121826";
   assert.ok(html.includes(`<meta name="theme-color" content="${expectedThemeColor}">`),
