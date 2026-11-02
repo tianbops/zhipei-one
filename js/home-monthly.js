@@ -13,7 +13,7 @@
   const wbDelta=$("trendWaybillsDelta"),wtDelta=$("trendWeightDelta");
   const wrap=$("trendChartWrap"),chart=$("trendChart");
   const grid=$("trendGrid"),area=$("trendArea"),line=$("trendLine"),points=$("trendPoints");
-  const axis=$("trendAxis"),hint=$("trendHint");
+  const axis=$("trendAxis");
 
   const prefersReduced=window.matchMedia&&window.matchMedia("(prefers-reduced-motion:reduce)").matches;
   let daily=[],byMonth=new Map(),currentMonth="";
@@ -127,17 +127,8 @@
       c.setAttribute("class","trend-point"+(isPeak?" is-peak":""));
       c.setAttribute("tabindex","0");
       c.setAttribute("aria-label",x.date+" "+x.count+"单 · "+x.weight.toFixed(3)+"t");
-      c.addEventListener("click",()=>{hint.innerHTML=esc(x.date)+" · "+x.count+"单 · "+x.weight.toFixed(3)+"t";});
       points.appendChild(c);
     });
-    if(total){
-      const peak=data[peakIdx];
-      hint.innerHTML=metric==="weight"
-        ? "峰值 "+peak.day+"日 · "+peak.weight.toFixed(3)+"t"
-        : "峰值 "+peak.day+"日 · "+peak.count+"单";
-    }else{
-      hint.innerHTML="本月暂无配送记录";
-    }
     // 轴：首日 / 月中 / 末日（只保留一排趋势线，无下方节奏条）
     axis.innerHTML="";
     const last=daysInMonth(currentMonth);
@@ -202,14 +193,6 @@
     animateNumber(storesEl,stores,v=>String(Math.round(v)));
     animateNumber(weightEl,weight,v=>v.toFixed(3));
     wbDelta.textContent="";wtDelta.textContent="";
-    /* 峰值信息（随指标切换）：年度峰值月（重量口径显示 t）。
-       2026-10-30 去掉了「最忙 X月X日 · N单」：它与汇总三项挤在同一行放不下，
-       小屏上两块文字会叠在一起。留着的一句本身信息量也更低——
-       年度看的是峰值月，某一天忙不忙去月度视图点柱子更直观。 */
-    let peakMi=0;vals.forEach((v,i)=>{if(v>vals[peakMi])peakMi=i;});
-    const fmtV=v=>isW?v.toFixed(3)+"t":Math.round(v)+"单";
-    const peakMonth=vals[peakMi]>safeMax?(peakMi+1)+"月":"—";
-    hint.innerHTML="年度峰值 <b>"+peakMonth+" · "+fmtV(vals[peakMi])+"</b>";
     titleEl.textContent="年度统计";
     monthEl.textContent=year+" 年度";
     metricWrap.hidden=false;   // 与月度画面统一：同样提供 重量/单量 切换
