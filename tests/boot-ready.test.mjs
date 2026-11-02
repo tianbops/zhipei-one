@@ -35,7 +35,7 @@ t("调用 ZhipeiNative.webReady", /nat\.webReady\(\)/.test(SRC));
 t("必须双 rAF（单次 rAF 会在首帧上屏前就撤启动屏）",
   /requestAnimationFrame\(function\s*\(\)\s*\{[\s\S]{0,120}?requestAnimationFrame\(fire\)/.test(SRC));
 t("幂等标记 sent（页面多入口/兜底不得重复握手）", /var\s+sent\s*=\s*false/.test(SRC) && /if\s*\(sent\)\s*return/.test(SRC));
-t("有 setTimeout 兜底（rAF 被节流时不至于挂到原生超时）", /setTimeout\(fire\s*,\s*1200\)/.test(SRC));
+t("不设置固定时间兜底（首屏未绘制时不得提前释放启动屏）", !/setTimeout\(fire\s*,\s*1200\)/.test(SRC));
 t("不直接操作 DOM（脚本可能在 body 末尾、DOM 状态不可假设）", !/document\.(getElementById|querySelector)/.test(SRC));
 
 /* ===== 二、每个页面都必须引入 ===== */
@@ -87,7 +87,7 @@ function boot({ bridge = true, rafThrows = false } = {}) {
 // 无桥：不发、不排队、不抛
 {
   const r = boot({ bridge: false });
-  t("无桥环境：不排队 rAF、不设兜底定时器", r.rafs.length === 0 && r.timers.length === 0,
+  t("无桥环境：不排队 rAF、不设定时器", r.rafs.length === 0 && r.timers.length === 0,
     `rafs=${r.rafs.length} timers=${r.timers.length}`);
 }
 
