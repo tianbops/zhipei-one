@@ -1,5 +1,5 @@
 <!doctype html><html lang="zh-CN"><head>
-<script defer src="/js/error-guard.js?v=da1b8353"></script><script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F6F7F9":"#121826");}catch(e){}</script><script src="/js/theme-sync.js?v=4249e893"></script><script>
+<script defer src="/js/error-guard.js?v=da1b8353"></script><script>document.documentElement.setAttribute("data-zp-theme","dark");</script><script src="/js/theme-sync.js?v=4249e893"></script><script>
 /* 启动期同步路由（国民级直达）：在登录卡片绘制前就决定是否直达目标页，
    彻底消除「先闪登录页、再跳首页」。规则：
    - manual=1 / reason=过期或重认证 / 浏览器回退(back_forward)：不拦截，停在登录页。
