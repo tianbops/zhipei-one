@@ -8,6 +8,14 @@ for(const page of ["pages/today.html","pages/order_detail.html"]){
  assert.match(html,/<circle cx="18" cy="5" r="2\.5"><\/circle>/,page+" 使用分享图标");
  assert.doesNotMatch(html,/id="menuBtn"|id="menuPanel"|id="editRouteBtn"|id="logoutBtn"/,page+" 不得保留旧菜单入口");
 }
+for(const page of ["pages/today.html","pages/order_detail.html","pages/data.html"]){
+ const html=readFileSync(root+page,"utf8");
+ assert.match(html,/\\/js\\/ui\\/share\\.js\\?v=[a-f0-9]{8}/,page+" 必须加载统一分享适配器");
+}
+const adapter=readFileSync(root+"js/ui/share.js","utf8");
+assert.match(adapter,/window\\.ZhipeiNative/,"分享适配器识别 Android 原生桥");
+assert.match(adapter,/native\\.shareText\\(subject, body\\)/,"Android App 分享必须调用原生 Sharesheet");
+assert.match(adapter,/Object\\.defineProperty\\(navigator, 'share'/,"统一复用既有 navigator.share 调用点");
 const boot=readFileSync(root+"js/order_detail/boot.js","utf8");
 assert.match(boot,/if\(\$\('shareBtn'\)\)\$\('shareBtn'\)\.onclick=async/,"分享按钮绑定原有分享逻辑");
 assert.match(boot,/navigator\.share\(\{title:'当日运单',text\}\)/,"优先使用系统分享面板");
