@@ -261,13 +261,10 @@ def main():
 
         def a4(b, base):
             c, pg = ctx(b); pg.goto(base + "/pages/order_detail?id=w-test&source=process&from=process", wait_until="domcontentloaded"); pg.wait_for_timeout(800)
-            pg.click("#menuBtn"); pg.wait_for_timeout(300)
-            pg.click("#editRouteBtn"); pg.wait_for_timeout(800)
-            check("A4-1 详情→数据中心 到达 /pages/data?from=order&id=w-test",
-                  p_url(pg).startswith("/pages/data") and "from=order" in p_url(pg) and "id=w-test" in p_url(pg), p_url(pg))
-            u = back(pg)
-            check("A4-2 数据→返回 必须回到原运单 /pages/order_detail?id=w-test&from=process",
-                  "order_detail" in u and "id=w-test" in u and "from=process" in u and "data" not in u, u)
+            share = pg.locator("#shareBtn")
+            check("A4-1 运单详情顶部直接显示分享按钮", share.count() == 1 and share.get_attribute("aria-label") == "分享运单", str(share.count()))
+            no_menu = pg.evaluate("document.getElementById('menuBtn') === null && document.getElementById('menuPanel') === null")
+            check("A4-2 运单详情已移除三横菜单入口", no_menu, "menuBtn/menuPanel 不存在")
             c.close()
         run(browser, base, "A4", a4)
 
@@ -371,12 +368,10 @@ def main():
 
         def d3(b, base):
             c, pg = ctx(b); pg.goto(base + "/pages/order_detail?id=w-test&source=process&from=process", wait_until="domcontentloaded"); pg.wait_for_timeout(800)
-            pg.click("#menuBtn"); pg.wait_for_timeout(300)
-            drawer_open = pg.evaluate("!document.getElementById('menuPanel').hidden")
-            check("D3-1 详情页菜单 Drawer 打开", drawer_open, f"hidden={not drawer_open}")
-            u = back(pg)
-            drawer_after = pg.evaluate("!document.getElementById('menuPanel').hidden")
-            check("D3-2 返回先关闭 Drawer（不离开详情）", (not drawer_after) and "order_detail" in u, f"drawer={not drawer_after} url={u}")
+            share = pg.locator("#shareBtn")
+            check("D3-1 详情页顶部直接显示分享按钮", share.count() == 1 and share.is_visible(), f"count={share.count()}")
+            no_menu = pg.evaluate("document.getElementById('menuBtn') === null && document.getElementById('menuPanel') === null")
+            check("D3-2 详情页不再显示三横菜单", no_menu, f"no_menu={no_menu}")
             c.close()
         run(browser, base, "D3", d3)
 
