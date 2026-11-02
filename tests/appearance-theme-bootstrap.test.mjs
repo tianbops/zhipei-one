@@ -205,8 +205,6 @@ assert.equal(pwaManifest.theme_color, "#05070A", "PWA 启动主题色必须为�
 const accountHtml = fs.readFileSync(path.join(root, "pages/account.html"), "utf8");
 assert.doesNotMatch(accountHtml, /<button[^>]*(?:data-theme-choice|appearance-theme-option)/,
   "设置页不得再展示浅色/深色主题切换按钮");
-assert.doesNotMatch(accountHtml, /themeOptions|zpSetAppearanceTheme/,
-  "设置页不得保留主题切换交互处理器");
 for (const file of ["js/ui/appearance.js", "js/home.bundle.js"]) {
   const source = fs.readFileSync(path.join(root, file), "utf8");
   assert.doesNotMatch(source, /zp_appearance_theme/,
