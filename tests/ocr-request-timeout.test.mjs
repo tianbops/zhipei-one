@@ -66,7 +66,7 @@ assert.match(processSource, /ocrResultFetchWaitMs:ocr\.ocrResultFetchWaitMs/,
   "成功运单必须保存 OCR 结果读取重试等待");
 assert.match(adminDiagnosticsSource, /ocrResultFetchWaitMs:"结果重试等待"/,
   "按 requestId 查询时必须显示结果读取重试等待");
-assert.match(adminDiagnosticsSource, /ocrResultRequestMs:"结果请求累计"/,
+assert.match(adminDiagnosticsSource, /ocrResultRequestMs:"结果响应头等待"/,
   "按 requestId 查询时必须拆分结果请求耗时");
 assert.match(adminDiagnosticsSource, /ocrResultBodyMs:"正文读取累计"/,
   "按 requestId 查询时必须拆分响应正文读取耗时");
