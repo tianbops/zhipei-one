@@ -35,6 +35,6 @@ assert.match(toolbarHtml, /id="historyLookupBtn"/);
 assert.match(toolbarHtml, /id="historyExportBtn"/);
 assert.match(toolbarHtml, /id="historyTrashBtn"/);
 assert.match(toolbarHtml, /id="historyPickerBtn"/);
-assert.match(css, /\.history-toolbar\s*\{[^}]*position:\s*sticky;[^}]*top:\s*0/s);
+assert.match(html, /<header class="topbar is-root">[\\s\\S]*?<div class="history-toolbar"[^>]*>[\\s\\S]*?<\\/div><div class="zp-scroll"><section class="card history-card">/);\nassert.match(css, /\\.history-toolbar\\s*\\{[^}]*position:\\s*static;[^}]*flex:\\s*0 0 auto/s);\nassert.doesNotMatch(css, /\\.history-toolbar\\s*\\{[^}]*position:\\s*sticky/s);
 assert.match(source, /confirmBtn\.onclick=async/);
 console.log("历史页已移除关键词搜索；日期选择、历史列表、删除、客户快查、导出与回收站入口保留：通过");
