@@ -86,3 +86,14 @@
   cursor:pointer;-webkit-tap-highlight-color:transparent;
 }
 .history-date-button svg{width:20px;height:20px;flex:none}
+
+
+/* 历史页操作区固定在滚动容器顶部；日期/月度列表在其下方独立滚动。 */
+.history-toolbar{
+  position:sticky;
+  top:0;
+  z-index:var(--ui-z-topbar);
+  isolation:isolate;
+  padding:0 0 8px;
+  background:var(--zp-bg);
+}
