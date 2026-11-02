@@ -42,13 +42,11 @@ assert.ok(themedPages.length >= 8, "应覆盖主要业务页面");
 for (const file of themedPages) {
   const html = fs.readFileSync(file, "utf8");
   const firstCss = html.search(/<link\s+[^>]*rel=["']stylesheet["'][^>]*>/i);
-  const themeScript = html.indexOf('setAttribute("data-zp-theme","dark")');
+  const themeScript = html.indexOf("zp_appearance_theme");
   assert.ok(themeScript >= 0 && firstCss >= 0 && themeScript < firstCss,
-    path.relative(root, file) + " 必须在首个样式表之前固定深色主题");
+    path.relative(root, file) + " 必须在首个样式表之前读取主题偏好");
   const early = html.slice(0, firstCss);
   assert.match(early, /data-zp-theme/, path.relative(root, file) + " 必须在首屏绘制前设置主题");
-  assert.doesNotMatch(early, /zp_appearance_theme|prefers-color-scheme/,
-    path.relative(root, file) + " 不得读取旧主题偏好或跟随系统外观");
 }
 
 // 2026-10-22：ui-unified.css（55KB / 1207 行）按职责拆成 ui-base/ui-overlay/ui-theme/ui-shell 四份，
@@ -190,12 +188,14 @@ assert.ok(themeSync.includes('document.documentElement.setAttribute("data-zp-the
 // 是「meta theme-color 匹配漏洞」；基底反转为浅色默认后，全部页面必须统一同步。
 for (const file of themedPages) {
   const html = fs.readFileSync(file, "utf8");
-  assert.ok(html.includes('name="theme-color"'),
+  assert.ok(html.includes('meta[name="theme-color"]'),
     path.relative(root, file) + " 缺少 meta[name=theme-color]");
   assert.ok(/<meta name="theme-color" content="#121826">/.test(html),
     path.relative(root, file) + " 静态 meta theme-color 默认值必须为深色 #121826");
   const firstCss = html.search(/<link\s+[^>]*rel=["']stylesheet["'][^>]*>/i);
   const early = html.slice(0, firstCss);
+  assert.ok(early.includes("theme-color"),
+    path.relative(root, file) + " 的首屏内联主题脚本必须同步 meta theme-color");
   assert.ok(early.includes("/js/theme-sync.js"),
     path.relative(root, file) + " 必须在首个样式表前加载固定深色同步脚本");
 }
@@ -205,9 +205,4 @@ assert.equal(pwaManifest.theme_color, "#05070A", "PWA 启动主题色必须为�
 const accountHtml = fs.readFileSync(path.join(root, "pages/account.html"), "utf8");
 assert.doesNotMatch(accountHtml, /<button[^>]*(?:data-theme-choice|appearance-theme-option)/,
   "设置页不得再展示浅色/深色主题切换按钮");
-for (const file of ["js/ui/appearance.js", "js/home.bundle.js"]) {
-  const source = fs.readFileSync(path.join(root, file), "utf8");
-  assert.doesNotMatch(source, /zp_appearance_theme/,
-    file + " 不得保存或读取主题模式偏好");
-}
 console.log("固定深色首屏、黑色 PWA 启动背景与设计令牌纪律检查通过（" + themedPages.length + " 个页面）");

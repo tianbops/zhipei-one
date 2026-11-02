@@ -30,6 +30,7 @@
   // 用户偏好只保存在当前浏览器，不写入业务账号或服务端数据。
   (function initAppearancePreferences(){
     const root=document.documentElement;
+    const THEME_KEY="zp_appearance_theme";
     const SCALE_KEY="zp_appearance_font_scale";
     const read=(key,fallback)=>{try{return localStorage.getItem(key)||fallback}catch{return fallback}};
     const applyTheme=()=>{
@@ -114,7 +115,7 @@
       }
       document.dispatchEvent(new CustomEvent("zp:fontscalechange",{detail:{scale:n}}));
     };
-    window.zpSetAppearanceTheme=()=>applyTheme();
+    window.zpSetAppearanceTheme=()=>{try{localStorage.setItem(THEME_KEY,"dark")}catch{}applyTheme()};
     window.zpGetAppearanceTheme=()=>"dark";
     window.zpSetFontScale=value=>{const n=Math.max(.85,Math.min(1.3,Number(value)||1));try{localStorage.setItem(SCALE_KEY,String(n))}catch{}applyScale(n)};
     window.zpGetFontScale=()=>Math.max(.85,Math.min(1.3,Number(read(SCALE_KEY,"1"))||1));
