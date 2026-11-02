@@ -1,6 +1,6 @@
 /* 智配One entry surfaces: black brand field + matching logo plate. */
 .login-shell {
-  background: #05070A;
+  background: var(--zp-logo-plate);
 }
 .login-brand-row {
   align-items: center;
@@ -14,13 +14,13 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border-radius: 22px;
-  background: #05070A;
+  border-radius: var(--zp-r-card);
+  background: var(--zp-logo-plate);
 }
 .login-brand-mark {
   display: block;
   width: 88px;
   height: 88px;
   object-fit: contain;
-  background: #05070A;
+  background: var(--zp-logo-plate);
 }
