@@ -90,14 +90,14 @@ node scripts/build-home-bundle.mjs
 npm run check:naming
 ```
 
-校验仓库名 / package.json / wrangler.toml / manifest.json / Android applicationId
-五域一致。依赖 `git fetch --unshallow` 的完整历史。
+硬校验：`package.json name` 必须与 Git 仓库名一致；`version.json version` 必须与最新语义化 tag 一致。
+`wrangler.toml` 项目名、`manifest.json` 展示名和 Android applicationId 仅输出快照，不强制相等（它们属于不同命名域）。版本硬校验依赖完整 Git 历史；CI 使用 `fetch-depth: 0`，PR 差异抓取不得再设置 `--depth`。
 
 ### 4.5 改了测试脚本 → 必须确认「全部跑完」，不是「第一处失败就收工」
 
 ```bash
 npm run test:node      # 并行执行器：全部文件跑完再汇总（推荐日常用）
-npm run test:serial    # 原 97 段串行链：保留为 c8 覆盖率口径 + 应急排查
+npm run test:serial    # 完整串行测试链：保留为 c8 覆盖率口径 + 应急排查
 ```
 
 `test:node` 曾是一条 97 段 `&&` 串行链，**单点失败会静默跳过其后全部测试**。
