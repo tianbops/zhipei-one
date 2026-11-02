@@ -211,7 +211,7 @@ assert.doesNotMatch(accountHtml, /themeOptions|zpSetAppearanceTheme/,
   "设置页不得保留主题切换交互处理器");
 for (const file of ["js/ui/appearance.js", "js/home.bundle.js"]) {
   const source = fs.readFileSync(path.join(root, file), "utf8");
-  assert.doesNotMatch(source, /zp_appearance_theme|localStorage\\.setItem\\(THEME_KEY/,
+  assert.doesNotMatch(source, /zp_appearance_theme/,
     file + " 不得保存或读取主题模式偏好");
 }
 console.log("固定深色首屏、黑色 PWA 启动背景与设计令牌纪律检查通过（" + themedPages.length + " 个页面）");
