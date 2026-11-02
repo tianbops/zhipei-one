@@ -206,7 +206,7 @@ assert.equal(pwaManifest.theme_color, "#05070A", "PWA 启动主题色必须为�
 const indexHtml = fs.readFileSync(path.join(root, "index.html"), "utf8");
 assert.match(indexHtml, /class="login-brand-mark"[^>]*src="\/assets\/icons\/icon-192\.png/,
   "登录启动页必须显示现有品牌 Logo");
-assert.match(fs.readFileSync(path.join(root, "css/app.css"), "utf8"), /\.login-shell\{background:#05070A\}/,
+assert.match(indexHtml, /\.login-shell\{background:#05070A\}/,
   "登录启动页必须使用品牌黑背景");
 assert.doesNotMatch(indexHtml, /zp_appearance_theme|prefers-color-scheme/,
   "启动页不得读取系统或本地浅色主题偏好");
