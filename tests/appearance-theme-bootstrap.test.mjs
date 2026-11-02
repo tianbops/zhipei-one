@@ -42,11 +42,13 @@ assert.ok(themedPages.length >= 8, "应覆盖主要业务页面");
 for (const file of themedPages) {
   const html = fs.readFileSync(file, "utf8");
   const firstCss = html.search(/<link\s+[^>]*rel=["']stylesheet["'][^>]*>/i);
-  const themeScript = html.indexOf("zp_appearance_theme");
+  const themeScript = html.indexOf('setAttribute("data-zp-theme","dark")');
   assert.ok(themeScript >= 0 && firstCss >= 0 && themeScript < firstCss,
-    path.relative(root, file) + " 必须在首个样式表之前读取主题偏好");
+    path.relative(root, file) + " 必须在首个样式表之前固定深色主题");
   const early = html.slice(0, firstCss);
   assert.match(early, /data-zp-theme/, path.relative(root, file) + " 必须在首屏绘制前设置主题");
+  assert.doesNotMatch(early, /zp_appearance_theme|prefers-color-scheme/,
+    path.relative(root, file) + " 不得读取旧主题偏好或跟随系统外观");
 }
 
 // 2026-10-22：ui-unified.css（55KB / 1207 行）按职责拆成 ui-base/ui-overlay/ui-theme/ui-shell 四份，
@@ -205,4 +207,11 @@ assert.equal(pwaManifest.theme_color, "#05070A", "PWA 启动主题色必须为�
 const accountHtml = fs.readFileSync(path.join(root, "pages/account.html"), "utf8");
 assert.doesNotMatch(accountHtml, /<button[^>]*(?:data-theme-choice|appearance-theme-option)/,
   "设置页不得再展示浅色/深色主题切换按钮");
+assert.doesNotMatch(accountHtml, /themeOptions|zpSetAppearanceTheme/,
+  "设置页不得保留主题切换交互处理器");
+for (const file of ["js/ui/appearance.js", "js/home.bundle.js"]) {
+  const source = fs.readFileSync(path.join(root, file), "utf8");
+  assert.doesNotMatch(source, /zp_appearance_theme|localStorage\\.setItem\\(THEME_KEY/,
+    file + " 不得保存或读取主题模式偏好");
+}
 console.log("固定深色首屏、黑色 PWA 启动背景与设计令牌纪律检查通过（" + themedPages.length + " 个页面）");
