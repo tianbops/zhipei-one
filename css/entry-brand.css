@@ -1,6 +1,7 @@
 /* 智配One entry surfaces: black brand field + matching logo plate. */
 .login-shell {
-  background: var(--zp-logo-plate);
+  /* 登录/注册页面背景跟随当前外观；黑色只保留给 Logo 底板，不覆盖整页。 */
+  background: var(--zp-bg);
 }
 .login-brand-row {
   align-items: center;
