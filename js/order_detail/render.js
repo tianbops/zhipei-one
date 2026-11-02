@@ -11,7 +11,6 @@ function render(){
   $('totalWeight').textContent=fmtWeight(historyChoices.reduce((n,x)=>n+(Number(x.totalWeight)||0),0));
   $('metrics').innerHTML='';
   $('routeName').textContent=routeText(order.routeName);
-  $('menuRoute').textContent=routeText(order.routeName);
   $('vehicle').textContent='';
   $('driver').textContent='';
   $('deliveryPerson').textContent='';
@@ -74,7 +73,6 @@ function render(){
  $('storeCount').textContent=Number(s.finalCount)||Number(s.total)||stores.length||0;
  $('totalWeight').textContent=fmtWeight(order.totalWeight);
  $('routeName').textContent=routeText(order.routeName)||'—';
- $('menuRoute').textContent=routeText(order.routeName)||'当前线路';
  $('vehicle').textContent=vehicleText(order.vehicle).replace(/^车辆\s*/,'')||'—';
  $('driver').textContent=personName(order.driver)||'—';
  $('deliveryPerson').textContent=personName(order.deliveryPerson)||'—';
