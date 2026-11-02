@@ -15,7 +15,7 @@ function loadPostcss() {
         "[缺少依赖] CSS 验证工具需要项目 devDependency：postcss。",
         "请在仓库根目录执行：npm ci",
         "",
-      ].join("\\n")
+      ].join("\n")
     );
     process.exit(2);
   }
