@@ -42,7 +42,7 @@ assert.ok(themedPages.length >= 8, "应覆盖主要业务页面");
 for (const file of themedPages) {
   const html = fs.readFileSync(file, "utf8");
   const firstCss = html.search(/<link\s+[^>]*rel=["']stylesheet["'][^>]*>/i);
-  const themeScript = html.indexOf("zp_appearance_theme");
+  const themeScript = html.indexOf("data-zp-theme");
   assert.ok(themeScript >= 0 && firstCss >= 0 && themeScript < firstCss,
     path.relative(root, file) + " 必须在首个样式表之前读取主题偏好");
   const early = html.slice(0, firstCss);
@@ -190,8 +190,9 @@ for (const file of themedPages) {
   const html = fs.readFileSync(file, "utf8");
   assert.ok(html.includes('meta[name="theme-color"]'),
     path.relative(root, file) + " 缺少 meta[name=theme-color]");
-  assert.ok(/<meta name="theme-color" content="#121826">/.test(html),
-    path.relative(root, file) + " 静态 meta theme-color 默认值必须为深色 #121826");
+  const expectedThemeColor = path.relative(root, file) === "index.html" ? "#05070A" : "#121826";
+  assert.ok(html.includes(`<meta name="theme-color" content="${expectedThemeColor}">`),
+    path.relative(root, file) + " 静态 meta theme-color 必须匹配页面启动底色 " + expectedThemeColor);
   const firstCss = html.search(/<link\s+[^>]*rel=["']stylesheet["'][^>]*>/i);
   const early = html.slice(0, firstCss);
   assert.ok(early.includes("theme-color"),
@@ -202,6 +203,13 @@ for (const file of themedPages) {
 const pwaManifest = JSON.parse(fs.readFileSync(path.join(root, "manifest.json"), "utf8"));
 assert.equal(pwaManifest.background_color, "#05070A", "PWA 启动背景必须为品牌黑");
 assert.equal(pwaManifest.theme_color, "#05070A", "PWA 启动主题色必须为品牌黑");
+const indexHtml = fs.readFileSync(path.join(root, "index.html"), "utf8");
+assert.match(indexHtml, /class="login-brand-mark"[^>]*src="\/assets\/icons\/icon-192\.png/,
+  "登录启动页必须显示现有品牌 Logo");
+assert.match(fs.readFileSync(path.join(root, "css/app.css"), "utf8"), /\.login-shell\{background:#05070A\}/,
+  "登录启动页必须使用品牌黑背景");
+assert.doesNotMatch(indexHtml, /zp_appearance_theme|prefers-color-scheme/,
+  "启动页不得读取系统或本地浅色主题偏好");
 const accountHtml = fs.readFileSync(path.join(root, "pages/account.html"), "utf8");
 assert.doesNotMatch(accountHtml, /<button[^>]*(?:data-theme-choice|appearance-theme-option)/,
   "设置页不得再展示浅色/深色主题切换按钮");
