@@ -28,7 +28,7 @@ assert.match(html, /id="historyLookupBtn"/);
 assert.match(html, /id="historyExportBtn"/);
 assert.match(html, /id="historyTrashBtn"/);
 const toolbarStart = html.indexOf('<div class="history-toolbar" aria-label="历史查询操作">');
-const toolbarEnd = html.indexOf('</div><div id="historyState"', toolbarStart);
+const toolbarEnd = html.indexOf('</div><div class="zp-scroll">', toolbarStart);
 assert.ok(toolbarStart >= 0 && toolbarEnd > toolbarStart, "操作区必须独立包裹在历史列表外侧");
 const toolbarHtml = html.slice(toolbarStart, toolbarEnd);
 assert.match(toolbarHtml, /id="historyLookupBtn"/);
