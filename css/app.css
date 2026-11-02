@@ -673,12 +673,3 @@ body {
     margin-bottom: 20px;
   }
 }
-
-
-/* 2026-11-02：登录启动入口统一品牌黑底，Logo 底板与背景同色无缝融合。 */
-.login-shell{background:#05070A}
-.login-brand-row{align-items:center;gap:16px}
-.login-brand-mark{display:block;flex:0 0 76px;width:76px;height:76px;object-fit:contain;padding:0;border:0;border-radius:18px;background:var(--zp-logo-plate,#05070A)}
-.login-brand-name{color:#F1F5F9}
-.login-eyebrow,.login-sub{color:#94A3B8}
-.login-headline{color:#F1F5F9}
