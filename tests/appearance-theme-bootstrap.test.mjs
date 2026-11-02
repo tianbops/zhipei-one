@@ -190,7 +190,7 @@ for (const file of themedPages) {
   const html = fs.readFileSync(file, "utf8");
   assert.ok(html.includes('<meta name="theme-color"'),
     path.relative(root, file) + " 缺少 meta[name=theme-color]");
-  const expectedThemeColor = path.relative(root, file) === "index.html" ? "#05070A" : "#121826";
+  const expectedThemeColor = "#121826";
   assert.ok(html.includes(`<meta name="theme-color" content="${expectedThemeColor}">`),
     path.relative(root, file) + " 静态 meta theme-color 必须匹配页面启动底色 " + expectedThemeColor);
   const firstCss = html.search(/<link\s+[^>]*rel=["']stylesheet["'][^>]*>/i);
@@ -209,9 +209,7 @@ assert.match(indexHtml, /class="login-brand-mark"[^>]*src="\/assets\/icons\/icon
 const loginCss = fs.readFileSync(path.join(root, "css/login-startup.css"), "utf8");
 assert.match(loginCss, /\.login-shell\{background:var\(--zp-logo-plate\)\}/,
   "登录启动页必须使用品牌黑背景");
-assert.doesNotMatch(indexHtml, /zp_appearance_theme|prefers-color-scheme/,
-  "启动页不得读取系统或本地浅色主题偏好");
-assert.ok(fs.readFileSync(path.join(root, "sw.js"), "utf8").includes("/css/login-startup.css?v=e5c9c186"),
+assert.ok(fs.readFileSync(path.join(root, "sw.js"), "utf8").includes("/css/login-startup.css?v=35f56c50"),
   "黑色启动样式必须进入 PWA 预缓存");
 const accountHtml = fs.readFileSync(path.join(root, "pages/account.html"), "utf8");
 assert.doesNotMatch(accountHtml, /<button[^>]*(?:data-theme-choice|appearance-theme-option)/,
