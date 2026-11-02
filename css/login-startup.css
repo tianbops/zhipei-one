@@ -1,6 +1,6 @@
 /* 智配One · 登录启动入口：品牌 Logo 与黑色背景统一。 */
 .login-shell{background:var(--zp-logo-plate)}
 .login-brand-row{align-items:center;gap:16px}
-.login-brand-mark{display:block;flex:0 0 76px;width:76px;height:76px;object-fit:contain;padding:0;border:0;border-radius:18px;background:var(--zp-logo-plate)}
+.login-brand-mark{display:block;flex:0 0 76px;width:76px;height:76px;object-fit:contain;padding:0;border:0;border-radius:var(--zp-r-dialog);background:var(--zp-logo-plate)}
 .login-brand-name,.login-headline{color:var(--zp-text)}
 .login-eyebrow,.login-sub{color:var(--zp-muted)}
