@@ -1,0 +1,26 @@
+/* 智配One entry surfaces: black brand field + matching logo plate. */
+.login-shell {
+  background: #05070A;
+}
+.login-brand-row {
+  align-items: center;
+  gap: 16px;
+}
+.login-brand-logo {
+  display: inline-flex;
+  flex: 0 0 88px;
+  width: 88px;
+  height: 88px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 22px;
+  background: #05070A;
+}
+.login-brand-mark {
+  display: block;
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  background: #05070A;
+}
