@@ -178,30 +178,15 @@ const check = (name, ok, detail) => {
       l=Math.min(l,bb.left);t=Math.min(t,bb.top);r=Math.max(r,bb.right);b=Math.max(b,bb.bottom);n++;}
     if(!n)return null;
     return JSON.stringify({l,r,t,b})})()`).then((x) => (x ? JSON.parse(x) : null));
-  /* 汇总行状态。
-     · hit  = 两块文字真的交叠（用户报的「文字重叠」）；
-     · out  = 有文字跑出卡片内容区；
-     · oneLine = 汇总三项是否还在同一行——旧样式挤不下时的表现不是单纯重叠，
-       而是三项被压成两三行、和右侧提示挤成一坨，所以这条必须一起断言；
-     · gap  = 两块文字的实际水平间隙，同行时不得贴在一起。 */
+  /* 汇总行状态：三项统计固定同一行，且文字不超出卡片。 */
   const rowState = async () => {
     const sum = await contentBox('.trend-summary');
-    const hint = await contentBox('#trendHint');
     const card = JSON.parse(await ev(`(()=>{const b=document.querySelector('#trendCard').getBoundingClientRect();
       return JSON.stringify({l:b.left,r:b.right})})()`));
-    const statTops = await ev(`[...document.querySelectorAll('.trend-summary .trend-stat')].map(e=>Math.round(e.getBoundingClientRect().top))`);
-    const hit = !!sum && !!hint && sum.r > hint.l + 0.5 && sum.l < hint.r - 0.5 && sum.b > hint.t + 0.5 && sum.t < hint.b - 0.5;
-    const out = !!sum && !!hint && Math.max(sum.r, hint.r) > card.r + 0.5;
-    const oneLine = Array.isArray(statTops) && statTops.length === 3 && statTops.every((t) => Math.abs(t - statTops[0]) <= 2);
-    // 不能用文本字形矩形是否垂直重叠判断 Flex 是否同排：baseline 对齐时，
-    // 不同字号/字体的字形可有数像素垂直空隙，但仍属于同一条 Flex line。
-    // 改用两个直接 Flex 子项的 border-box top/height 判断行位置。
-    const flexBoxes = JSON.parse(await ev(`(()=>{const s=document.querySelector('.trend-summary');const h=document.querySelector('#trendHint');const a=s?.getBoundingClientRect();const b=h?.getBoundingClientRect();return JSON.stringify({sumBox:a?{t:a.top,b:a.bottom,h:a.height}:null,hintBox:b?{t:b.top,b:b.bottom,h:b.height}:null})})()`));
-    const sumBox = flexBoxes?.sumBox || null;
-    const hintBox = flexBoxes?.hintBox || null;
-    const sameRow = !!sumBox && !!hintBox && Math.abs(sumBox.t - hintBox.t) <= Math.max(sumBox.h, hintBox.h) / 2;
-    const gap = !!sum && !!hint ? Math.round(hint.l - sum.r) : null;
-    return { hit, out, oneLine, sameRow, gap, sum, hint, sumBox, hintBox, card, statTops };
+    const statRects = await ev(`[...document.querySelectorAll('.trend-summary .trend-stat')].map(e=>{const r=e.getBoundingClientRect();return {t:Math.round(r.top),l:r.left,r:r.right}})`);
+    const oneLine = Array.isArray(statRects) && statRects.length === 3 && statRects.every((x) => Math.abs(x.t - statRects[0].t) <= 2);
+    const out = !!sum && (sum.l < card.l + 4 || sum.r > card.r - 4);
+    return { oneLine, out, sum, card, statRects };
   };
 
   /* ---------- 1. 首页 ---------- */
@@ -239,33 +224,24 @@ const check = (name, ok, detail) => {
     (await ev('document.documentElement.scrollWidth<=document.documentElement.clientWidth+1')) === true,
     String(await ev('document.documentElement.scrollWidth+" / "+document.documentElement.clientWidth')));
 
-  /* ---------- 2. 年度视图：提示不得压到汇总上 ----------
-     汇总从两项（单 / t）变成三项（单 / 家 / t）后，右侧提示曾在小屏上放不下；
-     旧样式（.trend-hint{flex:none} + summary min-width:0）的表现不是换行，而是
-     两块文字直接叠在一起。「最忙」一句已去掉，这里仍按 4 档宽度量真实文字矩形，
-     防的是**以后再加内容**又把这一行撑爆。 */
+  /* ---------- 2. 年度视图：三项统计始终单行，无峰值文字 ---------- */
   await ev('document.querySelector("#metricCount").click()');
   await sleep(350);
   await ev('document.querySelector("#trendYearBtn").click()');
   await sleep(800);
-  const yearHint = String(await txt('#trendHint'));
-  check('年度（单量）提示只显示峰值', new RegExp('^年度峰值\\s*' + Number(peakMonth) + '月\\s*·\\s*63单$').test(yearHint.trim()), yearHint);
-  check('年度提示不再显示「最忙」', !/最忙/.test(yearHint), yearHint);
+  check('年度视图不再保留峰值提示节点',
+    (await ev('!document.querySelector("#trendHint")&&!document.querySelector(".trend-hint")')) === true);
 
   for (const w of [390, 360, 320, 430]) {
     await C('Emulation.setDeviceMetricsOverride', { width: w, height: 844, deviceScaleFactor: 1, mobile: true });
     await sleep(320);
     const st = await rowState();
     check(`年度 ${w}px：汇总三项仍在同一行`, st.oneLine === true,
-      JSON.stringify({ tops: st.statTops, sum: st.sum }));
-    check(`年度 ${w}px：提示与汇总不重叠`, st.hit === false,
-      JSON.stringify({ sum: st.sum, hint: st.hint }));
-    /* 同行则要留出可见间隙（≥8px，含 gap）；换行则整块落在下方，不算挤。 */
-    check(`年度 ${w}px：提示没有贴着汇总`,
-      st.hit === false && (st.sameRow ? st.gap >= 8 : st.hint.t >= st.sum.b - 1),
-      JSON.stringify({ sameRow: st.sameRow, gap: st.gap }));
-    check(`年度 ${w}px：两行文字都在卡片内`, st.out === false,
-      JSON.stringify({ sum: st.sum, hint: st.hint, card: st.card }));
+      JSON.stringify({ rects: st.statRects, sum: st.sum }));
+    check(`年度 ${w}px：汇总文字保持在卡片内`, st.out === false,
+      JSON.stringify({ sum: st.sum, card: st.card }));
+    check(`年度 ${w}px：不显示峰值文字`,
+      (await ev('!document.querySelector("#trendHint")&&!document.querySelector(".trend-hint")')) === true);
   }
 
   await C('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
@@ -273,11 +249,12 @@ const check = (name, ok, detail) => {
   await ev('document.querySelector("#trendYearBtn").click()');   // 回月度
   await sleep(700);
   const mRow = await rowState();
-  check('月度视图短文案仍与汇总同排（没白占一行高度）', mRow.sameRow === true && mRow.hint.t < mRow.sum.b,
-    JSON.stringify({ sum: mRow.sum, hint: mRow.hint }));
-  check('月度视图汇总三项同一行且不重叠', mRow.oneLine === true && mRow.hit === false,
-    JSON.stringify({ tops: mRow.statTops, gap: mRow.gap }));
-  check('月度视图提示与汇总留有间隙', (mRow.gap ?? 0) >= 8, String(mRow.gap));
+  check('月度视图汇总三项保持同一行', mRow.oneLine === true,
+    JSON.stringify({ rects: mRow.statRects }));
+  check('月度视图汇总文字保持在卡片内', mRow.out === false,
+    JSON.stringify({ sum: mRow.sum, card: mRow.card }));
+  check('月度视图不显示峰值文字',
+    (await ev('!document.querySelector("#trendHint")&&!document.querySelector(".trend-hint")')) === true);
 
   /* ---------- 3. 历史页：同一批数据必须同一组数字 ---------- */
   await C('Page.navigate', { url: BASE + '/pages/history.html?fresh=1' });
