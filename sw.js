@@ -46,6 +46,7 @@ const PRECACHE = [
   "/css/history-nav.css?v=5f78b9ce",
   "/css/history-overlays.css?v=9bfde9ae",
   "/css/history-shell.css?v=3c752973",
+  "/css/login-startup.css?v=e5c9c186",
   "/css/home.bundle.css?v=da348cff",
   "/css/mobile-ui.css?v=3f9fab5a",
   "/css/offline.css?v=f44fa920",
