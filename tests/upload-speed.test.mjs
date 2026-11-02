@@ -1,7 +1,7 @@
 /* 上传/识别提速的守卫
    背景（生产实测）：规划各阶段（提取/匹配/去重/规划）均 0ms，单张运单总耗时 7428ms
    中有 7238ms 花在 OCR（提交 3.8s + 轮询 2.1s + 取结果 1.0s）。因此提速只有两个着力点：
-     1) 多图不要串行等：N 张 = N×7s，改为每批 2 张并发；
+     1) 多图不要串行等：N 张 = N×7s，改为每批最多 4 张并发；
      2) 上传前压缩图片：手机截图 2-5MB 会拉长上传与 OCR 提交。
    本测试做静态守卫，防止后续改动退回串行/去掉压缩。 */
 import assert from "node:assert/strict";
@@ -12,8 +12,8 @@ const frontend = readFileSync(new URL("../js/home/upload-process.js", import.met
 
 // 1) 后端：多图分批并发（单图批大小=1，行为不变）
 {
-  assert.ok(/const CONCURRENCY=files\.length>1\?2:1/.test(backend),
-    "多图应使用每批 2 张并发（单图批大小必须为 1，保持原行为）");
+  assert.ok(/const CONCURRENCY=files\.length>1\?4:1/.test(backend),
+    "多图应使用每批最多 4 张并发（单图批大小必须为 1，保持原行为）");
   assert.ok(/Promise\.allSettled\(batch\.map/.test(backend),
     "批内应使用 Promise.allSettled 并发识别，并统一处理失败");
   assert.ok(/for\(const s of settled\)results\.push\(s\.value\)/.test(backend),
@@ -64,8 +64,9 @@ assert.ok(/逐图OCR耗时/.test(diagnostics), "管理员复制诊断必须展�
 console.log("\n✅ upload-speed 全部通过");
 
 const r2StageBlock=backend.slice(backend.indexOf("const TEMP_STAGE_CONCURRENCY"),backend.indexOf("const ocrStarted"));
+assert.ok(/const TEMP_STAGE_CONCURRENCY=files.length>1\?2:1/.test(r2StageBlock), "R2 暂存并发仍必须保持 2 张上限");
 assert.ok(!/const batchId/.test(r2StageBlock), "batchId 只能在 OCR 并发批次作用域创建，不能误放在 R2 暂存循环");
-const ocrBatchStart=backend.indexOf("const CONCURRENCY=files.length>1?2:1");
+const ocrBatchStart=backend.indexOf("const CONCURRENCY=files.length>1?4:1");
 const ocrBatchEnd=backend.indexOf("const failed=settled.find",ocrBatchStart);
 assert.ok(ocrBatchStart>=0&&ocrBatchEnd>ocrBatchStart, "OCR 并发批次边界必须存在");
 assert.match(backend.slice(ocrBatchStart,ocrBatchEnd), /const batchId=batch\.length>1\?\x60zp-\$\{requestId\}-\$\{start\}\x60:null/,
