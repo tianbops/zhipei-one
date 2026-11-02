@@ -27,5 +27,14 @@ assert.doesNotMatch(css.slice(css.lastIndexOf("/* 日期选择：沿用全站次
 assert.match(html, /id="historyLookupBtn"/);
 assert.match(html, /id="historyExportBtn"/);
 assert.match(html, /id="historyTrashBtn"/);
+const toolbarStart = html.indexOf('<div class="history-toolbar" aria-label="历史查询操作">');
+const toolbarEnd = html.indexOf('</div><div id="historyState"', toolbarStart);
+assert.ok(toolbarStart >= 0 && toolbarEnd > toolbarStart, "操作区必须独立包裹在历史列表外侧");
+const toolbarHtml = html.slice(toolbarStart, toolbarEnd);
+assert.match(toolbarHtml, /id="historyLookupBtn"/);
+assert.match(toolbarHtml, /id="historyExportBtn"/);
+assert.match(toolbarHtml, /id="historyTrashBtn"/);
+assert.match(toolbarHtml, /id="historyPickerBtn"/);
+assert.match(css, /\.history-toolbar\s*\{[^}]*position:\s*sticky;[^}]*top:\s*0/s);
 assert.match(source, /confirmBtn\.onclick=async/);
 console.log("历史页已移除关键词搜索；日期选择、历史列表、删除、客户快查、导出与回收站入口保留：通过");
