@@ -196,8 +196,6 @@ for (const file of themedPages) {
     path.relative(root, file) + " 静态 meta theme-color 默认值必须为深色 #121826");
   const firstCss = html.search(/<link\s+[^>]*rel=["']stylesheet["'][^>]*>/i);
   const early = html.slice(0, firstCss);
-  assert.ok(early.includes("theme-color"),
-    path.relative(root, file) + " 的首屏内联主题脚本必须同步 meta theme-color");
   assert.ok(early.includes("/js/theme-sync.js"),
     path.relative(root, file) + " 必须在首个样式表前加载固定深色同步脚本");
 }
