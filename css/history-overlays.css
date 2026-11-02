@@ -90,10 +90,10 @@
 
 /* 历史页操作区固定在滚动容器顶部；日期/月度列表在其下方独立滚动。 */
 .history-toolbar{
-  position:sticky;
-  top:0;
-  z-index:var(--ui-z-topbar);
-  isolation:isolate;
+  /* 与 .zp-scroll 同级，作为固定 flex 子项，不参与滚动合成层；避免 Android WebView sticky 惯性滚动抖动。 */
+  position:static;
+  flex:0 0 auto;
+  margin-top:14px;
   padding:0 0 8px;
   background:var(--zp-bg);
 }
