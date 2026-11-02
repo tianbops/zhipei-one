@@ -196,5 +196,13 @@ for (const file of themedPages) {
   const early = html.slice(0, firstCss);
   assert.ok(early.includes("theme-color"),
     path.relative(root, file) + " 的首屏内联主题脚本必须同步 meta theme-color");
+  assert.ok(early.includes("/js/theme-sync.js"),
+    path.relative(root, file) + " 必须在首个样式表前加载固定深色同步脚本");
 }
-console.log("主题首屏初始化与设计令牌纪律检查通过（" + themedPages.length + " 个页面）");
+const pwaManifest = JSON.parse(fs.readFileSync(path.join(root, "manifest.json"), "utf8"));
+assert.equal(pwaManifest.background_color, "#05070A", "PWA 启动背景必须为品牌黑");
+assert.equal(pwaManifest.theme_color, "#05070A", "PWA 启动主题色必须为品牌黑");
+const accountHtml = fs.readFileSync(path.join(root, "pages/account.html"), "utf8");
+assert.doesNotMatch(accountHtml, /<button[^>]*(?:data-theme-choice|appearance-theme-option)/,
+  "设置页不得再展示浅色/深色主题切换按钮");
+console.log("固定深色首屏、黑色 PWA 启动背景与设计令牌纪律检查通过（" + themedPages.length + " 个页面）");
