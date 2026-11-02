@@ -216,12 +216,23 @@ const accordions=[
 ];
 accordions.forEach(([t,b])=>toggle(t,b,accordions));
 
+const themeOptions=[...document.querySelectorAll("[data-theme-choice]")];
 function renderAppearance(){
+ const selected=window.zpGetAppearanceTheme?window.zpGetAppearanceTheme():"system";
+ themeOptions.forEach(button=>{
+  const active=button.dataset.themeChoice===selected;
+  button.setAttribute("aria-pressed",String(active));
+  button.classList.toggle("is-selected",active);
+ });
  const scale=window.zpGetFontScale?window.zpGetFontScale():1;
  const slider=$("appearanceFontScale"),output=$("appearanceFontValue");
  if(slider)slider.value=String(scale);
  if(output)output.textContent=scale<.99?"较小":scale>1.01?"较大":"标准";
 }
+themeOptions.forEach(button=>button.addEventListener("click",()=>{
+ window.zpSetAppearanceTheme?.(button.dataset.themeChoice);
+ renderAppearance();
+}));
 $("appearanceFontScale")?.addEventListener("input",event=>{
  window.zpSetFontScale?.(Number(event.target.value));
  renderAppearance();
