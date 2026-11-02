@@ -31,10 +31,10 @@
 <meta name="apple-mobile-web-app-title" content="智配One"><script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#F6F7F9":"#121826");}catch(e){}</script><script src="/js/theme-sync.js?v=2c1a5bbc"></script>
 <link rel="stylesheet" href="/css/app.css?v=b5364547"><link rel="stylesheet" href="/css/ui-base.css?v=3aa1e2f4"><link rel="stylesheet" href="/css/ui-overlay.css?v=fe14de91"><link rel="stylesheet" href="/css/ui-theme.css?v=c306fcf7"><link rel="stylesheet" href="/css/ui-shell.css?v=2ab76df5"><link rel="stylesheet" href="/css/mobile-ui.css?v=3f9fab5a"><link rel="stylesheet" href="/css/business-pages.css?v=173ab665"><link rel="stylesheet" href="/css/data.css?v=af133e98"></head>
 <body><main class="page2 data-page zp-shell">
-<header class="topbar"><a class="app-back" href="/home" aria-label="返回"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><h1>数据资料</h1><button id="dataShareBtn" class="data-page-menu-btn" type="button" aria-label="分享线路资料"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3m0 0L7.5 7.5M12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"></path></svg></button></header>
+<header class="topbar"><a class="app-back" href="/home" aria-label="返回"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><h1>数据资料</h1><button id="pageMenuBtn" class="data-page-menu-btn" type="button" aria-label="打开菜单" hidden>☰</button><button id="dataShareHeaderBtn" class="data-page-menu-btn" type="button" aria-label="分享线路资料"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3m0 0L7.5 7.5M12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"></path></svg></button></header>
 <div class="data-fixed-area">
 <section class="page2-card data-route-card"><div class="data-route-kicker">当前调度线路</div><div class="data-route-title"><h2 id="title">加载中…</h2><div id="summary" class="data-summary"><strong></strong></div></div><p id="hint" class="data-route-hint">正在读取线路资料</p></section>
-
+<div id="pageMenu" class="data-page-menu" hidden><button id="dataShareBtn" type="button">分享</button><button id="dataLogoutBtn" type="button">退出</button></div>
 <section class="card data-tools-card" id="tools" style="display:none">
 <div class="data-maintenance">
   <div class="data-maintenance-group">
@@ -320,7 +320,10 @@ async function shareSavedBase(){
   else{zpToast("当前设备不支持分享","error")}
  }catch(e){if(e?.name!=="AbortError")zpToast("分享失败："+(e?.message||"请求失败"),"error")}
 }
-$("dataShareBtn").onclick=async()=>{if(routeId)await shareSavedBase()};
+$("pageMenuBtn").onclick=()=>{$("pageMenu").hidden=!$("pageMenu").hidden};
+document.addEventListener("click",e=>{if(!e.target.closest(".data-page-menu,.data-page-menu-btn"))$("pageMenu").hidden=true});
+$("dataShareBtn").onclick=async()=>{ $("pageMenu").hidden=true; if(routeId)await shareSavedBase() };
+$("dataLogoutBtn").onclick=async()=>{ $("pageMenu").hidden=true; if(!(await zpConfirm("退出登录","确定退出当前账号吗？")))return; try{await fetch("/api/logout",{method:"POST",credentials:"same-origin",cache:"no-store"})}finally{location.replace("/")} };
 async function submitStores(){
  if(saving)return;saving=true;$("saveStoresTop").disabled=true;
  try{
@@ -403,12 +406,12 @@ load();
   (window.zpBackHooks=window.zpBackHooks||[]).push(
     {rank:10,probe:openPanel,dirty:()=>filled(openPanel()),
      close:()=>{const el=openPanel();if(!el)return false;hidePanel(el.id);if(el.id==="editBox")editingIndex=-1;return true}},
-    
+    {rank:20,probe:()=>$("pageMenu"),close:()=>{$("pageMenu").hidden=true;return true}}
   );
   (window.zpDirtyProbes=window.zpDirtyProbes||[]).push(()=>
     filled(openPanel())||!!(dataBaseline&&dataBaseline!==JSON.stringify(stores)));
 })();
-</script><script src="/js/ui/core.js?v=7c4e2f82"></script><script src="/js/ui/haptic.js?v=a3a78c0a"></script><script src="/js/ui/appearance.js?v=2661f74b"></script><script src="/js/ui/feedback.js?v=f8da0256"></script><script src="/js/ui/nav.js?v=83cc75d0"></script><script src="/js/ui/back.js?v=6c6cbd5d"></script><script src="/js/ui/nav-prefetch.js?v=968d1e0b"></script>
+</script><script src="/js/data-share-header.js?v=1"></script><script src="/js/ui/core.js?v=7c4e2f82"></script><script src="/js/ui/haptic.js?v=a3a78c0a"></script><script src="/js/ui/appearance.js?v=2661f74b"></script><script src="/js/ui/feedback.js?v=f8da0256"></script><script src="/js/ui/nav.js?v=83cc75d0"></script><script src="/js/ui/back.js?v=6c6cbd5d"></script><script src="/js/ui/nav-prefetch.js?v=968d1e0b"></script>
 <script src="/js/pwa.js?v=68dbac73"></script>
 <script defer src="/js/boot-ready.js?v=3224a28d"></script>
 </body></html>
