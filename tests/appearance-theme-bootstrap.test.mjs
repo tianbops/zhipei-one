@@ -177,11 +177,8 @@ assert.ok(
 // ============================ E. 主题底色同步 ============================
 // 底色真值唯一：深色 #121826 ↔ 浅色 #F6F7F9，由映射表统一给出，杜绝多处各写一半对不齐。
 const unifiedJs = fs.readFileSync(path.join(root, "js/ui/appearance.js"), "utf8");
-assert.ok(unifiedJs.includes('root.dataset.zpTheme="dark"') && unifiedJs.includes('window.zpGetAppearanceTheme=()=>"dark"'),
-  "外观偏好必须固定为深色，且不受旧本地设置影响");
-const themeSync = fs.readFileSync(path.join(root, "js/theme-sync.js"), "utf8");
-assert.ok(themeSync.includes('document.documentElement.setAttribute("data-zp-theme", "dark")') && !themeSync.includes("COLORS.light"),
-  "首屏主题同步必须在样式表前强制深色");
+assert.ok(/const\s+dark\s*=\s*resolved\s*!==\s*"light"/.test(unifiedJs) && unifiedJs.includes('"#121826":"#F6F7F9"'),
+  "主题底色必须与网页主题一致（深色 #121826 / 浅色 #F6F7F9）");
 // js/ui/appearance.js 在页面底部，加载线上页面时可能晚于首帧，
 // 因此 <head> 里的内联主题脚本（比任何外链 JS 都早）也必须同步一次，否则浅色用户会先看到深色再跳变。
 // 2026-10-23：原 Group-B 五页（index/register/setup/offline/admin-bootstrap）只设属性不同步 meta，
@@ -190,19 +187,11 @@ for (const file of themedPages) {
   const html = fs.readFileSync(file, "utf8");
   assert.ok(html.includes('meta[name="theme-color"]'),
     path.relative(root, file) + " 缺少 meta[name=theme-color]");
-  assert.ok(/<meta name="theme-color" content="#121826">/.test(html),
-    path.relative(root, file) + " 静态 meta theme-color 默认值必须为深色 #121826");
+  assert.ok(/<meta name="theme-color" content="#F6F7F9">/.test(html),
+    path.relative(root, file) + " 静态 meta theme-color 默认值必须为浅色 #F6F7F9（浅色为默认外观）");
   const firstCss = html.search(/<link\s+[^>]*rel=["']stylesheet["'][^>]*>/i);
   const early = html.slice(0, firstCss);
   assert.ok(early.includes("theme-color"),
     path.relative(root, file) + " 的首屏内联主题脚本必须同步 meta theme-color");
-  assert.ok(early.includes("/js/theme-sync.js"),
-    path.relative(root, file) + " 必须在首个样式表前加载固定深色同步脚本");
 }
-const pwaManifest = JSON.parse(fs.readFileSync(path.join(root, "manifest.json"), "utf8"));
-assert.equal(pwaManifest.background_color, "#05070A", "PWA 启动背景必须为品牌黑");
-assert.equal(pwaManifest.theme_color, "#05070A", "PWA 启动主题色必须为品牌黑");
-const accountHtml = fs.readFileSync(path.join(root, "pages/account.html"), "utf8");
-assert.doesNotMatch(accountHtml, /<button[^>]*(?:data-theme-choice|appearance-theme-option)/,
-  "设置页不得再展示浅色/深色主题切换按钮");
-console.log("固定深色首屏、黑色 PWA 启动背景与设计令牌纪律检查通过（" + themedPages.length + " 个页面）");
+console.log("主题首屏初始化与设计令牌纪律检查通过（" + themedPages.length + " 个页面）");
