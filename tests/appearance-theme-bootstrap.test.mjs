@@ -42,7 +42,7 @@ assert.ok(themedPages.length >= 8, "应覆盖主要业务页面");
 for (const file of themedPages) {
   const html = fs.readFileSync(file, "utf8");
   const firstCss = html.search(/<link\s+[^>]*rel=["']stylesheet["'][^>]*>/i);
-  const themeScript = html.indexOf("zp_appearance_theme");
+  const themeScript = html.indexOf("data-zp-theme");
   assert.ok(themeScript >= 0 && firstCss >= 0 && themeScript < firstCss,
     path.relative(root, file) + " 必须在首个样式表之前读取主题偏好");
   const early = html.slice(0, firstCss);
@@ -188,10 +188,11 @@ assert.ok(themeSync.includes('document.documentElement.setAttribute("data-zp-the
 // 是「meta theme-color 匹配漏洞」；基底反转为浅色默认后，全部页面必须统一同步。
 for (const file of themedPages) {
   const html = fs.readFileSync(file, "utf8");
-  assert.ok(html.includes('meta[name="theme-color"]'),
+  assert.ok(html.includes('<meta name="theme-color"'),
     path.relative(root, file) + " 缺少 meta[name=theme-color]");
-  assert.ok(/<meta name="theme-color" content="#121826">/.test(html),
-    path.relative(root, file) + " 静态 meta theme-color 默认值必须为深色 #121826");
+  const expectedThemeColor = "#121826";
+  assert.ok(html.includes(`<meta name="theme-color" content="${expectedThemeColor}">`),
+    path.relative(root, file) + " 静态 meta theme-color 必须匹配页面启动底色 " + expectedThemeColor);
   const firstCss = html.search(/<link\s+[^>]*rel=["']stylesheet["'][^>]*>/i);
   const early = html.slice(0, firstCss);
   assert.ok(early.includes("theme-color"),
@@ -202,6 +203,14 @@ for (const file of themedPages) {
 const pwaManifest = JSON.parse(fs.readFileSync(path.join(root, "manifest.json"), "utf8"));
 assert.equal(pwaManifest.background_color, "#05070A", "PWA 启动背景必须为品牌黑");
 assert.equal(pwaManifest.theme_color, "#05070A", "PWA 启动主题色必须为品牌黑");
+const indexHtml = fs.readFileSync(path.join(root, "index.html"), "utf8");
+assert.match(indexHtml, /class="login-brand-mark"[^>]*src="\/assets\/icons\/icon-192\.png/,
+  "登录启动页必须显示现有品牌 Logo");
+const loginCss = fs.readFileSync(path.join(root, "css/login-startup.css"), "utf8");
+assert.match(loginCss, /\.login-shell\{background:var\(--zp-logo-plate\)\}/,
+  "登录启动页必须使用品牌黑背景");
+assert.ok(fs.readFileSync(path.join(root, "sw.js"), "utf8").includes("/css/login-startup.css?v=35f56c50"),
+  "黑色启动样式必须进入 PWA 预缓存");
 const accountHtml = fs.readFileSync(path.join(root, "pages/account.html"), "utf8");
 assert.doesNotMatch(accountHtml, /<button[^>]*(?:data-theme-choice|appearance-theme-option)/,
   "设置页不得再展示浅色/深色主题切换按钮");
