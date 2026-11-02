@@ -356,3 +356,8 @@ html[data-zp-theme="light"] select,html[data-zp-theme="light"] input[type="date"
   .diag-failure-card .diag-actions{gap:6px}
   .diag-failure-card .diag-actions .small-action{padding:6px 4px}
 }
+
+
+/* 管理页纯图标按钮与业务页统一：无外围框/底板，保留原有触控区域。 */
+.menu-btn,.add{border:0;border-radius:0;background:transparent;box-shadow:none}
+.menu-btn:active,.add:active{background:transparent;opacity:.65}
