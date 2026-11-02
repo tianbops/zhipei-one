@@ -3,8 +3,9 @@ const path = require("path");
 const postcss = require("postcss");
 const { execSync } = require("child_process");
 
-const ROOT = process.argv[2] || "/tmp/zhipei";
-const GIT = process.argv.includes("--git");
+const args = process.argv.slice(2);
+const ROOT = args.find((arg) => !arg.startsWith("--")) || path.resolve(__dirname, "..");
+const GIT = args.includes("--git");
 const files = fs.readdirSync(path.join(ROOT, "css"))
   .filter((f) => f.endsWith(".css") && f !== "home.bundle.css")
   .map((f) => "css/" + f);
