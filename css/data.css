@@ -1,4 +1,6 @@
 /* 智配One · 数据资料 UI 统一样式 */
+/* 顶部线路信息与维护操作固定在滚动区外；仅门店列表由 .zp-scroll 滚动。 */
+.data-fixed-area{flex:0 0 auto;min-width:0}
 .data-page{padding-bottom:calc(32px + env(safe-area-inset-bottom))}
 body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-route-card{padding:17px 16px}
