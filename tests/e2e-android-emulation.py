@@ -284,16 +284,13 @@ def main():
                   f"click={click_url} hw={sys_url}")
         run(browser, base, "AM2", am2)
 
-        # AM3 详情菜单 Drawer + 物理返回键先关 Drawer（不离开详情）
+        # AM3 运单详情顶部分享按钮：触控可见，且三横菜单已移除
         def am3(b, base):
             c, pg = ctx(b); pg.goto(base + "/pages/order_detail?id=w-test&source=process&from=process", wait_until="domcontentloaded"); pg.wait_for_timeout(800)
-            pg.click("#menuBtn"); pg.wait_for_timeout(300)
-            drawer_open = pg.evaluate("!document.getElementById('menuPanel').hidden")
-            check("AM3-1 详情菜单 Drawer 打开(touch)", drawer_open, f"hidden={not drawer_open}")
-            u = hw_back(pg)
-            drawer_after = pg.evaluate("!document.getElementById('menuPanel').hidden")
-            check("AM3-2 物理返回键先关 Drawer（不离开详情）",
-                  (not drawer_after) and "order_detail" in u, f"drawer={not drawer_after} url={u}")
+            share = pg.locator("#shareBtn")
+            check("AM3-1 详情页分享按钮触控可见", share.count() == 1 and share.is_visible(), f"count={share.count()}")
+            no_menu = pg.evaluate("document.getElementById('menuBtn') === null && document.getElementById('menuPanel') === null")
+            check("AM3-2 详情页三横菜单已移除", no_menu, f"no_menu={no_menu}")
             c.close()
         run(browser, base, "AM3", am3)
 
