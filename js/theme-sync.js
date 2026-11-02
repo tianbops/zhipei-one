@@ -7,14 +7,9 @@
  *   2) Capacitor StatusBar 插件（壳内已安装时）：可直接改原生状态栏底色。
  *   3) <meta name="theme-color">：PWA standalone、Chrome/Custom Tabs 用。
  *
- * 本文件在主题确定后同步这三条通道，并在用户切换深/浅主题时跟随变化
- * （监听 <html data-zp-theme> 属性变化）。
+ * 本文件在首屏固定深色后同步三条通道；系统外观与旧的本地主题偏好均不再影响页面。
  *
- * 两套主题都同时设「图标明暗 + 底色」：
- *   深色 → 浅色图标（白）+ #121826 底
- *   浅色 → 深色图标（黑）+ #F6F7F9 底（对应设计稿里“浅底黑字”的系统状态栏）
- * 只设底色不设图标会出现「白图标压在浅底上」不可读，所以两者必须成对下发；
- * 调用顺序也固定为「先切图标明暗、再改底色」，避免中间态闪一下不可读。
+ * 固定深色：白色系统图标 + #121826 页面底色，避免系统浅色外观带来白底闪屏。
  */
 (function () {
   "use strict";
@@ -66,12 +61,8 @@
     try {
       var sb = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.StatusBar;
       if (!sb) return;
-      /* StatusBar 的 Style 枚举是按「背景明暗」命名的，与字面直觉相反：
-           Style.Dark  = 深色背景 → 浅色（白）图标
-           Style.Light = 浅色背景 → 深色（黑）图标
-         浅色主题要的“黑色状态栏文字”就是 Style.Light。
-         先切图标明暗、成功后再改底色：避免中间态出现「白图标压在浅底上」不可读。 */
-      var wantStyle = theme === "dark" ? "DARK" : "LIGHT";
+      // 深色底固定使用浅色（白）系统图标。
+      var wantStyle = "DARK";
       var p = typeof sb.setStyle === "function" ? sb.setStyle({ style: wantStyle }) : null;
       Promise.resolve(p)
         .then(function () {
@@ -87,6 +78,9 @@
 
   function apply() {
     var theme = currentTheme();
+    if (document.documentElement.getAttribute("data-zp-theme") !== "dark") {
+      document.documentElement.setAttribute("data-zp-theme", "dark");
+    }
     var color = COLORS.dark;
     var key = theme + "|" + color;
     if (key === lastKey) return;
