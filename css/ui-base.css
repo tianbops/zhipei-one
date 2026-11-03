@@ -115,10 +115,14 @@
   --zp-accent:#0958D9;
   --zp-secondary-hover:#EAECEF;
   --zp-secondary-active:#E0E3E8;
-  /* 半透明 / 不透明卡片底色（保留两种用途，取值随主题翻转） */
-  --zp-card-translucent:rgba(255,255,255,.82);
-  --zp-card-translucent-2:rgba(242,243,245,.88);
+  /* 卡片 / 面板一律实底（2026-11-04 全站收敛）。
+     这里曾有 --zp-card-translucent（白 .82）与 -2（灰 .88），本意是「卡片压页面纯色底，
+     略透更轻」；但这套底被复制到弹窗、抽屉、下拉、提示条后，背后压的是正文，
+     于是弹窗里的字和背后的门店名叠在一起，看着像重影。
+     透明只保留给遮罩（--zp-scrim / --zp-scrim-dialog），那里透是功能。
+     组件侧统一：一级容器用 --zp-card，次级块与交互态用 --zp-card-2。 */
   --zp-card:var(--zp-surface);
+  --zp-card-2:var(--zp-surface-2);
   /* 列表分隔线（方案第十五章 Row，统一为 .10 单一来源） */
   --zp-divider:#DDE1E6;
   /* ===== 功能状态色（成功 / 警告 / 错误 / 提示）=====
@@ -266,7 +270,7 @@
      --soft 与 --panel 是首次补上（app.css 里从来没有这两项）。 */
   --bg:var(--zp-bg);
   --card:var(--zp-card);
-  --card2:var(--zp-card-translucent-2);
+  --card2:var(--zp-card-2);
   --line:var(--zp-line);
   --muted:var(--zp-muted);
   --soft:var(--zp-soft);
@@ -368,9 +372,8 @@ button:active{transform:translateY(0)}
 }
 .app-back svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 /* 按压反馈：原 rgba(20,28,37,.80) 覆于页面底色合成约 (18,24,32)；
-   取 --zp-card-translucent（合成约 (23,23,23)，亚感知）而非 -2 变体
-   （合成恰为页面底色，按压反馈会被抹平）。浅色下随令牌翻为微妙提亮。 */
-.app-back:active{background:var(--zp-card-translucent);color:var(--zp-text)}
+   取次级底 --zp-card-2 而非一级卡片底：后者与卡片同色，按压反馈会被抹平。 */
+.app-back:active{background:var(--zp-card-2);color:var(--zp-text)}
 
 /* 全站纯图标按钮：只保留图形，不绘制外围方框/底板。
    覆盖业务页历史遗留的高优先级单页定义；触控尺寸、定位与 aria 标签不变。
@@ -503,8 +506,8 @@ textarea:-webkit-autofill{
    双主题自适应；页面级文件（admin-base / business-pages）保留几何与布局，
    同特异度后加载赢、取值同为令牌零漂移。 */
 .dispatch-page,.account-page{background:var(--zp-bg)}
-.row{background:var(--zp-card-translucent-2)}
-.dialog{background:var(--zp-card-translucent-2)}
+.row{background:var(--zp-card)}
+.dialog{background:var(--zp-surface)}
 .message,.login-message{line-height:20px}
 .message.error,.login-message[role=alert]{color:var(--zp-error)}
 
@@ -577,8 +580,8 @@ textarea:-webkit-autofill{
 .zp-confirm-panel p{margin:8px 0 0;color:var(--zp-muted);word-break:break-word}
 .zp-confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
 .zp-confirm-actions button{min-height:var(--zp-control-height);border-radius:var(--zp-r-control);font-weight:var(--zp-fw-medium)}
-.zp-confirm-actions button:first-child{border:1px solid var(--zp-line);background:var(--zp-card-translucent-2);color:var(--zp-text)}
-.zp-confirm-actions button:last-child{border:1px solid var(--zp-line);background:var(--zp-card-translucent);color:var(--zp-text)}
+.zp-confirm-actions button:first-child{border:1px solid var(--zp-line);background:var(--zp-card-2);color:var(--zp-text)}
+.zp-confirm-actions button:last-child{border:1px solid var(--zp-line);background:var(--zp-card);color:var(--zp-text)}
 
 /* ===== 文字层级基线（2026-10-29 去 !important） =====
    上一版这里是一组 !important 强制规则（「Android 移动端文字规范 2.4」），用来把

@@ -48,8 +48,6 @@
   --zp-accent:#93C5FD;
   --zp-secondary-hover:#2A3A4F;
   --zp-secondary-active:#334155;
-  --zp-card-translucent:rgba(30,41,59,.82);
-  --zp-card-translucent-2:rgba(18,24,38,.88);
   --zp-divider:rgba(255,255,255,.10);
   /* ===== 功能状态色（深色 spec：提亮保对比度）===== */
   --zp-success:#22C55E;

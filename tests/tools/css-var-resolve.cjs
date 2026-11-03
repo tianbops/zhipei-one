@@ -142,7 +142,28 @@ const htmlFiles = [];
 console.log(`比对目录：before=${beforeDir}  after=${afterDir}`);
 console.log(`页面数：${htmlFiles.length}\n`);
 
+/**
+ * 已登记的变量语义变更 —— 有意为之，不是漂移。
+ * 每登记一条都要写清「为什么变、影响面、怎么确认视觉没坏」；
+ * 否则这个工具会退化成「谁都不敢改」的拦路石。
+ * 未登记的差异仍然 EXIT=1。
+ */
+const ACCEPTED_REMOVALS = {
+  "--zp-card-translucent":
+    "2026-11-04 全局取消半透明：容器底收敛到实色 --zp-card（=--zp-surface），避免正文透出弹窗。",
+  "--zp-card-translucent-2":
+    "同日同上：收敛到 --zp-card-2（=--zp-surface-2）。",
+};
+const ACCEPTED_CHANGES = {
+  "--card2": {
+    // 只接受「恰好变成这两个实色值」，改成别的颜色照样红 —— 登记不等于豁免。
+    values: ["#F2F3F5", "#253345"],
+    why: "别名跟随 --zp-card-translucent-2 一起转实色。该别名全仓零引用，仅保留兼容。",
+  },
+};
+
 let totalDiff = 0;
+let acceptedHits = 0;
 const newVars = new Set();
 const removedVars = new Set();
 
@@ -159,8 +180,16 @@ for (const htmlFile of htmlFiles.sort()) {
     const b = before.get(n);
     const a = after.get(n);
     if (b === undefined && a !== undefined) { newVars.add(n); continue; }
-    if (a === undefined && b !== undefined) { removedVars.add(n); continue; }
-    if (b !== a) diffs.push(`    ${n}\n      BEFORE: ${b}\n      AFTER : ${a}`);
+    if (a === undefined && b !== undefined) {
+      if (ACCEPTED_REMOVALS[n]) { acceptedHits++; continue; }
+      removedVars.add(n);
+      continue;
+    }
+    if (b !== a) {
+      const acc = ACCEPTED_CHANGES[n];
+      if (acc && acc.values.includes(a)) { acceptedHits++; continue; }
+      diffs.push(`    ${n}\n      BEFORE: ${b}\n      AFTER : ${a}`);
+    }
   }
   if (diffs.length) {
     console.log(`[差异] ${rel}  (${diffs.length} 处)`);
@@ -175,6 +204,7 @@ console.log("\n========== 汇总 ==========");
 console.log(`解析值发生变化：${totalDiff} 处`);
 if (newVars.size) console.log(`新增变量（应当是对外可用的新口径）：${[...newVars].join(", ")}`);
 if (removedVars.size) console.log(`⚠️ 消失的变量（危险）：${[...removedVars].join(", ")}`);
+if (acceptedHits) console.log(`已登记变更：${acceptedHits} 处（见 ACCEPTED_* 常量，需人工确认仍成立）`);
 
 const ok = totalDiff === 0 && removedVars.size === 0;
 console.log(ok ? "\n=== 变量解析完全等价 EXIT=0 ===" : "\n=== 存在不一致 EXIT=1 ===");

@@ -13,7 +13,7 @@
 .menu-item-icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .menu-divider{height:1px;margin:5px 7px;background:var(--zp-tint)}
 
-.task-card{position:relative;overflow:hidden;margin-top:14px;padding:14px;min-height:0;background:var(--zp-card-translucent-2);border:1px solid var(--zp-tint);border-radius:var(--zp-r-card);box-shadow:0 12px 30px var(--zp-shadow-md)}
+.task-card{position:relative;overflow:hidden;margin-top:14px;padding:14px;min-height:0;background:var(--zp-card);border:1px solid var(--zp-tint);border-radius:var(--zp-r-card);box-shadow:0 12px 30px var(--zp-shadow-md)}
 .task-title{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:var(--zp-fs-20);line-height:28px;font-weight:var(--zp-fw-bold)}
 .task-name{display:flex;align-items:center;gap:9px;min-width:0;white-space:nowrap}
 .task-date{margin:0;min-width:112px;text-align:center;white-space:nowrap;color:var(--zp-muted);font-size:var(--zp-fs-15);line-height:23px;font-weight:var(--zp-fw-medium)}
@@ -50,12 +50,12 @@
 .source-menu-title{height:28px;line-height:28px;margin:0 0 20px;color:var(--zp-text);text-align:center;font-size:var(--zp-fs-20);font-weight:var(--zp-fw-bold)}
 /* 2026-10-26 新增「粘贴文本」录入：来源入口从 3 列改 2×2，每格更宽容纳四项文案 */
 .source-menu-options{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.source-option{height:auto;min-height:72px;padding:9px 0;border:1px solid var(--zp-tint);border-radius:var(--zp-r-control);background:var(--zp-card-translucent);color:var(--zp-text);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.source-option{height:auto;min-height:72px;padding:9px 0;border:1px solid var(--zp-tint);border-radius:var(--zp-r-control);background:var(--zp-card-2);color:var(--zp-text);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .source-option:active{background:var(--zp-primary);color:var(--zp-on-primary);transform:scale(.985)}
 .source-icon{width:24px;height:24px;display:flex;align-items:center;justify-content:center}
 .source-icon svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .source-option strong{font-size:var(--zp-fs-13);font-weight:var(--zp-fw-semibold);line-height:18px}
-.upload-cancel-btn{width:100%;height:48px;min-height:48px;margin-top:12px;border:1px solid var(--zp-tint);border-radius:var(--zp-r-control);background:var(--zp-card-translucent);color:var(--zp-muted);font-size:var(--zp-fs-14);font-weight:var(--zp-fw-semibold);-webkit-tap-highlight-color:transparent}
+.upload-cancel-btn{width:100%;height:48px;min-height:48px;margin-top:12px;border:1px solid var(--zp-tint);border-radius:var(--zp-r-control);background:var(--zp-card-2);color:var(--zp-muted);font-size:var(--zp-fs-14);font-weight:var(--zp-fw-semibold);-webkit-tap-highlight-color:transparent}
 .upload-cancel-btn:active{background:var(--zp-primary);color:var(--zp-on-primary);transform:scale(.985)}
 
 /* 粘贴文本录入面板：与来源菜单同一容器风格，纯令牌配色（组件层零字面量） */
@@ -70,7 +70,7 @@
 .text-clear-btn{position:relative;height:30px;padding:0 12px;border:1px solid var(--zp-tint);border-radius:var(--zp-r-mini);background:transparent;color:var(--zp-muted);font-size:var(--zp-fs-12);font-weight:var(--zp-fw-semibold);cursor:pointer;-webkit-tap-highlight-color:transparent}
 .text-clear-btn:active{background:var(--zp-tint);color:var(--zp-text);transform:scale(.985)}
 .text-clear-btn[hidden]{display:none}
-.text-paste-btn{position:relative;height:30px;padding:0 12px;border:1px solid var(--zp-tint);border-radius:var(--zp-r-mini);background:var(--zp-card-translucent);color:var(--zp-primary);font-size:var(--zp-fs-12);font-weight:var(--zp-fw-semibold);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.text-paste-btn{position:relative;height:30px;padding:0 12px;border:1px solid var(--zp-tint);border-radius:var(--zp-r-mini);background:var(--zp-card-2);color:var(--zp-primary);font-size:var(--zp-fs-12);font-weight:var(--zp-fw-semibold);cursor:pointer;-webkit-tap-highlight-color:transparent}
 .text-paste-btn:active{background:var(--zp-primary);color:var(--zp-on-primary);transform:scale(.985)}
 .text-clear-btn::after,.text-paste-btn::after{content:"";position:absolute;inset-block:-9px;inset-inline:0}
 .text-panel-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
