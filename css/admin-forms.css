@@ -35,7 +35,7 @@
   right:-74px;top:0;bottom:0;
   width:74px;height:100%;min-height:54px;
   margin:0;padding:0;border:0;border-radius:0;
-  background:var(--zp-secondary-bg);color:var(--zp-error);z-index:1;
+  background:var(--zp-secondary-bg);color:var(--zp-danger);z-index:1;
   pointer-events:none;transition:none
 }
 #routes .route-content{
@@ -94,8 +94,8 @@
 .menu-bg .setting>span:last-child,.menu-bg .menu-username{min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .menu-bg .menu-username{color:inherit}
 .menu-bg .menu-divider{height:1px;margin:5px 7px;background:var(--zp-divider)}
-.menu-bg #logout{color:var(--zp-error)}
-.menu-bg #logout .menu-item-icon{color:var(--zp-error)}
+.menu-bg #logout{color:var(--zp-danger)}
+.menu-bg #logout .menu-item-icon{color:var(--zp-danger)}
 @keyframes admin-menu-in{
   from{opacity:0;transform:translateY(-5px) scale(.985)}
   to{opacity:1;transform:translateY(0) scale(1)}

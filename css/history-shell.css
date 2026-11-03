@@ -69,7 +69,9 @@
   /* 底色 = 行表面实色：深浅两套主题下都与行完全一致，因此动作条本身不可见，
      只有红字与图标（危险语义靠 --zp-error 承载，不靠色块）。 */
   background:var(--zp-bg);
-  color:var(--zp-error);
+  /* 危险语义用「错误正文」色 --zp-danger，不用 --zp-error：后者 #F53F3F 在
+     浅色底上只有 3.46:1，12px 小字不达 AA。 */
+  color:var(--zp-danger);
   font-size:var(--zp-fs-12);
   font-weight:var(--zp-fw-semibold);
   letter-spacing:1px;

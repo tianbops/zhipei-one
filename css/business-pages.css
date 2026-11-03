@@ -55,7 +55,7 @@
 /* 死规则对齐：page2-danger-btn 是 <button class*=danger>，其 border/background/color
    已被 ui-theme.css Phase 2 全站危险按钮标准 !important 接管（中性底+红字），
    此处仅令牌化保留尺寸声明，整条规则去留交 Phase 5。 */
-.account-page .page2-danger-btn{width:100%;min-height:var(--zp-control-height);margin-top:12px;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-secondary-bg);color:var(--zp-error);font-size:var(--zp-fs-16);font-weight:var(--zp-fw-semibold)}
+.account-page .page2-danger-btn{width:100%;min-height:var(--zp-control-height);margin-top:12px;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-secondary-bg);color:var(--zp-danger);font-size:var(--zp-fs-16);font-weight:var(--zp-fw-semibold)}
 .account-page .account-dialog-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
 .account-page .account-dialog-actions button{margin-top:0}
 @media(max-width:380px){.account-page{padding-left:12px;padding-right:12px}.account-page .page2-card{padding-left:12px;padding-right:12px}.account-page .account-danger-box{padding-left:12px;padding-right:12px}}

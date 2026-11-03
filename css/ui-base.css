@@ -134,8 +134,11 @@
   --zp-warning-soft:rgba(255,125,0,.10);
   --zp-error:#F53F3F;
   --zp-error-soft:rgba(245,63,63,.10);
-  --zp-danger:#D4380D;
-  --zp-danger-soft:rgba(212,56,13,.08);
+  /* 取值由对比度反推：#D4380D 在 --zp-surface-2(#F2F3F5) 上仅 4.33:1，
+     差在「危险按钮压在次级底上」这一常见组合。#C4320A 在 bg/surface/surface-2
+     三种底上分别是 5.13 / 5.50 / 4.95，全部达 AA。 */
+  --zp-danger:#C4320A;
+  --zp-danger-soft:rgba(196,50,10,.08);
   --zp-info:#1677FF;
   --zp-info-soft:rgba(22,119,255,.10);
 
@@ -509,7 +512,7 @@ textarea:-webkit-autofill{
 .row{background:var(--zp-card)}
 .dialog{background:var(--zp-surface)}
 .message,.login-message{line-height:20px}
-.message.error,.login-message[role=alert]{color:var(--zp-error)}
+.message.error,.login-message[role=alert]{color:var(--zp-danger)}
 
 /* Toast/轻反馈：用于成功、复制、保存等非破坏性反馈 */
 .ui-toast{
@@ -550,7 +553,9 @@ textarea:-webkit-autofill{
 .zp-empty{
   padding:28px 12px;
   text-align:center;
-  color:var(--zp-soft);
+  /* 空态是「用户必须读到」的信息，不是装饰：--zp-soft(#999) 在浅色底仅 2.66:1，
+     低于 WCAG AA 的 4.5:1。改用 --zp-muted（#666 / 深色 #94A3B8）。 */
+  color:var(--zp-muted);
   font-size:var(--zp-fs-15);
   line-height:22px;
 }
@@ -800,7 +805,7 @@ body.zp-has-nav{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
 /* 选中态只改文字/图标颜色（2026-10-24 用户定稿）：不加背景块、不改字重，
    与未选中态仅靠 主色 ↔ 中性灰 的色差区分。 */
 .zp-nav-item[aria-current="page"],
-.zp-nav-item.is-active{color:var(--zp-primary)}
+.zp-nav-item.is-active{color:var(--zp-accent)}
 /* 中间上传加号：无文字标签的凸起圆形按钮，圆形由 .zp-nav-icon 承载。
    阴影此前写成 box-shadow:0 8px 20px var(--zp-shadow-sm) —— 令牌本身是完整 shadow
    值（含 offset/blur/color），套进长度位置后整条声明非法被丢弃，于是首页加号没有

@@ -142,7 +142,7 @@
    ui-unified.css 的全局 button 文字兜底（:root[data-zp-theme=light] button）。 */
 /* 有新版本：静态状态点「● 有新版本」（只提示，动作在下方下载行，避免双热区） */
 #aboutVersion .acct-ver-badge{margin-left:8px;display:inline-flex;align-items:center;gap:5px;
-  padding:0;border:0;background:none;color:var(--zp-primary);
+  padding:0;border:0;background:none;color:var(--zp-accent);
   font-size:var(--zp-fs-12);font-weight:var(--zp-fw-semibold);line-height:16px;white-space:nowrap;vertical-align:middle;cursor:default}
 #aboutVersion .acct-ver-badge::before{content:"";width:6px;height:6px;border-radius:50%;
   background:currentColor;flex:none}
@@ -159,7 +159,7 @@
    .about-row-actions / .acct-mini-btn（网页版行胶囊按钮）已随 2026-10-29 改版下线：
    网页版行与「下载应用」行同构 —— 整行可点，右侧 acct-row-value 灰字 + 箭头。 */
 /* 下载应用行右侧动作文案：默认灰（acct-row-value 已给），有更新时主色强调 */
-.acct-install-action.is-update{color:var(--zp-primary);font-weight:var(--zp-fw-semibold)}
+.acct-install-action.is-update{color:var(--zp-accent);font-weight:var(--zp-fw-semibold)}
 
 /* 底部留白：注销账号是页面最后一项。通用 .zp-scroll 只留 72px（底栏 64px + 8px），
    而底栏中间的「+」向上突出约 28px，会与注销文字几乎贴在一起。

@@ -33,7 +33,10 @@
 .trend-nav::after,.trend-metric-btn::after,.trend-year::after{content:"";position:absolute;inset:-9px}
 .trend-month{color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:18px;font-variant-numeric:tabular-nums;letter-spacing:.5px;will-change:transform}
 .trend-metric{display:flex;gap:6px}
-.trend-metric-btn{appearance:none;border:1px solid var(--zp-line);background:var(--zp-surface-3);color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:18px;padding:5px 11px;border-radius:var(--zp-r-pill);cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+/* 未选中底色用 --zp-surface-2，与同族的 .trend-year 一致。原先写的是 --zp-surface-3，
+   但 surface-3 在本组件里的语义是「选中/按压」（见上方 .trend-year 注释），
+   拿它当未选中底会同时造成两件事：未选中比选中还重；深色下 muted 压在 #334155 上只有 4.04:1。 */
+.trend-metric-btn{appearance:none;border:1px solid var(--zp-line);background:var(--zp-surface-2);color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:18px;padding:5px 11px;border-radius:var(--zp-r-pill);cursor:pointer;transition:background .15s,color .15s,border-color .15s}
 .trend-metric-btn.is-active{background:var(--zp-primary);color:var(--zp-on-primary);border-color:var(--zp-primary);font-weight:var(--zp-fw-semibold)}
 .trend-metric-btn:active{transform:translateY(.5px)}
 /* 底排：三项配送汇总等分排列，固定单行显示，不再为峰值提示预留空间。 */
@@ -44,7 +47,7 @@
 .trend-stat i{font-style:normal;color:var(--zp-muted);font-size:var(--zp-fs-11)}
 .trend-delta{display:none}
 .trend-delta.is-up{color:var(--zp-success)}
-.trend-delta.is-down{color:var(--zp-error)}
+.trend-delta.is-down{color:var(--zp-danger)}
 .trend-chart-wrap{height:80px;margin:7px -2px 0;will-change:transform,opacity;touch-action:pan-y}
 .trend-chart{width:100%;height:100%;display:block;overflow:visible}
 .trend-grid{fill:none;stroke:var(--zp-surface-3);stroke-width:1;stroke-dasharray:2 5}

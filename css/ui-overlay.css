@@ -222,10 +222,10 @@
 /* --- 5.3 危险按钮：统一危险色（错误正文用 --zp-error，随主题翻转保证对比度） --- */
 .page2-danger-btn,
 .page2-danger{
-  color:var(--zp-error);
+  color:var(--zp-danger);
 }
 .page2-danger-btn{
-  border-color:var(--zp-error);
+  border-color:var(--zp-danger);
   background:var(--zp-error-soft);
 }
 .page2-danger-btn:hover:not(:disabled){
@@ -243,7 +243,7 @@
 .login-message,
 .login-message[role=alert],
 .processing-error-message{
-  color:var(--zp-error);
+  color:var(--zp-danger);
 }
 
 /* --- 5.5 空状态 ---

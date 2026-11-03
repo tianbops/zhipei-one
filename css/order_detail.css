@@ -39,7 +39,7 @@
 .order-store-name.nav{display:inline-block;color:var(--zp-text)!important;text-decoration:none!important;-webkit-text-decoration:none!important;cursor:pointer;padding:11px 0;margin:-11px 0}
 .order-store-name.nav:visited{color:var(--zp-text)!important;text-decoration:none!important}.order-store-name.nav:active{opacity:.65}
 .order-store-note-inline{margin-left:5px;color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:20px;font-weight:var(--zp-fw-medium);white-space:normal}
-.order-store-note{margin-top:3px;color:var(--zp-soft);font-size:var(--zp-fs-11);line-height:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.order-store-note{margin-top:3px;color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .order-store-status{display:inline-flex;margin-left:6px;padding:1px 5px;border-radius:var(--zp-r-chip);background:var(--zp-line);color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:16px;vertical-align:2px;font-weight:var(--zp-fw-semibold)}
 .order-store-status.pending{background:var(--zp-warning-soft);color:var(--zp-warning)}
 /* 空态统一走 css/ui-base.css 的 .zp-empty（本文件不再定义）。 */
@@ -97,7 +97,7 @@
 .order-history-swipe-row:last-child{margin-bottom:0}
 .order-history-swipe-row .order-history-choice{flex:1;min-width:100%;margin:0;border-radius:var(--zp-r-card);position:relative;z-index:2;transition:transform .18s ease}
 .order-history-swipe-row.open .order-history-choice{transform:translateX(-76px)}
-.history-choice-delete{position:absolute;right:0;top:0;width:76px;height:100%;border:0;border-radius:0 13px 13px 0;background:var(--zp-secondary-bg);color:var(--zp-error);font-size:var(--zp-fs-13);font-weight:var(--zp-fw-bold)}
+.history-choice-delete{position:absolute;right:0;top:0;width:76px;height:100%;border:0;border-radius:0 13px 13px 0;background:var(--zp-secondary-bg);color:var(--zp-danger);font-size:var(--zp-fs-13);font-weight:var(--zp-fw-bold)}
 .history-choice-delete:active{background:var(--zp-error-surface-strong)}
 .order-history-swipe-row .order-history-choice{touch-action:pan-y}
 
