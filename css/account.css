@@ -52,10 +52,6 @@
    容器按内容收紧：flex:none 不再横向撑满整行，margin-left:auto 右对齐。 */
 .acct-theme-row{display:flex;align-items:center;gap:10px;min-height:56px;border-bottom:1px solid var(--zp-line-inset)}
 .acct-theme-row .acct-row-label{flex:none}
-/* 浏览器里顶部/底部两条栏由浏览器绘制，页面改不了；写清楚比让用户以为是 bug 好。
-   App 内状态栏由页面接管（data-zp-e2e），不存在这层差异，隐藏。 */
-.acct-theme-note{margin:0 0 4px;color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:17px}
-html[data-zp-native="1"] .acct-theme-note{display:none}
 .acct-seg{display:inline-flex;flex:none;margin-left:auto;align-items:center;gap:0;padding:0;border-radius:0;
   background:none}
 /* 视觉高度按文字收紧：14px 文字 + 32px 按钮高，替代原先过高的 48px；
