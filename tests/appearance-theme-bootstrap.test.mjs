@@ -189,10 +189,28 @@ for (const file of themedPages) {
   assert.ok(html.includes('meta[name="theme-color"]'),
     path.relative(root, file) + " 缺少 meta[name=theme-color]");
   assert.ok(/<meta name="theme-color" content="#F6F7F9">/.test(html),
-    path.relative(root, file) + " 静态 meta theme-color 默认值必须为浅色 #F6F7F9（浅色为默认外观）");
+    path.relative(root, file) + " 静态 meta theme-color 兜底值必须为浅色 #F6F7F9（浅色为默认外观）");
+  // 2026-11-04：静态值必须按系统外观分成两条（media），再留一条无条件兜底。
+  // 部分安卓内核对 theme-color 只在解析期取一次、之后不跟随 JS，并且会把浅色值
+  // 按自己的深色盘重映射成近黑——Web 端「顶部一条黑带与页面不同色」就是它。
+  // 三条的顺序：浅(media) → 深(media) → 兜底，UA 取第一条 media 命中的。
+  const lightAt = html.indexOf('<meta name="theme-color" content="#F6F7F9" media="(prefers-color-scheme: light)">');
+  const darkAt = html.indexOf('<meta name="theme-color" content="#121826" media="(prefers-color-scheme: dark)">');
+  const fallbackAt = html.indexOf('<meta name="theme-color" content="#F6F7F9">');
+  assert.ok(lightAt >= 0 && darkAt >= 0, path.relative(root, file) + " 缺少按系统外观分流的 theme-color（media 两条）");
+  assert.ok(lightAt < darkAt && darkAt < fallbackAt,
+    path.relative(root, file) + " theme-color 顺序必须是 浅(media) → 深(media) → 无条件兜底，乱序会被 UA 取到错的色");
   const firstCss = html.search(/<link\s+[^>]*rel=["']stylesheet["'][^>]*>/i);
   const early = html.slice(0, firstCss);
   assert.ok(early.includes("theme-color"),
     path.relative(root, file) + " 的首屏内联主题脚本必须同步 meta theme-color");
 }
+
+// theme-sync.js 必须在拿到主题后把所有 theme-color 条目的 media 去掉并统一写色：
+// 否则用户手动选「深色」而系统是浅色时，媒体查询会把页面底色盖回浅色。
+const themeSyncJs = fs.readFileSync(path.join(root, "js/theme-sync.js"), "utf8");
+assert.ok(/querySelectorAll\('meta\[name="theme-color"\]'\)/.test(themeSyncJs),
+  "theme-sync.js 必须遍历全部 theme-color 条目（只改第一条会留下与用户选择冲突的 media 条目）");
+assert.ok(/removeAttribute\("media"\)/.test(themeSyncJs),
+  "theme-sync.js 必须在用户选定主题后去掉 theme-color 的 media 属性");
 console.log("主题首屏初始化与设计令牌纪律检查通过（" + themedPages.length + " 个页面）");
