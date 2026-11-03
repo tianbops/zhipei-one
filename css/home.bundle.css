@@ -1180,7 +1180,7 @@ textarea:-webkit-autofill{
    同特异度后加载赢、取值同为令牌零漂移。 */
 .dispatch-page,.account-page{background:var(--zp-bg)}
 .row{background:var(--zp-card-translucent-2)}
-.dialog{background:var(--zp-card-translucent-2)}
+.dialog{background:var(--zp-surface)}
 .message,.login-message{line-height:20px}
 .message.error,.login-message[role=alert]{color:var(--zp-error)}
 

@@ -170,7 +170,7 @@
 .history-picker-panel{
   width:min(100%,390px);
   padding:17px 16px 15px;
-  background:var(--zp-card-translucent);
+  background:var(--zp-surface);
   border:1px solid var(--zp-line);
   border-radius:var(--zp-r-dialog);
   box-shadow:0 18px 50px var(--zp-shadow-lg);
@@ -262,7 +262,7 @@
 .history-dialog-panel{
   width:min(100%,360px);
   padding:20px;
-  background:var(--zp-card-translucent);
+  background:var(--zp-surface);
   border:1px solid var(--zp-line);
   border-radius:var(--zp-r-dialog);
   box-shadow:0 18px 50px var(--zp-shadow-lg);
