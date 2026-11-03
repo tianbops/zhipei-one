@@ -72,7 +72,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 
 .data-field:first-of-type{margin-top:10px}
 .data-input[type=number]{font-variant-numeric:tabular-nums}
-.data-field-hint{display:block;margin-top:5px;color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:17px}.data-field-hint.invalid{color:var(--zp-error)}
+.data-field-hint{display:block;margin-top:5px;color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:17px}.data-field-hint.invalid{color:var(--zp-danger)}
 
 /* 2.0 数据资料维护交互 */
 .data-tools-card{padding:12px 14px}
@@ -104,7 +104,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
    实际宽度仍是 48px，预留不动也不会溢出。 */
 .data-swipe-actions button{min-width:48px;height:var(--zp-control-height);padding:0 9px;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-2);color:var(--zp-text);font-size:var(--zp-fs-14)}
 /* 死规则对齐：已被 ui-theme.css Phase 2 .data-swipe-actions .data-swipe-delete !important 接管。 */
-.data-swipe-actions .data-swipe-delete{color:var(--zp-error)}
+.data-swipe-actions .data-swipe-delete{color:var(--zp-danger)}
 @media(min-width:600px){
  .data-swipe-actions{right:0}
  .data-store-row.data-swipe-open .data-store-main{padding-right:124px}
@@ -193,7 +193,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-aliases{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
 .data-alias-chip{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:6px 10px;border:1px solid var(--zp-line);border-radius:var(--zp-r-pill);background:var(--zp-surface-2);color:var(--zp-text);font-size:var(--zp-fs-13);line-height:18px;white-space:pre-wrap;word-break:break-word}
 .data-alias-chip .data-alias-del{appearance:none;border:none;background:transparent;color:var(--zp-muted);font-size:var(--zp-fs-16);line-height:1;cursor:pointer;padding:0 2px;flex:0 0 auto}
-.data-alias-chip .data-alias-del:hover{color:var(--zp-error)}
+.data-alias-chip .data-alias-del:hover{color:var(--zp-danger)}
 .data-alias-add{display:flex;gap:8px;margin-top:8px}
 .data-alias-input{flex:1 1 auto;min-width:0;width:auto}
 .data-alias-add .data-action-btn{width:auto;height:var(--zp-control-height);border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-2);color:var(--zp-text);font-size:var(--zp-fs-14);padding:0 16px;flex:0 0 auto}

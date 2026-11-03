@@ -152,8 +152,11 @@ const dangerBody = ruleBodyOf(unified, DANGER_SEL);
 assert.ok(dangerBody !== null, "危险操作按钮唯一标准缺失：" + DANGER_SEL);
 assert.match(dangerBody, /background:\s*var\(--zp-secondary-bg\)\s*(?:!important)?/,
   "危险操作按钮必须用中性底 var(--zp-secondary-bg)");
-assert.match(dangerBody, /color:\s*var\(--zp-error\)\s*(?:!important)?/,
-  "危险操作按钮必须用红字 var(--zp-error)");
+// 2026-11-04：错误正文改用 --zp-danger（浅 #D4380D / 深 #FCA5A5）。
+// --zp-error 在浅色底上只有 3.46:1，12px 危险按钮文字不达 WCAG AA；
+// --zp-danger 的取值本就是「浅色更深、深色更亮」，正是这段文字需要的语义。
+assert.match(dangerBody, /color:\s*var\(--zp-danger\)\s*(?:!important)?/,
+  "危险操作按钮必须用红字 var(--zp-danger)（错误正文色，勿改回 --zp-error）");
 assert.ok(unified.includes(":not(.history-delete)"),
   "滑动动作条 .history-delete 必须从全站普通按钮危险样式中显式排除（透视+圆角直角混绘）");
 assert.ok(unified.includes('button[class*="delete"]:not(.account-collapse-head):not(.history-delete):active'), "危险操作按钮缺少按压状态");

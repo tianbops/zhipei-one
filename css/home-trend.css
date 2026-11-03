@@ -44,7 +44,7 @@
 .trend-stat i{font-style:normal;color:var(--zp-muted);font-size:var(--zp-fs-11)}
 .trend-delta{display:none}
 .trend-delta.is-up{color:var(--zp-success)}
-.trend-delta.is-down{color:var(--zp-error)}
+.trend-delta.is-down{color:var(--zp-danger)}
 .trend-chart-wrap{height:80px;margin:7px -2px 0;will-change:transform,opacity;touch-action:pan-y}
 .trend-chart{width:100%;height:100%;display:block;overflow:visible}
 .trend-grid{fill:none;stroke:var(--zp-surface-3);stroke-width:1;stroke-dasharray:2 5}

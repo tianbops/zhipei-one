@@ -52,7 +52,7 @@ body {
 }
 
 .message.error {
-  color: var(--zp-error);
+  color: var(--zp-danger);
 }
 
 .route-card {
@@ -572,7 +572,7 @@ body {
   margin: 0 0 7px;
   /* 死规则：ui-overlay.css 的 .login-message 同选择器且后加载，实际取 var(--zp-error)；
      此处对齐令牌，消除字面量分叉（浅色由 ui-theme 的 .login-message 补丁覆盖） */
-  color: var(--zp-error);
+  color: var(--zp-danger);
   font-size:var(--zp-fs-13);
   line-height: 20px;
 }

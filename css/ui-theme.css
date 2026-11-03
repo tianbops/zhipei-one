@@ -121,7 +121,7 @@ a[class*="danger"],
 .invite-actions .small-action.danger {
   background:var(--zp-secondary-bg);
   border:1px solid var(--zp-line);
-  color:var(--zp-error);
+  color:var(--zp-danger);
   box-shadow:none;
 }
 button[class*="delete"]:not(.account-collapse-head):not(.history-delete):active,
@@ -135,7 +135,7 @@ a[class*="danger"]:active,
 .invite-actions .small-action.danger:active {
   background:var(--zp-secondary-active);
   border-color:var(--zp-line);
-  color:var(--zp-error);
+  color:var(--zp-danger);
 }
 
 /* 登录输入框深色：2026-10-29 移除本条补丁。
