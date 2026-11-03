@@ -1342,6 +1342,37 @@ textarea:-webkit-autofill{
    max() 会退回一个更大的值，等于没改。 */
 html[data-zp-native="1"]{--zp-safe-top:8px}
 
+/* ===== 壳内 edge-to-edge：状态栏区域交给页面画（2026-11-04） =====
+   背景：状态栏改为透明 + WebView 让位后，那条 24px 高的像素同时有两个绘制者 ——
+   DecorView（原生，换色下一个 vsync 就上屏）和 WebView（页面，还要多一帧合成）。
+   无论怎么调原生侧的延后量，总会有一帧是「谁先谁后」，这就是用户反复看到的
+   「切换外观时顶部闪一下」。三次调 postOnAnimation 跳数都没修掉，因为方向错了：
+   问题不是「第二层画得早晚」，而是「本来就不该有第二层」。
+
+   成熟做法（Android 15 起 Chrome / Gmail / Telegram 统一如此）：WebView 铺满全屏，
+   状态栏区域由**页面**绘制 —— 同一块像素只有一个绘制者，与页面天然同帧。
+
+   能力协商而不是猜：只有壳显式提供 edgeToEdge() 并返回 true 才启用
+   （data-zp-e2e="1"）。旧壳没有这个方法，仍走上面 8px 分支，行为不变 ——
+   用 env() 是否大于 0 去猜会错：旧壳 WebView 让了位，env() 照样可能返回真实高度。 */
+html[data-zp-e2e="1"]{
+  --zp-e2e-top: env(safe-area-inset-top, 0px);
+  /* 内容仍从状态栏下方 8px 起：与旧壳视觉等价，只是那 8px 之下不再有原生色块 */
+  --zp-safe-top: max(var(--zp-e2e-top), 8px);
+}
+/* 固定色带 = 状态栏区域。用 ::after 而不是 ::before：admin-base 用 body::before
+   做「正在验证登录状态」的全屏遮罩，复用会把它顶掉。
+   色带随 --zp-bg 走，主题切换时与页面同一次样式重算；z-index 取最大，
+   滚动内容与弹层都不得穿到状态栏下（状态栏属于应用底色，不属于内容层）。 */
+html[data-zp-e2e="1"] body::after{
+  content:"";
+  position:fixed; left:0; right:0; top:0;
+  height:var(--zp-e2e-top);
+  background:var(--zp-bg);
+  z-index:2147483000;
+  pointer-events:none;
+}
+
 /* ===== 按钮原语（设计语言基线 3.0） =====
    存量按钮类名有 11 个入口（primary-btn / page2-primary / data-action-btn /
    login-submit / .zp-btn / dialog-actions button …），每个都各写一套高度与圆角，

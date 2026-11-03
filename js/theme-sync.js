@@ -34,6 +34,25 @@
         (cap && typeof cap.isNativePlatform === "function" && cap.isNativePlatform())) {
       document.documentElement.setAttribute("data-zp-native", "1");
     }
+    /* edge-to-edge 能力协商 + 状态栏高度。壳提供 statusBarInset() 即代表 WebView 已铺满全屏、
+       状态栏区域由页面绘制 —— 只有这样它才与页面同帧换色。
+
+       为什么不用 env(safe-area-inset-top) 判断：Android WebView 的 env() 只反映刘海
+       cutout，不含状态栏高度，普通机型返回 0；拿它当判据会把色带整个禁用掉。
+       旧壳没有这个方法，落在旧分支（让位 + 8px），行为不变。 */
+    if (nat0 && typeof nat0.statusBarInset === "function") {
+      try {
+        var topPx = nat0.statusBarInset();
+        if (typeof topPx === "number" && topPx >= 0) {
+          document.documentElement.setAttribute("data-zp-e2e", "1");
+          /* 0 表示原生还没拿到 inset：此时不写变量，让 CSS 的 env() 兜底；
+             原生拿到后会 evaluateJavascript 补写。 */
+          if (topPx > 0) {
+            document.documentElement.style.setProperty("--zp-e2e-top", topPx + "px");
+          }
+        }
+      } catch (e2eErr) {}
+    }
   } catch (e) {}
 
   function currentTheme() {

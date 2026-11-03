@@ -213,4 +213,24 @@ assert.ok(/querySelectorAll\('meta\[name="theme-color"\]'\)/.test(themeSyncJs),
   "theme-sync.js 必须遍历全部 theme-color 条目（只改第一条会留下与用户选择冲突的 media 条目）");
 assert.ok(/removeAttribute\("media"\)/.test(themeSyncJs),
   "theme-sync.js 必须在用户选定主题后去掉 theme-color 的 media 属性");
+
+// ============ F. 壳内 edge-to-edge：状态栏区域交给页面 ============
+// 结构契约：状态栏那块像素只能有一个绘制者。WebView 若仍为上边距让位，露出的就是
+// DecorView 原生底色 —— 原生和页面各画一半，切外观时必然有一帧错色带。
+// v1.0.29/30/31 三次调 postOnAnimation 的延后跳数都没修掉，因为问题不在时序，在结构。
+const uiBaseCss = fs.readFileSync(path.join(root, "css/ui-base.css"), "utf8");
+assert.ok(/html\[data-zp-e2e="1"\]\s*\{[\s\S]{0,200}?--zp-safe-top:\s*max\(var\(--zp-e2e-top\)/.test(uiBaseCss),
+  "ui-base.css 必须在 data-zp-e2e 下用原生给的高度推 --zp-safe-top（否则内容会顶到状态栏图标下）");
+const bandAt = uiBaseCss.indexOf('html[data-zp-e2e="1"] body::after');
+assert.ok(bandAt > 0,
+  "ui-base.css 必须用 body::after 画状态栏色带（body::before 已被 admin 的登录校验遮罩占用，复用会把它顶掉）");
+assert.ok(/background:\s*var\(--zp-bg\)/.test(uiBaseCss.slice(bandAt, bandAt + 400)),
+  "状态栏色带必须取 --zp-bg，才能与页面背景同源、同一次样式重算（这才是「同帧」的来源）");
+assert.ok(/position:\s*fixed/.test(uiBaseCss.slice(bandAt, bandAt + 400)),
+  "状态栏色带必须 fixed，否则滚动内容会穿到状态栏后面与图标重叠");
+assert.ok(themeSyncJs.includes("statusBarInset"),
+  "theme-sync.js 必须调 statusBarInset() 做能力协商并取高度——Android WebView 的 env(safe-area-inset-top) 只反映刘海、不含状态栏高度，拿 env 判断会整条禁用色带");
+assert.ok(themeSyncJs.includes("--zp-e2e-top"),
+  "theme-sync.js 必须把原生给的状态栏高度写进 --zp-e2e-top");
+
 console.log("主题首屏初始化与设计令牌纪律检查通过（" + themedPages.length + " 个页面）");
