@@ -89,19 +89,33 @@
     } catch (e) {}
   }
 
-  /* 去重：apply 会在「脚本执行 / DOMContentLoaded / 主题属性变化」三处触发，
-     同一主题下重复下发只会白白多打几次原生 IPC（StatusBar 调用是跨桥的）。 */
+  /* 去重：同步会由「脚本执行 / DOMContentLoaded / 主题属性变化 / 壳侧提前入口」
+     多处触发，同一主题下重复下发只会白白多打几次原生 IPC（StatusBar 调用是跨桥的）。 */
   var lastKey = "";
 
-  function apply() {
-    var theme = currentTheme();
-    var color = COLORS[theme] || COLORS.light;
+  function push(theme, color) {
     var key = theme + "|" + color;
     if (key === lastKey) return;
     lastKey = key;
     syncMeta(color);
     syncNative(theme, color);
   }
+
+  function apply() {
+    var theme = currentTheme();
+    push(theme, COLORS[theme] || COLORS.light);
+  }
+
+  /* 壳侧同步的提前入口：appearance.js 在改写 data-zp-theme **之前**调用它。
+     原生换色要经 JavaBridge → runOnUiThread → 下一帧，天生比网页慢 1~3 帧；
+     提前起跑让系统栏与网页尽量落在同一帧，压缩「网页已换色、状态栏还是旧色」的错配带。
+     只接受已解析的 dark/light 与在册色值，非法入参直接忽略（宁可少发一次，
+     也不把未知色送进原生染色通道）。 */
+  window.zpShellThemeSync = function (theme, color) {
+    if (theme !== "dark" && theme !== "light") return;
+    var safe = color === COLORS.dark || color === COLORS.light ? color : COLORS[theme];
+    push(theme, safe);
+  };
 
   apply();
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", apply);

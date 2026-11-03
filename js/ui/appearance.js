@@ -37,17 +37,38 @@
     const applyTheme=theme=>{
       const chosen=validThemes.includes(theme)?theme:"system";
       const resolved=chosen==="system"?(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):chosen;
-      root.dataset.zpTheme=resolved;
-      root.dataset.zpThemeChoice=chosen;
       const dark=resolved!=="light";
       /* 主题底色严格成对：深色 #121826 ↔ 浅色 #F6F7F9。
          映射表是 meta theme-color 的唯一真值来源（浅色取映射值，深色取键本身），
          杜绝多处各写一半对不齐。 */
       const SHELL_BG={"#121826":"#F6F7F9"};
       const bg=dark?"#121826":SHELL_BG["#121826"];
+      /* 外观切换必须原子换色（2026-11-03，深浅切换时顶部闪纯黑/纯白）：
+         color-scheme 不是可过渡属性，data-zp-theme 一改就**瞬时**生效，把 UA 基层
+         （canvas、滚动条、表单控件、WebView 合成层底色）立刻翻成该配方的默认极端色
+         ——切深色是纯黑、切浅色是纯白；而 .zp-ui-ready 给所有元素（含 html/body）
+         挂了 background-color .22s 渐变，主题色要 220ms 才到位。这两段时间常数不一致，
+         中间那一截露出来的就是既非 #121826 也非 #F6F7F9 的纯黑/纯白 —— 正是用户
+         看到的「状态栏位置闪一下黑白」。
+         做法：切换期间摘掉 zp-ui-ready（全站过渡都以它为宿主，摘掉即整体失效，
+         比新增一条 !important 更干净，也不动 CSS 强制声明预算），换色在同帧原子完成，
+         双 rAF 后再挂回，后续交互过渡不受影响。首帧前 zp-ui-ready 本就未挂，
+         此时没有过渡可关，不必修。 */
+      const wasReady=root.classList.contains("zp-ui-ready");
+      if(wasReady)root.classList.remove("zp-ui-ready");
+      /* 壳侧换色要多跳两趟线程（JavaBridge → runOnUiThread → 下一帧），比网页慢
+         1~3 帧；改 DOM 之前先同步下发，让原生尽早起跑，两侧尽量落进同一帧。
+         去重由 theme-sync.js 的 lastKey 兜住，随后观察器同主题调用不会重复跨桥。 */
+      try{if(typeof window.zpShellThemeSync==="function")window.zpShellThemeSync(resolved,bg)}catch(e){}
+      root.dataset.zpTheme=resolved;
+      root.dataset.zpThemeChoice=chosen;
       const meta=document.querySelector('meta[name="theme-color"]');
       if(meta)meta.setAttribute("content",bg);
       document.dispatchEvent(new CustomEvent("zp:appearancechange",{detail:{theme:chosen,resolved}}));
+      if(wasReady){
+        try{requestAnimationFrame(()=>requestAnimationFrame(()=>root.classList.add("zp-ui-ready")))}
+        catch(e){root.classList.add("zp-ui-ready")}
+      }
     };
     // 全局字号缩放的目标标签：必须覆盖所有可能直接包裹文本的标签。
     // 历史教训：原先漏了 div（及 em/i/b/h5/h6 等文字级标签），导致如
