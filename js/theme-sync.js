@@ -46,14 +46,26 @@
     }
   }
 
+  /* theme-color 要同时维护多条，缺一条就会有场景取到错的色：
+   *   - head 里静态写了三条：带 media 的浅/深两条 + 一条无条件兜底。
+   *     给「解析期取一次、之后不再跟随 JS」的内核用——这类内核会把浅色值按自己的
+   *     深色盘重映射成近黑，正是 Web 端「顶部一条黑带、与页面不同色」的成因。
+   *   - JS 一旦确定主题，就把所有条目的 media 去掉、统一写成当前色；
+   *     否则媒体查询会把用户手动选的深/浅盖回系统值。
+   */
   function syncMeta(color) {
-    var meta = document.querySelector('meta[name="theme-color"]');
-    if (!meta) {
-      meta = document.createElement("meta");
-      meta.setAttribute("name", "theme-color");
-      (document.head || document.documentElement).appendChild(meta);
+    var nodes = document.querySelectorAll('meta[name="theme-color"]');
+    if (!nodes.length) {
+      var created = document.createElement("meta");
+      created.setAttribute("name", "theme-color");
+      (document.head || document.documentElement).appendChild(created);
+      nodes = [created];
     }
-    if (meta.getAttribute("content") !== color) meta.setAttribute("content", color);
+    for (var i = 0; i < nodes.length; i++) {
+      var m = nodes[i];
+      if (m.getAttribute("content") !== color) m.setAttribute("content", color);
+      if (m.hasAttribute("media")) m.removeAttribute("media");
+    }
   }
 
   function syncNative(theme, color) {
@@ -95,9 +107,11 @@
 
   function push(theme, color) {
     var key = theme + "|" + color;
+    /* meta 每次都同步：DOM 可能后补新的 theme-color（如登录页把 meta 放在脚本之后），
+       只在颜色变化时同步会漏掉它们、留下带 media 的旧条目。同步本身是幂等的。 */
+    syncMeta(color);
     if (key === lastKey) return;
     lastKey = key;
-    syncMeta(color);
     syncNative(theme, color);
   }
 
