@@ -681,8 +681,11 @@ html[data-zp-native="1"]{--zp-safe-top:8px}
    用 env() 是否大于 0 去猜会错：旧壳 WebView 让了位，env() 照样可能返回真实高度。 */
 html[data-zp-e2e="1"]{
   --zp-e2e-top: env(safe-area-inset-top, 0px);
-  /* 内容仍从状态栏下方 8px 起：与旧壳视觉等价，只是那 8px 之下不再有原生色块 */
-  --zp-safe-top: max(var(--zp-e2e-top), 8px);
+  /* 内容从色带下沿再退 8px 起 —— 与旧壳「原生让位 + 页面 8px」视觉等价。
+     必须用 calc 相加：写成 max(--zp-e2e-top, 8px) 只会得到状态栏高度本身，
+     那 8px 呼吸位被吃掉，标题会贴着状态栏图标。
+     单位约定：--zp-e2e-top 由原生下发 CSS px（dp），不是物理像素。 */
+  --zp-safe-top: calc(var(--zp-e2e-top) + 8px);
 }
 /* 固定色带 = 状态栏区域。用 ::after 而不是 ::before：admin-base 用 body::before
    做「正在验证登录状态」的全屏遮罩，复用会把它顶掉。

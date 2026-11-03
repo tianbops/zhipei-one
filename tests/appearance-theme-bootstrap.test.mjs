@@ -219,8 +219,10 @@ assert.ok(/removeAttribute\("media"\)/.test(themeSyncJs),
 // DecorView 原生底色 —— 原生和页面各画一半，切外观时必然有一帧错色带。
 // v1.0.29/30/31 三次调 postOnAnimation 的延后跳数都没修掉，因为问题不在时序，在结构。
 const uiBaseCss = fs.readFileSync(path.join(root, "css/ui-base.css"), "utf8");
-assert.ok(/html\[data-zp-e2e="1"\]\s*\{[\s\S]{0,200}?--zp-safe-top:\s*max\(var\(--zp-e2e-top\)/.test(uiBaseCss),
-  "ui-base.css 必须在 data-zp-e2e 下用原生给的高度推 --zp-safe-top（否则内容会顶到状态栏图标下）");
+assert.ok(/html\[data-zp-e2e="1"\]\s*\{[\s\S]{0,260}?--zp-safe-top:\s*calc\(var\(--zp-e2e-top\)\s*\+\s*8px\)/.test(uiBaseCss),
+  "ui-base.css 必须在 data-zp-e2e 下用「状态栏高度 + 8px」推 --zp-safe-top（否则内容会顶到状态栏图标下，或吃掉 8px 呼吸位）");
+assert.ok(!/--zp-safe-top:\s*max\(var\(--zp-e2e-top\)\s*,\s*8px\)/.test(uiBaseCss),
+  "不得写成 max(var(--zp-e2e-top), 8px)：状态栏高度恒大于 8，max 只会返回状态栏高度，8px 呼吸位被吃掉");
 const bandAt = uiBaseCss.indexOf('html[data-zp-e2e="1"] body::after');
 assert.ok(bandAt > 0,
   "ui-base.css 必须用 body::after 画状态栏色带（body::before 已被 admin 的登录校验遮罩占用，复用会把它顶掉）");
