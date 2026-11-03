@@ -87,3 +87,7 @@ jobs:
       # 才不会降级为「提示」。2026-10-28 起纳入 CI。
       - if: steps.scope.outputs.docs_only != 'true'
         run: npm run check:naming
+      # 版本真值一致性：git tag ↔ version.json ↔ downloads/manifest.json（文件名须带版本号）。
+      # 2026-11-03 体检发现 v1.0.29 发布时 Android build.gradle 仍写 1.0.22 —— 公开产物此前
+      # 没有任何守卫；这条只在 Web 侧硬校验（Android 侧由 android-ci 以告警形式呈现）。
+      - run: npm run check:version
