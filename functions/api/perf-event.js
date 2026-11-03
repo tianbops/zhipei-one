@@ -5,7 +5,7 @@ import { guard } from "./_safe.js";
 const PAGES = new Set(["home","history","routes","account","login"]);
 /* endpoint 白名单：账户类已细分为 -me / -settings / -other；
  * 保留旧的 "api-account" 是为了让尚未升级到新版诊断脚本的浏览器仍能被接收（旧数据不丢）。 */
-const ENDPOINTS = new Set(["page-load","api-home","api-history","api-history-detail","api-history-search","api-routes","api-account","api-account-me","api-account-settings","api-account-other","api-waybills","api-waybill-process","home-today-ready-cache","home-today-ready-network","home-history-ready-cache","home-history-ready-network","api-auth","api-other"]);
+const ENDPOINTS = new Set(["page-load","boot-ready","api-home","api-history","api-history-detail","api-history-search","api-routes","api-account","api-account-me","api-account-settings","api-account-other","api-waybills","api-waybill-process","home-today-ready-cache","home-today-ready-network","home-history-ready-cache","home-history-ready-network","api-auth","api-other"]);
 const LUA = `
 local rate = tonumber(redis.call("INCR", KEYS[2]))
 if rate == 1 then redis.call("EXPIRE", KEYS[2], 3600) end

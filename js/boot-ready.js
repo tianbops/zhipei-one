@@ -24,10 +24,27 @@
   function fire() {
     if (sent) return;
     sent = true;
+    tryRecord();
     try {
       nat.webReady();
     } catch (e) {
       /* 桥异常不能影响页面本身 */
+    }
+  }
+
+  /* 启动时序遥测：此刻 ≈ 首帧已上屏，performance.now() 就是「导航开始 → 可见」。
+   * 这个数才是用户实际等待；既有的 page-load（load 事件）早于它，单看 page-load
+   * 会低估启动耗时，两者之差是「资源已齐、画面未上屏」的渲染尾巴。
+   * 反过来也有用：某次启动只有 page-load 没有 boot-ready，说明双 rAF 没被调度
+   * （页面隐藏/后台恢复等），那一次启动屏只能靠原生超时撤 —— 这个失败模式
+   * 以前是完全静默的。
+   * 上报必须 fire-and-forget：任何异常都不得影响握手本身。 */
+  function tryRecord() {
+    try {
+      if (typeof window.zpPerfRecord !== "function") return;
+      window.zpPerfRecord("boot-ready", 200, performance.now(), null);
+    } catch (e) {
+      /* 遥测失败不影响启动 */
     }
   }
 
