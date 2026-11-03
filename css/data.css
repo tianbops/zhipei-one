@@ -42,13 +42,13 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-import-panel{overflow:auto;display:flex;flex-direction:column}
 .data-import-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
 .data-import-head h3{margin:0;font-size:var(--zp-fs-16);line-height:24px}
-.data-import-close{width:34px;height:34px;border:1px solid var(--zp-line);border-radius:var(--zp-r-mini);background:var(--zp-card-translucent-2);color:var(--zp-muted);font-size:var(--zp-fs-18)}
+.data-import-close{width:34px;height:34px;border:1px solid var(--zp-line);border-radius:var(--zp-r-mini);background:var(--zp-card-2);color:var(--zp-muted);font-size:var(--zp-fs-18)}
 .data-file{width:100%;margin:12px 0;color:var(--zp-muted);font-size:var(--zp-fs-13)}
 .data-textarea{width:100%;min-height:230px;resize:vertical;border:1px solid var(--zp-input-line);border-radius:var(--zp-r-control);background:var(--zp-input-bg);color:var(--zp-text);padding:12px 16px;font:inherit;font-size:var(--zp-fs-14);line-height:1.6;outline:none}
 .data-textarea:focus{border-color:var(--zp-input-focus)}
 .data-preview{min-height:19px;margin-top:8px}
 .data-import-actions{position:sticky;bottom:0;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px -16px 0;padding:12px 16px calc(14px + env(safe-area-inset-bottom));background:var(--zp-surface);border-top:1px solid var(--zp-tint)}
-.data-import-actions button{height:var(--zp-control-height);border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-translucent-2);color:var(--zp-text);font-size:var(--zp-fs-15)}
+.data-import-actions button{height:var(--zp-control-height);border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-2);color:var(--zp-text);font-size:var(--zp-fs-15)}
 .data-import-actions #importSave{background:var(--zp-primary);color:var(--zp-on-primary)}
 /* 桌面端居中的补丁已无必要：.data-import 现在全程居中。 */
 /* 轻量入场动效：只做透明度+上滑，不改布局与结构；系统开启"减弱动态效果"时自动关闭 */
@@ -78,7 +78,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-tools-card{padding:12px 14px}
 .data-maintenance{display:grid;gap:9px}
 .data-maintenance-group{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-.data-action-btn{width:100%;min-height:var(--zp-control-height);margin:0;padding:0 16px;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-translucent-2);color:var(--zp-text);font-size:var(--zp-fs-14);font-weight:var(--zp-fw-medium)}
+.data-action-btn{width:100%;min-height:var(--zp-control-height);margin:0;padding:0 16px;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-2);color:var(--zp-text);font-size:var(--zp-fs-14);font-weight:var(--zp-fw-medium)}
 .data-action-btn:active{background:var(--zp-primary);color:var(--zp-on-primary)}
 .data-action-primary{background:var(--zp-primary);border-color:var(--zp-primary);color:var(--zp-on-primary);font-weight:var(--zp-fw-bold)}
 .data-store-row{touch-action:pan-y;user-select:none;transition:opacity .18s ease,transform .18s ease}
@@ -102,7 +102,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
    会超出 .data-store-main 为它们预留的 padding-right:116px 而溢出。
    font 14 时「编辑/删除」两字约 28px + 18 padding = 46px < min-width 48px，
    实际宽度仍是 48px，预留不动也不会溢出。 */
-.data-swipe-actions button{min-width:48px;height:var(--zp-control-height);padding:0 9px;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-translucent-2);color:var(--zp-text);font-size:var(--zp-fs-14)}
+.data-swipe-actions button{min-width:48px;height:var(--zp-control-height);padding:0 9px;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-2);color:var(--zp-text);font-size:var(--zp-fs-14)}
 /* 死规则对齐：已被 ui-theme.css Phase 2 .data-swipe-actions .data-swipe-delete !important 接管。 */
 .data-swipe-actions .data-swipe-delete{color:var(--zp-error)}
 @media(min-width:600px){
@@ -115,8 +115,8 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
    main > .topbar 的 var(--zp-safe-top)，导致本页顶栏是全站唯一贴着屏幕顶端的，
    比历史页/账号页高 24px，跨页切换时标题会跳。现与全局口径统一。 */
 .data-page .topbar h1{margin:0;text-align:center;font-weight:var(--zp-fw-semibold)}
-.data-page .app-back{width:var(--zp-control-height);height:var(--zp-control-height);display:flex;align-items:center;justify-content:center;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-translucent-2);color:var(--zp-text);text-decoration:none;box-sizing:border-box}
-.data-page-menu-btn{width:var(--zp-control-height);height:var(--zp-control-height);display:flex;align-items:center;justify-content:center;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-translucent-2);color:var(--zp-text);text-decoration:none;box-sizing:border-box}
+.data-page .app-back{width:var(--zp-control-height);height:var(--zp-control-height);display:flex;align-items:center;justify-content:center;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-2);color:var(--zp-text);text-decoration:none;box-sizing:border-box}
+.data-page-menu-btn{width:var(--zp-control-height);height:var(--zp-control-height);display:flex;align-items:center;justify-content:center;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-2);color:var(--zp-text);text-decoration:none;box-sizing:border-box}
 .data-page-menu-btn{font-size:var(--zp-fs-18);line-height:1}
 .data-page .app-back:active{background:var(--zp-primary);color:var(--zp-on-primary)}
 .data-page-menu-btn:active{background:var(--zp-primary);color:var(--zp-on-primary)}
@@ -136,7 +136,7 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-route-title .data-summary{flex:none;margin:0;padding:0;border:0}
 .data-route-title .data-summary strong{font-size:var(--zp-fs-16);white-space:nowrap}
 
-.data-feedback{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:160;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;max-width:calc(100vw - 32px);padding:10px 14px;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-surface);color:var(--zp-text);font-size:var(--zp-fs-13);line-height:18px;box-shadow:0 10px 28px var(--zp-shadow-md);text-align:center}.data-feedback.success{background:var(--zp-success-surface)}.data-feedback.error{background:var(--zp-error-surface);border-color:var(--zp-error-surface-strong)}.data-feedback-action{flex:none;min-height:32px;padding:0 10px;border:1px solid var(--zp-muted);border-radius:var(--zp-r-mini);background:var(--zp-card-translucent);color:var(--zp-text);font-size:var(--zp-fs-12);font-weight:var(--zp-fw-semibold)}
+.data-feedback{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:160;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;max-width:calc(100vw - 32px);padding:10px 14px;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-surface);color:var(--zp-text);font-size:var(--zp-fs-13);line-height:18px;box-shadow:0 10px 28px var(--zp-shadow-md);text-align:center}.data-feedback.success{background:var(--zp-success-surface)}.data-feedback.error{background:var(--zp-error-surface);border-color:var(--zp-error-surface-strong)}.data-feedback-action{flex:none;min-height:32px;padding:0 10px;border:1px solid var(--zp-muted);border-radius:var(--zp-r-mini);background:var(--zp-card);color:var(--zp-text);font-size:var(--zp-fs-12);font-weight:var(--zp-fw-semibold)}
 
 /* Android typography normalization: size/line-height only */
 .data-route-hint{font-size:var(--zp-fs-15);line-height:22px}
@@ -196,5 +196,5 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-alias-chip .data-alias-del:hover{color:var(--zp-error)}
 .data-alias-add{display:flex;gap:8px;margin-top:8px}
 .data-alias-input{flex:1 1 auto;min-width:0;width:auto}
-.data-alias-add .data-action-btn{width:auto;height:var(--zp-control-height);border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-translucent-2);color:var(--zp-text);font-size:var(--zp-fs-14);padding:0 16px;flex:0 0 auto}
+.data-alias-add .data-action-btn{width:auto;height:var(--zp-control-height);border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-2);color:var(--zp-text);font-size:var(--zp-fs-14);padding:0 16px;flex:0 0 auto}
 .data-aliases-empty{color:var(--zp-muted);font-size:var(--zp-fs-12);padding:2px 0}

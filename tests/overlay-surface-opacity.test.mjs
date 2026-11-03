@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 浮层面板必须不透明。
+ * 全局容器（卡片 / 面板 / 弹层）必须不透明，且底色随外观切换。
  *
  * ## 为什么单独立一条护栏
  * 半透明卡片（--zp-card-translucent / -2）是设计语言的一部分：卡片压在页面纯色底上，
@@ -8,8 +8,11 @@
  * 弹窗背后的门店名、备注会直接透进面板，和弹窗自己的文字叠在一起，
  * 看起来像重影/乱码 —— 用户描述为「弹窗透明，文字混乱」。
  *
- * v1.0.33 之前 .data-import-panel 就是 var(--zp-card-translucent)（白 82%），
- * 数据页「恢复数据」弹窗直接把下面的列表透出来。
+ * 2026-11-04 用户要求「全局统一风格，取消透明，随外观色变化而变化」：
+ * 不再只修浮层，而是把 --zp-card-translucent / -2 两个 token 整体收敛为
+ * --zp-card（=--zp-surface）/ --zp-card-2（=--zp-surface-2），
+ * 102 处引用一次性变实底；因为值本身是 var(--zp-surface*)，深浅主题各自解析，
+ * 所以「随外观变化」是结构保证，不靠逐处补丁。
  *
  * ## 判定口径
  * 只看「最终会覆盖在内容之上」的面板类，且只判该类的**背景**：
@@ -111,4 +114,60 @@ test("全屏遮罩用 scrim，不用卡片色", () => {
     }
   }
   assert.deepEqual(bad, [], "以下遮罩没有用 --zp-scrim / --zp-scrim-dialog：\n" + bad.join("\n"));
+});
+
+/* ===== 2026-11-04 全局收敛：令牌层与全容器层 ===== */
+
+const cssText = cssFiles.map((f) => ({ file: f.file, text: stripComments(f.text) }));
+
+test("半透明卡片令牌已下线，不得复活", () => {
+  const bad = [];
+  for (const { file, text } of cssText) {
+    if (/--zp-card-translucent/.test(text)) bad.push(file);
+  }
+  assert.deepEqual(bad, [], "以下文件仍引用 --zp-card-translucent*（已下线，改用 --zp-card / --zp-card-2）：\n" + bad.join("\n"));
+});
+
+test("--zp-card / --zp-card-2 指向表面令牌，只在 :root 定义一次", () => {
+  const found = { "--zp-card": [], "--zp-card-2": [] };
+  for (const { file, text } of cssText) {
+    for (const m of text.matchAll(/(--zp-card(?:-2)?)\s*:\s*([^;}]+)/g)) {
+      found[m[1]].push({ file, value: m[2].trim() });
+    }
+  }
+  // home.bundle.css 是首页的打包副本，允许同一令牌在 ui-base 与 bundle 各定义一次，
+  // 但值必须完全一致；深色不得再单独重定义（靠 --zp-surface 覆盖自动跟随）。
+  for (const [name, expect] of [["--zp-card", "var(--zp-surface)"], ["--zp-card-2", "var(--zp-surface-2)"]]) {
+    const hits = found[name];
+    assert.ok(hits.length >= 1, `${name} 未定义`);
+    const wrong = hits.filter((x) => x.value !== expect);
+    assert.deepEqual(wrong, [], `${name} 只能等于 ${expect}；深色请改 --zp-surface*，不要重定义卡片令牌`);
+    const files = hits.map((x) => x.file);
+    assert.equal(new Set(files).size, files.length, `${name} 在同一文件内重复定义：${files.join(", ")}`);
+  }
+});
+
+test("任何 background 都不得使用半透明字面量（遮罩除外）", () => {
+  const bad = [];
+  for (const { file, text } of cssText) {
+    for (const r of rules(text)) {
+      const bg = bgValue(r.body);
+      if (!bg) continue;
+      if (/rgba?\(/.test(bg)) bad.push(`${file}  ${r.selector}  →  ${bg}`);
+    }
+  }
+  assert.deepEqual(bad, [], "以下容器直接用 rgba 做背景，深色下极易变成白雾/黑雾：\n" + bad.join("\n"));
+});
+
+test("交互态与卡片底差一档（:active / .selected 不得用 --zp-card）", () => {
+  const bad = [];
+  for (const { file, text } of cssText) {
+    for (const r of rules(text)) {
+      if (!/(:active|\.selected|\.is-active)/.test(r.selector)) continue;
+      const bg = bgValue(r.body);
+      if (!bg) continue;
+      if (bg === "var(--zp-card)") bad.push(`${file}  ${r.selector}  →  ${bg}`);
+    }
+  }
+  assert.deepEqual(bad, [], "以下交互态与卡片同色，按下去看不出反馈（应改 --zp-card-2）：\n" + bad.join("\n"));
 });

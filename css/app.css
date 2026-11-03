@@ -29,7 +29,7 @@ body {
    标准 Header 钩子 .topbar 现统一定义于 css/ui-unified.css（权威层）。详见资产审计台账第二十四章。 */
 
 .card {
-  background: var(--zp-card-translucent-2);
+  background: var(--zp-card);
   border: 1px solid var(--zp-tint);
   border-radius:var(--zp-r-card);
   padding: 18px;
@@ -92,7 +92,7 @@ body {
 }
 
 .grid a {
-  background: var(--zp-card-translucent-2);
+  background: var(--zp-card);
   border: 1px solid var(--zp-line);
 }
 
@@ -151,7 +151,7 @@ body {
   padding: 12px;
   border: 1px solid var(--zp-line);
   border-radius:var(--zp-r-dialog);
-  background: var(--zp-card-translucent-2);
+  background: var(--zp-card);
 }
 
 .pending-box {
@@ -191,13 +191,13 @@ body {
 
 .choice-btn.selected {
   border-color: var(--zp-muted);
-  background: var(--zp-card-translucent);
+  background: var(--zp-card-2);
 }
 
 .secondary-btn {
   width: 100%;
   border: 1px solid var(--zp-line);
-  background: var(--zp-card-translucent-2);
+  background: var(--zp-card);
   color: var(--zp-text);
 }
 
@@ -408,7 +408,7 @@ body {
   height: var(--zp-control-height);
   border: 1px solid var(--zp-line);
   border-radius:var(--zp-r-control);
-  background: var(--zp-card-translucent-2);
+  background: var(--zp-card);
   color: var(--zp-text);
   font-size:var(--zp-fs-15);
 }
@@ -437,7 +437,7 @@ body {
 .request-row button {
   border: 1px solid var(--zp-line);
   border-radius:var(--zp-r-control);
-  background: var(--zp-card-translucent-2);
+  background: var(--zp-card);
   color: var(--zp-text);
   padding: 8px 16px;
   font-size:var(--zp-fs-14);
@@ -540,7 +540,7 @@ body {
   margin: 0;
   padding: 0 16px;
   /* 浅色基底输入对比度修复（2026-10-26 用户反馈「浅色输入框对比度太低」）：
-     原 var(--zp-line)#EEEEEE 边 + var(--zp-card-translucent-2)#F2F3F5 底，
+     此前是 var(--zp-line) 边 + var(--zp-card-2)#F2F3F5 底，
      边框与底色对比仅 1.07:1、与页面背景几乎无法区分；改为白底（--zp-surface）
      + 专用边框令牌 --zp-input-line，与 #F6F7F9 页面背景拉开层次。
      边框令牌定义见 ui-base.css（浅色）与 ui-theme.css（深色覆盖）；占位符

@@ -3,7 +3,7 @@
   margin-top:10px;
   touch-action:pan-y;   /* 纵向可滚动，横向手势留给 JS 切月 */
   padding:12px 13px 11px;
-  border:1px solid var(--zp-surface-3);border-radius:var(--zp-r-card);background:var(--zp-card-translucent-2);overflow:hidden;
+  border:1px solid var(--zp-surface-3);border-radius:var(--zp-r-card);background:var(--zp-card);overflow:hidden;
 }
 .trend-card.is-in{animation:trendIn .22s ease-out}
 @keyframes trendIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -16,7 +16,7 @@
   background:var(--zp-surface-2);color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:16px;cursor:pointer;white-space:nowrap;
   transition:background .15s,color .15s,border-color .15s;
 }
-/* 选中态用 --zp-surface-3（浅色 #E8EAED / 深色 #334155）：原 --zp-card-translucent
+/* 选中态用 --zp-surface-3（浅色 #E8EAED / 深色 #334155）：原 --zp-card-translucent-2
    在浅色下是 82% 白，叠在近白卡片上完全看不出选中，等于没有状态。 */
 .trend-year:active,.trend-year.is-active{background:var(--zp-surface-3);color:var(--zp-text);border-color:var(--zp-line)}
 .trend-month-row{display:flex;align-items:center;justify-content:center;gap:14px}
