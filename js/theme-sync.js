@@ -11,14 +11,17 @@
  * （监听 <html data-zp-theme> 属性变化）。
  *
  * 两套主题都同时设「图标明暗 + 底色」：
- *   深色 → 浅色图标（白）+ #121826 底
- *   浅色 → 深色图标（黑）+ #F6F7F9 底（对应设计稿里“浅底黑字”的系统状态栏）
+ *   深色 → 浅色图标（白）+ #000000 底
+ *   浅色 → 深色图标（黑）+ #FFFFFF 底（对应设计稿里“浅底黑字”的系统状态栏）
  * 只设底色不设图标会出现「白图标压在浅底上」不可读，所以两者必须成对下发；
  * 调用顺序也固定为「先切图标明暗、再改底色」，避免中间态闪一下不可读。
  */
 (function () {
   "use strict";
-  var COLORS = { dark: "#121826", light: "#F6F7F9" };
+  /* 2026-11-04 外观改版：随 --zp-bg 同步换成 Uber 中性色（浅 #FFFFFF / 深 #000000）。
+     这两个值必须与 css/ui-base.css 的 --zp-bg、css/ui-theme.css 的深色 --zp-bg 逐字一致，
+     否则原生状态栏/导航栏会与页面底差一条色带（tests/appearance-theme-bootstrap E 组在册）。 */
+  var COLORS = { dark: "#000000", light: "#FFFFFF" };
 
   /* App 壳标记：安卓壳用 WebView 外边距把状态栏区域整体让开（MainActivity
      .applyInsetsMargins），所以页面内的顶部 padding 与状态栏并不重叠，可以压到很小

@@ -9,14 +9,14 @@
  *   B. color-scheme：深色主题块必须显式 color-scheme:dark、其余 :root 块必须
  *      color-scheme:light——否则 WebView 里表单控件/滚动条会保持系统配色，
  *      深色模式下出现「白底黑字的滚动条」之类穿透（历史教训）；
- *   C. 设计令牌：浅色默认 :root 块持用户 spec 全套取值（#F6F7F9/#FFFFFF/#111111/
+ *   C. 设计令牌：浅色默认 :root 块持用户 spec 全套取值（#FFFFFF/#F3F3F3/#000000/
  *      #666666/#999999/#EEEEEE/#1677FF/#00B42A/#FF7D00/#F53F3F/阴影 .06），
- *      深色块持深色 spec（#121826/#1E293B/#F1F5F9/#94A3B8/#64748B/#334155/
+ *      深色块持深色 spec（#000000/#1D1D1D/#FFFFFF/#A3A3A3/#717171/#2B2B2B/
  *      #3B82F6/#22C55E/#FB923C/#EF4444/阴影 .25），logo 底板令牌 --zp-logo-plate 在册；
  *   D. 按钮体系：危险操作按钮 = 中性底 + 红字（var(--zp-secondary-bg) +
  *      var(--zp-error)，用户 2026-10 明确决策），旧「灰底灰字中性化」字面量必须绝迹；
- *   E. 壳色同步：appearance.js 与首屏早脚本把 #121826/#F6F7F9 回传安卓壳，
- *      静态 meta theme-color 默认浅色（#F6F7F9），修补 Group-B 五页不同步的漏洞。
+ *   E. 壳色同步：appearance.js 与首屏早脚本把 #000000/#FFFFFF 回传安卓壳，
+ *      静态 meta theme-color 默认浅色（#FFFFFF），修补 Group-B 五页不同步的漏洞。
  * ============================================================================
  */
 import fs from "node:fs";
@@ -112,16 +112,19 @@ for (const b of lightBlocks) {
 
 // C. 设计令牌：用户 spec 的浅色默认 + 深色覆盖（token 名沿用现有 --zp-* 体系）
 const LIGHT_TOKENS = [
-  ["--zp-bg", "#F6F7F9"], ["--zp-surface", "#FFFFFF"], ["--zp-text", "#111111"],
-  ["--zp-muted", "#666666"], ["--zp-soft", "#999999"], ["--zp-line", "#D9DDE3"],
-  ["--zp-line-inset", "#E1E4E8"], ["--zp-divider", "#DDE1E6"], ["--zp-tint", "rgba(0,0,0,.08)"],
+  ["--zp-bg", "#FFFFFF"], ["--zp-block", "#F3F3F3"], ["--zp-surface", "#FFFFFF"],
+  ["--zp-text", "#000000"],
+  ["--zp-muted", "#666666"], ["--zp-soft", "#999999"], ["--zp-line", "#E4E4E4"],
+  ["--zp-line-inset", "#EDEDED"], ["--zp-divider", "#E2E2E2"], ["--zp-tint", "rgba(0,0,0,.06)"],
   ["--zp-primary", "#1677FF"], ["--zp-on-primary", "#FFFFFF"],
   ["--zp-success", "#00B42A"], ["--zp-warning", "#FF7D00"], ["--zp-error", "#F53F3F"],
+  ["--zp-danger", "#B92B06"],
   ["--zp-shadow", "0 2px 8px rgba(0,0,0,.06)"],
 ];
 const DARK_TOKENS = [
-  ["--zp-bg", "#121826"], ["--zp-surface", "#1E293B"], ["--zp-text", "#F1F5F9"],
-  ["--zp-muted", "#94A3B8"], ["--zp-soft", "#64748B"], ["--zp-line", "#334155"],
+  ["--zp-bg", "#000000"], ["--zp-block", "#1D1D1D"], ["--zp-surface", "#232323"],
+  ["--zp-text", "#FFFFFF"],
+  ["--zp-muted", "#A3A3A3"], ["--zp-soft", "#717171"], ["--zp-line", "#2B2B2B"],
   ["--zp-primary", "#3B82F6"], ["--zp-success", "#22C55E"], ["--zp-warning", "#FB923C"],
   ["--zp-error", "#EF4444"], ["--zp-shadow", "0 2px 8px rgba(0,0,0,.25)"],
 ];
@@ -179,10 +182,10 @@ assert.ok(
 );
 
 // ============================ E. 主题底色同步 ============================
-// 底色真值唯一：深色 #121826 ↔ 浅色 #F6F7F9，由映射表统一给出，杜绝多处各写一半对不齐。
+// 底色真值唯一：深色 #000000 ↔ 浅色 #FFFFFF，由映射表统一给出，杜绝多处各写一半对不齐。
 const unifiedJs = fs.readFileSync(path.join(root, "js/ui/appearance.js"), "utf8");
-assert.ok(/const\s+dark\s*=\s*resolved\s*!==\s*"light"/.test(unifiedJs) && unifiedJs.includes('"#121826":"#F6F7F9"'),
-  "主题底色必须与网页主题一致（深色 #121826 / 浅色 #F6F7F9）");
+assert.ok(/const\s+dark\s*=\s*resolved\s*!==\s*"light"/.test(unifiedJs) && unifiedJs.includes('"#000000":"#FFFFFF"'),
+  "主题底色必须与网页主题一致（深色 #000000 / 浅色 #FFFFFF）");
 // js/ui/appearance.js 在页面底部，加载线上页面时可能晚于首帧，
 // 因此 <head> 里的内联主题脚本（比任何外链 JS 都早）也必须同步一次，否则浅色用户会先看到深色再跳变。
 // 2026-10-23：原 Group-B 五页（index/register/setup/offline/admin-bootstrap）只设属性不同步 meta，
@@ -191,15 +194,15 @@ for (const file of themedPages) {
   const html = fs.readFileSync(file, "utf8");
   assert.ok(html.includes('meta[name="theme-color"]'),
     path.relative(root, file) + " 缺少 meta[name=theme-color]");
-  assert.ok(/<meta name="theme-color" content="#F6F7F9">/.test(html),
-    path.relative(root, file) + " 静态 meta theme-color 兜底值必须为浅色 #F6F7F9（浅色为默认外观）");
+  assert.ok(/<meta name="theme-color" content="#FFFFFF">/.test(html),
+    path.relative(root, file) + " 静态 meta theme-color 兜底值必须为浅色 #FFFFFF（浅色为默认外观）");
   // 2026-11-04：静态值必须按系统外观分成两条（media），再留一条无条件兜底。
   // 部分安卓内核对 theme-color 只在解析期取一次、之后不跟随 JS，并且会把浅色值
   // 按自己的深色盘重映射成近黑——Web 端「顶部一条黑带与页面不同色」就是它。
   // 三条的顺序：浅(media) → 深(media) → 兜底，UA 取第一条 media 命中的。
-  const lightAt = html.indexOf('<meta name="theme-color" content="#F6F7F9" media="(prefers-color-scheme: light)">');
-  const darkAt = html.indexOf('<meta name="theme-color" content="#121826" media="(prefers-color-scheme: dark)">');
-  const fallbackAt = html.indexOf('<meta name="theme-color" content="#F6F7F9">');
+  const lightAt = html.indexOf('<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">');
+  const darkAt = html.indexOf('<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">');
+  const fallbackAt = html.indexOf('<meta name="theme-color" content="#FFFFFF">');
   assert.ok(lightAt >= 0 && darkAt >= 0, path.relative(root, file) + " 缺少按系统外观分流的 theme-color（media 两条）");
   assert.ok(lightAt < darkAt && darkAt < fallbackAt,
     path.relative(root, file) + " theme-color 顺序必须是 浅(media) → 深(media) → 无条件兜底，乱序会被 UA 取到错的色");

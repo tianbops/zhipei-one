@@ -155,11 +155,54 @@ const ACCEPTED_REMOVALS = {
     "同日同上：收敛到 --zp-card-2（=--zp-surface-2）。",
 };
 const ACCEPTED_CHANGES = {
-  "--card2": {
-    // 只接受「恰好变成这两个实色值」，改成别的颜色照样红 —— 登记不等于豁免。
-    values: ["#F2F3F5", "#253345"],
-    why: "别名跟随 --zp-card-translucent-2 一起转实色。该别名全仓零引用，仅保留兼容。",
-  },
+  // 2026-11-04 外观改版（Uber 中性色阶）：深色由 slate 族换为中性黑，浅色翻为白底灰块。
+  // 本表由 `node tests/tools/css-var-resolve.cjs` 的差异输出聚合生成，逐条登记
+  // from（旧值）→ values（新值）：只接受「从这些旧值恰好变成这些新值」。
+  // 再漂移一档（比如有人把 --zp-bg 改成 #0A0A0A）照样 EXIT=1 —— 登记不等于豁免。
+  "--bg": { from: ["#121826"], values: ["#000000"], why: "旧别名跟随对应 --zp-* 令牌变化（仅兼容保留，组件层零引用）" },
+  "--card": { from: ["#1E293B"], values: ["#1D1D1D"], why: "旧别名跟随对应 --zp-* 令牌变化（仅兼容保留，组件层零引用）" },
+  "--card2": { from: ["#253345"], values: ["#282828"], why: "旧别名跟随对应 --zp-* 令牌变化（仅兼容保留，组件层零引用）" },
+  "--line": { from: ["#334155"], values: ["#2B2B2B"], why: "旧别名跟随对应 --zp-* 令牌变化（仅兼容保留，组件层零引用）" },
+  "--muted": { from: ["#94A3B8"], values: ["#A3A3A3"], why: "旧别名跟随对应 --zp-* 令牌变化（仅兼容保留，组件层零引用）" },
+  "--panel": { from: ["#1E293B", "#253345"], values: ["#232323"], why: "旧别名跟随对应 --zp-* 令牌变化（仅兼容保留，组件层零引用）" },
+  "--soft": { from: ["#64748B"], values: ["#717171"], why: "旧别名跟随对应 --zp-* 令牌变化（仅兼容保留，组件层零引用）" },
+  "--text": { from: ["#F1F5F9"], values: ["#FFFFFF"], why: "旧别名跟随对应 --zp-* 令牌变化（仅兼容保留，组件层零引用）" },
+  "--zp-bg": { from: ["#121826"], values: ["#000000"], why: "Uber 中性色阶：表面/文字/边框由 slate 族换为中性灰" },
+  "--zp-card": { from: ["#1E293B"], values: ["#1D1D1D"], why: "卡片令牌：--zp-card 改指新增的 --zp-block（内容块），深色解析值随之变化" },
+  "--zp-card-2": { from: ["#253345"], values: ["#282828"], why: "卡片令牌：--zp-card 改指新增的 --zp-block（内容块），深色解析值随之变化" },
+  "--zp-disabled-bg": { from: ["#253345"], values: ["#282828"], why: "Uber 中性色阶：表面/文字/边框由 slate 族换为中性灰" },
+  "--zp-disabled-text": { from: ["#64748B"], values: ["#7A7A7A"], why: "Uber 中性色阶：表面/文字/边框由 slate 族换为中性灰" },
+  "--zp-focus": { from: ["#F1F5F9"], values: ["#FFFFFF"], why: "焦点色随中性化；光晕回到品牌蓝族" },
+  "--zp-focus-glow": { from: ["0 0 0 3px rgba(148,163,184,.18)"], values: ["0 0 0 3px rgba(96,165,250,.18)"], why: "焦点色随中性化；光晕回到品牌蓝族" },
+  "--zp-focus-ring": { from: ["#94A3B8"], values: ["#A3A3A3"], why: "焦点色随中性化；光晕回到品牌蓝族" },
+  "--zp-input-bg": { from: ["#1E293B"], values: ["#1D1D1D"], why: "输入框组随表面中性化（与卡片同色 + 描边，深浅同一条规则）" },
+  "--zp-input-bg-disabled": { from: ["#182130"], values: ["#191919"], why: "输入框组随表面中性化（与卡片同色 + 描边，深浅同一条规则）" },
+  "--zp-input-line": { from: ["#334155"], values: ["#2B2B2B"], why: "输入框组随表面中性化（与卡片同色 + 描边，深浅同一条规则）" },
+  "--zp-input-line-disabled": { from: ["#2A3648"], values: ["#202020"], why: "输入框组随表面中性化（与卡片同色 + 描边，深浅同一条规则）" },
+  "--zp-input-placeholder": { from: ["#94A3B8"], values: ["#A3A3A3"], why: "输入框组随表面中性化（与卡片同色 + 描边，深浅同一条规则）" },
+  "--zp-input-text-disabled": { from: ["#64748B"], values: ["#7A7A7A"], why: "输入框组随表面中性化（与卡片同色 + 描边，深浅同一条规则）" },
+  "--zp-line": { from: ["#334155"], values: ["#2B2B2B"], why: "Uber 中性色阶：表面/文字/边框由 slate 族换为中性灰" },
+  "--zp-line-inset": { from: ["#253345"], values: ["#252525"], why: "Uber 中性色阶：表面/文字/边框由 slate 族换为中性灰" },
+  "--zp-muted": { from: ["#94A3B8"], values: ["#A3A3A3"], why: "Uber 中性色阶：表面/文字/边框由 slate 族换为中性灰" },
+  "--zp-nav-active-bg": { from: ["rgba(255,255,255,.08)"], values: ["rgba(255,255,255,.10)"], why: "底栏浮岛化：深色浮岛取块色，不与页面底同色（纯黑上投影不可见，靠亮度差浮起）" },
+  "--zp-nav-bg": { from: ["#121826"], values: ["#1D1D1D"], why: "底栏浮岛化：深色浮岛取块色，不与页面底同色（纯黑上投影不可见，靠亮度差浮起）" },
+  "--zp-nav-text": { from: ["#94A3B8"], values: ["#A3A3A3"], why: "底栏浮岛化：深色浮岛取块色，不与页面底同色（纯黑上投影不可见，靠亮度差浮起）" },
+  "--zp-nav-text-active": { from: ["#F1F5F9"], values: ["#FFFFFF"], why: "底栏浮岛化：深色浮岛取块色，不与页面底同色（纯黑上投影不可见，靠亮度差浮起）" },
+  "--zp-scrim": { from: ["rgba(2,6,23,.72)"], values: ["rgba(0,0,0,.72)"], why: "遮罩去蓝调：原 rgba(2,6,23,…) 是 slate 族，中性底上会泛青" },
+  "--zp-scrim-dialog": { from: ["rgba(2,6,23,.58)"], values: ["rgba(0,0,0,.62)"], why: "遮罩去蓝调：原 rgba(2,6,23,…) 是 slate 族，中性底上会泛青" },
+  "--zp-secondary-active": { from: ["#334155"], values: ["#383838"], why: "次按钮组随表面中性化" },
+  "--zp-secondary-bg": { from: ["#253345"], values: ["#282828"], why: "次按钮组随表面中性化" },
+  "--zp-secondary-border": { from: ["#475569"], values: ["#3D3D3D"], why: "次按钮组随表面中性化" },
+  "--zp-secondary-hover": { from: ["#2A3A4F"], values: ["#2C2C2C"], why: "次按钮组随表面中性化" },
+  "--zp-secondary-text": { from: ["#F1F5F9"], values: ["#FFFFFF"], why: "次按钮组随表面中性化" },
+  "--zp-sk-a": { from: ["#1E293B"], values: ["#232323"], why: "骨架微光条随表面中性化" },
+  "--zp-sk-b": { from: ["#253345"], values: ["#282828"], why: "骨架微光条随表面中性化" },
+  "--zp-soft": { from: ["#64748B"], values: ["#717171"], why: "Uber 中性色阶：表面/文字/边框由 slate 族换为中性灰" },
+  "--zp-surface": { from: ["#1E293B"], values: ["#232323"], why: "Uber 中性色阶：表面/文字/边框由 slate 族换为中性灰" },
+  "--zp-surface-2": { from: ["#253345"], values: ["#282828"], why: "Uber 中性色阶：表面/文字/边框由 slate 族换为中性灰" },
+  "--zp-surface-3": { from: ["#334155"], values: ["#383838"], why: "Uber 中性色阶：表面/文字/边框由 slate 族换为中性灰" },
+  "--zp-text": { from: ["#F1F5F9"], values: ["#FFFFFF"], why: "Uber 中性色阶：表面/文字/边框由 slate 族换为中性灰" },
+  "--zp-tint": { from: ["rgba(255,255,255,.07)"], values: ["rgba(255,255,255,.08)"], why: "微染加深一档：纯黑底上 .07 的白描边几乎不可见" },
 };
 
 let totalDiff = 0;
@@ -187,7 +230,9 @@ for (const htmlFile of htmlFiles.sort()) {
     }
     if (b !== a) {
       const acc = ACCEPTED_CHANGES[n];
-      if (acc && acc.values.includes(a)) { acceptedHits++; continue; }
+      // 双向登记：after 必须落在 values，且 before 必须落在 from。
+      // 只写 values 时退化为单向放行（兼容尚未补 from 的旧条目）。
+      if (acc && acc.values.includes(a) && (!acc.from || acc.from.includes(b))) { acceptedHits++; continue; }
       diffs.push(`    ${n}\n      BEFORE: ${b}\n      AFTER : ${a}`);
     }
   }

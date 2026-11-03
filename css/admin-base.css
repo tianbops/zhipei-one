@@ -1,7 +1,7 @@
 /* css/admin-base.css —— 骨架与组件基础：:root 变量、页头、Tab、列表行 .row/.route、弹窗 .dialog、Toast
  * 拆分自 admin.html（原内联 <style> 第 1 段），规则顺序原样保留，层叠结果不变。
  */
-:root{--bg:var(--zp-bg);--card:var(--zp-card);--panel:var(--zp-surface-2);--line:var(--zp-line);--muted:var(--zp-muted);--soft:var(--zp-soft)}*{box-sizing:border-box}body{margin:0;background:var(--zp-bg);color:var(--zp-text);font:16px/22px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}/* 2026-10-29 与业务端统一：顶部只留 --zp-safe-top（壳内 8 / Web 24），
+:root{--bg:var(--zp-bg);--card:var(--zp-card);--panel:var(--zp-surface);--line:var(--zp-line);--muted:var(--zp-muted);--soft:var(--zp-soft)}*{box-sizing:border-box}body{margin:0;background:var(--zp-bg);color:var(--zp-text);font:16px/22px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}/* 2026-10-29 与业务端统一：顶部只留 --zp-safe-top（壳内 8 / Web 24），
      原 max(12px,…) 在壳内比首页多 4px。 */
 .shell{min-height:100dvh;padding:var(--zp-safe-top) 14px calc(28px + env(safe-area-inset-bottom))}.panel{width:min(100%,680px);margin:auto}.head{min-height:42px;padding:0 2px}.head img{width:36px;height:36px;padding:5px;background:var(--zp-logo-plate);border-radius:var(--zp-r-mini)}.head h1{font-size:var(--zp-fs-20);line-height:26px}/* 顶栏按钮 42px：与业务端同口径，顶栏 = 8px 呼吸位 + 42 = 50px；
    可点区域由下面的 ::after 补回 44×44。 */
@@ -153,7 +153,7 @@ html[data-zp-theme="light"] select,html[data-zp-theme="light"] input[type="date"
 /* appearance:none：与 zp-picker.css 同因——App WebView 对 button 的 UA 绘制会盖过类规则背景 */
 .dialog .zp-picker-trigger{width:100%;min-height:48px;padding:0 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;font:inherit;font-size:var(--zp-fs-16);color:var(--zp-text);background:var(--zp-surface);border:1px solid var(--zp-line);border-radius:var(--zp-r-control);-webkit-appearance:none;appearance:none}
 .dialog .zp-picker-trigger span{color:var(--zp-muted);font-size:var(--zp-fs-20)}
-.dialog .zp-picker-options{position:absolute;left:0;right:0;top:calc(100% + 5px);z-index:5;padding:5px;background:var(--zp-card);border:1px solid var(--zp-line);border-radius:var(--zp-r-control);box-shadow:var(--zp-shadow-md)}
+.dialog .zp-picker-options{position:absolute;left:0;right:0;top:calc(100% + 5px);z-index:5;padding:5px;background:var(--zp-surface);border:1px solid var(--zp-line);border-radius:var(--zp-r-control);box-shadow:var(--zp-shadow-md)}
 .dialog .zp-picker-options[hidden]{display:none}
 .dialog .zp-picker-options [role="option"]{display:block;width:100%;min-height:44px;padding:0 12px;text-align:left;font:inherit;font-size:var(--zp-fs-15);color:var(--zp-text);background:transparent;border:0;border-radius:var(--zp-r-control);-webkit-appearance:none;appearance:none}
 .dialog .zp-picker-options [role="option"][aria-selected="true"]{background:var(--zp-secondary-active);font-weight:var(--zp-fw-bold)}

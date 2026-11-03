@@ -6,48 +6,53 @@
    bootstrap B 组）要求非 dark :root 块不得残留。 */
 :root[data-zp-theme="dark"]{
   color-scheme:dark;
-  /* ===== 页面 / 表面 / 文字（深色 spec · slate 族）===== */
-  --zp-bg:#121826;
-  --zp-surface:#1E293B;
-  --zp-surface-2:#253345;
-  --zp-surface-3:#334155;
-  --zp-line:#334155;
-  /* 卡片内分隔线在深色下取 --zp-surface-2 #253345：比 --zp-line 柔一档，
+  /* ===== 页面 / 表面 / 文字（深色 spec · Uber 中性黑，2026-11-04）=====
+     浅色翻为「白底灰块」后，深色同步翻为「纯黑底 + 中性亮块」，两边层级同构。
+     纯黑（#000000）是用户定稿；代价是投影在纯黑上完全不可见，
+     故浮层/浮岛一律改靠 --zp-tint 白色微描边 + 亮度差显形，不靠 shadow。 */
+  --zp-bg:#000000;
+  --zp-block:#1D1D1D;
+  /* 浮层比块再亮一档：若与块同色，弹窗/下拉压在卡片上会糊成一片。 */
+  --zp-surface:#232323;
+  --zp-surface-2:#282828;
+  --zp-surface-3:#383838;
+  --zp-line:#2B2B2B;
+  /* 卡片内分隔线在深色下取 --zp-line-inset #252525：比 --zp-line 柔一档，
      避免深底上的行间线亮成描边（浅色取值见 ui-base.css）。 */
-  --zp-line-inset:#253345;
+  --zp-line-inset:#252525;
   --zp-input-line:var(--zp-line);
-  /* 输入框：卡片 #121826 上亮一档的实色（与浅色「白卡上纯白」同一条规则），
-     边取 --zp-line #334155 保证轮廓可见；禁用态整档压暗但保留描边。 */
-  --zp-input-bg:#1E293B;
-  --zp-input-bg-disabled:#182130;
-  --zp-input-line-disabled:#2A3648;
-  --zp-input-placeholder:#94A3B8;   /* 与深色 --zp-muted 同值 */
-  --zp-input-text-disabled:#64748B;
+  /* 输入框：与所在卡片同色、靠描边区分（与浅色「白卡上纯白 + 描边」同一条规则），
+     禁用态整档压暗但保留描边。 */
+  --zp-input-bg:var(--zp-block);
+  --zp-input-bg-disabled:#191919;
+  --zp-input-line-disabled:#202020;
+  --zp-input-placeholder:#A3A3A3;   /* 与深色 --zp-muted 同值 */
+  --zp-input-text-disabled:#7A7A7A;
   --zp-input-focus:#60A5FA;
-  --zp-text:#F1F5F9;
-  --zp-muted:#94A3B8;
-  --zp-soft:#64748B;
-  /* 骨架微光条深色化：slate 族同梯度微光 */
-  --zp-sk-a:#1E293B;
-  --zp-sk-b:#253345;
+  --zp-text:#FFFFFF;
+  --zp-muted:#A3A3A3;
+  --zp-soft:#717171;
+  /* 骨架微光条深色化：中性同梯度微光 */
+  --zp-sk-a:#232323;
+  --zp-sk-b:#282828;
   /* ===== 主按钮（深色 spec：亮蓝底白字）===== */
   --zp-primary:#3B82F6;
   --zp-on-primary:#FFFFFF;
-  --zp-secondary-bg:#253345;
-  --zp-secondary-border:#475569;
-  --zp-secondary-text:#F1F5F9;
-  --zp-disabled-bg:#253345;
-  --zp-disabled-text:#64748B;
-  --zp-scrim:rgba(2,6,23,.72);
-  --zp-focus:#F1F5F9;
+  --zp-secondary-bg:#282828;
+  --zp-secondary-border:#3D3D3D;
+  --zp-secondary-text:#FFFFFF;
+  --zp-disabled-bg:#282828;
+  --zp-disabled-text:#7A7A7A;
+  --zp-scrim:rgba(0,0,0,.72);
+  --zp-focus:#FFFFFF;
   --zp-primary-hover:#60A5FA;
   --zp-primary-active:#2563EB;
   /* 选中态强调色（主题蓝）：用于「已选中」文字/图标着色。
-     深色主题的选中块底为 --zp-line(#334155)，需比 --zp-primary 更亮一档才够对比度：
-     #60A5FA 在该底色上仅 4.07:1（不达 AA），故取 #93C5FD（5.74:1）。 */
+     2026-11-04 选中块底由 #334155 换成 --zp-block(#1D1D1D)，#93C5FD 在其上 9.35:1，
+     余量充足，色值维持不变（保住深色下同一支品牌蓝）。 */
   --zp-accent:#93C5FD;
-  --zp-secondary-hover:#2A3A4F;
-  --zp-secondary-active:#334155;
+  --zp-secondary-hover:#2C2C2C;
+  --zp-secondary-active:#383838;
   --zp-divider:rgba(255,255,255,.10);
   /* ===== 功能状态色（深色 spec：提亮保对比度）===== */
   --zp-success:#22C55E;
@@ -60,22 +65,23 @@
   --zp-danger-soft:rgba(252,165,165,.12);
   --zp-info:#60A5FA;
   --zp-info-soft:rgba(96,165,250,.14);
-  /* 底部一级导航：底色跟随页面背景（2026-10-28 用户定稿：不用近黑色块） */
-  --zp-nav-bg:var(--zp-bg);
-  --zp-nav-text:#94A3B8;
-  --zp-nav-text-active:#F1F5F9;
-  --zp-nav-active-bg:rgba(255,255,255,.08);
+  /* 底部一级导航：2026-11-04 浮岛化。纯黑底上投影不可见，
+     改取 --zp-block(#1D1D1D) 靠「比页面底亮一档」浮起（浅色见 ui-base.css）。 */
+  --zp-nav-bg:var(--zp-block);
+  --zp-nav-text:#A3A3A3;
+  --zp-nav-text-active:#FFFFFF;
+  --zp-nav-active-bg:rgba(255,255,255,.10);
   /* ===== Phase 1 令牌的深色取值 ===== */
-  --zp-tint:rgba(255,255,255,.07);
+  --zp-tint:rgba(255,255,255,.08);
   --zp-tint-strong:rgba(255,255,255,.16);
-  --zp-scrim-dialog:rgba(2,6,23,.58);
+  --zp-scrim-dialog:rgba(0,0,0,.62);
   --zp-shadow:0 2px 8px rgba(0,0,0,.25);
   --zp-shadow-sm:0 8px 20px rgba(0,0,0,.45);
   --zp-shadow-md:0 10px 28px rgba(0,0,0,.35);
   --zp-shadow-lg:0 18px 50px rgba(0,0,0,.45);
   --zp-shadow-menu:0 14px 34px rgba(0,0,0,.34);
-  --zp-focus-ring:#94A3B8;
-  --zp-focus-glow:0 0 0 3px rgba(148,163,184,.18);
+  --zp-focus-ring:#A3A3A3;
+  --zp-focus-glow:0 0 0 3px rgba(96,165,250,.18);
   --zp-success-surface:#152A1E;
   --zp-error-surface:#3B1D24;
   --zp-error-surface-strong:#5C2B31;
@@ -139,7 +145,7 @@ a[class*="danger"]:active,
 }
 
 /* 登录输入框深色：2026-10-29 移除本条补丁。
-   原先把深色底恢复为 --zp-card-translucent-2（≈#121826，与卡片同色）与聚焦实底，
-   而其它页输入框是 --zp-surface #1E293B —— 同一个 .login-field 输入框在深色下
-   「登录页像凹槽、注册页像灰块」。现由 --zp-input-bg 一处供给（深色 #1E293B），
+   原先把深色底恢复为 --zp-card-translucent-2（≈旧 --zp-bg，与卡片同色）与聚焦实底，
+   而其它页输入框是 --zp-surface —— 同一个 .login-field 输入框在深色下
+   「登录页像凹槽、注册页像灰块」。现由 --zp-input-bg 一处供给（深色 = --zp-block），
    聚焦色同源 --zp-input-focus，故不再需要页面级深色覆盖。 */
