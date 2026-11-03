@@ -77,6 +77,13 @@ assert.match(today,/home-today-ready-network/);
 assert.match(monthly,/home-history-ready-cache/);
 assert.match(monthly,/home-history-ready-network/);
 
+// ---- 启动时序（boot-ready） ----
+// 采集端白名单与上报端必须成对存在：只加一边，数据会被 validEvent 静默丢弃（返回 accepted:0，不报错）。
+const bootScript=readFileSync(new URL("../js/boot-ready.js",import.meta.url),"utf8");
+assert.ok(ingest.includes('"boot-ready"'),"采集端必须接受 boot-ready 端点，否则启动时序静默丢失");
+assert.match(bootScript,/zpPerfRecord\("boot-ready"/,"启动握手必须上报 boot-ready");
+assert.match(bootScript,/performance\.now\(\)/,"启动时序必须用单调高精度时钟");
+
 // AbortError 与 TimeoutError 不得再混入 network。\nassert.match(ingest,/"network","abort","timeout"/);\nassert.match(perfDiag,/classifyFetchFailure/);\nassert.match(perfDiag,/name==="TimeoutError"/);\nassert.match(perfDiag,/name==="AbortError"/);\n
 // The streaming OCR path records abort and timeout independently of generic fetch telemetry.
 assert.match(upload,/perfFailureStatus/);
