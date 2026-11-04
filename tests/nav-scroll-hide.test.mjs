@@ -32,16 +32,25 @@ function slice(src, from, to) {
 }
 
 /* ============ 一、CSS 隐藏态 ============ */
-console.log("一、隐藏态样式（位移出屏、不减淡）(6 条)");
+console.log("一、隐藏态样式（位移要盖住加号上凸、不减淡）(8 条)");
 {
   const block = slice(CSS, "/* ===== 常驻底部导航原语", ".zp-nav-item{");
   t("底栏基础定位 fixed + 横向 -50%",
     /\.zp-nav\{[\s\S]*?position:fixed[\s\S]*?transform:translateX\(-50%\)/.test(block));
-  t("隐藏态整体下移出屏（含 16px 余量）",
-    /\.zp-nav\.is-nav-hidden\{[^}]*transform:translate\(-50%,calc\(100% \+ 16px\)\)/.test(block),
-    "未见 translate(-50%,calc(100% + 16px))");
+  t("隐藏态整体下移出屏（含 32px 余量）",
+    /\.zp-nav\.is-nav-hidden\{[^}]*transform:translate\(-50%,calc\(100% \+ 32px\)\)/.test(block),
+    "未见 translate(-50%,calc(100% + 32px))");
   t("隐藏态保留 -50% 横向分量（不能只位移 Y）",
     /\.is-nav-hidden\{[^}]*translate\(-50%,/.test(block));
+  /* 2026-11-05 用户反馈「浮岛隐藏后下方还有一点蓝色区域没隐藏」：
+     加号圆比底栏顶边还高 9px，16px 余量被吃掉，隐藏后圆顶在视口内停 1px。
+     余量必须 ≥ 24（9 上凸 + 描边/投影），16px 属于回归值。 */
+  t("隐藏位移余量 ≥ 24px（要盖住中间加号上凸的 9px，否则露出蓝色圆顶）", (() => {
+    const m = block.match(/\.zp-nav\.is-nav-hidden\{[^}]*calc\(100% \+ (\d+)px\)/);
+    return m && Number(m[1]) >= 24;
+  })(), "余量 " + (block.match(/calc\(100% \+ (\d+)px\)/) || [])[1] + "px，应 ≥ 24px");
+  t("中间加号确有上凸（translateY(-16px)），是本条余量的来源",
+    /\.zp-nav-plus \.zp-nav-icon\{[^}]*transform:translateY\(-16px\)/.test(CSS));
   t("隐藏态 pointer-events:none（出屏后不挡点击）",
     /\.zp-nav\.is-nav-hidden\{[^}]*pointer-events:none/.test(block));
   t("底栏有 transform 过渡（收起/回来是滑动不是瞬移）",
