@@ -28,7 +28,7 @@
 .order-meta-label{font-size:var(--zp-fs-12);line-height:20px;color:var(--zp-muted);font-weight:var(--zp-fw-medium);white-space:nowrap}
 .order-route-name{font-size:var(--zp-fs-15);font-weight:var(--zp-fw-semibold);line-height:20px;color:var(--zp-text)}
 .order-vehicle{font-size:var(--zp-fs-15);line-height:20px;color:var(--zp-text);font-weight:var(--zp-fw-semibold);white-space:nowrap}
-.order-store-list{min-height:0;flex:1 1 auto;overflow-y:auto;padding:0 2px calc(72px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
+.order-store-list{min-height:0;flex:1 1 auto;overflow-y:auto;padding:0 2px calc(88px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
 .order-store-item{display:grid;grid-template-columns:34px minmax(0,1fr);gap:6px;padding:10px 3px;border-bottom:1px solid var(--zp-divider);min-height:56px}
 .order-store-item:last-child{border-bottom:0}.order-store-index{color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:22px;font-weight:var(--zp-fw-semibold)}
 .order-store-main{min-width:0}.order-store-name{font-size:var(--zp-fs-15);line-height:22px;color:var(--zp-text);font-weight:var(--zp-fw-semibold);word-break:break-all}
@@ -57,7 +57,7 @@
 /* pending-list 占据标题与按钮之间的剩余空间并内部滚动：
    缺少 flex:1+min-height:0 时内容会把面板撑高，被 overflow:hidden 硬裁，
    表现为"文字超出显示框"（2026-10-03 修复） */
-.pending-list{flex:1 1 auto;min-height:0;padding:12px 14px calc(72px + env(safe-area-inset-bottom));overflow:auto}.pending-box{padding:14px 0;border-bottom:1px solid var(--zp-divider)}.pending-box:last-child{border-bottom:0}
+.pending-list{flex:1 1 auto;min-height:0;padding:12px 14px calc(88px + env(safe-area-inset-bottom));overflow:auto}.pending-box{padding:14px 0;border-bottom:1px solid var(--zp-divider)}.pending-box:last-child{border-bottom:0}
 .pending-title{font-size:var(--zp-fs-14);font-weight:var(--zp-fw-semibold);line-height:20px}.pending-hint{margin-top:4px;color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:17px}
 .candidate-list{display:grid;gap:7px;margin-top:9px}
 /* 选项按钮：轻底色 + 细边框 + 大圆角，柔化"深色方块"感（全局统一）；
@@ -185,9 +185,12 @@
 
 
 /* UI 2.2：详情页视觉减层
-   保留摘要卡作为唯一核心信息卡，配送列表改为轻容器，减少“卡中卡”。 */
+   保留摘要卡作为唯一核心信息卡，配送列表改为轻容器，减少"卡中卡"。
+   2026-11-04 补：轻容器原本靠「页面灰底 + 白卡」的色差自证，浅色翻白底后
+   transparent 在白页面上等于不存在（只剩一条 6% 黑的描边），整页糊成一片白。
+   新体系里「内容块 = 灰块」是唯一定义，故改取 --zp-card，与摘要卡同色。 */
 .order-route-card{
-  background:transparent;
+  background:var(--zp-card);
   border-color:var(--zp-tint);
   border-radius:var(--zp-r-card);
   padding-left:4px;

@@ -91,8 +91,11 @@
 
 /* --- 退出登录：卡片式中性按钮 --- */
 .account-page .account-logout-section{margin:18px 0 0;padding:0}
+/* 2026-11-04：底由 --zp-card 改 --zp-surface。它是「整宽中性按钮」，不是内容块 ——
+   浅色翻为白底灰块后，若继续取块色就会和上面的卡片同色，看起来像又一张卡片而不是按钮。
+   白底 + --zp-line 描边 = 浮在灰块之间的白页面上的标准次按钮。 */
 .account-page .account-logout-section .account-logout{width:100%;min-height:var(--zp-control-height,48px);margin:0;
-  border:1px solid var(--zp-line);border-radius:var(--zp-r-card);background:var(--zp-card);
+  border:1px solid var(--zp-line);border-radius:var(--zp-r-card);background:var(--zp-surface);
   color:var(--zp-text);font-size:var(--zp-fs-15);font-weight:var(--zp-fw-semibold)}
 .account-page .account-logout-section .message{margin:10px 2px 0;text-align:center}
 
@@ -161,10 +164,10 @@
 /* 下载应用行右侧动作文案：默认灰（acct-row-value 已给），有更新时主色强调 */
 .acct-install-action.is-update{color:var(--zp-accent);font-weight:var(--zp-fw-semibold)}
 
-/* 底部留白：注销账号是页面最后一项。通用 .zp-scroll 只留 72px（底栏 64px + 8px），
-   而底栏中间的「+」向上突出约 28px，会与注销文字几乎贴在一起。
-   账号页单独加到底部 112px，让最后一项与「+」之间保留明显呼吸距离。 */
-.account-page .zp-scroll{padding-bottom:calc(112px + env(safe-area-inset-bottom))}
+/* 底部留白：注销账号是页面最后一项。通用 .zp-scroll 留 88px（浮岛离底 8 + 高 66 + 呼吸 14），
+   而底栏中间的「+」向上突出 16px，会与注销文字几乎贴在一起。
+   账号页单独加到底部 128px，让最后一项与「+」之间保留明显呼吸距离。 */
+.account-page .zp-scroll{padding-bottom:calc(128px + env(safe-area-inset-bottom))}
 
 @media(max-width:380px){
   /* 外壳左右留白由 main.zp-shell 的 --zp-gutter 统一下调到 12，本页不再重复声明。 */

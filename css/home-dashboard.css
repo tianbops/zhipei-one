@@ -88,7 +88,7 @@ main.home-app .zp-scroll{
   flex-direction:column;
   overflow:hidden;
   /* 底栏 fixed 覆盖在滚动区之上，必须留出 66px + 呼吸位，否则趋势卡被遮 */
-  padding-bottom:calc(72px + env(safe-area-inset-bottom));
+  padding-bottom:calc(88px + env(safe-area-inset-bottom));
 }
 main.home-app .task-card{
   flex:1 1 auto;
