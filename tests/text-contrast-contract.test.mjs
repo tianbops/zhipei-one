@@ -33,7 +33,8 @@ const themeCss = readFileSync("css/ui-theme.css", "utf8");
 // ui-base 是浅色基座，ui-theme 覆盖深色。深色若漏定义某个令牌，
 // 会落到浅色值上 —— 那本身就是 bug，下面用「必须有深色覆盖」兜住关键色。
 const LIGHT = collectHex(baseCss);
-const DARK = { ...LIGHT, ...collectHex(themeCss) };
+const DARK_RAW = collectHex(themeCss);          // 深色块里显式写出的（不含继承浅色的）
+const DARK = { ...LIGHT, ...DARK_RAW };
 
 function luminance(hex) {
   const h = hex.replace("#", "");
@@ -162,6 +163,18 @@ test("主按钮白字在正常/hover/按压三态上都必须达到 AA(4.5)", ()
       assert.ok(r >= 4.5,
         `${name}主题 ${state}(${bg}) 上的 ${fg} 只有 ${r.toFixed(2)}:1，低于 AA 的 4.5`);
     }
+  }
+});
+
+test("主色在两套主题里必须是同一个值（切换主题不换蓝）", () => {
+  // 2026-11-04 用户反馈：深色和浅色下的蓝不一致。此前深色取 #3B82F6(亮蓝)、
+  // 浅色 #0F62E6，同一颗按钮换个主题就换了一支蓝。
+  // 现统一到 #2C6CE2：白字 4.83、深底 3.75、卡片 3.01，四种落点全过线，
+  // 是「同一个蓝」还能两套都合规的窗口。谁再给深色单独调一个值，这里就红。
+  for (const t of ["--zp-primary", "--zp-primary-hover", "--zp-primary-active"]) {
+    assert.ok(t in DARK_RAW, `${t} 必须在深色块里显式定义（不靠继承浅色，否则主题切换会漏）`);
+    assert.equal(DARK_RAW[t].toUpperCase(), LIGHT[t].toUpperCase(),
+      `${t} 深浅两套必须同值：浅色 ${LIGHT[t]} / 深色 ${DARK_RAW[t]}`);
   }
 });
 
