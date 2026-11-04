@@ -76,7 +76,7 @@ const PRECACHE = [
   "/js/history/data.js?v=9cf1ad84",
   "/js/history/overlay.js?v=65a2aeb7",
   "/js/history/render.js?v=69bdb943",
-  "/js/home.bundle.js?v=de076560",
+  "/js/home.bundle.js?v=2408e2fd",
   "/js/login-session-retry.js?v=0c436693",
   "/js/login.js?v=55c0f0f1",
   "/js/offline-queue.js?v=c255ca1f",
@@ -97,7 +97,7 @@ const PRECACHE = [
   "/js/ui/feedback.js?v=f8da0256",
   "/js/ui/haptic.js?v=a3a78c0a",
   "/js/ui/nav-prefetch.js?v=968d1e0b",
-  "/js/ui/nav.js?v=25c4bd85",
+  "/js/ui/nav.js?v=d22c721c",
   "/js/ui/share.js?v=f2e4bdb6",
   "/js/ui/zp-picker.js?v=1cdf0a93",
 ];

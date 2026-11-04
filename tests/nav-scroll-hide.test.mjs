@@ -5,8 +5,8 @@
  *
  * 锁住两处实现，防止将来被「顺手回退」或「改成淡出」：
  *   · css/ui-base.css 的隐藏态样式（位移出屏、不减淡、保留横向 -50%、减动效关过渡）
-   *   · js/ui/nav.js 的滚动自隐藏逻辑（捕获阶段监听、rAF 防抖、顶部强制显示、
-   *     底部不强制弹起〔与 Uber 一致〕、累计位移阈值、只认占屏过半滚动区、inert）
+ *   · js/ui/nav.js 的滚动自隐藏逻辑（捕获阶段监听、rAF 防抖、顶部强制显示、
+ *     底部不强制弹起〔与 Uber 一致〕、累计位移阈值、只认页面级主滚动容器类名、inert）
  *
  * 风格与 nav-busy-guard.test.mjs 一致：直接读真实源码做正则 / 切片断言，
  * 改源码后本测试自动跟随。行为层面的真机验证由独立 Playwright 脚本承担
@@ -51,7 +51,7 @@ console.log("一、隐藏态样式（位移出屏、不减淡）(6 条)");
 }
 
 /* ============ 二、JS 滚动自隐藏逻辑 ============ */
-console.log("\n二、滚动自隐藏逻辑（捕获监听 / 顶部强显 / 底部不弹起 / 累计阈值）(7 条)");
+console.log("\n二、滚动自隐藏逻辑（捕获监听 / 顶部强显 / 底部不弹起 / 累计阈值 / 主滚动容器识别）(9 条)");
 {
   const block = slice(JS, "底栏滚动自隐藏", "})();");
   t("scroll 用捕获阶段监听（scroll 不冒泡，冒泡阶段收不到）",
@@ -65,8 +65,19 @@ console.log("\n二、滚动自隐藏逻辑（捕获监听 / 顶部强显 / 底�
     "仍存在底部强显逻辑 max-y<=NAV_SHOW_BOTTOM 或 NAV_SHOW_BOTTOM 常量");
   t("累计位移阈值 NAV_HIDE_DELTA（惯性滚动单帧太短，必须累计）",
     /NAV_HIDE_DELTA/.test(block) && /navAcc>=NAV_HIDE_DELTA/.test(block) && /navAcc<=-NAV_HIDE_DELTA/.test(block));
-  t("只认占屏过半的滚动区（内嵌小列表不触发）",
-    /clientHeight>=window\.innerHeight\*0\.6/.test(block));
+  t("按页面级主滚动容器类名识别（.zp-scroll / .order-store-list），不看占屏比例",
+    /classList\.contains\("zp-scroll"\)/.test(block) &&
+    /classList\.contains\("order-store-list"\)/.test(block));
+  // 只取 navScrollTarget 函数体（不含注释），避免注释里的说明文字造成误报
+  const targetFn = (() => {
+    const i = JS.indexOf("function navScrollTarget(e){");
+    const j = JS.indexOf("function navApply(", i);
+    return i >= 0 && j > i ? JS.slice(i, j) : "";
+  })();
+  t("不再用占屏过半 clientHeight>=innerHeight*0.6 判据（真机隐藏失效根因，反向契约）",
+    !!targetFn && !/innerHeight\*0\.6/.test(targetFn) && !/0\.6/.test(targetFn));
+  t("只认确实可滚动的容器（scrollHeight-clientHeight>4），内嵌小列表不触发",
+    /scrollHeight-el\.clientHeight>4/.test(block));
   t("隐藏态切换类名 + inert（位移出屏后退出 Tab 序）",
     /classList\.toggle\("is-nav-hidden",hide\)/.test(block) &&
     /setAttribute\("inert"/.test(block) && /removeAttribute\("inert"\)/.test(block));

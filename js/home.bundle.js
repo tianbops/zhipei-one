@@ -2216,8 +2216,12 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
      几条实现约束：
        · scroll 不冒泡，只能用捕获阶段监听；同时覆盖 .zp-scroll 内滚与整页滚动。
        · 首页底栏是 HTML 静态写的、其余页由上面注入，故一律按类名现取，不持有引用。
-       · 只认占屏过半的滚动区：首页「今日门店」264px 内嵌列表、帮助弹层不在其列，
-         否则在小区块里划两下底栏就没了。
+       · 只认「页面级主滚动容器」类名（.zp-scroll / .order-store-list），不靠占屏比例：
+         首页「今日门店」内嵌列表、帮助弹层、导入面板等内嵌滚动不带这些类，天然被排除，
+         在小区块里划两下不会把底栏收掉。改类名识别是为修「隐藏失效」——「占屏过半」
+         这类比例判据在真机上不可靠：PWA standalone 顶部白条让视口高度与容器高度
+         语义错位，数据中心固定工具区展开、order 页顶部卡片、分屏 / 系统大字号都会把
+         主滚动区压到过半以下，一旦低于门槛整页怎么滚底栏都不收。
        · 阈值用累计位移而非单帧位移：惯性滚动每帧只有几 px，单帧判断收不起来。 */
   var NAV_HIDE_DELTA=8;    // 累计位移达到这个数才切换，抗抖动
   var NAV_SHOW_TOP=56;     // 距顶这个范围内永远显示（底栏不强显，随 Uber 口径）
@@ -2225,8 +2229,14 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
 
   function navScrollTarget(e){
     var el=e.target;
+    // 整页滚动（document/window 触发）→ 认文档滚动元素，覆盖「降级为整页滚动」的页面
     if(!el||el===document||el===window)return document.scrollingElement||document.documentElement;
-    if(el.nodeType===1&&el.scrollHeight-el.clientHeight>4&&el.clientHeight>=window.innerHeight*0.6)return el;
+    if(el.nodeType!==1)return null;
+    // 只认页面级主滚动容器类名，且确实可滚动。不用「占屏过半」的比例判据：
+    // 该类比例在真机（PWA 白条 / 固定区展开 / 大字号 / 分屏）会误判主滚动区为「小区块」，
+    // 导致底栏完全不隐藏（数据中心隐藏失效的根因）。
+    if((el.classList.contains("zp-scroll")||el.classList.contains("order-store-list"))&&
+       el.scrollHeight-el.clientHeight>4)return el;
     return null;
   }
   function navApply(hide){
