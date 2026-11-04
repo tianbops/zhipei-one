@@ -175,8 +175,8 @@ console.log("\n五、缺口描边环 (4 条)");
   t("环心与缺口同心（top = cy - r - 1，即盒中心落在圆心）",
     /top:calc\(var\(--zp-nav-notch-cy\) - var\(--zp-nav-notch-r\) - 1px\)/.test(RING),
     (/top:[^;]+/.exec(RING) || [])[0]);
-  t("只保留下半圆（上半露在浮岛外，描上去会成悬空弧）",
-    /mask:linear-gradient\(180deg,transparent 50%,#000 50%\)/.test(RING) &&
+  t("只保留下半圆（上半露在浮岛外，描上去会成悬空弧；切口下移 1px 让端点藏进顶边线）",
+    /mask:linear-gradient\(180deg,transparent calc\(50% \+ 1px\),#000/.test(RING) &&
     Number.isFinite(r) && Number.isFinite(cy));
 }
 

@@ -918,8 +918,8 @@ html[data-zp-e2e="1"] body::after{
   box-sizing:border-box;
   border:1px solid var(--zp-nav-edge);
   border-radius:50%;
-  -webkit-mask:linear-gradient(180deg,transparent 50%,#000 50%);
-  mask:linear-gradient(180deg,transparent 50%,#000 50%);
+  -webkit-mask:linear-gradient(180deg,transparent calc(50% + 1px),#000 calc(50% + 1px));
+  mask:linear-gradient(180deg,transparent calc(50% + 1px),#000 calc(50% + 1px));
   pointer-events:none;
 }
 /* 滚动自隐藏（2026-11-04，逻辑见 js/ui/nav.js）：向下滚离开顶部后收起，上滑回来。
