@@ -131,5 +131,23 @@ console.log("\n四、加号投影的主色扩散 (2 条)");
     /--zp-nav-plus-shadow:/.test(LIGHT) && /--zp-nav-plus-shadow:/.test(DARK));
 }
 
+/* ============ 五、板感渐变（高光） ============ */
+console.log("\n五、板感渐变 --zp-nav-sheen (4 条)");
+{
+  const ls = LIGHT.match(/--zp-nav-sheen:[\s\S]*?;/);
+  const ds = DARK.match(/--zp-nav-sheen:[\s\S]*?;/);
+  t("浅色定义了 --zp-nav-sheen 且是 linear-gradient", !!ls && /linear-gradient\(/.test(ls[0]));
+  t("深色定义了 --zp-nav-sheen 且是 linear-gradient", !!ds && /linear-gradient\(/.test(ds[0]));
+  t("两套渐变的色值都是 rgba 字面量（不依赖颜色混合函数）",
+    !!ls && !!ds && !/color-mix/.test(ls[0] + ds[0]));
+  /* 顺序陷阱：background 简写会把 background-image 重置成 none，
+     若 image 写在简写之前，整条渐变会被后一条简写吃掉 —— 静默失效，肉眼查不出来。 */
+  const nav = BASE.slice(BASE.indexOf(".zp-nav{"), BASE.indexOf(".zp-nav-item{"));
+  const iBg = Math.max(nav.indexOf("background:var(--zp-nav-bg)"), nav.indexOf("background:var(--zp-nav-glass)"));
+  const iImg = nav.indexOf("background-image:var(--zp-nav-sheen)");
+  t("background-image 写在 background 简写之后（否则被简写重置掉）",
+    iImg > iBg && iImg > 0, `bg=${iBg} img=${iImg}`);
+}
+
 console.log(`\n${fail === 0 ? "✅" : "❌"} 通过 ${pass} 项，失败 ${fail} 项`);
 if (fail) { for (const f of failures) console.log("  - " + f); process.exit(1); }
