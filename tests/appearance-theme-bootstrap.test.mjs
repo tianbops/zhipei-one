@@ -115,7 +115,7 @@ const LIGHT_TOKENS = [
   ["--zp-bg", "#FFFFFF"], ["--zp-block", "#F3F3F3"], ["--zp-surface", "#FFFFFF"],
   ["--zp-text", "#000000"],
   ["--zp-muted", "#666666"], ["--zp-soft", "#999999"], ["--zp-line", "#E4E4E4"],
-  ["--zp-line-inset", "#EDEDED"], ["--zp-divider", "#E2E2E2"], ["--zp-tint", "rgba(0,0,0,.06)"],
+  ["--zp-line-inset", "#E8E8E8"], ["--zp-divider", "#E2E2E2"], ["--zp-tint", "rgba(0,0,0,.06)"],
   ["--zp-primary", "#2C6CE2"], ["--zp-on-primary", "#FFFFFF"],
   ["--zp-success", "#00B42A"], ["--zp-warning", "#FF7D00"], ["--zp-error", "#F53F3F"],
   ["--zp-danger", "#B92B06"],

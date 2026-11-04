@@ -181,7 +181,7 @@ const ACCEPTED_CHANGES = {
   "--zp-input-line": { from: ["#2B2B2B"], values: ["#3D3D3D"], why: "输入框组随表面色阶外推（禁用态压暗、保留描边）" },
   "--zp-input-line-disabled": { from: ["#202020"], values: ["#2B2B2B"], why: "输入框组随表面色阶外推（禁用态压暗、保留描边）" },
   "--zp-line": { from: ["#2B2B2B"], values: ["#3D3D3D"], why: "Uber 中性色阶：深色由 slate 族换为实测中性黑" },
-  "--zp-line-inset": { from: ["#252525"], values: ["#323232"], why: "Uber 中性色阶：深色由 slate 族换为实测中性黑" },
+  "--zp-line-inset": { from: ["#252525", "#323232"], values: ["#323232", "#2B2B2B"], why: "Uber 中性色阶；2026-11-04 列表容器改取页面底后，行线从压在块上改为压在页面上，深色下压一档到 #2B2B2B（对 #161616 为 1.28，不硬成框线）" },
   "--zp-nav-bg": { from: ["#1D1D1D"], values: ["#292929"], why: "底栏浮岛化：浮岛取块色，靠亮度差与描边从底色中浮起" },
   "--zp-primary": { from: ["#0F62E6", "#1677FF", "#2A6BE0", "#3B82F6"], values: ["#2C6CE2"], why: "两套主题统一为同一支蓝：白字 4.83、深底 3.75、卡片 3.01，四种落点全过线" },
   "--zp-primary-active": { from: ["#0958D9", "#1E56B8", "#2563EB"], values: ["#0B52BC"], why: "active 与浅色同值" },

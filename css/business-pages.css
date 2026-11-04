@@ -96,8 +96,10 @@
 .dispatch-current-count{margin-left:4px;font-size:var(--zp-fs-12);color:var(--zp-muted);font-weight:var(--zp-fw-semibold)}
 .dispatch-switch{margin-left:auto;flex:none;width:calc((100% - 2*var(--zp-seg-btn-gap))/3);min-width:72px;min-height:var(--zp-seg-btn-h);padding:var(--zp-seg-btn-pad,0 8px);border:1px solid var(--zp-tint-strong);border-radius:var(--zp-seg-btn-radius);background:var(--zp-primary);color:var(--zp-on-primary);font-size:var(--zp-seg-btn-font);font-weight:var(--zp-fw-semibold)}
 .dispatch-switch:active{opacity:.82}
-.dispatch-action-card{background:var(--zp-card);border:1px solid var(--zp-tint);border-radius:var(--zp-r-control);overflow:hidden;box-shadow:0 12px 30px var(--zp-shadow-md)}
-.dispatch-action{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:12px 14px;border:0;border-bottom:1px solid var(--zp-tint);background:transparent;color:var(--zp-text);text-align:left;cursor:pointer;text-decoration:none}
+/* 2026-11-04：操作列表同账号分组，改取 --zp-card-list（=页面底色），不再是卡片。
+   box-shadow 一并去掉——底色与页面同色后投影无处附着，只会在行首行尾拖出脏边。 */
+.dispatch-action-card{background:var(--zp-card-list);border:1px solid var(--zp-card-list-line);border-radius:var(--zp-r-control);overflow:hidden}
+.dispatch-action{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:12px 14px;border:0;border-bottom:1px solid var(--zp-line-inset);background:transparent;color:var(--zp-text);text-align:left;cursor:pointer;text-decoration:none}
 .dispatch-action:last-child{border-bottom:0}
 .dispatch-action:active{background:var(--zp-tint)}
 .dispatch-action-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:var(--zp-r-mini);background:var(--zp-tint);color:var(--zp-muted);flex:none}
