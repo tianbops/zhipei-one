@@ -2464,6 +2464,53 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
     try{history.pushState({zpGuard:((history.state&&history.state.zpGuard)|0)+1},"")}catch{}
   }
 
+  /* ===== 退出接力（2026-11-04）=====
+     登录跳转写的是 /home?v=时间戳，底栏「首页」Tab 却是 /home。站内导航一律
+     location.replace，只替换「当前项」，栈底那条 /home?v= 会永久残留；点 Tab 回到
+     首页后，第二次返回会落到这条 URL 不同的首页记录并**重新加载文档**，旧文档的
+     popstate 回调（含 zpDoExit）来不及跑就被卸载，于是人还留在 App 里退不出去。
+     修法不猜历史长度：第二次返回时把「正在退出」同步写进 sessionStorage，下一份
+     业务页文档发现自己是 back/forward 到达且带有效标记，就在 load 之后继续后退，
+     直到真正离开站点。zpExitAt 给标记 3 秒时效；正常 navigate 打开 App 时清标记，
+     绝不会把新会话一进来就退掉。 */
+  const ZP_EXIT_TTL=3000;
+  function zpHasExit(){
+    try{
+      if(sessionStorage.getItem("zpExitAdmin")!=="1")return false;
+      const t=Number(sessionStorage.getItem("zpExitAt")||0);
+      if(!t)return true;                       // 旧格式 / 管理员跨区标记：无时效，靠 back/forward 判定兜底
+      return Date.now()-t<ZP_EXIT_TTL;
+    }catch{return false}
+  }
+  /* 第一次返回（exit-armed）也落盘：第二次返回若落到 URL 不同的历史项，
+     浏览器是「跨文档」后退，旧文档收不到 popstate，zpHandleBack/zpDoExit 都不会跑。
+     新文档只能靠这个标记认出「用户正在再按一次退出」的窗口里。 */
+  function zpHasExitReady(){
+    try{
+      const t=Number(sessionStorage.getItem("zpExitReady")||0);
+      return !!t&&Date.now()-t<2500;
+    }catch{return false}
+  }
+  function zpClearExitMarks(){
+    try{sessionStorage.removeItem("zpExitAdmin");sessionStorage.removeItem("zpExitAt");sessionStorage.removeItem("zpExitReady")}catch{}
+  }
+  function zpIsBackNav(){
+    try{
+      // performance.navigation.type（2 = TYPE_BACK_FORWARD）在文档刚创建时同步可读；
+      // Navigation Timing 的 entry 要晚一点才有，back.js 是头部/尾部同步脚本，等不到它。
+      if(performance.navigation&&performance.navigation.type===2)return true;
+      const n=performance.getEntriesByType&&performance.getEntriesByType("navigation")[0];
+      if(n&&n.type==="back_forward")return true;
+    }catch{}
+    return false;
+  }
+  function zpContinueExit(){
+    const go=()=>{try{history.back()}catch{}};
+    // 文档加载期同步调用 history.back() 会被浏览器丢弃，必须等 load 之后再退。
+    if(document.readyState==="complete")setTimeout(go,0);
+    else window.addEventListener("load",()=>setTimeout(go,0),{once:true});
+  }
+
   async function zpConfirmDiscard(){
     const ok=await window.zpConfirm("放弃修改？","当前修改尚未提交，返回后将丢失。","放弃");
     return ok;
@@ -2563,9 +2610,14 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
       }
       if(zpExitArmed){
         // 管理员与普通用户统一：第二次返回只退出 App，不注销、不清理任何登录凭证。
+        // 同步落盘退出意图（不能放进 zpDoExit）：本次返回可能跨文档，旧文档的
+        // popstate 回调随时会被卸载，下一份业务页要靠这个标记接着往后退。
+        try{sessionStorage.setItem("zpExitAt",String(Date.now()))}catch{}
+        try{sessionStorage.setItem("zpExitAdmin","1")}catch{}
         return "exit";
       }
       zpExitArmed=true;
+      try{sessionStorage.setItem("zpExitReady",String(Date.now()))}catch{}
       try{window.zpToast?window.zpToast("再按一次退出应用","info"):0}catch{}
       clearTimeout(zpExitTimer);
       // 窗口过期：仅复位武装标记，不再补占位。
@@ -2576,7 +2628,7 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
       // 窗口过期：复位武装标记。仅当管理员端「非根」（同窗口进入、底下压着业务端首页）
       // 时补回占位——这样停顿后再按会重新武装而非直接滑到司机首页；管理员端「根」
       // （独立窗口，底下无业务页）则不补，保证停顿后下一次返回能越过首条记录由系统退出。
-      zpExitTimer=setTimeout(()=>{zpExitArmed=false;if(zpZone==="admin"&&zpAdminNonRoot)zpPushGuard()},2000);
+      zpExitTimer=setTimeout(()=>{zpExitArmed=false;try{sessionStorage.removeItem("zpExitReady")}catch{};if(zpZone==="admin"&&zpAdminNonRoot)zpPushGuard()},2000);
       return "exit-armed";
     }
     // 离开页面前：页面级未保存拦截
@@ -2700,13 +2752,19 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
   // 返回 true 表示本页已被隔离逻辑接管，调用方应停止后续初始化
   function zpZoneGuard(){
     if(zpZone!=="business")return false;
-    let exiting=false;
-    try{exiting=!!sessionStorage.getItem("zpExitAdmin")}catch{}
-    if(exiting){
-      // 正在退出：继续后退直到真正退出 PWA。此刻绝不能弹回管理端，
+    const backNav=zpIsBackNav();
+    // 正常 navigate 打开 App：清掉上一轮全部退出标记，TTL 还没过期也不会误退。
+    if(!backNav)zpClearExitMarks();
+    if(backNav&&(zpHasExit()||zpHasExitReady())){
+      // 退出接力：清掉 armed 预置，写正式退出标记（下一份文档还能继续接力），
+      // load 之后继续后退，直到真正离开站点。此刻绝不能弹回管理端，
       // 否则「两次返回退出」会变成回到管理端，永远退不出去。
-      try{sessionStorage.removeItem("zpExitAdmin")}catch{}
-      try{history.back()}catch{}
+      try{
+        sessionStorage.removeItem("zpExitReady");
+        sessionStorage.setItem("zpExitAt",String(Date.now()));
+        sessionStorage.setItem("zpExitAdmin","1");
+      }catch{}
+      zpContinueExit();
       return true;
     }
     if(zpIsAdminSession()){try{location.replace("/admin")}catch{};return true}
@@ -2725,7 +2783,8 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
       // 业务区门禁：管理员会话不在此停留；正在退出则继续后退（内部已处理标记）
       if(zpZoneGuard())return;
     }else{
-      try{sessionStorage.removeItem("zpExitAdmin")}catch{} // 非业务页：清残留，防误触
+      // 非业务页：清残留（含时间戳与 armed 预置），防误触把新会话退出去
+      zpClearExitMarks();
     }
     // 管理员端「非根」进入（历史里残留业务端首页，如司机会话→退出→再登录管理员）：
     // 进入即置跨区退出标记，保证任何一次离开都能越过业务端首页，直接退到桌面。
@@ -2746,10 +2805,19 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
     if(zpIsWorkspaceRoot&&!(history.state&&history.state.zpGuard))zpPushGuard();
     window.addEventListener("popstate",async()=>{
       if(window.zpSuppressPop){window.zpSuppressPop=false;return} // 自己触发的 back，吃掉
+      /* 第二次返回（已武装）必须同步走完退出，绝不能 await：这次返回常落到 URL
+         不同的历史项并重新加载文档，旧文档的 async 续体会在导航完成前被卸载，
+         zpDoExit 与退出标记都来不及落地，人就卡在栈底那条残留首页上。 */
+      if(zpExitArmed&&zpIsWorkspaceRoot&&!zpLeaving&&!zpTopHook()){
+        zpExitArmed=false;clearTimeout(zpExitTimer);
+        try{sessionStorage.removeItem("zpExitReady");sessionStorage.setItem("zpExitAt",String(Date.now()))}catch{}
+        zpDoExit();
+        return;
+      }
       // 业务端页上（含 bfcache 恢复）：消费跨区退出标记，继续后退直到真正退出
-      if(zpZone==="business"){
-        var _f2=null;try{_f2=sessionStorage.getItem("zpExitAdmin")}catch{}
-        if(_f2){try{sessionStorage.removeItem("zpExitAdmin")}catch{};try{history.back()}catch{};return}
+      if(zpZone==="business"&&zpHasExit()){
+        // 同文档（URL 相同、未重载）的返回也要接力：标记不删，逐条退到离开站点。
+        try{history.back()}catch{};return
       }
       const r=await zpHandleBack();
       if(zpLeaving)return;
