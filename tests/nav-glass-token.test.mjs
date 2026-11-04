@@ -17,6 +17,11 @@
  * 为什么不用颜色混合函数自动派生：安卓旧 WebView 不支持，
  * tests/theme-token-discipline 已把它列为兼容地板硬禁。所以颜色以 rgba 字面量
  * 固写在令牌层，由本测试守住它和底色/主色的一致性。
+ *
+ * alpha 区间上限同时是「材质必须看得出来」的回归闸门：首版浅色取 .86，交付后
+ * 用户反馈「测试版上没有看到改变」—— .86 白压在页面底 #F5F6F8 上算出 #FFFEFE，
+ * 与改造前的纯白浮岛肉眼同色，材质等于没做。区间收在 .66~.78 之后，
+ * 谁再把 alpha 抬回 .80 以上（图省事的「更清楚」），这条会直接红。
  */
 
 import { readFileSync } from "node:fs";
@@ -71,8 +76,8 @@ console.log("一、玻璃底色必须是导航底色的同色半透明 (7 条)")
   t("浅色玻璃 RGB = 导航底色 RGB（#FFFFFF）",
     !!glass && !!srgb && glass.r === srgb.r && glass.g === srgb.g && glass.b === srgb.b,
     glass && srgb ? `${glass.r},${glass.g},${glass.b} vs ${srgb.r},${srgb.g},${srgb.b}` : "解析失败");
-  t("浅色玻璃 alpha 在 .80~.92（透出内容但不糊成一片）",
-    !!glass && glass.a >= 0.8 && glass.a <= 0.92, glass && String(glass.a));
+  t("浅色玻璃 alpha 在 .66~.78（透出内容但不糊成一片）",
+    !!glass && glass.a >= 0.66 && glass.a <= 0.78, glass && String(glass.a));
 
   const block = pickHex(DARK, "zp-block");
   const dglass = pickRgba(DARK, "zp-nav-glass");
@@ -81,8 +86,8 @@ console.log("一、玻璃底色必须是导航底色的同色半透明 (7 条)")
   t("深色玻璃 RGB = 导航底色 RGB（#292929）",
     !!dglass && !!brgb && dglass.r === brgb.r && dglass.g === brgb.g && dglass.b === brgb.b,
     dglass && brgb ? `${dglass.r},${dglass.g},${dglass.b} vs ${brgb.r},${brgb.g},${brgb.b}` : "解析失败");
-  t("深色玻璃 alpha 在 .72~.88（比浅色更透一档，才看得出是浮层）",
-    !!dglass && dglass.a >= 0.72 && dglass.a <= 0.88, dglass && String(dglass.a));
+  t("深色玻璃 alpha 在 .60~.74（比浅色更透一档，才看得出是浮层）",
+    !!dglass && dglass.a >= 0.6 && dglass.a <= 0.74, dglass && String(dglass.a));
 }
 
 /* ============ 二、配色零改动 ============ */
