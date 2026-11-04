@@ -1054,13 +1054,16 @@ button:active{transform:translateY(0)}
 /* 2026-10-30（ZP-NAV-2026-002 表 3.1）：Tab 根页（历史/线路/我的）不显示页面内返回箭头。
    顶栏是三列 grid（按钮/标题/按钮），删掉箭头后若不改列定义，标题会掉进第一列窄格里；
    根页改为单列。
-   2026-11-04 大标题（用户定稿 · 对齐 Uber）：根页是「一级页面」，标题按一级标题处理 ——
-   31px 粗体左对齐，与内容左边界对齐；内页（带返回键）仍是 20px 居中，保持「当前在哪」的层级差。
+   2026-11-04（上午）：曾按 Uber 一级页改成 31px 粗体左对齐。
+   2026-11-04（下午，用户定稿）：改回 20px 居中 —— 31px 四字标题在 390 宽屏上居中后
+   左右各空 130px，读起来像海报标题而不是导航标题；且根页与内页切换时标题字号跳变
+   （31 → 20），层级差变成了「跳动」。现三页统一 20px / 26 行高 / semibold / 居中，
+   与内页顶栏完全同规格，「当前在哪」改由底栏选中态表达。
    两条都只改 .is-root 作用域，内页顶栏零影响。 */
-.topbar.is-root{grid-template-columns:1fr;justify-items:start}
+.topbar.is-root{grid-template-columns:1fr;justify-items:center}
 .topbar.is-root h1,.topbar.is-root strong{
-  font-size:var(--zp-fs-31);line-height:38px;font-weight:var(--zp-fw-bold);
-  letter-spacing:-.4px;text-align:left;
+  font-size:var(--zp-fs-20);line-height:26px;font-weight:var(--zp-fw-semibold);
+  letter-spacing:normal;text-align:center;
 }
 .topbar strong,.order-title{font-weight:var(--zp-fw-semibold)}
 /* 2026-10-29：隐私政策 / 服务条款两页此前没有标题规则，h1 用的是浏览器默认
