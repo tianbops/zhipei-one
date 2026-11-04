@@ -1498,6 +1498,13 @@ html[data-zp-e2e="1"] body::after{
   backdrop-filter:none;
   -webkit-backdrop-filter:none;
 }
+/* 滚动自隐藏（2026-11-04，逻辑见 js/ui/nav.js）：向下滚离开顶部后收起，上滑回来。
+   隐藏只做位移、不做淡出 —— 半透明穿屏会显廉价，且描边/投影会先于本体消失而留下脏边。
+   位移量 100% + 16px：底栏自身高度之外再多走 16，确保含 1px 描边与投影整体出屏。
+   必须保留 -50% 的横向分量，否则隐藏瞬间会横向跳到屏幕左侧。 */
+.zp-nav{transition:transform .24s cubic-bezier(.32,.72,0,1)}
+.zp-nav.is-nav-hidden{transform:translate(-50%,calc(100% + 16px));pointer-events:none}
+@media(prefers-reduced-motion:reduce){.zp-nav{transition:none}}
 .zp-nav-item{
   min-width:0;
   min-height:52px;
