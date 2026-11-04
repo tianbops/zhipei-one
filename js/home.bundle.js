@@ -273,7 +273,8 @@ const setRouteBadge=(route)=>{if(!dot)return;const type=route?.type||"";const na
   if (!root) return;
   var scroller = root.querySelector(".zp-scroll");
   var list = document.getElementById("todayStoreList");
-  if (!scroller || !list) return;
+  var card = root.querySelector(".task-card");
+  if (!scroller || !list || !card) return;
 
   var MIN_LIST_H = 172;  /* 4 行（176）减 4px 亚像素误差 */
   var lost = false;      /* 已降级：不再自动恢复，等视口变化重测 */
@@ -286,6 +287,11 @@ const setRouteBadge=(route)=>{if(!dot)return;const type=route?.type||"";const na
     list.classList.toggle("is-empty", isEmpty);
     /* 根类：今日配送卡的空态需填满整页（见 css/home-dashboard.css 的 .is-today-empty） */
     root.classList.toggle("is-today-empty", isEmpty);
+    /* 有内容：列表含真实门店行（骨架行带 aria-hidden，须排除）时收回内容高度，
+       否则保持 CSS 默认填满，避免数据到达后卡片被拉伸抖动。 */
+    var hasContent = list.querySelectorAll('.today-store-row:not([aria-hidden="true"])').length > 0;
+    card.classList.toggle("has-content", hasContent);
+    list.classList.toggle("has-content", hasContent);
     var canScroll = list.scrollHeight - list.clientHeight > 2;
     var atEnd = list.scrollTop + list.clientHeight >= list.scrollHeight - 2;
     list.classList.toggle("can-scroll", canScroll && !atEnd);

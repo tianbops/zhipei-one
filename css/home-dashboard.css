@@ -95,18 +95,20 @@ main.home-app .zp-scroll{
   padding-bottom:calc(88px + env(safe-area-inset-bottom));
 }
 main.home-app .task-card{
-  /* 内容模式：卡片按内容自然高度（门店越多越高），不强制填满、不封顶 */
-  flex:0 0 auto;
+  /* 默认填满整页（空态 / 加载态）：首屏即此高度，数据到达后不再被拉伸，消除刷新抖动。
+     有内容时由 .has-content 收回内容自然高度，随门店数增高。 */
+  flex:1 1 auto;
   min-height:0;
   display:flex;
   flex-direction:column;
 }
-/* 空态：今日配送卡填满整页（贴合「无内容时刚好将页面填满」）；有内容时回到上面的内容高度，随门店数增高 */
-main.home-app.is-today-empty .task-card{flex:1 1 auto}
+/* 有内容：卡片与列表回到内容自然高度，随门店数增高（不再强制填满整页） */
+main.home-app .task-card.has-content,
+main.home-app .today-store-list.has-content{flex:0 0 auto}
 main.home-app .today-store-list{
-  /* 内容驱动高度：列表按门店数自然增高，不再封顶 264px / 内部滚动；
-     超出一屏时由整页滚动承接。空态由 .is-empty 接管（flex:1 填满卡片）。 */
-  flex:0 0 auto;
+  /* 默认填满卡片（空态 / 加载态），文案贴顶由 .is-empty 接管；
+     有内容时由 .has-content 收回内容高度，超出一屏由整页滚动承接。 */
+  flex:1 1 auto;
   max-height:none;
   overflow:visible;
 }
@@ -141,5 +143,5 @@ main.home-app .today-store-list.can-scroll{
   mask-image:linear-gradient(to bottom,#000 calc(100% - 26px),transparent);
 }
 /* 空态（今日暂无配送门店）：提示文案贴近分隔线（顶部居中），下方大片留白，
-   与空态参考图一致；flex:1 让列表填满卡片，配合根类 .is-today-empty 使整卡填满整页 */
-main.home-app .today-store-list.is-empty{display:flex;align-items:flex-start;justify-content:center;flex:1 1 auto}
+   与空态参考图一致；flex 继承基础段 flex:1（列表填满卡片，整卡填满整页） */
+main.home-app .today-store-list.is-empty{display:flex;align-items:flex-start;justify-content:center}
