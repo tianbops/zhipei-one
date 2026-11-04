@@ -6,26 +6,28 @@
    bootstrap B 组）要求非 dark :root 块不得残留。 */
 :root[data-zp-theme="dark"]{
   color-scheme:dark;
-  /* ===== 页面 / 表面 / 文字（深色 spec · Uber 中性黑，2026-11-04）=====
-     浅色翻为「白底灰块」后，深色同步翻为「纯黑底 + 中性亮块」，两边层级同构。
-     纯黑（#000000）是用户定稿；代价是投影在纯黑上完全不可见，
-     故浮层/浮岛一律改靠 --zp-tint 白色微描边 + 亮度差显形，不靠 shadow。 */
-  --zp-bg:#000000;
-  --zp-block:#1D1D1D;
+  /* ===== 页面 / 表面 / 文字（深色 spec · Uber 实测值，2026-11-04 定稿）=====
+     底色 #161616 与块 #292929 是 Uber App 深色截图的像素实测值，非估算。
+     先前用的纯黑 #000000 已在真机复现 OLED 拖影（black smearing）：纯黑像素
+     在滚动时驱动响应慢半拍，浅色字会拖出一条余影。Uber 自己也不用纯黑，
+     #161616 只比纯黑亮 8.6%，拖影消失且省电收益基本保留。
+     浮层 #303030 / 控件 #363636 由块色按同一亮度步进外推，保持三级可分辨。 */
+  --zp-bg:#161616;
+  --zp-block:#292929;
   /* 浮层比块再亮一档：若与块同色，弹窗/下拉压在卡片上会糊成一片。 */
-  --zp-surface:#232323;
-  --zp-surface-2:#282828;
-  --zp-surface-3:#383838;
-  --zp-line:#2B2B2B;
-  /* 卡片内分隔线在深色下取 --zp-line-inset #252525：比 --zp-line 柔一档，
+  --zp-surface:#303030;
+  --zp-surface-2:#363636;
+  --zp-surface-3:#414141;
+  --zp-line:#3D3D3D;
+  /* 卡片内分隔线在深色下取 --zp-line-inset #323232：比 --zp-line 柔一档，
      避免深底上的行间线亮成描边（浅色取值见 ui-base.css）。 */
-  --zp-line-inset:#252525;
+  --zp-line-inset:#323232;
   --zp-input-line:var(--zp-line);
   /* 输入框：与所在卡片同色、靠描边区分（与浅色「白卡上纯白 + 描边」同一条规则），
      禁用态整档压暗但保留描边。 */
   --zp-input-bg:var(--zp-block);
-  --zp-input-bg-disabled:#191919;
-  --zp-input-line-disabled:#202020;
+  --zp-input-bg-disabled:#212121;
+  --zp-input-line-disabled:#2B2B2B;
   --zp-input-placeholder:#A3A3A3;   /* 与深色 --zp-muted 同值 */
   --zp-input-text-disabled:#7A7A7A;
   --zp-input-focus:#60A5FA;
@@ -33,26 +35,26 @@
   --zp-muted:#A3A3A3;
   --zp-soft:#717171;
   /* 骨架微光条深色化：中性同梯度微光 */
-  --zp-sk-a:#232323;
-  --zp-sk-b:#282828;
+  --zp-sk-a:#2F2F2F;
+  --zp-sk-b:#363636;
   /* ===== 主按钮（深色 spec：亮蓝底白字）===== */
   --zp-primary:#3B82F6;
   --zp-on-primary:#FFFFFF;
-  --zp-secondary-bg:#282828;
-  --zp-secondary-border:#3D3D3D;
+  --zp-secondary-bg:#363636;
+  --zp-secondary-border:#4A4A4A;
   --zp-secondary-text:#FFFFFF;
-  --zp-disabled-bg:#282828;
+  --zp-disabled-bg:#363636;
   --zp-disabled-text:#7A7A7A;
   --zp-scrim:rgba(0,0,0,.72);
   --zp-focus:#FFFFFF;
   --zp-primary-hover:#60A5FA;
   --zp-primary-active:#2563EB;
   /* 选中态强调色（主题蓝）：用于「已选中」文字/图标着色。
-     2026-11-04 选中块底由 #334155 换成 --zp-block(#1D1D1D)，#93C5FD 在其上 9.35:1，
+     2026-11-04 选中块底由 #334155 换成 --zp-block(#292929)，#93C5FD 在其上 8.07:1，
      余量充足，色值维持不变（保住深色下同一支品牌蓝）。 */
   --zp-accent:#93C5FD;
-  --zp-secondary-hover:#2C2C2C;
-  --zp-secondary-active:#383838;
+  --zp-secondary-hover:#3E3E3E;
+  --zp-secondary-active:#444444;
   --zp-divider:rgba(255,255,255,.10);
   /* ===== 功能状态色（深色 spec：提亮保对比度）===== */
   --zp-success:#22C55E;
@@ -65,8 +67,9 @@
   --zp-danger-soft:rgba(252,165,165,.12);
   --zp-info:#60A5FA;
   --zp-info-soft:rgba(96,165,250,.14);
-  /* 底部一级导航：2026-11-04 浮岛化。纯黑底上投影不可见，
-     改取 --zp-block(#1D1D1D) 靠「比页面底亮一档」浮起（浅色见 ui-base.css）。 */
+  /* 底部一级导航：2026-11-04 浮岛化。深色 #161616 底上投影几乎不可见，
+     改取 --zp-block(#292929) 靠「比页面底亮一档」+ 白色微描边浮起
+     （浅色见 ui-base.css）。 */
   --zp-nav-bg:var(--zp-block);
   --zp-nav-text:#A3A3A3;
   --zp-nav-text-active:#FFFFFF;
