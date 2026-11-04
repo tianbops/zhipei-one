@@ -5,8 +5,8 @@
  *
  * 锁住两处实现，防止将来被「顺手回退」或「改成淡出」：
  *   · css/ui-base.css 的隐藏态样式（位移出屏、不减淡、保留横向 -50%、减动效关过渡）
- *   · js/ui/nav.js 的滚动自隐藏逻辑（捕获阶段监听、rAF 防抖、顶/底强制显示、
- *     累计位移阈值、只认占屏过半滚动区、inert）
+   *   · js/ui/nav.js 的滚动自隐藏逻辑（捕获阶段监听、rAF 防抖、顶部强制显示、
+   *     底部不强制弹起〔与 Uber 一致〕、累计位移阈值、只认占屏过半滚动区、inert）
  *
  * 风格与 nav-busy-guard.test.mjs 一致：直接读真实源码做正则 / 切片断言，
  * 改源码后本测试自动跟随。行为层面的真机验证由独立 Playwright 脚本承担
@@ -51,17 +51,18 @@ console.log("一、隐藏态样式（位移出屏、不减淡）(6 条)");
 }
 
 /* ============ 二、JS 滚动自隐藏逻辑 ============ */
-console.log("\n二、滚动自隐藏逻辑（捕获监听 / 顶底强显 / 累计阈值）(7 条)");
+console.log("\n二、滚动自隐藏逻辑（捕获监听 / 顶部强显 / 底部不弹起 / 累计阈值）(7 条)");
 {
   const block = slice(JS, "底栏滚动自隐藏", "})();");
   t("scroll 用捕获阶段监听（scroll 不冒泡，冒泡阶段收不到）",
     /addEventListener\("scroll",navOnScroll,\{capture:true,passive:true\}/.test(block));
   t("用 requestAnimationFrame 防抖（不在每个 scroll 帧里改 DOM）",
     /requestAnimationFrame\(function\(\)\{/.test(block) && /navTicking/.test(block));
-  t("顶部强制显示（距顶 NAV_SHOW_TOP 内永远不收）",
-    /y<=NAV_SHOW_TOP\|\|max-y<=NAV_SHOW_BOTTOM/.test(block) && /NAV_SHOW_TOP=/.test(block));
-  t("底部强制显示（接近底部时强制显示，否则末段留白）",
-    /y<=NAV_SHOW_TOP\|\|max-y<=NAV_SHOW_BOTTOM/.test(block) && /NAV_SHOW_BOTTOM=/.test(block));
+  t("顶部强制显示（距顶 NAV_SHOW_TOP 内永远不收，且 NAV_SHOW_BOTTOM 已移除）",
+    /y<=NAV_SHOW_TOP\b/.test(block) && /NAV_SHOW_TOP=/.test(block) && !/NAV_SHOW_BOTTOM=/.test(block));
+  t("底部不再强制弹起（与 Uber 一致：滚到底若已收起则保持收起，不自动弹起）",
+    !/max-y<=NAV_SHOW_BOTTOM/.test(block) && !/NAV_SHOW_BOTTOM=/.test(block),
+    "仍存在底部强显逻辑 max-y<=NAV_SHOW_BOTTOM 或 NAV_SHOW_BOTTOM 常量");
   t("累计位移阈值 NAV_HIDE_DELTA（惯性滚动单帧太短，必须累计）",
     /NAV_HIDE_DELTA/.test(block) && /navAcc>=NAV_HIDE_DELTA/.test(block) && /navAcc<=-NAV_HIDE_DELTA/.test(block));
   t("只认占屏过半的滚动区（内嵌小列表不触发）",

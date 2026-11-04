@@ -2205,8 +2205,10 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
      浮岛化后底栏仍是常驻 fixed，长列表滚到中途会压住内容。规则取主流 App 口径：
        · 向下滚、离开顶部一段后，累计位移到阈值 → 收起
        · 向上滚累计到位 → 立刻回来（回滑即回，不等停手）
-       · 滚到顶部 / 接近底部 → 强制显示
-     最后一条不是补丁：页面内容为底栏让了 88px，滚到底若还收着，末段会留一块空白。
+       · 滚到顶部 → 强制显示（回顶时底栏应在，避免「滚回去却空着」的突兀）
+     注意：滚到【底部】不再强制弹起——与 Uber 一致：尾段若已收起就保持收起，
+     用户继续上滑/回滑才回来。页面内容为底栏让的 88px 在底栏收起时本就留作末段余白，
+     这是浮动底栏的固有取舍，Uber 同样如此。
      几条实现约束：
        · scroll 不冒泡，只能用捕获阶段监听；同时覆盖 .zp-scroll 内滚与整页滚动。
        · 首页底栏是 HTML 静态写的、其余页由上面注入，故一律按类名现取，不持有引用。
@@ -2214,8 +2216,7 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
          否则在小区块里划两下底栏就没了。
        · 阈值用累计位移而非单帧位移：惯性滚动每帧只有几 px，单帧判断收不起来。 */
   var NAV_HIDE_DELTA=8;    // 累计位移达到这个数才切换，抗抖动
-  var NAV_SHOW_TOP=56;     // 距顶这个范围内永远显示
-  var NAV_SHOW_BOTTOM=80;  // 距底这个范围内永远显示
+  var NAV_SHOW_TOP=56;     // 距顶这个范围内永远显示（底栏不强显，随 Uber 口径）
   var navEl=null,navHidden=false,navLastY=-1,navAcc=0,navTicking=false;
 
   function navScrollTarget(e){
@@ -2247,7 +2248,7 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
       var max=el.scrollHeight-el.clientHeight;
       var dy=y-navLastY;
       navLastY=y;
-      if(y<=NAV_SHOW_TOP||max-y<=NAV_SHOW_BOTTOM){navAcc=0;navApply(false);return;}
+      if(y<=NAV_SHOW_TOP){navAcc=0;navApply(false);return;}
       navAcc=dy>0?Math.max(0,navAcc)+dy:Math.min(0,navAcc)+dy;
       if(navAcc>=NAV_HIDE_DELTA){navAcc=0;navApply(true);}
       else if(navAcc<=-NAV_HIDE_DELTA){navAcc=0;navApply(false);}
