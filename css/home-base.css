@@ -2,18 +2,20 @@
 /* 板块宽度对齐全局：与线路页 / 历史页同用 --zp-space-4（16px）。
    原为 14px 历史遗留值，比全局窄 2px，跨页切换时板块宽度会跳。 */
 /* .home-app 只作命名空间：外壳尺寸（宽/高/居中/留白）统一由 main.zp-shell 声明。 */
-/* 2026-10-29：顶栏与「今日配送」之间保留一点距离感。
-   间距 = 这里的 6px + .zp-scroll 的 14px = 20px（原来 8+14=22，几乎没变），
-   只把多余的一层收掉 2px，不做大幅调整。 */
+/* 2026-11-04：用户反馈「顶部空间太紧」，顶栏与「今日配送」之间再松一档。
+   间距 = 这里的 12px + .zp-scroll 的 14px = 26px（原 6+14=20）。
+   只作用于首页，内页仍走 main > .topbar 的 6px 口径。 */
 /* 2026-11-04：顶栏标题全站居中（历史/线路/我的已改，首页跟上）。
    首页顶栏是品牌区两行（20px 主标 + 11px 副标），内容居中由 .home-brand 的
    align-items 控制，不是 text-align —— 两行是块级子项，居中对齐要作用于交叉轴。 */
-.home-app .topbar{display:flex;justify-content:center;align-items:center}
+.home-app .topbar{display:flex;justify-content:center;align-items:center;margin-bottom:12px}
 /* padding-left 抵消副标 letter-spacing:1.5px 的行尾留白（末字后也加一份间距，
    居中时整块会右偏 0.75px）；加了之后两行的视觉中线才真正重合。 */
 .home-brand{display:flex;flex-direction:column;align-items:center;text-align:center;line-height:1.2;padding-left:1.5px}
 .home-brand strong{font-size:var(--zp-fs-18);font-weight:var(--zp-fw-bold);letter-spacing:.5px;color:var(--zp-text)}
-.home-brand span{margin-top:2px;font-size:var(--zp-fs-11);color:var(--zp-muted);letter-spacing:1.5px}
+/* 2026-11-04：主标与副标原来只隔 2px，两行几乎黏在一起（用户反馈顶部太紧）。
+   拉到 8px，只改留白、不动字号与行高；副标仍与「今日配送」保持 26px 呼吸位。 */
+.home-brand span{margin-top:8px;font-size:var(--zp-fs-11);color:var(--zp-muted);letter-spacing:1.5px}
 .menu-item-icon{width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;color:var(--zp-muted)}
 .menu-item-icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .menu-divider{height:1px;margin:5px 7px;background:var(--zp-tint)}
@@ -133,11 +135,12 @@
    超长省略号截断，不换行 */
 
 /* Final Android typography normalization: size/line-height only */
-/* 2026-10-29 顶栏定高 50px：品牌区 42（标题 24 + 间距 2 + 副标 16）+ 8px 呼吸位。
-   字号不动（20/11 已在可读下限），只调行高；副标行高 16 也让两行之间松一点。 */
+/* 2026-11-04：品牌区 48（标题 24 + 间距 8 + 副标 16）+ 8px 呼吸位，
+   两行之间用留白拉开而不是放大字号（20/11 已在可读下限）。
+   原为 42（间距 2），用户反馈「智配One 和下方文字太挤」，见上方 margin-top:8px。 */
 .home-brand strong{font-size:var(--zp-fs-20);line-height:24px;letter-spacing:.5px}
 .home-brand span{font-size:var(--zp-fs-11);line-height:16px}
-/* 品牌区行高收一档到 24（标题 24 + 间距 2 + 副标 16 = 42，配 8px 呼吸位 = 50）。
+/* 品牌区行高收一档到 24（标题 24 + 间距 8 + 副标 16 = 48，配 8px 呼吸位 = 56）。
    2026-10-29：ui-base 的 .topbar strong 已从 !important 降级为普通基线，
    这里不再需要用 !important 对抗。 */
 .home-app .home-brand strong{line-height:24px}
