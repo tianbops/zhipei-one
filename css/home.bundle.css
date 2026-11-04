@@ -2507,13 +2507,13 @@ main.home-app .zp-scroll{
   display:flex;
   flex-direction:column;
   /* 2026-11-04：由 overflow:hidden（整页锁死、列表内部滚）改为 overflow-y:auto。
-     今日配送卡现随内容增高，超出一屏时由整页滚动承接；空态卡片保持 6 行高度（不撑满整页）。 */
+     今日配送卡现随内容增高，超出一屏时由整页滚动承接；空态卡片保持 4 行高度（不撑满整页）。 */
   overflow-y:auto;
   /* 底栏 fixed 覆盖在滚动区之上，必须留出 66px + 呼吸位，否则趋势卡被遮 */
   padding-bottom:calc(88px + env(safe-area-inset-bottom));
 }
 main.home-app .task-card{
-  /* 不撑满整页：空态保持 6 行高度（见 .today-store-list.is-empty），有内容时随门店数增高。
+  /* 不撑满整页：空态保持 4 行高度（见 .today-store-list.is-empty），有内容时随门店数增高。
      首屏即此状态，数据到达后高度稳定，刷新无抖动。 */
   flex:0 0 auto;
   min-height:0;
@@ -2521,7 +2521,7 @@ main.home-app .task-card{
   flex-direction:column;
 }
 main.home-app .today-store-list{
-  /* 内容驱动高度：随门店数自然增高，不封顶。空态由 .is-empty 接管（固定 6 行高度）。 */
+  /* 内容驱动高度：随门店数自然增高，不封顶。空态由 .is-empty 接管（固定 4 行高度）。 */
   flex:0 0 auto;
   max-height:none;
   overflow:visible;
@@ -2557,12 +2557,12 @@ main.home-app .today-store-list.can-scroll{
   mask-image:linear-gradient(to bottom,#000 calc(100% - 26px),transparent);
 }
 /* 空态（今日暂无配送门店）：提示文案贴近分隔线（顶部居中），下方大片留白；
-   列表固定 6 行高度（44px × 6 ≈ 264px），不撑满整页，与「6 排列」一致 */
+   列表固定 4 行高度（44px × 4 = 176px），不撑满整页，与「4 排列」一致 */
 main.home-app .today-store-list.is-empty{
   display:flex;
   align-items:flex-start;
   justify-content:center;
-  min-height:264px;
+  min-height:176px;
 }
 
 /* 浅色外观适配：首页固定导航与菜单交互

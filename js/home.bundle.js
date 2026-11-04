@@ -286,7 +286,7 @@ const setRouteBadge=(route)=>{if(!dot)return;const type=route?.type||"";const na
     var isEmpty = list.children.length === 1 && !!list.querySelector(".zp-empty--tight");
     list.classList.toggle("is-empty", isEmpty);
     /* 有内容：列表含真实门店行（骨架行带 aria-hidden，须排除）时挂 .has-content；
-       当前基础段已是内容高度，空态由 .is-empty 固定 6 行高度，二者高度均稳定，
+       当前基础段已是内容高度，空态由 .is-empty 固定 4 行高度，二者高度均稳定，
        数据到达后无卡片拉伸抖动。 */
     var hasContent = list.querySelectorAll('.today-store-row:not([aria-hidden="true"])').length > 0;
     card.classList.toggle("has-content", hasContent);

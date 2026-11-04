@@ -2,13 +2,13 @@
  * 首页「今日配送」高度行为契约（node tests/home-today-grow.test.mjs）
  * ------------------------------------------------------------------
  * 守护需求：今日配送板块「内容放开、随内容增多而增高；
- * 无内容（空态）保持 6 行高度、不撑满整页」（即「6 排列」）。
+ * 无内容（空态）保持 4 行高度、不撑满整页」（即「4 排列」）。
  *
  * 实现要点（易回归，必须锁死）：
  *   1) 基础段（@media 之外）：滚动容器可滚动承接内容、列表内容高度无 264 封顶；
  *      卡片与列表默认 flex:0 0 auto（不撑满整页）—— 首屏即此高度，
  *      数据到达后高度稳定，无刷新抖动；
- *   2) 空态 .today-store-list.is-empty 固定 min-height:264px（≈6 行），文案贴顶，不撑满；
+ *   2) 空态 .today-store-list.is-empty 固定 min-height:176px（= 44px × 4），文案贴顶，不撑满；
  *   3) 有内容时列表含真实门店行（骨架行带 aria-hidden，须排除），
  *      由 flex:0 0 auto 随门店数自然增高（基础段即此值，无需额外收回）；
  *   4) js/home/fit.js 按「非骨架的真实门店行」切换 .has-content，且不再因整页溢出回退 is-overflow。
@@ -60,12 +60,12 @@ console.log("首页今日配送高度契约（基础段 5 条）");
     !!list && /overflow:visible/.test(list), list);
 }
 
-console.log("\n空态 6 排列契约（3 条）");
+console.log("\n空态 4 排列契约（3 条）");
 {
   // 注意：.is-empty 规则写在降级 @media 之后（基础段语义、全文件唯一），故对全 CSS 提取，不限定 BASE 切片。
   const empty = rule(CSS, "main.home-app .today-store-list.is-empty");
-  t("空态列表固定 6 行高度（min-height:264px，≈ 44px × 6，不撑满整页）",
-    !!empty && /min-height:264px/.test(empty), empty);
+  t("空态列表固定 4 行高度（min-height:176px，= 44px × 4，不撑满整页）",
+    !!empty && /min-height:176px/.test(empty), empty);
   t("空态文案贴顶（align-items:flex-start，非垂直居中）",
     !!empty && /align-items:flex-start/.test(empty) && !/align-items:center/.test(empty), empty);
   t("空态不撑满（列表无 flex:1 1 auto，不拉伸填满卡片）",
