@@ -1550,10 +1550,12 @@ html[data-zp-e2e="1"] body::after{
 .zp-nav::before{
   content:"";
   position:absolute;
-  /* inset:0 指的是 .zp-nav 的**内边距盒**，负 margin 才是把表面撑回边框盒；
-     不这样写表面会比浮岛小一圈（左右各少 8px、上下各少 6px）。 */
+  /* inset:0 的参照是 .zp-nav 的**内边距盒**（border 为 0 时就是边框盒），
+     已经是整块浮岛的大小 —— 这里**不能**再加负 margin 去「撑回边框盒」。
+     四版曾写 margin:-6px -8px，表面被撑到 76×382（比浮岛大一圈、底边贴到距屏底 2px），
+     mask 的圆心也就跟着高了 6px，比加号圆心偏上 6px：上缝 1px、下缝 13px。
+     用户看到的「缝隙不平行、大小不一致」就是这个偏移，不是缝宽参数的问题。 */
   inset:0;
-  margin:calc(-1 * var(--zp-nav-pad-y)) calc(-1 * var(--zp-nav-pad-x));
   border-radius:var(--zp-r-nav);
   /* 不透明实色：--zp-nav-bg 就是表面色本身，不叠 alpha、不加渐变、不加内高光。
      一条声明到底，旧 WebView 与新版拿到的是同一块板，不存在「降级两套观感」。 */
@@ -1568,6 +1570,32 @@ html[data-zp-e2e="1"] body::after{
      只是加号没有那圈缝 —— 有意的降级，不是错位。 */
   -webkit-mask:var(--zp-nav-notch);
   mask:var(--zp-nav-notch);
+  pointer-events:none;
+}
+/* 缺口描边环（2026-11-05 五版补，用户：「下面缺口要描边，能清晰显示出缺口」）。
+   mask 是硬切，切口本身没有「厚度」—— 浅色下白浮岛压在白页面上，缺口在哪完全读不出来；
+   深色下也只能靠 #292929 与 #161616 的底色差隐约看到轮廓。
+   这里沿缺口外沿补一圈 1px 描边，颜色与浮岛外沿同一支 --zp-nav-edge：
+     · 环直径 = 缺口直径 + 2（68px），边框正好落在半径 33~34 的**实体侧**，
+       贴着切口不留缝，不会把 7px 的缝吃窄；
+     · 只保留下半圆（mask 从圆心水平线切开）—— 缺口的上半部分露在浮岛之外，
+       那里没有可描边的表面，画上去会成一条悬空的弧；
+     · 中心与缺口同心（top = cy - r - 1），所以整圈缝的任何一段都是 7px。
+   clip 用 mask 而不是 clip-path：本文件已经在用 mask 挖缺口，
+   同一套兼容档位，不引入新的能力依赖。 */
+.zp-nav::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:calc(var(--zp-nav-notch-cy) - var(--zp-nav-notch-r) - 1px);
+  width:calc(var(--zp-nav-notch-r) * 2 + 2px);
+  height:calc(var(--zp-nav-notch-r) * 2 + 2px);
+  transform:translateX(-50%);
+  box-sizing:border-box;
+  border:1px solid var(--zp-nav-edge);
+  border-radius:50%;
+  -webkit-mask:linear-gradient(180deg,transparent 50%,#000 50%);
+  mask:linear-gradient(180deg,transparent 50%,#000 50%);
   pointer-events:none;
 }
 /* 滚动自隐藏（2026-11-04，逻辑见 js/ui/nav.js）：向下滚离开顶部后收起，上滑回来。

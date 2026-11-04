@@ -128,7 +128,7 @@ console.log("\n三、描边与配色 (5 条)");
 }
 
 /* ============ 四、加号缺口几何（「加号独立」的全部实现） ============ */
-console.log("\n四、加号缺口几何 (7 条)");
+console.log("\n四、加号缺口几何 (8 条)");
 {
   const padY = pickPx(LIGHT, "zp-nav-pad-y");
   const cy = pickPx(LIGHT, "zp-nav-notch-cy");
@@ -152,10 +152,36 @@ console.log("\n四、加号缺口几何 (7 条)");
     /mask:var\(--zp-nav-notch\)/.test(SURFACE) && !/^\s*mask:/m.test(NAV));
   t("按钮层抬到表面层之上（绝对定位的 ::before 会盖住按钮）",
     /position:\s*relative/.test(ITEM) && /z-index:\s*1/.test(ITEM));
+  /* 圆心能对上，前提是表面盒不能被负 margin 撑出浮岛 —— 撑出去多少，
+     mask 的圆心就跟着偏多少（四版撑了 6px，结果上缝 1px、下缝 13px）。 */
+  t("表面盒不再用负 margin 外扩（外扩会让缺口圆心比加号高 6px，缝一边 1px 一边 13px）",
+    !/margin:\s*calc\(-1 \* var\(--zp-nav-pad/.test(SURFACE) && /inset:\s*0/.test(SURFACE),
+    (/margin:[^;]+/.exec(SURFACE) || [])[0]);
+}
+
+/* ============ 五之一、缺口描边环（用户：下面缺口要描边） ============ */
+console.log("\n五、缺口描边环 (4 条)");
+{
+  const RING = rule(BASE, ".zp-nav::after");
+  const r = pickPx(LIGHT, "zp-nav-notch-r");
+  const cy = pickPx(LIGHT, "zp-nav-notch-cy");
+
+  t("::after 是描边环（1px 实边 + 圆形 + 与浮岛外沿同一支描边色）",
+    /border:\s*1px solid var\(--zp-nav-edge\)/.test(RING) && /border-radius:\s*50%/.test(RING),
+    RING.slice(0, 60));
+  t("环径 = 缺口直径 + 2（边框正好落在实体侧 33~34，不吃窄 7px 的缝）",
+    new RegExp("width:calc\\(var\\(--zp-nav-notch-r\\) \\* 2 \\+ 2px\\)").test(RING) &&
+    new RegExp("height:calc\\(var\\(--zp-nav-notch-r\\) \\* 2 \\+ 2px\\)").test(RING));
+  t("环心与缺口同心（top = cy - r - 1，即盒中心落在圆心）",
+    /top:calc\(var\(--zp-nav-notch-cy\) - var\(--zp-nav-notch-r\) - 1px\)/.test(RING),
+    (/top:[^;]+/.exec(RING) || [])[0]);
+  t("只保留下半圆（上半露在浮岛外，描上去会成悬空弧）",
+    /mask:linear-gradient\(180deg,transparent 50%,#000 50%\)/.test(RING) &&
+    Number.isFinite(r) && Number.isFinite(cy));
 }
 
 /* ============ 五、收起后加号独立留在底部 ============ */
-console.log("\n五、收起态：浮岛沉下去、加号留在距底 21px (4 条)");
+console.log("\n六、收起态：浮岛沉下去、加号留在距底 21px (4 条)");
 {
   const bottom = +(/(?:^|;)bottom:calc\((\d+)px/.exec(NAV.replace(/\n\s*/g, ";")) || [])[1];
   const navH = +(/min-height:\s*(\d+)px/.exec(NAV) || [])[1];
