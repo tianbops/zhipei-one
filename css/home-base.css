@@ -5,8 +5,13 @@
 /* 2026-10-29：顶栏与「今日配送」之间保留一点距离感。
    间距 = 这里的 6px + .zp-scroll 的 14px = 20px（原来 8+14=22，几乎没变），
    只把多余的一层收掉 2px，不做大幅调整。 */
-.home-app .topbar{display:flex;justify-content:space-between;align-items:center}
-.home-brand{display:flex;flex-direction:column;line-height:1.2}
+/* 2026-11-04：顶栏标题全站居中（历史/线路/我的已改，首页跟上）。
+   首页顶栏是品牌区两行（20px 主标 + 11px 副标），内容居中由 .home-brand 的
+   align-items 控制，不是 text-align —— 两行是块级子项，居中对齐要作用于交叉轴。 */
+.home-app .topbar{display:flex;justify-content:center;align-items:center}
+/* padding-left 抵消副标 letter-spacing:1.5px 的行尾留白（末字后也加一份间距，
+   居中时整块会右偏 0.75px）；加了之后两行的视觉中线才真正重合。 */
+.home-brand{display:flex;flex-direction:column;align-items:center;text-align:center;line-height:1.2;padding-left:1.5px}
 .home-brand strong{font-size:var(--zp-fs-18);font-weight:var(--zp-fw-bold);letter-spacing:.5px;color:var(--zp-text)}
 .home-brand span{margin-top:2px;font-size:var(--zp-fs-11);color:var(--zp-muted);letter-spacing:1.5px}
 .menu-item-icon{width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;color:var(--zp-muted)}

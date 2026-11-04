@@ -1,5 +1,7 @@
 /* ===== 首页新版信息架构：今日工作台 + 底部四入口 ===== */
-.home-app .topbar{justify-content:flex-start}
+/* 2026-11-04：随全站顶栏居中，此处由 flex-start 改为 center
+   （本文件在 bundle 中晚于 home-base.css 加载，是最先生效的那条）。 */
+.home-app .topbar{justify-content:center}
 .task-card{padding-bottom:14px}
 /* 2026-10-29：顶栏下方已经有 .zp-scroll 的 14px padding，卡片这里再写 margin-top:14px
    等于叠成 28px，加上顶栏 8px，首页顶部到卡片之间空出 36px —— 用户反馈「页面顶高，
