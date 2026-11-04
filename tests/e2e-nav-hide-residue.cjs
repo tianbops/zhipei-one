@@ -1,19 +1,23 @@
-/* 浮岛底栏隐藏后「底部残留蓝色」回归验证（2026-11-05 用户反馈）
+/* 浮岛底栏收起态回归验证（2026-11-05 用户反馈 → 五版新契约）
  * ------------------------------------------------------------------
  * 用法：CHROMIUM=/usr/bin/chromium node tests/e2e-nav-hide-residue.cjs
  *
- * 现象（用户真机截图）：历史页向下滚，浮岛收起后底部仍有一条蓝色细弧。
- *   把截图底部放大取样：蓝色只在 x 696~744（图宽 1440）、高度 4 行，
- *   位置正中 —— 正是中间「+」圆形按钮的顶部，不是页面背景。
+ * 历史（四版）：用户真机截图「历史页向下滚，浮岛收起后底部仍有一条蓝色细弧」。
+ *   根因是隐藏位移余量不足，只让底栏本体出屏，中间加号凸出的圆顶留在视口内。
+ *   四版把余量加到 32px，加号跟着浮岛一起出屏 —— 那时断言的是「加号必须出屏」。
  *
- * 根因：隐藏位移是 translate(-50%, calc(100% + 16px))，100% 只让底栏本体
- *   重合出屏；而加号 `.zp-nav-plus .zp-nav-icon` 有 translateY(-16px) 上凸，
- *   52px 圆在 52px 行里居中再上移 16，圆顶比底栏顶边高 9px。16px 余量被
- *   这 9px 吃掉后只剩 7px，实测隐藏态加号顶边停在 843 / 视口 844 —— 露 1px。
- *   修复：余量 16 → 32px（位移 98px，加号顶边到 859，含投影整体出屏 15px）。
+ * 五版契约反转：用户参照 Shadowrocket 定稿「收起后加号不跟着走，独自留在底部」。
+ *   所以同一个测量点现在要验的是**相反**的事：
+ *     · 浮岛本体必须完全出屏（这是原来那条 bug 的底线，不能回退）；
+ *     · 加号必须留在屏内、底边距屏底 21px（参考截图实测 64px@3x）；
+ *     · 加号在收起态仍可点（父级 pointer-events:none 之下单独 auto）；
+ *     · 其余四个导航项出屏后必须退出 Tab 序（tabindex=-1 + aria-hidden），
+ *       否则键盘/读屏会停在一排看不见的链接上。
+ *   「露一点蓝边」与「留一枚完整圆钮」是两件事：前者是不完整出屏（bug），
+ *   后者是刻意的停靠位置（设计），本文件用 21px 这个精确值把两者分开。
  *
- * 为什么必须真浏览器：加号的实际顶边由 grid 行高、padding、居中与 transform
- *   叠加决定，改任一环都会移动这个值；只有真布局能给出「到底露没露」的答案。
+ * 为什么必须真浏览器：加号的最终位置由 grid 行高、padding、父层位移与自身
+ *   translateY 叠加决定，改任一环都会移动这个值；只有真布局能给出答案。
  *   断言直接量 getBoundingClientRect，不用像素截图解码（CI 无 PNG 解码依赖）。
  */
 const { spawn } = require('node:child_process');
@@ -78,26 +82,38 @@ const check = (name, ok, detail) => {
   console.log((ok ? '  ✅ ' : '  ❌ ') + name + (detail ? '  [' + detail + ']' : ''));
 };
 
-/* 一次量全：本体 / 加号 / 命中的元素 / 位移量 */
+/* 一次量全：本体 / 加号 / 命中元素 / Tab 序 */
 const MEASURE = `(()=>{
   const nav=document.querySelector('.zp-nav');
   const plus=document.querySelector('.zp-nav-plus .zp-nav-icon');
+  const plusBtn=document.querySelector('.zp-nav-plus');
   const nr=nav.getBoundingClientRect(), pr=plus.getBoundingClientRect();
   const vh=innerHeight;
   const hits=[];
   for(let y=vh-1;y>vh-26;y-=4){
     for(const x of [195,120,270]){
       const el=document.elementFromPoint(x,y);
-      hits.push(el?(el.closest('.zp-nav')?'NAV:'+(el.className||el.tagName):'page'):'none');
+      hits.push(el?(el.closest('.zp-nav-plus')?'PLUS':(el.closest('.zp-nav')?'NAV':'page')):'none');
     }
   }
+  // 加号圆心处的命中元素：收起态必须仍是加号本身（不是被 pointer-events:none 穿透）
+  const hitCenter=(()=>{
+    const el=document.elementFromPoint(pr.left+pr.width/2, pr.top+pr.height/2);
+    return el?(el.closest('.zp-nav-plus')?'PLUS':(el.closest('.zp-nav')?'NAV:'+el.className:'page')):'none';
+  })();
+  const items=[...document.querySelectorAll('.zp-nav-item')].map(a=>({
+    plus:a.classList.contains('zp-nav-plus'),
+    tab:a.getAttribute('tabindex'), aria:a.getAttribute('aria-hidden'),
+  }));
   return {
     vh, hidden:nav.classList.contains('is-nav-hidden'),
     navTop:+nr.top.toFixed(1), navBottom:+nr.bottom.toFixed(1), navH:+nr.height.toFixed(1),
-    plusTop:+pr.top.toFixed(1), plusVisible:+Math.max(0,vh-pr.top).toFixed(1),
-    inert:nav.hasAttribute('inert'),
-    navHits:hits.filter(h=>h.indexOf('NAV')===0).length,
-    hitSample:hits.slice(0,6),
+    plusTop:+pr.top.toFixed(1), plusBottom:+pr.bottom.toFixed(1),
+    plusDistBottom:+(vh-pr.bottom).toFixed(1), plusD:+pr.width.toFixed(1),
+    plusInert:plusBtn.hasAttribute('inert')||nav.hasAttribute('inert'),
+    navInert:nav.hasAttribute('inert'),
+    hitCenter, navHits:hits.filter(h=>h==='NAV').length, plusHits:hits.filter(h=>h==='PLUS').length,
+    hitSample:hits.slice(0,6), items,
     scrollTop:Math.round((document.querySelector('.zp-scroll')||document.documentElement).scrollTop),
   };
 })()`;
@@ -206,13 +222,31 @@ const MEASURE = `(()=>{
   await shot('nav-hidden-after.png');
 
   check('向下滚后底栏收起', hid.hidden === true, 'hidden=' + hid.hidden);
-  check('收起时带 inert（退出现行 Tab 序）', hid.inert === true);
-  check('底栏本体完全出屏', hid.navTop >= hid.vh, 'navTop=' + hid.navTop + ' vh=' + hid.vh);
-  /* 核心断言：蓝色圆顶来自加号，它必须也出屏 */
-  check('中间加号圆形完全出屏（余量不足时停在 843，露出 1px）',
-    hid.plusTop >= hid.vh, 'plusTop=' + hid.plusTop + ' vh=' + hid.vh + ' 露出=' + hid.plusVisible + 'px');
-  check('底部 24px 内无底栏元素拦截点击（隐藏态 pointer-events 穿透）', hid.navHits === 0, 'hits=' + hid.navHits + ' ' + JSON.stringify(hid.hitSample));
-  check('位移量 ≥ 本体高 + 24px（余量要盖住加号上凸 13px）',
+  check('底栏本体完全出屏（四版那条「底部露蓝边」的底线不能回退）',
+    hid.navTop >= hid.vh, 'navTop=' + hid.navTop + ' vh=' + hid.vh);
+  /* 五版新契约：加号不跟着走，独自停在距屏底 21px（参考截图 64px@3x 实测） */
+  check('加号留在屏内（收起态仍在视口内可见）',
+    hid.plusBottom <= hid.vh && hid.plusTop > hid.vh - 120,
+    'top=' + hid.plusTop + ' bottom=' + hid.plusBottom + ' vh=' + hid.vh);
+  check('加号底边距屏底 21px（±3px，参考软件收起态同位置）',
+    Math.abs(hid.plusDistBottom - 21) <= 3, '距底=' + hid.plusDistBottom + 'px');
+  check('加号尺寸未变（52px，收起不缩放）', hid.plusD === 52, 'd=' + hid.plusD);
+  /* 交互：父级 pointer-events:none 不能把加号一起废掉 */
+  check('加号在收起态仍可命中（圆心处 elementFromPoint 是加号本身）',
+    hid.hitCenter === 'PLUS', 'hit=' + hid.hitCenter);
+  check('加号未被 inert 波及（不能整条 nav 设 inert）',
+    hid.plusInert === false && hid.navInert === false);
+  /* 其余四项必须退出 Tab 序，否则键盘会停在一排看不见的链接上 */
+  const others = hid.items.filter((i) => !i.plus);
+  const plusItem = hid.items.find((i) => i.plus);
+  check('收起时其余四个导航项 tabindex=-1 且 aria-hidden=true',
+    others.length === 4 && others.every((i) => i.tab === '-1' && i.aria === 'true'),
+    JSON.stringify(others));
+  check('加号自己不受 Tab 序处理（不能被一起关掉）',
+    !!plusItem && plusItem.tab === null && plusItem.aria === null, JSON.stringify(plusItem));
+  check('浮岛本体（表面层）不拦截点击：底部 24px 内无 NAV 命中',
+    hid.navHits === 0, 'hits=' + hid.navHits + ' ' + JSON.stringify(hid.hitSample));
+  check('位移量 ≥ 本体高 + 24px（本体要完全沉下去，不能靠加号挡住缝）',
     hid.navTop - init.navTop >= hid.navH + 24, '位移=' + (hid.navTop - init.navTop) + ' 本体高=' + hid.navH);
 
   /* 上滑回来：确认修复没有把「回来」一起改坏 */
@@ -221,6 +255,11 @@ const MEASURE = `(()=>{
   await sleep(600);
   const back = await ev(MEASURE);
   check('上滑后底栏恢复', back.hidden === false && back.navTop < back.vh - 30, 'navTop=' + back.navTop);
+  check('上滑后加号回到缺口位（底边距屏底 46px，五版凸出 26px 的结果）',
+    Math.abs(back.plusDistBottom - 46) <= 2, '距底=' + back.plusDistBottom);
+  check('上滑后其余导航项恢复 Tab 序（tabindex / aria-hidden 已清除）',
+    back.items.filter((i) => !i.plus).every((i) => i.tab === null && i.aria === null),
+    JSON.stringify(back.items));
   await shot('nav-shown-after.png');
 
   ws.close();

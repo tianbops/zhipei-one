@@ -49,14 +49,14 @@ console.log("一、隐藏态样式（位移要盖住加号上凸、不减淡）(
     const m = block.match(/\.zp-nav\.is-nav-hidden\{[^}]*calc\(100% \+ (\d+)px\)/);
     return m && Number(m[1]) >= 24;
   })(), "余量 " + (block.match(/calc\(100% \+ (\d+)px\)/) || [])[1] + "px，应 ≥ 24px");
-  t("中间加号确有上凸（translateY(-20px)），是本条余量的来源",
-    /\.zp-nav-plus \.zp-nav-icon\{[^}]*transform:translateY\(-20px\)/.test(CSS));
+  t("中间加号确有上凸（translateY(-32px)，五版把圆心抬到浮岛顶边）",
+    /\.zp-nav-plus \.zp-nav-icon\{[^}]*transform:translateY\(-32px\)/.test(CSS));
   t("隐藏态 pointer-events:none（出屏后不挡点击）",
     /\.zp-nav\.is-nav-hidden\{[^}]*pointer-events:none/.test(block));
   t("底栏有 transform 过渡（收起/回来是滑动不是瞬移）",
     /\.zp-nav\{[^}]*transition:transform[^}]*\}/.test(block));
-  t("减动效下关闭过渡（prefers-reduced-motion）",
-    /@media\(prefers-reduced-motion:reduce\)\{\.zp-nav\{transition:none\}\}/.test(block));
+  t("减动效下关闭过渡（prefers-reduced-motion，浮岛与加号两条都要关）",
+    /@media\(prefers-reduced-motion:reduce\)\{[\s\S]{0,160}?\.zp-nav[,{][\s\S]{0,80}?transition:none/.test(CSS));
 }
 
 /* ============ 二、JS 滚动自隐藏逻辑 ============ */
@@ -87,9 +87,11 @@ console.log("\n二、滚动自隐藏逻辑（捕获监听 / 顶部强显 / 底�
     !!targetFn && !/innerHeight\*0\.6/.test(targetFn) && !/0\.6/.test(targetFn));
   t("只认确实可滚动的容器（scrollHeight-clientHeight>4），内嵌小列表不触发",
     /scrollHeight-el\.clientHeight>4/.test(block));
-  t("隐藏态切换类名 + inert（位移出屏后退出 Tab 序）",
+  t("隐藏态切换类名 + 只把非加号项移出 Tab 序（不整条 inert，否则加号点不到）",
     /classList\.toggle\("is-nav-hidden",hide\)/.test(block) &&
-    /setAttribute\("inert"/.test(block) && /removeAttribute\("inert"\)/.test(block));
+    /setAttribute\("tabindex","-1"\)/.test(block) &&
+    /removeAttribute\("tabindex"\)/.test(block) &&
+    !/navEl\.setAttribute\("inert"/.test(block));
 }
 
 /* ============ 三、反向契约：禁用淡出 ============ */

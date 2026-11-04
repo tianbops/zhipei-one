@@ -2256,8 +2256,17 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
     if(navHidden===hide)return;
     navHidden=hide;
     navEl.classList.toggle("is-nav-hidden",hide);
-    // inert 让收起后的底栏退出现行 Tab 序：位移出屏只是看不见，键盘/读屏仍会停在里面。
-    if(hide)navEl.setAttribute("inert","");else navEl.removeAttribute("inert");
+    /* 收起后退出现行 Tab 序。2026-11-05 五版：不能整条 inert ——
+       按参考软件的做法，收起时中间的加号仍留在屏幕底部、并且要能点，
+       父级 inert 会把加号一起废掉（inert 无法在子级局部解除）。
+       改为只把其余导航项移出 Tab 序 / 读屏：位移出屏只是看不见，
+       键盘和读屏若不处理仍会停在一排看不见的链接上。 */
+    var items=navEl.querySelectorAll(".zp-nav-item"),i;
+    for(i=0;i<items.length;i++){
+      if(items[i].classList.contains("zp-nav-plus"))continue;
+      if(hide){items[i].setAttribute("tabindex","-1");items[i].setAttribute("aria-hidden","true");}
+      else{items[i].removeAttribute("tabindex");items[i].removeAttribute("aria-hidden");}
+    }
   }
   function navOnScroll(e){
     var el=navScrollTarget(e);

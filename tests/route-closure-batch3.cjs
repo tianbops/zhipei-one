@@ -133,14 +133,11 @@ const req = (p, token, body) => ({
   check("找到 .dialog-bg 规则", ruleText.length > 0);
   check(".dialog-bg 已无 backdrop-filter", !/backdrop-filter\s*:\s*(?!none)/i.test(ruleText), ruleText.slice(0, 80));
   check(".dialog-bg 已无 -webkit-backdrop-filter", !/-webkit-backdrop-filter\s*:\s*(?!none)/i.test(ruleText));
-  /* 2026-11-05 需求变更：浮岛底栏改毛玻璃（用户要求参考 Shadowrocket 的浮层观感）。
-     原断言是「全站零生效 backdrop-filter」，出发点是 P2-12 那类**全屏遮罩**的大面积模糊
-     （admin .dialog-bg 盖满视口，低端机掉帧）；浮岛只有 66px 高、单独合成层做位移，
-     代价与全屏遮罩不是一个量级，因此把「全站为零」收窄为「白名单之外为零」：
-     只放行浮岛自身的规则（含 -webkit- 前缀；home.bundle.css 是它的拼接产物，
-     同一份规则会再出现一次）。2026-11-05 四版把浮岛**表面**搬到 .zp-nav::before
-     （为了给加号挖缺口而不同时裁掉加号），所以 .zp-nav::before 同样在白名单里 ——
-     它仍然是那 66px 的一条，不是全屏遮罩。其余任何选择器出现 backdrop-filter 仍然判红。 */
+  /* 2026-11-05 五版：浮岛材质从毛玻璃退回**不透明实色**（用户：「不要阴影」），
+     blur 一并删掉 —— 不透明底上模糊没有任何视觉产出，只白付一层合成开销。
+     于是这里恢复成最严的形态：**全站零生效 backdrop-filter**，不再需要白名单。
+     之前那段「白名单放行 .zp-nav / .zp-nav::before」随材质下线一并删除；
+     将来谁再给浮岛加模糊（比如又想做玻璃），这条会立刻红，逼他先解释代价。 */
   const files = fs.readdirSync(__dirname + "/..").filter(f => f.endsWith(".html"));
   const cssDir = path.join(__dirname, "..", "css");
   const cssFiles = fs.existsSync(cssDir) ? fs.readdirSync(cssDir).filter(f => f.endsWith(".css")).map(f => path.join(cssDir, f)) : [];
@@ -156,11 +153,10 @@ const req = (p, token, body) => ({
       if (t.startsWith("/*") || t.startsWith("*") || t.startsWith("//")) return;   // 注释不算
       if (/^@supports/i.test(t)) return;   // @supports 的能力探测不是真的在用
       if (!/backdrop-filter\s*:\s*(?!none)/i.test(l) && !/-webkit-backdrop-filter\s*:\s*(?!none)/i.test(l)) return;
-      if (sel === ".zp-nav" || sel === ".zp-nav::before") return;   // 白名单：浮岛底栏（本体 / 表面层）
       active++; offenders.push(path.basename(f) + ":" + (i + 1) + (sel ? " (" + sel + ")" : ""));
     });
   }
-  check("除浮岛 .zp-nav / .zp-nav::before 外，全站无生效的 backdrop-filter（注释不计）", active === 0, "残留=" + active + (offenders.length ? " @ " + offenders.join(",") : ""));
+  check("全站无生效的 backdrop-filter（注释不计，浮岛白名单已随实色化取消）", active === 0, "残留=" + active + (offenders.length ? " @ " + offenders.join(",") : ""));
 
   // ============ 桩自检：TTL 语义必须真实 ============
   console.log("【桩】MiniRedis 已真实实现 SET..EX 过期（不再失真）");

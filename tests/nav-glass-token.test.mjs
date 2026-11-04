@@ -1,34 +1,34 @@
 /**
- * 浮岛毛玻璃材质契约（2026-11-05 用户需求：参考 Shadowrocket 重做浮岛观感，
- * 「不能变现有颜色」「不改变底部按钮架构」）
+ * 浮岛表面契约（2026-11-05 五版，用户定稿「A · 纯白不透明」）
  * ------------------------------------------------------------------
  * 运行：node tests/nav-glass-token.test.mjs
  *
- * 这次改造只允许动「材质」：圆角、投影、模糊、透明度。任何一处颜色偏移都算违约。
- * 本测试把「材质升级但配色不动」写成可执行的断言，防止后续顺手调色：
+ * 文件名沿用历史（它曾经守护「毛玻璃」那一版材质）。四版之前这里是玻璃契约：
+ * alpha 区间、backdrop-filter、板感渐变、内高光、投影。五版用户逐项否掉 ——
+ * 「不要阴影，按钮区域不要高亮，保持以前版本原有色」—— 表面退回不透明实色，
+ * 于是本文件改成守护**实色契约**，语义与断言一一对应地翻了过来：
  *
- *   1) 玻璃底色的 RGB 必须**恒等于**该主题的 --zp-nav-bg 解析值
- *      （浅 #FFFFFF / 深 #292929），只允许 alpha 不同 —— 这就是「不变颜色」的字面含义；
- *   2) 导航文字 / 选中态 / 主色两套主题取值一个都不能变；
- *   3) 回退链必须是「先不透明底、后玻璃底」，旧 WebView 拿到的应等于改造前；
- *   4) backdrop-filter 必须真的在 .zp-nav 上（只有 alpha 没有模糊 = 半透明脏底）；
- *   5) 加号投影的主色扩散必须由 --zp-primary 预计算（RGB 相等），不许新起色相。
+ *   1) 表面必须是 var(--zp-nav-bg) 的实色，不得出现 rgba / 渐变 / 模糊；
+ *   2) 不得有投影、内高光、按下背景块（用户逐条点名去掉的三样）；
+ *   3) 1px 描边必须保留（浅色下是唯一轮廓，深色下是唯一分界）；
+ *   4) 缺口几何：圆心落在浮岛顶边、缝 7px —— 「加号独立」的全部实现就是这两个数；
+ *   5) 收起后加号反向补偿到距屏底 21px，且 pointer-events 单独放开（可点）；
+ *   6) 配色零改动：文字 / 选中态 / 主色两套主题一个都没变。
  *
- * 为什么不用颜色混合函数自动派生：安卓旧 WebView 不支持，
- * tests/theme-token-discipline 已把它列为兼容地板硬禁。所以颜色以 rgba 字面量
- * 固写在令牌层，由本测试守住它和底色/主色的一致性。
- *
- * alpha 区间上限同时是「材质必须看得出来」的回归闸门：首版浅色取 .86，交付后
- * 用户反馈「测试版上没有看到改变」—— .86 白压在页面底 #F5F6F8 上算出 #FFFEFE，
- * 与改造前的纯白浮岛肉眼同色，材质等于没做。区间收在 .66~.78 之后，
- * 谁再把 alpha 抬回 .80 以上（图省事的「更清楚」），这条会直接红。
+ * 为什么这些要写成测试而不是靠肉眼验收：本项目已经出现过两次「改了但看起来一样」
+ * （alpha .86 与 .80 都算不出与实心色的差别）。只有把「表面是什么、凸出多少、
+ * 缝多宽、收起停在哪」量化，才能在下次顺手调参时立刻发现偏离。
  */
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-const BASE = readFileSync(fileURLToPath(new URL("../css/ui-base.css", import.meta.url)), "utf8");
-const THEME = readFileSync(fileURLToPath(new URL("../css/ui-theme.css", import.meta.url)), "utf8");
+const RAW_BASE = readFileSync(fileURLToPath(new URL("../css/ui-base.css", import.meta.url)), "utf8");
+const RAW_THEME = readFileSync(fileURLToPath(new URL("../css/ui-theme.css", import.meta.url)), "utf8");
+/* 注释里也写着旧值（例：`transform:translateY(-24px)` 的历史说明），
+   不剥离会匹配到注释里的数字，得到「圆心偏移 32px」的假红。 */
+const BASE = RAW_BASE.replace(/\/\*[\s\S]*?\*\//g, "");
+const THEME = RAW_THEME.replace(/\/\*[\s\S]*?\*\//g, "");
 
 let pass = 0, fail = 0;
 const failures = [];
@@ -55,150 +55,125 @@ const pickHex = (block, name) => {
   const m = block.match(new RegExp("--" + name + "\\s*:\\s*(#[0-9A-Fa-f]{6})"));
   return m ? m[1].toUpperCase() : null;
 };
-const pickRgba = (block, name) => {
-  const m = block.match(new RegExp("--" + name + "\\s*:\\s*rgba\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*,\\s*(\\d+)\\s*,\\s*([\\d.]+)\\s*\\)"));
-  return m ? { r: +m[1], g: +m[2], b: +m[3], a: +m[4], raw: m[0] } : null;
+const pickVar = (block, name) => {
+  const m = block.match(new RegExp("--" + name + "\\s*:\\s*var\\((--[\\w-]+)\\)"));
+  return m ? m[1] : null;
 };
-const hexToRgb = (h) => ({
-  r: parseInt(h.slice(1, 3), 16),
-  g: parseInt(h.slice(3, 5), 16),
-  b: parseInt(h.slice(5, 7), 16),
-});
+const pickPx = (block, name) => {
+  const m = block.match(new RegExp("--" + name + "\\s*:\\s*(-?\\d+)px"));
+  return m ? +m[1] : null;
+};
+const rule = (css, selector) => {
+  /* 必须锚在行首 + 精确选择器：`.zp-nav-plus .zp-nav-icon` 是
+     `.zp-nav.is-nav-hidden .zp-nav-plus .zp-nav-icon` 的后缀，
+     用 indexOf 会先命中隐藏态那条，量出来的 translateY 是补偿值 -103。 */
+  const esc = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const m = css.match(new RegExp("(?:^|\\n)" + esc + "\\{([^}]*)\\}"));
+  return m ? m[1] : "";
+};
 
-/* ============ 一、玻璃底色 = 导航底色（只差 alpha） ============ */
-console.log("一、玻璃底色必须是导航底色的同色半透明 (7 条)");
+const NAV = rule(BASE, ".zp-nav");
+const SURFACE = rule(BASE, ".zp-nav::before");
+const PLUS = rule(BASE, ".zp-nav-plus .zp-nav-icon");
+const HIDDEN_PLUS = rule(BASE, ".zp-nav.is-nav-hidden .zp-nav-plus .zp-nav-icon");
+const ITEM = rule(BASE, ".zp-nav-item");
+
+/* ============ 一、表面 = 不透明实色（无玻璃、无渐变、无模糊） ============ */
+console.log("一、表面是不透明实色 (5 条)");
 {
-  const surface = pickHex(LIGHT, "zp-surface");
-  const glass = pickRgba(LIGHT, "zp-nav-glass");
-  t("浅色 --zp-surface 可解析", !!surface, String(surface));
-  t("浅色 --zp-nav-glass 是 rgba 字面量（不依赖颜色混合函数）", !!glass, glass && glass.raw);
-  const srgb = surface ? hexToRgb(surface) : null;
-  t("浅色玻璃 RGB = 导航底色 RGB（#FFFFFF）",
-    !!glass && !!srgb && glass.r === srgb.r && glass.g === srgb.g && glass.b === srgb.b,
-    glass && srgb ? `${glass.r},${glass.g},${glass.b} vs ${srgb.r},${srgb.g},${srgb.b}` : "解析失败");
-  t("浅色玻璃 alpha 在 .66~.78（透出内容但不糊成一片）",
-    !!glass && glass.a >= 0.66 && glass.a <= 0.78, glass && String(glass.a));
-
-  const block = pickHex(DARK, "zp-block");
-  const dglass = pickRgba(DARK, "zp-nav-glass");
-  t("深色 --zp-block 可解析", !!block, String(block));
-  const brgb = block ? hexToRgb(block) : null;
-  t("深色玻璃 RGB = 导航底色 RGB（#292929）",
-    !!dglass && !!brgb && dglass.r === brgb.r && dglass.g === brgb.g && dglass.b === brgb.b,
-    dglass && brgb ? `${dglass.r},${dglass.g},${dglass.b} vs ${brgb.r},${brgb.g},${brgb.b}` : "解析失败");
-  t("深色玻璃 alpha 在 .60~.74（比浅色更透一档，才看得出是浮层）",
-    !!dglass && dglass.a >= 0.6 && dglass.a <= 0.74, dglass && String(dglass.a));
+  t(".zp-nav 本体不画背景（表面在 ::before，理由见 CSS 注释）",
+    /background:\s*none/.test(NAV), NAV.trim().slice(0, 60));
+  t("::before 的底色就是 var(--zp-nav-bg)（不是另取一支颜色）",
+    /background:\s*var\(--zp-nav-bg\)/.test(SURFACE),
+    (/background:[^;]+/.exec(SURFACE) || [])[0]);
+  t("::before 底色里没有 rgba（不透明实色，不再叠 alpha）",
+    !/rgba\(/.test((/background:[^;]+/.exec(SURFACE) || [""])[0]));
+  t("没有 background-image（板感渐变已下线）",
+    !/background-image/.test(SURFACE), (/background-image:[^;]+/.exec(SURFACE) || [])[0]);
+  t("没有 backdrop-filter（不透明底上模糊无产出，白付合成开销）",
+    !/backdrop-filter:\s*(?!none)/.test(SURFACE));
 }
 
-/* ============ 二、配色零改动 ============ */
-console.log("\n二、导航配色与主色取值零改动 (5 条)");
+/* ============ 二、无阴影 / 无高光 / 无按下高亮 ============ */
+console.log("\n二、无阴影、无高光、无按下高亮 (4 条)");
 {
-  t("浅色文字 #666666 未变", pickHex(LIGHT, "zp-nav-text") === "#666666");
-  t("浅色选中文字 #000000 未变", pickHex(LIGHT, "zp-nav-text-active") === "#000000");
-  t("浅色按压底 #F3F3F3 未变", pickHex(LIGHT, "zp-nav-active-bg") === "#F3F3F3");
-  t("深色文字 #A3A3A3 / 选中 #FFFFFF 未变",
-    pickHex(DARK, "zp-nav-text") === "#A3A3A3" && pickHex(DARK, "zp-nav-text-active") === "#FFFFFF");
-  t("主色两主题同值 #2C6CE2（换主题不换蓝）",
+  t("浮岛无投影（box-shadow:none）", /box-shadow:\s*none/.test(SURFACE),
+    (/box-shadow:[^;]+/.exec(SURFACE) || [])[0]);
+  t("加号无投影（box-shadow:none）", /box-shadow:\s*none/.test(PLUS),
+    (/box-shadow:[^;]+/.exec(PLUS) || [])[0]);
+  const activeRule = (/\.zp-nav-item:active\{([^}]*)\}/.exec(BASE) || [])[1] || "";
+  t("按下不铺背景块（用户：「按钮区域不要高亮」）",
+    !/background/.test(activeRule), activeRule);
+  t("加号按下不加亮度滤镜（filter:brightness 已删）",
+    !/brightness\(/.test(BASE));
+}
+
+/* ============ 三、1px 描边与配色零改动 ============ */
+console.log("\n三、描边与配色 (5 条)");
+{
+  t("::before 保留 1px 实边 var(--zp-nav-edge)",
+    /border:\s*1px solid var\(--zp-nav-edge\)/.test(SURFACE));
+  t("浅色描边 rgba(0,0,0,.08) / 深色 rgba(255,255,255,.15) 都在",
+    /--zp-nav-edge:\s*rgba\(0,0,0,\.08\)/.test(LIGHT) &&
+    /--zp-nav-edge:\s*rgba\(255,255,255,\.15\)/.test(DARK));
+  t("浅色表面 = --zp-surface（导航底色仍是那支白）",
+    pickVar(LIGHT, "zp-nav-bg") === "--zp-surface");
+  t("深色表面 = --zp-block（比页面底亮一档）",
+    pickVar(DARK, "zp-nav-bg") === "--zp-block");
+  const navText = pickHex(DARK, "zp-nav-text") + "/" + pickHex(DARK, "zp-nav-text-active");
+  t("导航文字与选中态零改动（#666/#000 · #A3A3A3/#FFF · 主色 #2C6CE2）",
+    pickHex(LIGHT, "zp-nav-text") === "#666666" && pickHex(LIGHT, "zp-nav-text-active") === "#000000" &&
+    navText === "#A3A3A3/#FFFFFF" &&
     pickHex(LIGHT, "zp-primary") === "#2C6CE2" && pickHex(DARK, "zp-primary") === "#2C6CE2");
 }
 
-/* ============ 三、组件层：回退链与真模糊 ============ */
-console.log("\n三、组件层回退链与 backdrop-filter (4 条)");
+/* ============ 四、加号缺口几何（「加号独立」的全部实现） ============ */
+console.log("\n四、加号缺口几何 (7 条)");
 {
-  const nav = BASE.slice(BASE.indexOf(".zp-nav{"), BASE.indexOf(".zp-nav-item{"));
-  t("先声明不透明底 var(--zp-nav-bg)（旧 WebView 回退 = 改造前）",
-    /background:var\(--zp-nav-bg\)/.test(nav));
-  t("随后声明 var(--zp-nav-glass)（支持 alpha 的浏览器才用玻璃）",
-    /background:var\(--zp-nav-glass\)/.test(nav));
-  t("回退在前、玻璃在后（顺序不能反，否则回退覆盖玻璃）",
-    nav.indexOf("background:var(--zp-nav-bg)") < nav.indexOf("background:var(--zp-nav-glass)"));
-  t("backdrop-filter 真的在 .zp-nav 上且含 blur（只有 alpha 没模糊 = 脏底）",
-    /backdrop-filter:blur\(\d+px\)/.test(nav) && /-webkit-backdrop-filter:blur\(\d+px\)/.test(nav),
-    (nav.match(/backdrop-filter:[^;]+/) || [])[0]);
-}
+  const padY = pickPx(LIGHT, "zp-nav-pad-y");
+  const cy = pickPx(LIGHT, "zp-nav-notch-cy");
+  const r = pickPx(LIGHT, "zp-nav-notch-r");
+  const ty = +(/(?:translateY|translate)\(\s*(-?\d+)px\)/.exec(PLUS) || [])[1];
+  const plusD = +(/width:\s*(\d+)px/.exec(PLUS) || [])[1];
 
-/* ============ 四、加号投影不引入新色相 ============ */
-console.log("\n四、加号投影的主色扩散 (2 条)");
-{
-  const glow = pickRgba(LIGHT, "zp-nav-plus-shadow");
-  const primary = hexToRgb(pickHex(LIGHT, "zp-primary"));
-  const inShadow = LIGHT.match(/--zp-nav-plus-shadow:[\s\S]*?;/)[0];
-  const hit = [...inShadow.matchAll(/rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*[\d.]+\s*\)/g)]
-    .map((m) => ({ r: +m[1], g: +m[2], b: +m[3] }))
-    .find((c) => Math.abs(c.r - primary.r) + Math.abs(c.g - primary.g) + Math.abs(c.b - primary.b) < 6);
-  t("加号投影里有一层 RGB ≈ --zp-primary(#2C6CE2) 的主色扩散", !!hit, JSON.stringify(hit));
-  t("浅/深两套都定义了 --zp-nav-plus-shadow（深色单独压白高光）",
-    /--zp-nav-plus-shadow:/.test(LIGHT) && /--zp-nav-plus-shadow:/.test(DARK));
-}
-
-/* ============ 五、板感渐变（高光） ============ */
-console.log("\n五、板感渐变 --zp-nav-sheen (4 条)");
-{
-  const ls = LIGHT.match(/--zp-nav-sheen:[\s\S]*?;/);
-  const ds = DARK.match(/--zp-nav-sheen:[\s\S]*?;/);
-  t("浅色定义了 --zp-nav-sheen 且是 linear-gradient", !!ls && /linear-gradient\(/.test(ls[0]));
-  t("深色定义了 --zp-nav-sheen 且是 linear-gradient", !!ds && /linear-gradient\(/.test(ds[0]));
-  t("两套渐变的色值都是 rgba 字面量（不依赖颜色混合函数）",
-    !!ls && !!ds && !/color-mix/.test(ls[0] + ds[0]));
-  /* 顺序陷阱：background 简写会把 background-image 重置成 none，
-     若 image 写在简写之前，整条渐变会被后一条简写吃掉 —— 静默失效，肉眼查不出来。 */
-  const nav = BASE.slice(BASE.indexOf(".zp-nav{"), BASE.indexOf(".zp-nav-item{"));
-  const iBg = Math.max(nav.indexOf("background:var(--zp-nav-bg)"), nav.indexOf("background:var(--zp-nav-glass)"));
-  /* 四版之后 background-image 是两层（socket + sheen），sheen 仍在同一处声明里。 */
-  const iImg = nav.indexOf("background-image:var(--zp-nav-socket),var(--zp-nav-sheen)") >= 0
-    ? nav.indexOf("background-image:var(--zp-nav-socket),var(--zp-nav-sheen)")
-    : nav.indexOf("background-image:var(--zp-nav-sheen)");
-  t("background-image 写在 background 简写之后（否则被简写重置掉）",
-    iImg > iBg && iImg > 0, `bg=${iBg} img=${iImg}`);
-}
-
-/* ============ 六、加号缺口与凹槽（2026-11-05 四版） ============ */
-console.log("\n六、加号独立：缺口 / 凹槽 / 表面分层 (7 条)");
-{
-  /* 用户需求原话：「如视频一样将加号独立出来」。做法是浮岛顶边绕开加号挖一个圆缺口，
-     加号四周留 8px 缝 —— 但 mask 会连后代一起裁，所以表面必须降到 ::before。 */
-  /* 先剥注释再解析：注释里也写着 .zp-nav-plus .zp-nav-icon{transform:translateY(-20px)}，
-     不剥离会匹配到注释里的旧值，得到「圆心偏移 4px」的假红。 */
-  const BARE = BASE.replace(/\/\*[\s\S]*?\*\//g, "");
-  const nav = BARE.slice(BARE.indexOf(".zp-nav{"), BARE.indexOf(".zp-nav-item{"));
-  const before = BARE.slice(BARE.indexOf(".zp-nav::before{"), BARE.indexOf(".zp-nav::after{"));
-  const after = BARE.slice(BARE.indexOf(".zp-nav::after{"), BARE.indexOf(".zp-nav-item{"));
-
-  t(".zp-nav 本体不再画背景（表面交给 ::before）",
-    /background:\s*none/.test(nav) && /box-shadow:\s*none/.test(nav));
-  t("玻璃底 / 模糊 / 缺口 mask 都在 ::before 上",
-    /background:var\(--zp-nav-glass\)/.test(before) && /backdrop-filter:blur\(\d+px\)/.test(before) && /mask:var\(--zp-nav-notch\)/.test(before));
-  t("mask 没有打在 .zp-nav 本体上（打上去会把加号圆顶一起裁掉）",
-    !/^\s*mask:/m.test(nav.replace(/[^\n]*zp-nav::before[\s\S]*/m, "")));
-
-  /* 几何：缺口圆心 = 上内边距 + 行高/2 + 加号 translateY，半径 = 加号半径 + 缝。
-     任一处单改都会偏心或缝消失，所以直接算出来比对。 */
-  const padY = +(/--zp-nav-pad-y:\s*(\d+)px/.exec(LIGHT) || [])[1];
-  const cy = +(/--zp-nav-notch-cy:\s*(\d+)px/.exec(LIGHT) || [])[1];
-  const r = +(/--zp-nav-notch-r:\s*(\d+)px/.exec(LIGHT) || [])[1];
-  const plusRule = (/\.zp-nav-plus \.zp-nav-icon\{([^}]*)\}/.exec(BARE.replace(/\s+/g, " ")) || [])[1] || "";
-  const ty = +(/(?:translateY|translate)\((-?\d+)px\)/.exec(plusRule) || [])[1];
-  const plusD = +(/width:\s*(\d+)px/.exec(plusRule) || [])[1];
-  t("缺口圆心与加号圆心重合（padY + 行高/2 + translateY）",
-    Number.isFinite(padY) && Number.isFinite(cy) && Number.isFinite(ty) && Number.isFinite(plusD)
-      ? Math.abs((padY + 52 / 2 + ty) - cy) <= 1
-      : false,
-    `padY=${padY} ty=${ty} cy=${cy} 期望=${padY + 26 + ty}`);
+  t("缺口圆心与加号圆心重合（padY + 行高52/2 + translateY = cy）",
+    [padY, cy, r, ty, plusD].every(Number.isFinite) &&
+      Math.abs((padY + 52 / 2 + ty) - cy) <= 1,
+    `padY=${padY} ty=${ty} cy=${cy} 期望=${Number.isFinite(padY) && Number.isFinite(ty) ? padY + 26 + ty : "?"}`);
+  t("圆心正好落在浮岛顶边（cy = 0，即上下各露一半）", cy === 0, String(cy));
+  t("凸出量 = 加号半径 26px（四版是 18px，直径的 34%）",
+    ty === -32 && plusD === 52, `ty=${ty} plusD=${plusD}`);
   t("缺口半径 > 加号半径（缝必须存在，否则又变回「贴上去的圆」）",
     Number.isFinite(r) && Number.isFinite(plusD) ? r > plusD / 2 : false, `r=${r} plus=${plusD}`);
-  t("缺口半径 - 加号半径 在 4~12px（缝太窄看不见、太宽像洞）",
-    Number.isFinite(r) && Number.isFinite(plusD) ? (r - plusD / 2) >= 4 && (r - plusD / 2) <= 12 : false);
+  t("缝宽在 4~12px（太窄看不见、太宽像洞）",
+    Number.isFinite(r) && Number.isFinite(plusD) ? (r - plusD / 2) >= 4 && (r - plusD / 2) <= 12 : false,
+    `缝=${r - plusD / 2}`);
+  t("mask 打在 ::before 上、不在 .zp-nav 本体（否则连加号圆顶一起裁掉）",
+    /mask:var\(--zp-nav-notch\)/.test(SURFACE) && !/^\s*mask:/m.test(NAV));
+  t("按钮层抬到表面层之上（绝对定位的 ::before 会盖住按钮）",
+    /position:\s*relative/.test(ITEM) && /z-index:\s*1/.test(ITEM));
+}
 
-  /* 凹槽做成 ::before 的背景层而不是独立元素：背景层天然被浮岛圆角与 mask 裁住，
-     不会在浮岛顶边之外留灰弧（独立元素试过会溢出去）。 */
-  t("凹槽是两个背景层之一，且 socket 层压在 sheen 之上",
-    /background-image:var\(--zp-nav-socket\),var\(--zp-nav-sheen\)/.test(before),
-    (/background-image:[^;]+/.exec(before) || [])[0]);
-  t("两套主题都定义了凹槽渐变 --zp-nav-socket",
-    /--zp-nav-socket:\s*radial-gradient\(/.test(LIGHT) && /--zp-nav-socket:\s*radial-gradient\(/.test(DARK));
-  const itemRule = (/\.zp-nav-item\{([^}]*)\}/.exec(BARE.replace(/\s+/g, " ")) || [])[1] || "";
-  t("按钮层抬到表面层之上（否则绝对定位的 ::before 会盖住按钮）",
-    /position:relative/.test(itemRule) && /z-index:1/.test(itemRule), itemRule.slice(0, 80));
+/* ============ 五、收起后加号独立留在底部 ============ */
+console.log("\n五、收起态：浮岛沉下去、加号留在距底 21px (4 条)");
+{
+  const bottom = +(/(?:^|;)bottom:calc\((\d+)px/.exec(NAV.replace(/\n\s*/g, ";")) || [])[1];
+  const navH = +(/min-height:\s*(\d+)px/.exec(NAV) || [])[1];
+  const ty0 = +(/(?:translateY|translate)\(\s*(-?\d+)px\)/.exec(PLUS) || [])[1];
+  const ty1 = +(/(?:translateY|translate)\(\s*(-?\d+)px\)/.exec(HIDDEN_PLUS) || [])[1];
+  const plusD = +(/width:\s*(\d+)px/.exec(PLUS) || [])[1];
+  const shift = navH + 32; // 隐藏位移 = 100%（本体高）+ 32px 余量
+  const shown = bottom + navH - plusD / 2;      // 展开态加号底边距屏底 = 46
+  const hiddenDist = shown - shift + (Math.abs(ty1) - Math.abs(ty0));
+
+  t("隐藏态对加号做了单独的反向补偿（不是跟着浮岛一起沉下去）",
+    !!HIDDEN_PLUS && Number.isFinite(ty1) && ty1 < ty0, `ty0=${ty0} ty1=${ty1}`);
+  t("补偿后的停靠位置距屏底 21px（与参考软件收起态同位置）",
+    Math.abs(hiddenDist - 21) <= 2, `实算=${hiddenDist.toFixed(1)}px`);
+  t("隐藏态放行加号的 pointer-events（父级 none 之下单独 auto，才点得到）",
+    /pointer-events:\s*auto/.test(BASE.slice(BASE.indexOf(".zp-nav.is-nav-hidden .zp-nav-plus"), BASE.indexOf(".zp-nav-item{"))));
+  t("隐藏仍是位移、不是淡出（隐藏态不含 opacity）",
+    !/opacity/.test(rule(BASE, ".zp-nav.is-nav-hidden")));
 }
 
 console.log(`\n${fail === 0 ? "✅" : "❌"} 通过 ${pass} 项，失败 ${fail} 项`);
