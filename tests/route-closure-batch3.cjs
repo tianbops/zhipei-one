@@ -7,6 +7,8 @@
 //   P2-11 login 用裸 SET 写 session 永不过期，浏览器丢弃 Cookie 后服务端会话永久驻留，
 //         zp:session:* 无界增长（也是 cleanupUserSessions 必须全键扫描的根因）。
 //   P2-12 admin.html 全屏遮罩 backdrop-filter:blur(5px)，移动端/低端机掉帧典型来源。
+//         2026-11-05 起该禁令收窄为「白名单外为零」：浮岛底栏（.zp-nav，66px 高）
+//         按新需求改为毛玻璃，全屏遮罩类模糊仍然禁用。
 //
 // 运行：node tests/route-closure-batch3.cjs
 const { pathToFileURL } = require("url");
@@ -131,20 +133,32 @@ const req = (p, token, body) => ({
   check("找到 .dialog-bg 规则", ruleText.length > 0);
   check(".dialog-bg 已无 backdrop-filter", !/backdrop-filter\s*:\s*(?!none)/i.test(ruleText), ruleText.slice(0, 80));
   check(".dialog-bg 已无 -webkit-backdrop-filter", !/-webkit-backdrop-filter\s*:\s*(?!none)/i.test(ruleText));
-  // 全仓（除注释外）不应再有生效的 backdrop-filter
+  /* 2026-11-05 需求变更：浮岛底栏改毛玻璃（用户要求参考 Shadowrocket 的浮层观感）。
+     原断言是「全站零生效 backdrop-filter」，出发点是 P2-12 那类**全屏遮罩**的大面积模糊
+     （admin .dialog-bg 盖满视口，低端机掉帧）；浮岛只有 66px 高、单独合成层做位移，
+     代价与全屏遮罩不是一个量级，因此把「全站为零」收窄为「白名单之外为零」：
+     只放行选择器恰为 .zp-nav 的规则（含 -webkit- 前缀；home.bundle.css 是它的拼接产物，
+     同一份规则会再出现一次）。其余任何选择器出现 backdrop-filter 仍然判红。 */
   const files = fs.readdirSync(__dirname + "/..").filter(f => f.endsWith(".html"));
   const cssDir = path.join(__dirname, "..", "css");
   const cssFiles = fs.existsSync(cssDir) ? fs.readdirSync(cssDir).filter(f => f.endsWith(".css")).map(f => path.join(cssDir, f)) : [];
   let active = 0, offenders = [];
   for (const f of [...files, ...cssFiles]) {
     const lines = fs.readFileSync(f, "utf8").split("\n");
+    let sel = "";   // 当前规则块的选择器（遇到 "selector{" 记录，遇到 "}" 清空）
     lines.forEach((l, i) => {
       const t = l.trim();
+      const head = /^([^{}]+)\{/.exec(t);
+      if (head) sel = head[1].trim();
+      else if (t.startsWith("}")) sel = "";
       if (t.startsWith("/*") || t.startsWith("*") || t.startsWith("//")) return;   // 注释不算
-      if (/backdrop-filter\s*:\s*(?!none)/i.test(l) || /-webkit-backdrop-filter\s*:\s*(?!none)/i.test(l)) { active++; offenders.push(path.basename(f) + ":" + (i + 1)); }
+      if (/^@supports/i.test(t)) return;   // @supports 的能力探测不是真的在用
+      if (!/backdrop-filter\s*:\s*(?!none)/i.test(l) && !/-webkit-backdrop-filter\s*:\s*(?!none)/i.test(l)) return;
+      if (sel === ".zp-nav") return;   // 白名单：浮岛底栏
+      active++; offenders.push(path.basename(f) + ":" + (i + 1) + (sel ? " (" + sel + ")" : ""));
     });
   }
-  check("全站无生效的 backdrop-filter（注释不计）", active === 0, "残留=" + active + (offenders.length ? " @ " + offenders.join(",") : ""));
+  check("除浮岛 .zp-nav 外，全站无生效的 backdrop-filter（注释不计）", active === 0, "残留=" + active + (offenders.length ? " @ " + offenders.join(",") : ""));
 
   // ============ 桩自检：TTL 语义必须真实 ============
   console.log("【桩】MiniRedis 已真实实现 SET..EX 过期（不再失真）");

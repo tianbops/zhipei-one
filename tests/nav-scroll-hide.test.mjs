@@ -43,14 +43,14 @@ console.log("一、隐藏态样式（位移要盖住加号上凸、不减淡）(
   t("隐藏态保留 -50% 横向分量（不能只位移 Y）",
     /\.is-nav-hidden\{[^}]*translate\(-50%,/.test(block));
   /* 2026-11-05 用户反馈「浮岛隐藏后下方还有一点蓝色区域没隐藏」：
-     加号圆比底栏顶边还高 9px，16px 余量被吃掉，隐藏后圆顶在视口内停 1px。
-     余量必须 ≥ 24（9 上凸 + 描边/投影），16px 属于回归值。 */
-  t("隐藏位移余量 ≥ 24px（要盖住中间加号上凸的 9px，否则露出蓝色圆顶）", (() => {
+     加号圆比底栏顶边还高 13px（上移 20 - 行内居中 7），16px 余量被吃掉，
+     隐藏后圆顶在视口内停 1px。余量必须 ≥ 24（13 上凸 + 描边/投影），16 属回归值。 */
+  t("隐藏位移余量 ≥ 24px（要盖住中间加号上凸的 13px，否则露出蓝色圆顶）", (() => {
     const m = block.match(/\.zp-nav\.is-nav-hidden\{[^}]*calc\(100% \+ (\d+)px\)/);
     return m && Number(m[1]) >= 24;
   })(), "余量 " + (block.match(/calc\(100% \+ (\d+)px\)/) || [])[1] + "px，应 ≥ 24px");
-  t("中间加号确有上凸（translateY(-16px)），是本条余量的来源",
-    /\.zp-nav-plus \.zp-nav-icon\{[^}]*transform:translateY\(-16px\)/.test(CSS));
+  t("中间加号确有上凸（translateY(-20px)），是本条余量的来源",
+    /\.zp-nav-plus \.zp-nav-icon\{[^}]*transform:translateY\(-20px\)/.test(CSS));
   t("隐藏态 pointer-events:none（出屏后不挡点击）",
     /\.zp-nav\.is-nav-hidden\{[^}]*pointer-events:none/.test(block));
   t("底栏有 transform 过渡（收起/回来是滑动不是瞬移）",
