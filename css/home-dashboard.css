@@ -138,11 +138,23 @@ main.home-app .today-store-list.can-scroll{
   -webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 26px),transparent);
   mask-image:linear-gradient(to bottom,#000 calc(100% - 26px),transparent);
 }
-/* 空态（今日暂无配送门店）：提示文案贴近分隔线（顶部居中），下方大片留白；
-   列表固定 4 行高度（44px × 4 = 176px），不撑满整页，与「4 排列」一致 */
+/* 空态（今日暂无配送门店）：提示文案贴近分隔线（顶部居中），下方大片留白，
+   固定 4 行高度（44px × 4 = 176px），不撑满整页，与「4 排列」一致。
+   ------------------------------------------------------------
+   2026-11-04：高度改由「列表内唯一的空态元素」在纯 CSS 里定死，不再依赖
+   fit.js 异步加 .is-empty。原因：today.js 用 innerHTML 把骨架换成空态后，
+   ResizeObserver 观察的 .zp-scroll 高度不变（flex:1 撑满视口），fit.js 要等
+   600ms 定时器才补上 .is-empty，中间约 500ms 列表只有一行（56px）→ 卡片
+   「先回缩、再展开」，每次从别的 tab 切回首页都抖一次（用户录屏反馈）。
+   骨架首帧本来就是 4 行 = 176px，这里同为 176px，故首帧 / 数据到达 / 切换
+   全程同一高度，彻底消除抖动。 */
+main.home-app .today-store-list > .zp-empty--tight{
+  min-height:176px;
+}
+/* .is-empty 只负责文案贴顶对齐（高度已由上面的子元素规则保证）。
+   fit.js 仍会切换它，但加与不加都不再改变卡片高度。 */
 main.home-app .today-store-list.is-empty{
   display:flex;
   align-items:flex-start;
   justify-content:center;
-  min-height:176px;
 }

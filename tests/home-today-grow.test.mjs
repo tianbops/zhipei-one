@@ -8,10 +8,13 @@
  *   1) 基础段（@media 之外）：滚动容器可滚动承接内容、列表内容高度无 264 封顶；
  *      卡片与列表默认 flex:0 0 auto（不撑满整页）—— 首屏即此高度，
  *      数据到达后高度稳定，无刷新抖动；
- *   2) 空态 .today-store-list.is-empty 固定 min-height:176px（= 44px × 4），文案贴顶，不撑满；
+ *   2) 空态高度由「列表内唯一的 .zp-empty--tight」在纯 CSS 定死 min-height:176px
+ *      （= 44px × 4），文案贴顶、不撑满；高度不依赖 fit.js 异步加 .is-empty，
+ *      否则数据到达后到定时器补类前的约 500ms 会出现「回缩又展开」（切回首页抖动）；
  *   3) 有内容时列表含真实门店行（骨架行带 aria-hidden，须排除），
  *      由 flex:0 0 auto 随门店数自然增高（基础段即此值，无需额外收回）；
- *   4) js/home/fit.js 按「非骨架的真实门店行」切换 .has-content，且不再因整页溢出回退 is-overflow。
+ *   4) js/home/fit.js 按「非骨架的真实门店行」切换 .has-content、用 MutationObserver
+ *      在 innerHTML 替换后即时复核，且不再因整页溢出回退 is-overflow。
  * 注意：基础规则与降级规则（@media 内）选择器同名，靠源码顺序层叠，
  *      故此处只断言【基础段】的取值，避免把降级 A 的 display:block 误读为基础。
  */
@@ -39,7 +42,7 @@ const baseStart = CSS.indexOf("一屏定盘");
 const aIdx = CSS.indexOf("@media (max-height:759px)");
 const BASE = CSS.slice(baseStart, aIdx < 0 ? CSS.length : aIdx);
 
-console.log("首页今日配送高度契约（基础段 5 条）");
+console.log("首页今日配送高度契约（基础段 6 条）");
 {
   const scroller = rule(BASE, "main.home-app .zp-scroll");
   t("滚动容器基础段 display:flex（整页竖链）",
@@ -62,17 +65,19 @@ console.log("首页今日配送高度契约（基础段 5 条）");
 
 console.log("\n空态 4 排列契约（3 条）");
 {
-  // 注意：.is-empty 规则写在降级 @media 之后（基础段语义、全文件唯一），故对全 CSS 提取，不限定 BASE 切片。
+  // 高度改由「内容结构」在纯 CSS 里定死：列表内唯一的 .zp-empty--tight 自带 176px。
+  // 这样骨架首帧（4 行 = 176px）→ 数据到达空态 → 切回首页，全程同高，零抖动。
+  const tight = rule(CSS, "main.home-app .today-store-list > .zp-empty--tight");
+  t("空态高度由内容元素 CSS 定死 min-height:176px（= 44px × 4，不依赖 JS 加类）",
+    !!tight && /min-height:176px/.test(tight), tight);
   const empty = rule(CSS, "main.home-app .today-store-list.is-empty");
-  t("空态列表固定 4 行高度（min-height:176px，= 44px × 4，不撑满整页）",
-    !!empty && /min-height:176px/.test(empty), empty);
   t("空态文案贴顶（align-items:flex-start，非垂直居中）",
     !!empty && /align-items:flex-start/.test(empty) && !/align-items:center/.test(empty), empty);
-  t("空态不撑满（列表无 flex:1 1 auto，不拉伸填满卡片）",
-    !!empty && !/flex:1 1 auto/.test(empty), empty);
+  t(".is-empty 只做对齐、不承载高度也不拉伸（不含 min-height / flex:1 1 auto，防「回缩又展开」回归）",
+    !!empty && !/min-height:/.test(empty) && !/flex:1 1 auto/.test(empty), empty);
 }
 
-console.log("\nfit.js 契约（2 条）");
+console.log("\nfit.js 契约（4 条）");
 {
   t("fit.js 按真实门店行（排除骨架 aria-hidden）切换 .has-content",
     /querySelectorAll\('\.today-store-row:not\(\[aria-hidden="true"\]\)'\)\.length > 0/.test(JS) &&
@@ -82,6 +87,8 @@ console.log("\nfit.js 契约（2 条）");
     !/scroller\.scrollHeight - scroller\.clientHeight/.test(JS));
   t("fit.js 不再切换已废弃的 is-today-empty 根类（填空满逻辑已移除）",
     !/is-today-empty/.test(JS));
+  t("fit.js 用 MutationObserver 监听列表 childList，数据到达即时复核（不留中间态）",
+    /new MutationObserver\([\s\S]*?\)\.observe\(list,\s*\{\s*childList:\s*true\s*\}\)/.test(JS));
 }
 
 function finish() {

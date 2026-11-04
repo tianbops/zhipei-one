@@ -33,8 +33,8 @@
     var isEmpty = list.children.length === 1 && !!list.querySelector(".zp-empty--tight");
     list.classList.toggle("is-empty", isEmpty);
     /* 有内容：列表含真实门店行（骨架行带 aria-hidden，须排除）时挂 .has-content；
-       当前基础段已是内容高度，空态由 .is-empty 固定 4 行高度，二者高度均稳定，
-       数据到达后无卡片拉伸抖动。 */
+       基础段已是内容高度，空态 4 行高度由 CSS 直接定死在 .zp-empty--tight 上
+       （见 home-dashboard.css），不依赖此处加类，故数据到达前后卡片高度恒定。 */
     var hasContent = list.querySelectorAll('.today-store-row:not([aria-hidden="true"])').length > 0;
     card.classList.toggle("has-content", hasContent);
     list.classList.toggle("has-content", hasContent);
@@ -43,6 +43,14 @@
     list.classList.toggle("can-scroll", canScroll && !atEnd);
   }
   list.addEventListener("scroll", syncFade, { passive: true });
+
+  /* 数据到达后即时复核：today.js 用 innerHTML 整体替换列表，而 ResizeObserver
+     观察的 .zp-scroll 是 flex:1 撑满视口、尺寸不随列表内容变化，故必须直接监听
+     列表子节点变化；否则 .is-empty / .has-content 要等 600ms 定时器才同步。
+     （空态高度已由 CSS 保证，此处保证其余类也即时到位，不留任何中间态。） */
+  if (window.MutationObserver) {
+    new MutationObserver(function () { schedule(); }).observe(list, { childList: true });
+  }
 
   function measure() {
     root.classList.remove("is-overflow");
