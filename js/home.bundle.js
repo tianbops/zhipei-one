@@ -281,7 +281,7 @@ const setRouteBadge=(route)=>{if(!dot)return;const type=route?.type||"";const na
 
   /* 底部渐隐：仅「可滚且未到底」时启用（滚动条全站隐藏，否则看不出能滚） */
   function syncFade() {
-    /* 空态：整块区域垂直居中，避免「文案贴着分隔线、下面空一大片」 */
+    /* 空态：提示文案贴近分隔线（顶部），下方留白，与空态参考图一致 */
     var isEmpty = list.children.length === 1 && !!list.querySelector(".zp-empty--tight");
     list.classList.toggle("is-empty", isEmpty);
     /* 根类：今日配送卡的空态需填满整页（见 css/home-dashboard.css 的 .is-today-empty） */

@@ -60,8 +60,11 @@ console.log("\n空态填满契约（2 条）");
 {
   t("根类 .is-today-empty 使卡片 flex:1 填满整页",
     /\.is-today-empty[^{]*\.task-card\{[^}]*flex:1 1 auto/.test(CSS));
-  t("空态列表 .today-store-list.is-empty flex:1 填满卡片（文案居中）",
+  t("空态列表 .today-store-list.is-empty flex:1 填满卡片",
     /\.today-store-list\.is-empty\{[^}]*flex:1 1 auto/.test(CSS));
+  t("空态文案贴顶（align-items:flex-start，非垂直居中；与空态参考图一致）",
+    /\.today-store-list\.is-empty\{[^}]*align-items:flex-start/.test(CSS) &&
+    !/\.today-store-list\.is-empty\{[^}]*align-items:center/.test(CSS));
 }
 
 console.log("\nfit.js 契约（2 条）");

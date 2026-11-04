@@ -140,6 +140,6 @@ main.home-app .today-store-list.can-scroll{
   -webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 26px),transparent);
   mask-image:linear-gradient(to bottom,#000 calc(100% - 26px),transparent);
 }
-/* 空态（今日暂无配送门店）：在整块列表区垂直居中，而不是贴着分隔线孤零零一行；
-   flex:1 让列表填满卡片，配合根类 .is-today-empty 使整卡填满整页 */
-main.home-app .today-store-list.is-empty{display:flex;align-items:center;justify-content:center;flex:1 1 auto}
+/* 空态（今日暂无配送门店）：提示文案贴近分隔线（顶部居中），下方大片留白，
+   与空态参考图一致；flex:1 让列表填满卡片，配合根类 .is-today-empty 使整卡填满整页 */
+main.home-app .today-store-list.is-empty{display:flex;align-items:flex-start;justify-content:center;flex:1 1 auto}
