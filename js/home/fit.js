@@ -20,7 +20,8 @@
   if (!root) return;
   var scroller = root.querySelector(".zp-scroll");
   var list = document.getElementById("todayStoreList");
-  if (!scroller || !list) return;
+  var card = root.querySelector(".task-card");
+  if (!scroller || !list || !card) return;
 
   var MIN_LIST_H = 172;  /* 4 行（176）减 4px 亚像素误差 */
   var lost = false;      /* 已降级：不再自动恢复，等视口变化重测 */
@@ -28,24 +29,35 @@
 
   /* 底部渐隐：仅「可滚且未到底」时启用（滚动条全站隐藏，否则看不出能滚） */
   function syncFade() {
-    /* 空态：整块区域垂直居中，避免「文案贴着分隔线、下面空一大片」 */
-    list.classList.toggle("is-empty", list.children.length === 1 && !!list.querySelector(".zp-empty--tight"));
+    /* 空态：提示文案贴近分隔线（顶部），下方留白 */
+    var isEmpty = list.children.length === 1 && !!list.querySelector(".zp-empty--tight");
+    list.classList.toggle("is-empty", isEmpty);
+    /* 有内容：列表含真实门店行（骨架行带 aria-hidden，须排除）时挂 .has-content；
+       基础段已是内容高度，空态 4 行高度由 CSS 直接定死在 .zp-empty--tight 上
+       （见 home-dashboard.css），不依赖此处加类，故数据到达前后卡片高度恒定。 */
+    var hasContent = list.querySelectorAll('.today-store-row:not([aria-hidden="true"])').length > 0;
+    card.classList.toggle("has-content", hasContent);
+    list.classList.toggle("has-content", hasContent);
     var canScroll = list.scrollHeight - list.clientHeight > 2;
     var atEnd = list.scrollTop + list.clientHeight >= list.scrollHeight - 2;
     list.classList.toggle("can-scroll", canScroll && !atEnd);
   }
   list.addEventListener("scroll", syncFade, { passive: true });
 
+  /* 数据到达后即时复核：today.js 用 innerHTML 整体替换列表，而 ResizeObserver
+     观察的 .zp-scroll 是 flex:1 撑满视口、尺寸不随列表内容变化，故必须直接监听
+     列表子节点变化；否则 .is-empty / .has-content 要等 600ms 定时器才同步。
+     （空态高度已由 CSS 保证，此处保证其余类也即时到位，不留任何中间态。） */
+  if (window.MutationObserver) {
+    new MutationObserver(function () { schedule(); }).observe(list, { childList: true });
+  }
+
   function measure() {
     root.classList.remove("is-overflow");
     void scroller.offsetHeight;   /* 先按「未降级」重新排版，再取真实高度 */
-    var overflowed = scroller.scrollHeight - scroller.clientHeight > 2;
-    var listTooShort = list.clientHeight > 0 && list.clientHeight < MIN_LIST_H;
-
-    if (overflowed || listTooShort) {
-      root.classList.add("is-overflow");
-      lost = true;
-    }
+    /* 2026-11-04：不再因「整页内容溢出」回退到 is-overflow（列表封顶 264px + 内部滚动）。
+       今日配送卡现已改为随内容增高、由整页滚动承接（见 css/home-dashboard.css）。
+       键盘降级（is-keyboard）仍单独处理，避免卡片在键盘弹起时被撑高。 */
     syncFade();
   }
 

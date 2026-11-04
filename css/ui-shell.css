@@ -48,6 +48,9 @@ main > .topbar{
      与首页「今日配送」上方的距离同一口径。各页原有的 8px 覆盖同步改为 6px。 */
   margin-bottom:6px;
 }
+/* 2026-11-04：根页顶栏改 31px 大标题后，6px+14px 的间距显得标题压着第一组内容；
+   单独加到 14px（+28 = 与 Uber 一级页标题下方留白同量级）。内页顶栏仍是 6px。 */
+main > .topbar.is-root{margin-bottom:14px}
 /* 顶栏里决定整条高度的就是圆形按钮：排版盒收到 42px，顶栏 = 8px 呼吸位 + 42 = 50px，
    全站（含首页品牌区）等高。42 低于 44 的触摸建议值，用不可见 ::after 把可点区域
    补回 44×44 —— 视觉收紧不等于触控变小。 */
@@ -75,9 +78,9 @@ main > .topbar .order-icon-btn::after{
   overflow-y:auto;
   -webkit-overflow-scrolling:touch;
   overscroll-behavior-y:contain;
-  /* 顶部留 14px 与顶栏间距；底部 72px 让出常驻导航（64px 高 + 8px 呼吸位）。
-     旧值 84px 会在滚动到底时于横线上方多留 20px 空档。 */
-  padding:14px 0 calc(72px + env(safe-area-inset-bottom));
+  /* 顶部留 14px 与顶栏间距；底部 88px 让出浮岛式常驻导航
+     （离底 8 + 浮岛高 66 + 呼吸 14；2026-11-04 底栏由贴边条改浮岛后重算）。 */
+  padding:14px 0 calc(88px + env(safe-area-inset-bottom));
 }
 /* 全局隐藏滚动条（移动端成熟做法，对标 iOS 原生应用）：
    滚动与惯性完全不变，位置反馈由手势/边缘效应承担；常驻滚动条属桌面

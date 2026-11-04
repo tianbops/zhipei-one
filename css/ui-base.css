@@ -14,7 +14,7 @@
      兼容：旧变量名一律保留为别名指向新 token，任何既有 var(...) 的解析结果逐字节不变。
 
      Phase 4（2026-10-23 基底反转）：默认 :root 由深色纪元翻为**浅色用户 spec**
-     （#F6F7F9 底 / #FFFFFF 面 / #111111 字 / #1677FF 主色），深色全套值移至
+     （现为 #FFFFFF 底 / #F3F3F3 块 / #000000 字 / #0F62E6 主色，2026-11-04 改版），深色全套值移至
      ui-theme.css 的 :root[data-zp-theme="dark"]，双主题共用同一套令牌名。
 
      已消解的历史待决策项：
@@ -34,12 +34,13 @@
   --zp-surface-2:#E9E9E9;
   --zp-surface-3:#DFDFDF;
   --zp-line:#E4E4E4;
-  /* 卡片内分隔线（列表行下边线、展开体上边线）：
-     浅色 --zp-line-inset #EDEDED（块内的柔和分隔线）；深色必须比 --zp-line #2B2B2B
-     更柔，否则深底上的行间线会亮得像描边。此前这类差异靠 5 条
-     :root[data-zp-theme="dark"] .acct-row{border-bottom-color:…} 专题补丁实现，
-     属于「组件里写两套主题」，现已收进令牌层：组件只写一次 --zp-line-inset。 */
-  --zp-line-inset:#EDEDED;
+  /* 列表行分隔线（行下边线、展开体上边线）：
+     浅色 --zp-line-inset #E8E8E8。2026-11-04 由 #EDEDED 加深一档：
+     列表容器改取 --zp-card-list（=页面底）后，行线成了分组内唯一的分隔手段，
+     #EDEDED 在白底上仅 1.17，行与行会粘成一片；#E8E8E8 提到 1.23，
+     仍比 --zp-line #E4E4E4 柔，不越位成描边。
+     深色取值见 ui-theme.css（同一条规则：比 --zp-line 更柔）。 */
+  --zp-line-inset:#E8E8E8;
   /* 登录输入框专用边框（2026-10-26 浅色对比度修复）：浅色默认边框需比 --zp-line
      深一档才能与白底/浅灰页面背景拉开层次（原 #EEEEEE 边在白底上几乎隐形）；
      深色覆盖见 ui-theme.css。取值刻意避开 retired 色板中的旧浅灰蓝灰族。 */
@@ -58,11 +59,11 @@
   --zp-input-line-disabled:#DCDCDC;
   --zp-input-placeholder:#666666;   /* 与 --zp-muted 同值：#999 在浅底仅 2.6:1，不达 WCAG AA */
   --zp-input-text-disabled:#C4C4C4;
-  /* 输入框聚焦描边：品牌蓝一档（浅色 #1677FF / 深色 #60A5FA）。
+  /* 输入框聚焦描边：品牌蓝一档（浅色 #2C6CE2 / 深色 #6EA8FE）。
      与 focus-visible 的 --zp-focus（中性 #666/#FFFFFF，供键盘导航描边）分开：
      前者表达「正在编辑」，后者表达「焦点在哪」，两者语义不同，此前混用导致
      同一输入框在登录页聚焦变灰、在数据页变蓝。 */
-  --zp-input-focus:#1677FF;
+  --zp-input-focus:#2C6CE2;
   --zp-text:#000000;
   --zp-muted:#666666;
   --zp-soft:#999999;
@@ -97,9 +98,14 @@
   --zp-seg-btn-font:13px;
   --zp-seg-btn-gap:8px;
   /* ===== 主按钮（浅色 spec：品牌蓝底白字）=====
-     --zp-primary 是按钮「底色」：浅色模式=品牌蓝 #1677FF，深色模式=亮蓝 #3B82F6；
-     --zp-on-primary 是按钮上的「文字/图标色」，与底色反相。 */
-  --zp-primary:#1677FF;
+     --zp-primary 是按钮「底色」：浅色模式=品牌蓝 #0F62E6，深色模式=#2A6BE0；
+     --zp-on-primary 是按钮上的「文字/图标色」，与底色反相。
+     2026-11-04 由 #1677FF 压深并**与深色统一为同一个值**：#1677FF 上白字仅 4.10:1；
+     统一值 #2C6CE2 在两套主题里取同一个 hex，白字 4.83:1（AA 有余量），
+     在浅色白底上 4.83:1、在深色 #161616 上 3.75:1、卡片 #292929 上 3.01:1，
+     四种落点全部过线 —— 这是「同一个蓝」还能两套都合规的窗口。
+     与 #1677FF 同色相（216° vs 215°），只降明度，观感仍是同一支品牌蓝。 */
+  --zp-primary:#2C6CE2;
   --zp-on-primary:#FFFFFF;
   /* 次按钮（描边 / 幽灵按钮） */
   --zp-secondary-bg:#F3F3F3;
@@ -111,14 +117,16 @@
   /* 浮层遮罩（弹窗 / 底部面板上方的半透明黑幕） */
   --zp-scrim:rgba(0,0,0,.45);
   /* 键盘 / 焦点可见环 */
-  --zp-focus:#1677FF;
-  /* 交互态：hover（悬停）、active（按压）——主色 hover/active 取 Ant 色阶
-     （#4096FF 提亮 / #0958D9 压深），与 #1677FF 同族。 */
-  --zp-primary-hover:#4096FF;
-  --zp-primary-active:#0958D9;
+  --zp-focus:#2C6CE2;
+  /* 交互态：hover（悬停）、active（按压）——同族提亮/压深，
+     提亮幅度受「白字 ≥4.5」约束：#1A6FEB 是还能保住 4.65 的最亮一档。
+     两套主题同值（与主色一样不做深浅区分）。 */
+  --zp-primary-hover:#1A6FEB;
+  --zp-primary-active:#0B52BC;
   /* 选中态强调色（主题蓝）：用于「已选中」文字/图标着色。
-     取 --zp-primary-active 同值（#0958D9），因其与白底选中块对比度 6.16:1，
-     满足 WCAG AA 正文级可读性（--zp-primary #1677FF 在白底仅 4.10:1，不达标）。 */
+     与按钮态解耦：#0958D9 在白底 6.16:1，比按钮底色更深一档，
+     因为文字比色块需要更高的对比余量（#0F62E6 作文字虽 5.37 达标，但已无余量可让给
+     次级底上的选中块）。 */
   --zp-accent:#0958D9;
   --zp-secondary-hover:#E9E9E9;
   --zp-secondary-active:#DFDFDF;
@@ -130,6 +138,16 @@
      组件侧统一：一级内容块用 --zp-card（=块色），浮层改用 --zp-surface。 */
   --zp-card:var(--zp-block);
   --zp-card-2:var(--zp-surface-2);
+  /* 列表容器（2026-11-04 新增）：只装「纯行列表」的分组容器（账号分组、线路功能），
+     取页面底色，使分组不再是一块可见的卡，而是「小标题 + 若干行 + 行间线」。
+     起因：Uber 的列表项直接排在底色上，只有宫格按钮有灰底。我们色值本已与
+     Uber 逐像素一致（#FFFFFF/#F3F3F3、#161616/#292929），差的是色块面积——
+     Uber 灰块只占 13%，我们卡片铺了半屏（账号页实测 52%），同样对比度下
+     「点状分布」显得黑、「满铺」显得灰。色值不动，只把列表容器的面积让出去。
+     语义边界：内容卡（任务卡、线路卡、派单卡）仍用 --zp-card 保留块色，
+     否则整页拍平、失去全部层级。 */
+  --zp-card-list:var(--zp-bg);
+  --zp-card-list-line:transparent;
   /* 列表分隔线（方案第十五章 Row，统一为 .10 单一来源） */
   --zp-divider:#E2E2E2;
   /* ===== 功能状态色（成功 / 警告 / 错误 / 提示）=====
@@ -359,8 +377,18 @@ button:active{transform:translateY(0)}
 }
 /* 2026-10-30（ZP-NAV-2026-002 表 3.1）：Tab 根页（历史/线路/我的）不显示页面内返回箭头。
    顶栏是三列 grid（按钮/标题/按钮），删掉箭头后若不改列定义，标题会掉进第一列窄格里；
-   根页改为单列，标题按 text-align:center 居中于整幅宽度。 */
-.topbar.is-root{grid-template-columns:1fr}
+   根页改为单列。
+   2026-11-04（上午）：曾按 Uber 一级页改成 31px 粗体左对齐。
+   2026-11-04（下午，用户定稿）：改回 20px 居中 —— 31px 四字标题在 390 宽屏上居中后
+   左右各空 130px，读起来像海报标题而不是导航标题；且根页与内页切换时标题字号跳变
+   （31 → 20），层级差变成了「跳动」。现三页统一 20px / 26 行高 / semibold / 居中，
+   与内页顶栏完全同规格，「当前在哪」改由底栏选中态表达。
+   两条都只改 .is-root 作用域，内页顶栏零影响。 */
+.topbar.is-root{grid-template-columns:1fr;justify-items:center}
+.topbar.is-root h1,.topbar.is-root strong{
+  font-size:var(--zp-fs-20);line-height:26px;font-weight:var(--zp-fw-semibold);
+  letter-spacing:normal;text-align:center;
+}
 .topbar strong,.order-title{font-weight:var(--zp-fw-semibold)}
 /* 2026-10-29：隐私政策 / 服务条款两页此前没有标题规则，h1 用的是浏览器默认
    32px + margin，把顶栏撑到 98px（全站唯一例外）。这里补上与其他页一致的
@@ -772,20 +800,35 @@ html[data-zp-e2e="1"] body::after{
 .zp-nav{
   position:fixed;
   left:50%;
-  bottom:0;
+  /* 2026-11-04 浮岛化（用户定稿）：底栏由贴边条改为悬浮圆角胶囊。
+     离底 8px + 左右各 12px 留白，页面底从四周透出来，底栏才「浮」得起来。
+     深色纯黑下投影不可见（黑上黑影），故同时给 1px --zp-tint 描边：
+     浅色 rgba(0,0,0,.06) 几乎不可见（有投影兜底），深色 rgba(255,255,255,.08)
+     正好是唯一轮廓来源 —— 一条声明覆盖两套主题，不写第二套主题补丁。 */
+  bottom:calc(8px + env(safe-area-inset-bottom));
   z-index:var(--ui-z-nav);
-  width:min(100%,var(--zp-shell-max));
+  width:min(calc(100% - 24px), calc(var(--zp-shell-max) - 24px));
   min-height:64px;
-  padding:6px 8px calc(6px + env(safe-area-inset-bottom));
+  padding:6px 8px;
   transform:translateX(-50%);
   display:grid;
   grid-template-columns:repeat(5,1fr);
   gap:4px;
   background:var(--zp-nav-bg);
+  border:1px solid var(--zp-tint);
+  border-radius:var(--zp-r-sheet);
+  box-shadow:var(--zp-shadow-lg);
   /* 无上沿分隔线（2026-10-28 用户定稿）：底栏与内容靠色阶分开。 */
   backdrop-filter:none;
   -webkit-backdrop-filter:none;
 }
+/* 滚动自隐藏（2026-11-04，逻辑见 js/ui/nav.js）：向下滚离开顶部后收起，上滑回来。
+   隐藏只做位移、不做淡出 —— 半透明穿屏会显廉价，且描边/投影会先于本体消失而留下脏边。
+   位移量 100% + 16px：底栏自身高度之外再多走 16，确保含 1px 描边与投影整体出屏。
+   必须保留 -50% 的横向分量，否则隐藏瞬间会横向跳到屏幕左侧。 */
+.zp-nav{transition:transform .24s cubic-bezier(.32,.72,0,1)}
+.zp-nav.is-nav-hidden{transform:translate(-50%,calc(100% + 16px));pointer-events:none}
+@media(prefers-reduced-motion:reduce){.zp-nav{transition:none}}
 .zp-nav-item{
   min-width:0;
   min-height:52px;
@@ -807,8 +850,10 @@ html[data-zp-e2e="1"] body::after{
 }
 .zp-nav-item:active{background:var(--zp-nav-active-bg);color:var(--zp-nav-text-active)}
 /* 2026-10-30：历史/我的补齐四 Tab 底栏（ZP-NAV-2026-002 · C）后，
-   内容需为固定底栏让出高度；取值与首页 .home-app 的 72px 同口径。 */
-body.zp-has-nav{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+   内容需为固定底栏让出高度。2026-11-04 浮岛化后重算：
+   88px = 离底 8 + 浮岛高 66（64 + 上下描边）+ 与内容留 14 呼吸位。
+   浮岛顶部在 72px 处，中间加号凸出 16px 到 88px，正好与让位齐平、不压内容。 */
+body.zp-has-nav{padding-bottom:calc(88px + env(safe-area-inset-bottom))}
 .zp-nav-icon{width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex:none}
 .zp-nav-icon svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 /* 选中态只改文字/图标颜色（2026-10-24 用户定稿）：不加背景块、不改字重，

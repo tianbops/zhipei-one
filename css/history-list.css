@@ -23,24 +23,31 @@
 /* .history-state 已并入 css/ui-base.css 的 .zp-empty（2026-10-29 空态收编）。
    此前 history-list 与 history-shell 各定义一份（18px 0 / 22px 16px，字号 14/13 不一），
    靠加载顺序决定谁生效。 */
+/* 2026-11-04：列表容器改取 --zp-card-list（=页面底色），与账号分组、线路功能同一条规则。
+   历史页原先是「一张大卡装月份分组」，卡片消失后层级只剩月份标题与两种分隔线。
+   DOM 与布局不动。 */
 .history-list{
   width:100%;
-  border:1px solid var(--zp-tint);
+  border:1px solid var(--zp-card-list-line);
   border-radius:var(--zp-r-card);
   overflow:hidden;
-  background:var(--zp-card);
+  background:var(--zp-card-list);
 }
 .history-month{
-  background:var(--zp-card);
-  border-bottom:1px solid var(--zp-tint);
-}
-.history-month:last-child{
+  background:var(--zp-card-list);
+  /* 月份分组不再画线，改留 14px 空白（分组靠空白、行靠线，两种手段分开用）。
+     原先月份之间是一条 --zp-tint 线、行间是 --zp-divider 线，容器边框还在时靠
+     卡片边界兜底；卡片取消后两条线挤在一起，月份标题和日期行分不出层级。
+     改用空白后，组内是一串细线行、组与组之间是一段静默区，层级靠节奏而不是线的深浅。 */
   border-bottom:0;
+}
+.history-month + .history-month{
+  margin-top:14px;
 }
 .history-month-main{
   min-height:58px;
   padding:0 16px;
-  background:var(--zp-card);
+  background:var(--zp-card-list);
 }
 .history-month-main span{
   font-size:var(--zp-fs-16);
@@ -62,11 +69,11 @@
   margin-left:12px;
 }
 .history-month.expanded .history-month-main{
-  border-bottom:1px solid var(--zp-tint);
+  border-bottom:1px solid var(--zp-line-inset);
 }
 .history-month-body{
   display:none;
-  background:var(--zp-card);
+  background:var(--zp-card-list);
 }
 .history-month.expanded .history-month-body{
   display:block;
@@ -76,10 +83,14 @@
    刻意没动：它们是「月份分组容器」的内部分隔，不是列表行的行分隔线，
    语义不同 —— 顺手统一会让分组边界和行边界看起来一样重，反而丢掉层级。 */
 .history-swipe-row{
-  background:var(--zp-card);
+  background:var(--zp-card-list);
   border-bottom:1px solid var(--zp-divider);
 }
 .history-month-body .history-swipe-row:last-child{
+  border-bottom:0;
+}
+/* 最后一个月份标题行不留底线：它下面没有内容，留着会像列表被截断。 */
+.history-list>.history-month:last-child>.history-swipe-row{
   border-bottom:0;
 }
 .history-row-surface{

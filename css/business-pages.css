@@ -38,7 +38,7 @@
 
 /* 我的页：与线路申请页统一布局、颜色与密度。 */
 .account-page{background:var(--zp-bg);padding-top:16px /* 页面底色随主题（Phase 4：不再借用 logo 底板） */;padding-bottom:calc(92px + env(safe-area-inset-bottom))}
-.account-page .topbar h1{margin:0;text-align:center;color:var(--zp-text);font-size:var(--zp-fs-20);line-height:26px;font-weight:var(--zp-fw-bold)}
+.account-page .topbar h1{margin:0;text-align:center;color:var(--zp-text);font-size:var(--zp-fs-20);line-height:26px;font-weight:var(--zp-fw-semibold)}
 .account-page .page2-card{background:var(--zp-card);border:1px solid var(--zp-tint);border-radius:var(--zp-r-card);padding:14px;margin-bottom:8px;box-shadow:0 12px 30px var(--zp-shadow-md)}
 /* .account-page .page2-card h2 已删：设置页没有 .page2-card 结构，规则零作用，
    且用 !important 把卡片标题压到 15px（与全站 18px 不一）。 */
@@ -80,28 +80,41 @@
    待底栏统一到单一组件后再删。 */
 /* .dispatch-page 只作命名空间：外壳尺寸统一由 main.zp-shell 声明。 */
 @media(max-width:380px){.dispatch-page{padding-left:12px;padding-right:12px}}
-/* 2026-10-29 顶栏下方统一 20px（.zp-scroll 上内边距为 0，这里补 14） */
-.dispatch-intro{padding:14px 0 10px}
-.dispatch-intro h2{margin:0;font-size:var(--zp-fs-20);line-height:1.35}
-.dispatch-intro p{margin:6px 0 0;color:var(--zp-muted);font-size:var(--zp-fs-13)}
+/* 2026-11-04：删除「线路工作区」板块标题区（用户反馈），顶栏改为「线路维护」。
+   原来首屏挤了三级标题：顶栏「线路」→ 18px「线路工作区」+ 说明 → 13px 分组标题，
+   且大标题与顶栏只差 2px 字号，层级全靠字号硬撑。现在改用字号 + 留白分层：
+     顶栏 20px → 分组标题 14px 实色 → 线路名 22px / 功能名 16px → 说明 13px 灰字
+   删掉 intro 后首项是 .dispatch-section（自带 14px 上间距），ui-shell.css 的
+   main.zp-shell.dispatch-page .zp-scroll{padding-top:0} 保持不变——否则 .zp-scroll
+   的 14px 与 section 的 14px 叠加会把首屏推低 14px（14 + 14 + 14 = 42）。 */
 .dispatch-section{margin:14px 0 0}
-.dispatch-section-title{margin:0 0 8px;font-size:var(--zp-fs-13);line-height:20px;color:var(--zp-muted);font-weight:var(--zp-fw-semibold)}
+/* 两个分组之间用 22px 留白分层，不再靠线或卡片边界。 */
+.dispatch-section + .dispatch-section{margin-top:22px}
+.dispatch-section-title{margin:0 0 10px;font-size:var(--zp-fs-14);line-height:20px;color:var(--zp-text);font-weight:var(--zp-fw-semibold)}
 .dispatch-current{background:var(--zp-card);border:1px solid var(--zp-tint);border-radius:var(--zp-r-card);padding:14px 16px;box-shadow:0 12px 30px var(--zp-shadow-md)}
-.dispatch-current-row{display:flex;align-items:center;gap:var(--zp-seg-btn-gap)}.dispatch-current-name{flex:none}.dispatch-current-status{flex:0 1 auto;min-width:0}
-.dispatch-current-name{font-size:var(--zp-fs-22);font-weight:var(--zp-fw-bold);line-height:1;color:var(--zp-text)}
-.dispatch-current-status{font-size:var(--zp-fs-12);color:var(--zp-muted);display:flex;align-items:baseline;gap:2px}
-.dispatch-current-count{margin-left:4px;font-size:var(--zp-fs-12);color:var(--zp-muted);font-weight:var(--zp-fw-semibold)}
+.dispatch-current-row{display:flex;align-items:center;gap:var(--zp-seg-btn-gap)}
+/* 2026-11-04 文字布局优化：线路名与匹配状态改为上下两行。
+   原来 22px 名称与 12px 状态挤在同一条基线上，「已匹配 43家门店」读起来像名称的尾巴。
+   现在主信息独占一行、状态在下方，右侧「切换」仍垂直居中，
+   与 Uber 列表项「标题 + 副标题 + 右侧操作」的层级一致。 */
+.dispatch-current-info{flex:1 1 auto;min-width:0}
+.dispatch-current-name{font-size:var(--zp-fs-22);font-weight:var(--zp-fw-bold);line-height:1.2;color:var(--zp-text)}
+.dispatch-current-status{margin-top:6px;font-size:var(--zp-fs-13);line-height:18px;color:var(--zp-muted);display:flex;align-items:baseline;gap:4px}
+.dispatch-current-count{font-size:var(--zp-fs-13);color:var(--zp-text);font-weight:var(--zp-fw-semibold)}
 .dispatch-switch{margin-left:auto;flex:none;width:calc((100% - 2*var(--zp-seg-btn-gap))/3);min-width:72px;min-height:var(--zp-seg-btn-h);padding:var(--zp-seg-btn-pad,0 8px);border:1px solid var(--zp-tint-strong);border-radius:var(--zp-seg-btn-radius);background:var(--zp-primary);color:var(--zp-on-primary);font-size:var(--zp-seg-btn-font);font-weight:var(--zp-fw-semibold)}
 .dispatch-switch:active{opacity:.82}
-.dispatch-action-card{background:var(--zp-card);border:1px solid var(--zp-tint);border-radius:var(--zp-r-control);overflow:hidden;box-shadow:0 12px 30px var(--zp-shadow-md)}
-.dispatch-action{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:12px 14px;border:0;border-bottom:1px solid var(--zp-tint);background:transparent;color:var(--zp-text);text-align:left;cursor:pointer;text-decoration:none}
+/* 2026-11-04：操作列表同账号分组，改取 --zp-card-list（=页面底色），不再是卡片。
+   box-shadow 一并去掉——底色与页面同色后投影无处附着，只会在行首行尾拖出脏边。 */
+.dispatch-action-card{background:var(--zp-card-list);border:1px solid var(--zp-card-list-line);border-radius:var(--zp-r-control);overflow:hidden}
+.dispatch-action{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:12px 14px;border:0;border-bottom:1px solid var(--zp-line-inset);background:transparent;color:var(--zp-text);text-align:left;cursor:pointer;text-decoration:none}
 .dispatch-action:last-child{border-bottom:0}
 .dispatch-action:active{background:var(--zp-tint)}
 .dispatch-action-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:var(--zp-r-mini);background:var(--zp-tint);color:var(--zp-muted);flex:none}
 .dispatch-action-icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .dispatch-action-main{min-width:0;flex:1}
-.dispatch-action-main strong{display:block;font-size:var(--zp-fs-15);font-weight:var(--zp-fw-semibold)}
-.dispatch-action-main small{display:block;margin-top:3px;color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:1.35}
+/* 功能行：标题 16px / 说明 13px，与分组标题 14px 拉开三级；说明不再挤成 12px。 */
+.dispatch-action-main strong{display:block;font-size:var(--zp-fs-16);line-height:22px;font-weight:var(--zp-fw-semibold)}
+.dispatch-action-main small{display:block;margin-top:4px;color:var(--zp-muted);font-size:var(--zp-fs-13);line-height:1.4}
 .dispatch-action-arrow{color:var(--zp-muted);font-size:var(--zp-fs-20);line-height:1}
 .dispatch-retry{display:block;margin:12px auto 0;min-width:88px;height:36px;padding:0 18px;border:1px solid var(--zp-tint-strong);border-radius:var(--zp-r-mini);background:var(--zp-primary);color:var(--zp-on-primary);font-size:var(--zp-fs-13);font-weight:var(--zp-fw-semibold);cursor:pointer}
 .dispatch-retry:active{opacity:.82}

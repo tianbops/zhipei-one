@@ -28,8 +28,12 @@
   /* 2026-10-29 顶栏下方统一 20px：首个分组标题不再额外顶 18px */
   .account-page .zp-scroll>.acct-group-label:first-child{margin-top:0}
 
-/* --- 卡片与行 --- */
-.acct-card{background:var(--zp-card);border:1px solid var(--zp-tint);border-radius:var(--zp-r-card);padding:4px 16px;margin:0 0 10px}
+/* --- 卡片与行 ---
+   2026-11-04：分组容器改取 --zp-card-list（=页面底色）、描边取 --zp-card-list-line
+   （transparent）。视觉上不再是一张卡，而是「小标题 + 行 + 行间线」。
+   padding / 圆角 / margin 全部不动——DOM 与布局零改动，只换底色这一个属性，
+   行间区分交给 --zp-line-inset。危险区 .acct-danger-card 的红描边保留覆盖（见下）。 */
+.acct-card{background:var(--zp-card-list);border:1px solid var(--zp-card-list-line);border-radius:var(--zp-r-card);padding:4px 16px;margin:0 0 10px}
 .acct-rows{display:flex;flex-direction:column}
 .acct-row{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:0;border:0;background:none;
   color:var(--zp-text);font-size:var(--zp-fs-15);text-align:left;cursor:pointer;border-bottom:1px solid var(--zp-line-inset)}
@@ -89,15 +93,27 @@
 .account-dialog-actions{display:flex;gap:10px}
 .account-dialog-actions .page2-secondary,.account-dialog-actions .page2-danger-btn{flex:1;margin-top:12px}
 
-/* --- 退出登录：卡片式中性按钮 --- */
-.account-page .account-logout-section{margin:18px 0 0;padding:0}
+/* --- 退出登录：卡片式中性按钮 ---
+   2026-11-04：底部三块「版权 / 退出登录 / 注销账号」改为视觉等距 24px。
+   实测改动前 gap1=18px、gap2=60px（空 .message 的 min-height:20px + margin-top:10px
+   占 30px，再叠注销链接 margin-top:16px + padding-top:12px）。这里 margin-top
+   18→24 定义第一段；空 .message 不占位、注销链接 margin-top 16→10（10+12+2=24）
+   定义第二段。两段都按用户看到的文字/按钮边界量，不把链接的热区 padding 算进间距。 */
+.account-page .account-logout-section{margin:24px 0 0;padding:0}
+/* 空提示不该占 30px 高度；有错误文案时仍按原样显示（min-height + margin 保留）。 */
+.account-page .account-logout-section .message:empty{display:none}
+/* 2026-11-04：底由 --zp-card 改 --zp-surface。它是「整宽中性按钮」，不是内容块 ——
+   浅色翻为白底灰块后，若继续取块色就会和上面的卡片同色，看起来像又一张卡片而不是按钮。
+   白底 + --zp-line 描边 = 浮在灰块之间的白页面上的标准次按钮。 */
 .account-page .account-logout-section .account-logout{width:100%;min-height:var(--zp-control-height,48px);margin:0;
-  border:1px solid var(--zp-line);border-radius:var(--zp-r-card);background:var(--zp-card);
+  border:1px solid var(--zp-line);border-radius:var(--zp-r-card);background:var(--zp-surface);
   color:var(--zp-text);font-size:var(--zp-fs-15);font-weight:var(--zp-fw-semibold)}
 .account-page .account-logout-section .message{margin:10px 2px 0;text-align:center}
 
 /* --- 底部注销账号：无边框红色文字链接（与参考图一致） --- */
-.acct-destroy-link{display:block;margin:16px auto 0;padding:12px 24px;border:0;background:none;
+/* margin-top 16→10：10 + padding-top 12 + 文字行内 2 = 24px，与版权→按钮等距。
+   padding 12px 是 ≥44px 点击热区，不能用来折算间距，只调外边距。 */
+.acct-destroy-link{display:block;margin:10px auto 0;padding:12px 24px;border:0;background:none;
   color:var(--zp-danger);font-size:var(--zp-fs-15);font-weight:var(--zp-fw-regular);cursor:pointer}
 .acct-destroy-link:active{opacity:.6}
 
@@ -147,7 +163,9 @@
 #aboutVersion .acct-ver-badge::before{content:"";width:6px;height:6px;border-radius:50%;
   background:currentColor;flex:none}
 /* --- 关于：获取/信息卡片 + 版权 --- */
-.acct-about-copyright{margin:14px 0 4px;text-align:center;color:var(--zp-muted);font-size:var(--zp-fs-12)}
+/* 下方间距统一由 .account-logout-section 的 margin-top:24px 定义（两段等距）；
+   这里 margin-bottom 归零，避免 4px 与 24px 折叠时干扰口径。上方 14px 保持。 */
+.acct-about-copyright{margin:14px 0 0;text-align:center;color:var(--zp-muted);font-size:var(--zp-fs-12)}
 .install-guide{margin:2px 0 12px}
 .install-guide ol{margin:0;padding-left:20px;color:var(--zp-muted);font-size:var(--zp-fs-13);line-height:22px}
 /* 2026-10-29：.install-guide-fallback / .install-guide-copy 两条已删 —— 对应
@@ -161,10 +179,14 @@
 /* 下载应用行右侧动作文案：默认灰（acct-row-value 已给），有更新时主色强调 */
 .acct-install-action.is-update{color:var(--zp-accent);font-weight:var(--zp-fw-semibold)}
 
-/* 底部留白：注销账号是页面最后一项。通用 .zp-scroll 只留 72px（底栏 64px + 8px），
-   而底栏中间的「+」向上突出约 28px，会与注销文字几乎贴在一起。
-   账号页单独加到底部 112px，让最后一项与「+」之间保留明显呼吸距离。 */
-.account-page .zp-scroll{padding-bottom:calc(112px + env(safe-area-inset-bottom))}
+/* 底部留白：注销账号是页面最后一项。通用 .zp-scroll 留 88px（浮岛离底 8 + 高 66 + 呼吸 14）。
+   原 128px = 88 + 40：多出的 40px 是为了躲开底栏中间「+」向上凸出的 16px，
+   前提是**底栏常驻**。2026-11-04 底栏改成 Uber 交互后，下滑到底会隐藏且不自动弹起，
+   用户看到的正是「注销账号」下方那块没有任何内容的纯空白（实测滚到底 128px）。
+   收到 64px：保留呼吸位，不再为隐藏态的浮岛预留高度；上滑回内容时底栏才出现，
+   此时最后一项早已离开视口底部，不会被压住。
+   body.zp-has-nav 的 88px 让位属全站口径，本页不动。 */
+.account-page .zp-scroll{padding-bottom:calc(64px + env(safe-area-inset-bottom))}
 
 @media(max-width:380px){
   /* 外壳左右留白由 main.zp-shell 的 --zp-gutter 统一下调到 12，本页不再重复声明。 */

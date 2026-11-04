@@ -3,7 +3,9 @@
 
 
 /* 信息架构分组（P0-1） */
-.history-divider{border:0;border-top:1px solid var(--zp-divider);margin:14px 0}
+/* 2026-11-04：分隔线取 --zp-line-inset 而非 --zp-divider。页面底翻成纯白后，
+   #E2E2E2 的满幅横线在纯白上会变成硬分割（原来压在 #F6F7F9 上并不显眼）。 */
+.history-divider{border:0;border-top:1px solid var(--zp-line-inset);margin:14px 0}
 /* 左右缩进已由 main.history-shell 统一，板块内不再重复留白 */
 .history-actions{padding:0}
 .history-actions-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}

@@ -690,7 +690,7 @@ body {
      兼容：旧变量名一律保留为别名指向新 token，任何既有 var(...) 的解析结果逐字节不变。
 
      Phase 4（2026-10-23 基底反转）：默认 :root 由深色纪元翻为**浅色用户 spec**
-     （#F6F7F9 底 / #FFFFFF 面 / #111111 字 / #1677FF 主色），深色全套值移至
+     （现为 #FFFFFF 底 / #F3F3F3 块 / #000000 字 / #0F62E6 主色，2026-11-04 改版），深色全套值移至
      ui-theme.css 的 :root[data-zp-theme="dark"]，双主题共用同一套令牌名。
 
      已消解的历史待决策项：
@@ -710,12 +710,13 @@ body {
   --zp-surface-2:#E9E9E9;
   --zp-surface-3:#DFDFDF;
   --zp-line:#E4E4E4;
-  /* 卡片内分隔线（列表行下边线、展开体上边线）：
-     浅色 --zp-line-inset #EDEDED（块内的柔和分隔线）；深色必须比 --zp-line #2B2B2B
-     更柔，否则深底上的行间线会亮得像描边。此前这类差异靠 5 条
-     :root[data-zp-theme="dark"] .acct-row{border-bottom-color:…} 专题补丁实现，
-     属于「组件里写两套主题」，现已收进令牌层：组件只写一次 --zp-line-inset。 */
-  --zp-line-inset:#EDEDED;
+  /* 列表行分隔线（行下边线、展开体上边线）：
+     浅色 --zp-line-inset #E8E8E8。2026-11-04 由 #EDEDED 加深一档：
+     列表容器改取 --zp-card-list（=页面底）后，行线成了分组内唯一的分隔手段，
+     #EDEDED 在白底上仅 1.17，行与行会粘成一片；#E8E8E8 提到 1.23，
+     仍比 --zp-line #E4E4E4 柔，不越位成描边。
+     深色取值见 ui-theme.css（同一条规则：比 --zp-line 更柔）。 */
+  --zp-line-inset:#E8E8E8;
   /* 登录输入框专用边框（2026-10-26 浅色对比度修复）：浅色默认边框需比 --zp-line
      深一档才能与白底/浅灰页面背景拉开层次（原 #EEEEEE 边在白底上几乎隐形）；
      深色覆盖见 ui-theme.css。取值刻意避开 retired 色板中的旧浅灰蓝灰族。 */
@@ -734,11 +735,11 @@ body {
   --zp-input-line-disabled:#DCDCDC;
   --zp-input-placeholder:#666666;   /* 与 --zp-muted 同值：#999 在浅底仅 2.6:1，不达 WCAG AA */
   --zp-input-text-disabled:#C4C4C4;
-  /* 输入框聚焦描边：品牌蓝一档（浅色 #1677FF / 深色 #60A5FA）。
+  /* 输入框聚焦描边：品牌蓝一档（浅色 #2C6CE2 / 深色 #6EA8FE）。
      与 focus-visible 的 --zp-focus（中性 #666/#FFFFFF，供键盘导航描边）分开：
      前者表达「正在编辑」，后者表达「焦点在哪」，两者语义不同，此前混用导致
      同一输入框在登录页聚焦变灰、在数据页变蓝。 */
-  --zp-input-focus:#1677FF;
+  --zp-input-focus:#2C6CE2;
   --zp-text:#000000;
   --zp-muted:#666666;
   --zp-soft:#999999;
@@ -773,9 +774,14 @@ body {
   --zp-seg-btn-font:13px;
   --zp-seg-btn-gap:8px;
   /* ===== 主按钮（浅色 spec：品牌蓝底白字）=====
-     --zp-primary 是按钮「底色」：浅色模式=品牌蓝 #1677FF，深色模式=亮蓝 #3B82F6；
-     --zp-on-primary 是按钮上的「文字/图标色」，与底色反相。 */
-  --zp-primary:#1677FF;
+     --zp-primary 是按钮「底色」：浅色模式=品牌蓝 #0F62E6，深色模式=#2A6BE0；
+     --zp-on-primary 是按钮上的「文字/图标色」，与底色反相。
+     2026-11-04 由 #1677FF 压深并**与深色统一为同一个值**：#1677FF 上白字仅 4.10:1；
+     统一值 #2C6CE2 在两套主题里取同一个 hex，白字 4.83:1（AA 有余量），
+     在浅色白底上 4.83:1、在深色 #161616 上 3.75:1、卡片 #292929 上 3.01:1，
+     四种落点全部过线 —— 这是「同一个蓝」还能两套都合规的窗口。
+     与 #1677FF 同色相（216° vs 215°），只降明度，观感仍是同一支品牌蓝。 */
+  --zp-primary:#2C6CE2;
   --zp-on-primary:#FFFFFF;
   /* 次按钮（描边 / 幽灵按钮） */
   --zp-secondary-bg:#F3F3F3;
@@ -787,14 +793,16 @@ body {
   /* 浮层遮罩（弹窗 / 底部面板上方的半透明黑幕） */
   --zp-scrim:rgba(0,0,0,.45);
   /* 键盘 / 焦点可见环 */
-  --zp-focus:#1677FF;
-  /* 交互态：hover（悬停）、active（按压）——主色 hover/active 取 Ant 色阶
-     （#4096FF 提亮 / #0958D9 压深），与 #1677FF 同族。 */
-  --zp-primary-hover:#4096FF;
-  --zp-primary-active:#0958D9;
+  --zp-focus:#2C6CE2;
+  /* 交互态：hover（悬停）、active（按压）——同族提亮/压深，
+     提亮幅度受「白字 ≥4.5」约束：#1A6FEB 是还能保住 4.65 的最亮一档。
+     两套主题同值（与主色一样不做深浅区分）。 */
+  --zp-primary-hover:#1A6FEB;
+  --zp-primary-active:#0B52BC;
   /* 选中态强调色（主题蓝）：用于「已选中」文字/图标着色。
-     取 --zp-primary-active 同值（#0958D9），因其与白底选中块对比度 6.16:1，
-     满足 WCAG AA 正文级可读性（--zp-primary #1677FF 在白底仅 4.10:1，不达标）。 */
+     与按钮态解耦：#0958D9 在白底 6.16:1，比按钮底色更深一档，
+     因为文字比色块需要更高的对比余量（#0F62E6 作文字虽 5.37 达标，但已无余量可让给
+     次级底上的选中块）。 */
   --zp-accent:#0958D9;
   --zp-secondary-hover:#E9E9E9;
   --zp-secondary-active:#DFDFDF;
@@ -806,6 +814,16 @@ body {
      组件侧统一：一级内容块用 --zp-card（=块色），浮层改用 --zp-surface。 */
   --zp-card:var(--zp-block);
   --zp-card-2:var(--zp-surface-2);
+  /* 列表容器（2026-11-04 新增）：只装「纯行列表」的分组容器（账号分组、线路功能），
+     取页面底色，使分组不再是一块可见的卡，而是「小标题 + 若干行 + 行间线」。
+     起因：Uber 的列表项直接排在底色上，只有宫格按钮有灰底。我们色值本已与
+     Uber 逐像素一致（#FFFFFF/#F3F3F3、#161616/#292929），差的是色块面积——
+     Uber 灰块只占 13%，我们卡片铺了半屏（账号页实测 52%），同样对比度下
+     「点状分布」显得黑、「满铺」显得灰。色值不动，只把列表容器的面积让出去。
+     语义边界：内容卡（任务卡、线路卡、派单卡）仍用 --zp-card 保留块色，
+     否则整页拍平、失去全部层级。 */
+  --zp-card-list:var(--zp-bg);
+  --zp-card-list-line:transparent;
   /* 列表分隔线（方案第十五章 Row，统一为 .10 单一来源） */
   --zp-divider:#E2E2E2;
   /* ===== 功能状态色（成功 / 警告 / 错误 / 提示）=====
@@ -1035,8 +1053,18 @@ button:active{transform:translateY(0)}
 }
 /* 2026-10-30（ZP-NAV-2026-002 表 3.1）：Tab 根页（历史/线路/我的）不显示页面内返回箭头。
    顶栏是三列 grid（按钮/标题/按钮），删掉箭头后若不改列定义，标题会掉进第一列窄格里；
-   根页改为单列，标题按 text-align:center 居中于整幅宽度。 */
-.topbar.is-root{grid-template-columns:1fr}
+   根页改为单列。
+   2026-11-04（上午）：曾按 Uber 一级页改成 31px 粗体左对齐。
+   2026-11-04（下午，用户定稿）：改回 20px 居中 —— 31px 四字标题在 390 宽屏上居中后
+   左右各空 130px，读起来像海报标题而不是导航标题；且根页与内页切换时标题字号跳变
+   （31 → 20），层级差变成了「跳动」。现三页统一 20px / 26 行高 / semibold / 居中，
+   与内页顶栏完全同规格，「当前在哪」改由底栏选中态表达。
+   两条都只改 .is-root 作用域，内页顶栏零影响。 */
+.topbar.is-root{grid-template-columns:1fr;justify-items:center}
+.topbar.is-root h1,.topbar.is-root strong{
+  font-size:var(--zp-fs-20);line-height:26px;font-weight:var(--zp-fw-semibold);
+  letter-spacing:normal;text-align:center;
+}
 .topbar strong,.order-title{font-weight:var(--zp-fw-semibold)}
 /* 2026-10-29：隐私政策 / 服务条款两页此前没有标题规则，h1 用的是浏览器默认
    32px + margin，把顶栏撑到 98px（全站唯一例外）。这里补上与其他页一致的
@@ -1448,20 +1476,35 @@ html[data-zp-e2e="1"] body::after{
 .zp-nav{
   position:fixed;
   left:50%;
-  bottom:0;
+  /* 2026-11-04 浮岛化（用户定稿）：底栏由贴边条改为悬浮圆角胶囊。
+     离底 8px + 左右各 12px 留白，页面底从四周透出来，底栏才「浮」得起来。
+     深色纯黑下投影不可见（黑上黑影），故同时给 1px --zp-tint 描边：
+     浅色 rgba(0,0,0,.06) 几乎不可见（有投影兜底），深色 rgba(255,255,255,.08)
+     正好是唯一轮廓来源 —— 一条声明覆盖两套主题，不写第二套主题补丁。 */
+  bottom:calc(8px + env(safe-area-inset-bottom));
   z-index:var(--ui-z-nav);
-  width:min(100%,var(--zp-shell-max));
+  width:min(calc(100% - 24px), calc(var(--zp-shell-max) - 24px));
   min-height:64px;
-  padding:6px 8px calc(6px + env(safe-area-inset-bottom));
+  padding:6px 8px;
   transform:translateX(-50%);
   display:grid;
   grid-template-columns:repeat(5,1fr);
   gap:4px;
   background:var(--zp-nav-bg);
+  border:1px solid var(--zp-tint);
+  border-radius:var(--zp-r-sheet);
+  box-shadow:var(--zp-shadow-lg);
   /* 无上沿分隔线（2026-10-28 用户定稿）：底栏与内容靠色阶分开。 */
   backdrop-filter:none;
   -webkit-backdrop-filter:none;
 }
+/* 滚动自隐藏（2026-11-04，逻辑见 js/ui/nav.js）：向下滚离开顶部后收起，上滑回来。
+   隐藏只做位移、不做淡出 —— 半透明穿屏会显廉价，且描边/投影会先于本体消失而留下脏边。
+   位移量 100% + 16px：底栏自身高度之外再多走 16，确保含 1px 描边与投影整体出屏。
+   必须保留 -50% 的横向分量，否则隐藏瞬间会横向跳到屏幕左侧。 */
+.zp-nav{transition:transform .24s cubic-bezier(.32,.72,0,1)}
+.zp-nav.is-nav-hidden{transform:translate(-50%,calc(100% + 16px));pointer-events:none}
+@media(prefers-reduced-motion:reduce){.zp-nav{transition:none}}
 .zp-nav-item{
   min-width:0;
   min-height:52px;
@@ -1483,8 +1526,10 @@ html[data-zp-e2e="1"] body::after{
 }
 .zp-nav-item:active{background:var(--zp-nav-active-bg);color:var(--zp-nav-text-active)}
 /* 2026-10-30：历史/我的补齐四 Tab 底栏（ZP-NAV-2026-002 · C）后，
-   内容需为固定底栏让出高度；取值与首页 .home-app 的 72px 同口径。 */
-body.zp-has-nav{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+   内容需为固定底栏让出高度。2026-11-04 浮岛化后重算：
+   88px = 离底 8 + 浮岛高 66（64 + 上下描边）+ 与内容留 14 呼吸位。
+   浮岛顶部在 72px 处，中间加号凸出 16px 到 88px，正好与让位齐平、不压内容。 */
+body.zp-has-nav{padding-bottom:calc(88px + env(safe-area-inset-bottom))}
 .zp-nav-icon{width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex:none}
 .zp-nav-icon svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 /* 选中态只改文字/图标颜色（2026-10-24 用户定稿）：不加背景块、不改字重，
@@ -1845,53 +1890,64 @@ textarea:disabled,
    bootstrap B 组）要求非 dark :root 块不得残留。 */
 :root[data-zp-theme="dark"]{
   color-scheme:dark;
-  /* ===== 页面 / 表面 / 文字（深色 spec · Uber 中性黑，2026-11-04）=====
-     浅色翻为「白底灰块」后，深色同步翻为「纯黑底 + 中性亮块」，两边层级同构。
-     纯黑（#000000）是用户定稿；代价是投影在纯黑上完全不可见，
-     故浮层/浮岛一律改靠 --zp-tint 白色微描边 + 亮度差显形，不靠 shadow。 */
-  --zp-bg:#000000;
-  --zp-block:#1D1D1D;
+  /* ===== 页面 / 表面 / 文字（深色 spec · Uber 实测值，2026-11-04 定稿）=====
+     底色 #161616 与块 #292929 是 Uber App 深色截图的像素实测值，非估算。
+     先前用的纯黑 #000000 已在真机复现 OLED 拖影（black smearing）：纯黑像素
+     在滚动时驱动响应慢半拍，浅色字会拖出一条余影。Uber 自己也不用纯黑，
+     #161616 只比纯黑亮 8.6%，拖影消失且省电收益基本保留。
+     浮层 #303030 / 控件 #363636 由块色按同一亮度步进外推，保持三级可分辨。 */
+  --zp-bg:#161616;
+  --zp-block:#292929;
   /* 浮层比块再亮一档：若与块同色，弹窗/下拉压在卡片上会糊成一片。 */
-  --zp-surface:#232323;
-  --zp-surface-2:#282828;
-  --zp-surface-3:#383838;
-  --zp-line:#2B2B2B;
-  /* 卡片内分隔线在深色下取 --zp-line-inset #252525：比 --zp-line 柔一档，
-     避免深底上的行间线亮成描边（浅色取值见 ui-base.css）。 */
-  --zp-line-inset:#252525;
+  --zp-surface:#303030;
+  --zp-surface-2:#363636;
+  --zp-surface-3:#414141;
+  --zp-line:#3D3D3D;
+  /* 列表行分隔线在深色下取 --zp-line-inset #2B2B2B：比 --zp-line #3D3D3D 更暗，
+     即更贴近底色、不亮成描边。2026-11-04 由 #323232 下压一档——列表容器改取
+     --zp-card-list（=--zp-bg #161616）后，行线从「压在块上」变成「压在页面上」，
+     #323232 对 #161616 有 1.41，会硬成表格框线；#2B2B2B 为 1.28，
+     与浅色 #E8E8E8 对白底的 1.23 基本同档（浅色取值见 ui-base.css）。 */
+  --zp-line-inset:#2B2B2B;
   --zp-input-line:var(--zp-line);
   /* 输入框：与所在卡片同色、靠描边区分（与浅色「白卡上纯白 + 描边」同一条规则），
      禁用态整档压暗但保留描边。 */
   --zp-input-bg:var(--zp-block);
-  --zp-input-bg-disabled:#191919;
-  --zp-input-line-disabled:#202020;
+  --zp-input-bg-disabled:#212121;
+  --zp-input-line-disabled:#2B2B2B;
   --zp-input-placeholder:#A3A3A3;   /* 与深色 --zp-muted 同值 */
   --zp-input-text-disabled:#7A7A7A;
-  --zp-input-focus:#60A5FA;
+  --zp-input-focus:#6EA8FE;
   --zp-text:#FFFFFF;
   --zp-muted:#A3A3A3;
   --zp-soft:#717171;
   /* 骨架微光条深色化：中性同梯度微光 */
-  --zp-sk-a:#232323;
-  --zp-sk-b:#282828;
-  /* ===== 主按钮（深色 spec：亮蓝底白字）===== */
-  --zp-primary:#3B82F6;
+  --zp-sk-a:#2F2F2F;
+  --zp-sk-b:#363636;
+  /* ===== 主按钮（深色 spec）=====
+     2026-11-04 与浅色统一为同一个 hex #2C6CE2（用户要求：深浅两套的蓝必须一致）。
+     此前深色取 #3B82F6（亮蓝），浅色 #0F62E6，切换主题时按钮会明显换一支蓝。
+     统一值须同时满足：白字 ≥4.5（4.83）、深底 #161616 上可见（3.75）、
+     卡片 #292929 上可见（3.01）—— 这是三者交集的窗口，再亮白字掉线，再暗沉进卡片。 */
+  --zp-primary:#2C6CE2;
   --zp-on-primary:#FFFFFF;
-  --zp-secondary-bg:#282828;
-  --zp-secondary-border:#3D3D3D;
+  --zp-secondary-bg:#363636;
+  --zp-secondary-border:#4A4A4A;
   --zp-secondary-text:#FFFFFF;
-  --zp-disabled-bg:#282828;
+  --zp-disabled-bg:#363636;
   --zp-disabled-text:#7A7A7A;
   --zp-scrim:rgba(0,0,0,.72);
   --zp-focus:#FFFFFF;
-  --zp-primary-hover:#60A5FA;
-  --zp-primary-active:#2563EB;
+  --zp-primary-hover:#1A6FEB;   /* 与浅色同值，白字 4.65 仍达标 */
+  --zp-primary-active:#0B52BC;  /* 与浅色同值，白字 7.13 */
   /* 选中态强调色（主题蓝）：用于「已选中」文字/图标着色。
-     2026-11-04 选中块底由 #334155 换成 --zp-block(#1D1D1D)，#93C5FD 在其上 9.35:1，
-     余量充足，色值维持不变（保住深色下同一支品牌蓝）。 */
-  --zp-accent:#93C5FD;
-  --zp-secondary-hover:#2C2C2C;
-  --zp-secondary-active:#383838;
+     2026-11-04 由天蓝 #93C5FD 改为 #6EA8FE：两者对比度都够，但 #93C5FD 色相 212°、
+     饱和度拉满，深色下底栏选中项看着像「另一个青蓝色 App」；
+     #6EA8FE 色相 216°，与主色 #2C6CE2(216°) 同支，只是提亮，切换主题时是「同一个蓝变亮」。
+     文字色不可能与按钮底同值（#2C6CE2 压在 #292929 上仅 3.01，读不了）。 */
+  --zp-accent:#6EA8FE;
+  --zp-secondary-hover:#3E3E3E;
+  --zp-secondary-active:#444444;
   --zp-divider:rgba(255,255,255,.10);
   /* ===== 功能状态色（深色 spec：提亮保对比度）===== */
   --zp-success:#22C55E;
@@ -1904,8 +1960,9 @@ textarea:disabled,
   --zp-danger-soft:rgba(252,165,165,.12);
   --zp-info:#60A5FA;
   --zp-info-soft:rgba(96,165,250,.14);
-  /* 底部一级导航：2026-11-04 浮岛化。纯黑底上投影不可见，
-     改取 --zp-block(#1D1D1D) 靠「比页面底亮一档」浮起（浅色见 ui-base.css）。 */
+  /* 底部一级导航：2026-11-04 浮岛化。深色 #161616 底上投影几乎不可见，
+     改取 --zp-block(#292929) 靠「比页面底亮一档」+ 白色微描边浮起
+     （浅色见 ui-base.css）。 */
   --zp-nav-bg:var(--zp-block);
   --zp-nav-text:#A3A3A3;
   --zp-nav-text-active:#FFFFFF;
@@ -2039,6 +2096,9 @@ main > .topbar{
      与首页「今日配送」上方的距离同一口径。各页原有的 8px 覆盖同步改为 6px。 */
   margin-bottom:6px;
 }
+/* 2026-11-04：根页顶栏改 31px 大标题后，6px+14px 的间距显得标题压着第一组内容；
+   单独加到 14px（+28 = 与 Uber 一级页标题下方留白同量级）。内页顶栏仍是 6px。 */
+main > .topbar.is-root{margin-bottom:14px}
 /* 顶栏里决定整条高度的就是圆形按钮：排版盒收到 42px，顶栏 = 8px 呼吸位 + 42 = 50px，
    全站（含首页品牌区）等高。42 低于 44 的触摸建议值，用不可见 ::after 把可点区域
    补回 44×44 —— 视觉收紧不等于触控变小。 */
@@ -2066,9 +2126,9 @@ main > .topbar .order-icon-btn::after{
   overflow-y:auto;
   -webkit-overflow-scrolling:touch;
   overscroll-behavior-y:contain;
-  /* 顶部留 14px 与顶栏间距；底部 72px 让出常驻导航（64px 高 + 8px 呼吸位）。
-     旧值 84px 会在滚动到底时于横线上方多留 20px 空档。 */
-  padding:14px 0 calc(72px + env(safe-area-inset-bottom));
+  /* 顶部留 14px 与顶栏间距；底部 88px 让出浮岛式常驻导航
+     （离底 8 + 浮岛高 66 + 呼吸 14；2026-11-04 底栏由贴边条改浮岛后重算）。 */
+  padding:14px 0 calc(88px + env(safe-area-inset-bottom));
 }
 /* 全局隐藏滚动条（移动端成熟做法，对标 iOS 原生应用）：
    滚动与惯性完全不变，位置反馈由手势/边缘效应承担；常驻滚动条属桌面
@@ -2087,13 +2147,20 @@ html[data-zp-boot="hop"] .login-shell{display:none!important}
 /* 板块宽度对齐全局：与线路页 / 历史页同用 --zp-space-4（16px）。
    原为 14px 历史遗留值，比全局窄 2px，跨页切换时板块宽度会跳。 */
 /* .home-app 只作命名空间：外壳尺寸（宽/高/居中/留白）统一由 main.zp-shell 声明。 */
-/* 2026-10-29：顶栏与「今日配送」之间保留一点距离感。
-   间距 = 这里的 6px + .zp-scroll 的 14px = 20px（原来 8+14=22，几乎没变），
-   只把多余的一层收掉 2px，不做大幅调整。 */
-.home-app .topbar{display:flex;justify-content:space-between;align-items:center}
-.home-brand{display:flex;flex-direction:column;line-height:1.2}
+/* 2026-11-04：用户反馈「顶部空间太紧」，顶栏与「今日配送」之间再松一档。
+   间距 = 这里的 12px + .zp-scroll 的 14px = 26px（原 6+14=20）。
+   只作用于首页，内页仍走 main > .topbar 的 6px 口径。 */
+/* 2026-11-04：顶栏标题全站居中（历史/线路/我的已改，首页跟上）。
+   首页顶栏是品牌区两行（20px 主标 + 11px 副标），内容居中由 .home-brand 的
+   align-items 控制，不是 text-align —— 两行是块级子项，居中对齐要作用于交叉轴。 */
+.home-app .topbar{display:flex;justify-content:center;align-items:center;margin-bottom:12px}
+/* padding-left 抵消副标 letter-spacing:1.5px 的行尾留白（末字后也加一份间距，
+   居中时整块会右偏 0.75px）；加了之后两行的视觉中线才真正重合。 */
+.home-brand{display:flex;flex-direction:column;align-items:center;text-align:center;line-height:1.2;padding-left:1.5px}
 .home-brand strong{font-size:var(--zp-fs-18);font-weight:var(--zp-fw-bold);letter-spacing:.5px;color:var(--zp-text)}
-.home-brand span{margin-top:2px;font-size:var(--zp-fs-11);color:var(--zp-muted);letter-spacing:1.5px}
+/* 2026-11-04：主标与副标原来只隔 2px，两行几乎黏在一起（用户反馈顶部太紧）。
+   拉到 8px，只改留白、不动字号与行高；副标仍与「今日配送」保持 26px 呼吸位。 */
+.home-brand span{margin-top:8px;font-size:var(--zp-fs-11);color:var(--zp-muted);letter-spacing:1.5px}
 .menu-item-icon{width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;color:var(--zp-muted)}
 .menu-item-icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .menu-divider{height:1px;margin:5px 7px;background:var(--zp-tint)}
@@ -2103,7 +2170,7 @@ html[data-zp-boot="hop"] .login-shell{display:none!important}
 .task-name{display:flex;align-items:center;gap:9px;min-width:0;white-space:nowrap}
 .task-date{margin:0;min-width:112px;text-align:center;white-space:nowrap;color:var(--zp-muted);font-size:var(--zp-fs-15);line-height:23px;font-weight:var(--zp-fw-medium)}
 /* 2026-10-26 用户反馈：今日配送旁的圆形状态徽章采用主题蓝（双主题经令牌自适应，
-   浅色 #1677FF / 深色 #3B82F6），文字改 --zp-on-primary 白字保证蓝底可读 */
+   浅色 #0F62E6 / 深色 #2A6BE0），文字改 --zp-on-primary 白字保证蓝底可读 */
 .status-dot{width:26px;height:26px;min-width:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:var(--zp-primary);color:var(--zp-on-primary);border:1px solid var(--zp-tint-strong);font:650 11px/26px Arial,"Microsoft YaHei",sans-serif}
 .status-dot[hidden]{display:none}
 .today-summary .sub-badge{display:inline;color:var(--zp-text);font:600 14px/29px "Microsoft YaHei",sans-serif;white-space:nowrap}
@@ -2213,11 +2280,12 @@ html[data-zp-boot="hop"] .login-shell{display:none!important}
    超长省略号截断，不换行 */
 
 /* Final Android typography normalization: size/line-height only */
-/* 2026-10-29 顶栏定高 50px：品牌区 42（标题 24 + 间距 2 + 副标 16）+ 8px 呼吸位。
-   字号不动（20/11 已在可读下限），只调行高；副标行高 16 也让两行之间松一点。 */
+/* 2026-11-04：品牌区 48（标题 24 + 间距 8 + 副标 16）+ 8px 呼吸位，
+   两行之间用留白拉开而不是放大字号（20/11 已在可读下限）。
+   原为 42（间距 2），用户反馈「智配One 和下方文字太挤」，见上方 margin-top:8px。 */
 .home-brand strong{font-size:var(--zp-fs-20);line-height:24px;letter-spacing:.5px}
 .home-brand span{font-size:var(--zp-fs-11);line-height:16px}
-/* 品牌区行高收一档到 24（标题 24 + 间距 2 + 副标 16 = 42，配 8px 呼吸位 = 50）。
+/* 品牌区行高收一档到 24（标题 24 + 间距 8 + 副标 16 = 48，配 8px 呼吸位 = 56）。
    2026-10-29：ui-base 的 .topbar strong 已从 !important 降级为普通基线，
    这里不再需要用 !important 对抗。 */
 .home-app .home-brand strong{line-height:24px}
@@ -2352,7 +2420,9 @@ html[data-zp-boot="hop"] .login-shell{display:none!important}
 .skel-stats .skel-bar--wide{width:78px}
 
 /* ===== 首页新版信息架构：今日工作台 + 底部四入口 ===== */
-.home-app .topbar{justify-content:flex-start}
+/* 2026-11-04：随全站顶栏居中，此处由 flex-start 改为 center
+   （本文件在 bundle 中晚于 home-base.css 加载，是最先生效的那条）。 */
+.home-app .topbar{justify-content:center}
 .task-card{padding-bottom:14px}
 /* 2026-10-29：顶栏下方已经有 .zp-scroll 的 14px padding，卡片这里再写 margin-top:14px
    等于叠成 28px，加上顶栏 8px，首页顶部到卡片之间空出 36px —— 用户反馈「页面顶高，
@@ -2439,23 +2509,25 @@ main.home-app .task-card{margin-top:0}
 main.home-app .zp-scroll{
   display:flex;
   flex-direction:column;
-  overflow:hidden;
+  /* 2026-11-04：由 overflow:hidden（整页锁死、列表内部滚）改为 overflow-y:auto。
+     今日配送卡现随内容增高，超出一屏时由整页滚动承接；空态卡片保持 4 行高度（不撑满整页）。 */
+  overflow-y:auto;
   /* 底栏 fixed 覆盖在滚动区之上，必须留出 66px + 呼吸位，否则趋势卡被遮 */
-  padding-bottom:calc(72px + env(safe-area-inset-bottom));
+  padding-bottom:calc(88px + env(safe-area-inset-bottom));
 }
 main.home-app .task-card{
-  flex:1 1 auto;
+  /* 不撑满整页：空态保持 4 行高度（见 .today-store-list.is-empty），有内容时随门店数增高。
+     首屏即此状态，数据到达后高度稳定，刷新无抖动。 */
+  flex:0 0 auto;
   min-height:0;
   display:flex;
   flex-direction:column;
 }
 main.home-app .today-store-list{
-  flex:1 1 auto;
-  /* 176px = 4 行（44×4）：一屏锁定的最低门槛。低于 4 行时不再压缩列表，
-     而是由这条 min-height 把滚动区撑破，交给下面的降级规则整页滚动。
-     用户明确要求：小屏宁可整屏滚，也不要压成 2 行。 */
-  min-height:176px;
+  /* 内容驱动高度：随门店数自然增高，不封顶。空态由 .is-empty 接管（固定 4 行高度）。 */
+  flex:0 0 auto;
   max-height:none;
+  overflow:visible;
 }
 main.home-app .trend-card{flex:0 0 auto}
 
@@ -2487,8 +2559,26 @@ main.home-app .today-store-list.can-scroll{
   -webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 26px),transparent);
   mask-image:linear-gradient(to bottom,#000 calc(100% - 26px),transparent);
 }
-/* 空态（今日暂无配送门店）：在整块列表区垂直居中，而不是贴着分隔线孤零零一行 */
-main.home-app .today-store-list.is-empty{display:flex;align-items:center;justify-content:center}
+/* 空态（今日暂无配送门店）：提示文案贴近分隔线（顶部居中），下方大片留白，
+   固定 4 行高度（44px × 4 = 176px），不撑满整页，与「4 排列」一致。
+   ------------------------------------------------------------
+   2026-11-04：高度改由「列表内唯一的空态元素」在纯 CSS 里定死，不再依赖
+   fit.js 异步加 .is-empty。原因：today.js 用 innerHTML 把骨架换成空态后，
+   ResizeObserver 观察的 .zp-scroll 高度不变（flex:1 撑满视口），fit.js 要等
+   600ms 定时器才补上 .is-empty，中间约 500ms 列表只有一行（56px）→ 卡片
+   「先回缩、再展开」，每次从别的 tab 切回首页都抖一次（用户录屏反馈）。
+   骨架首帧本来就是 4 行 = 176px，这里同为 176px，故首帧 / 数据到达 / 切换
+   全程同一高度，彻底消除抖动。 */
+main.home-app .today-store-list > .zp-empty--tight{
+  min-height:176px;
+}
+/* .is-empty 只负责文案贴顶对齐（高度已由上面的子元素规则保证）。
+   fit.js 仍会切换它，但加与不加都不再改变卡片高度。 */
+main.home-app .today-store-list.is-empty{
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+}
 
 /* 浅色外观适配：首页固定导航与菜单交互
    （底栏颜色已于 Phase 4 收敛为 --zp-nav-* 令牌组，双主题自适应，此处不再覆盖） */

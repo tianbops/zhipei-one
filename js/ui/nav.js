@@ -1,5 +1,6 @@
 /* 智配One · 业务端常驻一级导航（原 js/ui-unified.js 拆分 · 4/6）
- * 底部 5 位导航的注入，以及「处理中离开」「点击已激活 tab」两道点击守卫。
+ * 底部 5 位导航的注入、「处理中离开」「点击已激活 tab」两道点击守卫，
+ * 以及底栏的滚动自隐藏（2026-11-04）。
  * 依赖：core.js（区域判定）、feedback.js（zpConfirm，运行时才用）
  */
 (function(){
@@ -77,6 +78,71 @@
     if(scroller)scroller.scrollTop=0;
     window.scrollTo(0,0);
   },true);
+
+  /* ===== 底栏滚动自隐藏（2026-11-04 用户提出缺此交互） =====
+     浮岛化后底栏仍是常驻 fixed，长列表滚到中途会压住内容。规则取主流 App 口径：
+       · 向下滚、离开顶部一段后，累计位移到阈值 → 收起
+       · 向上滚累计到位 → 立刻回来（回滑即回，不等停手）
+       · 滚到顶部 → 强制显示（回顶时底栏应在，避免「滚回去却空着」的突兀）
+     注意：滚到【底部】不再强制弹起——与 Uber 一致：尾段若已收起就保持收起，
+     用户继续上滑/回滑才回来。页面内容为底栏让的 88px 在底栏收起时本就留作末段余白，
+     这是浮动底栏的固有取舍，Uber 同样如此。
+     几条实现约束：
+       · scroll 不冒泡，只能用捕获阶段监听；同时覆盖 .zp-scroll 内滚与整页滚动。
+       · 首页底栏是 HTML 静态写的、其余页由上面注入，故一律按类名现取，不持有引用。
+       · 只认「页面级主滚动容器」类名（.zp-scroll / .order-store-list），不靠占屏比例：
+         首页「今日门店」内嵌列表、帮助弹层、导入面板等内嵌滚动不带这些类，天然被排除，
+         在小区块里划两下不会把底栏收掉。改类名识别是为修「隐藏失效」——「占屏过半」
+         这类比例判据在真机上不可靠：PWA standalone 顶部白条让视口高度与容器高度
+         语义错位，数据中心固定工具区展开、order 页顶部卡片、分屏 / 系统大字号都会把
+         主滚动区压到过半以下，一旦低于门槛整页怎么滚底栏都不收。
+       · 阈值用累计位移而非单帧位移：惯性滚动每帧只有几 px，单帧判断收不起来。 */
+  var NAV_HIDE_DELTA=8;    // 累计位移达到这个数才切换，抗抖动
+  var NAV_SHOW_TOP=56;     // 距顶这个范围内永远显示（底栏不强显，随 Uber 口径）
+  var navEl=null,navHidden=false,navLastY=-1,navAcc=0,navTicking=false;
+
+  function navScrollTarget(e){
+    var el=e.target;
+    // 整页滚动（document/window 触发）→ 认文档滚动元素，覆盖「降级为整页滚动」的页面
+    if(!el||el===document||el===window)return document.scrollingElement||document.documentElement;
+    if(el.nodeType!==1)return null;
+    // 只认页面级主滚动容器类名，且确实可滚动。不用「占屏过半」的比例判据：
+    // 该类比例在真机（PWA 白条 / 固定区展开 / 大字号 / 分屏）会误判主滚动区为「小区块」，
+    // 导致底栏完全不隐藏（数据中心隐藏失效的根因）。
+    if((el.classList.contains("zp-scroll")||el.classList.contains("order-store-list"))&&
+       el.scrollHeight-el.clientHeight>4)return el;
+    return null;
+  }
+  function navApply(hide){
+    if(!navEl||!navEl.isConnected){
+      navEl=document.querySelector(".zp-nav");
+      if(!navEl)return;
+      navHidden=navEl.classList.contains("is-nav-hidden"); // 元素被替换过时以实际类名为准
+    }
+    if(navHidden===hide)return;
+    navHidden=hide;
+    navEl.classList.toggle("is-nav-hidden",hide);
+    // inert 让收起后的底栏退出现行 Tab 序：位移出屏只是看不见，键盘/读屏仍会停在里面。
+    if(hide)navEl.setAttribute("inert","");else navEl.removeAttribute("inert");
+  }
+  function navOnScroll(e){
+    var el=navScrollTarget(e);
+    if(!el||navTicking)return;
+    navTicking=true;
+    requestAnimationFrame(function(){
+      navTicking=false;
+      var y=el.scrollTop;
+      if(navLastY<0){navLastY=y;return;}   // 首帧只记位置：恢复滚动位置跳进来时不当作「向下滚了很远」
+      var max=el.scrollHeight-el.clientHeight;
+      var dy=y-navLastY;
+      navLastY=y;
+      if(y<=NAV_SHOW_TOP){navAcc=0;navApply(false);return;}
+      navAcc=dy>0?Math.max(0,navAcc)+dy:Math.min(0,navAcc)+dy;
+      if(navAcc>=NAV_HIDE_DELTA){navAcc=0;navApply(true);}
+      else if(navAcc<=-NAV_HIDE_DELTA){navAcc=0;navApply(false);}
+    });
+  }
+  document.addEventListener("scroll",navOnScroll,{capture:true,passive:true});
 })();
 /* 业务端一级导航样式见 css/ui-overlay.css / css/ui-theme.css（.zp-business-nav-page 相关规则）。
    历史教训：曾有人把 CSS 整段粘贴进 JS，导致文件语法错误、整个 UI 层全部失效——

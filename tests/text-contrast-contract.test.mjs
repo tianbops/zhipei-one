@@ -33,7 +33,8 @@ const themeCss = readFileSync("css/ui-theme.css", "utf8");
 // ui-base 是浅色基座，ui-theme 覆盖深色。深色若漏定义某个令牌，
 // 会落到浅色值上 —— 那本身就是 bug，下面用「必须有深色覆盖」兜住关键色。
 const LIGHT = collectHex(baseCss);
-const DARK = { ...LIGHT, ...collectHex(themeCss) };
+const DARK_RAW = collectHex(themeCss);          // 深色块里显式写出的（不含继承浅色的）
+const DARK = { ...LIGHT, ...DARK_RAW };
 
 function luminance(hex) {
   const h = hex.replace("#", "");
@@ -148,9 +149,38 @@ test("空态与备注类文字必须用 --zp-muted，不得回退到 --zp-soft",
   }
 });
 
+test("主按钮白字在正常/hover/按压三态上都必须达到 AA(4.5)", () => {
+  // 2026-11-04 用户点名要解决的一处：白字压主色按钮 4.10(浅)/3.68(深)，全在 AA 线下。
+  // 修法不是给这三处按钮单独打补丁，而是把 --zp-primary 压深一档 —— 三处分别是
+  // .dispatch-retry、.data-action-primary、.history 的确认按钮，但根因是同一个令牌。
+  // 这条测试守的是「令牌值」：谁把 primary 改亮回去，三态里哪一态掉线就红。
+  for (const [name, T] of [["浅色", LIGHT], ["深色", DARK]]) {
+    const fg = T["--zp-on-primary"];
+    for (const state of ["--zp-primary", "--zp-primary-hover", "--zp-primary-active"]) {
+      const bg = T[state];
+      if (!bg || !fg) continue;
+      const r = contrast(fg, bg);
+      assert.ok(r >= 4.5,
+        `${name}主题 ${state}(${bg}) 上的 ${fg} 只有 ${r.toFixed(2)}:1，低于 AA 的 4.5`);
+    }
+  }
+});
+
+test("主色在两套主题里必须是同一个值（切换主题不换蓝）", () => {
+  // 2026-11-04 用户反馈：深色和浅色下的蓝不一致。此前深色取 #3B82F6(亮蓝)、
+  // 浅色 #0F62E6，同一颗按钮换个主题就换了一支蓝。
+  // 现统一到 #2C6CE2：白字 4.83、深底 3.75、卡片 3.01，四种落点全过线，
+  // 是「同一个蓝」还能两套都合规的窗口。谁再给深色单独调一个值，这里就红。
+  for (const t of ["--zp-primary", "--zp-primary-hover", "--zp-primary-active"]) {
+    assert.ok(t in DARK_RAW, `${t} 必须在深色块里显式定义（不靠继承浅色，否则主题切换会漏）`);
+    assert.equal(DARK_RAW[t].toUpperCase(), LIGHT[t].toUpperCase(),
+      `${t} 深浅两套必须同值：浅色 ${LIGHT[t]} / 深色 ${DARK_RAW[t]}`);
+  }
+});
+
 test("激活态文字用 --zp-accent，不用 --zp-primary", () => {
-  // --zp-primary 是「按钮底色」，白字压在它上面是设计取舍；
-  // 但把它当文字色（12px 标签）只有 3.83:1，必须用 accent（6.16:1）。
+  // --zp-primary 是「按钮底色」。压深到 #0F62E6 后它当文字色已有 5.37:1，
+  // 但文字应当留余量（选中块常压在 --zp-surface-2 上），仍统一用 accent(6.16:1)。
   const bad = [];
   const allow = [/accent-color\s*:\s*var\(--zp-primary\)/]; // range 滑块不是文字
   for (const f of ["css/ui-base.css", "css/account.css", "css/admin-base.css"]) {

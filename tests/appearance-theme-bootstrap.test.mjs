@@ -11,11 +11,11 @@
  *      深色模式下出现「白底黑字的滚动条」之类穿透（历史教训）；
  *   C. 设计令牌：浅色默认 :root 块持用户 spec 全套取值（#FFFFFF/#F3F3F3/#000000/
  *      #666666/#999999/#EEEEEE/#1677FF/#00B42A/#FF7D00/#F53F3F/阴影 .06），
- *      深色块持深色 spec（#000000/#1D1D1D/#FFFFFF/#A3A3A3/#717171/#2B2B2B/
+ *      深色块持深色 spec（#161616/#292929/#FFFFFF/#A3A3A3/#717171/#3D3D3D/
  *      #3B82F6/#22C55E/#FB923C/#EF4444/阴影 .25），logo 底板令牌 --zp-logo-plate 在册；
  *   D. 按钮体系：危险操作按钮 = 中性底 + 红字（var(--zp-secondary-bg) +
  *      var(--zp-error)，用户 2026-10 明确决策），旧「灰底灰字中性化」字面量必须绝迹；
- *   E. 壳色同步：appearance.js 与首屏早脚本把 #000000/#FFFFFF 回传安卓壳，
+ *   E. 壳色同步：appearance.js 与首屏早脚本把 #161616/#FFFFFF 回传安卓壳，
  *      静态 meta theme-color 默认浅色（#FFFFFF），修补 Group-B 五页不同步的漏洞。
  * ============================================================================
  */
@@ -115,17 +115,17 @@ const LIGHT_TOKENS = [
   ["--zp-bg", "#FFFFFF"], ["--zp-block", "#F3F3F3"], ["--zp-surface", "#FFFFFF"],
   ["--zp-text", "#000000"],
   ["--zp-muted", "#666666"], ["--zp-soft", "#999999"], ["--zp-line", "#E4E4E4"],
-  ["--zp-line-inset", "#EDEDED"], ["--zp-divider", "#E2E2E2"], ["--zp-tint", "rgba(0,0,0,.06)"],
-  ["--zp-primary", "#1677FF"], ["--zp-on-primary", "#FFFFFF"],
+  ["--zp-line-inset", "#E8E8E8"], ["--zp-divider", "#E2E2E2"], ["--zp-tint", "rgba(0,0,0,.06)"],
+  ["--zp-primary", "#2C6CE2"], ["--zp-on-primary", "#FFFFFF"],
   ["--zp-success", "#00B42A"], ["--zp-warning", "#FF7D00"], ["--zp-error", "#F53F3F"],
   ["--zp-danger", "#B92B06"],
   ["--zp-shadow", "0 2px 8px rgba(0,0,0,.06)"],
 ];
 const DARK_TOKENS = [
-  ["--zp-bg", "#000000"], ["--zp-block", "#1D1D1D"], ["--zp-surface", "#232323"],
+  ["--zp-bg", "#161616"], ["--zp-block", "#292929"], ["--zp-surface", "#303030"],
   ["--zp-text", "#FFFFFF"],
-  ["--zp-muted", "#A3A3A3"], ["--zp-soft", "#717171"], ["--zp-line", "#2B2B2B"],
-  ["--zp-primary", "#3B82F6"], ["--zp-success", "#22C55E"], ["--zp-warning", "#FB923C"],
+  ["--zp-muted", "#A3A3A3"], ["--zp-soft", "#717171"], ["--zp-line", "#3D3D3D"],
+  ["--zp-primary", "#2C6CE2"], ["--zp-success", "#22C55E"], ["--zp-warning", "#FB923C"],
   ["--zp-error", "#EF4444"], ["--zp-shadow", "0 2px 8px rgba(0,0,0,.25)"],
 ];
 for (const [name, value] of LIGHT_TOKENS) {
@@ -182,10 +182,10 @@ assert.ok(
 );
 
 // ============================ E. 主题底色同步 ============================
-// 底色真值唯一：深色 #000000 ↔ 浅色 #FFFFFF，由映射表统一给出，杜绝多处各写一半对不齐。
+// 底色真值唯一：深色 #161616 ↔ 浅色 #FFFFFF，由映射表统一给出，杜绝多处各写一半对不齐。
 const unifiedJs = fs.readFileSync(path.join(root, "js/ui/appearance.js"), "utf8");
-assert.ok(/const\s+dark\s*=\s*resolved\s*!==\s*"light"/.test(unifiedJs) && unifiedJs.includes('"#000000":"#FFFFFF"'),
-  "主题底色必须与网页主题一致（深色 #000000 / 浅色 #FFFFFF）");
+assert.ok(/const\s+dark\s*=\s*resolved\s*!==\s*"light"/.test(unifiedJs) && unifiedJs.includes('"#161616":"#FFFFFF"'),
+  "主题底色必须与网页主题一致（深色 #161616 / 浅色 #FFFFFF）");
 // js/ui/appearance.js 在页面底部，加载线上页面时可能晚于首帧，
 // 因此 <head> 里的内联主题脚本（比任何外链 JS 都早）也必须同步一次，否则浅色用户会先看到深色再跳变。
 // 2026-10-23：原 Group-B 五页（index/register/setup/offline/admin-bootstrap）只设属性不同步 meta，
@@ -201,7 +201,7 @@ for (const file of themedPages) {
   // 按自己的深色盘重映射成近黑——Web 端「顶部一条黑带与页面不同色」就是它。
   // 三条的顺序：浅(media) → 深(media) → 兜底，UA 取第一条 media 命中的。
   const lightAt = html.indexOf('<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">');
-  const darkAt = html.indexOf('<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">');
+  const darkAt = html.indexOf('<meta name="theme-color" content="#161616" media="(prefers-color-scheme: dark)">');
   const fallbackAt = html.indexOf('<meta name="theme-color" content="#FFFFFF">');
   assert.ok(lightAt >= 0 && darkAt >= 0, path.relative(root, file) + " 缺少按系统外观分流的 theme-color（media 两条）");
   assert.ok(lightAt < darkAt && darkAt < fallbackAt,

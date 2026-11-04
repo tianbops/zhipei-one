@@ -273,7 +273,8 @@ const setRouteBadge=(route)=>{if(!dot)return;const type=route?.type||"";const na
   if (!root) return;
   var scroller = root.querySelector(".zp-scroll");
   var list = document.getElementById("todayStoreList");
-  if (!scroller || !list) return;
+  var card = root.querySelector(".task-card");
+  if (!scroller || !list || !card) return;
 
   var MIN_LIST_H = 172;  /* 4 行（176）减 4px 亚像素误差 */
   var lost = false;      /* 已降级：不再自动恢复，等视口变化重测 */
@@ -281,24 +282,35 @@ const setRouteBadge=(route)=>{if(!dot)return;const type=route?.type||"";const na
 
   /* 底部渐隐：仅「可滚且未到底」时启用（滚动条全站隐藏，否则看不出能滚） */
   function syncFade() {
-    /* 空态：整块区域垂直居中，避免「文案贴着分隔线、下面空一大片」 */
-    list.classList.toggle("is-empty", list.children.length === 1 && !!list.querySelector(".zp-empty--tight"));
+    /* 空态：提示文案贴近分隔线（顶部），下方留白 */
+    var isEmpty = list.children.length === 1 && !!list.querySelector(".zp-empty--tight");
+    list.classList.toggle("is-empty", isEmpty);
+    /* 有内容：列表含真实门店行（骨架行带 aria-hidden，须排除）时挂 .has-content；
+       基础段已是内容高度，空态 4 行高度由 CSS 直接定死在 .zp-empty--tight 上
+       （见 home-dashboard.css），不依赖此处加类，故数据到达前后卡片高度恒定。 */
+    var hasContent = list.querySelectorAll('.today-store-row:not([aria-hidden="true"])').length > 0;
+    card.classList.toggle("has-content", hasContent);
+    list.classList.toggle("has-content", hasContent);
     var canScroll = list.scrollHeight - list.clientHeight > 2;
     var atEnd = list.scrollTop + list.clientHeight >= list.scrollHeight - 2;
     list.classList.toggle("can-scroll", canScroll && !atEnd);
   }
   list.addEventListener("scroll", syncFade, { passive: true });
 
+  /* 数据到达后即时复核：today.js 用 innerHTML 整体替换列表，而 ResizeObserver
+     观察的 .zp-scroll 是 flex:1 撑满视口、尺寸不随列表内容变化，故必须直接监听
+     列表子节点变化；否则 .is-empty / .has-content 要等 600ms 定时器才同步。
+     （空态高度已由 CSS 保证，此处保证其余类也即时到位，不留任何中间态。） */
+  if (window.MutationObserver) {
+    new MutationObserver(function () { schedule(); }).observe(list, { childList: true });
+  }
+
   function measure() {
     root.classList.remove("is-overflow");
     void scroller.offsetHeight;   /* 先按「未降级」重新排版，再取真实高度 */
-    var overflowed = scroller.scrollHeight - scroller.clientHeight > 2;
-    var listTooShort = list.clientHeight > 0 && list.clientHeight < MIN_LIST_H;
-
-    if (overflowed || listTooShort) {
-      root.classList.add("is-overflow");
-      lost = true;
-    }
+    /* 2026-11-04：不再因「整页内容溢出」回退到 is-overflow（列表封顶 264px + 内部滚动）。
+       今日配送卡现已改为随内容增高、由整页滚动承接（见 css/home-dashboard.css）。
+       键盘降级（is-keyboard）仍单独处理，避免卡片在键盘弹起时被撑高。 */
     syncFade();
   }
 
@@ -1860,17 +1872,17 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
       const chosen=validThemes.includes(theme)?theme:"system";
       const resolved=chosen==="system"?(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):chosen;
       const dark=resolved!=="light";
-      /* 主题底色严格成对：深色 #000000 ↔ 浅色 #FFFFFF（2026-11-04 随 Uber 中性色改版）。
+      /* 主题底色严格成对：深色 #161616 ↔ 浅色 #FFFFFF（2026-11-04 随 Uber 实测色改版）。
          映射表是 meta theme-color 的唯一真值来源（浅色取映射值，深色取键本身），
          杜绝多处各写一半对不齐。 */
-      const SHELL_BG={"#000000":"#FFFFFF"};
-      const bg=dark?"#000000":SHELL_BG["#000000"];
+      const SHELL_BG={"#161616":"#FFFFFF"};
+      const bg=dark?"#161616":SHELL_BG["#161616"];
       /* 外观切换必须原子换色（2026-11-03，深浅切换时顶部闪纯黑/纯白）：
          color-scheme 不是可过渡属性，data-zp-theme 一改就**瞬时**生效，把 UA 基层
          （canvas、滚动条、表单控件、WebView 合成层底色）立刻翻成该配方的默认极端色
          ——切深色是纯黑、切浅色是纯白；而 .zp-ui-ready 给所有元素（含 html/body）
          挂了 background-color .22s 渐变，主题色要 220ms 才到位。这两段时间常数不一致，
-         中间那一截露出来的就是既非 #000000 也非 #FFFFFF 的过渡灰 —— 正是用户
+         中间那一截露出来的就是既非 #161616 也非 #FFFFFF 的过渡灰 —— 正是用户
          看到的「状态栏位置闪一下」。
          （2026-11-04 底色改为纯黑/纯白后，单程切换的两端恰好等于 UA 默认极端色，
           闪动幅度变小；但浅↔深的中间过渡灰仍存在，故整套原子换色逻辑继续保留。）
@@ -2121,7 +2133,8 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
 
 ;
 /* 智配One · 业务端常驻一级导航（原 js/ui-unified.js 拆分 · 4/6）
- * 底部 5 位导航的注入，以及「处理中离开」「点击已激活 tab」两道点击守卫。
+ * 底部 5 位导航的注入、「处理中离开」「点击已激活 tab」两道点击守卫，
+ * 以及底栏的滚动自隐藏（2026-11-04）。
  * 依赖：core.js（区域判定）、feedback.js（zpConfirm，运行时才用）
  */
 (function(){
@@ -2199,6 +2212,71 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
     if(scroller)scroller.scrollTop=0;
     window.scrollTo(0,0);
   },true);
+
+  /* ===== 底栏滚动自隐藏（2026-11-04 用户提出缺此交互） =====
+     浮岛化后底栏仍是常驻 fixed，长列表滚到中途会压住内容。规则取主流 App 口径：
+       · 向下滚、离开顶部一段后，累计位移到阈值 → 收起
+       · 向上滚累计到位 → 立刻回来（回滑即回，不等停手）
+       · 滚到顶部 → 强制显示（回顶时底栏应在，避免「滚回去却空着」的突兀）
+     注意：滚到【底部】不再强制弹起——与 Uber 一致：尾段若已收起就保持收起，
+     用户继续上滑/回滑才回来。页面内容为底栏让的 88px 在底栏收起时本就留作末段余白，
+     这是浮动底栏的固有取舍，Uber 同样如此。
+     几条实现约束：
+       · scroll 不冒泡，只能用捕获阶段监听；同时覆盖 .zp-scroll 内滚与整页滚动。
+       · 首页底栏是 HTML 静态写的、其余页由上面注入，故一律按类名现取，不持有引用。
+       · 只认「页面级主滚动容器」类名（.zp-scroll / .order-store-list），不靠占屏比例：
+         首页「今日门店」内嵌列表、帮助弹层、导入面板等内嵌滚动不带这些类，天然被排除，
+         在小区块里划两下不会把底栏收掉。改类名识别是为修「隐藏失效」——「占屏过半」
+         这类比例判据在真机上不可靠：PWA standalone 顶部白条让视口高度与容器高度
+         语义错位，数据中心固定工具区展开、order 页顶部卡片、分屏 / 系统大字号都会把
+         主滚动区压到过半以下，一旦低于门槛整页怎么滚底栏都不收。
+       · 阈值用累计位移而非单帧位移：惯性滚动每帧只有几 px，单帧判断收不起来。 */
+  var NAV_HIDE_DELTA=8;    // 累计位移达到这个数才切换，抗抖动
+  var NAV_SHOW_TOP=56;     // 距顶这个范围内永远显示（底栏不强显，随 Uber 口径）
+  var navEl=null,navHidden=false,navLastY=-1,navAcc=0,navTicking=false;
+
+  function navScrollTarget(e){
+    var el=e.target;
+    // 整页滚动（document/window 触发）→ 认文档滚动元素，覆盖「降级为整页滚动」的页面
+    if(!el||el===document||el===window)return document.scrollingElement||document.documentElement;
+    if(el.nodeType!==1)return null;
+    // 只认页面级主滚动容器类名，且确实可滚动。不用「占屏过半」的比例判据：
+    // 该类比例在真机（PWA 白条 / 固定区展开 / 大字号 / 分屏）会误判主滚动区为「小区块」，
+    // 导致底栏完全不隐藏（数据中心隐藏失效的根因）。
+    if((el.classList.contains("zp-scroll")||el.classList.contains("order-store-list"))&&
+       el.scrollHeight-el.clientHeight>4)return el;
+    return null;
+  }
+  function navApply(hide){
+    if(!navEl||!navEl.isConnected){
+      navEl=document.querySelector(".zp-nav");
+      if(!navEl)return;
+      navHidden=navEl.classList.contains("is-nav-hidden"); // 元素被替换过时以实际类名为准
+    }
+    if(navHidden===hide)return;
+    navHidden=hide;
+    navEl.classList.toggle("is-nav-hidden",hide);
+    // inert 让收起后的底栏退出现行 Tab 序：位移出屏只是看不见，键盘/读屏仍会停在里面。
+    if(hide)navEl.setAttribute("inert","");else navEl.removeAttribute("inert");
+  }
+  function navOnScroll(e){
+    var el=navScrollTarget(e);
+    if(!el||navTicking)return;
+    navTicking=true;
+    requestAnimationFrame(function(){
+      navTicking=false;
+      var y=el.scrollTop;
+      if(navLastY<0){navLastY=y;return;}   // 首帧只记位置：恢复滚动位置跳进来时不当作「向下滚了很远」
+      var max=el.scrollHeight-el.clientHeight;
+      var dy=y-navLastY;
+      navLastY=y;
+      if(y<=NAV_SHOW_TOP){navAcc=0;navApply(false);return;}
+      navAcc=dy>0?Math.max(0,navAcc)+dy:Math.min(0,navAcc)+dy;
+      if(navAcc>=NAV_HIDE_DELTA){navAcc=0;navApply(true);}
+      else if(navAcc<=-NAV_HIDE_DELTA){navAcc=0;navApply(false);}
+    });
+  }
+  document.addEventListener("scroll",navOnScroll,{capture:true,passive:true});
 })();
 /* 业务端一级导航样式见 css/ui-overlay.css / css/ui-theme.css（.zp-business-nav-page 相关规则）。
    历史教训：曾有人把 CSS 整段粘贴进 JS，导致文件语法错误、整个 UI 层全部失效——
@@ -2386,6 +2464,53 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
     try{history.pushState({zpGuard:((history.state&&history.state.zpGuard)|0)+1},"")}catch{}
   }
 
+  /* ===== 退出接力（2026-11-04）=====
+     登录跳转写的是 /home?v=时间戳，底栏「首页」Tab 却是 /home。站内导航一律
+     location.replace，只替换「当前项」，栈底那条 /home?v= 会永久残留；点 Tab 回到
+     首页后，第二次返回会落到这条 URL 不同的首页记录并**重新加载文档**，旧文档的
+     popstate 回调（含 zpDoExit）来不及跑就被卸载，于是人还留在 App 里退不出去。
+     修法不猜历史长度：第二次返回时把「正在退出」同步写进 sessionStorage，下一份
+     业务页文档发现自己是 back/forward 到达且带有效标记，就在 load 之后继续后退，
+     直到真正离开站点。zpExitAt 给标记 3 秒时效；正常 navigate 打开 App 时清标记，
+     绝不会把新会话一进来就退掉。 */
+  const ZP_EXIT_TTL=3000;
+  function zpHasExit(){
+    try{
+      if(sessionStorage.getItem("zpExitAdmin")!=="1")return false;
+      const t=Number(sessionStorage.getItem("zpExitAt")||0);
+      if(!t)return true;                       // 旧格式 / 管理员跨区标记：无时效，靠 back/forward 判定兜底
+      return Date.now()-t<ZP_EXIT_TTL;
+    }catch{return false}
+  }
+  /* 第一次返回（exit-armed）也落盘：第二次返回若落到 URL 不同的历史项，
+     浏览器是「跨文档」后退，旧文档收不到 popstate，zpHandleBack/zpDoExit 都不会跑。
+     新文档只能靠这个标记认出「用户正在再按一次退出」的窗口里。 */
+  function zpHasExitReady(){
+    try{
+      const t=Number(sessionStorage.getItem("zpExitReady")||0);
+      return !!t&&Date.now()-t<2500;
+    }catch{return false}
+  }
+  function zpClearExitMarks(){
+    try{sessionStorage.removeItem("zpExitAdmin");sessionStorage.removeItem("zpExitAt");sessionStorage.removeItem("zpExitReady")}catch{}
+  }
+  function zpIsBackNav(){
+    try{
+      // performance.navigation.type（2 = TYPE_BACK_FORWARD）在文档刚创建时同步可读；
+      // Navigation Timing 的 entry 要晚一点才有，back.js 是头部/尾部同步脚本，等不到它。
+      if(performance.navigation&&performance.navigation.type===2)return true;
+      const n=performance.getEntriesByType&&performance.getEntriesByType("navigation")[0];
+      if(n&&n.type==="back_forward")return true;
+    }catch{}
+    return false;
+  }
+  function zpContinueExit(){
+    const go=()=>{try{history.back()}catch{}};
+    // 文档加载期同步调用 history.back() 会被浏览器丢弃，必须等 load 之后再退。
+    if(document.readyState==="complete")setTimeout(go,0);
+    else window.addEventListener("load",()=>setTimeout(go,0),{once:true});
+  }
+
   async function zpConfirmDiscard(){
     const ok=await window.zpConfirm("放弃修改？","当前修改尚未提交，返回后将丢失。","放弃");
     return ok;
@@ -2485,9 +2610,14 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
       }
       if(zpExitArmed){
         // 管理员与普通用户统一：第二次返回只退出 App，不注销、不清理任何登录凭证。
+        // 同步落盘退出意图（不能放进 zpDoExit）：本次返回可能跨文档，旧文档的
+        // popstate 回调随时会被卸载，下一份业务页要靠这个标记接着往后退。
+        try{sessionStorage.setItem("zpExitAt",String(Date.now()))}catch{}
+        try{sessionStorage.setItem("zpExitAdmin","1")}catch{}
         return "exit";
       }
       zpExitArmed=true;
+      try{sessionStorage.setItem("zpExitReady",String(Date.now()))}catch{}
       try{window.zpToast?window.zpToast("再按一次退出应用","info"):0}catch{}
       clearTimeout(zpExitTimer);
       // 窗口过期：仅复位武装标记，不再补占位。
@@ -2498,7 +2628,7 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
       // 窗口过期：复位武装标记。仅当管理员端「非根」（同窗口进入、底下压着业务端首页）
       // 时补回占位——这样停顿后再按会重新武装而非直接滑到司机首页；管理员端「根」
       // （独立窗口，底下无业务页）则不补，保证停顿后下一次返回能越过首条记录由系统退出。
-      zpExitTimer=setTimeout(()=>{zpExitArmed=false;if(zpZone==="admin"&&zpAdminNonRoot)zpPushGuard()},2000);
+      zpExitTimer=setTimeout(()=>{zpExitArmed=false;try{sessionStorage.removeItem("zpExitReady")}catch{};if(zpZone==="admin"&&zpAdminNonRoot)zpPushGuard()},2000);
       return "exit-armed";
     }
     // 离开页面前：页面级未保存拦截
@@ -2622,13 +2752,19 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
   // 返回 true 表示本页已被隔离逻辑接管，调用方应停止后续初始化
   function zpZoneGuard(){
     if(zpZone!=="business")return false;
-    let exiting=false;
-    try{exiting=!!sessionStorage.getItem("zpExitAdmin")}catch{}
-    if(exiting){
-      // 正在退出：继续后退直到真正退出 PWA。此刻绝不能弹回管理端，
+    const backNav=zpIsBackNav();
+    // 正常 navigate 打开 App：清掉上一轮全部退出标记，TTL 还没过期也不会误退。
+    if(!backNav)zpClearExitMarks();
+    if(backNav&&(zpHasExit()||zpHasExitReady())){
+      // 退出接力：清掉 armed 预置，写正式退出标记（下一份文档还能继续接力），
+      // load 之后继续后退，直到真正离开站点。此刻绝不能弹回管理端，
       // 否则「两次返回退出」会变成回到管理端，永远退不出去。
-      try{sessionStorage.removeItem("zpExitAdmin")}catch{}
-      try{history.back()}catch{}
+      try{
+        sessionStorage.removeItem("zpExitReady");
+        sessionStorage.setItem("zpExitAt",String(Date.now()));
+        sessionStorage.setItem("zpExitAdmin","1");
+      }catch{}
+      zpContinueExit();
       return true;
     }
     if(zpIsAdminSession()){try{location.replace("/admin")}catch{};return true}
@@ -2647,7 +2783,8 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
       // 业务区门禁：管理员会话不在此停留；正在退出则继续后退（内部已处理标记）
       if(zpZoneGuard())return;
     }else{
-      try{sessionStorage.removeItem("zpExitAdmin")}catch{} // 非业务页：清残留，防误触
+      // 非业务页：清残留（含时间戳与 armed 预置），防误触把新会话退出去
+      zpClearExitMarks();
     }
     // 管理员端「非根」进入（历史里残留业务端首页，如司机会话→退出→再登录管理员）：
     // 进入即置跨区退出标记，保证任何一次离开都能越过业务端首页，直接退到桌面。
@@ -2668,10 +2805,19 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
     if(zpIsWorkspaceRoot&&!(history.state&&history.state.zpGuard))zpPushGuard();
     window.addEventListener("popstate",async()=>{
       if(window.zpSuppressPop){window.zpSuppressPop=false;return} // 自己触发的 back，吃掉
+      /* 第二次返回（已武装）必须同步走完退出，绝不能 await：这次返回常落到 URL
+         不同的历史项并重新加载文档，旧文档的 async 续体会在导航完成前被卸载，
+         zpDoExit 与退出标记都来不及落地，人就卡在栈底那条残留首页上。 */
+      if(zpExitArmed&&zpIsWorkspaceRoot&&!zpLeaving&&!zpTopHook()){
+        zpExitArmed=false;clearTimeout(zpExitTimer);
+        try{sessionStorage.removeItem("zpExitReady");sessionStorage.setItem("zpExitAt",String(Date.now()))}catch{}
+        zpDoExit();
+        return;
+      }
       // 业务端页上（含 bfcache 恢复）：消费跨区退出标记，继续后退直到真正退出
-      if(zpZone==="business"){
-        var _f2=null;try{_f2=sessionStorage.getItem("zpExitAdmin")}catch{}
-        if(_f2){try{sessionStorage.removeItem("zpExitAdmin")}catch{};try{history.back()}catch{};return}
+      if(zpZone==="business"&&zpHasExit()){
+        // 同文档（URL 相同、未重载）的返回也要接力：标记不删，逐条退到离开站点。
+        try{history.back()}catch{};return
       }
       const r=await zpHandleBack();
       if(zpLeaving)return;
