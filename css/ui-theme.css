@@ -83,6 +83,20 @@
   --zp-nav-text:#A3A3A3;
   --zp-nav-text-active:#FFFFFF;
   --zp-nav-active-bg:rgba(255,255,255,.10);
+  /* 浮岛材质深色取值（2026-11-05，与 ui-base.css 同一组语义）：
+     深色底比浅色更需要「透」——不透明度取 80%，#292929 压在 #161616 上，
+     滑动时列表文字在玻璃后面走过，才看得出这是浮层不是贴片。
+     投影加深到 .55：纯黑底上 .14 级别的影子根本看不见。
+     同上，RGB 恒等于 --zp-nav-bg（此处为 --zp-block #292929），由
+     tests/nav-glass-token.test.mjs 守卫。 */
+  --zp-nav-glass:rgba(41,41,41,.80);
+  --zp-nav-shadow:0 12px 34px rgba(0,0,0,.55),0 1px 2px rgba(0,0,0,.4);
+  --zp-nav-hi:inset 0 1px 0 rgba(255,255,255,.07);
+  --zp-nav-edge:rgba(255,255,255,.13);
+  /* 深色下玻璃本就更暗，加号的白高光需要压一档，否则圆钮顶面像贴了张白纸。 */
+  --zp-nav-plus-shadow:0 6px 16px rgba(0,0,0,.34),
+                       0 10px 22px rgba(44,108,226,.30),
+                       inset 0 1px 0 rgba(255,255,255,.16);
   /* ===== Phase 1 令牌的深色取值 ===== */
   --zp-tint:rgba(255,255,255,.08);
   --zp-tint-strong:rgba(255,255,255,.16);

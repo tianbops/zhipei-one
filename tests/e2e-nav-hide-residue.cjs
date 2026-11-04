@@ -209,10 +209,10 @@ const MEASURE = `(()=>{
   check('收起时带 inert（退出现行 Tab 序）', hid.inert === true);
   check('底栏本体完全出屏', hid.navTop >= hid.vh, 'navTop=' + hid.navTop + ' vh=' + hid.vh);
   /* 核心断言：蓝色圆顶来自加号，它必须也出屏 */
-  check('中间加号圆形完全出屏（修复前停在 843，露出 1px）',
+  check('中间加号圆形完全出屏（余量不足时停在 843，露出 1px）',
     hid.plusTop >= hid.vh, 'plusTop=' + hid.plusTop + ' vh=' + hid.vh + ' 露出=' + hid.plusVisible + 'px');
   check('底部 24px 内无底栏元素拦截点击（隐藏态 pointer-events 穿透）', hid.navHits === 0, 'hits=' + hid.navHits + ' ' + JSON.stringify(hid.hitSample));
-  check('位移量 ≥ 本体高 + 24px（余量要盖住加号上凸 9px）',
+  check('位移量 ≥ 本体高 + 24px（余量要盖住加号上凸 13px）',
     hid.navTop - init.navTop >= hid.navH + 24, '位移=' + (hid.navTop - init.navTop) + ' 本体高=' + hid.navH);
 
   /* 上滑回来：确认修复没有把「回来」一起改坏 */

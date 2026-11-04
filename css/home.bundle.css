@@ -858,6 +858,30 @@ body {
   --zp-nav-text:#666666;
   --zp-nav-text-active:#000000;
   --zp-nav-active-bg:#F3F3F3;
+  /* 浮岛材质（2026-11-05，参考 Shadowrocket 的毛玻璃浮层）。
+     换的是「材质」不是「配色」：颜色仍是 --zp-nav-bg 的那支白（#FFFFFF），
+     只是带上 86% alpha 让内容隐约透出，再由 backdrop-filter 模糊成型。
+     两套主题的品牌色、中性色、文字色一个都没动。
+     为什么写成 rgba 字面量而不是颜色混合函数：安卓旧 WebView 不支持它，
+     tests/theme-token-discipline 把它列为兼容地板硬禁（见该文件 ③）。
+     因此这里的 RGB 必须恒等于 --zp-nav-bg 的解析值 —— 由
+     tests/nav-glass-token.test.mjs 逐主题比对守护，改底色就得同步改这里。 */
+  --zp-nav-glass:rgba(255,255,255,.86);
+  /* 加号的三层投影：接触影 + 主色扩散（26% 的 --zp-primary#2C6CE2）+ 1px 内白线。
+     组件层不写 rgba（纯白/纯黑三元组在退休色板名单里，见 theme-token-discipline），
+     整条做成令牌；深色下白高光要压到 .16（见 ui-theme.css）。 */
+  --zp-nav-plus-shadow:0 6px 16px rgba(0,0,0,.18),
+                       0 10px 20px rgba(44,108,226,.26),
+                       inset 0 1px 0 rgba(255,255,255,.28);
+  /* 浮岛投影：比通用 shadow-lg 更扩散、更低对比（大面浮层不用近距硬影），
+     另一条 1px 的近距影只给底边压一层，避免悬空感。 */
+  --zp-nav-shadow:0 10px 30px rgba(16,24,40,.14),0 1px 3px rgba(16,24,40,.06);
+  /* 玻璃上沿高光：1px 内白线，浅色下几乎看不见（白底无收益），
+     深色里才是「玻璃有厚度」的关键（见 ui-theme.css 的 .07）。 */
+  --zp-nav-hi:inset 0 1px 0 rgba(255,255,255,.72);
+  /* 玻璃边缘：比通用 --zp-tint 略强一档。毛玻璃与页面底色都是同一支中性色，
+     只靠阴影分不开边界，1px 实边才是「有一块玻璃在这」的第一信号。 */
+  --zp-nav-edge:rgba(0,0,0,.07);
   /* 中性微染：弱描边/分隔线。-strong 为强调描边（登录徽章边框 .09 / .16）。
      2026-11-04：浅色 .08→.06，块变 #F3F3F3 后描边需减淡，否则灰块看起来像描边卡。 */
   --zp-tint:rgba(0,0,0,.06);
@@ -959,6 +983,7 @@ body {
   --zp-r-card:16px;
   --zp-r-dialog:18px;
   --zp-r-sheet:20px; /* 底部抽屉顶部大圆角 */
+  --zp-r-nav:24px;   /* 浮岛底栏：66px 高的玻璃板，24 才是「板」而非「药丸」 */
   --zp-r-pill:999px;
   /* 间距：4 的倍数，唯一节奏 */
   --zp-sp-1:4px;
@@ -1490,23 +1515,38 @@ html[data-zp-e2e="1"] body::after{
   display:grid;
   grid-template-columns:repeat(5,1fr);
   gap:4px;
+  /* 2026-11-05 材质升级（参考 Shadowrocket 的底部浮层）：
+     从「不透明色块 + 硬投影」改成「毛玻璃浮岛」—— 颜色不变（仍是 --zp-nav-bg），
+     只是降不透明度 + backdrop-filter 模糊 + 更扩散的柔和投影 + 1px 内高光。
+     第一条 background 是给不支持 backdrop-filter / alpha 渲染的旧 WebView 的回落
+     （退回不透明底，等同改造前，不会出现「半透明但没模糊」的脏底）。
+     圆角同时从 20（--zp-r-sheet）放大到 24：66px 高的浮岛用 24 才是「板」而不是
+     「药丸」，与 Shadowrocket 那块底面板的转角比例一致。 */
   background:var(--zp-nav-bg);
-  border:1px solid var(--zp-tint);
-  border-radius:var(--zp-r-sheet);
-  box-shadow:var(--zp-shadow-lg);
-  /* 无上沿分隔线（2026-10-28 用户定稿）：底栏与内容靠色阶分开。 */
-  backdrop-filter:none;
-  -webkit-backdrop-filter:none;
+  background:var(--zp-nav-glass);
+  border:1px solid var(--zp-nav-edge);
+  border-radius:var(--zp-r-nav);
+  box-shadow:var(--zp-nav-shadow),var(--zp-nav-hi);
+  /* 模糊半径 22 与浮岛 66 的高宽比匹配：再大背景就糊成一片色块，再小文字轮廓会穿出来。
+     saturate 160% 是补偿 iOS/Android 模糊后普遍发灰的问题，不引入新色相。 */
+  backdrop-filter:blur(22px) saturate(160%);
+  -webkit-backdrop-filter:blur(22px) saturate(160%);
+}
+/* 不支持模糊的旧 WebView（安卓 5-8 的 System WebView 常见）：
+   半透明底没有模糊就是「文字透过底栏」，比不透明更脏。这里退回不透明底 ——
+   等价于改造前的观感，属于有意的降级而不是缺失。 */
+@supports not ((backdrop-filter:blur(2px)) or (-webkit-backdrop-filter:blur(2px))){
+  .zp-nav{background:var(--zp-nav-bg)}
 }
 /* 滚动自隐藏（2026-11-04，逻辑见 js/ui/nav.js）：向下滚离开顶部后收起，上滑回来。
    隐藏只做位移、不做淡出 —— 半透明穿屏会显廉价，且描边/投影会先于本体消失而留下脏边。
    位移量 100% + 32px，不是 100% + 16px：100% 只让**底栏本体**重合出屏，但中间的加号是
-   `.zp-nav-plus .zp-nav-icon{transform:translateY(-16px)}` 上凸的 —— 52px 圆在 52px 行里
-   居中、再上移 16，圆顶比底栏顶边还高 9px。16px 余量刚好被这 9px 吃掉：
+   `.zp-nav-plus .zp-nav-icon{transform:translateY(-20px)}` 上凸的 —— 52px 圆在 52px 行里
+   居中、再上移 20，圆顶比底栏顶边还高 13px。16px 余量刚好被这 13px 吃掉：
    390×844 实测隐藏后加号顶边停在 843（视口高 844），底部露出 1px 蓝色圆顶，
    真机 3x 截图底部可见 4 行蓝，就是用户看到的「下方还有一点蓝色没隐藏」。
-   32px = 加号上凸 9 + 1px 描边与投影模糊余量，位移 98px 后加号顶边到 859，
-   整块（含投影）离开视口 15px。将来若调大加号的上凸量，这里必须同步加。
+   32px = 加号上凸 13 + 1px 描边与投影模糊余量，位移 98px 后加号顶边到 855，
+   整块（含投影）离开视口 11px。将来若调大加号的上凸量，这里必须同步加。
    必须保留 -50% 的横向分量，否则隐藏瞬间会横向跳到屏幕左侧。 */
 .zp-nav{transition:transform .24s cubic-bezier(.32,.72,0,1)}
 .zp-nav.is-nav-hidden{transform:translate(-50%,calc(100% + 32px));pointer-events:none}
@@ -1553,8 +1593,13 @@ body.zp-has-nav{padding-bottom:calc(88px + env(safe-area-inset-bottom))}
   border-radius:50%;
   background:var(--zp-primary);
   color:var(--zp-on-primary);
-  transform:translateY(-16px);
+  transform:translateY(-20px);
+  /* 2026-11-05：加号从「贴在浮岛上的圆」变成「压在玻璃上的一枚实体按钮」。
+     三层各管一件事：黑投影只压接触阴影（0 6 16 / .18），主色投影负责色彩扩散
+     （26% 由 --zp-primary 预计算成 --zp-nav-plus-shadow，不引入新色相；再高就成霓虹灯），
+     1px 内白线给玻璃顶面反光。旧 WebView 用上一条 --zp-shadow-md 兜底（改造前原样）。 */
   box-shadow:var(--zp-shadow-md);
+  box-shadow:var(--zp-nav-plus-shadow);
 }
 .zp-nav-plus .zp-nav-icon svg{width:24px;height:24px;stroke-width:2.2}
 .zp-nav-plus:active{background:transparent}
@@ -1973,6 +2018,20 @@ textarea:disabled,
   --zp-nav-text:#A3A3A3;
   --zp-nav-text-active:#FFFFFF;
   --zp-nav-active-bg:rgba(255,255,255,.10);
+  /* 浮岛材质深色取值（2026-11-05，与 ui-base.css 同一组语义）：
+     深色底比浅色更需要「透」——不透明度取 80%，#292929 压在 #161616 上，
+     滑动时列表文字在玻璃后面走过，才看得出这是浮层不是贴片。
+     投影加深到 .55：纯黑底上 .14 级别的影子根本看不见。
+     同上，RGB 恒等于 --zp-nav-bg（此处为 --zp-block #292929），由
+     tests/nav-glass-token.test.mjs 守卫。 */
+  --zp-nav-glass:rgba(41,41,41,.80);
+  --zp-nav-shadow:0 12px 34px rgba(0,0,0,.55),0 1px 2px rgba(0,0,0,.4);
+  --zp-nav-hi:inset 0 1px 0 rgba(255,255,255,.07);
+  --zp-nav-edge:rgba(255,255,255,.13);
+  /* 深色下玻璃本就更暗，加号的白高光需要压一档，否则圆钮顶面像贴了张白纸。 */
+  --zp-nav-plus-shadow:0 6px 16px rgba(0,0,0,.34),
+                       0 10px 22px rgba(44,108,226,.30),
+                       inset 0 1px 0 rgba(255,255,255,.16);
   /* ===== Phase 1 令牌的深色取值 ===== */
   --zp-tint:rgba(255,255,255,.08);
   --zp-tint-strong:rgba(255,255,255,.16);
