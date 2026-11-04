@@ -2506,23 +2506,27 @@ main.home-app .task-card{margin-top:0}
 main.home-app .zp-scroll{
   display:flex;
   flex-direction:column;
-  overflow:hidden;
+  /* 2026-11-04：由 overflow:hidden（整页锁死、列表内部滚）改为 overflow-y:auto。
+     今日配送卡现随内容增高，超出一屏时由整页滚动承接；空态卡片 flex:1 仍填满整页。 */
+  overflow-y:auto;
   /* 底栏 fixed 覆盖在滚动区之上，必须留出 66px + 呼吸位，否则趋势卡被遮 */
   padding-bottom:calc(88px + env(safe-area-inset-bottom));
 }
 main.home-app .task-card{
-  flex:1 1 auto;
+  /* 内容模式：卡片按内容自然高度（门店越多越高），不强制填满、不封顶 */
+  flex:0 0 auto;
   min-height:0;
   display:flex;
   flex-direction:column;
 }
+/* 空态：今日配送卡填满整页（贴合「无内容时刚好将页面填满」）；有内容时回到上面的内容高度，随门店数增高 */
+main.home-app.is-today-empty .task-card{flex:1 1 auto}
 main.home-app .today-store-list{
-  flex:1 1 auto;
-  /* 176px = 4 行（44×4）：一屏锁定的最低门槛。低于 4 行时不再压缩列表，
-     而是由这条 min-height 把滚动区撑破，交给下面的降级规则整页滚动。
-     用户明确要求：小屏宁可整屏滚，也不要压成 2 行。 */
-  min-height:176px;
+  /* 内容驱动高度：列表按门店数自然增高，不再封顶 264px / 内部滚动；
+     超出一屏时由整页滚动承接。空态由 .is-empty 接管（flex:1 填满卡片）。 */
+  flex:0 0 auto;
   max-height:none;
+  overflow:visible;
 }
 main.home-app .trend-card{flex:0 0 auto}
 
@@ -2554,8 +2558,9 @@ main.home-app .today-store-list.can-scroll{
   -webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 26px),transparent);
   mask-image:linear-gradient(to bottom,#000 calc(100% - 26px),transparent);
 }
-/* 空态（今日暂无配送门店）：在整块列表区垂直居中，而不是贴着分隔线孤零零一行 */
-main.home-app .today-store-list.is-empty{display:flex;align-items:center;justify-content:center}
+/* 空态（今日暂无配送门店）：在整块列表区垂直居中，而不是贴着分隔线孤零零一行；
+   flex:1 让列表填满卡片，配合根类 .is-today-empty 使整卡填满整页 */
+main.home-app .today-store-list.is-empty{display:flex;align-items:center;justify-content:center;flex:1 1 auto}
 
 /* 浅色外观适配：首页固定导航与菜单交互
    （底栏颜色已于 Phase 4 收敛为 --zp-nav-* 令牌组，双主题自适应，此处不再覆盖） */

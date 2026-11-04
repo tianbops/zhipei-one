@@ -282,7 +282,10 @@ const setRouteBadge=(route)=>{if(!dot)return;const type=route?.type||"";const na
   /* 底部渐隐：仅「可滚且未到底」时启用（滚动条全站隐藏，否则看不出能滚） */
   function syncFade() {
     /* 空态：整块区域垂直居中，避免「文案贴着分隔线、下面空一大片」 */
-    list.classList.toggle("is-empty", list.children.length === 1 && !!list.querySelector(".zp-empty--tight"));
+    var isEmpty = list.children.length === 1 && !!list.querySelector(".zp-empty--tight");
+    list.classList.toggle("is-empty", isEmpty);
+    /* 根类：今日配送卡的空态需填满整页（见 css/home-dashboard.css 的 .is-today-empty） */
+    root.classList.toggle("is-today-empty", isEmpty);
     var canScroll = list.scrollHeight - list.clientHeight > 2;
     var atEnd = list.scrollTop + list.clientHeight >= list.scrollHeight - 2;
     list.classList.toggle("can-scroll", canScroll && !atEnd);
@@ -292,13 +295,9 @@ const setRouteBadge=(route)=>{if(!dot)return;const type=route?.type||"";const na
   function measure() {
     root.classList.remove("is-overflow");
     void scroller.offsetHeight;   /* 先按「未降级」重新排版，再取真实高度 */
-    var overflowed = scroller.scrollHeight - scroller.clientHeight > 2;
-    var listTooShort = list.clientHeight > 0 && list.clientHeight < MIN_LIST_H;
-
-    if (overflowed || listTooShort) {
-      root.classList.add("is-overflow");
-      lost = true;
-    }
+    /* 2026-11-04：不再因「整页内容溢出」回退到 is-overflow（列表封顶 264px + 内部滚动）。
+       今日配送卡现已改为随内容增高、由整页滚动承接（见 css/home-dashboard.css）。
+       键盘降级（is-keyboard）仍单独处理，避免卡片在键盘弹起时被撑高。 */
     syncFade();
   }
 
