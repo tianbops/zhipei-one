@@ -97,7 +97,7 @@ const PRECACHE = [
   "/js/ui/feedback.js?v=f8da0256",
   "/js/ui/haptic.js?v=a3a78c0a",
   "/js/ui/nav-prefetch.js?v=968d1e0b",
-  "/js/ui/nav.js?v=232c9731",
+  "/js/ui/nav.js?v=25c4bd85",
   "/js/ui/share.js?v=f2e4bdb6",
   "/js/ui/zp-picker.js?v=1cdf0a93",
 ];
