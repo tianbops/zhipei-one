@@ -235,6 +235,30 @@
      只靠阴影分不开边界，1px 实边才是「有一块玻璃在这」的第一信号。
      二版 .07→.08：底色更透，边线要同步加一点，否则外沿会糊进页面。 */
   --zp-nav-edge:rgba(0,0,0,.08);
+  /* 浮岛内边距（四版）：写成令牌是因为表面层 ::before 要用负 margin 抵消它
+     （绝对定位的 inset:0 对齐的是内边距盒，不是边框盒）。窗口变窄时只改这一处。 */
+  --zp-nav-pad-y:6px;
+  --zp-nav-pad-x:8px;
+  /* 加号缺口（四版）：圆心必须与加号圆心重合 ——
+     上内边距 6 + 行高 52/2 - 加号上移 24 = 8。三处任一改动都要同步这里，
+     否则缝会偏上或偏下（偏移 4px 肉眼就能看出「偏心」）。
+     半径 34 = 加号半径 26 + 缝 8。缝就是「加号独立」的视觉来源：
+     浮岛绕开加号凹进去 8px，加号才像自己嵌在上面的一枚按钮，而不是贴在浮岛上的圆。 */
+  --zp-nav-notch-cy:8px;
+  --zp-nav-notch-r:34px;
+  --zp-nav-notch:radial-gradient(circle at 50% var(--zp-nav-notch-cy),
+                   rgba(0,0,0,0) calc(var(--zp-nav-notch-r) - 1px),
+                   rgba(0,0,0,1) var(--zp-nav-notch-r));
+  /* 凹槽（四版）：只有缺口是不够的 —— 浮岛是白玻璃、页面也是白的，缝在白背景上
+     根本看不见（缺口只在滚动内容经过时才显形）。所以在缺口外圈补一圈暗边：
+     光从上打下来，凹进去的边沿必然比平面暗一点点。
+     做成 ::before 的**第二个背景层**而不是独立元素，是因为背景层天然被浮岛的
+     圆角与 mask 裁住：阴影只可能落在浮岛表面上，不会糊到浮岛上沿之外的页面上去
+     （独立元素试过，会在浮岛顶边外面留一道灰弧）。13px 是从缺口往外衰减的宽度。 */
+  --zp-nav-socket:radial-gradient(circle at 50% var(--zp-nav-notch-cy),
+                   rgba(16,24,40,0) calc(var(--zp-nav-notch-r) - 1px),
+                   rgba(16,24,40,.13) var(--zp-nav-notch-r),
+                   rgba(16,24,40,0) calc(var(--zp-nav-notch-r) + 13px));
   /* 中性微染：弱描边/分隔线。-strong 为强调描边（登录徽章边框 .09 / .16）。
      2026-11-04：浅色 .08→.06，块变 #F3F3F3 后描边需减淡，否则灰块看起来像描边卡。 */
   --zp-tint:rgba(0,0,0,.06);
@@ -863,7 +887,7 @@ html[data-zp-e2e="1"] body::after{
   z-index:var(--ui-z-nav);
   width:min(calc(100% - 24px), calc(var(--zp-shell-max) - 24px));
   min-height:64px;
-  padding:6px 8px;
+  padding:var(--zp-nav-pad-y) var(--zp-nav-pad-x);
   transform:translateX(-50%);
   display:grid;
   grid-template-columns:repeat(5,1fr);
@@ -874,14 +898,38 @@ html[data-zp-e2e="1"] body::after{
      第一条 background 是给不支持 backdrop-filter / alpha 渲染的旧 WebView 的回落
      （退回不透明底，等同改造前，不会出现「半透明但没模糊」的脏底）。
      圆角同时从 20（--zp-r-sheet）放大到 24：66px 高的浮岛用 24 才是「板」而不是
-     「药丸」，与 Shadowrocket 那块底面板的转角比例一致。 */
+     「药丸」，与 Shadowrocket 那块底面板的转角比例一致。
+
+     2026-11-05 四版（用户：「如视频一样把加号独立出来」）：
+     浮岛表面整体搬到 ::before 上，见下方 .zp-nav::before 的注释 —— 只有把表面和
+     内容拆成两层，才能给加号挖缺口而不同时把加号自己裁掉。 */
+  background:none;
+  border:0;
+  box-shadow:none;
+}
+/* 浮岛表面层（玻璃本体）。为什么不在 .zp-nav 上直接画：
+   参考视频里加号是「独立」的 —— 浮岛顶边绕着它凹进去，加号四周留一圈页面色，
+   靠 mask 挖一个圆缺口最接近。但 mask 会连同后代一起裁掉，加号是 .zp-nav 的子元素，
+   把 mask 打在 .zp-nav 上会把加号圆顶也切掉。于是表面降到伪元素：
+   mask 只作用于这一层，加号仍是浮岛的子元素（点击区、隐藏位移、层级都不用改）。
+
+   几何：缺口圆心必须与加号圆心重合（50% / --zp-nav-notch-cy:12px，
+   = 上内边距 6 + 行高 52 的一半 26 - 加号上移 20），半径 32 = 加号 26 + 缝 6。
+   把 --zp-nav-notch-r 调小到 26 就完全没有缝（退回三版的观感），调大缝更宽。 */
+.zp-nav::before{
+  content:"";
+  position:absolute;
+  /* inset:0 指的是 .zp-nav 的**内边距盒**，负 margin 才是把表面撑回边框盒；
+     不这样写表面会比浮岛小一圈（左右各少 8px、上下各少 6px）。 */
+  inset:0;
+  margin:calc(-1 * var(--zp-nav-pad-y)) calc(-1 * var(--zp-nav-pad-x));
+  border-radius:var(--zp-r-nav);
   background:var(--zp-nav-bg);
   background:var(--zp-nav-glass);
   /* background-image 必须写在两条 background 简写之后：简写会把 image 重置成 none，
      写前面等于被吃掉。这条就是「板感」渐变，见 --zp-nav-sheen 的注释。 */
-  background-image:var(--zp-nav-sheen);
+  background-image:var(--zp-nav-socket),var(--zp-nav-sheen);
   border:1px solid var(--zp-nav-edge);
-  border-radius:var(--zp-r-nav);
   box-shadow:var(--zp-nav-shadow),var(--zp-nav-hi);
   /* 模糊半径 26 与浮岛 66 的高宽比匹配：再大背景就糊成一片色块，再小文字轮廓会穿出来。
      saturate 170% 是补偿 iOS/Android 模糊后普遍发灰的问题，不引入新色相。
@@ -890,12 +938,17 @@ html[data-zp-e2e="1"] body::after{
      「磨砂玻璃」；26px 把字形彻底摊平成色块，只剩明暗在动，才是玻璃。 */
   backdrop-filter:blur(26px) saturate(170%);
   -webkit-backdrop-filter:blur(26px) saturate(170%);
+  /* 不支持 mask 的浏览器（安卓 4.x 的 System WebView）拿到的是完整圆角浮岛，
+     只是加号没有那圈缝 —— 有意的降级，不是错位。 */
+  -webkit-mask:var(--zp-nav-notch);
+  mask:var(--zp-nav-notch);
+  pointer-events:none;
 }
 /* 不支持模糊的旧 WebView（安卓 5-8 的 System WebView 常见）：
    半透明底没有模糊就是「文字透过底栏」，比不透明更脏。这里退回不透明底 ——
    等价于改造前的观感，属于有意的降级而不是缺失。 */
 @supports not ((backdrop-filter:blur(2px)) or (-webkit-backdrop-filter:blur(2px))){
-  .zp-nav{background:var(--zp-nav-bg)}
+  .zp-nav::before{background:var(--zp-nav-bg);background-image:none}
 }
 /* 滚动自隐藏（2026-11-04，逻辑见 js/ui/nav.js）：向下滚离开顶部后收起，上滑回来。
    隐藏只做位移、不做淡出 —— 半透明穿屏会显廉价，且描边/投影会先于本体消失而留下脏边。
@@ -911,6 +964,10 @@ html[data-zp-e2e="1"] body::after{
 .zp-nav.is-nav-hidden{transform:translate(-50%,calc(100% + 32px));pointer-events:none}
 @media(prefers-reduced-motion:reduce){.zp-nav{transition:none}}
 .zp-nav-item{
+  /* 四版：浮岛表面搬到 ::before 之后，绝对定位的伪元素会盖住静态流内的按钮，
+     这里把按钮抬到表面层之上（z-index 只在 .zp-nav 这个层叠上下文里比较，不影响全站层级）。 */
+  position:relative;
+  z-index:1;
   min-width:0;
   min-height:52px;
   padding:0;
@@ -952,7 +1009,7 @@ body.zp-has-nav{padding-bottom:calc(88px + env(safe-area-inset-bottom))}
   border-radius:50%;
   background:var(--zp-primary);
   color:var(--zp-on-primary);
-  transform:translateY(-20px);
+  transform:translateY(-24px);
   /* 2026-11-05：加号从「贴在浮岛上的圆」变成「压在玻璃上的一枚实体按钮」。
      三层各管一件事：黑投影只压接触阴影（0 6 16 / .18），主色投影负责色彩扩散
      （26% 由 --zp-primary 预计算成 --zp-nav-plus-shadow，不引入新色相；再高就成霓虹灯），
@@ -964,7 +1021,7 @@ body.zp-has-nav{padding-bottom:calc(88px + env(safe-area-inset-bottom))}
 .zp-nav-plus:active{background:transparent}
 .zp-nav-plus:active .zp-nav-icon{filter:brightness(1.15)}
 @media(max-width:380px){
-  .zp-nav{padding-left:6px;padding-right:6px}
+  .zp-nav{--zp-nav-pad-x:6px}
 }
 /* 首页上传弹层打开时，底栏浮于遮罩之上，使「上传」按钮可再次点击将其关闭。
    用层级令牌递进而非硬编码 1001，叠放秩序仍由 --ui-z-* 一处决定。 */
