@@ -5,22 +5,22 @@
 .history-card{
   padding:0;
   overflow:hidden;
-  background:var(--zp-card);
-  border-color:var(--zp-tint);
+  background:var(--zp-card-list);
+  border-color:var(--zp-card-list-line);
   border-radius:var(--zp-r-card);
 }
 
 /* .history-state 已并入 css/ui-base.css 的 .zp-empty（同上）。 */
 .history-list{width:100%}
 .history-month{
-  border-bottom:1px solid var(--zp-tint);
+  border-bottom:0;
 }
-.history-month:last-child{border-bottom:0}
+.history-month + .history-month{margin-top:14px}
 
 .history-swipe-row{
   position:relative;
   overflow:hidden;
-  background:var(--zp-card);
+  background:var(--zp-card-list);
   isolation:isolate;
   touch-action:pan-y;
 }
@@ -117,7 +117,7 @@
   white-space:nowrap;
 }
 .history-month.expanded .history-month-main{
-  border-bottom:1px solid var(--zp-tint);
+  border-bottom:1px solid var(--zp-line-inset);
 }
 .history-month-main::after{
   content:"";
@@ -135,12 +135,12 @@
 }
 .history-month-body{
   display:none;
-  background:var(--zp-card);
+  background:var(--zp-card-list);
 }
 .history-month.expanded .history-month-body{display:block}
 .history-month-body .history-row-surface{background:var(--zp-bg)}
 .history-month-body .history-swipe-row{
-  border-bottom:1px solid var(--zp-tint);
+  border-bottom:1px solid var(--zp-divider);
 }
 .history-month-body .history-swipe-row:last-child{border-bottom:0}
 
