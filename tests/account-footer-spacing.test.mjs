@@ -23,7 +23,7 @@
  *   1) 三段数值 24 / 10 / 12 不得回退到 18 / 16 / 4；
  *   2) 空 .message 不占位，但有文案时仍显示（app.css 的 min-height 不被删）；
  *   3) 三块 DOM 顺序与文案不变，版权字号/居中/颜色不变；
- *   4) 底部 64px 留白与 env 安全区不动（不与 account-bottom-gap 冲突）；
+ *   4) 底部 88px 让位与 env 安全区不动（与 account-bottom-gap 同一口径）；
  *   5) 不用 !important；account.css?v 在页面与 SW 中一致。
  * 几何等距的实测由 tests/e2e-account-footer-spacing.cjs 负责（7 项，gap1=gap2=24）。
  */
@@ -91,8 +91,8 @@ console.log("设置页底部三块等距契约（14 条）");
     /text-align:center/.test(crRule) &&
     /color:var\(--zp-muted\)/.test(crRule), crRule);
 
-  t("底部 64px 留白与 env 安全区保持不变",
-    /padding-bottom:calc\(64px\s*\+\s*env\(safe-area-inset-bottom\)\)/.test(ACCT));
+  t("底部 88px 让位与 env 安全区保持不变",
+    /padding-bottom:calc\(88px\s*\+\s*env\(safe-area-inset-bottom\)\)/.test(ACCT));
 
   t("三条规则均不使用 !important（项目禁止优先级硬压）",
     !/!important/.test(crRule) && !/!important/.test(secRule) &&
