@@ -1,15 +1,16 @@
 /**
  * 首页「今日配送」高度行为契约（node tests/home-today-grow.test.mjs）
  * ------------------------------------------------------------------
- * 守护 2026-11-04 的需求：今日配送板块「内容放开、随内容增多而增高；
- * 无内容时保持填满整页」，并修复「刷新时卡片被拉伸跳动」的布局抖动。
+ * 守护需求：今日配送板块「内容放开、随内容增多而增高；
+ * 无内容（空态）保持 6 行高度、不撑满整页」（即「6 排列」）。
  *
  * 实现要点（易回归，必须锁死）：
  *   1) 基础段（@media 之外）：滚动容器可滚动承接内容、列表内容高度无 264 封顶；
- *      **卡片与列表默认 flex:1 1 auto（填满整页）** —— 首屏即此高度，
- *      数据到达空态后不再被 JS 拉伸，消除刷新抖动；
- *   2) 有内容时由 .has-content（挂在卡片与列表上）收回 flex:0 0 auto，回到内容自然高度；
- *   3) 空态文案 .today-store-list.is-empty 贴顶（align-items:flex-start），非垂直居中；
+ *      卡片与列表默认 flex:0 0 auto（不撑满整页）—— 首屏即此高度，
+ *      数据到达后高度稳定，无刷新抖动；
+ *   2) 空态 .today-store-list.is-empty 固定 min-height:264px（≈6 行），文案贴顶，不撑满；
+ *   3) 有内容时列表含真实门店行（骨架行带 aria-hidden，须排除），
+ *      由 flex:0 0 auto 随门店数自然增高（基础段即此值，无需额外收回）；
  *   4) js/home/fit.js 按「非骨架的真实门店行」切换 .has-content，且不再因整页溢出回退 is-overflow。
  * 注意：基础规则与降级规则（@media 内）选择器同名，靠源码顺序层叠，
  *      故此处只断言【基础段】的取值，避免把降级 A 的 display:block 误读为基础。
@@ -47,40 +48,40 @@ console.log("首页今日配送高度契约（基础段 5 条）");
     !!scroller && /overflow-y:auto/.test(scroller) && !/overflow:hidden;/.test(scroller), scroller);
 
   const card = rule(BASE, "main.home-app .task-card");
-  t("卡片基础段默认 flex:1 1 auto（首屏即填满，消除刷新跳动；填满交给默认，收回交给 .has-content）",
-    !!card && /flex:1 1 auto/.test(card), card);
+  t("卡片基础段 flex:0 0 auto（不撑满整页，空态保持自然/固定高度，无刷新抖动）",
+    !!card && /flex:0 0 auto/.test(card), card);
 
   const list = rule(BASE, "main.home-app .today-store-list");
-  t("列表基础段 flex:1 1 auto（默认填满卡片，空态无需 JS 拉伸）",
-    !!list && /flex:1 1 auto/.test(list), list);
+  t("列表基础段 flex:0 0 auto（内容自然增高，不强制填满）",
+    !!list && /flex:0 0 auto/.test(list), list);
   t("列表基础段无 264 封顶（max-height:none，非 max-height:264px）",
     !!list && /max-height:none/.test(list) && !/max-height:264px/.test(list), list);
   t("列表基础段 overflow:visible（不再内部滚动）",
     !!list && /overflow:visible/.test(list), list);
 }
 
-console.log("\n空态填满 + 内容收回契约（3 条）");
+console.log("\n空态 6 排列契约（3 条）");
 {
-  t("有内容 .has-content 使卡片收回 flex:0 0 auto（不强制填满，随门店数增高）",
-    /main\.home-app \.task-card\.has-content[^{]*\{[^}]*flex:0 0 auto/.test(CSS) ||
-    /\.task-card\.has-content[^{]*\{[^}]*flex:0 0 auto/.test(CSS));
-  t("有内容 .has-content 使列表收回 flex:0 0 auto（内容自然增高）",
-    /\.today-store-list\.has-content\{[^}]*flex:0 0 auto/.test(CSS));
-  t("空态文案贴顶（.today-store-list.is-empty align-items:flex-start，非垂直居中）",
-    /\.today-store-list\.is-empty\{[^}]*align-items:flex-start/.test(CSS) &&
-    !/\.today-store-list\.is-empty\{[^}]*align-items:center/.test(CSS));
+  // 注意：.is-empty 规则写在降级 @media 之后（基础段语义、全文件唯一），故对全 CSS 提取，不限定 BASE 切片。
+  const empty = rule(CSS, "main.home-app .today-store-list.is-empty");
+  t("空态列表固定 6 行高度（min-height:264px，≈ 44px × 6，不撑满整页）",
+    !!empty && /min-height:264px/.test(empty), empty);
+  t("空态文案贴顶（align-items:flex-start，非垂直居中）",
+    !!empty && /align-items:flex-start/.test(empty) && !/align-items:center/.test(empty), empty);
+  t("空态不撑满（列表无 flex:1 1 auto，不拉伸填满卡片）",
+    !!empty && !/flex:1 1 auto/.test(empty), empty);
 }
 
-console.log("\nfit.js 契约（3 条）");
+console.log("\nfit.js 契约（2 条）");
 {
   t("fit.js 按真实门店行（排除骨架 aria-hidden）切换 .has-content",
     /querySelectorAll\('\.today-store-row:not\(\[aria-hidden="true"\]\)'\)\.length > 0/.test(JS) &&
     /classList\.toggle\("has-content"/.test(JS));
-  t("fit.js 切换根类 is-today-empty（区分空态/内容态）",
-    /root\.classList\.toggle\("is-today-empty"/.test(JS));
   t("fit.js 不再因整页溢出回退 is-overflow（否则内容态又被封顶 264）",
     !/classList\.add\("is-overflow"\)/.test(JS) &&
     !/scroller\.scrollHeight - scroller\.clientHeight/.test(JS));
+  t("fit.js 不再切换已废弃的 is-today-empty 根类（填空满逻辑已移除）",
+    !/is-today-empty/.test(JS));
 }
 
 function finish() {

@@ -282,13 +282,12 @@ const setRouteBadge=(route)=>{if(!dot)return;const type=route?.type||"";const na
 
   /* 底部渐隐：仅「可滚且未到底」时启用（滚动条全站隐藏，否则看不出能滚） */
   function syncFade() {
-    /* 空态：提示文案贴近分隔线（顶部），下方留白，与空态参考图一致 */
+    /* 空态：提示文案贴近分隔线（顶部），下方留白 */
     var isEmpty = list.children.length === 1 && !!list.querySelector(".zp-empty--tight");
     list.classList.toggle("is-empty", isEmpty);
-    /* 根类：今日配送卡的空态需填满整页（见 css/home-dashboard.css 的 .is-today-empty） */
-    root.classList.toggle("is-today-empty", isEmpty);
-    /* 有内容：列表含真实门店行（骨架行带 aria-hidden，须排除）时收回内容高度，
-       否则保持 CSS 默认填满，避免数据到达后卡片被拉伸抖动。 */
+    /* 有内容：列表含真实门店行（骨架行带 aria-hidden，须排除）时挂 .has-content；
+       当前基础段已是内容高度，空态由 .is-empty 固定 6 行高度，二者高度均稳定，
+       数据到达后无卡片拉伸抖动。 */
     var hasContent = list.querySelectorAll('.today-store-row:not([aria-hidden="true"])').length > 0;
     card.classList.toggle("has-content", hasContent);
     list.classList.toggle("has-content", hasContent);
