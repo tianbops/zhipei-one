@@ -144,9 +144,61 @@ console.log("\n五、板感渐变 --zp-nav-sheen (4 条)");
      若 image 写在简写之前，整条渐变会被后一条简写吃掉 —— 静默失效，肉眼查不出来。 */
   const nav = BASE.slice(BASE.indexOf(".zp-nav{"), BASE.indexOf(".zp-nav-item{"));
   const iBg = Math.max(nav.indexOf("background:var(--zp-nav-bg)"), nav.indexOf("background:var(--zp-nav-glass)"));
-  const iImg = nav.indexOf("background-image:var(--zp-nav-sheen)");
+  /* 四版之后 background-image 是两层（socket + sheen），sheen 仍在同一处声明里。 */
+  const iImg = nav.indexOf("background-image:var(--zp-nav-socket),var(--zp-nav-sheen)") >= 0
+    ? nav.indexOf("background-image:var(--zp-nav-socket),var(--zp-nav-sheen)")
+    : nav.indexOf("background-image:var(--zp-nav-sheen)");
   t("background-image 写在 background 简写之后（否则被简写重置掉）",
     iImg > iBg && iImg > 0, `bg=${iBg} img=${iImg}`);
+}
+
+/* ============ 六、加号缺口与凹槽（2026-11-05 四版） ============ */
+console.log("\n六、加号独立：缺口 / 凹槽 / 表面分层 (7 条)");
+{
+  /* 用户需求原话：「如视频一样将加号独立出来」。做法是浮岛顶边绕开加号挖一个圆缺口，
+     加号四周留 8px 缝 —— 但 mask 会连后代一起裁，所以表面必须降到 ::before。 */
+  /* 先剥注释再解析：注释里也写着 .zp-nav-plus .zp-nav-icon{transform:translateY(-20px)}，
+     不剥离会匹配到注释里的旧值，得到「圆心偏移 4px」的假红。 */
+  const BARE = BASE.replace(/\/\*[\s\S]*?\*\//g, "");
+  const nav = BARE.slice(BARE.indexOf(".zp-nav{"), BARE.indexOf(".zp-nav-item{"));
+  const before = BARE.slice(BARE.indexOf(".zp-nav::before{"), BARE.indexOf(".zp-nav::after{"));
+  const after = BARE.slice(BARE.indexOf(".zp-nav::after{"), BARE.indexOf(".zp-nav-item{"));
+
+  t(".zp-nav 本体不再画背景（表面交给 ::before）",
+    /background:\s*none/.test(nav) && /box-shadow:\s*none/.test(nav));
+  t("玻璃底 / 模糊 / 缺口 mask 都在 ::before 上",
+    /background:var\(--zp-nav-glass\)/.test(before) && /backdrop-filter:blur\(\d+px\)/.test(before) && /mask:var\(--zp-nav-notch\)/.test(before));
+  t("mask 没有打在 .zp-nav 本体上（打上去会把加号圆顶一起裁掉）",
+    !/^\s*mask:/m.test(nav.replace(/[^\n]*zp-nav::before[\s\S]*/m, "")));
+
+  /* 几何：缺口圆心 = 上内边距 + 行高/2 + 加号 translateY，半径 = 加号半径 + 缝。
+     任一处单改都会偏心或缝消失，所以直接算出来比对。 */
+  const padY = +(/--zp-nav-pad-y:\s*(\d+)px/.exec(LIGHT) || [])[1];
+  const cy = +(/--zp-nav-notch-cy:\s*(\d+)px/.exec(LIGHT) || [])[1];
+  const r = +(/--zp-nav-notch-r:\s*(\d+)px/.exec(LIGHT) || [])[1];
+  const plusRule = (/\.zp-nav-plus \.zp-nav-icon\{([^}]*)\}/.exec(BARE.replace(/\s+/g, " ")) || [])[1] || "";
+  const ty = +(/(?:translateY|translate)\((-?\d+)px\)/.exec(plusRule) || [])[1];
+  const plusD = +(/width:\s*(\d+)px/.exec(plusRule) || [])[1];
+  t("缺口圆心与加号圆心重合（padY + 行高/2 + translateY）",
+    Number.isFinite(padY) && Number.isFinite(cy) && Number.isFinite(ty) && Number.isFinite(plusD)
+      ? Math.abs((padY + 52 / 2 + ty) - cy) <= 1
+      : false,
+    `padY=${padY} ty=${ty} cy=${cy} 期望=${padY + 26 + ty}`);
+  t("缺口半径 > 加号半径（缝必须存在，否则又变回「贴上去的圆」）",
+    Number.isFinite(r) && Number.isFinite(plusD) ? r > plusD / 2 : false, `r=${r} plus=${plusD}`);
+  t("缺口半径 - 加号半径 在 4~12px（缝太窄看不见、太宽像洞）",
+    Number.isFinite(r) && Number.isFinite(plusD) ? (r - plusD / 2) >= 4 && (r - plusD / 2) <= 12 : false);
+
+  /* 凹槽做成 ::before 的背景层而不是独立元素：背景层天然被浮岛圆角与 mask 裁住，
+     不会在浮岛顶边之外留灰弧（独立元素试过会溢出去）。 */
+  t("凹槽是两个背景层之一，且 socket 层压在 sheen 之上",
+    /background-image:var\(--zp-nav-socket\),var\(--zp-nav-sheen\)/.test(before),
+    (/background-image:[^;]+/.exec(before) || [])[0]);
+  t("两套主题都定义了凹槽渐变 --zp-nav-socket",
+    /--zp-nav-socket:\s*radial-gradient\(/.test(LIGHT) && /--zp-nav-socket:\s*radial-gradient\(/.test(DARK));
+  const itemRule = (/\.zp-nav-item\{([^}]*)\}/.exec(BARE.replace(/\s+/g, " ")) || [])[1] || "";
+  t("按钮层抬到表面层之上（否则绝对定位的 ::before 会盖住按钮）",
+    /position:relative/.test(itemRule) && /z-index:1/.test(itemRule), itemRule.slice(0, 80));
 }
 
 console.log(`\n${fail === 0 ? "✅" : "❌"} 通过 ${pass} 项，失败 ${fail} 项`);

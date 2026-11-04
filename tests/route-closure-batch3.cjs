@@ -137,8 +137,10 @@ const req = (p, token, body) => ({
      原断言是「全站零生效 backdrop-filter」，出发点是 P2-12 那类**全屏遮罩**的大面积模糊
      （admin .dialog-bg 盖满视口，低端机掉帧）；浮岛只有 66px 高、单独合成层做位移，
      代价与全屏遮罩不是一个量级，因此把「全站为零」收窄为「白名单之外为零」：
-     只放行选择器恰为 .zp-nav 的规则（含 -webkit- 前缀；home.bundle.css 是它的拼接产物，
-     同一份规则会再出现一次）。其余任何选择器出现 backdrop-filter 仍然判红。 */
+     只放行浮岛自身的规则（含 -webkit- 前缀；home.bundle.css 是它的拼接产物，
+     同一份规则会再出现一次）。2026-11-05 四版把浮岛**表面**搬到 .zp-nav::before
+     （为了给加号挖缺口而不同时裁掉加号），所以 .zp-nav::before 同样在白名单里 ——
+     它仍然是那 66px 的一条，不是全屏遮罩。其余任何选择器出现 backdrop-filter 仍然判红。 */
   const files = fs.readdirSync(__dirname + "/..").filter(f => f.endsWith(".html"));
   const cssDir = path.join(__dirname, "..", "css");
   const cssFiles = fs.existsSync(cssDir) ? fs.readdirSync(cssDir).filter(f => f.endsWith(".css")).map(f => path.join(cssDir, f)) : [];
@@ -154,11 +156,11 @@ const req = (p, token, body) => ({
       if (t.startsWith("/*") || t.startsWith("*") || t.startsWith("//")) return;   // 注释不算
       if (/^@supports/i.test(t)) return;   // @supports 的能力探测不是真的在用
       if (!/backdrop-filter\s*:\s*(?!none)/i.test(l) && !/-webkit-backdrop-filter\s*:\s*(?!none)/i.test(l)) return;
-      if (sel === ".zp-nav") return;   // 白名单：浮岛底栏
+      if (sel === ".zp-nav" || sel === ".zp-nav::before") return;   // 白名单：浮岛底栏（本体 / 表面层）
       active++; offenders.push(path.basename(f) + ":" + (i + 1) + (sel ? " (" + sel + ")" : ""));
     });
   }
-  check("除浮岛 .zp-nav 外，全站无生效的 backdrop-filter（注释不计）", active === 0, "残留=" + active + (offenders.length ? " @ " + offenders.join(",") : ""));
+  check("除浮岛 .zp-nav / .zp-nav::before 外，全站无生效的 backdrop-filter（注释不计）", active === 0, "残留=" + active + (offenders.length ? " @ " + offenders.join(",") : ""));
 
   // ============ 桩自检：TTL 语义必须真实 ============
   console.log("【桩】MiniRedis 已真实实现 SET..EX 过期（不再失真）");
