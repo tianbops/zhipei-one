@@ -136,12 +136,21 @@ test("--zp-card / --zp-card-2 指向表面令牌，只在 :root 定义一次", (
     }
   }
   // home.bundle.css 是首页的打包副本，允许同一令牌在 ui-base 与 bundle 各定义一次，
-  // 但值必须完全一致；深色不得再单独重定义（靠 --zp-surface 覆盖自动跟随）。
-  for (const [name, expect] of [["--zp-card", "var(--zp-surface)"], ["--zp-card-2", "var(--zp-surface-2)"]]) {
+  // 但值必须完全一致；深色不得再单独重定义（靠 --zp-block / --zp-surface* 覆盖自动跟随）。
+  // 2026-11-04 语义拆分：浅色翻为「白底灰块」后，内容块与浮层不再同色。
+  //   --zp-card   → var(--zp-block)   内容块（卡片 / 宫格 / 列表容器）
+  //   --zp-surface→ 浮层（弹窗 / sheet / 下拉 / 输入框）
+  // 旧值 var(--zp-surface) 继续放行，是为了让 bundle 重建前的新旧两版都能通过。
+  // 这不是豁免：--zp-card 依然只能指向「不透明实色令牌」，不得写字面量、不得指 --zp-bg。
+  const CARD_ALIASES = {
+    "--zp-card": ["var(--zp-block)", "var(--zp-surface)"],
+    "--zp-card-2": ["var(--zp-surface-2)"],
+  };
+  for (const [name, accepts] of Object.entries(CARD_ALIASES)) {
     const hits = found[name];
     assert.ok(hits.length >= 1, `${name} 未定义`);
-    const wrong = hits.filter((x) => x.value !== expect);
-    assert.deepEqual(wrong, [], `${name} 只能等于 ${expect}；深色请改 --zp-surface*，不要重定义卡片令牌`);
+    const wrong = hits.filter((x) => !accepts.includes(x.value));
+    assert.deepEqual(wrong, [], `${name} 只能等于 ${accepts.join(" 或 ")}；深色请改 --zp-block/--zp-surface*，不要重定义卡片令牌`);
     const files = hits.map((x) => x.file);
     assert.equal(new Set(files).size, files.length, `${name} 在同一文件内重复定义：${files.join(", ")}`);
   }

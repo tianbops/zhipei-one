@@ -21,42 +21,49 @@
        ◆ danger 双值共役：原 --zp-danger（#FFB4AB）与 --ui-danger（#FF8278）并存且异值，
          现已统一 —— --ui-danger/--ui-danger-soft 降为 --zp-danger/--zp-danger-soft 的别名，
          mobile-ui.css 的重复 :root 定义一并删除（Big Bang 换色天然消解「合并改外观」顾虑）。 */
-  /* ===== 页面 / 表面 / 文字（浅色 spec · Uber 风格中性灰阶）===== */
-  --zp-bg:#F6F7F9;
+  /* ===== 页面 / 表面 / 文字（浅色 spec · Uber 中性灰阶）=====
+     2026-11-04 层极反转：由「灰底白卡」翻为「白底灰块」。
+     Uber 的层级不是靠底色深浅，而是靠「底 ─ 块 ─ 块内交互」三级实色：
+       页面底 #FFFFFF → 内容块 #F3F3F3 → 块内交互态 #E9E9E9。
+     因此新增 --zp-block 承载「内容块」，--zp-surface 收窄为「浮层/输入框」
+     （弹窗、下拉、sheet 必须比块亮，压在遮罩上才浮得起来）。
+     组件侧无需区分：--zp-card 一律指向 --zp-block，浮层类改用 --zp-surface。 */
+  --zp-bg:#FFFFFF;
+  --zp-block:#F3F3F3;
   --zp-surface:#FFFFFF;
-  --zp-surface-2:#F2F3F5;
-  --zp-surface-3:#E8EAED;
-  --zp-line:#D9DDE3;
+  --zp-surface-2:#E9E9E9;
+  --zp-surface-3:#DFDFDF;
+  --zp-line:#E4E4E4;
   /* 卡片内分隔线（列表行下边线、展开体上边线）：
-     浅色 --zp-line-inset #E1E4E8（白卡内的柔和分隔线）；深色必须比 --zp-line #334155
+     浅色 --zp-line-inset #EDEDED（块内的柔和分隔线）；深色必须比 --zp-line #2B2B2B
      更柔，否则深底上的行间线会亮得像描边。此前这类差异靠 5 条
      :root[data-zp-theme="dark"] .acct-row{border-bottom-color:…} 专题补丁实现，
      属于「组件里写两套主题」，现已收进令牌层：组件只写一次 --zp-line-inset。 */
-  --zp-line-inset:#E1E4E8;
+  --zp-line-inset:#EDEDED;
   /* 登录输入框专用边框（2026-10-26 浅色对比度修复）：浅色默认边框需比 --zp-line
      深一档才能与白底/浅灰页面背景拉开层次（原 #EEEEEE 边在白底上几乎隐形）；
      深色覆盖见 ui-theme.css。取值刻意避开 retired 色板中的旧浅灰蓝灰族。 */
-  --zp-input-line:#C5CCD4;
+  --zp-input-line:#C9C9C9;
   /* ===== 输入框令牌组（2026-10-29 统一：一处定义，全站一个外观）=====
      背景：输入框曾有四套并存 —— 登录框（白底 + #C5CCD4 边）、pages/* 的 !important
      兜底（同白底）、.zp-password-control 包裹层（卡片同色底 + #EEEEEE 边，在灰卡上
      等于隐形）、管理端（白底但沿用 --zp-line #EEEEEE 边）、data 页（--zp-surface-2 灰底）。
      同一屏里「当前密码」无框、「新用户名」白框，正是四套规格并排的结果。
      口径：输入框 = 比所在卡片亮一档的实色 + 明确描边，深浅两套主题同一条规则：
-       浅色 卡片 #F2F3F5 → 输入框 #FFFFFF，边 #C5CCD4
-       深色 卡片 #121826 → 输入框 #1E293B，边 #334155
+       浅色 块 #F3F3F3 → 输入框 #FFFFFF，边 #C9C9C9
+       深色 块 #1D1D1D → 输入框 #1D1D1D，边 #2B2B2B（同色靠描边，与浅色同一条规则）
      禁用态不再靠整块 opacity（会把边框一起淡掉），改为独立底色/描边/文字色。 */
   --zp-input-bg:#FFFFFF;
-  --zp-input-bg-disabled:#F2F3F5;
-  --zp-input-line-disabled:#D0D5DD;
+  --zp-input-bg-disabled:#EDEDED;
+  --zp-input-line-disabled:#DCDCDC;
   --zp-input-placeholder:#666666;   /* 与 --zp-muted 同值：#999 在浅底仅 2.6:1，不达 WCAG AA */
-  --zp-input-text-disabled:#B5BCC4;
+  --zp-input-text-disabled:#C4C4C4;
   /* 输入框聚焦描边：品牌蓝一档（浅色 #1677FF / 深色 #60A5FA）。
-     与 focus-visible 的 --zp-focus（中性 #666/#F1F5F9，供键盘导航描边）分开：
+     与 focus-visible 的 --zp-focus（中性 #666/#FFFFFF，供键盘导航描边）分开：
      前者表达「正在编辑」，后者表达「焦点在哪」，两者语义不同，此前混用导致
      同一输入框在登录页聚焦变灰、在数据页变蓝。 */
   --zp-input-focus:#1677FF;
-  --zp-text:#111111;
+  --zp-text:#000000;
   --zp-muted:#666666;
   --zp-soft:#999999;
   /* 卡片圆角：基线 3.0 起指向 --zp-r-card（16px）；旧名保留是为了既有
@@ -74,8 +81,8 @@
   /* 骨架微光条（加载占位）双外观 token：order_detail / home / data 三处
      页面级骨架共用同一取值。浅色外观为浅灰微光；深色外观在 ui-theme.css 的
      :root[data-zp-theme="dark"] 覆盖为 slate 族微光。 */
-  --zp-sk-a:#E9ECEF;
-  --zp-sk-b:#F3F5F7;
+  --zp-sk-a:#EDEDED;
+  --zp-sk-b:#F3F3F3;
   /* ===== 全局按钮标准 · 分段式动作按钮（单一真相源）=====
      基准度量取自「外观模式」选项组（跟随系统/深色/浅色）与「线路切换」等
      行内动作按钮，两类按钮历史上各自起值（高 40/42、圆角 10/12、宽度
@@ -95,12 +102,12 @@
   --zp-primary:#1677FF;
   --zp-on-primary:#FFFFFF;
   /* 次按钮（描边 / 幽灵按钮） */
-  --zp-secondary-bg:#F2F3F5;
-  --zp-secondary-border:#D0D5DD;
-  --zp-secondary-text:#111111;
+  --zp-secondary-bg:#F3F3F3;
+  --zp-secondary-border:#E4E4E4;
+  --zp-secondary-text:#000000;
   /* 禁用态 */
-  --zp-disabled-bg:#F2F3F5;
-  --zp-disabled-text:#B5BCC4;
+  --zp-disabled-bg:#F3F3F3;
+  --zp-disabled-text:#BFBFBF;
   /* 浮层遮罩（弹窗 / 底部面板上方的半透明黑幕） */
   --zp-scrim:rgba(0,0,0,.45);
   /* 键盘 / 焦点可见环 */
@@ -113,18 +120,18 @@
      取 --zp-primary-active 同值（#0958D9），因其与白底选中块对比度 6.16:1，
      满足 WCAG AA 正文级可读性（--zp-primary #1677FF 在白底仅 4.10:1，不达标）。 */
   --zp-accent:#0958D9;
-  --zp-secondary-hover:#EAECEF;
-  --zp-secondary-active:#E0E3E8;
+  --zp-secondary-hover:#E9E9E9;
+  --zp-secondary-active:#DFDFDF;
   /* 卡片 / 面板一律实底（2026-11-04 全站收敛）。
      这里曾有 --zp-card-translucent（白 .82）与 -2（灰 .88），本意是「卡片压页面纯色底，
      略透更轻」；但这套底被复制到弹窗、抽屉、下拉、提示条后，背后压的是正文，
      于是弹窗里的字和背后的门店名叠在一起，看着像重影。
      透明只保留给遮罩（--zp-scrim / --zp-scrim-dialog），那里透是功能。
-     组件侧统一：一级容器用 --zp-card，次级块与交互态用 --zp-card-2。 */
-  --zp-card:var(--zp-surface);
+     组件侧统一：一级内容块用 --zp-card（=块色），浮层改用 --zp-surface。 */
+  --zp-card:var(--zp-block);
   --zp-card-2:var(--zp-surface-2);
   /* 列表分隔线（方案第十五章 Row，统一为 .10 单一来源） */
-  --zp-divider:#DDE1E6;
+  --zp-divider:#E2E2E2;
   /* ===== 功能状态色（成功 / 警告 / 错误 / 提示）=====
      -strong 用于边框 / 图标 / 危险操作；-soft 用于底色微染；
      --zp-danger 专用于「错误正文」（浅色用深红保对比度、深色用浅红），随主题翻转。 */
@@ -134,11 +141,11 @@
   --zp-warning-soft:rgba(255,125,0,.10);
   --zp-error:#F53F3F;
   --zp-error-soft:rgba(245,63,63,.10);
-  /* 取值由对比度反推：#D4380D 在 --zp-surface-2(#F2F3F5) 上仅 4.33:1，
-     差在「危险按钮压在次级底上」这一常见组合。#C4320A 在 bg/surface/surface-2
-     三种底上分别是 5.13 / 5.50 / 4.95，全部达 AA。 */
-  --zp-danger:#C4320A;
-  --zp-danger-soft:rgba(196,50,10,.08);
+  /* 取值由对比度反推。2026-11-04 换灰阶时重算：surface-2 由 #F2F3F5 压到 #E9E9E9，
+     #C4320A 在其上恰好 4.50:1（卡线，浮点易判负），故再压深一档。
+     #B92B06 在 bg/block/surface-2 上分别为 6.16 / 5.55 / 5.07，全部达 AA。 */
+  --zp-danger:#B92B06;
+  --zp-danger-soft:rgba(185,43,6,.08);
   --zp-info:#1677FF;
   --zp-info-soft:rgba(22,119,255,.10);
 
@@ -149,19 +156,21 @@
      浅色下不能翻白（描边会消失），故双主题同值——命名令牌白名单，
      禁止组件层直写字面量（appearance-theme-bootstrap 断言在册）。 */
   --zp-logo-plate:#05070A;
-  /* 底部一级导航（品牌导航条）令牌组：底色跟随页面背景（2026-10-28 用户定稿：
-     底栏与页面同色融为一体，不用独立色块，也不加分隔横线）。
-     文字仍按主题取中性/主色，保证同色底上的可读性。 */
-  --zp-nav-bg:var(--zp-bg);
+  /* 底部一级导航（品牌导航条）令牌组。
+     2026-11-04 浮岛化：底栏从贴边条改为悬浮圆角胶囊（见 .zp-nav）。
+     浅色浮岛取 --zp-surface(#FFFFFF) 靠投影浮起；深色纯黑底上投影不可见，
+     故改取 --zp-block(#1D1D1D)，靠「比页面底亮一档」浮起（见 ui-theme.css）。 */
+  --zp-nav-bg:var(--zp-surface);
   --zp-nav-text:#666666;
-  --zp-nav-text-active:#111111;
-  --zp-nav-active-bg:#F2F3F5;
-  /* 中性微染：弱描边/分隔线（原 .075/.07/.065 三档归一为 .08 浅色 / .07 深色）；
-     -strong 为强调描边（登录徽章边框 .10 / .16）。 */
-  --zp-tint:rgba(0,0,0,.08);
-  --zp-tint-strong:rgba(0,0,0,.10);
-  /* 模态遮罩：业务弹窗/二次确认（原 .58 与 .62 两档归一为 .40 浅色 / .58 深色）。 */
-  --zp-scrim-dialog:rgba(15,23,42,.40);
+  --zp-nav-text-active:#000000;
+  --zp-nav-active-bg:#F3F3F3;
+  /* 中性微染：弱描边/分隔线。-strong 为强调描边（登录徽章边框 .09 / .16）。
+     2026-11-04：浅色 .08→.06，块变 #F3F3F3 后描边需减淡，否则灰块看起来像描边卡。 */
+  --zp-tint:rgba(0,0,0,.06);
+  --zp-tint-strong:rgba(0,0,0,.09);
+  /* 模态遮罩：业务弹窗/二次确认（原 .58 与 .62 两档归一为 .40 浅色 / .62 深色）。
+     2026-11-04 去蓝调：原 rgba(15,23,42,…) 是 slate 族，中性底上会泛青。 */
+  --zp-scrim-dialog:rgba(0,0,0,.40);
   /* 投影：--zp-shadow 为通用单档（用户 spec），sm/md/lg/menu 为分档——
      sm 凸起元素（底栏加号）/ md 悬浮元素（FAB、Toast）/ lg 模态面板 /
      menu 下拉菜单；浅色用低 alpha 冷灰，深色用高 alpha 纯黑。 */
@@ -553,8 +562,8 @@ textarea:-webkit-autofill{
 .zp-empty{
   padding:28px 12px;
   text-align:center;
-  /* 空态是「用户必须读到」的信息，不是装饰：--zp-soft(#999) 在浅色底仅 2.66:1，
-     低于 WCAG AA 的 4.5:1。改用 --zp-muted（#666 / 深色 #94A3B8）。 */
+  /* 空态是「用户必须读到」的信息，不是装饰：--zp-soft(#999) 在浅色底仅 2.85:1，
+     低于 WCAG AA 的 4.5:1。改用 --zp-muted（#666 / 深色 #A3A3A3）。 */
   color:var(--zp-muted);
   font-size:var(--zp-fs-15);
   line-height:22px;
