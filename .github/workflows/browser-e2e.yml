@@ -82,6 +82,10 @@ jobs:
         env:
           CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
         run: node tests/e2e-home-exit-back.cjs
+      - name: Verify floating nav leaves no residue when hidden
+        env:
+          CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
+        run: node tests/e2e-nav-hide-residue.cjs
       - name: Verify standalone admin workspace isolation
         env:
           CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
