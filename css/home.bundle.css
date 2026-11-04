@@ -878,6 +878,17 @@ body {
      因此这里的 RGB 必须恒等于 --zp-nav-bg 的解析值 —— 由
      tests/nav-glass-token.test.mjs 逐主题比对守护，改底色就得同步改这里。 */
   --zp-nav-glass:rgba(255,255,255,.72);
+  /* 浮岛「板感」渐变（2026-11-05 三版，用户点名要加高光）。
+     纯高光在浅色下没用 —— 白玻璃上再叠白渐变，压在同样白的页面上等于没画。
+     所以这条渐变是三段：上段提亮（有内容/彩底从后面过时先亮起来）、
+     中段归零（不污染标签所在的中线区域）、下段压一点点中性暗（
+     rgba(16,24,40,.035)）—— 只在最底部 20% 给一道几乎看不见的收边，
+     让浮岛即使压在纯白页面上也有一条「厚度」可读，而不是一张贴纸。
+     深色另有一套（见 ui-theme.css），暗部用 rgba(0,0,0,.18) 收得更狠一档。 */
+  --zp-nav-sheen:linear-gradient(180deg,
+                   rgba(255,255,255,.55) 0%,
+                   rgba(255,255,255,0) 46%,
+                   rgba(16,24,40,.035) 100%);
   /* 加号的三层投影：接触影 + 主色扩散（26% 的 --zp-primary#2C6CE2）+ 1px 内白线。
      组件层不写 rgba（纯白/纯黑三元组在退休色板名单里，见 theme-token-discipline），
      整条做成令牌；深色下白高光要压到 .16（见 ui-theme.css）。 */
@@ -887,8 +898,10 @@ body {
   /* 浮岛投影：比通用 shadow-lg 更扩散、更低对比（大面浮层不用近距硬影），
      另一条 1px 的近距影只给底边压一层，避免悬空感。
      2026-11-05 二版：透明度降到 .72 后浮岛本身「变轻」了，投影不跟着抬一档
-     就会显得贴不住页面（玻璃越透越需要影子说明它悬在上面）。 */
-  --zp-nav-shadow:0 12px 34px rgba(16,24,40,.16),0 2px 6px rgba(16,24,40,.06);
+     「玻璃越透越需要影子说明它悬在上面」。
+     三版再加一档（.16→.20、抬到 40px）：加高光渐变之后浮岛上沿变亮，
+     影子不跟着走就会「上亮下也亮」，反而更贴不住页面。 */
+  --zp-nav-shadow:0 16px 40px rgba(16,24,40,.20),0 3px 10px rgba(16,24,40,.08);
   /* 玻璃上沿高光：1px 内白线。二版从 .72 提到 .88 —— 底色更透之后，
      这道高光是「玻璃有厚度」的主要信号（纯白实心上它几乎看不出）。
      深色里另有一套更弱的取值（见 ui-theme.css 的 .10）。 */
@@ -1539,6 +1552,9 @@ html[data-zp-e2e="1"] body::after{
      「药丸」，与 Shadowrocket 那块底面板的转角比例一致。 */
   background:var(--zp-nav-bg);
   background:var(--zp-nav-glass);
+  /* background-image 必须写在两条 background 简写之后：简写会把 image 重置成 none，
+     写前面等于被吃掉。这条就是「板感」渐变，见 --zp-nav-sheen 的注释。 */
+  background-image:var(--zp-nav-sheen);
   border:1px solid var(--zp-nav-edge);
   border-radius:var(--zp-r-nav);
   box-shadow:var(--zp-nav-shadow),var(--zp-nav-hi);
@@ -2047,7 +2063,13 @@ textarea:disabled,
      同上，RGB 恒等于 --zp-nav-bg（此处为 --zp-block #292929），由
      tests/nav-glass-token.test.mjs 守卫。 */
   --zp-nav-glass:rgba(41,41,41,.68);
-  --zp-nav-shadow:0 12px 34px rgba(0,0,0,.55),0 1px 2px rgba(0,0,0,.4);
+  /* 深色的板感渐变：上段白高光压到 .10（深底上 .55 会像贴了张亮纸），
+     下段压暗到 .18 —— 深色浮岛的下沿必须比上沿更暗才「沉」得住。 */
+  --zp-nav-sheen:linear-gradient(180deg,
+                   rgba(255,255,255,.10) 0%,
+                   rgba(255,255,255,0) 50%,
+                   rgba(0,0,0,.18) 100%);
+  --zp-nav-shadow:0 16px 40px rgba(0,0,0,.58),0 2px 8px rgba(0,0,0,.45);
   --zp-nav-hi:inset 0 1px 0 rgba(255,255,255,.10);
   --zp-nav-edge:rgba(255,255,255,.15);
   /* 深色下玻璃本就更暗，加号的白高光需要压一档，否则圆钮顶面像贴了张白纸。 */
