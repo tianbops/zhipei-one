@@ -18,7 +18,7 @@
 .task-name{display:flex;align-items:center;gap:9px;min-width:0;white-space:nowrap}
 .task-date{margin:0;min-width:112px;text-align:center;white-space:nowrap;color:var(--zp-muted);font-size:var(--zp-fs-15);line-height:23px;font-weight:var(--zp-fw-medium)}
 /* 2026-10-26 用户反馈：今日配送旁的圆形状态徽章采用主题蓝（双主题经令牌自适应，
-   浅色 #1677FF / 深色 #3B82F6），文字改 --zp-on-primary 白字保证蓝底可读 */
+   浅色 #0F62E6 / 深色 #2A6BE0），文字改 --zp-on-primary 白字保证蓝底可读 */
 .status-dot{width:26px;height:26px;min-width:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:var(--zp-primary);color:var(--zp-on-primary);border:1px solid var(--zp-tint-strong);font:650 11px/26px Arial,"Microsoft YaHei",sans-serif}
 .status-dot[hidden]{display:none}
 .today-summary .sub-badge{display:inline;color:var(--zp-text);font:600 14px/29px "Microsoft YaHei",sans-serif;white-space:nowrap}

@@ -116,7 +116,7 @@ const LIGHT_TOKENS = [
   ["--zp-text", "#000000"],
   ["--zp-muted", "#666666"], ["--zp-soft", "#999999"], ["--zp-line", "#E4E4E4"],
   ["--zp-line-inset", "#EDEDED"], ["--zp-divider", "#E2E2E2"], ["--zp-tint", "rgba(0,0,0,.06)"],
-  ["--zp-primary", "#1677FF"], ["--zp-on-primary", "#FFFFFF"],
+  ["--zp-primary", "#0F62E6"], ["--zp-on-primary", "#FFFFFF"],
   ["--zp-success", "#00B42A"], ["--zp-warning", "#FF7D00"], ["--zp-error", "#F53F3F"],
   ["--zp-danger", "#B92B06"],
   ["--zp-shadow", "0 2px 8px rgba(0,0,0,.06)"],
@@ -125,7 +125,7 @@ const DARK_TOKENS = [
   ["--zp-bg", "#161616"], ["--zp-block", "#292929"], ["--zp-surface", "#303030"],
   ["--zp-text", "#FFFFFF"],
   ["--zp-muted", "#A3A3A3"], ["--zp-soft", "#717171"], ["--zp-line", "#3D3D3D"],
-  ["--zp-primary", "#3B82F6"], ["--zp-success", "#22C55E"], ["--zp-warning", "#FB923C"],
+  ["--zp-primary", "#2A6BE0"], ["--zp-success", "#22C55E"], ["--zp-warning", "#FB923C"],
   ["--zp-error", "#EF4444"], ["--zp-shadow", "0 2px 8px rgba(0,0,0,.25)"],
 ];
 for (const [name, value] of LIGHT_TOKENS) {

@@ -14,7 +14,7 @@
      兼容：旧变量名一律保留为别名指向新 token，任何既有 var(...) 的解析结果逐字节不变。
 
      Phase 4（2026-10-23 基底反转）：默认 :root 由深色纪元翻为**浅色用户 spec**
-     （#F6F7F9 底 / #FFFFFF 面 / #111111 字 / #1677FF 主色），深色全套值移至
+     （现为 #FFFFFF 底 / #F3F3F3 块 / #000000 字 / #0F62E6 主色，2026-11-04 改版），深色全套值移至
      ui-theme.css 的 :root[data-zp-theme="dark"]，双主题共用同一套令牌名。
 
      已消解的历史待决策项：
@@ -58,11 +58,11 @@
   --zp-input-line-disabled:#DCDCDC;
   --zp-input-placeholder:#666666;   /* 与 --zp-muted 同值：#999 在浅底仅 2.6:1，不达 WCAG AA */
   --zp-input-text-disabled:#C4C4C4;
-  /* 输入框聚焦描边：品牌蓝一档（浅色 #1677FF / 深色 #60A5FA）。
+  /* 输入框聚焦描边：品牌蓝一档（浅色 #0F62E6 / 深色 #60A5FA）。
      与 focus-visible 的 --zp-focus（中性 #666/#FFFFFF，供键盘导航描边）分开：
      前者表达「正在编辑」，后者表达「焦点在哪」，两者语义不同，此前混用导致
      同一输入框在登录页聚焦变灰、在数据页变蓝。 */
-  --zp-input-focus:#1677FF;
+  --zp-input-focus:#0F62E6;
   --zp-text:#000000;
   --zp-muted:#666666;
   --zp-soft:#999999;
@@ -97,9 +97,12 @@
   --zp-seg-btn-font:13px;
   --zp-seg-btn-gap:8px;
   /* ===== 主按钮（浅色 spec：品牌蓝底白字）=====
-     --zp-primary 是按钮「底色」：浅色模式=品牌蓝 #1677FF，深色模式=亮蓝 #3B82F6；
-     --zp-on-primary 是按钮上的「文字/图标色」，与底色反相。 */
-  --zp-primary:#1677FF;
+     --zp-primary 是按钮「底色」：浅色模式=品牌蓝 #0F62E6，深色模式=#2A6BE0；
+     --zp-on-primary 是按钮上的「文字/图标色」，与底色反相。
+     2026-11-04 由 #1677FF 压深一档：#1677FF 上白字仅 4.10:1，低于 AA 的 4.5。
+     #0F62E6 与 #1677FF 同色相同饱和度，只降明度，观感仍是同一支品牌蓝；
+     白字提到 5.37:1，hover(#1A6FEB) 4.65、active(#0B52BC) 7.13 三态全部达标。 */
+  --zp-primary:#0F62E6;
   --zp-on-primary:#FFFFFF;
   /* 次按钮（描边 / 幽灵按钮） */
   --zp-secondary-bg:#F3F3F3;
@@ -111,14 +114,15 @@
   /* 浮层遮罩（弹窗 / 底部面板上方的半透明黑幕） */
   --zp-scrim:rgba(0,0,0,.45);
   /* 键盘 / 焦点可见环 */
-  --zp-focus:#1677FF;
-  /* 交互态：hover（悬停）、active（按压）——主色 hover/active 取 Ant 色阶
-     （#4096FF 提亮 / #0958D9 压深），与 #1677FF 同族。 */
-  --zp-primary-hover:#4096FF;
-  --zp-primary-active:#0958D9;
+  --zp-focus:#0F62E6;
+  /* 交互态：hover（悬停）、active（按压）——同族提亮/压深，
+     提亮幅度受「白字 ≥4.5」约束：#1A6FEB 是还能保住 4.65 的最亮一档。 */
+  --zp-primary-hover:#1A6FEB;
+  --zp-primary-active:#0B52BC;
   /* 选中态强调色（主题蓝）：用于「已选中」文字/图标着色。
-     取 --zp-primary-active 同值（#0958D9），因其与白底选中块对比度 6.16:1，
-     满足 WCAG AA 正文级可读性（--zp-primary #1677FF 在白底仅 4.10:1，不达标）。 */
+     与按钮态解耦：#0958D9 在白底 6.16:1，比按钮底色更深一档，
+     因为文字比色块需要更高的对比余量（#0F62E6 作文字虽 5.37 达标，但已无余量可让给
+     次级底上的选中块）。 */
   --zp-accent:#0958D9;
   --zp-secondary-hover:#E9E9E9;
   --zp-secondary-active:#DFDFDF;
