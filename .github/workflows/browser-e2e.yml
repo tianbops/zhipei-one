@@ -54,6 +54,34 @@ jobs:
         env:
           CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
         run: node tests/e2e-stats-scope.cjs
+      - name: Verify home brand block spacing
+        env:
+          CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
+        run: node tests/e2e-home-brand-gap.cjs
+      - name: Verify history month reveals from the top
+        env:
+          CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
+        run: node tests/e2e-history-month-reveal.cjs
+      - name: Verify dispatch page text hierarchy
+        env:
+          CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
+        run: node tests/e2e-dispatch-text-layout.cjs
+      - name: Verify account page bottom breathing room
+        env:
+          CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
+        run: node tests/e2e-account-bottom-gap.cjs
+      - name: Verify account copyright line
+        env:
+          CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
+        run: node tests/e2e-account-copyright.cjs
+      - name: Verify account footer three-block spacing
+        env:
+          CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
+        run: node tests/e2e-account-footer-spacing.cjs
+      - name: Verify second back gesture exits the site from home
+        env:
+          CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
+        run: node tests/e2e-home-exit-back.cjs
       - name: Verify standalone admin workspace isolation
         env:
           CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}

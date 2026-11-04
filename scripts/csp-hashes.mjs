@@ -33,11 +33,14 @@ const CSP_BASE = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-s
 const HASHES_PATH = path.join(root, "functions/api/_csp-hashes.js");
 const HEADERS_PATH = path.join(root, "_headers");
 
-/** 递归收集全部 *.html（排除 node_modules 与 coverage/ 本地度量产物） */
+/** 递归收集全部 *.html（排除 node_modules / coverage / tests/fixtures）
+ *  tests/fixtures 是 e2e 的历史快照，不是会被下发的页面；把它们算进 CSP 哈希
+ *  会让「线上页面集合」与快照集合混在一起，且新增快照就要改 _headers。 */
 function collectHtml(dir, out = []) {
   for (const name of readdirSync(dir)) {
     if (name === "node_modules" || name === "coverage") continue;
     const p = path.join(dir, name);
+    if (name === "fixtures" && path.basename(dir) === "tests") continue;
     const st = statSync(p);
     if (st.isDirectory()) collectHtml(p, out);
     else if (name.endsWith(".html")) out.push(p);

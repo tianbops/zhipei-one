@@ -4,16 +4,18 @@
  *
  * 为什么必须真浏览器：文字层级是「计算样式 + 实际几何」的事，静态断言只能证明
  * 源码写了令牌，证明不了删掉 .dispatch-intro 之后首屏有没有被推低、名称与状态
- * 是不是真的分成了两行。这里用 git HEAD（修复前）与工作区（修复后）两套 HTML/CSS
+ * 是不是真的分成了两行。这里用固化的基线快照（tests/fixtures/e2e-baseline，修复前）与工作区（修复后）两套 HTML/CSS
  * 在同一浏览器里各加载一次，逐项比对并截图。
  */
-const { spawn, execFileSync } = require('node:child_process');
+const { spawn } = require('node:child_process');
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
-const OUT_DIR = process.env.OUT_DIR || '/root/.codebuddy/artifact/2f8a7d30-9c21-4f0b-1d41-8cc6368be000';
+const os = require('node:os');
+const OUT_DIR = process.env.OUT_DIR || path.join(os.tmpdir(), 'zp-e2e-out');
+fs.mkdirSync(OUT_DIR, { recursive: true });
 const PORT = Number(process.env.PORT || 8143);
 const PORT_CDP = Number(process.env.PORT_CDP || 9324);
 const CHROMIUM = process.env.CHROMIUM || '/usr/bin/chromium';
@@ -23,8 +25,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const getJSON = u => new Promise((res, rej) => http.get(u, r => { let d = ''; r.on('data', c => d += c); r.on('end', () => res(JSON.parse(d))); }).on('error', rej));
 
 /* 修复前的 HTML/CSS 从 git HEAD 取，保证对比的是真实旧版本而不是手写桩。 */
-const OLD_HTML = execFileSync('git', ['show', 'HEAD:pages/dispatch.html'], { cwd: ROOT, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 });
-const OLD_CSS = execFileSync('git', ['show', 'HEAD:css/business-pages.css'], { cwd: ROOT, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 });
+const FIX = path.join(__dirname, 'fixtures', 'e2e-baseline');
+const OLD_HTML = fs.readFileSync(path.join(FIX, 'dispatch_old.html'), 'utf8');
+const OLD_CSS = fs.readFileSync(path.join(FIX, 'dispatch_old.css'), 'utf8');
 let MODE = 'old';
 
 const STUB = `
