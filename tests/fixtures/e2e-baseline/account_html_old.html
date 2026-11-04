@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<script src="/js/error-guard.js?v=da1b8353"></script>
+<script src="/js/fetch-retry.js?v=c6db261e"></script>
+<script>
+(function(){
+  function goLogin(){
+    try{document.documentElement.style.display="none"}catch(e){}
+    var p=location.pathname+location.search;
+    location.replace("/?redirect="+encodeURIComponent(p)+"&reason=auth");
+  }
+  try{
+    if(sessionStorage.getItem("zpAuth")!=="1"){goLogin();return;}
+  }catch(e){}
+  try{
+    window.addEventListener("pageshow",function(ev){
+      if(ev.persisted){try{if(sessionStorage.getItem("zpAuth")!=="1")location.replace("/?reason=auth");}catch(e){}}
+    });
+  }catch(e){}
+})();
+</script>
+
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>设置 · 智配One</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#161616" media="(prefers-color-scheme: dark)"><meta name="theme-color" content="#FFFFFF">
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png?v=25f1ad28">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="智配One"><script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#FFFFFF":"#161616");}catch(e){}</script><script src="/js/theme-sync.js?v=e56e8350"></script>
+<link rel="stylesheet" href="/css/app.css?v=3ac0265a"><link rel="stylesheet" href="/css/ui-base.css?v=0e3d20cf"><link rel="stylesheet" href="/css/ui-overlay.css?v=07775030"><link rel="stylesheet" href="/css/ui-theme.css?v=b68d6e71"><link rel="stylesheet" href="/css/ui-shell.css?v=8537d8fb"><link rel="stylesheet" href="/css/mobile-ui.css?v=480312f5"><link rel="stylesheet" href="/css/business-pages.css?v=c9c0f175">
+<link rel="stylesheet" href="/css/account.css?v=e5145c06"><script src="/js/perf-diagnostics.js?v=260b5b37"></script>
+</head>
+<body class="zp-has-nav"><main class="page2 account-page zp-shell">
+<header class="topbar is-root"><h1>设置</h1></header>
+
+<div class="zp-scroll">
+
+<h2 class="acct-group-label">账号</h2>
+<section class="acct-card" aria-label="账号">
+  <div class="acct-rows">
+    <div class="acct-row" role="group">
+      <span class="acct-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c0-3.3 3.6-5.5 8-5.5s8 2.2 8 5.5"></path></svg></span>
+      <span class="acct-row-label">用户名</span>
+      <span class="acct-row-value" id="username">读取中…</span>
+    </div>
+    <button class="acct-row" id="usernameToggle" type="button" aria-expanded="false" aria-controls="usernameBody">
+      <span class="acct-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v2M12 19v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M3 12h2M19 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path><circle cx="12" cy="12" r="3.5"></circle></svg></span>
+      <span class="acct-row-label">修改用户名</span>
+      <span class="acct-row-value" aria-hidden="true"></span>
+      <svg class="acct-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
+    </button>
+    <button class="acct-row" id="passwordToggle" type="button" aria-expanded="false" aria-controls="passwordBody">
+      <span class="acct-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2"></rect><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"></path></svg></span>
+      <span class="acct-row-label">修改密码</span>
+      <span class="acct-row-value" aria-hidden="true"></span>
+      <svg class="acct-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
+    </button>
+  </div>
+  <div id="usernameBody" class="acct-body" hidden>
+    <label class="page2-label">当前密码<input id="renamePassword" type="password" autocomplete="current-password" placeholder="验证身份后修改"></label>
+    <label class="page2-label">新用户名<input id="newUsername" type="text" autocomplete="username" maxlength="32" placeholder="字母、数字、_-.，3-32位"></label>
+    <p class="page2-soft">修改后需重新登录。</p>
+    <button id="renameBtn" class="page2-primary" type="button">保存用户名</button>
+    <p id="renameMessage" class="message" aria-live="polite"></p>
+  </div>
+  <div id="passwordBody" class="acct-body" hidden>
+    <label class="page2-label">当前密码<input id="currentPassword" type="password" autocomplete="current-password" placeholder="请输入当前密码"></label>
+    <label class="page2-label">新密码<input id="newPassword" type="password" autocomplete="new-password" minlength="8" maxlength="128" placeholder="至少8位"></label>
+    <label class="page2-label">确认新密码<input id="confirmPassword" type="password" autocomplete="new-password" minlength="8" maxlength="128" placeholder="再次输入新密码"></label>
+    <p class="page2-soft">修改后需重新登录。</p>
+    <button id="passwordBtn" class="page2-primary" type="button">保存新密码</button>
+    <p id="passwordMessage" class="message" aria-live="polite"></p>
+  </div>
+</section>
+
+<h2 class="acct-group-label">外观</h2>
+<section class="acct-card" aria-label="外观与显示">
+  <div class="acct-theme-row">
+    <span class="acct-row-label">主题</span>
+    <div class="acct-seg" role="group" aria-label="外观模式">
+      <button type="button" class="appearance-theme-option" data-theme-choice="system" aria-pressed="false">系统</button>
+      <button type="button" class="appearance-theme-option" data-theme-choice="light" aria-pressed="false">浅色</button>
+      <button type="button" class="appearance-theme-option" data-theme-choice="dark" aria-pressed="false">深色</button>
+    </div>
+  </div>
+  <button id="fontSizeToggle" class="acct-font-trigger" type="button" aria-expanded="false" aria-controls="fontSizePanel">
+    <span class="acct-row-icon acct-glyph" aria-hidden="true">Aa</span>
+    <span class="acct-row-label">字体大小</span>
+    <svg class="acct-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
+  </button>
+  <div id="fontSizePanel" class="acct-font-panel" hidden>
+    <div class="acct-font-slider">
+      <input id="appearanceFontScale" type="range" min="0.85" max="1.3" step="0.05" value="1" aria-label="全局文字大小">
+      <output id="appearanceFontValue" for="appearanceFontScale">标准</output>
+    </div>
+  </div>
+</section>
+
+<div class="acct-about-hero">
+  <p class="acct-about-name">智配One</p>
+  <p class="acct-about-ver" id="aboutVersion"><span id="aboutVerText">当前版本</span></p>
+</div>
+
+<section id="aboutCard" class="acct-card about-card" aria-label="获取">
+  <div class="acct-rows">
+    <button class="acct-row" id="installRow" type="button">
+      <span class="acct-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2.5"></rect><path d="M10 7h4"></path></svg></span>
+      <span id="installLabelBtn" class="acct-row-label">客户端</span>
+      <span id="installActionText" class="acct-row-value acct-install-action">下载</span>
+      <svg class="acct-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
+    </button>
+    <button class="acct-row" id="webCopyBtn" type="button" aria-label="复制Web端地址">
+      <span class="acct-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18"></path></svg></span>
+      <span class="acct-row-label">Web端</span>
+      <span class="acct-row-value">复制网址</span>
+      <svg class="acct-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
+    </button>
+  </div>
+  <a id="installDlLink" hidden aria-hidden="true"></a>
+  <div id="installGuide" class="install-guide" hidden>
+    <ol id="installGuideSteps"></ol>
+  </div>
+</section>
+
+<h2 class="acct-group-label">关于</h2>
+<section class="acct-card about-card" aria-label="信息">
+  <div class="acct-rows">
+    <button class="acct-row" id="privacyLink" type="button">
+      <span class="acct-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"></path></svg></span>
+      <span class="acct-row-label">隐私政策</span>
+      <span class="acct-row-value" aria-hidden="true"></span>
+      <svg class="acct-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
+    </button>
+    <button class="acct-row" id="termsLink" type="button">
+      <span class="acct-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4h7l4 4v12H7z"></path><path d="M14 4v4h4"></path></svg></span>
+      <span class="acct-row-label">服务条款</span>
+      <span class="acct-row-value" aria-hidden="true"></span>
+      <svg class="acct-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
+    </button>
+    <button class="acct-row" id="helpLink" type="button">
+      <span class="acct-row-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1 .9-1 1.7"></path><path d="M12 17h.01"></path></svg></span>
+      <span class="acct-row-label">帮助反馈</span>
+      <span class="acct-row-value" aria-hidden="true"></span>
+      <svg class="acct-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
+    </button>
+  </div>
+</section>
+
+<div class="acct-about-copyright">© 2026 智配One</div>
+
+<section class="account-logout-section">
+  <button id="logout" class="account-logout" type="button">退出登录</button>
+  <p id="message" class="message"></p>
+</section>
+
+<button id="dangerToggle" class="acct-destroy-link" type="button" aria-expanded="false" aria-controls="dangerBody">注销账号</button>
+<div id="dangerBody" class="acct-card acct-danger-card" hidden>
+  <div id="deletePrompt" class="account-danger-box">
+    <strong>注销账号</strong>
+    <p>注销将永久删除本账号、线路绑定与待处理申请；线路与业务数据不受影响。</p>
+    <button id="deleteAccountBtn" class="page2-danger-btn" type="button">注销账号</button>
+  </div>
+  <div id="deleteConfirmPanel" class="account-delete-confirm" hidden>
+    <strong>确认注销账号</strong>
+    <p>此操作无法撤销，输入密码确认注销。</p>
+    <label class="page2-label">当前密码<input id="deletePassword" type="password" autocomplete="current-password" placeholder="请输入当前密码"></label>
+    <p id="deleteMessage" class="message" aria-live="polite"></p>
+    <div class="account-dialog-actions">
+      <button id="deleteCancel" class="page2-secondary" type="button">取消</button>
+      <button id="deleteConfirm" class="page2-danger-btn" type="button">确认注销</button>
+    </div>
+  </div>
+</div>
+
+<div class="acct-help-layer" id="helpLayer" hidden>
+  <div class="acct-help-panel" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <div class="acct-help-head">
+      <h2 id="helpTitle">帮助与反馈</h2>
+      <button id="helpClose" class="acct-help-close" type="button" aria-label="关闭">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+      </button>
+    </div>
+    <div class="acct-help-body">
+      <h3 class="acct-help-sub">常见问题</h3>
+      <p class="acct-help-q">忘记密码怎么办？</p>
+      <p class="acct-help-a">请联系下方反馈邮箱或你的线路管理员重置密码。</p>
+      <p class="acct-help-q">数据存在哪里？</p>
+      <p class="acct-help-a">云端加密存储，换设备登录同一账号即可同步。</p>
+      <p class="acct-help-q">运单识别不准？</p>
+      <p class="acct-help-a">识别结果可能存在误差，务必人工核对，可手动修正后再使用。</p>
+      <h3 class="acct-help-sub">反馈渠道</h3>
+      <p class="acct-help-a">遇到问题或有功能建议，欢迎邮件反馈：</p>
+      <button id="helpMailBtn" class="acct-help-mail" type="button">复制反馈邮箱 tianbops@live.com</button>
+    </div>
+  </div>
+</div>
+
+</div>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+/* 手风琴：同一时刻只展开一个面板。
+   group 传入全部可折叠项的 [toggle, body] 列表；展开其中一项时自动收起其余项。 */
+function toggle(toggle,body,group){
+ toggle?.addEventListener("click",()=>{
+  const open=body.hidden;
+  if(open&&group){
+   group.forEach(([t,b])=>{
+    if(t===toggle||!b)return;
+    if(!b.hidden){b.hidden=true;t?.setAttribute("aria-expanded","false");}
+   });
+  }
+  body.hidden=!open;toggle.setAttribute("aria-expanded",String(open));
+ });
+}
+/* 可折叠项登记表：修改用户名 / 修改密码 / 字体大小 / 注销账号 —— 互斥展开 */
+const accordions=[
+ [$("usernameToggle"),$("usernameBody")],
+ [$("passwordToggle"),$("passwordBody")],
+ [$("fontSizeToggle"),$("fontSizePanel")],
+ [$("dangerToggle"),$("dangerBody")],
+];
+accordions.forEach(([t,b])=>toggle(t,b,accordions));
+
+const themeOptions=[...document.querySelectorAll("[data-theme-choice]")];
+function renderAppearance(){
+ const selected=window.zpGetAppearanceTheme?window.zpGetAppearanceTheme():"system";
+ themeOptions.forEach(button=>{
+  const active=button.dataset.themeChoice===selected;
+  button.setAttribute("aria-pressed",String(active));
+  button.classList.toggle("is-selected",active);
+ });
+ const scale=window.zpGetFontScale?window.zpGetFontScale():1;
+ const slider=$("appearanceFontScale"),output=$("appearanceFontValue");
+ if(slider)slider.value=String(scale);
+ if(output)output.textContent=scale<.99?"较小":scale>1.01?"较大":"标准";
+}
+themeOptions.forEach(button=>button.addEventListener("click",()=>{
+ window.zpSetAppearanceTheme?.(button.dataset.themeChoice);
+ renderAppearance();
+}));
+$("appearanceFontScale")?.addEventListener("input",event=>{
+ window.zpSetFontScale?.(Number(event.target.value));
+ renderAppearance();
+});
+document.addEventListener("zp:appearancechange",renderAppearance);
+document.addEventListener("zp:fontscalechange",renderAppearance);
+
+
+async function api(u,o={}){const r=await zpFetch(u,{credentials:"same-origin",cache:"no-store",...o});const d=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(d.error||d.message||"请求失败");e.code=d.code||"HTTP_"+r.status;throw e}return d}
+function show(id,e){$(id).textContent=(e.code?"["+e.code+"] ":"")+(e.message||"请求失败")}
+
+/* 敏感信息变更后强制重新鉴权：后端已使旧会话失效（user.sessionVersion 自增），
+   此处彻底清登录态并回登录页——与成熟 App「改密码/改用户名后需重新登录」一致。
+   必须同时清 cookie（/api/logout 删服务端会话 + 清 cookie）与会话标记 sessionStorage.zpAuth，
+   否则首页守卫会因 zpAuth 仍在而放行，但 /api/me 因版本不匹配返回 401，
+   导致卡在「已登录却拉不到数据」的坏状态（此前「修改不成功」的根因）。 */
+async function reauthLogout(){
+ try{await fetch("/api/logout",{method:"POST",credentials:"same-origin"})}catch(e){}
+ try{sessionStorage.removeItem("zpAuth")}catch(e){}
+ setTimeout(()=>location.replace("/?reason=reauth"),700);
+}
+
+async function load(){
+ try{
+  const x=await api("/api/me"),me=x.user||{};
+  $("username").textContent=me.username||"—";
+  $("newUsername").placeholder="当前："+(me.username||"—");
+  if(me.role==="system_admin"||me.role==="admin")$("dangerToggle").hidden=true;
+ }catch(e){if(e&&e.code==="HTTP_401"&&window.zpAuthFail){window.zpAuthFail("expired");return}show("message",e)}
+}
+
+$("renameBtn").onclick=async()=>{
+ const password=$("renamePassword").value,username=$("newUsername").value.trim();
+ if(!password){$("renameMessage").textContent="请输入当前密码验证身份";return}
+ if(!username){$("renameMessage").textContent="请输入新用户名";return}
+ if(!/^[-A-Za-z0-9_.]{3,32}$/.test(username)){$("renameMessage").textContent="用户名需为3-32位字母、数字、下划线、短横线或点";return}
+ $("renameBtn").disabled=true;$("renameMessage").textContent="保存中…";
+ try{
+  await api("/api/account-settings",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"rename",username,password})});
+  $("renameMessage").textContent="用户名已修改，正在退出登录…";
+  await reauthLogout();
+ }catch(e){show("renameMessage",e);$("renameBtn").disabled=false}
+};
+
+$("passwordBtn").onclick=async()=>{
+ const currentPassword=$("currentPassword").value,newPassword=$("newPassword").value,confirmPassword=$("confirmPassword").value;
+ if(!currentPassword||!newPassword||!confirmPassword){$("passwordMessage").textContent="请完整填写密码";return}
+ if(newPassword.length<8){$("passwordMessage").textContent="新密码至少8位";return}
+ if(newPassword!==confirmPassword){$("passwordMessage").textContent="两次输入的新密码不一致";return}
+ $("passwordBtn").disabled=true;$("passwordMessage").textContent="保存中…";
+ try{
+  await api("/api/account-settings",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"password",currentPassword,password:newPassword,confirmPassword})});
+  $("passwordMessage").textContent="密码已修改，正在退出登录…";
+  $("currentPassword").value="";$("newPassword").value="";$("confirmPassword").value="";
+  await reauthLogout();
+ }catch(e){show("passwordMessage",e);$("passwordBtn").disabled=false}
+};
+
+$("logout").onclick=async()=>{if(!(await zpConfirm("退出登录","确定要退出当前账号吗？","退出")))return;try{await fetch("/api/logout",{method:"POST",credentials:"same-origin"})}finally{try{sessionStorage.removeItem("zpAuth")}catch(e){}location.replace("/")}};
+
+const deletePrompt=$("deletePrompt"),deleteConfirmPanel=$("deleteConfirmPanel");
+function closeDelete(){deleteConfirmPanel.hidden=true;deletePrompt.hidden=false;$("deletePassword").value="";$("deleteMessage").textContent="";$("deleteConfirm").disabled=false}
+$("deleteAccountBtn").onclick=()=>{deletePrompt.hidden=true;deleteConfirmPanel.hidden=false;setTimeout(()=>$("deletePassword").focus(),50)};
+$("deleteCancel").onclick=closeDelete;
+$("deleteConfirm").onclick=async()=>{
+ const password=$("deletePassword").value;
+ if(!password){$("deleteMessage").textContent="请输入当前密码";return}
+ $("deleteConfirm").disabled=true;$("deleteMessage").textContent="正在注销…";
+ try{
+  await api("/api/account-settings",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"delete",password})});
+  $("deleteMessage").textContent="账号已注销，即将返回登录页面…";
+  try{sessionStorage.removeItem("zpAuth")}catch(e){}
+  setTimeout(()=>location.replace("/"),700);
+ }catch(e){show("deleteMessage",e);$("deleteConfirm").disabled=false}
+};
+
+ /* 关于（成熟 App 范式 2.0）：品牌区版本 + 获取组（客户端/Web端地址）+ 信息组（隐私/条款/帮助）。
+    - 客户端与版本提示：全端统一「检查最新版本」范式，文案由唯一渲染源 applyAction() 计算：
+      已是最新 →「已是最新」；最新安装包比当前新 → 高亮「更新到 Vx.x.x」。
+      数据单一来源：/version.json（网页实时版，SW 保证最新）、/downloads/manifest.json（最新安装包）、
+      ZhipeiNative.appVersion()（App 壳版本，锁在安装包内）。
+      App 壳点击走原生 ZhipeiNative.downloadApk()；浏览器同样下载 /downloads 下的真 APK；
+      iOS 无原生 APK，退化为「添加到主屏幕」；微信内置浏览器无法下载，引导去外部浏览器。
+    - 网页端地址：点击复制官网 https://tianyou-zhipei.pages.dev */
+(function(){
+ const guide=$("installGuide"),steps=$("installGuideSteps"),
+  webCopyBtn=$("webCopyBtn"),installDlLink=$("installDlLink"),
+  installRow=$("installRow"),actionText=$("installActionText");
+ if(!$("aboutVersion"))return;
+ function setAction(text,primary){if(!actionText)return;actionText.textContent=text;actionText.classList.toggle("is-update",!!primary);}
+ const isNativeApp=!!(window.ZhipeiNative&&typeof window.ZhipeiNative.downloadApk==="function");
+ const ua=navigator.userAgent||"";
+ const isWeChat=/MicroMessenger/i.test(ua);
+ const isIOS=/iPad|iPhone|iPod/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+
+ /* App 壳版本（锁在安装包内）；浏览器环境返回 null */
+ function apkVersion(){
+  try{
+   if(window.ZhipeiNative&&window.ZhipeiNative.appVersion){
+    const v=window.ZhipeiNative.appVersion();
+    if(v&&/^\d+(\.\d+)*$/.test(String(v)))return String(v);
+   }
+  }catch(e){}
+  return null;
+ }
+ /* 版本比较：逐段数值比较，段数不足补 0 */
+ function compareVer(a,b){
+  const pa=String(a).split(".").map(n=>parseInt(n,10)||0);
+  const pb=String(b).split(".").map(n=>parseInt(n,10)||0);
+  const n=Math.max(pa.length,pb.length);
+  for(let i=0;i<n;i++){const x=pa[i]||0,y=pb[i]||0;if(x!==y)return x<y?-1:1;}
+  return 0;
+ }
+
+ /* 两路版本数据（webVer / apkVer）到位后统一渲染 —— actionText 与版本文案的唯一写入点 */
+ const state={webVer:null,apkVer:null};
+ let verBadge=null;
+ function renderVer(){
+  const textEl=$("aboutVerText");if(!textEl)return;
+  if(verBadge){verBadge.remove();verBadge=null;}
+  const apkV=apkVersion();
+  /* 「有新版本」必须以「真有包可下」为准（manifest 的 version），
+     不能拿网页版本号凑数：web 已发版但 APK 没同步时，提示会指向一个下不到的版本。 */
+  const latest=state.apkVer||state.webVer;
+  if(apkV){
+   textEl.textContent="当前版本 V"+apkV;
+   if(latest&&compareVer(apkV,latest)<0){
+    // 「有新版本」只作状态提示（静态角标）；真正的更新动作在下方「客户端」行
+    verBadge=document.createElement("span");
+    verBadge.className="acct-ver-badge";
+    verBadge.textContent="有新版本";
+    verBadge.setAttribute("role","status");
+    textEl.after(verBadge);
+   }
+  }else{
+   textEl.textContent=state.webVer?("当前版本 V"+state.webVer):"Web端";
+  }
+ }
+ function applyAction(){
+  if(isNativeApp){
+   const v=apkVersion();
+   /* 只认可下载的包版本（manifest.version）。用 webVer 会在「网页已发版、APK 还没同步」
+      时提示更新到一个并不存在的版本，点下去只会又装回旧包。 */
+   const target=state.apkVer;
+   if(v&&target&&compareVer(v,target)<0)setAction("更新到 V"+target,true);
+   else if(v)setAction("已是最新",false);
+   return;
+  }
+  if(isWeChat){setAction("在浏览器打开",false);return;}
+  if(isIOS){setAction("添加到主屏幕",false);return;}
+  /* 通用浏览器：与 App 壳同一套「检查最新版本」提示 ——
+     最新安装包比网页实时版本新 → 高亮「更新到 Vx.x.x」；否则 →「已是最新」。 */
+  if(state.apkVer){
+   if(state.webVer&&compareVer(state.apkVer,state.webVer)>0)setAction("更新到 V"+state.apkVer,true);
+   else setAction("已是最新",false);
+  }else setAction("下载",false);
+ }
+ function render(){renderVer();applyAction();}
+
+ zpFetch("/version.json?ts="+Date.now(),{cache:"no-store"})
+  .then(r=>r.json())
+  .then(v=>{state.webVer=(v&&v.version)||null;render();})
+  .catch(()=>{render();});
+ if(!isIOS){
+  zpFetch("/downloads/manifest.json?ts="+Date.now(),{cache:"no-store"})
+   .then(r=>r.ok?r.json():null)
+   .then(m=>{
+    const ver=(m&&m.version)||null;
+    state.apkVer=ver;
+    if(m&&m.file)setApk(m.file,ver);
+    else if(ver)setApk("zhipei-one-"+ver+"-release.apk",ver);
+    render();
+   })
+   .catch(()=>{
+    // 拿不到清单时不猜固定名（那个名字已废弃，指过去就是 404）；
+    // 优先用网页版本号推出带版本的包名，推不出就不给链接。
+    if(state.webVer)setApk("zhipei-one-"+state.webVer+"-release.apk",state.webVer);
+    render();
+   });
+ }
+
+ /* 网页端地址：复制固定官网地址 */
+ const WEB_URL="https://tianyou-zhipei.pages.dev";
+ function fallbackCopy(text,tip){
+  const ta=document.createElement("textarea");ta.value=text;ta.style.position="fixed";ta.style.opacity="0";
+  document.body.appendChild(ta);ta.select();
+  try{document.execCommand("copy");if(window.zpToast)window.zpToast(tip||"已复制","success")}catch(e){}
+  ta.remove();
+ }
+ function copyText(text,tip){
+  try{
+   if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(
+     ()=>{if(window.zpToast)window.zpToast(tip||"已复制","success")},
+     ()=>fallbackCopy(text,tip)
+    );
+   }else fallbackCopy(text,tip);
+  }catch(e){fallbackCopy(text,tip)}
+ }
+ function copyWeb(){copyText(WEB_URL,"网页端地址已复制")}
+ webCopyBtn.onclick=copyWeb;
+
+ /* 最新安装包直链：App 壳内触发原生下载，浏览器内作为直链下载。
+    文件名必须带版本号（服务端文件本身也带版本）。固定名会让系统下载器/文件管理器
+    里堆着同名旧包，用户点开哪一个是随机的——2026-10-30 的「装了 V1.0.19 还是旧版」
+    就是这么来的：安装器读到的是上次那份 1.0.18。
+    ?v= 是第二道保险：即使文件名撞了，CDN/浏览器缓存键也不同。 */
+ function setApk(file,ver){
+  if(!installDlLink)return;
+  installDlLink.href="/downloads/"+file+(ver?"?v="+encodeURIComponent(ver):"");
+  installDlLink.setAttribute("download","zhipei-one-"+(ver||"latest")+"-release.apk");
+ }
+ function triggerApk(){
+  if(!(installDlLink&&installDlLink.getAttribute("href"))){
+   if(window.zpToast)window.zpToast("安装包信息加载中，请稍候再试","info");
+   return;
+  }
+  if(isNativeApp){
+   window.ZhipeiNative.downloadApk(installDlLink.href);
+   if(window.zpToast)window.zpToast("开始下载安装包…","info");
+  }else{
+   const a=document.createElement("a");
+   a.href=installDlLink.href;
+   const dl=installDlLink.getAttribute("download");if(dl)a.download=dl;
+   a.rel="noopener";document.body.appendChild(a);a.click();a.remove();
+   if(window.zpToast)window.zpToast("开始下载安装包…","info");
+  }
+ }
+
+ /* 添加到桌面：触发 PWA 安装/引导 */
+ function showSteps(list){
+  steps.innerHTML="";
+  list.forEach(t=>{const li=document.createElement("li");li.textContent=t;steps.appendChild(li)});
+  guide.hidden=false;
+ }
+ /* 点击「客户端」：统一入口 —— 与 App 壳一致，下载最新 APK。
+    - App 壳：原生下载（原地更新安装包）
+    - 微信：网页内无法下载，引导去外部浏览器后由浏览器流程下载
+    - iOS：无原生 APK，退化为「添加到主屏幕」
+    - 其余（Android 浏览器 / 桌面）：直接触发 /downloads 下的 APK 文件下载 */
+ const installClick=()=>{
+  guide.hidden=true;
+  if(isNativeApp){triggerApk();return;}
+  if(isWeChat){
+    showSteps(["点右上角「···」","选「在浏览器中打开」","在浏览器中打开后点「客户端」获取安装包"]);
+    return;
+  }
+  if(isIOS){
+    showSteps(["点底部「分享」按钮","选「添加到主屏幕」","点「添加」，之后从桌面打开"]);
+    return;
+  }
+  triggerApk();
+ };
+ if(installRow)installRow.addEventListener("click",installClick);
+ window.addEventListener("appinstalled",()=>{
+  setAction("已安装",false);guide.hidden=true;if(window.zpToast)window.zpToast("已添加到桌面","success");
+ });
+
+ /* 隐私政策 / 服务条款：独立静态页（公开免登录、可分享）；帮助反馈：页内弹层 */
+(function(){
+ const helpLayer=$("helpLayer"),helpClose=$("helpClose"),helpMailBtn=$("helpMailBtn");
+ function openHelp(){
+  if(!helpLayer)return;
+  helpLayer.hidden=false;
+  document.body.style.overflow="hidden";
+ }
+ function closeHelp(){
+  if(!helpLayer)return;
+  helpLayer.hidden=true;
+  document.body.style.overflow="";
+ }
+ /* 返回键：帮助弹层作为本页最上层（rank 8 高于通用确认框 rank 5），
+    物理/手势返回先关弹层而非退出页面——与顶部关闭按钮行为一致 */
+ window.zpRegisterBackHook?.({
+  rank:8,
+  probe:()=>helpLayer&&!helpLayer.hidden?helpLayer:null,
+  close:()=>{closeHelp();return true}
+ });
+ const h=$("helpLink");
+ if(h)h.addEventListener("click",openHelp);
+ if(helpClose)helpClose.addEventListener("click",closeHelp);
+ /* 点遮罩空白处关闭（面板内点击不关） */
+ if(helpLayer)helpLayer.addEventListener("click",e=>{if(e.target===helpLayer)closeHelp()});
+ if(helpMailBtn)helpMailBtn.addEventListener("click",()=>copyText("tianbops@live.com","反馈邮箱已复制"));
+})();
+const p=$("privacyLink"),t=$("termsLink");
+/* 站内跳转一律 replace：assign/push 会往历史里多压一条内页记录，
+   离开后按返回就会退回到已经离开的页面（单根模型下历史栈只保留当前页一条）。 */
+if(p)p.addEventListener("click",()=>location.replace("/pages/privacy"));
+if(t)t.addEventListener("click",()=>location.replace("/pages/terms"));
+})();
+
+load();
+</script><script src="/js/account-online-recovery.js?v=73bd8abb"></script><script src="/js/ui/core.js?v=7c4e2f82"></script><script src="/js/ui/haptic.js?v=a3a78c0a"></script><script src="/js/ui/appearance.js?v=a6de05cc"></script><script src="/js/ui/feedback.js?v=f8da0256"></script><script src="/js/ui/nav.js?v=d22c721c"></script><script src="/js/ui/back.js?v=6c6cbd5d"></script><script src="/js/ui/nav-prefetch.js?v=968d1e0b"></script>
+<script src="/js/pwa.js?v=68dbac73"></script>
+<nav class="zp-nav" aria-label="主要功能">
+    <a class="zp-nav-item zp-nav-home" href="/home">
+      <span class="zp-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 9.8 12 3.5l8.5 6.3V19a1.5 1.5 0 0 1-1.5 1.5h-3.2v-6H9.2v6H5A1.5 1.5 0 0 1 3.5 19z"/></svg></span>
+      <span>首页</span>
+    </a>
+    <a class="zp-nav-item" href="/pages/history?from=home">
+      <span class="zp-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3.5 5v4h4"/><path d="M12 7.5v5l3.2 1.9"/></svg></span>
+      <span>历史</span>
+    </a>
+    <a class="zp-nav-item zp-nav-plus" href="/home?openUpload=1" aria-label="上传">
+      <span class="zp-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg></span>
+    </a>
+    <a class="zp-nav-item" href="/pages/dispatch?from=home">
+      <span class="zp-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16v12H4z"/><path d="M8 10h8M8 14h5"/></svg></span>
+      <span>线路</span>
+    </a>
+    <a class="zp-nav-item is-active" href="/pages/account" aria-current="page">
+      <span class="zp-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3"/><path d="M5 20c.8-3.2 3.1-5 7-5s6.2 1.8 7 5"/></svg></span>
+      <span>我的</span>
+    </a>
+  </nav>
+<script defer src="/js/boot-ready.js?v=4e3f49ea"></script>
+</body></html>

@@ -1,0 +1,160 @@
+/* 智配One · 业务页面 2.0 */
+/* .page2 只作命名空间：外壳尺寸统一由 main.zp-shell 声明（2026-10-29 外壳收编）。 */
+.account-page .topbar h1,.route-apply-page .topbar h1{margin:0;text-align:center;font-weight:var(--zp-fw-bold)}
+.page2-card{background:var(--zp-card);border:1px solid var(--zp-tint);border-radius:var(--zp-r-card);padding:16px;margin-bottom:10px}
+.page2-card h2{margin:0 0 8px;font-size:var(--zp-fs-18);line-height:24px}
+.page2-label{display:block;margin-top:13px;color:var(--zp-muted);font-size:var(--zp-fs-13)}
+/* 表单控件只保留布局（宽、高、间距）；底色 / 描边 / 圆角 / 文字色统一由 ui-base 的
+   「表单控件基座」供给（2026-10-29）。此前这里写死「--zp-card 底 +
+   --zp-line 边」，在灰卡上等于隐形，且与登录框白底规格分叉。 */
+.page2-label select,.page2-label input,.page2-label textarea,.page2-label button.zp-pk-trigger{display:block;width:100%;min-height:48px;margin-top:6px;padding:0 16px}
+/* zp-picker 触发器顶替原生 select：外观取同一组输入框令牌，内部仍需 flex 排布文字与箭头 */
+.page2-label button.zp-pk-trigger{display:flex;border:1px solid var(--zp-input-line);border-radius:var(--zp-r-control);background:var(--zp-input-bg);color:var(--zp-text)}
+.page2-primary,.page2-secondary{width:100%;min-height:48px;margin-top:14px;border-radius:var(--zp-r-control);font-size:var(--zp-fs-15)}
+.page2-primary{border:1px solid var(--zp-primary);background:var(--zp-primary);color:var(--zp-on-primary)}
+.page2-secondary{border:1px solid var(--zp-line);background:var(--zp-card-2);color:var(--zp-text)}
+.page2-primary:disabled,.page2-secondary:disabled{opacity:.45}
+.page2-soft{margin:4px 0 0;color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:18px}
+.page2-danger{color:var(--zp-danger)!important}
+@media(max-width:380px){.page2{padding-left:12px;padding-right:12px}.page2-card{padding:15px}}.request-row{padding:12px 0;border-bottom:1px solid var(--zp-divider);font-size:var(--zp-fs-13);line-height:21px;color:var(--zp-muted)}.request-row:last-child{border-bottom:0}.request-row strong{color:var(--zp-text)}.data-help{margin:6px 0 0;color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:19px}.data-import{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;background:var(--zp-scrim)}.data-import-panel{width:min(100%,430px);max-height:88vh;overflow:auto;padding:18px;border:1px solid var(--zp-line);border-radius:var(--zp-r-dialog);background:var(--zp-surface)}.data-textarea{width:100%;min-height:190px;margin-top:10px;padding:12px;resize:vertical}.data-import-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.data-import-actions button{min-height:var(--zp-control-height);border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-2);color:var(--zp-text)}.data-import-actions button:last-child{background:var(--zp-primary);border-color:var(--zp-primary);color:var(--zp-on-primary)}.account-row{display:flex;justify-content:space-between;align-items:center;min-height:48px;border-bottom:1px solid var(--zp-divider);font-size:var(--zp-fs-13);color:var(--zp-muted)}.account-row:last-child{border-bottom:0}.account-row strong{color:var(--zp-text)}.account-logout{margin-top:0}/* 空态统一走 css/ui-base.css 的 .zp-empty（本文件不再定义）。 */
+/* 线路申请页：保持现有视觉，只压缩占用并将维护申请改为折叠面板 */
+.route-apply-page .page2-card{padding:14px;margin-bottom:8px}
+.route-apply-page .page2-card h2{margin-bottom:6px}
+.route-apply-page .message{margin:0;font-size:var(--zp-fs-13);line-height:20px}
+.route-apply-page .maintain-card{padding:0;overflow:hidden}
+.route-apply-page .collapse-head{width:100%;min-height:48px;padding:0 14px;border:0;background:transparent;color:var(--zp-text);display:flex;align-items:center;justify-content:space-between;text-align:left;font-size:var(--zp-fs-15);font-weight:var(--zp-fw-bold)}
+.route-apply-page .collapse-icon{color:var(--zp-muted);font-size:var(--zp-fs-20);line-height:1;transition:transform .18s ease}
+.route-apply-page .collapse-body{padding:0 14px 14px}
+.route-apply-page .collapse-body[hidden]{display:none}
+.route-apply-page .page2-label{margin-top:10px}
+.route-apply-page .page2-label select,.route-apply-page .page2-label button.zp-pk-trigger{min-height:var(--zp-control-height);margin-top:5px}
+.route-apply-page .primary-btn,.route-apply-page .secondary-btn{min-height:var(--zp-control-height)}
+/* 申请人信息（2026-10-30，选填）：与上方字段同宽同高；姓名框单排起步、随内容增高，
+   封顶两行后框内滚动（高度由页面脚本算，这里只定基准外观与单行垂直居中）。 */
+.route-apply-page .applicant-group{margin-top:16px;padding-top:2px;border-top:1px solid var(--zp-divider)}
+.route-apply-page .applicant-title{margin:12px 0 0;color:var(--zp-text);font-size:var(--zp-fs-13);font-weight:var(--zp-fw-semibold)}
+.route-apply-page .page2-label textarea#applicantName{min-height:var(--zp-control-height);height:var(--zp-control-height);padding:13px 16px;line-height:22px;font-size:var(--zp-fs-16);resize:none;overflow-y:hidden}
+@media(max-width:380px){.route-apply-page .page2-card{padding:12px}.route-apply-page .maintain-card{padding:0}.route-apply-page .collapse-head{min-height:46px;padding:0 12px}.route-apply-page .collapse-body{padding:0 12px 12px}}
+
+/* 我的页：与线路申请页统一布局、颜色与密度。 */
+.account-page{background:var(--zp-bg);padding-top:16px /* 页面底色随主题（Phase 4：不再借用 logo 底板） */;padding-bottom:calc(92px + env(safe-area-inset-bottom))}
+.account-page .topbar h1{margin:0;text-align:center;color:var(--zp-text);font-size:var(--zp-fs-20);line-height:26px;font-weight:var(--zp-fw-semibold)}
+.account-page .page2-card{background:var(--zp-card);border:1px solid var(--zp-tint);border-radius:var(--zp-r-card);padding:14px;margin-bottom:8px;box-shadow:0 12px 30px var(--zp-shadow-md)}
+/* .account-page .page2-card h2 已删：设置页没有 .page2-card 结构，规则零作用，
+   且用 !important 把卡片标题压到 15px（与全站 18px 不一）。 */
+.account-page .page2-soft{margin:4px 0 0;color:var(--zp-muted);font-size:var(--zp-fs-13);line-height:20px}
+.account-page .account-row{min-height:46px;border-bottom:0;color:var(--zp-muted);font-size:var(--zp-fs-15);line-height:22px}
+.account-page .account-row strong{color:var(--zp-text);font-size:var(--zp-fs-15);font-weight:var(--zp-fw-semibold);text-align:right}
+.account-page .page2-label{display:block;margin-top:10px;color:var(--zp-muted);font-size:var(--zp-fs-13);line-height:20px}
+.account-page .page2-label>input{display:block;width:100%;min-height:48px;margin-top:5px;font-size:var(--zp-fs-15)}
+.account-page .page2-primary,.account-page .page2-secondary{min-height:var(--zp-control-height);margin-top:12px;border-radius:var(--zp-r-control);font-size:var(--zp-fs-15);font-weight:var(--zp-fw-semibold)}
+.account-page .page2-primary{background:var(--zp-primary);border:1px solid var(--zp-primary);color:var(--zp-on-primary)}
+.account-page .account-danger-box{padding:12px 14px 14px;border-top:1px solid var(--zp-tint)}
+.account-page .account-danger-box strong{display:block;color:var(--zp-text);font-size:var(--zp-fs-14);line-height:20px}
+.account-page .account-danger-box p{margin:5px 0 0;color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:19px}
+/* 死规则对齐：page2-danger-btn 是 <button class*=danger>，其 border/background/color
+   已被 ui-theme.css Phase 2 全站危险按钮标准 !important 接管（中性底+红字），
+   此处仅令牌化保留尺寸声明，整条规则去留交 Phase 5。 */
+.account-page .page2-danger-btn{width:100%;min-height:var(--zp-control-height);margin-top:12px;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-secondary-bg);color:var(--zp-danger);font-size:var(--zp-fs-16);font-weight:var(--zp-fw-semibold)}
+.account-page .account-dialog-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.account-page .account-dialog-actions button{margin-top:0}
+@media(max-width:380px){.account-page{padding-left:12px;padding-right:12px}.account-page .page2-card{padding-left:12px;padding-right:12px}.account-page .account-danger-box{padding-left:12px;padding-right:12px}}
+
+/* Android 返回层 2.5：所有业务页统一为运单详情同款纯箭头；点击走浏览器历史栈。 */
+.page2 .app-back{color:var(--zp-text)}
+.page2 .app-back:active{color:var(--zp-text)}
+
+/* 线路选择页
+   ------------------------------------------------------------------
+   2026-10-29 UI 专项整治「收编」批次：原 pages/dispatch.html 内联 style（110 行）
+   与本节早期的 8 条规则**存在同名重复定义**（.dispatch-section / -title / -empty
+   各写两遍，实际生效的总是后加载的那份）。此处合并为唯一来源：
+     · .dispatch-page 保留早期的 width/min-height/margin（内联没有这三项），
+       padding 取内联的新值；
+     · app-back / topbar h1 只有早期版本有，原样保留；
+     · 其余同名规则删除早期副本，以迁移后的声明为准，并把早期副本里
+       「未被覆盖即仍在生效」的两个行高（title 20 / empty 22）显式写回，
+       保证合并前后计算样式逐项一致。
+   底栏（.bottom-nav）那一大段 !important 是防字体污染的历史守卫，
+   本轮原样迁移，未作改写；它属于「底栏两套实现」的遗留问题，
+   待底栏统一到单一组件后再删。 */
+/* .dispatch-page 只作命名空间：外壳尺寸统一由 main.zp-shell 声明。 */
+@media(max-width:380px){.dispatch-page{padding-left:12px;padding-right:12px}}
+/* 2026-10-29 顶栏下方统一 20px（.zp-scroll 上内边距为 0，这里补 14） */
+/* 2026-11-04（下午）：顶栏回到 20px 居中后，与 18px 的 h2 只差 2px，两级标题又黏在一起
+   （上午降 h2、收 padding 是为了躲开 31px 大标题，前提已变）。这里把上间距恢复到
+   14px，顶栏 14 + 本节 14 = 28px，用空白而不是字号拉开两级标题。 */
+.dispatch-intro{padding:14px 0 10px}
+.dispatch-intro h2{margin:0;font-size:var(--zp-fs-18);line-height:1.35;font-weight:var(--zp-fw-semibold)}
+.dispatch-intro p{margin:6px 0 0;color:var(--zp-muted);font-size:var(--zp-fs-13)}
+.dispatch-section{margin:14px 0 0}
+.dispatch-section-title{margin:0 0 8px;font-size:var(--zp-fs-13);line-height:20px;color:var(--zp-muted);font-weight:var(--zp-fw-semibold)}
+.dispatch-current{background:var(--zp-card);border:1px solid var(--zp-tint);border-radius:var(--zp-r-card);padding:14px 16px;box-shadow:0 12px 30px var(--zp-shadow-md)}
+.dispatch-current-row{display:flex;align-items:center;gap:var(--zp-seg-btn-gap)}.dispatch-current-name{flex:none}.dispatch-current-status{flex:0 1 auto;min-width:0}
+.dispatch-current-name{font-size:var(--zp-fs-22);font-weight:var(--zp-fw-bold);line-height:1;color:var(--zp-text)}
+.dispatch-current-status{font-size:var(--zp-fs-12);color:var(--zp-muted);display:flex;align-items:baseline;gap:2px}
+.dispatch-current-count{margin-left:4px;font-size:var(--zp-fs-12);color:var(--zp-muted);font-weight:var(--zp-fw-semibold)}
+.dispatch-switch{margin-left:auto;flex:none;width:calc((100% - 2*var(--zp-seg-btn-gap))/3);min-width:72px;min-height:var(--zp-seg-btn-h);padding:var(--zp-seg-btn-pad,0 8px);border:1px solid var(--zp-tint-strong);border-radius:var(--zp-seg-btn-radius);background:var(--zp-primary);color:var(--zp-on-primary);font-size:var(--zp-seg-btn-font);font-weight:var(--zp-fw-semibold)}
+.dispatch-switch:active{opacity:.82}
+/* 2026-11-04：操作列表同账号分组，改取 --zp-card-list（=页面底色），不再是卡片。
+   box-shadow 一并去掉——底色与页面同色后投影无处附着，只会在行首行尾拖出脏边。 */
+.dispatch-action-card{background:var(--zp-card-list);border:1px solid var(--zp-card-list-line);border-radius:var(--zp-r-control);overflow:hidden}
+.dispatch-action{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:12px 14px;border:0;border-bottom:1px solid var(--zp-line-inset);background:transparent;color:var(--zp-text);text-align:left;cursor:pointer;text-decoration:none}
+.dispatch-action:last-child{border-bottom:0}
+.dispatch-action:active{background:var(--zp-tint)}
+.dispatch-action-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:var(--zp-r-mini);background:var(--zp-tint);color:var(--zp-muted);flex:none}
+.dispatch-action-icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.dispatch-action-main{min-width:0;flex:1}
+.dispatch-action-main strong{display:block;font-size:var(--zp-fs-15);font-weight:var(--zp-fw-semibold)}
+.dispatch-action-main small{display:block;margin-top:3px;color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:1.35}
+.dispatch-action-arrow{color:var(--zp-muted);font-size:var(--zp-fs-20);line-height:1}
+.dispatch-retry{display:block;margin:12px auto 0;min-width:88px;height:36px;padding:0 18px;border:1px solid var(--zp-tint-strong);border-radius:var(--zp-r-mini);background:var(--zp-primary);color:var(--zp-on-primary);font-size:var(--zp-fs-13);font-weight:var(--zp-fw-semibold);cursor:pointer}
+.dispatch-retry:active{opacity:.82}
+.dispatch-sheet-backdrop{position:fixed;inset:0;z-index:50;display:none;place-items:end center;background:var(--zp-scrim);padding:0}
+.dispatch-sheet-backdrop.open{display:grid}
+.dispatch-sheet{width:100%;max-width:480px;padding:12px 16px calc(18px + env(safe-area-inset-bottom));background:var(--zp-surface-2);border-top:1px solid var(--zp-line);border-radius:var(--zp-r-sheet) var(--zp-r-sheet) 0 0;box-shadow:0 -12px 36px var(--zp-shadow-md)}
+.dispatch-sheet-handle{width:34px;height:4px;margin:1px auto 14px;border-radius:var(--zp-r-handle);background:var(--zp-muted)}
+.dispatch-sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.dispatch-sheet h3{margin:0;font-size:var(--zp-fs-18)}
+.dispatch-sheet-confirm{height:36px;padding:0 14px;border:1px solid var(--zp-line);border-radius:var(--zp-r-dialog);background:var(--zp-secondary-active);color:var(--zp-text);font-size:var(--zp-fs-13);font-weight:var(--zp-fw-semibold)}
+.dispatch-sheet-confirm:disabled{opacity:.45}
+.dispatch-sheet-sub{margin:0 0 8px;color:var(--zp-muted);font-size:var(--zp-fs-12)}
+.dispatch-picker{position:relative;height:246px;overflow:hidden;border-top:1px solid var(--zp-line);border-bottom:1px solid var(--zp-line);background:var(--zp-secondary-bg)}
+.dispatch-picker::before,.dispatch-picker::after{content:"";position:absolute;left:0;right:0;height:78px;z-index:2;pointer-events:none}
+.dispatch-picker::before{top:0;background:linear-gradient(var(--zp-secondary-bg),transparent)}
+.dispatch-picker::after{bottom:0;background:linear-gradient(transparent,var(--zp-secondary-bg))}
+.dispatch-picker-selection{position:absolute;left:10px;right:10px;top:calc(50% - 27px);height:54px;border-top:1px solid var(--zp-line);border-bottom:1px solid var(--zp-line);border-radius:var(--zp-r-control);pointer-events:none;z-index:1}
+.dispatch-picker-list{height:100%;overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior:contain;scrollbar-width:none;padding:96px 10px}
+.dispatch-picker-list::-webkit-scrollbar{display:none}
+.dispatch-picker-option{height:54px;scroll-snap-align:center;display:flex;align-items:center;justify-content:center;border:0;background:transparent;color:var(--zp-muted);width:100%;font-size:var(--zp-fs-16);font-weight:var(--zp-fw-medium)}
+.dispatch-picker-option.is-selected{color:var(--zp-text);font-size:var(--zp-fs-18);font-weight:var(--zp-fw-bold)}
+.dispatch-picker-option small{margin-left:8px;color:var(--zp-muted);font-size:var(--zp-fs-12);font-weight:var(--zp-fw-regular)}
+.dispatch-picker-empty{display:grid;place-items:center;height:100%;color:var(--zp-muted);font-size:var(--zp-fs-13)}
+.dispatch-sheet-cancel{width:100%;height:46px;margin-top:10px;border:1px solid var(--zp-line);border-radius:var(--zp-r-dialog);background:var(--zp-secondary-active);color:var(--zp-text);font-size:var(--zp-fs-14)}
+.dispatch-confirm-backdrop{position:fixed;inset:0;z-index:60;display:none;place-items:center;padding:20px;background:var(--zp-scrim)}
+.dispatch-confirm-backdrop.open{display:grid}
+.dispatch-dialog{width:min(100%,360px);padding:20px;background:var(--zp-surface-2);border:1px solid var(--zp-line);border-radius:var(--zp-r-dialog)}
+.dispatch-dialog h3{margin:0;font-size:var(--zp-fs-18)}
+.dispatch-dialog p{margin:8px 0 18px;color:var(--zp-muted);font-size:var(--zp-fs-13);line-height:1.55}
+.dispatch-dialog-actions{display:flex;gap:10px}
+.dispatch-dialog-actions button{flex:1;height:var(--zp-control-height);border:1px solid var(--zp-line);border-radius:var(--zp-r-control);font-size:var(--zp-fs-14)}
+.dispatch-dialog-cancel{background:var(--zp-secondary-bg);color:var(--zp-muted)}
+.dispatch-dialog-ok{background:var(--zp-secondary-active);color:var(--zp-text)}
+
+/* 线路页底栏的「字体污染守卫」（.dispatch-page .bottom-nav 前缀 + 30 条 !important）
+   已删除（2026-10-29 底栏收编）：它的全部内容是「把继承下来的字体/书写模式/字号改回
+   正常值」，而全站已无 @font-face、无图标字体，污染源不存在，守卫对齐的目标就是
+   首页底栏本身。底栏现为 css/ui-base.css 的单一原语 .zp-nav，字体由 :root 继承。 */
+
+
+
+/* 2026-10-29 二次收编：本段原含两块历史样式，均已删除 ——
+   ① .account-collapse-icon：注释早已写明「折叠箭头随 account.html 改版作废」，
+      但规则本身没跟着删，属性值里还留着 font-size:0!important / line-height:0!important
+      这类用「把字挤没」冒充图标的旧手法；
+   ② 「我的 · 外观与显示设置」8 条（.appearance-card / .appearance-setting /
+      .appearance-theme-options / .appearance-font-*）：对应旧外观卡片的单卡片布局，
+      现设置页已改为 .acct-seg 分段控件 + .acct-font-* 折叠行，样式由 css/account.css
+      提供，这里的旧值无 DOM 可作用，只会与 account.css 抢同一个 .appearance-theme-option。
+   保留的 .account-logout 仍在 DOM 中（pages/account.html 的退出登录按钮）。 */
+.account-page .account-logout-section .account-logout{width:100%;min-height:var(--zp-control-height);margin:0;background:var(--zp-primary);border:1px solid var(--zp-primary);border-radius:var(--zp-r-card);color:var(--zp-on-primary);font-size:var(--zp-fs-15);font-weight:var(--zp-fw-semibold)}

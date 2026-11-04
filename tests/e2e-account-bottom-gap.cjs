@@ -13,8 +13,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
-const OUT_DIR = process.env.OUT_DIR || '/root/.codebuddy/artifact/2f8a7d30-9c21-4f0b-1d41-8cc6368be000';
-const OLD_CSS = process.env.OLD_CSS || path.join(OUT_DIR, 'account_old.css');
+const os = require('node:os');
+const OUT_DIR = process.env.OUT_DIR || path.join(os.tmpdir(), 'zp-e2e-out');
+fs.mkdirSync(OUT_DIR, { recursive: true });
+const OLD_CSS = process.env.OLD_CSS || path.join(__dirname, 'fixtures', 'e2e-baseline', 'account_old.css');
 const PORT = Number(process.env.PORT || 8151);
 const PORT_CDP = Number(process.env.PORT_CDP || 9331);
 const CHROMIUM = process.env.CHROMIUM || '/usr/bin/chromium';

@@ -11,7 +11,7 @@
  *
  * 用法（需要本机 chromium，不进 npm test）：
  *   CHROMIUM=/usr/bin/chromium node tests/e2e-home-exit-back.cjs
- *   OLD_BACK / OLD_BUNDLE 可指定「修复前」快照，缺省读 artifact 下的同名文件。
+ *   OLD_BACK / OLD_BUNDLE 可指定「修复前」快照，缺省读 tests/fixtures/e2e-baseline/ 下的同名快照。
  *
  * 自带静态服务器做「无扩展名 → .html」映射，与线上 Pages 一致；
  * 只桩掉鉴权/数据接口，保留真实 back.js —— 验证的正是它的历史栈行为。
@@ -20,11 +20,14 @@ const { spawn } = require('node:child_process');
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
+const os = require('node:os');
 
 const ROOT = path.resolve(__dirname, '..');
-const ART = '/root/.codebuddy/artifact/2f8a7d30-9c21-4f0b-1d41-8cc6368be000';
-const OLD_BACK = process.env.OLD_BACK || path.join(ART, 'back_old.js');
-const OLD_BUNDLE = process.env.OLD_BUNDLE || path.join(ART, 'home_bundle_old.js');
+const OUT_DIR = process.env.OUT_DIR || path.join(os.tmpdir(), 'zp-e2e-out');
+fs.mkdirSync(OUT_DIR, { recursive: true });
+const FIX = path.join(__dirname, 'fixtures', 'e2e-baseline');
+const OLD_BACK = process.env.OLD_BACK || path.join(FIX, 'back_old.js');
+const OLD_BUNDLE = process.env.OLD_BUNDLE || path.join(FIX, 'home_bundle_old.js');
 const HAVE_OLD = fs.existsSync(OLD_BACK) && fs.existsSync(OLD_BUNDLE);
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
@@ -197,7 +200,7 @@ const check = (name, ok, detail) => {
     console.log('   ' + tag + ' navlog=' + JSON.stringify(s2.navlog));
     console.log('   ' + tag + ' backlog=' + JSON.stringify(s2.backlog));
     if (tag.indexOf('修复前') === 0 || tag.indexOf('修复后') === 0) {
-      await shot(path.join(ART, tag.indexOf('修复前') === 0 ? 'exit_before.png' : 'exit_after.png'));
+      await shot(path.join(OUT_DIR, tag.indexOf('修复前') === 0 ? 'exit_before.png' : 'exit_after.png'));
     }
     return { s0, sHist, sHome, s1, s2 };
   }
@@ -233,7 +236,7 @@ const check = (name, ok, detail) => {
     key: { seq: [newKey.s0.path, newKey.sHist.path, newKey.sHome.path, newKey.s1.path, newKey.s2.path], out: newKey.s2.out },
     OUT: '/workspace/home-exit-back-compare.png',
   };
-  fs.writeFileSync(path.join(ART, 'exit_meta.json'), JSON.stringify(meta, null, 2));
+  fs.writeFileSync(path.join(OUT_DIR, 'exit_meta.json'), JSON.stringify(meta, null, 2));
 
   const failed = results.filter((r) => !r.ok);
   console.log('\n' + (failed.length === 0 ? '✅ 全部通过' : '❌ 失败 ' + failed.length + ' 项') + '（共 ' + results.length + ' 项）');

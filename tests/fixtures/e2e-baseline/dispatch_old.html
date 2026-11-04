@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<script src="/js/error-guard.js?v=da1b8353"></script>
+<script src="/js/fetch-retry.js?v=c6db261e"></script>
+<script>
+(function(){
+  function goLogin(){
+    try{document.documentElement.style.display="none"}catch(e){}
+    var p=location.pathname+location.search;
+    location.replace("/?redirect="+encodeURIComponent(p)+"&reason=auth");
+  }
+  try{
+    if(sessionStorage.getItem("zpAuth")!=="1"){goLogin();return;}
+  }catch(e){}
+  try{
+    window.addEventListener("pageshow",function(ev){
+      if(ev.persisted){try{if(sessionStorage.getItem("zpAuth")!=="1")location.replace("/?reason=auth");}catch(e){}}
+    });
+  }catch(e){}
+})();
+</script>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#161616" media="(prefers-color-scheme: dark)"><meta name="theme-color" content="#FFFFFF">
+<title>线路 · 智配One</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png?v=25f1ad28">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="智配One">
+<script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#FFFFFF":"#161616");}catch(e){}</script><script src="/js/theme-sync.js?v=e56e8350"></script>
+<link rel="stylesheet" href="/css/app.css?v=3ac0265a"><link rel="stylesheet" href="/css/ui-base.css?v=0e3d20cf"><link rel="stylesheet" href="/css/ui-overlay.css?v=07775030"><link rel="stylesheet" href="/css/ui-theme.css?v=b68d6e71"><link rel="stylesheet" href="/css/ui-shell.css?v=8537d8fb">
+<link rel="stylesheet" href="/css/mobile-ui.css?v=480312f5"><link rel="stylesheet" href="/css/business-pages.css?v=340c48b5">
+
+<script src="/js/perf-diagnostics.js?v=260b5b37"></script>
+</head>
+<body>
+<main class="dispatch-page zp-shell">
+<header class="topbar is-root"><h1>线路</h1></header>
+
+<div class="zp-scroll">
+<section class="dispatch-intro">
+  <h2>线路工作区</h2>
+  <p>管理当前配送线路与线路资料。</p>
+</section>
+
+<section class="dispatch-section">
+  <h2 class="dispatch-section-title">当前配送线路</h2>
+  <div id="currentRoute" class="dispatch-current">
+    <div class="zp-empty">读取中…</div>
+  </div>
+</section>
+
+<section class="dispatch-section">
+  <h2 class="dispatch-section-title">线路功能</h2>
+  <div class="dispatch-action-card">
+    <a class="dispatch-action" href="/pages/route_apply?from=dispatch">
+      <span class="dispatch-action-icon"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/></svg></span>
+      <span class="dispatch-action-main"><strong>线路申请</strong><small>申请维护线路、查看审核状态、解除绑定</small></span>
+      <span class="dispatch-action-arrow">›</span>
+    </a>
+    <a class="dispatch-action" href="/pages/data?from=dispatch">
+      <span class="dispatch-action-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg></span>
+      <span class="dispatch-action-main"><strong>数据中心</strong><small>查看当前线路门店资料，具备权限时可维护</small></span>
+      <span class="dispatch-action-arrow">›</span>
+    </a>
+  </div>
+</section>
+
+<nav class="zp-nav" aria-label="主要功能">
+  <a class="zp-nav-item zp-nav-home" href="/home">
+    <span class="zp-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 9.8 12 3.5l8.5 6.3V19a1.5 1.5 0 0 1-1.5 1.5h-3.2v-6H9.2v6H5A1.5 1.5 0 0 1 3.5 19z"/></svg></span><span>首页</span>
+  </a>
+  <a class="zp-nav-item" href="/pages/history?from=dispatch">
+    <span class="zp-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3.5 5v4h4"/><path d="M12 7.5v5l3.2 1.9"/></svg></span><span>历史</span>
+  </a>
+  <a class="zp-nav-item zp-nav-plus" href="/home?openUpload=1" aria-label="上传">
+    <span class="zp-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg></span>
+  </a>
+  <a class="zp-nav-item is-active" href="/pages/dispatch?from=home" aria-current="page">
+    <span class="zp-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16v12H4z"/><path d="M8 10h8M8 14h5"/></svg></span><span>线路</span>
+  </a>
+  <a class="zp-nav-item" href="/pages/account?from=dispatch">
+    <span class="zp-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3"/><path d="M5 20c.8-3.2 3.1-5 7-5s6.2 1.8 7 5"/></svg></span><span>我的</span>
+  </a>
+</nav>
+</div>
+</main>
+
+<div id="routeSheetBackdrop" class="dispatch-sheet-backdrop" aria-hidden="true">
+  <section class="dispatch-sheet" role="dialog" aria-modal="true" aria-labelledby="routeSheetTitle">
+    <div class="dispatch-sheet-handle"></div>
+    <div class="dispatch-sheet-head"><h3 id="routeSheetTitle">选择配送线路</h3><button id="routeSheetConfirm" class="dispatch-sheet-confirm" type="button" disabled>确认</button></div>
+    <p class="dispatch-sheet-sub">上下滑动选择线路，选中后点击确认。</p>
+    <div class="dispatch-picker">
+      <div class="dispatch-picker-selection" aria-hidden="true"></div>
+      <div id="routePickerList" class="dispatch-picker-list"></div>
+    </div>
+    <button id="routeSheetCancel" class="dispatch-sheet-cancel" type="button">取消</button>
+  </section>
+</div>
+
+<div id="confirmBackdrop" class="dispatch-confirm-backdrop" aria-hidden="true">
+  <section class="dispatch-dialog" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <h3 id="confirmTitle">切换配送线路</h3>
+    <p id="confirmText"></p>
+    <div class="dispatch-dialog-actions">
+      <button id="confirmCancel" class="dispatch-dialog-cancel" type="button">取消</button>
+      <button id="confirmOk" class="dispatch-dialog-ok" type="button">确定</button>
+    </div>
+  </section>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const API_TIMEOUT=10000;
+async function api(url,opt={}){
+  try{
+    const r=await zpFetch(url,{credentials:"same-origin",cache:"no-store",...opt},{timeoutMs:API_TIMEOUT});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok||!d.success)throw new Error(d.error||"请求失败");
+    return d;
+  }catch(e){
+    if(e&&e.name==="AbortError")throw new Error("网络超时，请重试");
+    throw e;
+  }
+}
+function esc(v){return String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+let routeState={current:"",routes:[]};
+let pickerRoute="";
+let pendingRoute="";
+let pickerTimer=0;
+
+function routeName(r){const raw=r?.name||r?.id||"未命名线路";return (window.zpRouteName?window.zpRouteName(raw):raw)||raw/* 全局标准：文本位置统一「X号线」 */}
+
+function openSheet(){
+  pickerRoute=routeState.current;
+  renderPicker();
+  $("routeSheetBackdrop").classList.add("open");
+  $("routeSheetBackdrop").setAttribute("aria-hidden","false");
+  requestAnimationFrame(()=>scrollPickerTo(pickerRoute,false));
+}
+function closeSheet(){
+  $("routeSheetBackdrop").classList.remove("open");
+  $("routeSheetBackdrop").setAttribute("aria-hidden","true");
+}
+
+function openConfirm(id){
+  pendingRoute=id;
+  const r=routeState.routes.find(x=>x.id===id);
+  $("confirmText").textContent="确定切换至"+routeName(r)+"吗？切换后，本次配送将使用该线路。";
+  $("confirmBackdrop").classList.add("open");
+  $("confirmBackdrop").setAttribute("aria-hidden","false");
+}
+function closeConfirm(){
+  pendingRoute="";
+  $("confirmBackdrop").classList.remove("open");
+  $("confirmBackdrop").setAttribute("aria-hidden","true");
+}
+function renderCurrent(){
+  const r=routeState.routes.find(x=>x.id===routeState.current);
+  if(!r){/* 未选调度线路：只要有可配送线路就渲染「选择线路」入口。
+      此前该状态只渲染一行文字、没有任何按钮——选择弹层只有已选线路后的
+      「切换」按钮能打开，被管理员绑定过线路（boundRouteId 有值、
+      dispatchRouteId 为空、服务端不自动派临时线路）的新用户永远无法选线。 */
+    const canPick=routeState.routes.length>0;
+    $("currentRoute").innerHTML='<div class="zp-empty">'+(canPick?"暂未选择配送线路":"暂无可配送线路，可在线路申请中提交申请")+'</div>'+(canPick?'<button id="chooseRouteBtn" class="dispatch-switch" type="button" style="display:block;margin:10px auto 0">选择线路</button>':"");
+    if(canPick)$("chooseRouteBtn").addEventListener("click",openSheet);
+    return}
+  $("currentRoute").innerHTML='<div class="dispatch-current-row"><div class="dispatch-current-name">'+esc(routeName(r))+'</div><div class="dispatch-current-status">已匹配<span class="dispatch-current-count">'+(Number(r.storeCount)||0)+'家门店</span></div><button id="switchRouteBtn" class="dispatch-switch" type="button">切换</button></div>';
+  $("switchRouteBtn").addEventListener("click",openSheet);
+}
+function renderPicker(){
+  const list=$("routePickerList");
+  if(!routeState.routes.length){list.innerHTML='<div class="dispatch-picker-empty">暂无可配送线路</div>';$("routeSheetConfirm").disabled=true;return}
+  list.innerHTML=routeState.routes.map(r=>'<button class="dispatch-picker-option" type="button" data-route-id="'+esc(r.id)+'"><span>'+esc(routeName(r))+'</span><small>'+(Number(r.storeCount)||0)+'家门店</small></button>').join("");
+  list.querySelectorAll("[data-route-id]").forEach(b=>b.addEventListener("click",()=>{pickerRoute=b.dataset.routeId;scrollPickerTo(pickerRoute,true)}));
+  updatePickerSelection();
+}
+function scrollPickerTo(id,smooth=true){
+  const el=$("routePickerList").querySelector('[data-route-id="'+CSS.escape(id)+'"]');
+  if(el)el.scrollIntoView({block:"center",behavior:smooth?"smooth":"auto"});
+  pickerRoute=id;
+  updatePickerSelection();
+}
+function updatePickerSelection(){
+  const list=$("routePickerList");
+  list.querySelectorAll(".dispatch-picker-option").forEach(b=>b.classList.toggle("is-selected",b.dataset.routeId===pickerRoute));
+  $("routeSheetConfirm").disabled=!pickerRoute||pickerRoute===routeState.current;
+}
+function settlePicker(){
+  const opts=[...$("routePickerList").querySelectorAll(".dispatch-picker-option")];
+  if(!opts.length)return;
+  const center=$("routePickerList").getBoundingClientRect().top+$("routePickerList").clientHeight/2;
+  let best=opts[0],dist=Infinity;
+  for(const el of opts){const d=Math.abs(el.getBoundingClientRect().top+el.offsetHeight/2-center);if(d<dist){dist=d;best=el}}
+  pickerRoute=best.dataset.routeId;
+  scrollPickerTo(pickerRoute,true);
+}
+
+async function selectRoute(id){
+  $("confirmOk").disabled=true;
+  try{
+    await api("/api/dispatch",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({routeId:id})});
+    location.replace("/home");
+  }catch(e){
+    $("confirmOk").disabled=false;
+    window.zpToast?.(e.message||"线路切换失败","error");
+  }
+}
+$("routeSheetCancel").addEventListener("click",closeSheet);
+$("routeSheetConfirm").addEventListener("click",()=>{if(pickerRoute&&pickerRoute!==routeState.current){closeSheet();openConfirm(pickerRoute)}});
+$("routePickerList").addEventListener("scroll",()=>{clearTimeout(pickerTimer);pickerTimer=setTimeout(settlePicker,90)},{passive:true});
+$("routeSheetBackdrop").addEventListener("click",e=>{if(e.target===$("routeSheetBackdrop"))closeSheet()});
+$("confirmCancel").addEventListener("click",closeConfirm);
+$("confirmBackdrop").addEventListener("click",e=>{if(e.target===$("confirmBackdrop"))closeConfirm()});
+$("confirmOk").addEventListener("click",async()=>{if(pendingRoute)await selectRoute(pendingRoute)});
+
+// 手机端系统返回：先关闭最上层确认，再关闭线路选择层，避免直接离开线路页。
+(window.zpBackHooks=window.zpBackHooks||[]).push(
+  {rank:10,probe:()=>$("confirmBackdrop")?.classList.contains("open")?$("confirmBackdrop"):null,close:()=>{closeConfirm();return true}},
+  {rank:20,probe:()=>$("routeSheetBackdrop")?.classList.contains("open")?$("routeSheetBackdrop"):null,close:()=>{closeSheet();return true}}
+);
+
+function renderLoadError(){
+  $("currentRoute").innerHTML='<div class="zp-empty">线路读取失败，请重试</div><button id="routeRetryBtn" class="dispatch-retry" type="button">重试</button>';
+  $("routeRetryBtn").addEventListener("click",()=>{
+    $("currentRoute").innerHTML='<div class="zp-empty">读取中…</div>';
+    load();
+  });
+}
+let dispatchInitialLoadFailed=false;
+let dispatchLoadInFlight=false;
+async function load(){
+  if(dispatchLoadInFlight)return;
+  dispatchLoadInFlight=true;
+  try{
+    // 聚合接口：一次往返同时拿「调度线路 + 可选线路列表」（历史为 /api/routes 与
+    // /api/dispatch 两次并行请求；服务端批量 MGET 后全程仅 6 条 Redis 命令）
+    const d=await api("/api/dispatch-bootstrap");
+    routeState.current=d.dispatchRoute?.id||"";
+    routeState.routes=(d.routes||[]).filter(r=>r.status==="active");
+    dispatchInitialLoadFailed=false;
+    renderCurrent();
+  }catch(e){
+    dispatchInitialLoadFailed=true;
+    renderLoadError();
+  }finally{
+    dispatchLoadInFlight=false;
+  }
+}
+// 只恢复失败的只读初始化请求；选择/确认线路期间不刷新，也不重放 POST。
+function canRecoverDispatch(){
+  if(!dispatchInitialLoadFailed||dispatchLoadInFlight||navigator.onLine===false)return false;
+  if($("routeSheetBackdrop")?.classList.contains("open"))return false;
+  if($("confirmBackdrop")?.classList.contains("open")||pendingRoute)return false;
+  return true;
+}
+function recoverDispatch(){
+  if(canRecoverDispatch())load();
+}
+window.addEventListener("online",recoverDispatch);
+window.addEventListener("focus",recoverDispatch);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")recoverDispatch()});
+load();
+</script>
+<script src="/js/ui/core.js?v=7c4e2f82"></script><script src="/js/ui/haptic.js?v=a3a78c0a"></script><script src="/js/ui/appearance.js?v=a6de05cc"></script><script src="/js/ui/feedback.js?v=f8da0256"></script><script src="/js/ui/nav.js?v=d22c721c"></script><script src="/js/ui/back.js?v=6c6cbd5d"></script><script src="/js/ui/nav-prefetch.js?v=968d1e0b"></script>
+<script src="/js/pwa.js?v=68dbac73"></script>
+<script defer src="/js/boot-ready.js?v=4e3f49ea"></script>
+</body>
+</html>
