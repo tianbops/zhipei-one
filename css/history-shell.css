@@ -10,7 +10,12 @@
   border-radius:var(--zp-r-card);
 }
 
-/* .history-state 已并入 css/ui-base.css 的 .zp-empty（同上）。 */
+/* .history-state 已并入 css/ui-base.css 的 .zp-empty（同上）。
+   2026-11-04：render.js 渲染成功后只把 #historyState 的文本清空（textContent=""），
+   但 .zp-empty 自带 padding:28px 12px —— 空元素仍白占 56px，把月份列表整体下推，
+   表现为「选择日期」按钮下方一大块空白（用户截图反馈）。空提示节点不该占位；
+   有文案时（暂无历史记录 / 读取失败）不是 :empty，照常显示。 */
+#historyState:empty{display:none}
 .history-list{width:100%}
 .history-month{
   border-bottom:0;
