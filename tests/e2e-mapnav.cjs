@@ -7,7 +7,10 @@
  *      data-zp-nav，证明不了浏览器真的把门店名渲染成可点链接、也没被 esc 吃掉；
  *   2) 旧实现的 bug 是「纯文本 navigation 被解析成站内路径」，只有在浏览器里看
  *      a.href 才能确认真实解析结果；
- *   3) 门店名来自 OCR，必须确认带 <img onerror> 的名字不会执行。
+ *   3) 门店名来自 OCR，必须确认带 <img onerror> 的名字不会执行；
+ *   4) 成熟 H5 范式：有坐标落 /marker 位置标注页、无坐标落 /search 搜索页，
+ *      都是「看位置」页，绝不用 /navigation 驾车路线页（真机会整页引导下载），
+ *      是否用 App 导航由落地页里的按钮交给司机自己点。
  *
  * 离线环境不真的跳外网：捕获阶段监听 a[data-zp-nav]，记录 href 后 preventDefault。
  */
@@ -164,10 +167,12 @@ const SNAP_DETAIL = `(()=>{
   check('关键词链接不带 callnative、带 src=zhipei（真机避免下载引导页）',
     !!s4.abs && new URL(s4.abs).searchParams.get('callnative') === null && new URL(s4.abs).searchParams.get('src') === 'zhipei');
   const s6 = byName('已定位门店');
-  check('有坐标 → 直接进驾车路线（navigation），不再停在 POI 页',
-    s6.kind === 'geo' && new URL(s6.abs).pathname === '/navigation' && new URL(s6.abs).searchParams.get('mode') === 'car', JSON.stringify(s6));
-  check('to 参数是「经度,纬度,名称」，顺序不得颠倒',
-    s6.abs && new URL(s6.abs).searchParams.get('to') === '106.551200,29.563100,已定位门店', s6.abs && new URL(s6.abs).searchParams.get('to'));
+  check('有坐标 → /marker 位置标注「看位置」页（不是 /navigation 驾车路线页）',
+    s6.kind === 'geo' && new URL(s6.abs).pathname === '/marker' && new URL(s6.abs).searchParams.get('mode') === null, JSON.stringify(s6));
+  check('position 是「经度,纬度」，顺序不得颠倒',
+    s6.abs && new URL(s6.abs).searchParams.get('position') === '106.551200,29.563100', s6.abs && new URL(s6.abs).searchParams.get('position'));
+  check('位置页带 name=门店名、不带 callnative（不主动拉起 App）',
+    s6.abs && new URL(s6.abs).searchParams.get('name') === '已定位门店' && new URL(s6.abs).searchParams.get('callnative') === null, s6.abs);
   check('普通环境 target=_self', home.items.every((x) => x.target === '_self'));
   check('aria-label 说明「导航到 门店名」', !!s1.label && /导航到/.test(s1.label), s1.label);
   check('门店名里的 <img onerror> 被转义，未执行', home && home.injectedImg === false && home.xss === false);
@@ -236,11 +241,11 @@ const SNAP_DETAIL = `(()=>{
 
   await pick('amap');
   const out1 = await ev('window.__navOut');
-  check('选高德 → uri.amap.com/navigation 且 to 经度在前',
-    Array.isArray(out1) && out1.length === 1 && (() => { try { const u = new URL(out1[0]); return u.pathname === '/navigation' && (u.searchParams.get('to') || '').startsWith('106.551200,29.563100'); } catch { return false; } })(),
+  check('选高德 → uri.amap.com/marker 位置页「看位置」，且 position 经度在前',
+    Array.isArray(out1) && out1.length === 1 && (() => { try { const u = new URL(out1[0]); return u.pathname === '/marker' && (u.searchParams.get('position') || '').startsWith('106.551200,29.563100') && !/\/navigation/.test(out1[0]); } catch { return false; } })(),
     JSON.stringify(out1));
-  check('选高德后 URL 不含 callnative / 下载引导域名',
-    Array.isArray(out1) && out1.length === 1 && !/callnative|surl\.amap|callAPP|ap\.amap|wap\.amap/.test(out1[0]), JSON.stringify(out1));
+  check('选高德后 URL 不含 /navigation / callnative / 下载引导域名',
+    Array.isArray(out1) && out1.length === 1 && !/\/navigation|callnative|surl\.amap|callAPP|ap\.amap|wap\.amap/.test(out1[0]), JSON.stringify(out1));
   check('选完菜单自动关闭', (await ev(`!document.querySelector('.zp-mn-sheet')`)) === true);
 
   await clickStore(5);

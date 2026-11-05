@@ -1,20 +1,25 @@
 /**
  * 门店导航目标契约（node tests/mapnav.test.mjs）
  * ------------------------------------------------------------------
- * 守护需求：点门店名能导航到该门店，且未装地图 App 时**不会**被导向
- * 「立即下载高德」整页（2026-11 真机回归）。
+ * 守护需求：点门店名能查看该门店位置；是否用 App 导航由司机在落地页里
+ * 自己点「打开高德APP」决定，我们绝不自动弹出下载引导页（2026-11 真机回归）。
  *
- * 实现要点（改了就会出事，必须锁死）：
- *   1) 高德一律官方网页版：uri.amap.com 不带 callnative、不透传任何地图短链；
- *      带 callnative=1 或透传 surl.amap.com 时，callAPP 中转页在调起失败后会
- *      location.replace 到 ap.amap.com / wap-org.amap.com 下载引导页；
- *   2) 无坐标（含空 / 纯文本 / 非地图 URL / javascript: / data: / 地图短链）
+ * 成熟 H5 范式（选择 → 打开 → 兜底，下载永远是用户主动动作）：
+ *   1) 决定因素是**落地页类型**，不是 callnative。正式版 407 的 POI 详情 /
+ *      搜索页在真机上不跳下载页；uri.amap.com/navigation 驾车路线页一进去
+ *      就要开始导航，未装 App 时高德整页引到 ap.amap.com / wap-org.amap.com
+ *      「立即下载」—— 416/417 都跳、正式版不跳，根因就在这里。
+ *   2) 所以高德一律送「看位置」页：有坐标 → uri.amap.com/marker（位置标注页，
+ *      落 m.amap.com/share/index）；无坐标 → uri.amap.com/search（门店名搜索页，
+ *      落 m.amap.com/search/view）。**绝不用 /navigation，绝不带 callnative=1，
+ *      绝不透传 surl.amap.com 短链**（callAPP 中转页未装 App 时超时兜底跳下载页）。
+ *   3) 无坐标（含空 / 纯文本 / 非地图 URL / javascript: / data: / 地图短链）
  *      → 门店名走高德关键词，且**绝不允许**回到旧实现 new URL(v, location.origin)
  *      —— 那会把 "A栋B1" 解析成站内路径，点一下 404，返回键都救不回来；
- *   3) 白名单按「等于或以 .域名 结尾」匹配，防 amap.com.evil.com / amap.com@evil.com；
+ *   4) 白名单按「等于或以 .域名 结尾」匹配，防 amap.com.evil.com / amap.com@evil.com；
  *      navigation 链接仍进 payload.link，但只供百度分支判断，不生成高德 URL；
- *   4) 一律 https 官方链接，不用自建 scheme、不做安装探测；
- *   5) 起点不传，交给地图网页版 / App 的 GPS。
+ *   5) 一律 https 官方链接，不用自建 scheme、不做安装探测；
+ *   6) 起点不传，交给地图网页版 / App 的 GPS。
  *
  * 纯函数用 node:vm 跑，不需要浏览器；静态断言守住两个渲染器与打包顺序。
  */
@@ -115,12 +120,14 @@ console.log("\n白名单防伪装（4 条）");
     !M.isMapHost("amap.com.evil.com") && !M.isMapHost("evilamap.com") && !M.isMapHost(""));
 }
 
-console.log("\n关键词链接构造（4 条）");
+console.log("\n关键词链接构造 = 门店名搜索「看位置」页（5 条）");
 {
   const r = M.resolve({ name: "渝北中景隆(重庆)贸易有限公司" });
   t("中文门店名正确编码，keyword 可还原",
     q(r.url) === "渝北中景隆(重庆)贸易有限公司", r.url);
-  t("一律不带 callnative（真机：带上会跳下载引导页）",
+  t("落地是 /search 门店名搜索页（不是 /navigation 路线页）",
+    new URL(r.url).pathname === "/search" && !/\/navigation/.test(r.url), r.url);
+  t("一律不带 callnative（不主动拉起 App，选择权留给司机）",
     new URL(r.url).searchParams.get("callnative") === null, r.url);
   t("带来源标识 src=zhipei", new URL(r.url).searchParams.get("src") === "zhipei");
   const desktop = load({ ua: DESKTOP_UA }).api.resolve({ name: "渝北中景隆(重庆)贸易有限公司" });
@@ -137,15 +144,19 @@ console.log("\n名称回退与空值（3 条）");
     M.resolve({}) === null && M.resolve(null) === null && M.resolve({ name: " ", navigation: "" }) === null);
 }
 
-console.log("\n坐标优先（6 条）");
+console.log("\n坐标优先 = 位置标注「看位置」页（7 条）");
 {
   const g = M.resolve({ name: "谊品生鲜", lat: 29.5631, lng: 106.5512, navigation: "https://surl.amap.com/abc" });
-  t("有坐标时走 navigation（真导航），不再停在 POI 页", !!g && g.kind === "geo" && /uri\.amap\.com\/navigation/.test(g.url), JSON.stringify(g));
+  t("有坐标时走 /marker 位置标注页（不是 /navigation 驾车路线页）",
+    !!g && g.kind === "geo" && new URL(g.url).pathname === "/marker" && !/\/navigation/.test(g.url), JSON.stringify(g));
   const u = new URL(g.url);
-  t("to 参数是「经度,纬度,名称」——顺序写反会导到几百公里外",
-    (u.searchParams.get("to") || "").startsWith("106.551200,29.563100"), u.searchParams.get("to"));
-  t("带 mode=car（驾车路线）", u.searchParams.get("mode") === "car");
-  t("驾车路线 URL 一律不带 callnative", u.searchParams.get("callnative") === null, g.url);
+  t("position 是「经度,纬度」——顺序写反会导到几百公里外",
+    (u.searchParams.get("position") || "").startsWith("106.551200,29.563100"), u.searchParams.get("position"));
+  t("带 name=门店名（位置页显示门店标注）", u.searchParams.get("name") === "谊品生鲜", u.searchParams.get("name"));
+  t("不带 mode=car（绝不主动进入导航流程，那是下载引导页入口）",
+    u.searchParams.get("mode") === null, g.url);
+  t("位置页 URL 一律不带 callnative（不主动拉起 App）",
+    u.searchParams.get("callnative") === null, g.url);
   const zero = M.resolve({ name: "谊品生鲜", lat: 0, lng: 0 });
   t("0,0 视为无效坐标，退回关键词搜索", !!zero && zero.kind === "keyword", JSON.stringify(zero));
   const str = M.resolve({ name: "谊品生鲜", lat: "29.5631", lng: "106.5512" });
@@ -169,18 +180,21 @@ console.log("\n三家 provider 目标（14 条）");
   const u = M.providerUrls(GEO);
   t("PROVIDERS 顺序为高德 / 百度 / 腾讯",
     M.PROVIDERS.map((p) => p.id).join(",") === "amap,baidu,qq", JSON.stringify(M.PROVIDERS.map((p) => p.id)));
-  t("高德 note 标明网页版且明确「不拉起 App」",
-    M.PROVIDERS[0].note.includes("网页版") && M.PROVIDERS[0].note.includes("不拉起 App"));
+  t("高德 note 说明「查看门店位置」且把是否用 App 交给用户选",
+    M.PROVIDERS[0].note.includes("查看门店位置") && /由您选|自己选/.test(M.PROVIDERS[0].note),
+    M.PROVIDERS[0].note);
   t("腾讯 note 标明网页版（不承诺拉起 App）", M.PROVIDERS[2].note.includes("网页版"));
   t("三家都有 https 目标", ["amap", "baidu", "qq"].every((k) => typeof u[k] === "string" && u[k].startsWith("https://")));
   t("有坐标时 _geo=true（菜单显示已绑定精确坐标）", u._geo === true);
 
   const amap = new URL(u.amap);
-  t("高德走 uri.amap.com/navigation", amap.hostname === "uri.amap.com" && amap.pathname === "/navigation", u.amap);
-  t("高德 to = 经度,纬度,名称（写反会导到几百公里外）",
-    (amap.searchParams.get("to") || "").startsWith("106.551200,29.563100"), amap.searchParams.get("to"));
-  t("高德 mode=car + 不带 callnative（官方网页版驾车路线）",
-    amap.searchParams.get("mode") === "car" && amap.searchParams.get("callnative") === null, u.amap);
+  t("高德走 uri.amap.com/marker 位置标注页（不是 /navigation 路线页）",
+    amap.hostname === "uri.amap.com" && amap.pathname === "/marker", u.amap);
+  t("高德 position = 经度,纬度（写反会导到几百公里外）",
+    (amap.searchParams.get("position") || "").startsWith("106.551200,29.563100"), amap.searchParams.get("position"));
+  t("高德带 name=门店名 + 不带 mode/callnative（只标位置、不进导航流程）",
+    amap.searchParams.get("name") === GEO.name &&
+    amap.searchParams.get("mode") === null && amap.searchParams.get("callnative") === null, u.amap);
 
   const baidu = new URL(u.baidu);
   const dest = baidu.searchParams.get("destination") || "";
@@ -216,13 +230,20 @@ console.log("\n无坐标时三家各自降级（6 条）");
   t("百度短链不误当高德导航（走关键词搜索）", new URL(b.amap).pathname === "/search", b.amap);
 }
 
-console.log("\n真机回归：不触发高德下载引导页（7 条）");
+console.log("\n真机回归：只送「看位置」页、不触发下载引导页（10 条）");
 {
   const forbidden = /callnative|surl\.amap\.com|wb\.amap\.com|callAPP|ap\.amap\.com|wap\.amap\.com/;
   t("源码不再拼接 callnative 参数（注释里的说明文字不算）",
     !/\+\s*["']&callnative=/.test(SRC) && !/url\s*\+\s*["']&callnative/.test(SRC));
   t("源码不再透传短链给高德（无 out.amap = link）", !/out\.amap\s*=\s*link/.test(SRC));
   t("源码不再有 kind:\"link\"（渐进增强 href 也不透传）", !/kind:\s*"link"/.test(SRC));
+  /* 决定性契约：绝不构造 uri.amap.com/navigation 驾车路线页。
+     注释里会提到这个路径做说明，因此只匹配「字符串字面量里的 /navigation」。 */
+  t("源码不再拼接 uri.amap.com/navigation（真机下载引导页的根因）",
+    !/["']https:\/\/uri\.amap\.com\/navigation/.test(SRC) &&
+    !/["']\/navigation\?to=/.test(SRC));
+  t("源码改用 uri.amap.com/marker 位置标注页",
+    /["']https:\/\/uri\.amap\.com\/marker\?position=/.test(SRC));
   const stores = [
     { label: "有坐标 + 高德短链", s: { name: "谊品生鲜", lat: 29.5631, lng: 106.5512, navigation: "https://surl.amap.com/abc" } },
     { label: "无坐标 + 高德短链", s: { name: "谊品生鲜", navigation: "https://surl.amap.com/abc" } },
@@ -230,9 +251,13 @@ console.log("\n真机回归：不触发高德下载引导页（7 条）");
   ];
   for (const { label, s } of stores) {
     const urls = [M.resolve(s).url, M.providerUrls(s).amap, M.keywordUrl(s.name),
-      M.navigationUrl({ lat: 29.5631, lng: 106.5512 }, s.name)];
-    t(label + " → 四条高德 URL 都不含下载引导域名/参数",
-      urls.every((u) => typeof u === "string" && !forbidden.test(u)), JSON.stringify(urls));
+      M.markerUrl({ lat: 29.5631, lng: 106.5512 }, s.name)];
+    t(label + " → 四条高德 URL 都是 /marker 或 /search「看位置」页，且无下载域名/参数",
+      urls.every((u) => {
+        if (typeof u !== "string" || forbidden.test(u)) return false;
+        const p = new URL(u).pathname;
+        return (p === "/marker" || p === "/search") && !/\/navigation/.test(u);
+      }), JSON.stringify(urls));
   }
   t("源码不再写「未装用网页版」（已被真机证伪）", !/未装用网页版/.test(SRC));
 }

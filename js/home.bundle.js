@@ -995,18 +995,25 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
    浏览器无法枚举已安装的 App，也调不出「用哪个地图打开」的系统选择器。
    唯一可行的是让用户明确选一次；配送场景里每次选比进设置改默认更直观。
 
-   为什么全部用 https 官方链接、零探测、零自建 scheme：
-   高德一律用官方网页版入口：uri.amap.com 不带 callnative（302 落
-   m.amap.com/navigation/index 网页版驾车路线页，带终点 daddr）。2026-11 真机验证：
-   带 callnative=1 或直接透传 surl.amap.com 短链时，未装 App 的手机会经
-   wb.amap.com → m.amap.com/callAPP 的超时兜底，整页跳到 ap.amap.com /
-   wap-org.amap.com 的「立即下载高德」，而不是网页版导航。那个页面的内容与跳转
-   由高德控制、我们改不了，但「是否触发」取决于我们给的链接，所以这里一律不触发。
-   百度 URI API v2.0 免费免 ak、支持 coord_type=gcj02，官方声明可在移动浏览器
-   （含微信）调起百度地图产品；腾讯不申请开发者 key，用 map.qq.com 网页版搜索占位。
-   自建 baidumap:// / qqmap:// 在 iOS 未装会弹系统错误框、WebView 与微信普遍拦截，
-   visibilitychange + 超时探测还会双跳 —— 一律不做。
-   起点不传：各家移动端默认用本机 GPS，比浏览器 geolocation 更准且无需授权。
+   为什么只送到「看位置」页、把是否用 App 留给司机自己点（成熟 H5 范式）：
+   成熟 App 处理「点地址去导航」是「选择 → 打开 → 兜底」，下载永远是用户主动
+   点击的动作，不是页面自动行为。我们是 H5，浏览器无法枚举已安装 App，因此
+   把「是否用 App」也做成显式选择：只送到地图网页的「位置页」，页面里自带
+   「打开高德APP」按钮，司机想用 App 导航就自己点，不想就只看位置。
+   2026-11 真机回归（决定性差异是「落地页类型」，不是 callnative）：
+     · uri.amap.com/navigation 驾车路线页一进去就要开始导航，未装 App 的手机
+       会被高德整页引到 ap.amap.com / wap-org.amap.com 的「立即下载」；
+     · callnative=1 由高德自动判定并拉起 App，同样把选择权从用户手里拿走；
+     · 透传 surl.amap.com 短链会经 m.amap.com/callAPP 中转，未装 App 时
+       超时兜底跳下载页，且落地页随出口漂移，不可依赖。
+   所以高德一律用 uri.amap.com/marker（有坐标 → 位置标注页，落 m.amap.com/
+   share/index）或 /search（无坐标 → 门店名搜索页，落 m.amap.com/search/view），
+   两者都是「看位置」页、零下载页特征，也不带 callnative；这正是正式版 407
+   （POI 详情 / 搜索页）在真机上不跳下载页的原因。
+   百度 URI API v2.0 免费免 ak、支持 coord_type=gcj02；腾讯不申请开发者 key，
+   用 map.qq.com 网页版搜索占位。自建 baidumap:// / qqmap:// 在 iOS 未装会弹
+   系统错误框、WebView 与微信普遍拦截，visibilitychange + 超时探测还会双跳，
+   一律不做。起点不传：各家移动端默认用本机 GPS，比浏览器 geolocation 更准。
 
    坐标系：库里只存一组 GCJ-02（火星坐标）。高德 / 腾讯原生就是 GCJ-02；
    百度是 BD-09，但 URI 支持 coord_type=gcj02 让百度自己转，不存两套坐标。
@@ -1024,7 +1031,7 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
   var SRC = "zhipei";
 
   var PROVIDERS = [
-    { id: "amap", label: "高德地图", note: "网页版导航（不拉起 App、不引导下载）" },
+    { id: "amap", label: "高德地图", note: "查看门店位置，是否用 App 导航由您选" },
     { id: "baidu", label: "百度地图", note: "免 key，坐标由百度自动转换" },
     { id: "qq", label: "腾讯地图", note: "网页版搜索（无需开发者 key）" },
   ];
@@ -1103,19 +1110,24 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
     }
   }
 
+  /* 全程不带 callnative：不主动拉起 App，也不显式置 0（正式版 407 的
+     keywordUrl 带 callnative=1 却不跳下载页，说明决定因素是落地页类型，
+     不是这个参数；多带一个参数只是多一个不确定变量）。
+     「是否用 App」由落地页自带的「打开高德APP」按钮交给司机自己点。 */
+
+  /* 门店名搜索页（302 落 m.amap.com/search/view）：无坐标时的「看位置」入口。 */
   function keywordUrl(name) {
-    /* 不带 callnative 是官方默认网页版行为。带 callnative=1 会让未装 App 的手机
-       落到 ap.amap.com 下载引导页（真机验证），而不是网页版搜索。 */
     return "https://uri.amap.com/search?keyword=" + enc(name) + "&src=" + SRC;
   }
 
-  /* uri.amap.com/navigation 的 to 参数是「经度,纬度,名称」——纬度在前会导到几百公里外 */
-  function navigationUrl(geo, name) {
-    var to = geo.lng.toFixed(6) + "," + geo.lat.toFixed(6);
-    if (name) to += "," + enc(name);
-    /* 不带 callnative：302 落 m.amap.com/navigation/index 网页版驾车路线页，
-       带终点 daddr；不会触发 scheme 调起 App / 下载引导页。 */
-    return "https://uri.amap.com/navigation?to=" + to + "&mode=car&src=" + SRC;
+  /* 位置标注页（302 落 m.amap.com/share/index）：position 是「经度,纬度」，
+     纬度在前会导到几百公里外。用门店自己的坐标标一个点，页面里自带
+     「打开高德APP」按钮 —— 想导航就自己点，我们绝不主动进入导航流程。 */
+  function markerUrl(geo, name) {
+    var url = "https://uri.amap.com/marker?position=" +
+      geo.lng.toFixed(6) + "," + geo.lat.toFixed(6);
+    if (name) url += "&name=" + enc(name);
+    return url + "&src=" + SRC;
   }
 
   /* ===== 三家适配器：一张表收口差异 =====
@@ -1127,11 +1139,13 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
     var n = enc(name);
     var out = {};
 
-    /* 高德：一律官方网页版 —— 有坐标走精确驾车路线，没坐标按门店名搜索。
-       绝不透传 navigation 里的 surl.amap.com 短链：那条经 wb.amap.com →
-       m.amap.com/callAPP，未装 App 时超时兜底会整页跳「立即下载高德」。
+    /* 高德：一律送到「看位置」页 —— 有坐标走位置标注页（marker），没坐标按
+       门店名搜索（search）。绝不用 uri.amap.com/navigation 驾车路线页（真机会
+       引导下载），也绝不透传 navigation 里的 surl.amap.com 短链（那条经
+       m.amap.com/callAPP，未装 App 时超时兜底整页跳「立即下载高德」）。
+       页面里自带「打开高德APP」按钮，是否用 App 由司机自己点。
        link 只参与下面的百度分支判断，不参与高德 URL。 */
-    out.amap = geo ? navigationUrl(geo, name) : keywordUrl(name);
+    out.amap = geo ? markerUrl(geo, name) : keywordUrl(name);
 
     /* 百度：destination 必须带 latlng: 前缀（纬度在前），|name: 后缀是可选标注。
        coord_type=gcj02 让百度自己把 GCJ-02 转成 BD-09；output=html 是网页版兜底。
@@ -1172,12 +1186,13 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
   }
 
   /* 返回 {url, kind:"geo"|"keyword"}；门店无任何可用信息时返回 null。
-     url 仍是高德默认链接 —— 菜单脚本没加载时点门店名也能导航（渐进增强）。
-     这里同样不透传短链，否则渐进增强路径会绕过上面的网页版约束。 */
+     url 仍是高德默认「看位置」链接 —— 菜单脚本没加载时点门店名也能用
+     （渐进增强）。这里同样只用 marker/search，绝不透传短链、绝不用驾车
+     路线页，否则渐进增强路径会绕过上面的约束。 */
   function resolve(store) {
     var geo = geoOf(store);
     var name = pickName(store);
-    if (geo) return { url: navigationUrl(geo, name), kind: "geo" };
+    if (geo) return { url: markerUrl(geo, name), kind: "geo" };
     return name ? { url: keywordUrl(name), kind: "keyword" } : null;
   }
 
@@ -1252,7 +1267,7 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
 
     var head = el("div", "zp-mn-head");
     head.appendChild(el("div", "zp-mn-title", "导航到 " + data.name));
-    head.appendChild(el("div", "zp-mn-sub", urls._geo ? "已绑定精确坐标，可直接作为导航终点" : "暂无坐标，将按门店名搜索"));
+    head.appendChild(el("div", "zp-mn-sub", urls._geo ? "已绑定精确坐标 · 打开门店位置，是否用 App 导航由您选" : "暂无坐标 · 将按门店名搜索门店位置"));
     var x = el("button", "zp-mn-close", "✕");
     x.type = "button";
     x.setAttribute("aria-label", "关闭");
@@ -1326,7 +1341,7 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
     resolve: resolve,
     linkAttrs: linkAttrs,
     keywordUrl: keywordUrl,
-    navigationUrl: navigationUrl,
+    markerUrl: markerUrl,
     providerUrls: providerUrls,
     navPayload: navPayload,
     isMapHost: isMapHost,
