@@ -97,6 +97,32 @@ export function fromText(raw) {
   return { lat: round(pair.lat), lng: round(pair.lng), name: "", address: "", kind: "coord" };
 }
 
+/* m.amap.com/callAPP?android=androidamap%3F...%26p%3D<POIID,lat,lng,name,address>
+   移动 UA 请求短链时高德会落到这个「唤起 App」中转页，坐标藏在 android/ios/mo
+   参数里而不是 URL 上。桌面 UA 虽然能直接拿到 ?p=，但高德随时可能统一策略，
+   所以两条路都认。 */
+export function fromCallApp(url) {
+  for (const key of ["android", "ios", "mo", "wp"]) {
+    const raw = url.searchParams.get(key);
+    if (!raw) continue;
+    const query = raw.split("?").slice(1).join("?");
+    if (!query) continue;
+    const p = new URLSearchParams(query).get("p");
+    if (!p) continue;
+    const parts = p.split(",").map((s) => s.trim());
+    const pair = pickPair(parts[1], parts[2]);
+    if (!pair) continue;
+    return {
+      lat: round(pair.lat),
+      lng: round(pair.lng),
+      name: text(parts[3]),
+      address: text(parts[4]),
+      kind: "amap-poi",
+    };
+  }
+  return null;
+}
+
 /* 返回 {hit} / {pending:URL} / {error} / null(不是 URL) */
 export function parseUrl(raw) {
   let u;
@@ -108,7 +134,7 @@ export function parseUrl(raw) {
   if (!/^https?:$/.test(u.protocol)) return null;
   if (u.username || u.password) return null;
   if (!hostAllowed(u.hostname)) return { error: "UNSUPPORTED_HOST" };
-  return fromPParam(u) || fromMarker(u) || { pending: u };
+  return fromPParam(u) || fromMarker(u) || fromCallApp(u) || { pending: u };
 }
 
 function snippetToCoord(html) {
@@ -140,8 +166,10 @@ export async function expand(u, timeoutMs = 4000) {
       redirect: "follow",
       signal: ctrl.signal,
       headers: {
+        /* 必须用桌面 UA：移动 UA 会落到 m.amap.com/callAPP 的唤起中转页，
+           URL 上没有 ?p=，坐标藏在参数里；桌面 UA 才直接落在 www.amap.com/?p= */
         "user-agent":
-          "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         accept: "text/html,application/xhtml+xml",
       },
     });
@@ -153,7 +181,7 @@ export async function expand(u, timeoutMs = 4000) {
     } catch {
       landed = u;
     }
-    const direct = fromPParam(landed) || fromMarker(landed);
+    const direct = fromPParam(landed) || fromMarker(landed) || fromCallApp(landed);
     if (direct) {
       try {
         res.body?.cancel();

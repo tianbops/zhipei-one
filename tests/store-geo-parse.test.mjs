@@ -19,6 +19,7 @@ import { fileURLToPath } from "node:url";
 import {
   fromPParam,
   fromMarker,
+  fromCallApp,
   fromText,
   pickPair,
   parseUrl,
@@ -84,6 +85,31 @@ console.log("\nmarker 链接（3 条）");
       const x = fromMarker(new URL("https://uri.amap.com/marker?position=29.5631,106.5512"));
       return x && x.lat === 29.5631;
     })()
+  );
+}
+
+console.log("\n唤起中转页 callAPP（3 条）");
+{
+  /* 移动 UA 请求短链时高德落到 m.amap.com/callAPP，坐标藏在 android 参数里 */
+  const u = new URL(
+    "https://m.amap.com/callAPP?android=androidamap%3Faction%3Dshorturl%26p%3DB000A8UIN8%2C39.91783884443746%2C116.3970284163952%2C%E6%95%85%E5%AE%AB%E5%8D%9A%E7%89%A9%E9%99%A2%2C%E6%99%AF%E5%B1%B1%E5%89%8D%E8%A1%974%E5%8F%B7"
+  );
+  const r = fromCallApp(u);
+  t(
+    "android 参数里的 p= 能解出坐标",
+    r && Math.abs(r.lat - 39.917839) < 1e-6 && Math.abs(r.lng - 116.397028) < 1e-6,
+    JSON.stringify(r)
+  );
+  t(
+    "名称与门牌地址一并还原",
+    r && r.name === "故宫博物院" && r.address === "景山前街4号",
+    JSON.stringify(r)
+  );
+  const p2 = parseUrl(u.href);
+  t(
+    "parseUrl 遇到 callAPP 直接返回坐标，不再 pending",
+    p2 && p2.lat === 39.917839 && !p2.pending,
+    JSON.stringify(p2)
   );
 }
 
