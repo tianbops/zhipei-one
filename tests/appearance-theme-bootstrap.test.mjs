@@ -143,14 +143,15 @@ assert.ok(allRootBlocks.some(b => b.body.includes("--zp-logo-plate:#05070A")),
 // ============================ D. 按钮体系 ============================
 // 危险操作按钮唯一标准：中性底 + 红字（用户 2026-10 决策「中性底+红字」——
 // 破坏性操作不用红底恐吓、也不延续灰字，与全站次按钮同底、仅文字取错误色）。
-// .history-delete（历史页整行滑动动作条）保持实底专用样式，显式排除；
-// .account-collapse-head（我的页折叠行）不是动作按钮，同样排除。
+// .history-delete（历史页整行滑动动作条）保持实底专用样式，显式排除。
+// 2026-11-05 全局体检：原选择器还带 :not(.account-collapse-head)，该类在账户页重构后
+// 已无任何元素使用（css-deadcode 审计 0 引用），条件恒真故从实现与断言里一并移除。
 // 取规则体后逐条断言（顺序无关），避免Phase 2 调整声明次序就误报。
 const ruleBodyOf = (css, selector) => {
   const m = css.match(new RegExp(selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "[^{]*\\{([^}]*)\\}"));
   return m ? m[1] : null;
 };
-const DANGER_SEL = 'button[class*="delete"]:not(.account-collapse-head):not(.history-delete)';
+const DANGER_SEL = 'button[class*="delete"]:not(.history-delete)';
 const dangerBody = ruleBodyOf(unified, DANGER_SEL);
 assert.ok(dangerBody !== null, "危险操作按钮唯一标准缺失：" + DANGER_SEL);
 assert.match(dangerBody, /background:\s*var\(--zp-secondary-bg\)\s*(?:!important)?/,
@@ -162,10 +163,13 @@ assert.match(dangerBody, /color:\s*var\(--zp-danger\)\s*(?:!important)?/,
   "危险操作按钮必须用红字 var(--zp-danger)（错误正文色，勿改回 --zp-error）");
 assert.ok(unified.includes(":not(.history-delete)"),
   "滑动动作条 .history-delete 必须从全站普通按钮危险样式中显式排除（透视+圆角直角混绘）");
-assert.ok(unified.includes('button[class*="delete"]:not(.account-collapse-head):not(.history-delete):active'), "危险操作按钮缺少按压状态");
-assert.ok(unified.includes('button[class*="delete"]:not(.account-collapse-head):disabled'), "危险操作按钮缺少禁用状态");
-assert.ok(unified.includes('button[class*="danger"]:not(.account-collapse-head)'),
-  "折叠行组件不得套用危险动作按钮实底样式（保留排除写法）");
+assert.ok(unified.includes('button[class*="delete"]:not(.history-delete):active'), "危险操作按钮缺少按压状态");
+assert.ok(unified.includes('button[class*="delete"]:disabled'), "危险操作按钮缺少禁用状态");
+// 折叠行组件（.account-collapse-head）已随账户页重构下线，对应的 :not() 排除写法
+// 在 2026-11-05 体检中移除；这里改为守护「危险态仍以 button[class*="danger"] 起手」，
+// 保证危险按钮标准本身还在，而不是锁死一条已恒真的过滤条件。
+assert.ok(unified.includes('button[class*="danger"]'),
+  "折叠行组件不得套用危险动作按钮实底样式（危险按钮标准缺失）");
 for (const selector of [".history-choice-delete", ".data-swipe-actions .data-swipe-delete", ".page2-danger-btn"]) {
   assert.ok(unified.includes(selector), "全局危险操作按钮样式缺少覆盖: " + selector);
 }

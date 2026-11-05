@@ -26,7 +26,7 @@ body {
 
 
 /* 阶段 6 · 5A：移除遗留 .topbar 死规则（无任何 HTML 使用裸 .topbar）。
-   标准 Header 钩子 .topbar 现统一定义于 css/ui-unified.css（权威层）。详见资产审计台账第二十四章。 */
+   标准 Header 钩子 .topbar 现统一定义于 css/ui-base.css（权威层）。详见资产审计台账第二十四章。 */
 
 .card {
   background: var(--zp-card);
@@ -567,14 +567,34 @@ body {
   background: var(--zp-input-bg);
 }
 
+/* 登录类页面（index / register / admin-bootstrap）的密码框走 feedback.js 的统一实现，
+   但登录表单的输入框是 54px 高（比业务页 48 更舒展）。包裹层与内部 input 都要对齐到
+   54，否则同一张表单里账号框 54、密码框 48，并排就能看出「两个控件不同高」。
+   特异性地 (0,3,1) 高于 ui-base.css 的 .zp-password-control input[type] (0,2,1)。
+   注意 54 是**含边框的总高**：账号框 .login-field input 带 box-sizing:border-box，
+   54 里已经包含上下各 1px 描边；包裹层不是 border-box，所以这里显式声明，
+   内部 input 取 52（52 + 上下描边 = 54），两者内容区高度才真的一致。
+   实测不写 box-sizing 时包裹层是 54+2=56，比账号框高 2px。 */
+.login-field .zp-password-control {
+  min-height: 54px;
+  box-sizing: border-box;
+}
+
+.login-field .zp-password-control input[type="password"],
+.login-field .zp-password-control input[type="text"] {
+  height: 52px;
+  min-height: 52px;
+  padding-right: 52px;
+}
+
 .login-message {
   min-height: 20px;
   margin: 0 0 7px;
-  /* 死规则：ui-overlay.css 的 .login-message 同选择器且后加载，实际取 var(--zp-error)；
-     此处对齐令牌，消除字面量分叉（浅色由 ui-theme 的 .login-message 补丁覆盖） */
-  color: var(--zp-danger);
   font-size:var(--zp-fs-13);
-  line-height: 20px;
+  /* 2026-11-05 全局体检：删掉这里的 color 与 line-height —— 两条都是从没生效过的
+     死声明（同选择器在 ui-overlay.css / ui-base.css 里后加载、同值或更强），
+     留着只会让「改哪个文件才有效」变成猜谜。颜色唯一来源 = ui-overlay.css 5.4 节，
+     行高唯一来源 = ui-base.css 的 .message,.login-message。 */
 }
 
 .login-submit {
@@ -1161,7 +1181,7 @@ html body :is(.data-page .app-back,.data-page .data-page-menu-btn,.order-shell .
 }
 
 /* 菜单统一为单层浮层 */
-.data-page-menu, .order-menu{
+.data-page-menu{
   border:1px solid var(--zp-line);
   border-radius:var(--zp-r-control);
   background:var(--zp-surface);
@@ -1169,9 +1189,9 @@ html body :is(.data-page .app-back,.data-page .data-page-menu-btn,.order-shell .
   overflow:hidden;
 }
 /* 菜单面板内的条目本身就是点击目标，不是「列表里的文字」，按第十三章必须 ≥48。
-   注意：本条是跨页面的兜底值，data.css / order_detail.css 里还有同选择器的后续定义，
+   注意：本条是跨页面的兜底值，data.css 里还有同选择器的后续定义，
    后者会覆盖这里 —— 已一并收敛，改动是否真的生效以 css-button-resolve.cjs 的页面级结果为准。 */
-.data-page-menu button, .order-menu button{
+.data-page-menu button{
   min-height:var(--zp-control-height);
 }
 .menu-divider{background:var(--zp-tint)}
@@ -1279,7 +1299,11 @@ textarea:-webkit-autofill{
 .message,.login-message{line-height:20px}
 .message.error,.login-message[role=alert]{color:var(--zp-danger)}
 
-/* Toast/轻反馈：用于成功、复制、保存等非破坏性反馈 */
+/* Toast/轻反馈：用于成功、复制、保存等非破坏性反馈。
+   400 是**层内相对值**，不是全站层级：feedback.js 把 toast 与确认框一起塞进
+   #zpUiLayer（该容器 z-index:var(--ui-z-modal-top)=1200），对外只有容器的层级生效，
+   这里的 400/500 只决定「确认框压住 toast」。所以不要按 --ui-z-toast(2000) 去改它，
+   改了也不会让 toast 在业务弹窗之上 —— 那由容器的 1200 决定。 */
 .ui-toast{
   position:fixed;
   left:50%;
@@ -1291,8 +1315,8 @@ textarea:-webkit-autofill{
   border-radius:var(--zp-r-mini);
   background:var(--zp-surface);
   color:var(--zp-text);
-  font-size:var(--zp-fs-13);
-  line-height:18px;
+  font-size:var(--zp-fs-15);
+  line-height:21px;
   text-align:center;
   box-shadow:var(--zp-shadow-md);
   transform:translate(-50%,10px);
@@ -1365,7 +1389,9 @@ textarea:-webkit-autofill{
    本段只列「组件自身没有字号声明」的那些，有声明的一律以组件为准：
      · .topbar strong / .section-title —— 顶栏标题与区块标题的兜底
      · 弹窗标题 / 正文 / 按钮 —— account-dialog 等原本完全依赖 !important
-     · .ui-toast —— 全局提示 */
+   注：.ui-toast 不在此列 —— 它有自己的块（上方 607 行附近），字号/行高随组件声明，
+   2026-11-05 体检时把这里重复的一条（15/21）并回组件块，删掉了「13/18 被 15/21 覆盖」
+   的死声明。同一选择器只保留一处定义。 */
 .topbar strong{font-size:var(--zp-fs-20);line-height:26px}
 .section-title{font-size:var(--zp-fs-18);line-height:24px}
 .order-dialog-head strong,.data-import-head h3,.history-dialog-panel>strong,
@@ -1374,7 +1400,6 @@ textarea:-webkit-autofill{
 .zp-confirm-panel p{font-size:var(--zp-fs-15);line-height:22px}
 .data-import-actions button,.history-dialog-actions button,.order-dialog-actions button,
 .account-dialog-actions button,.zp-confirm-actions button{font-size:var(--zp-fs-16);line-height:var(--zp-lh-22)}
-.ui-toast{font-size:var(--zp-fs-15);line-height:21px}
 
 /* 弹层定位与圆角（2026-10-29 去 !important）：遮罩的 display/居中/padding 与
    面板的 width/圆角/最大高度，唯一完整定义在 css/ui-overlay.css 的 4.0 节，
@@ -1501,16 +1526,13 @@ html[data-zp-e2e="1"] body::after{
 .zp-btn:disabled,.zp-btn[aria-disabled="true"]{opacity:.55;cursor:not-allowed;transform:none}
 
 /* ===== 密码框（含显隐按钮）原语 =====
-   2026-10-29 UI 专项整治：index.html / register.html / admin-bootstrap.html
-   三处各自内联了一份**逐字节相同**的 .password-field / .password-toggle
-   （6 行 × 3 份），属于「同一控件抄三遍」。现收进本层作为唯一来源，
-   三页各删内联块。类名与 DOM 结构未动，JS 选择器零改动。
-   显隐按钮高 48 与输入框同高、右内缩 6px，触控靶区 40×48。 */
-.password-field{position:relative}
-.password-field input{padding-right:52px}
-.password-toggle{position:absolute;right:6px;bottom:0;width:40px;height:48px;padding:0;border:0;background:transparent;color:var(--zp-muted);display:flex;align-items:center;justify-content:center;cursor:pointer}
-.password-toggle:hover{color:var(--zp-text)}
-.password-toggle svg{width:20px;height:20px;pointer-events:none}
+   2026-11-05 全局体检：删掉这里的 .password-field / .password-toggle（旧版第二套实现）。
+   它们曾被 index / register / admin-bootstrap 三页各抄一份，2026-10-29 收进本层时
+   只解决了「三份 CSS 合并」，没解决「两套控件并存」—— 业务页早就是
+   .zp-password-control + feedback.js 的统一实现（白底 + --zp-input-line 边 + 38px 眼睛），
+   而登录类三页还是裸 label + 绝对定位按钮（40×48、无容器描边），同一个 App 里
+   密码框有两种长相。现在三页也交给 feedback.js 自动包裹，旧类与旧按钮一并删除，
+   全站只剩一套。尺寸差异（登录页 54 / 业务页 48）由 app.css 的 .login-field 段承接。 */
 
 /* ===== 常驻底部导航原语（2026-10-29 底栏收编） =====
    背景：底栏曾有三份实现，全都叫 .bottom-nav，靠页面级前缀与 !important 抢胜负：
@@ -1549,6 +1571,9 @@ html[data-zp-e2e="1"] body::after{
   background:none;
   border:0;
   box-shadow:none;
+  /* 收起/回来是滑动，不是瞬移。过渡写在本块而不是另起一条只写 transition 的规则 ——
+     同一选择器拆成两处时，改其中一处很容易漏掉另一处（本文件历史上就出现过）。 */
+  transition:transform .24s cubic-bezier(.32,.72,0,1);
 }
 /* 浮岛表面层（实色板）。为什么不在 .zp-nav 上直接画：
    加号是「独立」的 —— 浮岛顶边绕着它凹进去，加号四周留一圈页面色，
@@ -1616,7 +1641,6 @@ html[data-zp-e2e="1"] body::after{
    五版加了「收起后加号独立留在底部」（见下面的反向补偿），所以这个余量只针对浮岛本体，
    不再需要覆盖加号上凸量。将来若调大浮岛高度，这里不用改（100% 跟着走）。
    必须保留 -50% 的横向分量，否则隐藏瞬间会横向跳到屏幕左侧。 */
-.zp-nav{transition:transform .24s cubic-bezier(.32,.72,0,1)}
 .zp-nav.is-nav-hidden{transform:translate(-50%,calc(100% + 32px));pointer-events:none}
 /* 五版（参考软件收起态）：浮岛整条沉下去，中间的加号**不跟着走**，
    独自停在距屏底 21px 处继续可见。
@@ -2138,8 +2162,8 @@ textarea::placeholder {
 
 /* 禁用态：破坏性动作按钮禁用时整体弱化、光标禁示；
    双主题通用（原浅色补丁规则去前缀，深色下同样生效）。 */
-button[class*="delete"]:not(.account-collapse-head):disabled,
-button[class*="danger"]:not(.account-collapse-head):disabled,
+button[class*="delete"]:disabled,
+button[class*="danger"]:disabled,
 .history-choice-delete:disabled {
   opacity:.55;
   cursor:not-allowed;
@@ -2151,14 +2175,15 @@ button[class*="danger"]:not(.account-collapse-head):disabled,
    四令牌（--zp-secondary-bg 底 / --zp-line 边 / --zp-error 字 / --zp-secondary-active
    按压）双主题各有一套值，一套规则自动自适应，无需拆深浅两套 !important 特化。
    历史页整行滑动动作条 .history-delete 显式排除：它是实底专用形态（带边框会与
-   行宽不齐、两端混绘出白边），颜色与本标准同族，基座见 history-shell.css；
-   .account-collapse-head 是折叠行非动作按钮，同样排除。
+   行宽不齐、两端混绘出白边），颜色与本标准同族，基座见 history-shell.css。
+   2026-11-05 体检：原选择器还带 :not(.account-collapse-head)（折叠行非动作按钮），
+   该类在账户页重构后已不存在，条件恒真 —— 一并删除，避免以后误以为它还在起过滤作用。
    2026-10-29：四条 !important 已撤除 —— 各页面级 danger 规则（账号注销、管理端滑出删除、
    运单删除、数据左滑删除）本轮已把取值对齐到同一组令牌，不再需要靠优先级压平；
    保留 !important 只会让「下一处新增按钮为什么变样」再次变成黑盒。 */
-button[class*="delete"]:not(.account-collapse-head):not(.history-delete),
+button[class*="delete"]:not(.history-delete),
 a[class*="delete"],
-button[class*="danger"]:not(.account-collapse-head),
+button[class*="danger"],
 a[class*="danger"],
 .history-choice-delete,
 .history-dialog-actions .delete,
@@ -2170,9 +2195,9 @@ a[class*="danger"],
   color:var(--zp-danger);
   box-shadow:none;
 }
-button[class*="delete"]:not(.account-collapse-head):not(.history-delete):active,
+button[class*="delete"]:not(.history-delete):active,
 a[class*="delete"]:active,
-button[class*="danger"]:not(.account-collapse-head):active,
+button[class*="danger"]:active,
 a[class*="danger"]:active,
 .history-choice-delete:active,
 .history-dialog-actions .delete:active,
@@ -2341,7 +2366,7 @@ html[data-zp-boot="hop"] .login-shell{display:none!important}
    与「所有业务弹窗统一居中、18px 圆角、实底」的口径冲突，也把 20px 这个
    不在圆角刻度内的值带了回来。入场动效同样由 ui-overlay 的
    .upload-sheet{animation:zpModalIn} 统一给出。 */
-.sheet-handle{width:34px;height:4px;margin:0 auto 16px;border-radius:4px;background:var(--zp-tint-strong)}
+.sheet-handle{width:34px;height:4px;margin:0 auto 16px;border-radius:var(--zp-r-handle);background:var(--zp-tint-strong)}
 .upload-source-menu{margin:0;padding:0;background:transparent}
 .source-menu-title{height:28px;line-height:28px;margin:0 0 20px;color:var(--zp-text);text-align:center;font-size:var(--zp-fs-20);font-weight:var(--zp-fw-bold)}
 /* 2026-10-26 新增「粘贴文本」录入：来源入口从 3 列改 2×2，每格更宽容纳四项文案 */
@@ -2466,7 +2491,7 @@ html[data-zp-boot="hop"] .login-shell{display:none!important}
   background-size:200% 100%;
   animation:zpSkelHome 1.4s ease-in-out infinite;
 }
-.today-store-list .skel-idx{width:22px;min-width:22px;height:13px;border-radius:4px}
+.today-store-list .skel-idx{width:22px;min-width:22px;height:13px;border-radius:var(--zp-r-handle)}
 .today-store-list .skel-name{height:15px;width:58%;max-width:250px}
 .today-store-list .skel-name--short{width:42%;max-width:180px}
 @media(prefers-reduced-motion:reduce){.skel-bar{animation:none}}
@@ -2533,10 +2558,6 @@ html[data-zp-boot="hop"] .login-shell{display:none!important}
 .trend-year-bar{fill:var(--zp-tint-strong)}
 .trend-year-bar.is-peak{fill:var(--zp-primary)}
 .trend-axis{height:15px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 3px;color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:13px;font-variant-numeric:tabular-nums}
-/* flex:0 1 auto（原来是 none）——单行放不下时允许收缩并在内部折行，
-   配合上面的 .trend-bottom-row{flex-wrap:wrap}，长文案不会横向压到汇总上。 */
-.trend-hint{min-width:0;flex:0 1 auto;margin-left:auto;min-height:0;margin-top:0;color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:14px;text-align:right}
-.trend-hint b{color:var(--zp-muted);font-weight:var(--zp-fw-semibold);font-variant-numeric:tabular-nums}
 @media(prefers-reduced-motion:reduce){
   .trend-card.is-in{animation:none}
   .trend-chart-wrap{transition:none!important}
@@ -2558,7 +2579,7 @@ html[data-zp-boot="hop"] .login-shell{display:none!important}
 .trend-card.is-skel{pointer-events:none}
 .trend-card.is-skel .trend-bottom-row{display:none}
 .trend-card.is-skel .trend-controls{opacity:.6}
-.skel-chart{height:100%;border-radius:6px}
+.skel-chart{height:100%;border-radius:var(--zp-r-chip)}
 .skel-stats{display:flex;align-items:center;gap:14px;margin-top:9px}
 .skel-stats .skel-bar{height:15px;width:46px}
 .skel-stats .skel-bar--wide{width:78px}

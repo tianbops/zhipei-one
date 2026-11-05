@@ -485,7 +485,7 @@ html body :is(.data-page .app-back,.data-page .data-page-menu-btn,.order-shell .
 }
 
 /* 菜单统一为单层浮层 */
-.data-page-menu, .order-menu{
+.data-page-menu{
   border:1px solid var(--zp-line);
   border-radius:var(--zp-r-control);
   background:var(--zp-surface);
@@ -493,9 +493,9 @@ html body :is(.data-page .app-back,.data-page .data-page-menu-btn,.order-shell .
   overflow:hidden;
 }
 /* 菜单面板内的条目本身就是点击目标，不是「列表里的文字」，按第十三章必须 ≥48。
-   注意：本条是跨页面的兜底值，data.css / order_detail.css 里还有同选择器的后续定义，
+   注意：本条是跨页面的兜底值，data.css 里还有同选择器的后续定义，
    后者会覆盖这里 —— 已一并收敛，改动是否真的生效以 css-button-resolve.cjs 的页面级结果为准。 */
-.data-page-menu button, .order-menu button{
+.data-page-menu button{
   min-height:var(--zp-control-height);
 }
 .menu-divider{background:var(--zp-tint)}
@@ -603,7 +603,11 @@ textarea:-webkit-autofill{
 .message,.login-message{line-height:20px}
 .message.error,.login-message[role=alert]{color:var(--zp-danger)}
 
-/* Toast/轻反馈：用于成功、复制、保存等非破坏性反馈 */
+/* Toast/轻反馈：用于成功、复制、保存等非破坏性反馈。
+   400 是**层内相对值**，不是全站层级：feedback.js 把 toast 与确认框一起塞进
+   #zpUiLayer（该容器 z-index:var(--ui-z-modal-top)=1200），对外只有容器的层级生效，
+   这里的 400/500 只决定「确认框压住 toast」。所以不要按 --ui-z-toast(2000) 去改它，
+   改了也不会让 toast 在业务弹窗之上 —— 那由容器的 1200 决定。 */
 .ui-toast{
   position:fixed;
   left:50%;
@@ -615,8 +619,8 @@ textarea:-webkit-autofill{
   border-radius:var(--zp-r-mini);
   background:var(--zp-surface);
   color:var(--zp-text);
-  font-size:var(--zp-fs-13);
-  line-height:18px;
+  font-size:var(--zp-fs-15);
+  line-height:21px;
   text-align:center;
   box-shadow:var(--zp-shadow-md);
   transform:translate(-50%,10px);
@@ -689,7 +693,9 @@ textarea:-webkit-autofill{
    本段只列「组件自身没有字号声明」的那些，有声明的一律以组件为准：
      · .topbar strong / .section-title —— 顶栏标题与区块标题的兜底
      · 弹窗标题 / 正文 / 按钮 —— account-dialog 等原本完全依赖 !important
-     · .ui-toast —— 全局提示 */
+   注：.ui-toast 不在此列 —— 它有自己的块（上方 607 行附近），字号/行高随组件声明，
+   2026-11-05 体检时把这里重复的一条（15/21）并回组件块，删掉了「13/18 被 15/21 覆盖」
+   的死声明。同一选择器只保留一处定义。 */
 .topbar strong{font-size:var(--zp-fs-20);line-height:26px}
 .section-title{font-size:var(--zp-fs-18);line-height:24px}
 .order-dialog-head strong,.data-import-head h3,.history-dialog-panel>strong,
@@ -698,7 +704,6 @@ textarea:-webkit-autofill{
 .zp-confirm-panel p{font-size:var(--zp-fs-15);line-height:22px}
 .data-import-actions button,.history-dialog-actions button,.order-dialog-actions button,
 .account-dialog-actions button,.zp-confirm-actions button{font-size:var(--zp-fs-16);line-height:var(--zp-lh-22)}
-.ui-toast{font-size:var(--zp-fs-15);line-height:21px}
 
 /* 弹层定位与圆角（2026-10-29 去 !important）：遮罩的 display/居中/padding 与
    面板的 width/圆角/最大高度，唯一完整定义在 css/ui-overlay.css 的 4.0 节，
@@ -825,16 +830,13 @@ html[data-zp-e2e="1"] body::after{
 .zp-btn:disabled,.zp-btn[aria-disabled="true"]{opacity:.55;cursor:not-allowed;transform:none}
 
 /* ===== 密码框（含显隐按钮）原语 =====
-   2026-10-29 UI 专项整治：index.html / register.html / admin-bootstrap.html
-   三处各自内联了一份**逐字节相同**的 .password-field / .password-toggle
-   （6 行 × 3 份），属于「同一控件抄三遍」。现收进本层作为唯一来源，
-   三页各删内联块。类名与 DOM 结构未动，JS 选择器零改动。
-   显隐按钮高 48 与输入框同高、右内缩 6px，触控靶区 40×48。 */
-.password-field{position:relative}
-.password-field input{padding-right:52px}
-.password-toggle{position:absolute;right:6px;bottom:0;width:40px;height:48px;padding:0;border:0;background:transparent;color:var(--zp-muted);display:flex;align-items:center;justify-content:center;cursor:pointer}
-.password-toggle:hover{color:var(--zp-text)}
-.password-toggle svg{width:20px;height:20px;pointer-events:none}
+   2026-11-05 全局体检：删掉这里的 .password-field / .password-toggle（旧版第二套实现）。
+   它们曾被 index / register / admin-bootstrap 三页各抄一份，2026-10-29 收进本层时
+   只解决了「三份 CSS 合并」，没解决「两套控件并存」—— 业务页早就是
+   .zp-password-control + feedback.js 的统一实现（白底 + --zp-input-line 边 + 38px 眼睛），
+   而登录类三页还是裸 label + 绝对定位按钮（40×48、无容器描边），同一个 App 里
+   密码框有两种长相。现在三页也交给 feedback.js 自动包裹，旧类与旧按钮一并删除，
+   全站只剩一套。尺寸差异（登录页 54 / 业务页 48）由 app.css 的 .login-field 段承接。 */
 
 /* ===== 常驻底部导航原语（2026-10-29 底栏收编） =====
    背景：底栏曾有三份实现，全都叫 .bottom-nav，靠页面级前缀与 !important 抢胜负：
@@ -873,6 +875,9 @@ html[data-zp-e2e="1"] body::after{
   background:none;
   border:0;
   box-shadow:none;
+  /* 收起/回来是滑动，不是瞬移。过渡写在本块而不是另起一条只写 transition 的规则 ——
+     同一选择器拆成两处时，改其中一处很容易漏掉另一处（本文件历史上就出现过）。 */
+  transition:transform .24s cubic-bezier(.32,.72,0,1);
 }
 /* 浮岛表面层（实色板）。为什么不在 .zp-nav 上直接画：
    加号是「独立」的 —— 浮岛顶边绕着它凹进去，加号四周留一圈页面色，
@@ -940,7 +945,6 @@ html[data-zp-e2e="1"] body::after{
    五版加了「收起后加号独立留在底部」（见下面的反向补偿），所以这个余量只针对浮岛本体，
    不再需要覆盖加号上凸量。将来若调大浮岛高度，这里不用改（100% 跟着走）。
    必须保留 -50% 的横向分量，否则隐藏瞬间会横向跳到屏幕左侧。 */
-.zp-nav{transition:transform .24s cubic-bezier(.32,.72,0,1)}
 .zp-nav.is-nav-hidden{transform:translate(-50%,calc(100% + 32px));pointer-events:none}
 /* 五版（参考软件收起态）：浮岛整条沉下去，中间的加号**不跟着走**，
    独自停在距屏底 21px 处继续可见。

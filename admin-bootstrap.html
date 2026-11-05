@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="智配One">
-<link rel="stylesheet" href="/css/app.css?v=3ac0265a"><link rel="stylesheet" href="/css/ui-base.css?v=f0d5ae73"><link rel="stylesheet" href="/css/ui-overlay.css?v=07775030"><link rel="stylesheet" href="/css/ui-theme.css?v=f4a0c28e"><link rel="stylesheet" href="/css/ui-shell.css?v=8537d8fb"><link rel="stylesheet" href="/css/entry-brand.css?v=cdf9fe5e">
+<link rel="stylesheet" href="/css/app.css?v=3e4da6dd"><link rel="stylesheet" href="/css/ui-base.css?v=b2030d73"><link rel="stylesheet" href="/css/ui-overlay.css?v=07775030"><link rel="stylesheet" href="/css/ui-theme.css?v=eb09ffcc"><link rel="stylesheet" href="/css/ui-shell.css?v=8537d8fb"><link rel="stylesheet" href="/css/entry-brand.css?v=cdf9fe5e">
 
 </head>
 <body>
@@ -30,20 +30,14 @@
 <input id="username" autocomplete="username" placeholder="请输入管理员账号" required maxlength="32">
 </label>
 
-<label class="login-field password-field">
+<label class="login-field">
 <span>管理员密码</span>
 <input id="password" type="password" autocomplete="new-password" placeholder="请输入管理员密码" minlength="8" required>
-<button type="button" class="password-toggle" data-password-toggle="password" aria-label="显示密码" aria-pressed="false" hidden>
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.2 12s3.2-5 9.8-5 9.8 5 9.8 5-3.2 5-9.8 5-9.8-5-9.8-5Z"/><circle cx="12" cy="12" r="2.5"/></svg>
-</button>
 </label>
 
-<label class="login-field password-field">
+<label class="login-field">
 <span>初始化密钥</span>
 <input id="setupKey" type="password" autocomplete="off" placeholder="请输入初始化密钥" required>
-<button type="button" class="password-toggle" data-password-toggle="setupKey" aria-label="显示密钥" aria-pressed="false" hidden>
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.2 12s3.2-5 9.8-5 9.8 5 9.8 5-3.2 5-9.8 5-9.8-5-9.8-5Z"/><circle cx="12" cy="12" r="2.5"/></svg>
-</button>
 </label>
 
 <div id="message" class="login-message" role="alert"></div>
@@ -59,28 +53,6 @@
 const form=document.getElementById('form');
 const message=document.getElementById('message');
 const button=document.getElementById('button');
-
-document.querySelectorAll('[data-password-toggle]').forEach(toggle=>{
- const input=document.getElementById(toggle.dataset.passwordToggle);
- if(!input)return;
- const syncVisibility=()=>{
-  toggle.hidden=input.value.length===0;
-  if(toggle.hidden&&input.type==='text'){
-   input.type='password';
-   toggle.setAttribute('aria-pressed','false');
-   toggle.setAttribute('aria-label',toggle.dataset.passwordToggle==='setupKey'?'显示密钥':'显示密码');
-  }
- };
- syncVisibility();
- input.addEventListener('input',syncVisibility);
- toggle.addEventListener('click',()=>{
-  if(input.value.length===0)return;
-  const visible=input.type==='text';
-  input.type=visible?'password':'text';
-  toggle.setAttribute('aria-pressed',String(!visible));
-  toggle.setAttribute('aria-label',visible?(toggle.dataset.passwordToggle==='setupKey'?'显示密钥':'显示密码'):(toggle.dataset.passwordToggle==='setupKey'?'隐藏密钥':'隐藏密码'));
- });
-});
 
 form.addEventListener('submit',async e=>{
  e.preventDefault();
@@ -104,7 +76,7 @@ form.addEventListener('submit',async e=>{
  }
 });
 </script>
-<script src="/js/pwa.js?v=68dbac73"></script>
+<script src="/js/ui/feedback.js?v=f8da0256"></script><script src="/js/pwa.js?v=68dbac73"></script>
 <script defer src="/js/boot-ready.js?v=4e3f49ea"></script>
 </body>
 </html>

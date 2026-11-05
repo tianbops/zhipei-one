@@ -4,12 +4,7 @@
 .order-icon-btn{width:var(--zp-control-height);height:var(--zp-control-height);border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-2);color:var(--zp-text);display:flex;align-items:center;justify-content:center}
 .order-icon-btn svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .order-icon-btn:active{background:var(--zp-primary);color:var(--zp-on-primary);transform:scale(.97)}
-.order-menu{position:absolute;right:0;top:48px;width:190px;background:var(--zp-surface);border:1px solid var(--zp-line);border-radius:var(--zp-r-control);box-shadow:0 10px 24px var(--zp-shadow-menu);overflow:hidden;animation:zpMenuIn .14s ease-out}
-.order-menu[hidden],.order-dialog[hidden]{display:none}
-.order-menu button,.order-menu-route{width:100%;min-height:var(--zp-control-height);border:0;border-bottom:1px solid var(--zp-tint);background:transparent;color:var(--zp-text);text-align:left;padding:0 16px;font-size:var(--zp-fs-14)}
-.order-menu-route{display:flex;align-items:center;background:var(--zp-surface-3);font-weight:var(--zp-fw-semibold)}
-.order-menu button{display:flex;align-items:center}
-.order-menu button:active{background:var(--zp-primary);color:var(--zp-on-primary)}.order-menu .logout{color:var(--zp-danger);border-bottom:0}
+.order-dialog[hidden]{display:none}
 .order-summary-card,.order-route-card{background:var(--zp-card);border:1px solid var(--zp-tint);border-radius:var(--zp-r-card);box-shadow:none}
 .order-summary-card{padding:14px 15px 13px;flex:0 0 auto;margin-bottom:10px}
 .order-date{text-align:center;font-size:var(--zp-fs-14);line-height:22px;color:var(--zp-text);font-weight:var(--zp-fw-semibold)}
@@ -222,7 +217,6 @@
 
 /* Android typography readability adjustment: size/line-height only */
 .order-title{font-size:var(--zp-fs-20);line-height:26px}
-.order-menu button,.order-menu-route{font-size:var(--zp-fs-16);line-height:22px}
 .order-date{font-size:var(--zp-fs-16);line-height:23px}
 .order-summary-main{font-size:var(--zp-fs-22);line-height:28px}
 .order-summary-main span:nth-child(2),.order-summary-main span:nth-child(5){font-size:var(--zp-fs-15);line-height:20px}

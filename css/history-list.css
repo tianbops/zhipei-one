@@ -4,7 +4,7 @@
 /* 板块宽度对齐全局：全局间距 token 为 --zp-space-4（16px），线路页 .dispatch-page
    即用 16px。历史页此前是满宽贴边（内缩 0），与各页不一致；此处统一到 16px。
    用 main.history-shell（0,1,1）与 main.zp-shell 同特异性，靠后加载胜出，
-   且不受 ui-unified 中 main.zp-shell 的 padding-top/bottom:0 影响。
+   且不受 ui-base.css 中 main.zp-shell 的 padding-top/bottom:0 影响。
    注意：板块自身不再重复缩进（见下方 .history-actions 等归零），否则会变成 16+16。 */
 .history-card{
   padding:0;

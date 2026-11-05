@@ -114,8 +114,8 @@ textarea::placeholder {
 
 /* 禁用态：破坏性动作按钮禁用时整体弱化、光标禁示；
    双主题通用（原浅色补丁规则去前缀，深色下同样生效）。 */
-button[class*="delete"]:not(.account-collapse-head):disabled,
-button[class*="danger"]:not(.account-collapse-head):disabled,
+button[class*="delete"]:disabled,
+button[class*="danger"]:disabled,
 .history-choice-delete:disabled {
   opacity:.55;
   cursor:not-allowed;
@@ -127,14 +127,15 @@ button[class*="danger"]:not(.account-collapse-head):disabled,
    四令牌（--zp-secondary-bg 底 / --zp-line 边 / --zp-error 字 / --zp-secondary-active
    按压）双主题各有一套值，一套规则自动自适应，无需拆深浅两套 !important 特化。
    历史页整行滑动动作条 .history-delete 显式排除：它是实底专用形态（带边框会与
-   行宽不齐、两端混绘出白边），颜色与本标准同族，基座见 history-shell.css；
-   .account-collapse-head 是折叠行非动作按钮，同样排除。
+   行宽不齐、两端混绘出白边），颜色与本标准同族，基座见 history-shell.css。
+   2026-11-05 体检：原选择器还带 :not(.account-collapse-head)（折叠行非动作按钮），
+   该类在账户页重构后已不存在，条件恒真 —— 一并删除，避免以后误以为它还在起过滤作用。
    2026-10-29：四条 !important 已撤除 —— 各页面级 danger 规则（账号注销、管理端滑出删除、
    运单删除、数据左滑删除）本轮已把取值对齐到同一组令牌，不再需要靠优先级压平；
    保留 !important 只会让「下一处新增按钮为什么变样」再次变成黑盒。 */
-button[class*="delete"]:not(.account-collapse-head):not(.history-delete),
+button[class*="delete"]:not(.history-delete),
 a[class*="delete"],
-button[class*="danger"]:not(.account-collapse-head),
+button[class*="danger"],
 a[class*="danger"],
 .history-choice-delete,
 .history-dialog-actions .delete,
@@ -146,9 +147,9 @@ a[class*="danger"],
   color:var(--zp-danger);
   box-shadow:none;
 }
-button[class*="delete"]:not(.account-collapse-head):not(.history-delete):active,
+button[class*="delete"]:not(.history-delete):active,
 a[class*="delete"]:active,
-button[class*="danger"]:not(.account-collapse-head):active,
+button[class*="danger"]:active,
 a[class*="danger"]:active,
 .history-choice-delete:active,
 .history-dialog-actions .delete:active,

@@ -60,10 +60,6 @@
 .trend-year-bar{fill:var(--zp-tint-strong)}
 .trend-year-bar.is-peak{fill:var(--zp-primary)}
 .trend-axis{height:15px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 3px;color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:13px;font-variant-numeric:tabular-nums}
-/* flex:0 1 auto（原来是 none）——单行放不下时允许收缩并在内部折行，
-   配合上面的 .trend-bottom-row{flex-wrap:wrap}，长文案不会横向压到汇总上。 */
-.trend-hint{min-width:0;flex:0 1 auto;margin-left:auto;min-height:0;margin-top:0;color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:14px;text-align:right}
-.trend-hint b{color:var(--zp-muted);font-weight:var(--zp-fw-semibold);font-variant-numeric:tabular-nums}
 @media(prefers-reduced-motion:reduce){
   .trend-card.is-in{animation:none}
   .trend-chart-wrap{transition:none!important}
@@ -85,7 +81,7 @@
 .trend-card.is-skel{pointer-events:none}
 .trend-card.is-skel .trend-bottom-row{display:none}
 .trend-card.is-skel .trend-controls{opacity:.6}
-.skel-chart{height:100%;border-radius:6px}
+.skel-chart{height:100%;border-radius:var(--zp-r-chip)}
 .skel-stats{display:flex;align-items:center;gap:14px;margin-top:9px}
 .skel-stats .skel-bar{height:15px;width:46px}
 .skel-stats .skel-bar--wide{width:78px}

@@ -52,7 +52,7 @@
    与「所有业务弹窗统一居中、18px 圆角、实底」的口径冲突，也把 20px 这个
    不在圆角刻度内的值带了回来。入场动效同样由 ui-overlay 的
    .upload-sheet{animation:zpModalIn} 统一给出。 */
-.sheet-handle{width:34px;height:4px;margin:0 auto 16px;border-radius:4px;background:var(--zp-tint-strong)}
+.sheet-handle{width:34px;height:4px;margin:0 auto 16px;border-radius:var(--zp-r-handle);background:var(--zp-tint-strong)}
 .upload-source-menu{margin:0;padding:0;background:transparent}
 .source-menu-title{height:28px;line-height:28px;margin:0 0 20px;color:var(--zp-text);text-align:center;font-size:var(--zp-fs-20);font-weight:var(--zp-fw-bold)}
 /* 2026-10-26 新增「粘贴文本」录入：来源入口从 3 列改 2×2，每格更宽容纳四项文案 */
@@ -177,7 +177,7 @@
   background-size:200% 100%;
   animation:zpSkelHome 1.4s ease-in-out infinite;
 }
-.today-store-list .skel-idx{width:22px;min-width:22px;height:13px;border-radius:4px}
+.today-store-list .skel-idx{width:22px;min-width:22px;height:13px;border-radius:var(--zp-r-handle)}
 .today-store-list .skel-name{height:15px;width:58%;max-width:250px}
 .today-store-list .skel-name--short{width:42%;max-width:180px}
 @media(prefers-reduced-motion:reduce){.skel-bar{animation:none}}
