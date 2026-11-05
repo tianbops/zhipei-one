@@ -74,6 +74,10 @@ jobs:
         env:
           CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
         run: node tests/e2e-data-swipe.cjs
+      - name: Verify data center back goes to route maintenance
+        env:
+          CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
+        run: node tests/e2e-data-back.cjs
       - name: Verify history month reveals from the top
         env:
           CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}

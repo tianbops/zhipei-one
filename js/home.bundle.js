@@ -2467,8 +2467,16 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
     process:"/home",
     home:"/home"
   };
-  // 静态父级：没有 from= 也能确定归属的页（页脚/条款都是账户页的下级）
-  const zpStaticParent={"/pages/privacy":"/pages/account","/pages/terms":"/pages/account"};
+  /* 静态父级：没有 from= 也能确定归属的页。
+     页脚/条款归属「我的」；数据中心归属「线路维护」——它是「线路维护」页里的
+     「数据中心」入口进来的二级页，默认返回就该回到线路维护，丢回首页会丢掉
+     刚选的线路上下文（2026-11-05 产品设定）。from=order 的编辑往返在
+     zpParentOf 最前面单独处理，不受这里影响。 */
+  const zpStaticParent={
+    "/pages/privacy":"/pages/account",
+    "/pages/terms":"/pages/account",
+    "/pages/data":"/pages/dispatch"
+  };
 
   function zpParentOf(path,params){
     // 详情 → 数据资料（编辑线路）：必须回到那张运单，否则用户丢掉正在改的单。

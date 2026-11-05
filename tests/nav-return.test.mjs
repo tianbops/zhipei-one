@@ -89,7 +89,8 @@ console.log("一、层级返回（业务端 34 条）");
     ["/pages/order_detail?id=W1", "", "/home", "详情无来源→首页"],
     ["/pages/order_detail?from=today", "", "/home", "未登记来源 today→首页"],
     ["/pages/data?from=dispatch", "", "/pages/dispatch", "派单→数据资料→回派单"],
-    ["/pages/data", "", "/home", "数据资料无来源→首页"],
+    ["/pages/data", "", "/pages/dispatch", "数据资料无来源→默认回线路维护（静态父级）"],
+    ["/pages/data?from=constructor", "", "/pages/dispatch", "数据资料未登记来源→仍回线路维护，不回首页"],
     ["/pages/data?from=order&id=W9&source=process", "", "/pages/order_detail?id=W9&source=process&from=process",
       "详情→数据资料→回原运单"],
     ["/pages/data?from=order&id=W9&origin=history", "", "/pages/order_detail?id=W9&source=process&from=history",
@@ -132,7 +133,7 @@ console.log("\n二、跨区防火墙（管理员端 12 条）");
     ["/admin", "/pages/data", "/admin", "fallback 为业务页→防火墙拦截"],
     ["/admin?tab=1", "", "/admin", "四个面板是平级一级页，不构成历史层级"],
     ["/home?from=admin", "", "/home", "反向越权：业务端不得进入管理端"],
-    ["/pages/data?from=admin", "", "/home", "反向越权：业务子页不得进入管理端"],
+    ["/pages/data?from=admin", "", "/pages/dispatch", "反向越权：业务子页不得进入管理端，回线路维护"],
     ["/admin?from=admin", "", "/admin", "自我返回→兜底到本区根，防死循环"],
   ];
   for (const [url, fb, want, name] of cases) {
