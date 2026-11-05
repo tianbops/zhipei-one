@@ -123,8 +123,8 @@ const SNAP_DETAIL = `(()=>{
   const ev = async (s) => { const r = await C('Runtime.evaluate', { expression: s, returnByValue: true, awaitPromise: true }); if (r.exceptionDetails) return { err: String(r.exceptionDetails.text).slice(0, 160) }; return r.result.value; };
 
   await C('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
-  /* 必须同时覆盖 UA：isMobile() 读 navigator.userAgent，只改 metrics 会让关键词链接
-     少掉 callnative（桌面 UA 行为），与真机不一致。 */
+  /* 覆盖成真机 UA：导航 URL 已不再按 UA 分支，但页面其它移动端判定仍依赖它，
+     保持与真机一致，确保回归看到的是真实渲染结果。 */
   await C('Emulation.setUserAgentOverride', {
     userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
   });
@@ -150,7 +150,8 @@ const SNAP_DETAIL = `(()=>{
 
   const byName = (n) => (home.items || []).find((x) => (x.name || '').indexOf(n) > -1) || {};
   const s1 = byName('谊品生鲜');
-  check('高德短链原样透传', s1.kind === 'link' && s1.abs === 'https://surl.amap.com/abc', JSON.stringify(s1));
+  check('高德短链不透传，改走门店名网页版搜索',
+    s1.kind === 'keyword' && (() => { try { const u = new URL(s1.abs); return u.hostname === 'uri.amap.com' && u.pathname === '/search' && !/surl\.amap\.com|callnative/.test(s1.abs); } catch { return false; } })(), JSON.stringify(s1));
   const s2 = byName('渝北中景隆');
   check('纯文本 navigation 降级为高德关键词搜索',
     s2.kind === 'keyword' && new URL(s2.abs).hostname === 'uri.amap.com' &&
@@ -160,8 +161,8 @@ const SNAP_DETAIL = `(()=>{
     s3.kind === 'keyword' && new URL(s3.abs).hostname === 'uri.amap.com' && !/evil\.com/.test(s3.abs), JSON.stringify(s3));
   const s4 = byName('到家主城');
   check('无 navigation 用门店名搜索', s4.kind === 'keyword' && new URL(s4.abs).searchParams.get('keyword') === '到家主城-江北区加州客服中心', JSON.stringify(s4));
-  check('关键词链接带 callnative=1 与 src=zhipei',
-    !!s4.abs && new URL(s4.abs).searchParams.get('callnative') === '1' && new URL(s4.abs).searchParams.get('src') === 'zhipei');
+  check('关键词链接不带 callnative、带 src=zhipei（真机避免下载引导页）',
+    !!s4.abs && new URL(s4.abs).searchParams.get('callnative') === null && new URL(s4.abs).searchParams.get('src') === 'zhipei');
   const s6 = byName('已定位门店');
   check('有坐标 → 直接进驾车路线（navigation），不再停在 POI 页',
     s6.kind === 'geo' && new URL(s6.abs).pathname === '/navigation' && new URL(s6.abs).searchParams.get('mode') === 'car', JSON.stringify(s6));
@@ -183,7 +184,10 @@ const SNAP_DETAIL = `(()=>{
   const detail = await ev(SNAP_DETAIL);
   console.log('detail ' + JSON.stringify(detail));
   check('详情页门店名可点（6 个链接）', detail && detail.links === 6, detail && String(detail.links));
-  check('详情页高德短链同样透传', detail && detail.items.some((x) => x.abs === 'https://surl.amap.com/abc'));
+  check('详情页高德短链同样不透传（全表无 surl.amap.com）',
+    detail && detail.items.every((x) => !/surl\.amap\.com|callnative|callAPP/.test(x.abs)) &&
+    detail.items.some((x) => x.kind === 'keyword' && /uri\.amap\.com\/search/.test(x.abs)),
+    JSON.stringify(detail && detail.items.map((x) => x.abs)));
   check('详情页触控热区 ≥44px', detail && detail.items.every((x) => x.box >= 44), detail && JSON.stringify(detail.items.map((x) => x.box)));
   check('详情页门店名注入被转义', detail && detail.injectedImg === false && detail.xss === false);
 
@@ -235,6 +239,8 @@ const SNAP_DETAIL = `(()=>{
   check('选高德 → uri.amap.com/navigation 且 to 经度在前',
     Array.isArray(out1) && out1.length === 1 && (() => { try { const u = new URL(out1[0]); return u.pathname === '/navigation' && (u.searchParams.get('to') || '').startsWith('106.551200,29.563100'); } catch { return false; } })(),
     JSON.stringify(out1));
+  check('选高德后 URL 不含 callnative / 下载引导域名',
+    Array.isArray(out1) && out1.length === 1 && !/callnative|surl\.amap|callAPP|ap\.amap|wap\.amap/.test(out1[0]), JSON.stringify(out1));
   check('选完菜单自动关闭', (await ev(`!document.querySelector('.zp-mn-sheet')`)) === true);
 
   await clickStore(5);
@@ -259,6 +265,15 @@ const SNAP_DETAIL = `(()=>{
   check('未定位门店选高德 → 关键词搜索（不拼 0,0）',
     Array.isArray(out4) && out4.length === 4 && (() => { try { const u = new URL(out4[3]); return u.pathname === '/search' && u.searchParams.get('keyword') === '渝北中景隆(重庆)贸易有限公司'; } catch { return false; } })(),
     JSON.stringify(out4));
+
+  /* 真机回归：门店存了高德短链但没解析出坐标时，选高德也不能把短链交出去，
+     否则 m.amap.com/callAPP 中转页会在未装 App 时整页跳「立即下载高德」。 */
+  await clickStore(0);   /* S1：带高德短链、未定位 */
+  await pick('amap');
+  const out5 = await ev('window.__navOut');
+  check('有高德短链但未定位 → 选高德仍走网页版搜索（下载引导页回归）',
+    Array.isArray(out5) && out5.length === 5 && (() => { try { const u = new URL(out5[4]); return u.pathname === '/search' && !/surl\.amap|callnative|callAPP|ap\.amap|wap\.amap/.test(out5[4]); } catch { return false; } })(),
+    JSON.stringify(out5));
 
   await clickStore(5);
   await ev(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}))`);
