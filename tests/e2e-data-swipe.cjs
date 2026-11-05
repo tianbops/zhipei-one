@@ -27,19 +27,35 @@ const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; cha
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const getJSON = (u) => new Promise((res, rej) => http.get(u, (r) => { let d = ''; r.on('data', (c) => (d += c)); r.on('end', () => res(JSON.parse(d))); }).on('error', rej));
 
-/* navigation 留空：不触发自动定位，门店名是 <strong> 而不是链接，
-   手势起手点不会落在 .data-store-nav 上。 */
+/* 故意混排：S1 / S3 有导航链接（门店名渲染成 <a class="data-store-nav">，
+   即「保存即定位」后的真实形态），S2 没有链接（门店名是 <strong>）。
+   2026-11-05 回归：手势曾把 .data-store-nav 上的起手排除掉，导致有链接的
+   那批门店整个左滑没反应 —— 用户反馈「有一部分门店不能左滑了」。
+   有链接的两家带坐标，避免提交时触发自动定位干扰本用例。 */
 const STORES = [
-  { storeId: 'S1', name: '谊品生鲜长安锦绣城店', navigation: '', lat: null, lng: null, address: '', routeOrder: 1, aliases: [] },
+  { storeId: 'S1', name: '谊品生鲜长安锦绣城店', navigation: 'https://surl.amap.com/abc', lat: 29.600741, lng: 106.525818, address: '佳园路2号', routeOrder: 1, aliases: [] },
   { storeId: 'S2', name: '渝北中景隆贸易', navigation: '', lat: null, lng: null, address: '', routeOrder: 2, aliases: [] },
-  { storeId: 'S3', name: '到家主城加州客服中心', navigation: '', lat: null, lng: null, address: '', routeOrder: 3, aliases: [] },
+  { storeId: 'S3', name: '到家主城加州客服中心', navigation: 'https://uri.amap.com/navigation?to=106.5,29.5,x&mode=car', lat: 29.5807, lng: 106.5301, address: '', routeOrder: 3, aliases: [] },
 ];
 
 const STUB = `
 try{sessionStorage.setItem('zpAuth','1');sessionStorage.setItem('zpRole','user');localStorage.setItem('zp_appearance_theme','light')}catch(e){}
 (function(){
   var stores=${JSON.stringify(STORES)};
-  window.__puts=[];
+  window.__puts=[];window.__navClicks=[];
+  /* 统计「会真的跳转」的门店名链接点击：capture 记下候选，冒泡阶段看
+     defaultPrevented —— 被页面手势抑制掉的 click 不计入（那正是要验证的），
+     正常轻点链接会计入。最后无条件 preventDefault，避免测试环境真去打开
+     target=_blank 的外网标签页，把无头 Chromium 卡在外部请求上。 */
+  var navCandidate=null;
+  document.addEventListener('click',function(e){
+    navCandidate=e.target&&e.target.closest?e.target.closest('.data-store-nav'):null;
+  },true);
+  document.addEventListener('click',function(e){
+    if(!navCandidate)return;
+    if(!e.defaultPrevented)window.__navClicks.push(navCandidate.getAttribute('href'));
+    e.preventDefault();navCandidate=null;
+  },false);
   var real=window.fetch;
   var B=function(t){var r={ok:true,status:200,headers:{get:function(){return null},has:function(){return false}}};r.json=function(){return Promise.resolve(JSON.parse(t))};r.text=function(){return Promise.resolve(t)};r.clone=function(){return B(t)};return Promise.resolve(r)};
   window.fetch=function(u,o){
@@ -69,6 +85,8 @@ const SNAP = `(()=>{
     open:!!open,
     openIndex:open?Number(open.dataset.index):-1,
     names:rows.map(r=>(r.querySelector('.data-store-name')||{}).textContent||''),
+    navLinks:document.querySelectorAll('.data-store-nav').length,
+    navClicks:window.__navClicks.length,
     confirm:!!box&&!box.hidden,
     confirmTitle:box?(box.querySelector('#zpConfirmTitle')||{}).textContent||'':'',
     puts:window.__puts.length,
@@ -163,6 +181,33 @@ const SNAP = `(()=>{
   await gesture(LEFT, centerY, RIGHT, centerY);
   const s5 = await ev(SNAP);
   check('右滑收起动作条但门店数不变', s5 && s5.open === false && s5.rows === 3 && s5.puts === 0, JSON.stringify(s5));
+
+  /* ⑤b 有导航链接的门店：门店名是 <a data-store-nav>，必须在链接上起手也能左滑。
+     这是「有一部分门店不能左滑」的回归点 —— 手势曾把链接上的起手整批排除。 */
+  const navRect = await ev(`(()=>{const a=document.querySelector('.data-store-row[data-index="0"] .data-store-nav');if(!a)return null;const b=a.getBoundingClientRect();return {l:Math.round(b.left),r:Math.round(b.right),y:Math.round(b.top+b.height/2)}})()`);
+  check('带导航链接的门店名渲染成可点链接', !!navRect && navRect.r > navRect.l, JSON.stringify(navRect));
+  const navX = Math.min((navRect ? navRect.r : 200) - 15, 260);
+  const navX1 = Math.max(navX - 180, 20);
+  const navY = navRect ? navRect.y : centerY;
+  const clicksBefore = (await ev(SNAP)).navClicks;
+  await gesture(navX, navY, navX1, navY);
+  const sNav = await ev(SNAP);
+  check('在门店名链接上起手左滑，也能展开动作条', sNav && sNav.open === true && sNav.openIndex === 0, JSON.stringify(sNav && { open: sNav.open, openIndex: sNav.openIndex, rows: sNav.rows }));
+  check('左滑不会误触发门店名链接跳地图', sNav && sNav.navClicks === clicksBefore, JSON.stringify(sNav && { before: clicksBefore, after: sNav.navClicks }));
+
+  /* ⑤c 无链接的门店同样能左滑（两类门店都要覆盖） */
+  const plainRect = await ev(`(()=>{const a=document.querySelector('.data-store-row[data-index="1"] .data-store-name');if(!a)return null;const b=a.getBoundingClientRect();return {y:Math.round(b.top+b.height/2)}})()`);
+  const plainY = plainRect ? plainRect.y : centerY;
+  await gesture(RIGHT, plainY, LEFT, plainY);
+  const sPlain = await ev(SNAP);
+  check('无导航链接的门店也能左滑展开', sPlain && sPlain.open === true && sPlain.openIndex === 1, JSON.stringify(sPlain && { open: sPlain.open, openIndex: sPlain.openIndex }));
+  await gesture(LEFT, centerY, RIGHT, centerY);/* 收起，保持后续用例干净 */
+
+  /* ⑤d 极快一划：只派发 1 次 touchMove，方向锁定来不及多次采样也必须能识别 */
+  await gesture(RIGHT, centerY, LEFT, centerY, 1);
+  const sFast = await ev(SNAP);
+  check('极快一划（仅 1 次 touchmove）也能左滑展开', sFast && sFast.open === true && sFast.openIndex === 0, JSON.stringify(sFast && { open: sFast.open, openIndex: sFast.openIndex }));
+  await gesture(LEFT, centerY, RIGHT, centerY);/* 收起，保持后续用例干净 */
 
   /* ⑥ 删除必须二次确认，取消不生效 */
   await gesture(RIGHT, centerY, LEFT, centerY);

@@ -466,11 +466,18 @@ async function submitStores(){
    视觉删除与真实数据不一致。现在删除只有一条路：点动作条里的「删除」+ zpConfirm 确认。 */
 function closeSwipeRows(){document.querySelectorAll(".data-store-row.data-swipe-open").forEach(x=>x.classList.remove("data-swipe-open"))}
 function bindTouch(){
- const list=$("stores");let touchRow=null;
+ const list=$("stores");let touchRow=null,suppressNavUntil=0;
  const reset=row=>{if(!row)return;clearTimeout(row._timer);row.classList.remove("data-drag-active");row._touch=null;touchRow=null};
+ /* 有导航地址的门店名是 <a class="data-store-nav" target="_blank">，且它铺满整行内容区。
+    门店名链接上必须允许起手，否则这批门店一律划不动（用户反馈「一部分门店不能左滑」）。
+    代价是手势结束后浏览器可能补发一次 click 到这个链接，把「左滑」变成「打开地图」——
+    这里在 capture 阶段只拦这一次链接点击，动作条按钮不受影响；标志消费后立即清零，
+    之后正常点门店名照常导航。 */
+ list.addEventListener("click",e=>{
+  if(Date.now()<suppressNavUntil&&e.target.closest?.(".data-store-nav")){e.preventDefault();suppressNavUntil=0}
+ },true);
  list.addEventListener("touchstart",e=>{
   const row=e.target.closest(".data-store-row");if(!row||!canMaintain)return;
-  if(e.target.closest(".data-swipe-actions button,.data-store-nav"))return;/* 按钮/链接上起手不做手势 */
   touchRow=row;
   row._touch={x:e.touches[0].clientX,y:e.touches[0].clientY,t:Date.now(),long:false,locked:null};
   row._timer=setTimeout(()=>{if(row._touch){row._touch.long=true;row.classList.add("data-drag-active")}},550)
@@ -478,9 +485,10 @@ function bindTouch(){
  list.addEventListener("touchmove",e=>{
   const row=touchRow,t=row?row._touch:null;if(!row||!t)return;
   const dx=e.touches[0].clientX-t.x,dy=e.touches[0].clientY-t.y;
-  /* 方向锁定（与首页月度卡一致）：先到 6px 即定性 X/Y。滚列表一旦判为纵向，
-     抬手时横向位移再大也不能当成左右滑，避免斜着一划就把门店划没。 */
-  if(t.locked===null&&(Math.abs(dx)>6||Math.abs(dy)>6))t.locked=Math.abs(dx)>Math.abs(dy)?"x":"y";
+  /* 方向锁定：先到 6px 定性，但只有「纵向明显占优」(dy>1.2*dx) 才判 y，
+     略偏横向的手势仍算 x，避免把正常左划吃掉。抬手时只在明确判 y 时忽略，
+     这样快速一划（浏览器没派发 touchmove）也能靠最终位移识别。 */
+  if(t.locked===null&&(Math.abs(dx)>6||Math.abs(dy)>6))t.locked=Math.abs(dy)>Math.abs(dx)*1.2?"y":"x";
   if(Math.abs(dx)>12||Math.abs(dy)>12)clearTimeout(row._timer);/* 动了就不再判长按 */
   if(t.long){if(e.cancelable)e.preventDefault();row.classList.add("data-drag-active");return}
   if(t.locked==="x"&&e.cancelable)e.preventDefault();/* 横向意图：别让页面滚动抢走手势 */
@@ -490,8 +498,9 @@ function bindTouch(){
   const dx=e.changedTouches[0].clientX-t.x,dy=e.changedTouches[0].clientY-t.y,long=t.long,locked=t.locked;
   if(long){const target=document.elementFromPoint(e.changedTouches[0].clientX,e.changedTouches[0].clientY)?.closest(".data-store-row");reset(row);if(target&&target!==row){applyOrder(Number(row.dataset.index),Number(target.dataset.index))}return}
   reset(row);
-  if(locked!=="x")return;/* 纵向滚动 / 只是轻点：不触发任何滑动动作 */
-  if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)){
+  if(locked==="y")return;/* 明确是纵向滚动：不触发任何滑动动作 */
+  if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.2){
+   suppressNavUntil=Date.now()+300;/* 拦掉这次手势补发的门店名链接 click */
    closeSwipeRows();
    if(dx<0)row.classList.add("data-swipe-open")/* 右滑到此为止：只收起，不碰数据 */
   }

@@ -28,7 +28,13 @@ assert.ok(swipe.length > 400, "应能截取到 bindTouch 手势段");
 assert.ok(!/hiddenIndexes|data-store-hidden|display\s*:\s*none/.test(swipe), "手势段不得含任何隐藏/抹除行的逻辑");
 assert.ok(!/stores\.splice|\brender\(\)/.test(swipe), "手势段不得删除数据或重建列表");
 assert.ok(swipe.includes('t.locked===null'), "方向锁定：先到 6px 即定性 X/Y");
-assert.ok(swipe.includes('locked!=="x"'), "方向锁定：纵向滚动不得触发左右滑判定");
+assert.ok(swipe.includes('locked==="y"'), "只有明确判为纵向滚动才忽略手势（快速一划不依赖 touchmove）");
+assert.ok(swipe.includes("Math.abs(dy)*1.2"), "方向判定须给横向留余量，不能把斜向偏横的左划吃掉");
+/* 有导航地址的门店名是 <a data-store-nav>，且铺满整行内容区：
+   把它从起手点排除掉，等于让这批门店一律划不动（2026-11-05 二次回归）。 */
+const start = swipe.slice(swipe.indexOf('addEventListener("touchstart"'), swipe.indexOf('addEventListener("touchmove"'));
+assert.ok(!/data-store-nav/.test(start), "touchstart 不得排除门店名链接上的起手");
+assert.ok(swipe.includes("suppressNavUntil"), "横向滑动后须抑制补发的链接点击，避免误跳地图");
 assert.ok(swipe.includes('addEventListener("touchcancel"'), "手势被系统取消也要归位");
 assert.ok(swipe.includes("closeSwipeRows()"), "右滑统一收起已展开的动作条");
 assert.ok(swipe.includes('if(dx<0)row.classList.add("data-swipe-open")'), "左滑只露出编辑/删除动作条");

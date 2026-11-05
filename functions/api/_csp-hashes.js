@@ -12,6 +12,7 @@ export const INLINE_SCRIPT_HASHES = [
   "'sha256-87JL97wRThIQJ5nd22m+H9WDJsaF5Xb9iWWeSscd/jo='",
   "'sha256-EQJmSLoiJL+PQWC4gR5vK1m00IAIkOncgH8MBRcIFI8='",
   "'sha256-FtNCWvRQ8Fk17rFw1hKRlJwhHLDsg23OtAvJiOm2l7A='",
+  "'sha256-GmQk84kot8l+Q5CfHOW605sUA906OZdH+jR/QJxFKMw='",
   "'sha256-MKdPLPHgoQKi9NaNphrUVdhASlXdJH/uPhOszrQk/Ps='",
   "'sha256-OMhe+dMAqc2bRUb8FOcWKrjwPISAwhL/+2XSvZyMBz8='",
   "'sha256-Ugr/ROWqz2c38q1IjBPexc6mwtLx8Ps2WXYPFdznT0U='",
@@ -25,7 +26,6 @@ export const INLINE_SCRIPT_HASHES = [
   "'sha256-vfKd3DNIyARe3BGl0pwB3s6YlavfItKoYdbB40fLaDA='",
   "'sha256-vg4zcO/PWYJRpe2qI8rwNf3wpqBQ/IJxB1fyaLxnMqI='",
   "'sha256-xwOMVfPJMmLEg85NWPTN78xGGnsPNZYwSkvdKNCvOvg='",
-  "'sha256-ya2/WkXrlRNq0qtrw8w9Q3IX0J7mp7Zvb8me3Ro00KY='",
 ];
 
 /** 把哈希表注入基础 CSP 的 script-src（'unsafe-inline' 保留作旧浏览器回退） */
