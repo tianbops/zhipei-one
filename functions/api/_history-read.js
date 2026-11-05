@@ -188,7 +188,9 @@ export async function enrichFactory(env,routeId){
    const baseStores=baseStoresCache,byId=new Map(baseStores.map(s=>[clean(s?.storeId),s]).filter(x=>x[0]));
    const baseKey=v=>clean(v).normalize("NFKC").replace(/\s+/g,"").replace(/[，。；;：:、（）()【】\[\]{}<>《》“”"'‘’]/g,"").toLowerCase(),byName=new Map();
    for(const bs of baseStores)for(const field of [bs?.name,bs?.originalName,...(Array.isArray(bs?.aliases)?bs.aliases:[])]){const key=baseKey(field);if(key&&!byName.has(key))byName.set(key,bs)}
-   out.stores=out.stores.map(s=>{const baseStore=byId.get(clean(s?.storeId))||byName.get(baseKey(s?.name||s?.rawName));if(!baseStore)return s;const navigation=clean(baseStore.navigation)||clean(s?.navigation),note=clean(baseStore.note||baseStore.remark)||clean(s?.note||s?.remark),geo=geoOf(baseStore),address=clean(baseStore.address);return navigation||note||geo||address?{...s,...(navigation?{navigation}:{}),...(note?{note}:{}),...(geo||{}),...(address?{address}:{})}:s});
+   /* 只回补坐标，不回补 address：运单门店的收货地址来自 OCR/线路原文，
+      不能被基准库里高德分享的描述文字覆盖（同 latest.js）。 */
+   out.stores=out.stores.map(s=>{const baseStore=byId.get(clean(s?.storeId))||byName.get(baseKey(s?.name||s?.rawName));if(!baseStore)return s;const navigation=clean(baseStore.navigation)||clean(s?.navigation),note=clean(baseStore.note||baseStore.remark)||clean(s?.note||s?.remark),geo=geoOf(baseStore);return navigation||note||geo?{...s,...(navigation?{navigation}:{}),...(note?{note}:{}),...(geo||{})}:s});
   }catch{}
   // 响应瘦身：sourceLine 是处理阶段的调试字段（整条原始线路文本，逐门店重复），
   // 前端（home/order_detail/history）均不消费；25 家门店时它会把单日响应撑大数十 KB，

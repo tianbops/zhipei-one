@@ -153,6 +153,81 @@ console.log("\n链接属性与幂等（4 条）");
   t("重复加载不覆盖已有实例（幂等哨兵）", WIN.zpMapNav === FIRST && !!FIRST.resolve);
 }
 
+console.log("\n三家 provider 目标（13 条）");
+{
+  const GEO = { name: "谊品生鲜长安锦绣城店", lat: 29.5631, lng: 106.5512 };
+  const u = M.providerUrls(GEO);
+  t("PROVIDERS 顺序为高德 / 百度 / 腾讯",
+    M.PROVIDERS.map((p) => p.id).join(",") === "amap,baidu,qq", JSON.stringify(M.PROVIDERS.map((p) => p.id)));
+  t("腾讯 note 标明网页版（不承诺拉起 App）", M.PROVIDERS[2].note.includes("网页版"));
+  t("三家都有 https 目标", ["amap", "baidu", "qq"].every((k) => typeof u[k] === "string" && u[k].startsWith("https://")));
+  t("有坐标时 _geo=true（菜单显示已绑定精确坐标）", u._geo === true);
+
+  const amap = new URL(u.amap);
+  t("高德走 uri.amap.com/navigation", amap.hostname === "uri.amap.com" && amap.pathname === "/navigation", u.amap);
+  t("高德 to = 经度,纬度,名称（写反会导到几百公里外）",
+    (amap.searchParams.get("to") || "").startsWith("106.551200,29.563100"), amap.searchParams.get("to"));
+  t("高德 mode=car + 移动端 callnative=1",
+    amap.searchParams.get("mode") === "car" && amap.searchParams.get("callnative") === "1");
+
+  const baidu = new URL(u.baidu);
+  const dest = baidu.searchParams.get("destination") || "";
+  t("百度走 api.map.baidu.com/direction", baidu.hostname === "api.map.baidu.com" && baidu.pathname === "/direction", u.baidu);
+  t("百度 destination 带 latlng: 且纬度在前（与高德相反）",
+    dest.startsWith("latlng:29.563100,106.551200"), dest);
+  t("百度 destination 带 |name: 标注", dest.includes("|name:"));
+  t("百度 coord_type=gcj02（百度自己转 BD-09，不存两套坐标）",
+    baidu.searchParams.get("coord_type") === "gcj02");
+  t("百度 mode=driving + output=html（未装时用网页版兜底）",
+    baidu.searchParams.get("mode") === "driving" && baidu.searchParams.get("output") === "html");
+
+  const qq = new URL(u.qq);
+  t("腾讯走 map.qq.com 网页版搜索（what=门店名）",
+    qq.hostname === "map.qq.com" && qq.searchParams.get("what") === GEO.name, u.qq);
+  t("腾讯 center = 纬度,经度，且不用需开发者 key 的 URI API",
+    qq.searchParams.get("center") === "29.563100,106.551200" && !u.qq.includes("apis.map.qq.com/uri"));
+}
+
+console.log("\n无坐标时三家各自降级（6 条）");
+{
+  const n = encodeURIComponent("谊品生鲜");
+  const amapLink = "https://surl.amap.com/abc";
+  const u = M.providerUrls({ name: "谊品生鲜", navigation: amapLink });
+  t("有高德链接但无坐标 → 高德原样透传（链接自带 POI）", u.amap === amapLink);
+  t("有高德链接但无坐标 → 百度按门店名搜索", u.baidu === "https://map.baidu.com/search/" + n + "/", u.baidu);
+  t("腾讯始终网页版搜索且不带 center", u.qq === "https://map.qq.com/?what=" + n, u.qq);
+  t("无坐标时 _geo=false", u._geo === false);
+  const b = M.providerUrls({ name: "谊品生鲜", navigation: "https://j.map.baidu.com/xyz" });
+  t("百度短链原样透传给百度", b.baidu === "https://j.map.baidu.com/xyz", b.baidu);
+  t("百度短链不误当高德导航（走关键词搜索）", new URL(b.amap).pathname === "/search", b.amap);
+}
+
+console.log("\n菜单载荷 navPayload / linkAttrs（6 条）");
+{
+  const GEO = { name: "谊品生鲜", lat: 29.5631, lng: 106.5512 };
+  const p = JSON.parse(M.navPayload(GEO));
+  t("payload 含 name/lat/lng", p.name === GEO.name && p.lat === GEO.lat && p.lng === GEO.lng);
+  t("payload 不含 POI 名称 / 地址文本", !("address" in p) && !("kind" in p) && Object.keys(p).length === 4);
+  const empty = JSON.parse(M.navPayload({ name: "谊品生鲜", lat: null, lng: null, navigation: "A栋B1" }));
+  t("无效坐标写成 null（绝不写 0,0）", empty.lat === null && empty.lng === null);
+  t("纯文字 navigation 不进 payload.link", empty.link === "");
+  const withLink = JSON.parse(M.navPayload({ name: "谊品生鲜", navigation: "https://surl.amap.com/abc" }));
+  t("白名单地图链接进 payload.link", withLink.link === "https://surl.amap.com/abc", withLink.link);
+  const attrs = M.linkAttrs(GEO);
+  t("linkAttrs 输出可反解的 payload",
+    typeof attrs.payload === "string" && JSON.parse(attrs.payload).lat === GEO.lat);
+}
+
+console.log("\n菜单接线与零探测（3 条）");
+{
+  t("两个渲染器都输出 data-zp-nav-payload",
+    /data-zp-nav-payload="/.test(HOME_JS) && /data-zp-nav-payload="/.test(RENDER_JS));
+  t("mapnav.js 用冒泡委托且检查 defaultPrevented（不抢手势 / e2e 捕获阶段的点击）",
+    /closest\("\[data-zp-nav-payload\]"\)/.test(SRC) && /e\.defaultPrevented/.test(SRC));
+  t("零自建 scheme / 零安装探测",
+    !/["'](?:qqmap|baidumap):\/\//.test(SRC) && !/addEventListener\(["']visibilitychange/.test(SRC));
+}
+
 console.log("\n渲染层与打包顺序（7 条）");
 {
   t("首页渲染器不再用 new URL(..., location.origin)",

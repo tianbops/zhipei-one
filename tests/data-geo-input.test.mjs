@@ -26,9 +26,10 @@ const geoApi = readFileSync(resolve(root, "functions/api/store/geo.js"), "utf8")
 assert.ok(html.includes("function navUrlOf("), "必须有从文案里提取链接的 navUrlOf()");
 assert.ok(!/function looksResolvable\(v\)\{return \/\^https\?:\\\\\//.test(html), "looksResolvable 不得再只认 http 开头");
 assert.ok(/looksResolvable\(v\)\{return !!navUrlOf\(v\)/.test(html), "looksResolvable 须认带文案的分享文本");
-assert.ok(/autoLocate[\s\S]{0,600}navUrlOf\(s\?\.navigation\)/.test(html), "autoLocate 的 targets 须认带文案文本");
+assert.ok(/function needsGeo\(s\)[\s\S]{0,260}navUrlOf\(s\?\.navigation\)/.test(html), "needsGeo 须从带文案文本里提取链接再判定");
+assert.ok(/const targets=\(list\|\|\[\]\)\.filter\(needsGeo\)/.test(html), "autoLocate 的 targets 须走 needsGeo（认带文案文本 + geoFrom 变更）");
 assert.ok(/autoLocate[\s\S]{0,1200}text:navUrlOf\(x\.navigation\)/.test(html), "提交给接口的 text 须是提取出的纯链接");
-assert.ok(/const pending=stores\.filter\(s=>!geoOfStore\(s\)&&!!navUrlOf\(s\.navigation\)\)/.test(html), "提交时的 pending 须认带文案文本");
+assert.ok(/const pending=stores\.filter\(needsGeo\)\.length/.test(html), "提交时的 pending 须走 needsGeo（换链接也要重解析）");
 assert.ok(/item\.navigation=link\|\|\(editGeo\?"":navText\)/.test(html), "编辑保存须把文案规范化成纯链接（否则渲染出打不开的链接）");
 
 /* 2. 前端：失败必须可见，且说明原因 */

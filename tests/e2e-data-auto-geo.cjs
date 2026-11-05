@@ -28,13 +28,13 @@ const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; cha
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const getJSON = (u) => new Promise((res, rej) => http.get(u, (r) => { let d = ''; r.on('data', (c) => (d += c)); r.on('end', () => res(JSON.parse(d))); }).on('error', rej));
 
-/* 两家门店都没有坐标（后端 normalizeStore 会把缺失写成 lat:null）：
-   S1 已有旧链接，S2 完全没有链接。 */
+/* 三家门店都没有坐标（后端 normalizeStore 会把缺失写成 lat:null）：
+   S1 已有旧链接，S2 完全没有链接。基准库里不再有 address 字段。 */
 const STORES = [
-  { storeId: 'S1', name: '谊品生鲜长安锦绣城店', navigation: 'https://surl.amap.com/old1', lat: null, lng: null, address: '', routeOrder: 1, aliases: [] },
-  { storeId: 'S2', name: '渝北中景隆贸易', navigation: '', lat: null, lng: null, address: '', routeOrder: 2, aliases: [] },
+  { storeId: 'S1', name: '谊品生鲜长安锦绣城店', navigation: 'https://surl.amap.com/old1', lat: null, lng: null, routeOrder: 1, aliases: [] },
+  { storeId: 'S2', name: '渝北中景隆贸易', navigation: '', lat: null, lng: null, routeOrder: 2, aliases: [] },
   /* S3 有链接但没坐标，且这次没人编辑它 —— 提交时必须靠自动定位兜住 */
-  { storeId: 'S3', name: '到家主城加州客服中心', navigation: 'https://surl.amap.com/new3', lat: null, lng: null, address: '', routeOrder: 3, aliases: [] },
+  { storeId: 'S3', name: '到家主城加州客服中心', navigation: 'https://surl.amap.com/new3', lat: null, lng: null, routeOrder: 3, aliases: [] },
 ];
 
 const STUB = `
@@ -45,7 +45,9 @@ try{sessionStorage.setItem('zpAuth','1');sessionStorage.setItem('zpRole','user')
   window.__puts=[];
   var real=window.fetch;
   var B=function(t){var r={ok:true,status:200,headers:{get:function(){return null},has:function(){return false}}};r.json=function(){return Promise.resolve(JSON.parse(t))};r.text=function(){return Promise.resolve(t)};r.clone=function(){return B(t)};return Promise.resolve(r)};
-  var MAP={'https://surl.amap.com/9Xhz3TMYbR2':{lat:29.600741,lng:106.525818,address:'佳园路2号'},'https://surl.amap.com/new2':{lat:29.6102,lng:106.5743,address:'渝北区龙溪街道'},'https://surl.amap.com/new3':{lat:29.5807,lng:106.5301,address:'江北区建新北路'}};
+  /* 模拟真实 /api/store/geo：只回坐标投影 {lat,lng,kind}，不再回传 POI 名称 / 位置描述。
+     new4 是「换了链接」后的新地址；bad 故意不在表里，用来验证解析失败必须清旧坐标。 */
+  var MAP={'https://surl.amap.com/9Xhz3TMYbR2':{lat:29.600741,lng:106.525818},'https://surl.amap.com/new2':{lat:29.6102,lng:106.5743},'https://surl.amap.com/new3':{lat:29.5807,lng:106.5301},'https://surl.amap.com/new4':{lat:29.6666,lng:106.6666}};
   window.fetch=function(u,o){
     var s=String(u&&u.url||u),m=String((o&&o.method)||'GET').toUpperCase();
     if(s.indexOf('/api/dispatch')>=0)return B(JSON.stringify({success:true,dispatchRoute:{id:'r1',name:'一号线'}}));
@@ -54,7 +56,7 @@ try{sessionStorage.setItem('zpAuth','1');sessionStorage.setItem('zpRole','user')
       var items=(body.items||[]).map(function(it){
         var hit=MAP[String(it.text||'').trim()];
         window.__geo.push({text:it.text,hit:!!hit});
-        return hit?{ok:true,lat:hit.lat,lng:hit.lng,address:hit.address}:{ok:false,reason:'NO_COORD'};
+        return hit?{ok:true,lat:hit.lat,lng:hit.lng,kind:'q'}:{ok:false,reason:'NO_COORD'};
       });
       return B(JSON.stringify({success:true,items:items}));
     }
@@ -158,15 +160,57 @@ const SNAP = `(()=>{
   console.log('done ' + JSON.stringify(done && { puts: (done.puts || []).length, toast: done.toast }));
   const put = done && done.puts && done.puts[0];
   check('提交更新发出 1 次 PUT', !!put, done && String((done.puts || []).length));
-  check('PUT 里 S1 带坐标与门牌地址（用户给的真实「分享位置」短链）',
-    !!put && put.stores[0].lat === 29.600741 && put.stores[0].lng === 106.525818 && put.stores[0].address === '佳园路2号',
+  check('PUT 里 S1 带坐标与 geoFrom（用户给的真实「分享位置」短链）',
+    !!put && put.stores[0].lat === 29.600741 && put.stores[0].lng === 106.525818 && /^[a-f0-9]{8}$/.test(put.stores[0].geoFrom || ''),
     put && JSON.stringify(put.stores[0]));
   check('PUT 里 S2 带坐标（第二个输入框的值也进了提交）',
     !!put && put.stores[1].lat === 29.6102 && put.stores[1].lng === 106.5743, put && JSON.stringify(put.stores[1]));
-  check('没被编辑过的 S3 在提交时被自动补上坐标',
-    !!put && put.stores[2].lat === 29.5807 && put.stores[2].lng === 106.5301 && put.stores[2].address === '江北区建新北路',
+  check('没被编辑过的 S3 在提交时被自动补上坐标与 geoFrom',
+    !!put && put.stores[2].lat === 29.5807 && put.stores[2].lng === 106.5301 && /^[a-f0-9]{8}$/.test(put.stores[2].geoFrom || ''),
     put && JSON.stringify(put.stores[2]));
+  check('PUT 里不带 address（只存坐标，不把高德位置描述写进收货地址）',
+    !!put && put.stores.every(s => !('address' in s)),
+    put && JSON.stringify(put.stores.map(s => Object.keys(s))));
   check('保存后给管理员明确反馈（含「已自动定位 1 家」）', done && /已自动定位 1 家/.test(done.toast), done && done.toast);
+
+  /* 路径 C：已有坐标的门店换了地址链接 → 提交更新必须强制重解析并关联新坐标。
+     故意不派发 input 事件：这样编辑阶段的防抖解析不会发生，能严格证明
+     「即使没有粘贴防抖，提交更新也会按 geoFrom 变化兜底重解析」。 */
+  await ev(`(()=>{document.querySelector('[data-swipe-edit="0"]').click();return 1})()`);
+  await sleep(250);
+  await ev(`(()=>{const i=document.getElementById('editNavigation');i.value='https://surl.amap.com/new4';document.getElementById('editSave').click();return 1})()`);
+  await sleep(700);
+  const geoBeforeC = await ev('window.__geo.length');
+  await ev(`(()=>{document.getElementById('saveStoresTop').click();return 1})()`);
+  await sleep(1400);
+  const done2 = await ev(SNAP);
+  const put2 = done2 && done2.puts && done2.puts[1];
+  check('换链接提交时重新调用了坐标解析接口（geoFrom 与链接不符）',
+    done2 && done2.geo.some(g => g.text === 'https://surl.amap.com/new4' && g.hit === true) && done2.geo.length > geoBeforeC,
+    done2 && JSON.stringify(done2.geo));
+  check('第二次 PUT 里 S1 换成新链接对应的坐标，不再是上一家店的位置',
+    !!put2 && put2.stores[0].lat === 29.6666 && put2.stores[0].lng === 106.6666,
+    put2 && JSON.stringify(put2.stores[0]));
+  check('S1 的 geoFrom 更新为新链接指纹（与第一次提交不同）',
+    !!put2 && /^[a-f0-9]{8}$/.test(put2.stores[0].geoFrom || '') && put2.stores[0].geoFrom !== put.stores[0].geoFrom,
+    put2 && `${put.stores[0].geoFrom} → ${put2.stores[0].geoFrom}`);
+  check('PUT 里始终不带 address（只存坐标）',
+    !!put2 && put2.stores.every(s => !('address' in s)),
+    put2 && JSON.stringify(put2.stores.map(s => Object.keys(s))));
+
+  /* 路径 D：换链接但解析失败 → 绝不能让新地址继续绑着上一家店的坐标 */
+  await ev(`(()=>{document.querySelector('[data-swipe-edit="1"]').click();return 1})()`);
+  await sleep(250);
+  await ev(`(()=>{const i=document.getElementById('editNavigation');i.value='https://surl.amap.com/bad';document.getElementById('editSave').click();return 1})()`);
+  await sleep(700);
+  await ev(`(()=>{document.getElementById('saveStoresTop').click();return 1})()`);
+  await sleep(1400);
+  const done3 = await ev(SNAP);
+  const put3 = done3 && done3.puts && done3.puts[2];
+  check('解析失败时清掉旧坐标与 geoFrom（新链接不绑旧终点）',
+    !!put3 && put3.stores[1].lat === null && put3.stores[1].lng === null && put3.stores[1].geoFrom === '',
+    put3 && JSON.stringify(put3.stores[1]));
+  check('解析失败反馈常驻且可重试', done3 && /重新识别/.test(done3.toast), done3 && done3.toast);
 
   const shot = await C('Page.captureScreenshot', { format: 'png' });
   fs.writeFileSync(path.join(OUT_DIR, 'data_auto_geo.png'), Buffer.from(shot.data, 'base64'));

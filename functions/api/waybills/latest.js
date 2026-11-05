@@ -55,8 +55,10 @@ async function latestGet({request,env}){
     const note=clean(baseStore.note||baseStore.remark)||clean(s?.note||s?.remark);
     /* 坐标同样用基准库回补：运单快照里可能没有（老运单、或补坐标之前生成的），
        但导航要的是「这家店在哪」，而不是「这份快照当时存了什么」。 */
-    const geo=geoOf(baseStore),address=clean(baseStore.address);
-    return navigation||note||geo||address?{...s,...(navigation?{navigation}:{}),...(note?{note}:{}),...(geo||{}),...(address?{address}:{})}:s;
+    const geo=geoOf(baseStore);
+    /* 基准库不再回补 address：运单门店的 address 是收货地址（OCR/线路原文），
+       高德分享里的位置描述曾把它覆盖掉，还会被历史检索读到。只回补坐标。 */
+    return navigation||note||geo?{...s,...(navigation?{navigation}:{}),...(note?{note}:{}),...(geo||{})}:s;
    });
   }catch{}
   // 响应瘦身：与 history.js 同理，剥离前端不消费的调试字段 sourceLine，降低弱网传输体积。

@@ -17,7 +17,7 @@ function t(name, cond, extra) {
   if (cond) pass++;
   else { fail++; failures.push(name + (extra ? " → " + extra : "")); }
 }
-function makeEnv({ pathname="/home", adminPage=0, zone="business" }={}) {
+function makeEnv({ pathname="/home", adminPage=0, zone="business", pushChild=false, resolveBack=null, dirty=false, discardResult=true }={}) {
   const env = { replaced:[], fetched:[], pages:[], toasts:[],
     session:new Set(["zpAuth","zpRole","zpExitAdmin","zpAutoHop"]),
     local:new Set(["zpLastAuth","zpLastRole"]) };
@@ -35,15 +35,24 @@ function makeEnv({ pathname="/home", adminPage=0, zone="business" }={}) {
     const zpIsWorkspaceRoot=UI.normPath(location.pathname)===UI.normPath(zpRoot);
     let zpExitArmed=false,zpExitTimer=0,zpAdminNonRoot=false;
     const zpCloseTopLayer=async()=>false;
-    const zpConfirmDiscard=async()=>true;
+    /* 未保存拦截可配置：discardResult=false 模拟用户点「取消」，留在编辑态。 */
+    const zpConfirmDiscard=async()=>${JSON.stringify(discardResult)};
+    window.zpDirtyProbes=${dirty?"[()=>true]":"[]"};
     function zpPushGuard(){}
-    function zpResolveBack(){return zpRoot}
+    function zpResolveBack(){return ${JSON.stringify(resolveBack)}||zpRoot}
     window.zpResolveBack=zpResolveBack;
+    /* 系统返回「父级 → 子页」push 进来时用到的模块级依赖（见 back.js 顶部）：
+       这里按用例注入，验证物理后退分支不会绕过弹层/未保存拦截。 */
+    let zpCameByPush=${pushChild?"true":"false"};
+    const zpStaticParent={"/pages/data":"/pages/dispatch","/pages/privacy":"/pages/account","/pages/terms":"/pages/account"};
+    const history={back:()=>{window.__zpBackCalls=(window.__zpBackCalls|0)+1}};
   `;
   const factory=new Function("window","document","location","fetch","setTimeout","clearTimeout","sessionStorage","localStorage",
     prelude+BODY+"\nreturn window.zpHandleBack;");
   env.back=factory(win,{querySelector:()=>null},location,async(url,options)=>{env.fetched.push({url,options});return{ok:true};},
     ()=>0,()=>{},sessionStorage,localStorage);
+  /* env.backCalls 从 win 上读，避免改 factory 参数签名 */
+  Object.defineProperty(env,"backCalls",{get:()=>win.__zpBackCalls|0});
   return env;
 }
 {
@@ -72,6 +81,41 @@ function makeEnv({ pathname="/home", adminPage=0, zone="business" }={}) {
  t("用户返回不注销",root.fetched.length===0);
  t("用户登录凭证保留",root.session.has("zpAuth")&&root.session.has("zpRole"));
  t("用户自动登录标记保留",root.local.has("zpLastAuth")&&root.local.has("zpLastRole"));
+}
+/* ===== 父级 → 子页物理历史：安卓系统手势返回必须落回线路维护 ===== */
+{
+ /* 顶栏箭头：zpCameByPush 且返回目标正是静态父级 → history.back()，不 replace */
+ const env=makeEnv({pathname:"/pages/data",zone:"business",pushChild:true,resolveBack:"/pages/dispatch"});
+ const r=await env.back();
+ t("push 进来的数据页顶栏返回走物理后退",r==="leave"&&env.backCalls===1,JSON.stringify({r,backCalls:env.backCalls}));
+ t("物理后退不再 location.replace（避免留下孤儿历史项）",env.replaced.length===0,JSON.stringify(env.replaced));
+}
+{
+ /* popstate（系统自己已退一层）不得再 back 一次，否则一次返回退两层 */
+ const env=makeEnv({pathname:"/pages/data",zone:"business",pushChild:true,resolveBack:"/pages/dispatch"});
+ const r=await env.back(true);
+ t("系统返回路径不再二次 history.back()",r==="leave"&&env.backCalls===0,JSON.stringify({r,backCalls:env.backCalls}));
+ t("系统返回路径仍落到线路维护",env.replaced[0]==="/pages/dispatch",JSON.stringify(env.replaced));
+}
+{
+ /* 普通子页（非 push 进来）行为不变：仍 location.replace */
+ const env=makeEnv({pathname:"/pages/data",zone:"business",pushChild:false,resolveBack:"/pages/dispatch"});
+ await env.back();
+ t("非 push 子页仍用 location.replace",env.backCalls===0&&env.replaced[0]==="/pages/dispatch",JSON.stringify(env.replaced));
+}
+{
+ /* 未保存拦截优先级高于物理后退：用户点「取消」，物理返回不得被触发 */
+ const env=makeEnv({pathname:"/pages/data",zone:"business",pushChild:true,resolveBack:"/pages/dispatch",dirty:true,discardResult:false});
+ const r=await env.back();
+ t("未保存且取消时返回被页面消费",r==="handled",r);
+ t("未保存且取消时不走物理后退",env.backCalls===0,JSON.stringify({backCalls:env.backCalls}));
+ t("未保存且取消时不 location.replace",env.replaced.length===0,JSON.stringify(env.replaced));
+}
+{
+ /* 用户确认放弃后，物理后退分支照常执行（拦截不得误伤正常返回） */
+ const env=makeEnv({pathname:"/pages/data",zone:"business",pushChild:true,resolveBack:"/pages/dispatch",dirty:true,discardResult:true});
+ const r=await env.back();
+ t("确认放弃后 push 子页仍走物理后退",r==="leave"&&env.backCalls===1,JSON.stringify({r,backCalls:env.backCalls}));
 }
 {
  const start=SRC.indexOf("function zpDoExit()");

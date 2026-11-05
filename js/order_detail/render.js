@@ -108,7 +108,7 @@ function render(){
      note=x.note||x.remark||'';
    }
    const noteHtml=note?'<span class="order-store-note-inline">（'+esc(note)+'）</span>':'';
-   const nameHtmlWithNote=nav?'<a class="order-store-name nav" href="'+attr(nav.url)+'" target="'+nav.target+'"'+(nav.rel?' rel="'+nav.rel+'"':'')+' data-zp-nav="'+attr(nav.kind)+'" data-zp-nav-name="'+attr(rawName)+'">'+name+noteHtml+status+'</a>':'<div class="order-store-name">'+name+noteHtml+status+'</div>';
+   const nameHtmlWithNote=nav?'<a class="order-store-name nav" href="'+attr(nav.url)+'" target="'+nav.target+'"'+(nav.rel?' rel="'+nav.rel+'"':'')+' data-zp-nav="'+attr(nav.kind)+'" data-zp-nav-name="'+attr(rawName)+'" data-zp-nav-payload="'+attr(nav.payload||'')+'">'+name+noteHtml+status+'</a>':'<div class="order-store-name">'+name+noteHtml+status+'</div>';
    return '<div class="order-store-item"><span class="order-store-index">'+String(i+1).padStart(2,'0')+'</span><div class="order-store-main">'+nameHtmlWithNote+'</div></div>';
  }).join(''):'<div class="zp-empty">当日暂无配送数据</div>';
  const old=$('confirmPendingBtn');if(old)old.remove();

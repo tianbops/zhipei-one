@@ -1,3 +1,4 @@
+/** 高德分享链接 / 坐标文本 → GCJ-02 经纬度；只回传 {lat,lng,kind}，不回传名称或地址文本；单次上限 10 条。 */
 /* /api/store/geo —— 把「高德分享链接 / 坐标文本」解析成经纬度
    ------------------------------------------------------------
    为什么必须放服务端：
@@ -25,6 +26,11 @@ const CACHE_TTL = 60 * 60 * 24 * 30;
 
 const text = (v) => (v == null ? "" : String(v).trim());
 
+/* 只把坐标交给前端。高德分享链接里的 POI 名称 / 位置描述是外部文案，
+   一旦随门店入库就会覆盖运单的收货地址（见 latest.js / _history-read.js）。
+   响应与 30 天缓存都做同一份字段投影，避免历史缓存把文本带回来。 */
+const project = (g) => ({ lat: g.lat, lng: g.lng, kind: text(g.kind) });
+
 function hash(s) {
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) {
@@ -44,7 +50,7 @@ async function resolveOne(env, raw) {
   let candidate = input;
   if (!/^(https?:)?\/\//i.test(candidate)) {
     const direct = fromText(candidate);
-    if (direct) return { ok: true, ...direct };
+    if (direct) return { ok: true, ...project(direct) };
     const embedded = extractUrl(candidate);
     if (!embedded) return { ok: false, reason: "INVALID_URL" };
     candidate = embedded.href;
@@ -53,27 +59,29 @@ async function resolveOne(env, raw) {
   const parsed = parseUrl(candidate);
   if (!parsed) return { ok: false, reason: "INVALID_URL" };
   if (parsed.error) return { ok: false, reason: parsed.error };
-  if (!parsed.pending) return { ok: true, ...parsed };
+  if (!parsed.pending) return { ok: true, ...project(parsed) };
 
   /* 短链结果缓存 30 天：同一家门店的分享链接不该每次编辑都打一次外网。
-     注意缓存的是「解析结果」，若历史上存过失败结果，不能被当成成功复用。 */
+     注意缓存的是「解析结果」，若历史上存过失败结果，不能被当成成功复用。
+     缓存值也做投影：旧缓存里可能带着 POI 名称/位置描述，不能回流到前端。 */
   const key = "geo:" + hash(parsed.pending.href);
   try {
     const cached = await get(env, key);
     if (cached) {
       const v = typeof cached === "string" ? JSON.parse(cached) : cached;
       if (v && !v.error && Number.isFinite(Number(v.lat)) && Number.isFinite(Number(v.lng))) {
-        return { ok: true, ...v, cached: true };
+        return { ok: true, ...project(v), cached: true };
       }
     }
   } catch {}
 
   const got = await expand(parsed.pending);
   if (got.error) return { ok: false, reason: got.error };
+  const out = project(got);
   try {
-    await setEx(env, key, JSON.stringify(got), CACHE_TTL);
+    await setEx(env, key, JSON.stringify(out), CACHE_TTL);
   } catch {}
-  return { ok: true, ...got };
+  return { ok: true, ...out };
 }
 
 async function pool(items, size, fn) {

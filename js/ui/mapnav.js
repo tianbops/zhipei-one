@@ -1,30 +1,42 @@
-/* ui/mapnav.js —— 门店名 → 地图导航目标
+/* ui/mapnav.js —— 门店名 → 三家地图导航目标 + 点门店名弹选择菜单
    ------------------------------------------------------------
    门店数据里 name 必有，navigation（「导航地址」）与坐标（lat/lng，GCJ-02）可有可无。
-   这里只做一件事：把一个门店对象解析成「可点击的目标 URL」，交给渲染层拼 <a href>。
+   这里做两件事：
+   1) 把一个门店对象解析成「三家各自的 URL」，交给渲染层拼 <a href> 与 data 载荷；
+   2) 捕获门店名链接的点击，弹底部菜单让司机选高德 / 百度 / 腾讯，再跳对应软件。
 
-   三条路径，优先级从高到低：
-   0) 有坐标 → uri.amap.com/navigation，直接进「到这里的驾车路线」（真正的导航，
-      不再停在搜索结果页或 POI 详情页）；坐标在数据中心由分享链接解析而来；
-   1) navigation 是地图域名下的 http(s) 链接 → 原样透传（链接自带精确 POI）；
-   2) 其余（空 / 纯文本 / 非地图 URL）→ 用门店名走高德关键词搜索。
+   为什么是「每次点门店名弹菜单」而不是设置里选默认：
+   浏览器无法枚举已安装的 App，也调不出「用哪个地图打开」的系统选择器。
+   唯一可行的是让用户明确选一次；配送场景里每次选比进设置改默认更直观。
 
-   为什么用 https 智能链接而不是 androidamap:// / iosamap://：
-   高德 uri.amap.com 的 callnative=1 会「已装拉起 App、未装留在网页版」，
-   两态由高德自己判定；自建 scheme 在 iOS 未安装时会弹系统错误框，
-   WebView / 微信普遍拦截，靠 visibilitychange + 超时探测还会出现双跳。
-   起点不传：地图 App 默认用本机 GPS，比浏览器 geolocation 更准且无需授权。
+   为什么全部用 https 官方链接、零探测、零自建 scheme：
+   高德 uri.amap.com 的 callnative=1 由高德自己判定「已装拉 App / 未装留网页版」；
+   百度 URI API v2.0 免费免 ak、支持 coord_type=gcj02，官方声明可在移动浏览器
+   （含微信）调起百度地图产品；腾讯不申请开发者 key，用 map.qq.com 网页版搜索占位。
+   自建 baidumap:// / qqmap:// 在 iOS 未装会弹系统错误框、WebView 与微信普遍拦截，
+   visibilitychange + 超时探测还会双跳 —— 一律不做。
+   起点不传：各家移动端默认用本机 GPS，比浏览器 geolocation 更准且无需授权。
+
+   坐标系：库里只存一组 GCJ-02（火星坐标）。高德 / 腾讯原生就是 GCJ-02；
+   百度是 BD-09，但 URI 支持 coord_type=gcj02 让百度自己转，不存两套坐标。
+   经纬度顺序三家不同（高德经度在前、百度纬度在前），各配单测锁死。
 
    为什么严格校验、且 new URL 不带 base：
-   旧实现 new URL(v, location.origin) 会把 "A栋B1" 解析成站内路径
-   https://站点/A%E6栋... 并跳过去（404，且 back.js 的 replace 让返回键也救不回）。
-   服务端对 navigation 无格式校验，历史数据里确实有这种纯文本。 */
+   旧实现 new URL(v, location.origin) 会把 "A栋B1" 解析成站内路径并跳过去（404，
+   且 back.js 的 replace 让返回键也救不回）。服务端对 navigation 无格式校验，
+   历史数据里确实有这种纯文本。 */
 (function () {
   "use strict";
   if (typeof window === "undefined" || window.zpMapNav) return;
 
   var MAP_HOSTS = ["amap.com", "map.baidu.com", "map.qq.com", "ditu.qq.com"];
   var SRC = "zhipei";
+
+  var PROVIDERS = [
+    { id: "amap", label: "高德地图", note: "已装拉起 App，未装用网页版" },
+    { id: "baidu", label: "百度地图", note: "免 key，坐标由百度自动转换" },
+    { id: "qq", label: "腾讯地图", note: "网页版搜索（无需开发者 key）" },
+  ];
 
   function text(v) {
     return v == null ? "" : String(v).trim();
@@ -49,57 +61,6 @@
     }
   }
 
-  function keywordUrl(name) {
-    var url = "https://uri.amap.com/search?keyword=" + encodeURIComponent(name) + "&src=" + SRC;
-    /* callnative 仅移动端有意义：桌面端加了也只是个无效参数，去掉更干净 */
-    return isMobile() ? url + "&callnative=1" : url;
-  }
-
-  function pickName(store) {
-    return (
-      text(store && store.name) || text(store && store.rawName) || text(store && store.originalName)
-    );
-  }
-
-  /* 基准库里的坐标（GCJ-02）优先。有坐标就是「到这里的驾车路线」，
-     没有才退回链接 / 关键词搜索。范围外的值直接忽略，避免拼出 0,0。 */
-  function geoOf(store) {
-    var lat = Number(store && store.lat);
-    var lng = Number(store && store.lng);
-    if (!isFinite(lat) || !isFinite(lng)) return null;
-    if (lat < 18 || lat > 54 || lng < 73 || lng > 136) return null;
-    return { lat: lat, lng: lng };
-  }
-
-  /* uri.amap.com/navigation 的 to 参数是「经度,纬度,名称」——纬度在前会导到几百公里外 */
-  function navigationUrl(geo, name) {
-    var to = geo.lng.toFixed(6) + "," + geo.lat.toFixed(6);
-    if (name) to += "," + encodeURIComponent(name);
-    var url = "https://uri.amap.com/navigation?to=" + to + "&mode=car&src=" + SRC;
-    return isMobile() ? url + "&callnative=1" : url;
-  }
-
-  /* 返回 {url, kind:"geo"|"link"|"keyword"}；门店无任何可用信息时返回 null */
-  function resolve(store) {
-    var geo = geoOf(store);
-    var name = pickName(store);
-    if (geo) return { url: navigationUrl(geo, name), kind: "geo" };
-    var raw = text(store && store.navigation) || text(store && store.nav);
-    if (raw) {
-      try {
-        var u = new URL(raw);
-        if (!u.username && !u.password && /^https?:$/.test(u.protocol) && isMapHost(u.hostname)) {
-          return { url: u.href, kind: "link" };
-        }
-      } catch (e) {
-        /* 纯文本、相对路径、非法 scheme 都落这里 → 走关键词 */
-      }
-    }
-    return name ? { url: keywordUrl(name), kind: "keyword" } : null;
-  }
-
-  /* 加到主屏的 iOS PWA 没有地址栏，_self 跳走会困在高德页；
-     其它场景（浏览器、App 壳）用 _self，返回键/手势能直接回列表。 */
   function standalone() {
     try {
       return (
@@ -111,6 +72,128 @@
     }
   }
 
+  function pickName(store) {
+    return (
+      text(store && store.name) || text(store && store.rawName) || text(store && store.originalName)
+    );
+  }
+
+  /* 基准库里的坐标（GCJ-02）优先。范围外的值直接忽略，避免拼出 0,0。 */
+  function geoOf(store) {
+    var lat = Number(store && store.lat);
+    var lng = Number(store && store.lng);
+    if (!isFinite(lat) || !isFinite(lng)) return null;
+    if (lat < 18 || lat > 54 || lng < 73 || lng > 136) return null;
+    return { lat: lat, lng: lng };
+  }
+
+  /* 只认白名单地图域名下的 http(s) 链接；纯文本/非地图 URL 一律当没有。 */
+  function linkOf(store) {
+    var raw = text(store && store.navigation) || text(store && store.nav);
+    if (!raw) return "";
+    try {
+      var u = new URL(raw);
+      if (!u.username && !u.password && /^https?:$/.test(u.protocol) && isMapHost(u.hostname)) {
+        return u.href;
+      }
+    } catch (e) {}
+    return "";
+  }
+
+  function enc(v) {
+    return encodeURIComponent(v);
+  }
+
+  function hostIs(link, re) {
+    try {
+      return re.test(new URL(link).hostname.toLowerCase().replace(/\.$/, ""));
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function keywordUrl(name) {
+    var url = "https://uri.amap.com/search?keyword=" + enc(name) + "&src=" + SRC;
+    /* callnative 仅移动端有意义：桌面端加了也只是个无效参数，去掉更干净 */
+    return isMobile() ? url + "&callnative=1" : url;
+  }
+
+  /* uri.amap.com/navigation 的 to 参数是「经度,纬度,名称」——纬度在前会导到几百公里外 */
+  function navigationUrl(geo, name) {
+    var to = geo.lng.toFixed(6) + "," + geo.lat.toFixed(6);
+    if (name) to += "," + enc(name);
+    var url = "https://uri.amap.com/navigation?to=" + to + "&mode=car&src=" + SRC;
+    return isMobile() ? url + "&callnative=1" : url;
+  }
+
+  /* ===== 三家适配器：一张表收口差异 =====
+     返回 {amap, baidu, qq, _geo}，_geo 供菜单显示「已绑定精确坐标」。 */
+  function providerUrls(store) {
+    var geo = geoOf(store);
+    var name = pickName(store);
+    var link = linkOf(store);
+    var n = enc(name);
+    var out = {};
+
+    /* 高德：坐标 → 精确驾车导航；无坐标但有高德链接 → 原样透传（自带精确 POI）；
+       其余 → 门店名搜索。 */
+    if (geo) {
+      out.amap = navigationUrl(geo, name);
+    } else if (link && hostIs(link, /(^|\.)amap\.com$/)) {
+      out.amap = link;
+    } else {
+      out.amap = keywordUrl(name);
+    }
+
+    /* 百度：destination 必须带 latlng: 前缀（纬度在前），|name: 后缀是可选标注。
+       coord_type=gcj02 让百度自己把 GCJ-02 转成 BD-09；output=html 是网页版兜底。
+       不传 origin，百度移动端默认用当前定位。 */
+    if (geo) {
+      out.baidu =
+        "https://api.map.baidu.com/direction?destination=" +
+        "latlng:" + geo.lat.toFixed(6) + "," + geo.lng.toFixed(6) +
+        (name ? "|name:" + n : "") +
+        "&mode=driving&coord_type=gcj02&output=html&src=" + SRC;
+    } else if (link && hostIs(link, /(^|\.)map\.baidu\.com$/)) {
+      out.baidu = link;
+    } else {
+      out.baidu = "https://map.baidu.com/search/" + n + "/";
+    }
+
+    /* 腾讯：不申请开发者 key（URI API 的 referer 必填且要开发者标识），
+       用 map.qq.com 官方网页版搜索占位。有坐标时附带 center 让网页版尽量贴近
+       精确位置；最终落点以腾讯页面行为为准，不做唤起 App 的承诺。 */
+    out.qq =
+      "https://map.qq.com/?what=" + n +
+      (geo ? "&center=" + geo.lat.toFixed(6) + "," + geo.lng.toFixed(6) : "");
+
+    out._geo = !!geo;
+    return out;
+  }
+
+  /* 载荷：渲染层塞进 data-zp-nav-payload，菜单点击时还原，
+     避免把整个门店对象挂 DOM 上，也不依赖渲染层作用域。 */
+  function navPayload(store) {
+    var geo = geoOf(store);
+    return JSON.stringify({
+      name: pickName(store),
+      lat: geo ? geo.lat : null,
+      lng: geo ? geo.lng : null,
+      link: linkOf(store),
+    });
+  }
+
+  /* 返回 {url, kind:"geo"|"link"|"keyword"}；门店无任何可用信息时返回 null。
+     url 仍是高德默认链接 —— 菜单脚本没加载时点门店名也能导航（渐进增强）。 */
+  function resolve(store) {
+    var geo = geoOf(store);
+    var name = pickName(store);
+    if (geo) return { url: navigationUrl(geo, name), kind: "geo" };
+    var link = linkOf(store);
+    if (link) return { url: link, kind: "link" };
+    return name ? { url: keywordUrl(name), kind: "keyword" } : null;
+  }
+
   function linkAttrs(store) {
     var t = resolve(store);
     if (!t) return null;
@@ -120,14 +203,147 @@
       kind: t.kind,
       target: blank ? "_blank" : "_self",
       rel: blank ? "noopener" : "",
+      payload: navPayload(store),
     };
   }
+
+  /* ===== 底部选择菜单 ===== */
+  var sheet = null;
+  var lastAnchor = null;
+
+  function el(tag, cls, txt) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (txt != null) n.textContent = txt;
+    return n;
+  }
+
+  function closeMenu() {
+    if (sheet) {
+      var bg = sheet;
+      sheet = null;
+      if (bg.parentNode) bg.parentNode.removeChild(bg);
+      document.body.classList.remove("zp-mn-open");
+    }
+    if (lastAnchor && lastAnchor.focus) {
+      try { lastAnchor.focus({ preventScroll: true }); } catch (e) {}
+    }
+    lastAnchor = null;
+  }
+
+  function go(url, blank) {
+    if (!url) return;
+    if (blank) {
+      try { window.open(url, "_blank", "noopener"); } catch (e) { location.href = url; }
+    } else {
+      location.href = url;
+    }
+  }
+
+  function openMenu(anchor, payload) {
+    closeMenu();
+    var data;
+    try { data = JSON.parse(payload); } catch (e) { return false; }
+    if (!data || (!data.name && !data.lat)) return false;
+
+    var urls = providerUrls({
+      name: data.name,
+      lat: data.lat,
+      lng: data.lng,
+      navigation: data.link,
+    });
+    /* 数据中心等页面把门店名做成 target=_blank 的预览链接；继承它，
+       避免管理员点一下就被 _self 带离维护页面。 */
+    var blank = standalone() || anchor.getAttribute("target") === "_blank";
+    lastAnchor = anchor;
+
+    var bg = el("div", "zp-mn-bg");
+    var box = el("div", "zp-mn-sheet");
+    box.setAttribute("role", "dialog");
+    box.setAttribute("aria-modal", "true");
+    box.setAttribute("aria-label", "选择导航软件");
+
+    var head = el("div", "zp-mn-head");
+    head.appendChild(el("div", "zp-mn-title", "导航到 " + data.name));
+    head.appendChild(el("div", "zp-mn-sub", urls._geo ? "已绑定精确坐标，可直接作为导航终点" : "暂无坐标，将按门店名搜索"));
+    var x = el("button", "zp-mn-close", "✕");
+    x.type = "button";
+    x.setAttribute("aria-label", "关闭");
+    x.addEventListener("click", closeMenu);
+    head.appendChild(x);
+    box.appendChild(head);
+
+    var list = el("div", "zp-mn-list");
+    PROVIDERS.forEach(function (p) {
+      var row = el("button", "zp-mn-row");
+      row.type = "button";
+      row.setAttribute("data-provider", p.id);
+      var main = el("span", "zp-mn-row-main");
+      main.appendChild(el("span", "zp-mn-row-label", p.label));
+      main.appendChild(el("span", "zp-mn-row-hint", p.note));
+      row.appendChild(main);
+      row.appendChild(el("span", "zp-mn-arrow", "›"));
+      row.addEventListener("click", function () {
+        var u = urls[p.id];
+        closeMenu();
+        go(u, blank);
+      });
+      list.appendChild(row);
+    });
+    box.appendChild(list);
+    bg.appendChild(box);
+    bg.addEventListener("click", function (e) {
+      if (e.target === bg) closeMenu();
+    });
+
+    document.body.appendChild(bg);
+    document.body.classList.add("zp-mn-open");
+    sheet = bg;
+    var first = list.querySelector(".zp-mn-row");
+    if (first && first.focus) { try { first.focus({ preventScroll: true }); } catch (e) {} }
+    return true;
+  }
+
+  /* 冒泡阶段委托：手势 / 业务已 preventDefault 的点击不接管。
+     数据中心左滑后浏览器补发的那次 click 会被 suppressNavUntil 吃掉，这里跳过；
+     e2e 用例在捕获阶段 preventDefault 记录 href，也不会弹菜单。 */
+  if (typeof document !== "undefined") {
+    document.addEventListener("click", function (e) {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var a = e.target && e.target.closest ? e.target.closest("[data-zp-nav-payload]") : null;
+      if (!a) return;
+      var payload = a.getAttribute("data-zp-nav-payload");
+      if (!payload) return;
+      if (!openMenu(a, payload)) return;
+      e.preventDefault();
+    }, false);
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && sheet && !e.defaultPrevented) {
+        e.preventDefault();
+        closeMenu();
+      }
+    });
+  }
+
+  /* 系统返回键先关菜单：沿用项目统一的返回层级钩子。
+     back.js 可能晚于本文件加载，用自初始化 push 写法（与其约定一致）。
+     rank 8 低于业务弹层（10+），保证菜单是最先响应返回的那一层。 */
+  (window.zpBackHooks = window.zpBackHooks || []).push({
+    rank: 8,
+    probe: function () { return sheet; },
+    close: function () { if (!sheet) return false; closeMenu(); return true; },
+  });
 
   window.zpMapNav = {
     resolve: resolve,
     linkAttrs: linkAttrs,
     keywordUrl: keywordUrl,
+    navigationUrl: navigationUrl,
+    providerUrls: providerUrls,
+    navPayload: navPayload,
     isMapHost: isMapHost,
     isMobile: isMobile,
+    PROVIDERS: PROVIDERS,
   };
 })();

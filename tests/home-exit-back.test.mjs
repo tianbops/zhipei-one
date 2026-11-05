@@ -44,7 +44,8 @@ console.log("二、popstate 同步退出（同文档的第二次返回）");
   const POP = SRC.slice(SRC.indexOf('window.addEventListener("popstate"'));
   t("已武装时同步调用 zpDoExit，不 await", /if\(zpExitArmed&&zpIsWorkspaceRoot&&!zpLeaving&&!zpTopHook\(\)\)\{[\s\S]{0,320}zpDoExit\(\);/.test(POP));
   t("同步退出分支清掉 armed 预置", /zpExitArmed=false;clearTimeout\(zpExitTimer\);[\s\S]{0,160}removeItem\("zpExitReady"\)/.test(POP));
-  t("同步分支位于 await zpHandleBack 之前", POP.indexOf("zpDoExit();") < POP.indexOf("const r=await zpHandleBack()"));
+  t("同步分支位于 await zpHandleBack 之前", POP.indexOf("zpDoExit();") < POP.indexOf("const r=await zpHandleBack("));
+  t("popstate 传 true（系统已退一层，不得二次 history.back）", /const r=await zpHandleBack\(true\)/.test(POP));
   t("同文档接力仍保留（标记不删）", /zpZone==="business"&&zpHasExit\(\)\)\{[\s\S]{0,160}history\.back\(\)/.test(POP));
 }
 

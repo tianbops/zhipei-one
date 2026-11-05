@@ -56,11 +56,16 @@ try{localStorage.clear()}catch(e){}
     return real.apply(this,arguments);
   };
 })();
-/* 记录点击而不真的离开页面 */
-window.__nav=[];
+/* 记录点击而不真的离开页面。
+   菜单模式（window.__menuMode）下捕获阶段只计数、不 preventDefault，
+   让 mapnav.js 的冒泡委托能弹出选择菜单；菜单自身会阻止默认跳转。
+   window.open 被覆盖成只记录，避免三家 provider 真的打开外链。 */
+window.__nav=[];window.__navOut=[];window.__menuClicks=0;
+window.open=function(u){window.__navOut.push(String(u));return null;};
 document.addEventListener('click',function(e){
   var a=e.target&&e.target.closest?e.target.closest('a[data-zp-nav]'):null;
   if(!a)return;
+  if(window.__menuMode){window.__menuClicks++;return}
   e.preventDefault();
   window.__nav.push({href:a.getAttribute('href'),abs:a.href,target:a.target,kind:a.dataset.zpNav,name:a.dataset.zpNavName,text:(a.textContent||'').trim().slice(0,12)});
 },true);`;
@@ -181,6 +186,104 @@ const SNAP_DETAIL = `(()=>{
   check('详情页高德短链同样透传', detail && detail.items.some((x) => x.abs === 'https://surl.amap.com/abc'));
   check('详情页触控热区 ≥44px', detail && detail.items.every((x) => x.box >= 44), detail && JSON.stringify(detail.items.map((x) => x.box)));
   check('详情页门店名注入被转义', detail && detail.injectedImg === false && detail.xss === false);
+
+  /* ===== 每次点门店名弹菜单：高德 / 百度 / 腾讯 ===== */
+  await C('Page.navigate', { url: BASE + '/home.html?case=mapnav-menu' });
+  await sleep(1700);
+  const menuSetup = await ev(`(()=>{
+    window.__menuMode=true;window.__menuClicks=0;window.__navOut=[];
+    const as=[...document.querySelectorAll('#todayStoreList a[data-zp-nav-payload]')];
+    as.forEach(a=>{a.setAttribute('target','_blank');a.setAttribute('href','#probe')});
+    return as.length;
+  })()`);
+  check('6 家门店都带 data-zp-nav-payload 载荷', menuSetup === 6, String(menuSetup));
+
+  const payloads = await ev(`(()=>[...document.querySelectorAll('#todayStoreList a[data-zp-nav-payload]')].map(a=>{
+    try{return {p:JSON.parse(a.getAttribute('data-zp-nav-payload'))}}catch(e){return {err:String(e)}}
+  }))()`);
+  check('菜单载荷全部可反解且只含 name/lat/lng/link',
+    Array.isArray(payloads) && payloads.length === 6 && payloads.every(x => x.p && !x.err &&
+      Object.keys(x.p).sort().join(',') === 'lat,link,lng,name'), JSON.stringify(payloads && payloads.slice(0, 2)));
+  check('已定位门店载荷带精确坐标、不带地址文本',
+    Array.isArray(payloads) && payloads.some(x => x.p && x.p.lat === 29.5631 && x.p.lng === 106.5512),
+    JSON.stringify(payloads && payloads.map(x => x.p && [x.p.lat, x.p.lng])));
+
+  const MENU = `(()=>({sheet:!!document.querySelector('.zp-mn-sheet'),
+    rows:[...document.querySelectorAll('.zp-mn-row[data-provider]')].map(r=>r.dataset.provider),
+    title:(document.querySelector('.zp-mn-title')||{}).textContent||'',
+    sub:(document.querySelector('.zp-mn-sub')||{}).textContent||'',
+    open:document.body.classList.contains('zp-mn-open')}))()`;
+  const clickStore = async (idx) => {
+    await ev(`(()=>{const a=[...document.querySelectorAll('#todayStoreList a[data-zp-nav-payload]')][${idx}];
+      const n=a&&a.querySelector('.today-store-name');if(n)n.click();return 1})()`);
+    await sleep(140);
+  };
+  const pick = async (id) => {
+    await ev(`(()=>{const r=document.querySelector('.zp-mn-row[data-provider="${id}"]');if(r)r.click();return 1})()`);
+    await sleep(140);
+  };
+
+  await clickStore(5);   /* S6：已定位门店 */
+  const m1 = await ev(MENU);
+  check('点门店名弹出底部菜单', m1 && m1.sheet === true && m1.open === true, JSON.stringify(m1));
+  check('菜单固定列高德 / 百度 / 腾讯三家', m1 && m1.rows.join(',') === 'amap,baidu,qq', JSON.stringify(m1 && m1.rows));
+  check('已定位门店菜单标注「已绑定精确坐标」',
+    m1 && /已绑定精确坐标/.test(m1.sub) && /导航到/.test(m1.title), JSON.stringify(m1));
+
+  await pick('amap');
+  const out1 = await ev('window.__navOut');
+  check('选高德 → uri.amap.com/navigation 且 to 经度在前',
+    Array.isArray(out1) && out1.length === 1 && (() => { try { const u = new URL(out1[0]); return u.pathname === '/navigation' && (u.searchParams.get('to') || '').startsWith('106.551200,29.563100'); } catch { return false; } })(),
+    JSON.stringify(out1));
+  check('选完菜单自动关闭', (await ev(`!document.querySelector('.zp-mn-sheet')`)) === true);
+
+  await clickStore(5);
+  await pick('baidu');
+  const out2 = await ev('window.__navOut');
+  check('选百度 → latlng 纬度在前 + coord_type=gcj02',
+    Array.isArray(out2) && out2.length === 2 && (() => { try { const u = new URL(out2[1]); const d = u.searchParams.get('destination') || ''; return u.hostname === 'api.map.baidu.com' && d.startsWith('latlng:29.563100,106.551200') && u.searchParams.get('coord_type') === 'gcj02'; } catch { return false; } })(),
+    JSON.stringify(out2));
+
+  await clickStore(5);
+  await pick('qq');
+  const out3 = await ev('window.__navOut');
+  check('选腾讯 → map.qq.com 网页版搜索（免开发者 key）',
+    Array.isArray(out3) && out3.length === 3 && (() => { try { const u = new URL(out3[2]); return u.hostname === 'map.qq.com' && u.searchParams.get('what') === '已定位门店' && u.searchParams.get('center') === '29.563100,106.551200' && !out3[2].includes('apis.map.qq.com'); } catch { return false; } })(),
+    JSON.stringify(out3));
+
+  await clickStore(1);   /* S2：纯文本 navigation，未定位 */
+  const m2 = await ev(MENU);
+  check('未定位门店菜单提示「按门店名搜索」', m2 && /暂无坐标/.test(m2.sub), JSON.stringify(m2));
+  await pick('amap');
+  const out4 = await ev('window.__navOut');
+  check('未定位门店选高德 → 关键词搜索（不拼 0,0）',
+    Array.isArray(out4) && out4.length === 4 && (() => { try { const u = new URL(out4[3]); return u.pathname === '/search' && u.searchParams.get('keyword') === '渝北中景隆(重庆)贸易有限公司'; } catch { return false; } })(),
+    JSON.stringify(out4));
+
+  await clickStore(5);
+  await ev(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}))`);
+  await sleep(120);
+  check('Escape 关闭菜单', (await ev(`!document.querySelector('.zp-mn-sheet')`)) === true);
+
+  await clickStore(5);
+  await ev(`(()=>{const bg=document.querySelector('.zp-mn-bg');if(bg)bg.click();return 1})()`);
+  await sleep(120);
+  check('点遮罩关闭菜单', (await ev(`!document.querySelector('.zp-mn-sheet')`)) === true);
+
+  check('菜单注册 rank 8 返回钩子（系统返回先关菜单）',
+    (await ev(`(window.zpBackHooks||[]).some(h=>h&&h.rank===8)`)) === true);
+
+  const suppress = await ev(`(()=>{
+    window.__menuMode=false;
+    const a=[...document.querySelectorAll('#todayStoreList a[data-zp-nav-payload]')][5];
+    const n=a&&a.querySelector('.today-store-name');if(!n)return 'no-anchor';
+    const guard=e=>e.preventDefault();
+    document.addEventListener('click',guard,{capture:true,once:true});
+    n.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,button:0}));
+    return !document.querySelector('.zp-mn-sheet');
+  })()`);
+  check('业务已 preventDefault 的点击不弹菜单（不抢手势 / e2e 捕获阶段点击）',
+    suppress === true, String(suppress));
 
   const fails = results.filter((r) => !r.ok);
   console.log('\n结果: ' + (results.length - fails.length) + '/' + results.length + ' 通过');

@@ -29,7 +29,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="智配One"><script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#FFFFFF":"#161616");}catch(e){}</script><script src="/js/theme-sync.js?v=e56e8350"></script>
-<link rel="stylesheet" href="/css/app.css?v=3e4da6dd"><link rel="stylesheet" href="/css/ui-base.css?v=b2030d73"><link rel="stylesheet" href="/css/ui-overlay.css?v=07775030"><link rel="stylesheet" href="/css/ui-theme.css?v=eb09ffcc"><link rel="stylesheet" href="/css/ui-shell.css?v=8537d8fb"><link rel="stylesheet" href="/css/mobile-ui.css?v=26b52400"><link rel="stylesheet" href="/css/business-pages.css?v=c9c0f175"><link rel="stylesheet" href="/css/data.css?v=ad4157ce"></head>
+<link rel="stylesheet" href="/css/app.css?v=3e4da6dd"><link rel="stylesheet" href="/css/ui-base.css?v=b2030d73"><link rel="stylesheet" href="/css/ui-overlay.css?v=947b024f"><link rel="stylesheet" href="/css/ui-theme.css?v=eb09ffcc"><link rel="stylesheet" href="/css/ui-shell.css?v=8537d8fb"><link rel="stylesheet" href="/css/mobile-ui.css?v=26b52400"><link rel="stylesheet" href="/css/business-pages.css?v=c9c0f175"><link rel="stylesheet" href="/css/data.css?v=ad4157ce"></head>
 <body><main class="page2 data-page zp-shell">
 <header class="topbar"><a class="app-back" href="/pages/dispatch" aria-label="返回线路维护"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><h1>数据资料</h1><button id="pageMenuBtn" class="data-page-menu-btn" type="button" aria-label="打开菜单" hidden>☰</button><button id="dataShareHeaderBtn" class="data-page-menu-btn" type="button" aria-label="分享线路资料"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5"></circle><circle cx="6" cy="12" r="2.5"></circle><circle cx="18" cy="19" r="2.5"></circle><path d="m8.2 10.8 7.5-4.4M8.2 13.2l7.5 4.4"></path></svg></button></header>
 <div class="data-fixed-area">
@@ -157,11 +157,14 @@ function render(){
   const nav=navUrl(s.navigation);
   /* 未定位角标：只标缺失的，已有坐标的不占视觉。保存后自动补齐，剩下的就是没链接的。 */
   const located=!!geoOfStore(s);
+  /* 点门店名也走三家选择菜单（与首页/详情一致）。载荷只带坐标与名称，
+     不依赖 mapnav.js 的加载顺序；菜单委托由页面底部引入的 mapnav.js 注册。 */
+  const payload=esc(JSON.stringify({name:s.name||s.originalName||"",lat:numOf(s.lat),lng:numOf(s.lng),link:nav}));
   return '<article class="data-store-row" data-index="'+index+'" draggable="'+(canMaintain?"true":"false")+'">'+
    '<span class="data-store-index">'+String(i+1).padStart(2,"0")+'</span>'+
    '<div class="data-store-main">'+
    '<div class="data-store-name-line">'+
-   (nav?'<a class="data-store-name data-store-nav" href="'+esc(nav)+'" target="_blank" rel="noopener noreferrer">'+name+(located?"":'<em class="data-store-geo">未定位</em>')+'</a>':'<strong class="data-store-name">'+name+(located?"":'<em class="data-store-geo">未定位</em>')+'</strong>')+
+   (nav?'<a class="data-store-name data-store-nav" href="'+esc(nav)+'" target="_blank" rel="noopener noreferrer" data-zp-nav-payload="'+payload+'">'+name+(located?"":'<em class="data-store-geo">未定位</em>')+'</a>':'<strong class="data-store-name">'+name+(located?"":'<em class="data-store-geo">未定位</em>')+'</strong>')+
    '</div>'+
    (meta.length?'<div class="data-store-meta">'+meta.join("")+'</div>':"")+
    '</div>'+
@@ -173,7 +176,9 @@ function render(){
    门店的坐标不由人填：把高德「分享」出来的链接粘进「导航地址」，
    粘贴后 0.5 秒（以及保存时）由服务端代取 302 落点，从中取出 GCJ-02 坐标。
    管理员不需要知道有「解析」这个动作，也不需要懂经纬度。
-   坐标存在 store 上（lat/lng/address），提交仍走原来的 /api/base。 */
+   坐标存在 store 上（lat/lng/geoFrom），提交仍走原来的 /api/base。
+   geoFrom 是「这组坐标由哪条链接解出」的短指纹：链接换了就必须重新解析，
+   否则新链接会继续绑着旧坐标，司机导航到的是上一家店的位置。 */
 /* null / "" 不能被 Number() 变成 0 —— 否则「没有坐标」会被当成 (0,0) 的已定位门店，
    列表不再显示角标、保存时也跳过解析，最后导航到几内亚湾。范围校验与后端 numOrNull 一致。 */
 function numOf(v){if(v==null||v==="")return null;const n=Number(v);return Number.isFinite(n)?n:null}
@@ -181,9 +186,25 @@ function geoOfStore(s){
  const lat=numOf(s?.lat),lng=numOf(s?.lng);
  if(lat==null||lng==null)return null;
  if(lat<18||lat>54||lng<73||lng>136)return null;
- return {lat,lng,address:String(s?.address||"")};
+ return {lat,lng,geoFrom:String(s?.geoFrom||"")};
 }
 function geoText(g){return g?g.lat.toFixed(6)+", "+g.lng.toFixed(6):""}
+/* 链接指纹：只用于判断「坐标是不是由当前这条链接解出来的」，不入库链接文本本身。
+   用与服务端缓存键相同的 FNV-1a，输出 8 位十六进制。 */
+function geoFingerprint(v){
+ const s=String(v||"");if(!s)return "";
+ let h=2166136261;
+ for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}
+ return (h>>>0).toString(16).padStart(8,"0");
+}
+/* 需要（重新）解析：没有坐标，或链接与 geoFrom 对不上（含历史数据没有 geoFrom）。
+   这样「换了地址链接再提交更新」一定会重新解析并把新坐标绑回这家门店。 */
+function needsGeo(s){
+ const link=navUrlOf(s?.navigation);
+ if(!link)return false;
+ const g=geoOfStore(s);
+ return !g||g.geoFrom!==geoFingerprint(link);
+}
 const GEO_REASON={EMPTY:"先粘贴链接或坐标",INVALID_URL:"链接不完整，请检查是否复制全",UNSUPPORTED_HOST:"只认高德链接；百度/腾讯请在高德里搜到这家店后再分享",TIMEOUT:"网络超时，请重试",FETCH_FAILED:"链接打不开，可能已失效",NO_COORD:"这个链接里没有坐标，请用高德的「分享」重新复制",REQUEST_FAILED:"定位服务连接失败"};
 /* 高德 App「分享」到微信/剪贴板常带文案前缀（【高德地图】… / 我在这里…）。
    只认「整段以 http 开头」会让这类粘贴被静默跳过 —— 提交时不发请求也不报错，
@@ -197,7 +218,7 @@ function geoReasonText(r){return GEO_REASON[r]||("解析失败（"+String(r||"�
 function setGeoHint(msg,kind){
  const el=$("editGeoHint");if(!el)return;
  if(msg){el.textContent=msg;el.className="data-field-hint"+(kind?" "+kind:"");return}
- if(editGeo){el.textContent="已定位"+(editGeo.address?" · "+editGeo.address:"")+"，保存后司机点门店名可直接导航";el.className="data-field-hint ok";return}
+ if(editGeo){el.textContent="已定位 "+geoText(editGeo)+"，保存后司机点门店名可选用地图导航";el.className="data-field-hint ok";return}
  el.textContent="在高德地图找到这家店 → 分享 → 复制链接 → 粘贴到这里，保存即自动定位";el.className="data-field-hint";
 }
 /* 只有「能从文本里取到链接」或「两个小数」才值得发请求；
@@ -225,7 +246,7 @@ async function resolveGeo(text){
  const promise=(async()=>{
   try{
    const it=await parseGeoTarget(v);
-   if(it&&it.ok){editGeo={lat:it.lat,lng:it.lng,address:it.address||""};geoResolvedFor=v;setGeoHint();return editGeo}
+   if(it&&it.ok){editGeo={lat:it.lat,lng:it.lng,geoFrom:geoFingerprint(navUrlOf(v)||v)};geoResolvedFor=v;setGeoHint();return editGeo}
    editGeo=null;setGeoHint(it?.reason?geoReasonText(it.reason):"没识别出位置，导航仍可用，但会停在搜索结果页","bad");return null
   }catch(e){editGeo=null;setGeoHint("识别失败："+err(e)+"，可保存后再试","bad");return null}
  })();
@@ -338,7 +359,8 @@ $("editSave").onclick=async()=>{
     纯文字备注原样保留，历史数据里 navigation 可能就是门牌描述 */
  item.navigation=link||(editGeo?"":navText);
  item.note=$("editNote").value.trim();
- item.lat=editGeo?editGeo.lat:null;item.lng=editGeo?editGeo.lng:null;item.address=editGeo?(editGeo.address||""):"";
+ /* 链接换了但解析失败（editGeo 为 null）：同步清掉旧坐标，绝不能让新地址继续绑着上一家店的位置 */
+ item.lat=editGeo?editGeo.lat:null;item.lng=editGeo?editGeo.lng:null;item.geoFrom=editGeo?(editGeo.geoFrom||""):"";
  item.aliases=editAliases;
  if(editingIndex<0){stores.push(item);editingIndex=stores.length-1}
  const from=editingIndex;applyOrder(from,order);closeEditor();render()
@@ -406,9 +428,13 @@ $("saveStoresTop").onclick=async()=>submitStores();
    管理员只需要粘贴链接，解析是保存过程的一部分，不是额外操作。
    只改内存里的暂存数据，落库仍是 submitStores 的 PUT，不绕过「先预览再提交」。 */
 async function autoLocate(list,onProgress){
- /* 带文案的分享文本也要认：navUrlOf 会取出其中的链接 */
- const targets=(list||[]).filter(s=>!geoOfStore(s)&&!!navUrlOf(s?.navigation));
+ /* 带文案的分享文本也要认：navUrlOf 会取出其中的链接。
+    关键：不只看「有没有坐标」，还要看链接与 geoFrom 是否一致 ——
+    换了地址链接提交时，旧坐标必须作废重解析，不能继续指向上一家店。 */
+ const targets=(list||[]).filter(needsGeo);
  if(!targets.length)return{ok:0,fail:[],reasons:{}};
+ /* 先把待重解析门店的旧坐标清掉：解析失败时也不能留着旧终点 */
+ targets.forEach(s=>{s.lat=null;s.lng=null;s.geoFrom=""});
  let ok=0;const fail=[],reasons={};
  const bump=r=>{const k=r||"UNKNOWN";reasons[k]=(reasons[k]||0)+1};
  /* 服务端单次上限 10 条（Cloudflare subrequest 配额），这里必须同尺寸分片 */
@@ -417,7 +443,7 @@ async function autoLocate(list,onProgress){
   try{
    const r=await api("/api/store/geo",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({routeId,items:chunk.map(x=>({text:navUrlOf(x.navigation)}))})});
    (r.items||[]).forEach((it,j)=>{const s=chunk[j];if(!s)return;
-    if(it&&it.ok){s.lat=it.lat;s.lng=it.lng;s.address=it.address||"";ok++}
+    if(it&&it.ok){s.lat=it.lat;s.lng=it.lng;s.geoFrom=geoFingerprint(navUrlOf(s.navigation));ok++}
     else{fail.push(s.name||"未命名门店");bump(it?.reason)}
    });
    /* 接口返回的条数不足时，缺的那些也算失败，别静默当成成功 */
@@ -457,7 +483,7 @@ async function submitStores(){
   stores.forEach((s,i)=>s.routeOrder=i+1);
   /* 保存即定位：先把「有高德链接但没坐标」的门店补齐，再落库。
      这一步取代了原来的「批量定位」按钮 —— 管理员只粘贴链接，不必记得去点解析。 */
-  const pending=stores.filter(s=>!geoOfStore(s)&&!!navUrlOf(s.navigation)).length;
+  const pending=stores.filter(needsGeo).length;
   /* 填了「导航地址」但里面根本没有链接（纯文字地址 / 备注）：这些永远不会被解析，
      旧版连一句提示都没有，管理员只看到「提交成功」却全部「未定位」。 */
   const noLink=stores.filter(s=>!geoOfStore(s)&&String(s.navigation||"").trim()&&!navUrlOf(s.navigation)).length;
@@ -593,7 +619,7 @@ load();
   (window.zpDirtyProbes=window.zpDirtyProbes||[]).push(()=>
     filled(openPanel())||!!(dataBaseline&&dataBaseline!==JSON.stringify(stores)));
 })();
-</script><script src="/js/ui/share.js?v=f2e4bdb6"></script><script src="/js/data-share-header.js?v=ddb85bdc"></script><script src="/js/ui/core.js?v=7c4e2f82"></script><script src="/js/ui/haptic.js?v=a3a78c0a"></script><script src="/js/ui/appearance.js?v=a6de05cc"></script><script src="/js/ui/feedback.js?v=f8da0256"></script><script src="/js/ui/nav.js?v=c43aa872"></script><script src="/js/ui/back.js?v=bff74c36"></script><script src="/js/ui/nav-prefetch.js?v=968d1e0b"></script>
+</script><script src="/js/ui/share.js?v=f2e4bdb6"></script><script src="/js/data-share-header.js?v=ddb85bdc"></script><script src="/js/ui/mapnav.js?v=65412b8f"></script><script src="/js/ui/core.js?v=7c4e2f82"></script><script src="/js/ui/haptic.js?v=a3a78c0a"></script><script src="/js/ui/appearance.js?v=a6de05cc"></script><script src="/js/ui/feedback.js?v=f8da0256"></script><script src="/js/ui/nav.js?v=c43aa872"></script><script src="/js/ui/back.js?v=41f48fe4"></script><script src="/js/ui/nav-prefetch.js?v=968d1e0b"></script>
 <script src="/js/pwa.js?v=68dbac73"></script>
 <script defer src="/js/boot-ready.js?v=4e3f49ea"></script>
 </body></html>

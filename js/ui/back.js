@@ -88,6 +88,19 @@
     "/pages/data":"/pages/dispatch"
   };
 
+  /* 本页是否由「静态父级 → 子页」的普通导航 push 进来（见文件末尾的放行逻辑）。
+     标记由父页点击时写入、子页加载时立即消费并清除，只属于当前文档生命周期；
+     严格校验「本页的静态父级 === 标记值」，避免残留标记误判。 */
+  let zpCameByPush=false;
+  try{
+    const marker=sessionStorage.getItem("zpNavPushParent");
+    if(marker){
+      sessionStorage.removeItem("zpNavPushParent");
+      const here=UI.normPath(location.pathname);
+      zpCameByPush=!!zpStaticParent[here]&&UI.normPath(marker)===UI.normPath(zpStaticParent[here]);
+    }
+  }catch(e){}
+
   function zpParentOf(path,params){
     // 详情 → 数据资料（编辑线路）：必须回到那张运单，否则用户丢掉正在改的单。
     // 这是一对同级页的往返（2↔2），返回给 allowSameDepth 豁免；
@@ -317,7 +330,7 @@
     UI.trapTab(root,e);
   });
 
-  window.zpHandleBack=async function(){
+  window.zpHandleBack=async function(fromPopstate){
     if(await zpCloseTopLayer())return "handled";
     if(zpIsWorkspaceRoot){
       // 管理员空间：先把模块收口到管理员首页（模块 0），再走「两次返回退桌面」。
@@ -359,7 +372,21 @@
       let dirty=false;try{dirty=!!fn()}catch{}
       if(dirty&&!await zpConfirmDiscard())return "handled";
     }
-    location.replace(zpResolveBack("/home"));
+    const target=zpResolveBack("/home");
+    /* 本页是「父级 → 子页」push 进来的，且返回目标正是那个父级：
+       用物理后退消费栈里那条父级记录，浏览器直接加载父级文档。
+       顶栏箭头（非 popstate）与原生壳都走这里；弹层阶梯、未保存拦截
+       已在上面跑完，不会绕过。popstate 路径不这么做 —— 那次 back 是系统
+       自己发起的，再做一次 history.back() 会多退一层。 */
+    const here=UI.normPath(location.pathname);
+    if(!fromPopstate&&zpCameByPush&&zpStaticParent[here]&&
+       UI.normPath(target)===UI.normPath(zpStaticParent[here])){
+      zpCameByPush=false;
+      /* 多页架构下父子 URL 不同，这次 back 是跨文档加载父级页，
+         不会触发子页的 popstate，无需抑制标记（同文档场景不存在）。 */
+      try{history.back();return "leave"}catch(e){}
+    }
+    location.replace(target);
     return "leave";
   };
 
@@ -433,6 +460,25 @@
      判定：同源 + 以 / 开头 + 无 target/download/修饰键；外链、下载、mailto/tel、
      纯锚点一律放行。用冒泡阶段并检查 defaultPrevented，不抢业务自己处理的点击
      （如处理中的离开确认、选中 tab 滚回顶部）。 */
+  /* 有静态父级的子页（数据资料 / 页脚条款）：若当前页正好就是那个父级，
+     放行普通 <a> 导航，让物理历史保留「父级 → 子页」两层。
+     ------------------------------------------------------------------
+     为什么必须留这一条例外：站内一律 replace 时，子页的上一条历史记录是
+     「工作区根」文档。安卓手势/系统返回是跨文档后退，浏览器直接加载根页，
+     popstate 不触发，zpHandleBack 的层级控制完全没机会介入 —— 线上表现为
+     「数据资料按返回回到首页而不是线路维护」。顶栏箭头走 zpBackButton 不受影响，
+     所以只有系统返回错。保留父级记录后，系统返回自然落回父级页。 */
+  function zpPushChildParent(destPath){
+    let parent=null;
+    try{parent=zpStaticParent[UI.normPath(destPath)]||null}catch(e){}
+    if(!parent)return false;
+    let here;
+    try{here=UI.normPath(location.pathname)}catch(e){return false}
+    if(here!==UI.normPath(parent))return false;
+    try{sessionStorage.setItem("zpNavPushParent",here)}catch(e){}
+    return true;
+  }
+
   document.addEventListener("click",function(e){
     if(e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;
     const a=e.target&&e.target.closest?e.target.closest("a[href]"):null;
@@ -441,9 +487,10 @@
     if(!raw||raw.charAt(0)==="#"||/^(mailto:|tel:|javascript:)/i.test(raw))return;
     let url;try{url=new URL(raw,a.baseURI)}catch{return}
     if(url.origin!==location.origin)return;
-    e.preventDefault();
     // 同页链接（当前 tab、页内跳转）：不重复导航，否则又会压一条同样的历史
     if(url.pathname===location.pathname&&url.search===location.search)return;
+    if(zpPushChildParent(url.pathname))return;   // 放行：浏览器自己 push 一条历史
+    e.preventDefault();
     location.replace(url.href);
   },false);
 
@@ -542,7 +589,8 @@
         // 同文档（URL 相同、未重载）的返回也要接力：标记不删，逐条退到离开站点。
         try{history.back()}catch{};return
       }
-      const r=await zpHandleBack();
+      /* 传 true：系统自己已经退过一层历史，不能再 history.back() 多退一层 */
+      const r=await zpHandleBack(true);
       if(zpLeaving)return;
       if(r==="handled"){if(zpTopHook())zpPushGuard();return} // 还有下一层要关才补占位；层关光了就不再补，免得堆出孤儿记录
       if(r==="exit-armed")return;               // 处于「再按一次退出」窗口：窗口内再按即离开

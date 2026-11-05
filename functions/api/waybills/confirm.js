@@ -145,7 +145,7 @@ export async function onRequestPost({request,env}){
       if(globalTarget){
         target=base.stores.find(s=>clean(s.storeId)===clean(globalTarget.storeId))||null;
         if(!target){
-          target={storeId:clean(globalTarget.storeId),originalName:clean(globalTarget.originalName)||rawName,name:clean(globalTarget.name)||standardName,aliases:Array.isArray(globalTarget.aliases)?globalTarget.aliases:[],navigation:globalTarget.navigation||null,lat:geoNum(globalTarget.lat,"lat"),lng:geoNum(globalTarget.lng,"lng"),address:String(globalTarget.address||"").trim(),routeOrder:base.stores.length+1,note:""};
+          target={storeId:clean(globalTarget.storeId),originalName:clean(globalTarget.originalName)||rawName,name:clean(globalTarget.name)||standardName,aliases:Array.isArray(globalTarget.aliases)?globalTarget.aliases:[],navigation:globalTarget.navigation||null,lat:geoNum(globalTarget.lat,"lat"),lng:geoNum(globalTarget.lng,"lng"),geoFrom:"",routeOrder:base.stores.length+1,note:""};
           base.stores.push(target);
         }
 

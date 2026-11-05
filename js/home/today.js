@@ -44,6 +44,7 @@ function zpRenderTodayCard(w,dayOrders,fromCache){
         if(!t)return '<div class="today-store-row">'+body+'</div>';
         return '<a class="today-store-row" href="'+attr(t.url)+'" target="'+t.target+'"'+(t.rel?' rel="'+t.rel+'"':'')+
           ' data-zp-nav="'+attr(t.kind)+'" data-zp-nav-name="'+attr(rawName)+'"'+
+          ' data-zp-nav-payload="'+attr(t.payload||'')+'"'+
           ' aria-label="第'+(i+1)+'家，导航到 '+attr(rawName)+'">'+body+'</a>';
       }).join(""):'<div class="zp-empty zp-empty--tight">今日暂无配送门店</div>';
     }catch{
