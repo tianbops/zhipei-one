@@ -66,6 +66,10 @@ jobs:
         env:
           CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
         run: node tests/e2e-mapnav.cjs
+      - name: Verify data center auto-locates pasted map links
+        env:
+          CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
+        run: node tests/e2e-data-auto-geo.cjs
       - name: Verify history month reveals from the top
         env:
           CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}

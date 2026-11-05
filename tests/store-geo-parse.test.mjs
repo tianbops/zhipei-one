@@ -223,7 +223,7 @@ console.log("\n真实 302 展开（3 条）");
   srv.close();
 }
 
-console.log("\n接线检查（8 条）");
+console.log("\n接线检查（10 条）");
 {
   const read = (p) => readFileSync(fileURLToPath(new URL("../" + p, import.meta.url)), "utf8");
   const BASE = read("functions/api/base.js");
@@ -239,11 +239,28 @@ console.log("\n接线检查（8 条）");
   t("latest.js 用基准库回补坐标（老运单也能导航）", /geoOf\(baseStore\)/.test(LATEST));
   t("历史读取同样回补坐标", /geoOf\(baseStore\)/.test(HISTORY));
   t(
-    "编辑面板有「位置」输入与解析按钮",
-    /id="editGeo"/.test(DATA) && /id="editGeoParse"/.test(DATA)
+    "编辑面板只留一个「导航地址」输入，没有单独的解析按钮",
+    /id="editNavigation"/.test(DATA) &&
+      !/id="editGeo"/.test(DATA) &&
+      !/editGeoParse/.test(DATA)
   );
   t("保存时把坐标写进门店对象", /item\.lat=editGeo\?editGeo\.lat:null/.test(DATA));
-  t("批量定位按钮按维护权限显示", /batchGeoBtn"\)\.hidden=!canMaintain/.test(DATA));
+  t(
+    "提交更新时自动定位（不再依赖手动「批量定位」按钮）",
+    /autoLocate\(stores/.test(DATA) && !/batchGeoBtn/.test(DATA)
+  );
+  t(
+    "粘贴链接后自动解析（input 事件内触发 resolveGeo）",
+    /\$\("editNavigation"\)\.addEventListener\("input"[\s\S]{0,400}?resolveGeo\(v\)/.test(DATA)
+  );
+  t(
+    "保存按钮兜底解析（防抖未跑完也能拿到坐标）",
+    /editSave"\)\.onclick=async\(\)=>\{[\s\S]{0,700}?await resolveGeo\(navText\)/.test(DATA)
+  );
+  t(
+    "null 坐标不会被 Number() 当成 0 —— 否则 (0,0) 会显示已定位并跳过解析",
+    /if\(v==null\|\|v===""\)return null/.test(DATA) && /const located=!!geoOfStore\(s\)/.test(DATA)
+  );
   t("未定位角标只在缺坐标时渲染", /<em class="data-store-geo">未定位<\/em>/.test(DATA));
   t("首页 bundle 已打入坐标导航（mapnav 在打包清单里）", /uri\.amap\.com\/navigation/.test(BUNDLE));
 }
