@@ -70,6 +70,10 @@ jobs:
         env:
           CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
         run: node tests/e2e-data-auto-geo.cjs
+      - name: Verify swiping right never deletes a store
+        env:
+          CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
+        run: node tests/e2e-data-swipe.cjs
       - name: Verify history month reveals from the top
         env:
           CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}

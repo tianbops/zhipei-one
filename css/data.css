@@ -94,7 +94,6 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-store-row{touch-action:pan-y;user-select:none;transition:opacity .18s ease,transform .18s ease}
 .data-store-row.data-drag-active{opacity:.72;transform:scale(.99);background:var(--zp-tint)}
 .data-store-nav{color:var(--zp-text);text-decoration:none;cursor:pointer}
-.data-store-hidden{display:none}
 .data-store-meta-label{color:var(--zp-muted)}
 @media(min-width:600px){
  .data-tools-card{padding:14px 16px}

@@ -21,11 +21,11 @@ export const INLINE_SCRIPT_HASHES = [
   "'sha256-eMT6TQXzCqozsul4L3cq/gnK8jCzbH4qlVqfrCgbfEk='",
   "'sha256-fmSxi6o0X0L18UHDMnuUmLsD6zBhC+okAzUDoP1axbc='",
   "'sha256-nEqy98Q3AUMWGF2ZJKlpxae2hLsCfWAol3+nA7s4KXI='",
-  "'sha256-r0cw+EamkTI5zLPUFQy3gefb3f+CgVw3P7KtoEe8Rgs='",
   "'sha256-rUxWriDc1gvjeuXT7KZjQoE0/wWbp8y/pzOAo7di7GM='",
   "'sha256-vfKd3DNIyARe3BGl0pwB3s6YlavfItKoYdbB40fLaDA='",
   "'sha256-vg4zcO/PWYJRpe2qI8rwNf3wpqBQ/IJxB1fyaLxnMqI='",
   "'sha256-xwOMVfPJMmLEg85NWPTN78xGGnsPNZYwSkvdKNCvOvg='",
+  "'sha256-ya2/WkXrlRNq0qtrw8w9Q3IX0J7mp7Zvb8me3Ro00KY='",
 ];
 
 /** 把哈希表注入基础 CSP 的 script-src（'unsafe-inline' 保留作旧浏览器回退） */

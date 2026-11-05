@@ -29,7 +29,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="智配One"><script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#FFFFFF":"#161616");}catch(e){}</script><script src="/js/theme-sync.js?v=e56e8350"></script>
-<link rel="stylesheet" href="/css/app.css?v=3e4da6dd"><link rel="stylesheet" href="/css/ui-base.css?v=b2030d73"><link rel="stylesheet" href="/css/ui-overlay.css?v=07775030"><link rel="stylesheet" href="/css/ui-theme.css?v=eb09ffcc"><link rel="stylesheet" href="/css/ui-shell.css?v=8537d8fb"><link rel="stylesheet" href="/css/mobile-ui.css?v=26b52400"><link rel="stylesheet" href="/css/business-pages.css?v=c9c0f175"><link rel="stylesheet" href="/css/data.css?v=d18c1114"></head>
+<link rel="stylesheet" href="/css/app.css?v=3e4da6dd"><link rel="stylesheet" href="/css/ui-base.css?v=b2030d73"><link rel="stylesheet" href="/css/ui-overlay.css?v=07775030"><link rel="stylesheet" href="/css/ui-theme.css?v=eb09ffcc"><link rel="stylesheet" href="/css/ui-shell.css?v=8537d8fb"><link rel="stylesheet" href="/css/mobile-ui.css?v=26b52400"><link rel="stylesheet" href="/css/business-pages.css?v=c9c0f175"><link rel="stylesheet" href="/css/data.css?v=ad4157ce"></head>
 <body><main class="page2 data-page zp-shell">
 <header class="topbar"><a class="app-back" href="/home" aria-label="返回"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><h1>数据资料</h1><button id="pageMenuBtn" class="data-page-menu-btn" type="button" aria-label="打开菜单" hidden>☰</button><button id="dataShareHeaderBtn" class="data-page-menu-btn" type="button" aria-label="分享线路资料"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5"></circle><circle cx="6" cy="12" r="2.5"></circle><circle cx="18" cy="19" r="2.5"></circle><path d="m8.2 10.8 7.5-4.4M8.2 13.2l7.5 4.4"></path></svg></button></header>
 <div class="data-fixed-area">
@@ -97,7 +97,7 @@ var dataBaseline="";// 门店资料基线：用于判断是否存在「暂存但
 })();
 async function api(u,o={}){const r=await zpFetch(u,{credentials:"same-origin",...o});const d=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(d.error||d.message||"请求失败");e.code=d.code||"HTTP_"+r.status;e.detail=d.detail||"";throw e}return d}
 function err(e){return(e.code?"["+e.code+"] ":"")+e.message+(e.detail?" · "+e.detail:"")}
-let routeId="",canMaintain=false,stores=[],baseVersion=1,saving=false,baseVersionConflict=false,editingIndex=-1,confirming=false,dragIndex=-1,hiddenIndexes=new Set(),editAliases=[],editGeo=null;
+let routeId="",canMaintain=false,stores=[],baseVersion=1,saving=false,baseVersionConflict=false,editingIndex=-1,confirming=false,dragIndex=-1,editAliases=[],editGeo=null;
 
 function cleanName(v){return String(v||"").trim().replace(/^[、.．)）\\-\s]+|[、.．\\-\s]+$/g,"").trim()}
 function parseImport(text){
@@ -148,7 +148,7 @@ function render(){
  if(!stores.length){box.innerHTML='<div class="zp-empty">暂无门店资料</div>';return}
  const ordered=stores.map((s,index)=>({s,index})).sort((a,b)=>(a.s.routeOrder||0)-(b.s.routeOrder||0));
  box.innerHTML=ordered.map((entry,i)=>{
-  const s=entry.s,index=entry.index,hidden=hiddenIndexes.has(index);
+  const s=entry.s,index=entry.index;
   const name=esc(s.name||s.originalName||"未命名门店");
   const meta=[];
   if(s.aliases?.length)meta.push('<span><b class="data-store-meta-label">别名</b>'+esc(s.aliases.join("、").replace(/\\n/g," "))+'</span>');
@@ -156,8 +156,7 @@ function render(){
   const nav=navUrl(s.navigation);
   /* 未定位角标：只标缺失的，已有坐标的不占视觉。保存后自动补齐，剩下的就是没链接的。 */
   const located=!!geoOfStore(s);
-  const rowClass=hidden?"data-store-row data-store-hidden":"data-store-row";
-  return '<article class="'+rowClass+'" data-index="'+index+'" draggable="'+(canMaintain?"true":"false")+'">'+
+  return '<article class="data-store-row" data-index="'+index+'" draggable="'+(canMaintain?"true":"false")+'">'+
    '<span class="data-store-index">'+String(i+1).padStart(2,"0")+'</span>'+
    '<div class="data-store-main">'+
    '<div class="data-store-name-line">'+
@@ -299,7 +298,7 @@ async function askConfirm(title,message,okText="确定"){
 function applyOrder(index,target){
  const to=Math.max(1,Math.min(Number(target)||1,stores.length))-1;
  if(index<0||index>=stores.length||index===to)return;
- const [item]=stores.splice(index,1);stores.splice(to,0,item);stores.forEach((s,i)=>s.routeOrder=i+1);hiddenIndexes.clear();render()
+ const [item]=stores.splice(index,1);stores.splice(to,0,item);stores.forEach((s,i)=>s.routeOrder=i+1);render()
 }
 $("editOrder").oninput=updateOrderHint;
 $("editClose").onclick=closeEditor;$("editCancel").onclick=closeEditor;
@@ -360,7 +359,7 @@ $("replaceApply").onclick=async()=>{
  const p=prepareReplace();if(!p.length)return;
  const ok=await zpConfirm("确认批量替换","当前资料 "+stores.length+" 家，新资料 "+p.length+" 家。确认后只替换当前页面的暂存资料；服务器正式资料仍需点击“提交更新”才会改变。","确认替换");
  if(!ok)return;
- stores=p.map((s,i)=>({...s,routeOrder:i+1}));hiddenIndexes.clear();hidePanel("replaceBox");render();
+ stores=p.map((s,i)=>({...s,routeOrder:i+1}));hidePanel("replaceBox");render();
 };
 $("appendBtn").onclick=()=>canMaintain&&openAppend();
 $("appendClose").onclick=$("appendCancel").onclick=()=>hidePanel("appendBox");
@@ -370,7 +369,7 @@ $("appendApply").onclick=()=>{
  if(!name){$("appendError").textContent="请输入门店名称";return}
  stores.splice(order-1,0,{storeId:"",originalName:name,name,aliases:[],businessStoreCode:"",navigation:$("appendNavigation").value.trim(),routeOrder:order,note:$("appendNote").value.trim()});
  stores.forEach((s,i)=>s.routeOrder=i+1);
- hiddenIndexes.clear();render();hidePanel("appendBox")
+ render();hidePanel("appendBox")
 };
 $("restoreBtn").onclick=()=>{if(canMaintain){showRestore();$("restoreFile").click()}};
 $("restoreChoose").onclick=()=>$("restoreFile").click();
@@ -381,7 +380,7 @@ $("restoreFile").onchange=async e=>{
   const raw=await file.text(),parsed=parseImport(raw);
   if(!parsed.length){$("restorePreview").textContent="未识别到有效门店资料，请选择之前导出的数据文件。";return}
   $("restorePreview").textContent="已读取 "+parsed.length+" 家门店。恢复后将替换当前页面显示的暂存资料。";
-  if(await askConfirm("恢复数据","确认用这份 "+parsed.length+" 家门店资料替换当前页面显示的数据吗？")){stores=parsed.map((s,i)=>({...s,routeOrder:i+1}));hiddenIndexes.clear();render();hidePanel("restoreBox")}
+  if(await askConfirm("恢复数据","确认用这份 "+parsed.length+" 家门店资料替换当前页面显示的数据吗？")){stores=parsed.map((s,i)=>({...s,routeOrder:i+1}));render();hidePanel("restoreBox")}
  }catch(e){$("restorePreview").textContent="恢复失败："+err(e)}
  finally{e.target.value=""}
 };
@@ -448,7 +447,7 @@ async function submitStores(){
    if(located)render();
   }
   const d=await api("/api/base",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({routeId,expectedVersion:baseVersion,stores})});
-  stores=Array.isArray(d.base?.stores)?d.base.stores:stores;baseVersion=Number(d.base?.version)||baseVersion;hiddenIndexes.clear();dataBaseline=JSON.stringify(stores);render();
+  stores=Array.isArray(d.base?.stores)?d.base.stores:stores;baseVersion=Number(d.base?.version)||baseVersion;dataBaseline=JSON.stringify(stores);render();
   $("summary").innerHTML="<strong>"+stores.length+"家</strong>";
   /* 反馈要如实说清补了几家、几家没取到 —— 没取到的那几家，导航会停在搜索结果页 */
   showDataFeedback("success","数据更新成功"+(located?"，已自动定位 "+located+" 家":"")+(fail.length?"；"+fail.length+" 家没取到位置："+fail.slice(0,2).join("、")+(fail.length>2?" 等":""):""));
@@ -460,27 +459,44 @@ async function submitStores(){
   }
  finally{saving=false;btn.disabled=false;btn.textContent=label}
 }
+/* 列表手势（2026-11-05 修正）
+   左滑：露出「编辑 / 删除」动作条；右滑：只把动作条收起来。
+   此前右滑会把该行加进隐藏集合并整行 display:none，看起来等同「删掉门店」，
+   既没有二次确认也没有撤销；更糟的是提交时 stores 仍是完整的，保存后门店又回来 ——
+   视觉删除与真实数据不一致。现在删除只有一条路：点动作条里的「删除」+ zpConfirm 确认。 */
+function closeSwipeRows(){document.querySelectorAll(".data-store-row.data-swipe-open").forEach(x=>x.classList.remove("data-swipe-open"))}
 function bindTouch(){
  const list=$("stores");let touchRow=null;
+ const reset=row=>{if(!row)return;clearTimeout(row._timer);row.classList.remove("data-drag-active");row._touch=null;touchRow=null};
  list.addEventListener("touchstart",e=>{
   const row=e.target.closest(".data-store-row");if(!row||!canMaintain)return;
+  if(e.target.closest(".data-swipe-actions button,.data-store-nav"))return;/* 按钮/链接上起手不做手势 */
   touchRow=row;
-  row._touch={x:e.touches[0].clientX,y:e.touches[0].clientY,t:Date.now(),long:false};
+  row._touch={x:e.touches[0].clientX,y:e.touches[0].clientY,t:Date.now(),long:false,locked:null};
   row._timer=setTimeout(()=>{if(row._touch){row._touch.long=true;row.classList.add("data-drag-active")}},550)
  },{passive:true});
  list.addEventListener("touchmove",e=>{
   const row=touchRow,t=row?row._touch:null;if(!row||!t)return;
   const dx=e.touches[0].clientX-t.x,dy=e.touches[0].clientY-t.y;
-  if(Math.abs(dx)>12||Math.abs(dy)>12){clearTimeout(row._timer);if(!t.long)return}
-  if(t.long){e.preventDefault();row.classList.add("data-drag-active")}
+  /* 方向锁定（与首页月度卡一致）：先到 6px 即定性 X/Y。滚列表一旦判为纵向，
+     抬手时横向位移再大也不能当成左右滑，避免斜着一划就把门店划没。 */
+  if(t.locked===null&&(Math.abs(dx)>6||Math.abs(dy)>6))t.locked=Math.abs(dx)>Math.abs(dy)?"x":"y";
+  if(Math.abs(dx)>12||Math.abs(dy)>12)clearTimeout(row._timer);/* 动了就不再判长按 */
+  if(t.long){if(e.cancelable)e.preventDefault();row.classList.add("data-drag-active");return}
+  if(t.locked==="x"&&e.cancelable)e.preventDefault();/* 横向意图：别让页面滚动抢走手势 */
  },{passive:false});
  list.addEventListener("touchend",e=>{
-  const row=touchRow,t=row?row._touch:null;if(!row||!t)return;clearTimeout(row._timer);
-  const dx=e.changedTouches[0].clientX-t.x,dy=e.changedTouches[0].clientY-t.y;row.classList.remove("data-drag-active");row._touch=null;
-  if(t.long){const target=document.elementFromPoint(e.changedTouches[0].clientX,e.changedTouches[0].clientY)?.closest(".data-store-row");row.classList.remove("data-drag-active");if(target&&target!==row){applyOrder(Number(row.dataset.index),Number(target.dataset.index))}touchRow=null;return;}
-  if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)){const index=Number(row.dataset.index);if(dx<0){document.querySelectorAll(".data-store-row.data-swipe-open").forEach(x=>x.classList.remove("data-swipe-open"));row.classList.add("data-swipe-open")}else{hiddenIndexes.add(index);render()}touchRow=null;return}
-  touchRow=null;
+  const row=touchRow,t=row?row._touch:null;if(!row||!t)return;
+  const dx=e.changedTouches[0].clientX-t.x,dy=e.changedTouches[0].clientY-t.y,long=t.long,locked=t.locked;
+  if(long){const target=document.elementFromPoint(e.changedTouches[0].clientX,e.changedTouches[0].clientY)?.closest(".data-store-row");reset(row);if(target&&target!==row){applyOrder(Number(row.dataset.index),Number(target.dataset.index))}return}
+  reset(row);
+  if(locked!=="x")return;/* 纵向滚动 / 只是轻点：不触发任何滑动动作 */
+  if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)){
+   closeSwipeRows();
+   if(dx<0)row.classList.add("data-swipe-open")/* 右滑到此为止：只收起，不碰数据 */
+  }
  },{passive:true});
+ list.addEventListener("touchcancel",()=>{reset(touchRow)},{passive:true});
  list.addEventListener("dragstart",e=>{const row=e.target.closest(".data-store-row");if(!row||!canMaintain)return;dragIndex=Number(row.dataset.index);row.classList.add("data-drag-active")});
  list.addEventListener("dragover",e=>{if(dragIndex>=0)e.preventDefault()});
  list.addEventListener("drop",e=>{const row=e.target.closest(".data-store-row");if(!row||dragIndex<0)return;e.preventDefault();applyOrder(dragIndex,Number(row.dataset.index));dragIndex=-1});
@@ -492,7 +508,7 @@ $("stores").addEventListener("click",e=>{
  if(del){
   const i=Number(del.dataset.swipeDelete);
   if(Number.isInteger(i)&&i>=0&&i<stores.length){
-   askConfirm("删除门店","确定删除“"+(stores[i].name||stores[i].originalName||"该门店")+"”吗？").then(ok=>{if(!ok)return;stores.splice(i,1);stores.forEach((s,n)=>s.routeOrder=n+1);hiddenIndexes.clear();render()})
+   askConfirm("删除门店","确定删除“"+(stores[i].name||stores[i].originalName||"该门店")+"”吗？").then(ok=>{if(!ok)return;stores.splice(i,1);stores.forEach((s,n)=>s.routeOrder=n+1);render()})
   }
   return
  }
