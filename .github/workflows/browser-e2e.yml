@@ -58,6 +58,10 @@ jobs:
         env:
           CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
         run: node tests/e2e-home-brand-gap.cjs
+      - name: Verify today delivery list expands at every viewport
+        env:
+          CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
+        run: node tests/e2e-home-today-expand.cjs
       - name: Verify history month reveals from the top
         env:
           CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}

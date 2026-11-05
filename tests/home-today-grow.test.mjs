@@ -38,7 +38,7 @@ function rule(src, sel) {
 }
 // 基础段：从「一屏定盘」注释到降级 A（@media max-height:759px）之前。
 // 注意：文件更前面还有一个 @media(max-width:380px)，不能用作边界。
-const baseStart = CSS.indexOf("一屏定盘");
+const baseStart = CSS.indexOf("首页纵向布局");
 const aIdx = CSS.indexOf("@media (max-height:759px)");
 const BASE = CSS.slice(baseStart, aIdx < 0 ? CSS.length : aIdx);
 
@@ -79,16 +79,30 @@ console.log("\n空态 4 排列契约（3 条）");
 
 console.log("\nfit.js 契约（4 条）");
 {
-  t("fit.js 按真实门店行（排除骨架 aria-hidden）切换 .has-content",
-    /querySelectorAll\('\.today-store-row:not\(\[aria-hidden="true"\]\)'\)\.length > 0/.test(JS) &&
-    /classList\.toggle\("has-content"/.test(JS));
-  t("fit.js 不再因整页溢出回退 is-overflow（否则内容态又被封顶 264）",
-    !/classList\.add\("is-overflow"\)/.test(JS) &&
-    !/scroller\.scrollHeight - scroller\.clientHeight/.test(JS));
+  t("fit.js 只维护空态对齐类 .is-empty（不再维护无消费者的 has-content / can-scroll）",
+    /classList\.toggle\("is-empty"/.test(JS) &&
+    !/classList\.toggle\("has-content"/.test(JS) && !/classList\.toggle\("can-scroll"/.test(JS));
+  t("fit.js 不再回退 is-overflow / 不做高度测量（列表高度已由 CSS 内容驱动）",
+    !/classList\.[a-z]+\("is-overflow"/.test(JS) && !/scrollHeight/.test(JS));
   t("fit.js 不再切换已废弃的 is-today-empty 根类（填空满逻辑已移除）",
     !/is-today-empty/.test(JS));
   t("fit.js 用 MutationObserver 监听列表 childList，数据到达即时复核（不留中间态）",
     /new MutationObserver\([\s\S]*?\)\.observe\(list,\s*\{\s*childList:\s*true\s*\}\)/.test(JS));
+}
+
+console.log("\n降级段不封顶契约（2 条）");
+{
+  /* 2026-11-05 用户录屏回归：浏览器地址栏占高时可视高度 < 760px，
+     触发降级 A。旧规则在这里给列表加 max-height:264px 却没恢复 overflow，
+     列表被裁 + 渐隐 + 滑不动 → 「web 端运单未展开，app 端正常」。
+     现在降级段只切版面，列表高度在两种版面下都必须由内容决定。 */
+  const aBlock = CSS.slice(aIdx < 0 ? 0 : aIdx, CSS.indexOf("降级 B"));
+  t("降级 A（矮屏/横屏）不再给门店列表加 max-height 封顶",
+    aIdx > 0 && !/today-store-list/.test(aBlock), aBlock);
+  const bStart = CSS.indexOf("main.home-app.is-keyboard .zp-scroll");
+  const B = CSS.slice(bStart, CSS.indexOf("空态（今日暂无配送门店）"));
+  t("降级 B（键盘）同样不给列表加 max-height，且不再有 is-overflow 分支",
+    bStart > 0 && !/today-store-list/.test(B) && !/is-overflow/.test(CSS), B);
 }
 
 function finish() {

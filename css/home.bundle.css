@@ -2593,18 +2593,14 @@ html[data-zp-boot="hop"] .login-shell{display:none!important}
    等于叠成 28px，加上顶栏 8px，首页顶部到卡片之间空出 36px —— 用户反馈「页面顶高，
    矮点」。去掉这层重复，只保留一层 14px 间距（降级为整页滚动时同样只有一层）。 */
 main.home-app .task-card{margin-top:0}
+/* 列表高度一律内容驱动（不再封顶 264px、不再内部滚动）：门店有几家就铺几家，
+   超出一屏由整页滚动承接。2026-11-05 移除旧的「窗内滚动」兜底 —— 它在浏览器
+   地址栏占高（可视高度 < 760px）时只压高度、没恢复 overflow，列表既被裁又被
+   渐隐遮住、还滑不动，用户看到的就是「运单数据未展开」。 */
 .today-store-list{
   margin-top:12px;
-  /* 固定展示约 6 家（行高 44px × 6 = 264px）：其余门店在窗内滚动
-     （overscroll-behavior 防滚动穿透），月度统计稳定回到首屏。 */
-  max-height:264px;
-  overflow-y:auto;
-  overscroll-behavior:contain;
-  -webkit-overflow-scrolling:touch;
   border-top:1px solid var(--zp-tint);
-  scrollbar-width:none;
 }
-.today-store-list::-webkit-scrollbar{display:none}
 .today-store-row{
   min-height:44px;
   display:flex;
@@ -2658,19 +2654,17 @@ main.home-app .task-card{margin-top:0}
 /* 底栏原语已收进 css/ui-base.css（.zp-nav），本页不再声明。 */
 @media(max-width:380px){
  .home-app{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
- .today-store-list{max-height:252px}   /* 行高 42px × 6 = 252px，固定展示 6 家 */
  .today-store-row{min-height:44px}
  .today-store-name{font-size:var(--zp-fs-16)}
 }
 
 
-/* ===== 一屏定盘（2026-10-29） =====
-   用户反馈：首页两张卡会随页面一起上下滑动，位置不稳定。
-   规则只有一条链：顶栏/底栏恒定 → 趋势卡定高 → 今日配送卡吃掉剩余高度
-   → 门店列表在卡片内部滚动。变化量只来自「可见行数」，
-   字号 / 行高 / 左右边距 / 圆角一律不缩（可读性与跨页一致性红线）。
-   降级：高度不够时（小屏、横屏、分屏、系统大字号、键盘弹起）自动回到整页滚动，
-   宁可让页面滚，也不把卡片压扁 —— 压扁会裁字，比滚动更糟。 */
+/* ===== 首页纵向布局：内容驱动 + 整页滚动 =====
+   规则只有一条链：顶栏 → 今日配送卡（随门店数增高，不封顶）→ 趋势卡 → 由整页滚动承接。
+   门店列表不再「封顶后窗内滚动」：那条旧设计在浏览器地址栏占高时只压高度、没恢复
+   overflow，列表既被裁又被渐隐遮住、还滑不动（2026-11-05 用户录屏：web 端运单未展开，
+   app 端正常）。现在任何可视高度下门店都完整铺开，与 app 内 WebView 全高时一致。
+   字号 / 行高 / 左右边距 / 圆角一律不缩（可读性与跨页一致性红线）。 */
 main.home-app .zp-scroll{
   display:flex;
   flex-direction:column;
@@ -2696,35 +2690,23 @@ main.home-app .today-store-list{
 }
 main.home-app .trend-card{flex:0 0 auto}
 
-/* 降级 A：横屏 / 矮屏（分屏、小窗、老机型）→ 整页滚动，卡片保持自然高度。
-   门槛 760px：低于此高度锁死只能显示 3 行（门店名两行时行高 49px），
-   而整页滚时卡片是自然高度、能显示 5 行 —— 宁可让页面滚，也不把列表压到 3 行。
-   760 以上锁定时，最少也能完整显示 4 行。
-   用户明确要求：小屏宁可整屏滚，也不压。 */
+/* 降级 A：横屏 / 矮屏（分屏、小窗、浏览器地址栏占高）→ 版面回退为块级 + 整页滚动。
+   只切版面，不再给列表加 max-height：列表在两种版面下都是内容高度，
+   所以地址栏伸缩跨过 760px 时也不会出现「列表高度跳变」。
+   用户明确要求：小屏宁可整屏滚，也不压列表。 */
 @media (max-height:759px),(orientation:landscape){
   main.home-app .zp-scroll{display:block;overflow-y:auto}
   main.home-app .task-card{display:block}
-  main.home-app .today-store-list{flex:none;max-height:264px}
 }
 
-/* 降级 B：键盘弹起 / 内容溢出（JS 判定，见 js/home/fit.js）
-   键盘把可视区压矮时若继续锁死布局，卡片会被压成一条，故同样回退整页滚动。 */
-main.home-app.is-keyboard .zp-scroll,
-main.home-app.is-overflow .zp-scroll{display:block;overflow-y:auto}
-main.home-app.is-keyboard .task-card,
-main.home-app.is-overflow .task-card{display:block}
-main.home-app.is-keyboard .today-store-list,
-main.home-app.is-overflow .today-store-list{flex:none;max-height:264px}
+/* 降级 B：键盘弹起（JS 判定，见 js/home/fit.js）
+   键盘把可视区压矮时若继续用 flex 链，卡片会被压成一条，故同样回退整页滚动。 */
+main.home-app.is-keyboard .zp-scroll{display:block;overflow-y:auto}
+main.home-app.is-keyboard .task-card{display:block}
 
-/* 门店列表底部渐隐：仅「可滚且未到底」时出现（js/home/fit.js 加 .can-scroll）。
-   2026-10-29：列表改为「填满可用高度」后，底部必然露出半行，故渐隐从 18px 加到 26px，
-   让被切的那行自然淡出（而不是硬切断），同时充当「还能往下滚」的提示；
-   滚到底自动移除，避免最后一行永久变淡。 */
-main.home-app .today-store-list.can-scroll{
-  -webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 26px),transparent);
-  mask-image:linear-gradient(to bottom,#000 calc(100% - 26px),transparent);
-}
-/* 空态（今日暂无配送门店）：提示文案贴近分隔线（顶部居中），下方大片留白，
+/* 列表不再有「底部渐隐」：渐隐是为「窗内滚动还有下文」服务的，
+   现在门店全部铺开、由整页滚动承接，硬加渐隐反而像被裁断。
+   空态（今日暂无配送门店）：提示文案贴近分隔线（顶部居中），下方大片留白，
    固定 4 行高度（44px × 4 = 176px），不撑满整页，与「4 排列」一致。
    ------------------------------------------------------------
    2026-11-04：高度改由「列表内唯一的空态元素」在纯 CSS 里定死，不再依赖
