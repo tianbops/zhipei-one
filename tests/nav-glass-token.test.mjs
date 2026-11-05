@@ -109,13 +109,23 @@ console.log("\n二、无阴影、无高光、无按下高亮 (4 条)");
 }
 
 /* ============ 三、1px 描边与配色零改动 ============ */
-console.log("\n三、描边与配色 (5 条)");
+console.log("\n三、描边与配色 (6 条)");
 {
   t("::before 保留 1px 实边 var(--zp-nav-edge)",
     /border:\s*1px solid var\(--zp-nav-edge\)/.test(SURFACE));
-  t("浅色描边 rgba(0,0,0,.08) / 深色 rgba(255,255,255,.15) 都在",
-    /--zp-nav-edge:\s*rgba\(0,0,0,\.08\)/.test(LIGHT) &&
+  t("浅色描边 rgba(0,0,0,.16) / 深色 rgba(255,255,255,.15) 都在",
+    /--zp-nav-edge:\s*rgba\(0,0,0,\.16\)/.test(LIGHT) &&
     /--zp-nav-edge:\s*rgba\(255,255,255,\.15\)/.test(DARK));
+  /* 2026-11-05 六版：浅色描边下限 .12、上限 .20。
+     下限 —— 浮岛 #FFFFFF 与页面底 #FFFFFF 同色（实测两侧采样都是 255），
+     去掉投影后这条 1px 是唯一轮廓；.08 算出来 #EBEBEB 只差 20 阶，
+     3x 屏上被抗锯齿摊开就看不出边界，回退到那个档位等于又变回「贴纸」。
+     上限 —— 同一个令牌还给缺口环用，.20 起外沿会先于内容抢注意力，
+     整块板从「有边」变成「套了灰框」。区间外都判红。 */
+  const edgeAlpha = +(/(--zp-nav-edge:\s*rgba\(0,0,0,\.(\d+)\))/.exec(LIGHT) || [])[2];
+  const ea = Number("0." + String(edgeAlpha));
+  t("浅色描边对比度落在 .12~.20 区间（低于 .12 读不出轮廓，高于 .20 成灰框）",
+    ea >= 0.12 && ea <= 0.2, "alpha=" + ea);
   t("浅色表面 = --zp-surface（导航底色仍是那支白）",
     pickVar(LIGHT, "zp-nav-bg") === "--zp-surface");
   t("深色表面 = --zp-block（比页面底亮一档）",
