@@ -16,7 +16,10 @@ import { canMaintainRoute } from "../_permissions.js";
 import { get, setEx } from "../_redis.js";
 import { parseUrl, fromText, expand } from "./_geo-parse.js";
 
-const MAX_ITEMS = 20; // 单次上限：避开 Cloudflare 单请求 subrequest 配额
+/* 单次 10 条：每条要走「读缓存 + 取外网 + 写缓存」最多 3 次 subrequest，
+   Cloudflare 免费版单请求上限 50 —— 20 条就会撞线（60 次），整批直接失败。
+   前端按同样的 10 条分片，两边必须一致，否则会被静默截断。 */
+const MAX_ITEMS = 10;
 const CONCURRENCY = 5;
 const CACHE_TTL = 60 * 60 * 24 * 30;
 

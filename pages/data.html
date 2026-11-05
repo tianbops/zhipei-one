@@ -356,15 +356,15 @@ async function batchGeo(){
  const btn=$("batchGeoBtn"),label=btn.textContent;btn.disabled=true;btn.textContent="解析中…";
  try{
   const ok=[],fail=[];
-  /* 服务端单次上限 20 条，这里同步分片，避免一次请求打太多外网 */
-  for(let k=0;k<targets.length;k+=20){
-   const chunk=targets.slice(k,k+20);
+  /* 服务端单次上限 10 条（subrequest 配额），这里必须同尺寸分片 */
+  for(let k=0;k<targets.length;k+=10){
+   const chunk=targets.slice(k,k+10);
    const r=await api("/api/store/geo",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({routeId,items:chunk.map(x=>({text:x.navigation}))})});
    (r.items||[]).forEach((it,j)=>{const s=chunk[j];if(!s)return;
     if(it&&it.ok){s.lat=it.lat;s.lng=it.lng;s.address=it.address||"";ok.push(s.name)}
     else fail.push((s.name||"未命名")+"（"+(GEO_REASON[it?.reason]||"未识别")+"）");
    });
-   if(k+20<targets.length)await new Promise(r=>setTimeout(r,120));
+   if(k+10<targets.length)await new Promise(r=>setTimeout(r,120));
   }
   render();
   if(fail.length)showDataFeedback("error","已定位 "+ok.length+" 家，"+fail.length+" 家没识别出来："+fail.slice(0,2).join("、")+(fail.length>2?" 等":""));
