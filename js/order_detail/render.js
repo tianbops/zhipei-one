@@ -1,5 +1,8 @@
 'use strict';
 
+/* 门店导航目标：见 js/ui/mapnav.js（地图链接直传 / 门店名走高德搜索） */
+function navTarget(x){try{return window.zpMapNav&&window.zpMapNav.linkAttrs?window.zpMapNav.linkAttrs(x):null}catch(e){return null}}
+
 function render(){
  if(!order)return;
  if(Array.isArray(historyChoices)&&historyChoices.length>1){
@@ -86,9 +89,9 @@ function render(){
  if(order.quality?.level==='REVIEW')metrics.push('需复核');
  $('metrics').innerHTML=metrics.map(x=>'<span>'+esc(x)+'</span>').join('');
  $('routeList').innerHTML=stores.length?stores.map((x,i)=>{
-   const name=esc(x.name||x.rawName||'未识别门店'), nav=safeUrl(navOf(x));
+   const rawName=String(x.name||'').trim()||String(x.rawName||'').trim()||String(x.originalName||'').trim()||'未识别门店';
+   const name=esc(rawName), nav=navTarget(x);
    const status=x.pending?'<span class="order-store-status pending">待确认</span>':(x.matchMethod==='confirmed-new'||x.isNew?'<span class="order-store-status">新增</span>':'');
-   const nameHtml=nav?'<a class="order-store-name nav" href="'+attr(nav)+'" target="_self">'+name+status+'</a>':'<div class="order-store-name">'+name+status+'</div>';
    // 待定门店：优先展示候选建议及置信度，并说明未自动匹配的原因，便于用户快速判断。
    const REASON_TEXT={no_candidate:'基准库中无相近门店',below_threshold:'相似度不足，请确认',ambiguous:'存在多个相近门店，请选择'};
    let note='';
@@ -105,7 +108,7 @@ function render(){
      note=x.note||x.remark||'';
    }
    const noteHtml=note?'<span class="order-store-note-inline">（'+esc(note)+'）</span>':'';
-   const nameHtmlWithNote=nav?'<a class="order-store-name nav" href="'+attr(nav)+'" target="_self">'+name+noteHtml+status+'</a>':'<div class="order-store-name">'+name+noteHtml+status+'</div>';
+   const nameHtmlWithNote=nav?'<a class="order-store-name nav" href="'+attr(nav.url)+'" target="'+nav.target+'"'+(nav.rel?' rel="'+nav.rel+'"':'')+' data-zp-nav="'+attr(nav.kind)+'" data-zp-nav-name="'+attr(rawName)+'">'+name+noteHtml+status+'</a>':'<div class="order-store-name">'+name+noteHtml+status+'</div>';
    return '<div class="order-store-item"><span class="order-store-index">'+String(i+1).padStart(2,'0')+'</span><div class="order-store-main">'+nameHtmlWithNote+'</div></div>';
  }).join(''):'<div class="zp-empty">当日暂无配送数据</div>';
  const old=$('confirmPendingBtn');if(old)old.remove();

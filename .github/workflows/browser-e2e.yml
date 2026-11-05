@@ -62,6 +62,10 @@ jobs:
         env:
           CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
         run: node tests/e2e-home-today-expand.cjs
+      - name: Verify store map navigation targets
+        env:
+          CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
+        run: node tests/e2e-mapnav.cjs
       - name: Verify history month reveals from the top
         env:
           CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}

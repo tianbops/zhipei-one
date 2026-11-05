@@ -27,8 +27,7 @@ function zpRenderTodayCard(w,dayOrders,fromCache){
   // 此前 esc 等定义在 if(todayStoreList) 块内，todayMetrics 块引用时
   // ReferenceError → 被外层 catch 静默吞掉 → 整卡「暂无运单」。
   // 数量语义已统一：只显示最终门店数及必要的自动恢复数。
-  const navOf=x=>String(x?.navigation||x?.nav||"").trim();
-  const safeUrl=v=>{try{const u=new URL(String(v||"").trim(),location.origin);return /^(https?:)$/.test(u.protocol)?u.href:""}catch{return""}};
+  const navTarget=x=>{try{return window.zpMapNav&&window.zpMapNav.linkAttrs?window.zpMapNav.linkAttrs(x):null}catch{return null}};
   const esc=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   const attr=v=>esc(v).replace(/'/g,"&#39;");
   if(todayOrders)todayOrders.textContent=(dayOrders>0?dayOrders:1)+"单";
@@ -39,9 +38,13 @@ function zpRenderTodayCard(w,dayOrders,fromCache){
   if(todayStoreList){
     try{
       todayStoreList.innerHTML=stores.length?stores.map((x,i)=>{
-        const name=esc(x?.name||x?.rawName||"未识别门店"),nav=safeUrl(navOf(x));
+        const rawName=String(x?.name||"").trim()||String(x?.rawName||"").trim()||String(x?.originalName||"").trim()||"未识别门店";
+        const name=esc(rawName),t=navTarget(x);
         const body='<span class="today-store-index">'+(i+1)+'</span><span class="today-store-name">'+name+'</span>';
-        return nav?'<a class="today-store-row" href="'+attr(nav)+'" target="_self">'+body+'</a>':'<div class="today-store-row">'+body+'</div>';
+        if(!t)return '<div class="today-store-row">'+body+'</div>';
+        return '<a class="today-store-row" href="'+attr(t.url)+'" target="'+t.target+'"'+(t.rel?' rel="'+t.rel+'"':'')+
+          ' data-zp-nav="'+attr(t.kind)+'" data-zp-nav-name="'+attr(rawName)+'"'+
+          ' aria-label="第'+(i+1)+'家，导航到 '+attr(rawName)+'">'+body+'</a>';
       }).join(""):'<div class="zp-empty zp-empty--tight">今日暂无配送门店</div>';
     }catch{
       todayStoreList.innerHTML='<div class="zp-empty zp-empty--tight">今日门店明细暂不可用</div>';
