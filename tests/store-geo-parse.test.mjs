@@ -6,8 +6,9 @@
  *
  * 必须锁死的规则：
  *   1) wb.amap.com/?p=POIID,lat,lng,name,address → 纬度在前；
+ *      wb.amap.com/?q=lat,lng,位置名称          → 纬度在前（高德「分享位置」）；
  *      uri.amap.com/marker?position=lng,lat      → 经度在前；
- *      两者顺序相反，必须靠范围（纬度 18~54 / 经度 73~136）反推，写反也要纠正；
+ *      顺序相反，必须靠范围（纬度 18~54 / 经度 73~136）反推，写反也要纠正；
  *   2) 域名白名单：amap.com 及子域放行，amap.com.evil.com / amap.com@evil.com 拒绝
  *      （这个接口会代用户发请求，白名单缺失就是 SSRF）；
  *   3) 非 URL 的文本只当坐标解析，"A栋B1" 不得被误读成经纬度；
@@ -18,6 +19,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import {
   fromPParam,
+  fromQParam,
   fromMarker,
   fromCallApp,
   fromText,
@@ -69,6 +71,42 @@ console.log("\n高德分享落点 p= 参数（4 条）");
     "只有 POIID+坐标（无名称地址）也不报错",
     only && only.lat === 29.5631 && only.name === "",
     JSON.stringify(only)
+  );
+}
+
+console.log("\n高德「分享位置」落点 q= 参数（6 条）");
+{
+  /* 用户实际给的链接展开后就是这种：surl.amap.com/9Xhz3TMYbR2
+     → wb.amap.com/?q=29.600741086473104,106.5258179605007,佳园路2号
+     与 p= 不同：没有 POIID，坐标在 [0][1]，第三段是位置描述而非门店名。 */
+  const u = new URL(
+    "https://wb.amap.com/?q=29.600741086473104%2C106.5258179605007%2C%E4%BD%B3%E5%9B%AD%E8%B7%AF2%E5%8F%B7&commonBizInfo=%7B%22share_from%22%3A%22poi_poi%22%7D"
+  );
+  const r = fromQParam(u);
+  t(
+    "坐标解析正确（重庆 29.600741 / 106.525818）",
+    r && Math.abs(r.lat - 29.600741) < 1e-6 && Math.abs(r.lng - 106.525818) < 1e-6,
+    JSON.stringify(r)
+  );
+  t("位置描述还原为门牌地址", r && r.address === "佳园路2号", JSON.stringify(r));
+  t("kind 标记为 amap-share，与 POI 分享区分", r && r.kind === "amap-share");
+  const flipped = fromQParam(
+    new URL("https://wb.amap.com/?q=106.525818%2C29.600741%2C%E4%BD%B3%E5%9B%AD%E8%B7%AF2%E5%8F%B7")
+  );
+  t(
+    "坐标顺序写反也能纠正（q=106.5258,29.6007）",
+    flipped && flipped.lat === 29.600741 && flipped.lng === 106.525818,
+    JSON.stringify(flipped)
+  );
+  t(
+    "q= 是普通搜索关键词时不误判（火锅 / 中文 / 空）",
+    fromQParam(new URL("https://www.amap.com/?q=%E7%81%AB%E9%94%85")) === null &&
+      fromQParam(new URL("https://www.amap.com/?q=")) === null
+  );
+  t(
+    "q= 里出现境外/0 坐标一律拒绝",
+    fromQParam(new URL("https://wb.amap.com/?q=0%2C0%2Cx")) === null &&
+      fromQParam(new URL("https://wb.amap.com/?q=48.8%2C2.3%2CParis")) === null
   );
 }
 
@@ -167,10 +205,18 @@ console.log("\n域名白名单 / SSRF（6 条）");
   );
 }
 
-console.log("\nparseUrl 分流（3 条）");
+console.log("\nparseUrl 分流（4 条）");
 {
   const hit = parseUrl("https://wb.amap.com/?p=B1%2C29.5%2C106.5%2C%E5%BA%97%2C%E8%B7%AF");
-  t("落点链接直接解析出坐标，无需展开", hit && hit.lat === 29.5 && !hit.pending);
+  t("p= 落点链接直接解析出坐标，无需展开", hit && hit.lat === 29.5 && !hit.pending);
+  const q = parseUrl(
+    "https://wb.amap.com/?q=29.600741%2C106.525818%2C%E4%BD%B3%E5%9B%AD%E8%B7%AF2%E5%8F%B7"
+  );
+  t(
+    "q= 落点链接同样直接出坐标（且不会按 p= 取 [1][2] 存成错坐标）",
+    q && q.lat === 29.600741 && q.lng === 106.525818 && !q.pending,
+    JSON.stringify(q)
+  );
   const pend = parseUrl("https://surl.amap.com/abc123");
   t(
     "短链标记为 pending（需要服务端展开）",
@@ -180,10 +226,25 @@ console.log("\nparseUrl 分流（3 条）");
   t("白名单外的域名返回 UNSUPPORTED_HOST", bad && bad.error === "UNSUPPORTED_HOST");
 }
 
-console.log("\n真实 302 展开（3 条）");
+console.log("\n真实 302 展开（6 条）");
 {
-  /* 本地起一个假的短链服务，模拟 surl → wb 的两次跳转 */
+  /* 本地起一个假的短链服务，模拟 surl → wb 的两次跳转。
+     同时覆盖三种落点：URL 上带 p=、URL 上带 q=、坐标写在中转 HTML 里。 */
   const srv = createServer((req, res) => {
+    if (req.url.startsWith("/short-q")) {
+      res.writeHead(302, {
+        location: "/final-q?q=29.600741%2C106.525818%2C%E4%BD%B3%E5%9B%AD%E8%B7%AF2%E5%8F%B7",
+      });
+      return res.end();
+    }
+    if (req.url.startsWith("/short-q-html")) {
+      res.writeHead(302, { location: "/html-q" });
+      return res.end();
+    }
+    if (req.url.startsWith("/short-p-html")) {
+      res.writeHead(302, { location: "/html-p" });
+      return res.end();
+    }
     if (req.url.startsWith("/short")) {
       res.writeHead(302, { location: "/mid" });
       return res.end();
@@ -199,21 +260,54 @@ console.log("\n真实 302 展开（3 条）");
       res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
       return res.end("<html>ok</html>");
     }
+    if (req.url.startsWith("/html-q")) {
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      return res.end(
+        '<a href="https://wb.amap.com/?q=29.600741%2C106.525818%2C%E4%BD%B3%E5%9B%AD%E8%B7%AF2%E5%8F%B7">打开地图</a>'
+      );
+    }
+    if (req.url.startsWith("/html-p")) {
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      return res.end(
+        '<a href="https://wb.amap.com/?p=B0FF%2C29.5631%2C106.5512%2C%E8%B0%8A%E5%93%81%2C%E8%B7%AF1%E5%8F%B7">打开地图</a>'
+      );
+    }
     res.writeHead(404);
     res.end();
   });
   await new Promise((r) => srv.listen(0, r));
   const port = srv.address().port;
+  const base = "http://127.0.0.1:" + port;
 
-  const got = await expand(new URL("http://127.0.0.1:" + port + "/short"));
+  const got = await expand(new URL(base + "/short"));
   t(
-    "跟随两次跳转后取到坐标",
+    "p= 落点：跟随两次跳转后取到坐标",
     got && got.lat === 29.5631 && got.lng === 106.5512,
     JSON.stringify(got)
   );
-  t("带出门店名", got && got.name === "谊品生鲜", got && got.name);
+  t("p= 落点带出门店名", got && got.name === "谊品生鲜", got && got.name);
 
-  const dead = await expand(new URL("http://127.0.0.1:" + port + "/404"));
+  const q = await expand(new URL(base + "/short-q"));
+  t(
+    "q= 落点：位置分享短链也能取到坐标（用户给的真实形态）",
+    q && q.lat === 29.600741 && q.lng === 106.525818 && q.address === "佳园路2号",
+    JSON.stringify(q)
+  );
+
+  const htmlQ = await expand(new URL(base + "/short-q-html"));
+  t(
+    "q= 写在中转 HTML 里也能解析，且不会取成「经度,名称」",
+    htmlQ && htmlQ.lat === 29.600741 && htmlQ.lng === 106.525818,
+    JSON.stringify(htmlQ)
+  );
+  const htmlP = await expand(new URL(base + "/short-p-html"));
+  t(
+    "p= 写在中转 HTML 里仍按 POI 格式解析（回归）",
+    htmlP && htmlP.lat === 29.5631 && htmlP.lng === 106.5512,
+    JSON.stringify(htmlP)
+  );
+
+  const dead = await expand(new URL(base + "/404"));
   t(
     "打不开的链接返回 NO_COORD 而不是抛错",
     dead && dead.error === "NO_COORD",
@@ -240,9 +334,7 @@ console.log("\n接线检查（10 条）");
   t("历史读取同样回补坐标", /geoOf\(baseStore\)/.test(HISTORY));
   t(
     "编辑面板只留一个「导航地址」输入，没有单独的解析按钮",
-    /id="editNavigation"/.test(DATA) &&
-      !/id="editGeo"/.test(DATA) &&
-      !/editGeoParse/.test(DATA)
+    /id="editNavigation"/.test(DATA) && !/id="editGeo"/.test(DATA) && !/editGeoParse/.test(DATA)
   );
   t("保存时把坐标写进门店对象", /item\.lat=editGeo\?editGeo\.lat:null/.test(DATA));
   t(

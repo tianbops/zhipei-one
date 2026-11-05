@@ -45,7 +45,7 @@ try{sessionStorage.setItem('zpAuth','1');sessionStorage.setItem('zpRole','user')
   window.__puts=[];
   var real=window.fetch;
   var B=function(t){var r={ok:true,status:200,headers:{get:function(){return null},has:function(){return false}}};r.json=function(){return Promise.resolve(JSON.parse(t))};r.text=function(){return Promise.resolve(t)};r.clone=function(){return B(t)};return Promise.resolve(r)};
-  var MAP={'https://surl.amap.com/new1':{lat:29.5631,lng:106.5512,address:'江北区建新东路3号'},'https://surl.amap.com/new2':{lat:29.6102,lng:106.5743,address:'渝北区龙溪街道'},'https://surl.amap.com/new3':{lat:29.5807,lng:106.5301,address:'江北区建新北路'}};
+  var MAP={'https://surl.amap.com/9Xhz3TMYbR2':{lat:29.600741,lng:106.525818,address:'佳园路2号'},'https://surl.amap.com/new2':{lat:29.6102,lng:106.5743,address:'渝北区龙溪街道'},'https://surl.amap.com/new3':{lat:29.5807,lng:106.5301,address:'江北区建新北路'}};
   window.fetch=function(u,o){
     var s=String(u&&u.url||u),m=String((o&&o.method)||'GET').toUpperCase();
     if(s.indexOf('/api/dispatch')>=0)return B(JSON.stringify({success:true,dispatchRoute:{id:'r1',name:'一号线'}}));
@@ -132,7 +132,7 @@ const SNAP = `(()=>{
   /* 路径 A：粘贴链接后立刻保存（0.45s 防抖还没跑），靠保存兜底拿坐标 */
   await ev(`(()=>{document.querySelector('[data-swipe-edit="0"]').click();return !!document.getElementById('editBox')})()`);
   await sleep(300);
-  await ev(`(()=>{const i=document.getElementById('editNavigation');i.value='https://surl.amap.com/new1';i.dispatchEvent(new Event('input',{bubbles:true}));return i.value})()`);
+  await ev(`(()=>{const i=document.getElementById('editNavigation');i.value='https://surl.amap.com/9Xhz3TMYbR2';i.dispatchEvent(new Event('input',{bubbles:true}));return i.value})()`);
   await ev(`(()=>{document.getElementById('editSave').click();return 1})()`);
   await sleep(900);
   const afterSave = await ev(SNAP);
@@ -158,8 +158,8 @@ const SNAP = `(()=>{
   console.log('done ' + JSON.stringify(done && { puts: (done.puts || []).length, toast: done.toast }));
   const put = done && done.puts && done.puts[0];
   check('提交更新发出 1 次 PUT', !!put, done && String((done.puts || []).length));
-  check('PUT 里 S1 带坐标与门牌地址',
-    !!put && put.stores[0].lat === 29.5631 && put.stores[0].lng === 106.5512 && put.stores[0].address === '江北区建新东路3号',
+  check('PUT 里 S1 带坐标与门牌地址（用户给的真实「分享位置」短链）',
+    !!put && put.stores[0].lat === 29.600741 && put.stores[0].lng === 106.525818 && put.stores[0].address === '佳园路2号',
     put && JSON.stringify(put.stores[0]));
   check('PUT 里 S2 带坐标（第二个输入框的值也进了提交）',
     !!put && put.stores[1].lat === 29.6102 && put.stores[1].lng === 106.5743, put && JSON.stringify(put.stores[1]));

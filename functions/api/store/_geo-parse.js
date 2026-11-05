@@ -2,13 +2,17 @@
    ------------------------------------------------------------
    三种输入的格式差异都在这里收口，别在调用方重复判断：
 
-   1) 裸坐标     29.5631,106.5512                    顺序不敏感
-   2) marker     uri.amap.com/marker?position=lng,lat —— 经度在前
-   3) 分享短链   surl.amap.com/xxx → 302 →
-                 wb.amap.com/?p=POIID,lat,lng,名称,地址 —— 纬度在前
-                                                        ↑ 与 2) 相反
+   1) 裸坐标         29.5631,106.5512                      顺序不敏感
+   2) marker         uri.amap.com/marker?position=lng,lat —— 经度在前
+   3) POI 分享短链   surl.amap.com/xxx → 302 →
+                     wb.amap.com/?p=POIID,lat,lng,名称,地址 —— 纬度在前
+   4) 位置分享短链   surl.amap.com/xxx → 302 →
+                     wb.amap.com/?q=lat,lng,位置名称       —— 纬度在前，没有 POIID
+                     ↑ 高德 App「分享位置」给的是这种，实测高于「分享 POI」出现频率
+                     （surl.amap.com/9Xhz3TMYbR2 → q=29.600741,106.525818,佳园路2号）
 
-   2) 和 3) 顺序相反，是这块最容易写错的地方。统一走 pickPair() 按
+   2) 和 3)/4) 的经纬度顺序相反；p= 的坐标在 [1][2]，q= 的在 [0][1] ——
+   这是这块最容易写错的地方。统一走 pickPair() 按
    「纬度 18~54 / 经度 73~136」反推，写反了也能纠正过来。 */
 
 export const ALLOWED_HOSTS = [
@@ -67,6 +71,30 @@ export function fromPParam(url) {
     name: text(parts[3]),
     address: text(parts[4]),
     kind: "amap-poi",
+  };
+}
+
+/* wb.amap.com/?q=lat,lng,位置名称
+   高德 App 里「分享位置 / 发送位置」得到的是这种，不带 POIID，也没有独立地址段。
+   第三段是位置描述（如「佳园路2号」），当门牌地址展示。
+   注意与 p= 的区别：p= 的第 0 段是 POIID，坐标在 [1][2]；q= 的坐标在 [0][1]。
+   q 也可能是普通的搜索关键词（?q=火锅），pickPair 会返回 null，不会误判。 */
+export function fromQParam(url) {
+  let raw = url.searchParams.get("q");
+  if (!raw) return null;
+  try {
+    raw = decodeURIComponent(raw);
+  } catch {}
+  const parts = raw.split(",").map((s) => s.trim());
+  const pair = pickPair(parts[0], parts[1]);
+  if (!pair) return null;
+  const label = text(parts.slice(2).join(","));
+  return {
+    lat: round(pair.lat),
+    lng: round(pair.lng),
+    name: label,
+    address: label,
+    kind: "amap-share",
   };
 }
 
@@ -134,27 +162,31 @@ export function parseUrl(raw) {
   if (!/^https?:$/.test(u.protocol)) return null;
   if (u.username || u.password) return null;
   if (!hostAllowed(u.hostname)) return { error: "UNSUPPORTED_HOST" };
-  return fromPParam(u) || fromMarker(u) || fromCallApp(u) || { pending: u };
+  return fromPParam(u) || fromQParam(u) || fromMarker(u) || fromCallApp(u) || { pending: u };
 }
 
 function snippetToCoord(html) {
-  const hit =
-    html.match(/wb\.amap\.com\/?\?p=([^"'&\s]+)/i) ||
-    html.match(/["']position["']\s*:\s*["']([0-9.]+\s*,\s*[0-9.]+)["']/i) ||
-    html.match(/position=([0-9.]+%2C[0-9.]+|[0-9.]+,[0-9.]+)/i);
-  if (!hit) return null;
-  const raw = decodeURIComponent(hit[1]);
-  /* 中转页里出现的既可能是完整 p=POIID,lat,lng,...，也可能只是 position=lng,lat */
-  const parts = raw.split(",").map((s) => s.trim());
-  const pair = parts.length >= 3 ? pickPair(parts[1], parts[2]) : pickPair(parts[0], parts[1]);
-  if (!pair) return null;
-  return {
-    lat: round(pair.lat),
-    lng: round(pair.lng),
-    name: text(parts[3]),
-    address: text(parts[4]),
-    kind: "amap-poi",
-  };
+  /* 中转 HTML 里可能藏着 p= / q= / position= 三种写法。
+     统一构造成 URL 再交给各自的解析器，避免在这里重复一遍「坐标在第几段」的判断
+     —— 之前就是因为这个判断只按 p= 写，q= 三段会被取成「经度,名称」，存下错坐标。 */
+  const candidates = [
+    { re: /[?&]p=([^"'&\s]+)/i, key: "p", fn: fromPParam },
+    { re: /[?&]q=([^"'&\s]+)/i, key: "q", fn: fromQParam },
+    { re: /position=([0-9.]+%2C[0-9.]+|[0-9.]+,[0-9.]+)/i, key: "position", fn: fromMarker },
+  ];
+  for (const c of candidates) {
+    const hit = html.match(c.re);
+    if (!hit) continue;
+    let probe;
+    try {
+      probe = new URL("https://wb.amap.com/?" + c.key + "=" + hit[1]);
+    } catch {
+      continue;
+    }
+    const got = c.fn(probe);
+    if (got) return got;
+  }
+  return null;
 }
 
 /* 跟随 302 拿落点。fetch 是全局的，Node 18+ 与 workerd 都有。 */
@@ -174,14 +206,15 @@ export async function expand(u, timeoutMs = 4000) {
       },
     });
 
-    /* 落点 URL 通常已经带 ?p=，读到就能直接收工 */
+    /* 落点 URL 通常已经带 ?p= 或 ?q=，读到就能直接收工 */
     let landed;
     try {
       landed = new URL(res.url);
     } catch {
       landed = u;
     }
-    const direct = fromPParam(landed) || fromMarker(landed) || fromCallApp(landed);
+    const direct =
+      fromPParam(landed) || fromQParam(landed) || fromMarker(landed) || fromCallApp(landed);
     if (direct) {
       try {
         res.body?.cancel();
