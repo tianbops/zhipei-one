@@ -986,11 +986,12 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
 ;
 /* ui/mapnav.js —— 门店名 → 地图导航目标
    ------------------------------------------------------------
-   门店数据里只有 name 和 navigation（「导航地址」，真实数据多为高德短链
-   https://surl.amap.com/xxx），没有 address / 经纬度。所以这里只做一件事：
-   把一个门店对象解析成「可点击的目标 URL」，交给渲染层拼 <a href>。
+   门店数据里 name 必有，navigation（「导航地址」）与坐标（lat/lng，GCJ-02）可有可无。
+   这里只做一件事：把一个门店对象解析成「可点击的目标 URL」，交给渲染层拼 <a href>。
 
-   两条路径：
+   三条路径，优先级从高到低：
+   0) 有坐标 → uri.amap.com/navigation，直接进「到这里的驾车路线」（真正的导航，
+      不再停在搜索结果页或 POI 详情页）；坐标在数据中心由分享链接解析而来；
    1) navigation 是地图域名下的 http(s) 链接 → 原样透传（链接自带精确 POI）；
    2) 其余（空 / 纯文本 / 非地图 URL）→ 用门店名走高德关键词搜索。
 
@@ -1041,28 +1042,45 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
   }
 
   function pickName(store) {
-    return text(store && store.name) || text(store && store.rawName) || text(store && store.originalName);
+    return (
+      text(store && store.name) || text(store && store.rawName) || text(store && store.originalName)
+    );
   }
 
-  /* 返回 {url, kind:"link"|"keyword"}；门店无任何可用信息时返回 null */
+  /* 基准库里的坐标（GCJ-02）优先。有坐标就是「到这里的驾车路线」，
+     没有才退回链接 / 关键词搜索。范围外的值直接忽略，避免拼出 0,0。 */
+  function geoOf(store) {
+    var lat = Number(store && store.lat);
+    var lng = Number(store && store.lng);
+    if (!isFinite(lat) || !isFinite(lng)) return null;
+    if (lat < 18 || lat > 54 || lng < 73 || lng > 136) return null;
+    return { lat: lat, lng: lng };
+  }
+
+  /* uri.amap.com/navigation 的 to 参数是「经度,纬度,名称」——纬度在前会导到几百公里外 */
+  function navigationUrl(geo, name) {
+    var to = geo.lng.toFixed(6) + "," + geo.lat.toFixed(6);
+    if (name) to += "," + encodeURIComponent(name);
+    var url = "https://uri.amap.com/navigation?to=" + to + "&mode=car&src=" + SRC;
+    return isMobile() ? url + "&callnative=1" : url;
+  }
+
+  /* 返回 {url, kind:"geo"|"link"|"keyword"}；门店无任何可用信息时返回 null */
   function resolve(store) {
+    var geo = geoOf(store);
+    var name = pickName(store);
+    if (geo) return { url: navigationUrl(geo, name), kind: "geo" };
     var raw = text(store && store.navigation) || text(store && store.nav);
     if (raw) {
       try {
         var u = new URL(raw);
-        if (
-          !u.username &&
-          !u.password &&
-          /^https?:$/.test(u.protocol) &&
-          isMapHost(u.hostname)
-        ) {
+        if (!u.username && !u.password && /^https?:$/.test(u.protocol) && isMapHost(u.hostname)) {
           return { url: u.href, kind: "link" };
         }
       } catch (e) {
         /* 纯文本、相对路径、非法 scheme 都落这里 → 走关键词 */
       }
     }
-    var name = pickName(store);
     return name ? { url: keywordUrl(name), kind: "keyword" } : null;
   }
 

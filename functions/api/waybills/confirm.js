@@ -11,6 +11,8 @@ import {appendWaybillEvent} from "./_waybill-events.js";
 import {degraded} from "../_degrade.js";
 
 const clean=v=>String(v??"").trim();
+/* 坐标：只接受范围内的有限数字（GCJ-02），否则落 null —— 与 /api/base 的清洗口径一致 */
+const geoNum=(v,kind)=>{if(v==null||v==="")return null;const n=Number(v);if(!Number.isFinite(n))return null;if(kind==="lat"&&(n<18||n>54))return null;if(kind==="lng"&&(n<73||n>136))return null;return Math.round(n*1e6)/1e6};
 const normalized=v=>clean(v).replace(/[\u3000\s]+/g,"").replace(/[（）()【】\[\]{}<>《》“”"'‘’]/g,"").replace(/[·•、,，。；;:：!！?？\-_—]/g,"").replace(/Ⅱl|Il|II|ⅱ/gi,"II").toLowerCase();
 // 运单确认权限：正式线路要求维护权限；临时线路要求“必须是本人独立的临时空间”，
 // 杜绝跨临时用户确认（每个临时用户 routeId=__temp__:<userId>，互不相同）。
@@ -143,7 +145,7 @@ export async function onRequestPost({request,env}){
       if(globalTarget){
         target=base.stores.find(s=>clean(s.storeId)===clean(globalTarget.storeId))||null;
         if(!target){
-          target={storeId:clean(globalTarget.storeId),originalName:clean(globalTarget.originalName)||rawName,name:clean(globalTarget.name)||standardName,aliases:Array.isArray(globalTarget.aliases)?globalTarget.aliases:[],navigation:globalTarget.navigation||null,routeOrder:base.stores.length+1,note:""};
+          target={storeId:clean(globalTarget.storeId),originalName:clean(globalTarget.originalName)||rawName,name:clean(globalTarget.name)||standardName,aliases:Array.isArray(globalTarget.aliases)?globalTarget.aliases:[],navigation:globalTarget.navigation||null,lat:geoNum(globalTarget.lat,"lat"),lng:geoNum(globalTarget.lng,"lng"),address:String(globalTarget.address||"").trim(),routeOrder:base.stores.length+1,note:""};
           base.stores.push(target);
         }
 

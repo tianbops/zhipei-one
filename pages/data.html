@@ -29,7 +29,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="智配One"><script>try{var t=localStorage.getItem("zp_appearance_theme")||"system";var r=(t==="light"||t==="dark")?t:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-zp-theme",r);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",r==="light"?"#FFFFFF":"#161616");}catch(e){}</script><script src="/js/theme-sync.js?v=e56e8350"></script>
-<link rel="stylesheet" href="/css/app.css?v=3e4da6dd"><link rel="stylesheet" href="/css/ui-base.css?v=b2030d73"><link rel="stylesheet" href="/css/ui-overlay.css?v=07775030"><link rel="stylesheet" href="/css/ui-theme.css?v=eb09ffcc"><link rel="stylesheet" href="/css/ui-shell.css?v=8537d8fb"><link rel="stylesheet" href="/css/mobile-ui.css?v=26b52400"><link rel="stylesheet" href="/css/business-pages.css?v=c9c0f175"><link rel="stylesheet" href="/css/data.css?v=03609cd6"></head>
+<link rel="stylesheet" href="/css/app.css?v=3e4da6dd"><link rel="stylesheet" href="/css/ui-base.css?v=b2030d73"><link rel="stylesheet" href="/css/ui-overlay.css?v=07775030"><link rel="stylesheet" href="/css/ui-theme.css?v=eb09ffcc"><link rel="stylesheet" href="/css/ui-shell.css?v=8537d8fb"><link rel="stylesheet" href="/css/mobile-ui.css?v=26b52400"><link rel="stylesheet" href="/css/business-pages.css?v=c9c0f175"><link rel="stylesheet" href="/css/data.css?v=4ccb4d94"></head>
 <body><main class="page2 data-page zp-shell">
 <header class="topbar"><a class="app-back" href="/home" aria-label="返回"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a><h1>数据资料</h1><button id="pageMenuBtn" class="data-page-menu-btn" type="button" aria-label="打开菜单" hidden>☰</button><button id="dataShareHeaderBtn" class="data-page-menu-btn" type="button" aria-label="分享线路资料"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5"></circle><circle cx="6" cy="12" r="2.5"></circle><circle cx="18" cy="19" r="2.5"></circle><path d="m8.2 10.8 7.5-4.4M8.2 13.2l7.5 4.4"></path></svg></button></header>
 <div class="data-fixed-area">
@@ -51,8 +51,8 @@
 <div id="dataFeedback" class="data-feedback" hidden></div>
 </div>
 <div class="zp-scroll">
-<section class="page2-card data-list-card"><div class="data-list-head"><span class="data-list-title">门店资料</span><span id="storeCount" class="data-list-count"></span></div><div id="stores" class="data-store-list">加载中…</div></section>
-<div id="editBox" class="data-import data-editor" style="display:none"><div class="data-import-panel data-editor-panel"><div class="data-import-head"><h3 id="editTitle">编辑门店</h3><button id="editClose" class="data-import-close" type="button" aria-label="关闭">×</button></div><label class="data-field"><span>排列序号</span><input id="editOrder" class="data-input" type="number" min="1" step="1" inputmode="numeric" placeholder="例如 1"><small id="editOrderHint" class="data-field-hint"></small></label><label class="data-field"><span>门店名称</span><input id="editName" class="data-input" type="text" maxlength="120"></label><label class="data-field"><span>导航地址</span><input id="editNavigation" class="data-input" type="url" placeholder="https://..."></label><label class="data-field"><span>备注</span><textarea id="editNote" rows="1" class="data-textarea data-note" placeholder="可选"></textarea></label><label class="data-field"><span>别名（学习自动添加，可手动删除或追加）</span><div id="editAliases" class="data-aliases"></div><div class="data-alias-add"><input id="editAliasInput" class="data-input data-alias-input" type="text" maxlength="120" placeholder="输入别名后点“添加”"><button id="editAliasAdd" type="button" class="data-action-btn">添加</button></div></label><div id="editError" class="data-help data-preview"></div><div class="data-import-actions"><button id="editCancel" type="button">取消</button><button id="editSave" type="button">保存</button></div></div></div>
+<section class="page2-card data-list-card"><div class="data-list-head"><span class="data-list-title">门店资料</span><span class="data-list-tools"><button id="batchGeoBtn" class="data-list-tool" type="button" hidden>批量定位</button><span id="storeCount" class="data-list-count"></span></span></div><div id="stores" class="data-store-list">加载中…</div></section>
+<div id="editBox" class="data-import data-editor" style="display:none"><div class="data-import-panel data-editor-panel"><div class="data-import-head"><h3 id="editTitle">编辑门店</h3><button id="editClose" class="data-import-close" type="button" aria-label="关闭">×</button></div><label class="data-field"><span>排列序号</span><input id="editOrder" class="data-input" type="number" min="1" step="1" inputmode="numeric" placeholder="例如 1"><small id="editOrderHint" class="data-field-hint"></small></label><label class="data-field"><span>门店名称</span><input id="editName" class="data-input" type="text" maxlength="120"></label><label class="data-field"><span>导航地址</span><input id="editNavigation" class="data-input" type="url" placeholder="https://..."></label><label class="data-field"><span>位置</span><div class="data-geo-row"><input id="editGeo" class="data-input" type="text" autocomplete="off" placeholder="粘贴高德分享链接，或 29.5631,106.5512"><button id="editGeoParse" class="data-action-btn" type="button">解析</button></div><small id="editGeoHint" class="data-field-hint">在高德地图找到这家店 → 分享 → 复制链接，回这里粘贴，即可一键导航到门口</small></label><label class="data-field"><span>备注</span><textarea id="editNote" rows="1" class="data-textarea data-note" placeholder="可选"></textarea></label><label class="data-field"><span>别名（学习自动添加，可手动删除或追加）</span><div id="editAliases" class="data-aliases"></div><div class="data-alias-add"><input id="editAliasInput" class="data-input data-alias-input" type="text" maxlength="120" placeholder="输入别名后点“添加”"><button id="editAliasAdd" type="button" class="data-action-btn">添加</button></div></label><div id="editError" class="data-help data-preview"></div><div class="data-import-actions"><button id="editCancel" type="button">取消</button><button id="editSave" type="button">保存</button></div></div></div>
 <div id="replaceBox" class="data-import" style="display:none"><div class="data-import-panel">
 <div class="data-import-head"><h3>批量替换</h3><button id="replaceClose" class="data-import-close" type="button" aria-label="关闭">×</button></div>
 <p class="data-help">用新的完整门店资料替换当前线路显示的资料。确认提交前，不会修改服务器中的正式数据。</p>
@@ -97,7 +97,7 @@ var dataBaseline="";// 门店资料基线：用于判断是否存在「暂存但
 })();
 async function api(u,o={}){const r=await zpFetch(u,{credentials:"same-origin",...o});const d=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(d.error||d.message||"请求失败");e.code=d.code||"HTTP_"+r.status;e.detail=d.detail||"";throw e}return d}
 function err(e){return(e.code?"["+e.code+"] ":"")+e.message+(e.detail?" · "+e.detail:"")}
-let routeId="",canMaintain=false,stores=[],baseVersion=1,saving=false,baseVersionConflict=false,editingIndex=-1,confirming=false,dragIndex=-1,hiddenIndexes=new Set(),editAliases=[];
+let routeId="",canMaintain=false,stores=[],baseVersion=1,saving=false,baseVersionConflict=false,editingIndex=-1,confirming=false,dragIndex=-1,hiddenIndexes=new Set(),editAliases=[],editGeo=null;
 
 function cleanName(v){return String(v||"").trim().replace(/^[、.．)）\\-\s]+|[、.．\\-\s]+$/g,"").trim()}
 function parseImport(text){
@@ -154,19 +154,48 @@ function render(){
   if(s.aliases?.length)meta.push('<span><b class="data-store-meta-label">别名</b>'+esc(s.aliases.join("、").replace(/\\n/g," "))+'</span>');
   if(s.note)meta.push('<span><b class="data-store-meta-label">备注</b>'+esc(s.note)+'</span>');
   const nav=navUrl(s.navigation);
+  /* 未定位角标：只标缺失的，已有坐标的不占视觉。批量定位的完成度靠它一眼可见。 */
+  const located=Number.isFinite(Number(s.lat))&&Number.isFinite(Number(s.lng));
   const rowClass=hidden?"data-store-row data-store-hidden":"data-store-row";
   return '<article class="'+rowClass+'" data-index="'+index+'" draggable="'+(canMaintain?"true":"false")+'">'+
    '<span class="data-store-index">'+String(i+1).padStart(2,"0")+'</span>'+
    '<div class="data-store-main">'+
    '<div class="data-store-name-line">'+
-   (nav?'<a class="data-store-name data-store-nav" href="'+esc(nav)+'" target="_blank" rel="noopener noreferrer">'+name+'</a>':'<strong class="data-store-name">'+name+'</strong>')+
-   ""+
+   (nav?'<a class="data-store-name data-store-nav" href="'+esc(nav)+'" target="_blank" rel="noopener noreferrer">'+name+(located?"":'<em class="data-store-geo">未定位</em>')+'</a>':'<strong class="data-store-name">'+name+(located?"":'<em class="data-store-geo">未定位</em>')+'</strong>')+
    '</div>'+
    (meta.length?'<div class="data-store-meta">'+meta.join("")+'</div>':"")+
    '</div>'+
    (canMaintain?'<div class="data-swipe-actions"><button type="button" data-swipe-edit="'+index+'">编辑</button><button type="button" class="data-swipe-delete" data-swipe-delete="'+index+'">删除</button></div>':"")+
    '</article>'
  }).join("");
+}
+/* ===== 位置（坐标）=====
+   门店的坐标不手填：把高德「分享」出来的链接粘进来，服务端代取 302 落点，
+   从中取出 GCJ-02 坐标。这样管理员不需要懂经纬度，也不用装任何工具。
+   坐标存在 store 上（lat/lng/address），提交走原来的 /api/base。 */
+function geoOfStore(s){const lat=Number(s?.lat),lng=Number(s?.lng);return Number.isFinite(lat)&&Number.isFinite(lng)?{lat,lng,address:String(s?.address||"")}:null}
+function geoText(g){return g?g.lat.toFixed(6)+", "+g.lng.toFixed(6):""}
+const GEO_REASON={EMPTY:"先粘贴链接或坐标",INVALID_URL:"链接不完整，请检查是否复制全",UNSUPPORTED_HOST:"只认高德链接；百度/腾讯请在高德里搜到这家店后再分享",TIMEOUT:"网络超时，请重试",FETCH_FAILED:"链接打不开，可能已失效",NO_COORD:"这个链接里没有坐标，请用高德的「分享」重新复制"};
+function setGeoHint(msg,kind){
+ const el=$("editGeoHint");if(!el)return;
+ if(msg){el.textContent=msg;el.className="data-field-hint"+(kind?" "+kind:"");return}
+ if(editGeo){el.textContent=(editGeo.address?editGeo.address+" · ":"")+"已定位，司机点门店名可直接导航到这里";el.className="data-field-hint ok";return}
+ el.textContent="在高德地图找到这家店 → 分享 → 复制链接，回这里粘贴，即可一键导航到门口";el.className="data-field-hint";
+}
+async function parseGeoTarget(text){
+ const r=await api("/api/store/geo",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({routeId,items:[{text}]})});
+ return r.items&&r.items[0];
+}
+async function parseGeoField(){
+ const v=$("editGeo").value.trim();
+ if(!v){setGeoHint("先粘贴链接或坐标","bad");$("editGeo").focus();return}
+ const btn=$("editGeoParse");btn.disabled=true;setGeoHint("解析中…");
+ try{
+  const it=await parseGeoTarget(v);
+  if(it&&it.ok){editGeo={lat:it.lat,lng:it.lng,address:it.address||""};$("editGeo").value=geoText(editGeo);setGeoHint()}
+  else setGeoHint(GEO_REASON[it?.reason]||"没识别出来，换一个链接试试","bad");
+ }catch(e){setGeoHint("解析失败："+err(e),"bad")}
+ finally{btn.disabled=false}
 }
 function openEditor(index=-1){
  editingIndex=index;
@@ -176,6 +205,9 @@ function openEditor(index=-1){
  updateOrderHint();
  $("editName").value=s.name||s.originalName||"";
  $("editNavigation").value=s.navigation||"";
+ editGeo=geoOfStore(s);
+ $("editGeo").value=editGeo?geoText(editGeo):"";
+ setGeoHint();
  $("editNote").value=s.note||"";autoGrow($("editNote"));
  editAliases=Array.isArray(s.aliases)?s.aliases.map(x=>String(x).trim()).filter(Boolean):[];renderEditAliases();
  $("editError").textContent="";
@@ -219,6 +251,13 @@ $("editAliases").addEventListener("click",e=>{const del=e.target.closest("[data-
 $("editAliasAdd").onclick=addEditAlias;
 $("editAliasInput").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();addEditAlias()}});
 $("editNote").addEventListener("input",e=>autoGrow(e.target));
+$("editGeoParse").onclick=parseGeoField;
+$("editGeo").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();parseGeoField()}});
+$("editGeo").addEventListener("input",()=>{
+ const v=$("editGeo").value.trim();
+ /* 手改动过输入框就作废已解析的坐标：宁可让用户重解析，也不要存一个跟输入对不上的位置 */
+ if(!editGeo||v!==geoText(editGeo)){editGeo=null;setGeoHint(v?"内容改过了，点「解析」重新识别":"")}
+});
 $("appendNote").addEventListener("input",e=>autoGrow(e.target));
 async function askConfirm(title,message,okText="确定"){
  if(confirming)return false;
@@ -240,6 +279,7 @@ $("editSave").onclick=()=>{
  if(!Number.isInteger(order)||order<1||order>max){$("editError").textContent="排列序号无效";return}
  let item=editingIndex>=0?stores[editingIndex]:{storeId:"",originalName:"",aliases:[],businessStoreCode:"",routeOrder:stores.length+1};
  item.name=name;if(!item.originalName)item.originalName=name;item.navigation=$("editNavigation").value.trim();item.note=$("editNote").value.trim();
+ item.lat=editGeo?editGeo.lat:null;item.lng=editGeo?editGeo.lng:null;item.address=editGeo?(editGeo.address||""):"";
  item.aliases=editAliases;
  if(editingIndex<0){stores.push(item);editingIndex=stores.length-1}
  const from=editingIndex;applyOrder(from,order);closeEditor();render()
@@ -302,6 +342,37 @@ $("restoreFile").onchange=async e=>{
  finally{e.target.value=""}
 };
 $("saveStoresTop").onclick=async()=>submitStores();
+/* 批量定位：扫描「有高德链接但还没坐标」的门店，一次解析补齐。只写暂存，
+   提交仍走 submitStores —— 批量改几十家也不绕过「先预览再提交」的规矩。 */
+async function batchGeo(){
+ if(!canMaintain||saving)return;
+ const targets=stores.filter(s=>!geoOfStore(s)&&/^https?:\/\//i.test(String(s.navigation||"").trim()));
+ const missing=stores.filter(s=>!geoOfStore(s)).length;
+ if(!targets.length){
+  zpToast(missing?"剩下 "+missing+" 家没有高德链接，只能在编辑里单独补位置":"所有门店都已有位置");
+  return
+ }
+ if(!(await zpConfirm("批量定位","将为 "+targets.length+" 家门店解析位置。只有再点「提交更新」才会写入服务器。","开始解析")))return;
+ const btn=$("batchGeoBtn"),label=btn.textContent;btn.disabled=true;btn.textContent="解析中…";
+ try{
+  const ok=[],fail=[];
+  /* 服务端单次上限 20 条，这里同步分片，避免一次请求打太多外网 */
+  for(let k=0;k<targets.length;k+=20){
+   const chunk=targets.slice(k,k+20);
+   const r=await api("/api/store/geo",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({routeId,items:chunk.map(x=>({text:x.navigation}))})});
+   (r.items||[]).forEach((it,j)=>{const s=chunk[j];if(!s)return;
+    if(it&&it.ok){s.lat=it.lat;s.lng=it.lng;s.address=it.address||"";ok.push(s.name)}
+    else fail.push((s.name||"未命名")+"（"+(GEO_REASON[it?.reason]||"未识别")+"）");
+   });
+   if(k+20<targets.length)await new Promise(r=>setTimeout(r,120));
+  }
+  render();
+  if(fail.length)showDataFeedback("error","已定位 "+ok.length+" 家，"+fail.length+" 家没识别出来："+fail.slice(0,2).join("、")+(fail.length>2?" 等":""));
+  else showDataFeedback("success","已定位 "+ok.length+" 家门店，点「提交更新」保存");
+ }catch(e){showDataFeedback("error","批量定位失败："+err(e))}
+ finally{btn.disabled=false;btn.textContent=label}
+}
+$("batchGeoBtn").onclick=batchGeo;
 async function shareSavedBase(){
  try{
   const d=await api("/api/base?routeId="+encodeURIComponent(routeId));
@@ -388,6 +459,7 @@ async function load(){
   if(routeId&&routeId.startsWith("__temp__:")){$("title").textContent="临时用户 · 数据资料";$("hint").textContent="临时用户不建立正式数据资料";$("summary").innerHTML="<strong>临时用户</strong>";$("stores").textContent="临时用户使用全局学习识别门店，规划按运单原始顺序排列。";return}
   const x=await api("/api/base?routeId="+encodeURIComponent(routeId));
   canMaintain=!!x.canMaintain;
+  $("batchGeoBtn").hidden=!canMaintain;
   $("tools").style.display=canMaintain?"block":"none";
   stores=Array.isArray(x.base?.stores)?x.base.stores:[];baseVersion=Number(x.base?.version)||1;dataBaseline=JSON.stringify(stores);
   $("title").textContent=(x.route?.name?(rn(x.route.name)||"当前线路"):"当前线路");/* 全局标准：文本位置统一「X号线」 */

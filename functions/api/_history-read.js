@@ -16,6 +16,9 @@ import {dayMetaKey,parseMeta} from "./waybills/_waybill-meta.js";
 import {Budget,scanKeysBudgeted,mgetBatchMap,throwBudgetExceeded,SUBREQUEST_BUDGET_EXCEEDED} from "./_redis-budget.js";
 import {clean,historyReadable,waybillIndexKey,validDate,inRange} from "./_history-range.js";
 
+/* 基准库坐标（GCJ-02）：范围内才算数，避免拼出 0,0 这类无效导航 */
+const geoOf=x=>{const lat=Number(x?.lat),lng=Number(x?.lng);return Number.isFinite(lat)&&Number.isFinite(lng)&&lat>=18&&lat<=54&&lng>=73&&lng<=136?{lat,lng}:null};
+
 export async function readWaybills(env,ids,budget=null,strictIndex=false){
  const cleanIds=[...new Set((ids||[]).map(clean).filter(Boolean))];if(!cleanIds.length)return [];
  const decode=raw=>{if(!raw)return null;try{const x=typeof raw==="string"?JSON.parse(raw):raw;return historyReadable(x)?x:null}catch{return null}};
@@ -185,7 +188,7 @@ export async function enrichFactory(env,routeId){
    const baseStores=baseStoresCache,byId=new Map(baseStores.map(s=>[clean(s?.storeId),s]).filter(x=>x[0]));
    const baseKey=v=>clean(v).normalize("NFKC").replace(/\s+/g,"").replace(/[，。；;：:、（）()【】\[\]{}<>《》“”"'‘’]/g,"").toLowerCase(),byName=new Map();
    for(const bs of baseStores)for(const field of [bs?.name,bs?.originalName,...(Array.isArray(bs?.aliases)?bs.aliases:[])]){const key=baseKey(field);if(key&&!byName.has(key))byName.set(key,bs)}
-   out.stores=out.stores.map(s=>{const baseStore=byId.get(clean(s?.storeId))||byName.get(baseKey(s?.name||s?.rawName));if(!baseStore)return s;const navigation=clean(baseStore.navigation)||clean(s?.navigation),note=clean(baseStore.note||baseStore.remark)||clean(s?.note||s?.remark);return navigation||note?{...s,...(navigation?{navigation}:{}),...(note?{note}:{})}:s});
+   out.stores=out.stores.map(s=>{const baseStore=byId.get(clean(s?.storeId))||byName.get(baseKey(s?.name||s?.rawName));if(!baseStore)return s;const navigation=clean(baseStore.navigation)||clean(s?.navigation),note=clean(baseStore.note||baseStore.remark)||clean(s?.note||s?.remark),geo=geoOf(baseStore),address=clean(baseStore.address);return navigation||note||geo||address?{...s,...(navigation?{navigation}:{}),...(note?{note}:{}),...(geo||{}),...(address?{address}:{})}:s});
   }catch{}
   // 响应瘦身：sourceLine 是处理阶段的调试字段（整条原始线路文本，逐门店重复），
   // 前端（home/order_detail/history）均不消费；25 家门店时它会把单日响应撑大数十 KB，

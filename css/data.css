@@ -74,6 +74,21 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-input[type=number]{font-variant-numeric:tabular-nums}
 .data-field-hint{display:block;margin-top:5px;color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:17px}.data-field-hint.invalid{color:var(--zp-danger)}
 
+/* 位置字段：输入框与「解析」同一行，按钮不换行也不被压缩 */
+.data-geo-row{display:flex;align-items:center;gap:8px}
+.data-geo-row .data-input{flex:1;min-width:0}
+.data-geo-row .data-action-btn{width:auto;flex:0 0 auto;padding:0 18px}
+.data-field-hint.ok{color:var(--zp-success)}
+.data-field-hint.bad{color:var(--zp-danger)}
+
+/* 未定位角标：只标缺失的门店，跟随名称、不占额外行（有坐标的店不显示） */
+.data-store-geo{display:inline-block;margin-left:6px;padding:0 5px;border-radius:var(--zp-r-mini);background:var(--zp-tint);color:var(--zp-muted);font-size:var(--zp-fs-11);font-style:normal;line-height:17px;vertical-align:1px}
+
+/* 列表头的批量定位入口：与门店数量同一行，维护权限才出现 */
+.data-list-tools{display:flex;align-items:center;gap:10px}
+.data-list-tool{height:28px;padding:0 10px;border:1px solid var(--zp-line);border-radius:var(--zp-r-mini);background:var(--zp-card-2);color:var(--zp-text);font-size:var(--zp-fs-12);font-weight:var(--zp-fw-medium)}
+.data-list-tool:active{background:var(--zp-primary);color:var(--zp-on-primary);border-color:var(--zp-primary)}
+
 /* 2.0 数据资料维护交互 */
 .data-tools-card{padding:12px 14px}
 .data-maintenance{display:grid;gap:9px}

@@ -8,6 +8,8 @@ import {guard} from "../_safe.js";
 import {degraded} from "../_degrade.js";
 
 const clean=v=>String(v??"").trim();
+/* 基准库里的坐标（GCJ-02）。范围外的值当作没有，避免拼出「0,0」这种导航。 */
+const geoOf=x=>{const lat=Number(x?.lat),lng=Number(x?.lng);return Number.isFinite(lat)&&Number.isFinite(lng)&&lat>=18&&lat<=54&&lng>=73&&lng<=136?{lat,lng}:null};
 const todayCN=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 const validWaybill=x=>!!x&&x.schemaVersion==="2"&&typeof x.id==="string"&&typeof x.routeId==="string"&&Array.isArray(x.stores)&&!!x.summary;
 const activeWaybill=x=>validWaybill(x)&&x.historyStatus!=="SUPERSEDED";
@@ -51,7 +53,10 @@ async function latestGet({request,env}){
     if(!baseStore)return s;
     const navigation=clean(baseStore.navigation)||clean(s?.navigation);
     const note=clean(baseStore.note||baseStore.remark)||clean(s?.note||s?.remark);
-    return navigation||note?{...s,...(navigation?{navigation}:{}),...(note?{note}:{})}:s;
+    /* 坐标同样用基准库回补：运单快照里可能没有（老运单、或补坐标之前生成的），
+       但导航要的是「这家店在哪」，而不是「这份快照当时存了什么」。 */
+    const geo=geoOf(baseStore),address=clean(baseStore.address);
+    return navigation||note||geo||address?{...s,...(navigation?{navigation}:{}),...(note?{note}:{}),...(geo||{}),...(address?{address}:{})}:s;
    });
   }catch{}
   // 响应瘦身：与 history.js 同理，剥离前端不消费的调试字段 sourceLine，降低弱网传输体积。

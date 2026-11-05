@@ -127,6 +127,21 @@ console.log("\n名称回退与空值（3 条）");
     M.resolve({}) === null && M.resolve(null) === null && M.resolve({ name: " ", navigation: "" }) === null);
 }
 
+console.log("\n坐标优先（6 条）");
+{
+  const g = M.resolve({ name: "谊品生鲜", lat: 29.5631, lng: 106.5512, navigation: "https://surl.amap.com/abc" });
+  t("有坐标时走 navigation（真导航），不再停在 POI 页", !!g && g.kind === "geo" && /uri\.amap\.com\/navigation/.test(g.url), JSON.stringify(g));
+  const u = new URL(g.url);
+  t("to 参数是「经度,纬度,名称」——顺序写反会导到几百公里外",
+    (u.searchParams.get("to") || "").startsWith("106.551200,29.563100"), u.searchParams.get("to"));
+  t("带 mode=car（驾车路线）", u.searchParams.get("mode") === "car");
+  t("移动端带 callnative=1", u.searchParams.get("callnative") === "1");
+  const zero = M.resolve({ name: "谊品生鲜", lat: 0, lng: 0 });
+  t("0,0 视为无效坐标，退回关键词搜索", !!zero && zero.kind === "keyword", JSON.stringify(zero));
+  const str = M.resolve({ name: "谊品生鲜", lat: "29.5631", lng: "106.5512" });
+  t("字符串坐标也认（运单快照里的数值可能被序列化成字符串）", !!str && str.kind === "geo");
+}
+
 console.log("\n链接属性与幂等（4 条）");
 {
   const normal = M.linkAttrs({ name: "谊品生鲜", navigation: "https://surl.amap.com/abc" });

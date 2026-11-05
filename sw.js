@@ -9,7 +9,7 @@
  *   - 图片/字体       ：stale-while-revalidate（内容基本不变，秒开优先）
  * 资产缓存键用完整 URL（含 ?v=）精确匹配；页面缓存键用 pathname 规整（忽略 ?from 等查询）。
  */
-const VERSION = "zp-pwa-407";
+const VERSION = "zp-pwa-409";
 const STATIC_CACHE = VERSION + "-static";
 const PAGES_CACHE = VERSION + "-pages";
 const OFFLINE_URL = "/offline";
@@ -40,7 +40,7 @@ const PRECACHE = [
   "/css/admin-perf.css?v=f296a369",
   "/css/app.css?v=3e4da6dd",
   "/css/business-pages.css?v=c9c0f175",
-  "/css/data.css?v=03609cd6",
+  "/css/data.css?v=4ccb4d94",
   "/css/doc-page.css?v=df84b894",
   "/css/entry-brand.css?v=cdf9fe5e",
   "/css/history-list.css?v=d97483f9",
@@ -76,7 +76,7 @@ const PRECACHE = [
   "/js/history/data.js?v=9cf1ad84",
   "/js/history/overlay.js?v=65a2aeb7",
   "/js/history/render.js?v=59fe703f",
-  "/js/home.bundle.js?v=8806c4f8",
+  "/js/home.bundle.js?v=fb10ccb6",
   "/js/login-session-retry.js?v=0c436693",
   "/js/login.js?v=5392495d",
   "/js/offline-queue.js?v=c255ca1f",
@@ -96,7 +96,7 @@ const PRECACHE = [
   "/js/ui/core.js?v=7c4e2f82",
   "/js/ui/feedback.js?v=f8da0256",
   "/js/ui/haptic.js?v=a3a78c0a",
-  "/js/ui/mapnav.js?v=42a6312e",
+  "/js/ui/mapnav.js?v=1fccdee7",
   "/js/ui/nav-prefetch.js?v=968d1e0b",
   "/js/ui/nav.js?v=c43aa872",
   "/js/ui/share.js?v=f2e4bdb6",

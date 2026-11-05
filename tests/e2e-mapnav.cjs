@@ -28,13 +28,14 @@ const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; cha
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const getJSON = (u) => new Promise((res, rej) => http.get(u, (r) => { let d = ''; r.on('data', (c) => (d += c)); r.on('end', () => res(JSON.parse(d))); }).on('error', rej));
 
-/* 五家门店覆盖：高德链 / 纯文本 / 外域链接 / 无导航 / 带注入标签的名称 */
+/* 六家门店覆盖：高德链 / 纯文本 / 外域链接 / 无导航 / 带注入标签的名称 / 已定位（有坐标） */
 const STORES = [
   { storeId: 'S1', name: '谊品生鲜长安锦绣城店', navigation: 'https://surl.amap.com/abc' },
   { storeId: 'S2', name: '渝北中景隆(重庆)贸易有限公司', navigation: 'A栋B1' },
   { storeId: 'S3', name: '江北重庆三峡融资担保集团', navigation: 'https://evil.com/x' },
   { storeId: 'S4', name: '到家主城-江北区加州客服中心', navigation: '' },
   { storeId: 'S5', name: '<img src=x onerror="window.__x=1">特渠部', navigation: '' },
+  { storeId: 'S6', name: '已定位门店', navigation: 'https://surl.amap.com/xyz', lat: 29.5631, lng: 106.5512 },
 ];
 
 const STUB = `
@@ -136,8 +137,8 @@ const SNAP_DETAIL = `(()=>{
   const check = (name, ok, detail) => { results.push({ name, ok }); console.log((ok ? '  PASS ' : '  FAIL ') + name + (detail ? '  [' + detail + ']' : '')); };
 
   console.log('home ' + JSON.stringify(home));
-  check('首页 5 家门店全部渲染', home && home.rows === 5, home && String(home.rows));
-  check('5 家全部可点（无导航链接的门店也不留死行）', home && home.links === 5 && home.plainRows === 0, home && `${home.links}/${home.plainRows}`);
+  check('首页 6 家门店全部渲染', home && home.rows === 6, home && String(home.rows));
+  check('6 家全部可点（无导航链接的门店也不留死行）', home && home.links === 6 && home.plainRows === 0, home && `${home.links}/${home.plainRows}`);
   check('没有站内相对路径（旧 bug：纯文本被当成站内链接）',
     home && home.items.every((x) => /^https:\/\//.test(x.abs) && !x.abs.startsWith(BASE)), home && JSON.stringify(home.items.map((x) => x.abs)));
   check('没有 javascript: / data: 伪协议', home && home.items.every((x) => !/^(javascript|data):/i.test(x.href)));
@@ -156,6 +157,11 @@ const SNAP_DETAIL = `(()=>{
   check('无 navigation 用门店名搜索', s4.kind === 'keyword' && new URL(s4.abs).searchParams.get('keyword') === '到家主城-江北区加州客服中心', JSON.stringify(s4));
   check('关键词链接带 callnative=1 与 src=zhipei',
     !!s4.abs && new URL(s4.abs).searchParams.get('callnative') === '1' && new URL(s4.abs).searchParams.get('src') === 'zhipei');
+  const s6 = byName('已定位门店');
+  check('有坐标 → 直接进驾车路线（navigation），不再停在 POI 页',
+    s6.kind === 'geo' && new URL(s6.abs).pathname === '/navigation' && new URL(s6.abs).searchParams.get('mode') === 'car', JSON.stringify(s6));
+  check('to 参数是「经度,纬度,名称」，顺序不得颠倒',
+    s6.abs && new URL(s6.abs).searchParams.get('to') === '106.551200,29.563100,已定位门店', s6.abs && new URL(s6.abs).searchParams.get('to'));
   check('普通环境 target=_self', home.items.every((x) => x.target === '_self'));
   check('aria-label 说明「导航到 门店名」', !!s1.label && /导航到/.test(s1.label), s1.label);
   check('门店名里的 <img onerror> 被转义，未执行', home && home.injectedImg === false && home.xss === false);
@@ -171,7 +177,7 @@ const SNAP_DETAIL = `(()=>{
   await sleep(1800);
   const detail = await ev(SNAP_DETAIL);
   console.log('detail ' + JSON.stringify(detail));
-  check('详情页门店名可点（5 个链接）', detail && detail.links === 5, detail && String(detail.links));
+  check('详情页门店名可点（6 个链接）', detail && detail.links === 6, detail && String(detail.links));
   check('详情页高德短链同样透传', detail && detail.items.some((x) => x.abs === 'https://surl.amap.com/abc'));
   check('详情页触控热区 ≥44px', detail && detail.items.every((x) => x.box >= 44), detail && JSON.stringify(detail.items.map((x) => x.box)));
   check('详情页门店名注入被转义', detail && detail.injectedImg === false && detail.xss === false);
