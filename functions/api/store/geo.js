@@ -14,7 +14,7 @@ import { json, body } from "../_json.js";
 import { currentUser } from "../_auth.js";
 import { canMaintainRoute } from "../_permissions.js";
 import { get, setEx } from "../_redis.js";
-import { parseUrl, fromText, expand } from "./_geo-parse.js";
+import { parseUrl, fromText, extractUrl, expand } from "./_geo-parse.js";
 
 /* 单次 10 条：每条要走「读缓存 + 取外网 + 写缓存」最多 3 次 subrequest，
    Cloudflare 免费版单请求上限 50 —— 20 条就会撞线（60 次），整批直接失败。
@@ -38,24 +38,31 @@ async function resolveOne(env, raw) {
   const input = text(raw);
   if (!input) return { ok: false, reason: "EMPTY" };
 
-  /* 不是 URL 就只当坐标文本解析 —— 不能让 "A栋B1" 这类备注被误读成经纬度 */
-  if (!/^(https?:)?\/\//i.test(input)) {
-    const direct = fromText(input);
-    return direct ? { ok: true, ...direct } : { ok: false, reason: "INVALID_URL" };
+  /* 高德 App 分享到微信/剪贴板常带文案前缀（【高德地图】… / 我在这里…），
+     整段不是 URL。先从文本里取出链接，取不到才按坐标文本解析。
+     仍不能把 "A栋B1" 这类备注误读成经纬度（fromText 只认两个合规小数）。 */
+  let candidate = input;
+  if (!/^(https?:)?\/\//i.test(candidate)) {
+    const direct = fromText(candidate);
+    if (direct) return { ok: true, ...direct };
+    const embedded = extractUrl(candidate);
+    if (!embedded) return { ok: false, reason: "INVALID_URL" };
+    candidate = embedded.href;
   }
 
-  const parsed = parseUrl(input);
+  const parsed = parseUrl(candidate);
   if (!parsed) return { ok: false, reason: "INVALID_URL" };
   if (parsed.error) return { ok: false, reason: parsed.error };
   if (!parsed.pending) return { ok: true, ...parsed };
 
-  /* 短链结果缓存 30 天：同一家门店的分享链接不该每次编辑都打一次外网 */
+  /* 短链结果缓存 30 天：同一家门店的分享链接不该每次编辑都打一次外网。
+     注意缓存的是「解析结果」，若历史上存过失败结果，不能被当成成功复用。 */
   const key = "geo:" + hash(parsed.pending.href);
   try {
     const cached = await get(env, key);
     if (cached) {
       const v = typeof cached === "string" ? JSON.parse(cached) : cached;
-      if (v && Number.isFinite(Number(v.lat)) && Number.isFinite(Number(v.lng))) {
+      if (v && !v.error && Number.isFinite(Number(v.lat)) && Number.isFinite(Number(v.lng))) {
         return { ok: true, ...v, cached: true };
       }
     }

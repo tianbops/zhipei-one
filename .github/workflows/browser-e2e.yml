@@ -70,6 +70,10 @@ jobs:
         env:
           CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
         run: node tests/e2e-data-auto-geo.cjs
+      - name: Verify share-text links resolve and geo failures are visible
+        env:
+          CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
+        run: node tests/e2e-data-geo-input.cjs
       - name: Verify swiping right never deletes a store
         env:
           CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}

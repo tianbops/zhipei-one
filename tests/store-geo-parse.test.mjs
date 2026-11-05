@@ -22,6 +22,8 @@ import {
   fromQParam,
   fromMarker,
   fromCallApp,
+  fromLatLon,
+  extractUrl,
   fromText,
   pickPair,
   parseUrl,
@@ -151,6 +153,48 @@ console.log("\n唤起中转页 callAPP（3 条）");
   );
 }
 
+console.log("\n中转页 q= / lat-lon 与带文案分享（用户真实形态，8 条）");
+{
+  /* 云端 Worker 出口实测：短链可能落到 callAPP，坐标不再是 p= 而是 q= 或 lat/lon。
+     旧版 fromCallApp 只认 p=，这几种全部返回 NO_COORD → 43 家门店整体定位失败。 */
+  const ios = new URL(
+    "https://m.amap.com/callAPP?ios=viewMap%3FsourceApplication%3Dfrom_wb%26dev%3D0%26poiname%3D%E4%BD%B3%E5%9B%AD%E8%B7%AF2%E5%8F%B7%26lat%3D29.600741086473104%26lon%3D106.5258179605007"
+  );
+  const iosHit = fromCallApp(ios);
+  t("callAPP ios=viewMap 的 lat/lon 能解出坐标", !!iosHit && iosHit.lat === 29.600741 && iosHit.lng === 106.525818, JSON.stringify(iosHit));
+
+  const android = new URL(
+    "https://m.amap.com/callAPP?android=androidamap%3Faction%3Dshorturl%26q%3D29.600741086473104%2C106.5258179605007%2C%E4%BD%B3%E5%9B%AD%E8%B7%AF2%E5%8F%B7"
+  );
+  const androidHit = fromCallApp(android);
+  t("callAPP android 的 q= 能解出坐标", !!androidHit && androidHit.lat === 29.600741 && androidHit.lng === 106.525818, JSON.stringify(androidHit));
+
+  const mo = new URL(
+    "https://m.amap.com/callAPP?mo=http%3A%2F%2Fm.amap.com%2F%3Fq%3D29.600741%2C106.525818%2Cx%26callapp%3D0"
+  );
+  const moHit = fromCallApp(mo);
+  t("callAPP mo= 里嵌套的 q= 能解出坐标", !!moHit && moHit.lat === 29.600741 && moHit.lng === 106.525818, JSON.stringify(moHit));
+
+  t("parseUrl 遇到 q= 中转页直接返回坐标而非 pending", (() => {
+    const p = parseUrl(android.href);
+    return p && p.lat === 29.600741 && !p.pending;
+  })(), "q= 中转页");
+  t("URL 上直接带 lat/lon 也能解析", (() => {
+    const r = fromLatLon(new URL("https://m.amap.com/viewMap?lat=29.600741&lon=106.525818"));
+    return r && r.lat === 29.600741 && r.lng === 106.525818;
+  })(), "fromLatLon");
+
+  /* 高德 App 分享到微信/剪贴板带文案前缀，整段不是 URL */
+  const share = "【高德地图】佳园路2号 https://surl.amap.com/9Xhz3TMYbR2 点击查看";
+  t("带文案分享文本能提取出链接", extractUrl(share)?.href === "https://surl.amap.com/9Xhz3TMYbR2", JSON.stringify(extractUrl(share)?.href));
+  t("提取出的链接能正常进入 parseUrl 分流", (() => {
+    const ext = extractUrl(share);
+    const p = ext && parseUrl(ext.href);
+    return p && !!p.pending;
+  })(), "extractUrl → parseUrl");
+  t("纯文字备注不会被误提取成链接", extractUrl("A栋B1 由经销商代送") === null, "extractUrl 备注");
+}
+
 console.log("\n纯文本坐标（4 条）");
 {
   t(
@@ -237,6 +281,34 @@ console.log("\n真实 302 展开（6 条）");
       });
       return res.end();
     }
+    /* 逐跳关键回归：第一跳 Location 带 q=，但后续又 302 到「无坐标的通用首页」。
+       旧实现 redirect:"follow" 只看最终 res.url，会拿到 /home 而返回 NO_COORD；
+       云端 Worker 出口拿到的正是这种落地形态。 */
+    if (req.url.startsWith("/short-q-migrate")) {
+      res.writeHead(302, {
+        location: "/hop-migrate?q=29.600741%2C106.525818%2C%E4%BD%B3%E5%9B%AD%E8%B7%AF2%E5%8F%B7&amap_migrate_retry=1",
+      });
+      return res.end();
+    }
+    if (req.url.startsWith("/hop-migrate")) {
+      res.writeHead(302, { location: "/home" });
+      return res.end();
+    }
+    if (req.url.startsWith("/home")) {
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      return res.end("<html>高德地图 - 在线地图查询｜路线规划｜地点搜索</html>");
+    }
+    /* 302 落到 callAPP 中转页（移动 UA / 云端出口形态） */
+    if (req.url.startsWith("/short-callapp")) {
+      res.writeHead(302, {
+        location: "/callapp?ios=viewMap%3FsourceApplication%3Dfrom_wb%26dev%3D0%26poiname%3Dx%26lat%3D29.600741%26lon%3D106.525818",
+      });
+      return res.end();
+    }
+    if (req.url.startsWith("/callapp")) {
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      return res.end("<html>唤起地图 App</html>");
+    }
     if (req.url.startsWith("/short-q-html")) {
       res.writeHead(302, { location: "/html-q" });
       return res.end();
@@ -312,6 +384,20 @@ console.log("\n真实 302 展开（6 条）");
     "打不开的链接返回 NO_COORD 而不是抛错",
     dead && dead.error === "NO_COORD",
     JSON.stringify(dead)
+  );
+
+  /* 逐跳解析：第一跳 Location 带坐标，后续跳到无坐标首页也必须成功 */
+  const migrated = await expand(new URL(base + "/short-q-migrate"));
+  t(
+    "第一跳带 q=、后续落到无坐标首页仍能取到坐标（逐跳解析，不看最终 URL）",
+    migrated && migrated.lat === 29.600741 && migrated.lng === 106.525818,
+    JSON.stringify(migrated)
+  );
+  const callapp = await expand(new URL(base + "/short-callapp"));
+  t(
+    "302 落到 callAPP 中转页（ios lat/lon）也能取到坐标",
+    callapp && callapp.lat === 29.600741 && callapp.lng === 106.525818,
+    JSON.stringify(callapp)
   );
 
   srv.close();

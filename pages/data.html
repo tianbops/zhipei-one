@@ -126,7 +126,7 @@ function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&l
 /* 全局标准：文本位置统一「X号线」（与 ui-unified.js 的 zpRouteName 同规则，ui-unified 未加载时兜底） */
 function rn(v){const s=String(v??"").trim();if(!s)return"";if(window.zpRouteName)return window.zpRouteName(s)||s;if(/号线$/.test(s))return s;if(/^(\d+)号$/.test(s))return s.replace("号","")+"号线";if(/^\d+路$/.test(s))return s.replace("路","")+"号线";if(/^\d+$/.test(s))return s+"号线";return s}
 function navUrl(v){const u=String(v||"").trim();return /^https?:\/\//i.test(u)?u:""}
-function showDataFeedback(type,message,actionLabel="",action=null){
+function showDataFeedback(type,message,actionLabel="",action=null,sticky=false){
  const el=$("dataFeedback");if(!el)return;
  el.className="data-feedback "+type;el.replaceChildren();
  const text=document.createElement("span");text.textContent=message;el.appendChild(text);
@@ -134,7 +134,8 @@ function showDataFeedback(type,message,actionLabel="",action=null){
   const btn=document.createElement("button");btn.type="button";btn.className="data-feedback-action";btn.textContent=actionLabel;btn.onclick=action;el.appendChild(btn)
  }
  el.hidden=false;clearTimeout(showDataFeedback.timer);
- showDataFeedback.timer=setTimeout(()=>{el.hidden=true},actionLabel?15000:2600)
+ /* 定位失败必须让人看见原因：旧版 2.6 秒就消失，用户只看到「已提交」却全未定位 */
+ if(!sticky)showDataFeedback.timer=setTimeout(()=>{el.hidden=true},actionLabel?15000:2600)
 }
 function downloadDraft(){
  const payload={routeId,baseVersion,exportedAt:new Date().toISOString(),stores:stores.map((s,i)=>({...s,routeOrder:i+1}))};
@@ -183,17 +184,31 @@ function geoOfStore(s){
  return {lat,lng,address:String(s?.address||"")};
 }
 function geoText(g){return g?g.lat.toFixed(6)+", "+g.lng.toFixed(6):""}
-const GEO_REASON={EMPTY:"先粘贴链接或坐标",INVALID_URL:"链接不完整，请检查是否复制全",UNSUPPORTED_HOST:"只认高德链接；百度/腾讯请在高德里搜到这家店后再分享",TIMEOUT:"网络超时，请重试",FETCH_FAILED:"链接打不开，可能已失效",NO_COORD:"这个链接里没有坐标，请用高德的「分享」重新复制"};
+const GEO_REASON={EMPTY:"先粘贴链接或坐标",INVALID_URL:"链接不完整，请检查是否复制全",UNSUPPORTED_HOST:"只认高德链接；百度/腾讯请在高德里搜到这家店后再分享",TIMEOUT:"网络超时，请重试",FETCH_FAILED:"链接打不开，可能已失效",NO_COORD:"这个链接里没有坐标，请用高德的「分享」重新复制",REQUEST_FAILED:"定位服务连接失败"};
+/* 高德 App「分享」到微信/剪贴板常带文案前缀（【高德地图】… / 我在这里…）。
+   只认「整段以 http 开头」会让这类粘贴被静默跳过 —— 提交时不发请求也不报错，
+   43 家门店全部停在「未定位」。这里统一从任意文本里取出第一个链接。 */
+function navUrlOf(v){
+ const s=String(v||"").trim();
+ if(/^https?:\/\//i.test(s))return s.match(/^https?:\/\/[^\s<>"'`）)】\]，,；;]+/i)?.[0]||s;
+ const m=s.match(/https?:\/\/[^\s<>"'`）)】\]，,；;]+/i);return m?m[0]:"";
+}
+function geoReasonText(r){return GEO_REASON[r]||("解析失败（"+String(r||"未知原因")+"）")}
 function setGeoHint(msg,kind){
  const el=$("editGeoHint");if(!el)return;
  if(msg){el.textContent=msg;el.className="data-field-hint"+(kind?" "+kind:"");return}
  if(editGeo){el.textContent="已定位"+(editGeo.address?" · "+editGeo.address:"")+"，保存后司机点门店名可直接导航";el.className="data-field-hint ok";return}
  el.textContent="在高德地图找到这家店 → 分享 → 复制链接 → 粘贴到这里，保存即自动定位";el.className="data-field-hint";
 }
-/* 只有「链接」或「两个小数」才值得发请求；"A栋B1" 这类备注不发外网 */
-function looksResolvable(v){return /^https?:\/\//i.test(v)||/^\d{2,3}\.\d{3,}\s*[,，、\s]\s*\d{1,3}\.\d{3,}$/.test(v)}
+/* 只有「能从文本里取到链接」或「两个小数」才值得发请求；
+   "A栋B1" 这类备注不发外网。带文案的分享文本现在也算可解析。 */
+function looksResolvable(v){return !!navUrlOf(v)||/^\d{2,3}\.\d{3,}\s*[,，、\s]\s*\d{1,3}\.\d{3,}$/.test(v)}
 async function parseGeoTarget(text){
- const r=await api("/api/store/geo",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({routeId,items:[{text}]})});
+ /* 与提交时的 autoLocate 保持一致：只把提取出的纯链接送服务端，
+    文案前缀不进缓存 key，编辑框与提交两条路解析结果一致。
+    纯坐标文本没有链接，原样送去走 fromText。 */
+ const target=navUrlOf(text)||String(text||"").trim();
+ const r=await api("/api/store/geo",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({routeId,items:[{text:target}]})});
  return r.items&&r.items[0];
 }
 /* 一段输入 → 坐标。成功写 editGeo 并刷新提示；失败只提示，不阻断保存
@@ -211,7 +226,7 @@ async function resolveGeo(text){
   try{
    const it=await parseGeoTarget(v);
    if(it&&it.ok){editGeo={lat:it.lat,lng:it.lng,address:it.address||""};geoResolvedFor=v;setGeoHint();return editGeo}
-   editGeo=null;setGeoHint(GEO_REASON[it?.reason]||"没识别出位置，导航仍可用，但会停在搜索结果页","bad");return null
+   editGeo=null;setGeoHint(it?.reason?geoReasonText(it.reason):"没识别出位置，导航仍可用，但会停在搜索结果页","bad");return null
   }catch(e){editGeo=null;setGeoHint("识别失败："+err(e)+"，可保存后再试","bad");return null}
  })();
  geoInflight={text:v,promise};
@@ -315,12 +330,13 @@ $("editSave").onclick=async()=>{
   const btn=$("editSave");btn.disabled=true;
   try{await resolveGeo(navText)}finally{btn.disabled=false}
  }
- const isLink=/^https?:\/\//i.test(navText);
+ /* 带文案的分享文本只留纯链接存（否则整段文案会变成一个打不开的「导航」链接） */
+ const link=navUrlOf(navText);
  let item=editingIndex>=0?stores[editingIndex]:{storeId:"",originalName:"",aliases:[],businessStoreCode:"",routeOrder:stores.length+1};
  item.name=name;if(!item.originalName)item.originalName=name;
  /* 坐标文本不当链接存（否则列表里会渲染出一条打不开的「导航」）；
     纯文字备注原样保留，历史数据里 navigation 可能就是门牌描述 */
- item.navigation=isLink?navText:(editGeo?"":navText);
+ item.navigation=link||(editGeo?"":navText);
  item.note=$("editNote").value.trim();
  item.lat=editGeo?editGeo.lat:null;item.lng=editGeo?editGeo.lng:null;item.address=editGeo?(editGeo.address||""):"";
  item.aliases=editAliases;
@@ -390,23 +406,27 @@ $("saveStoresTop").onclick=async()=>submitStores();
    管理员只需要粘贴链接，解析是保存过程的一部分，不是额外操作。
    只改内存里的暂存数据，落库仍是 submitStores 的 PUT，不绕过「先预览再提交」。 */
 async function autoLocate(list,onProgress){
- const targets=(list||[]).filter(s=>!geoOfStore(s)&&/^https?:\/\//i.test(String(s?.navigation||"").trim()));
- if(!targets.length)return{ok:0,fail:[]};
- let ok=0;const fail=[];
+ /* 带文案的分享文本也要认：navUrlOf 会取出其中的链接 */
+ const targets=(list||[]).filter(s=>!geoOfStore(s)&&!!navUrlOf(s?.navigation));
+ if(!targets.length)return{ok:0,fail:[],reasons:{}};
+ let ok=0;const fail=[],reasons={};
+ const bump=r=>{const k=r||"UNKNOWN";reasons[k]=(reasons[k]||0)+1};
  /* 服务端单次上限 10 条（Cloudflare subrequest 配额），这里必须同尺寸分片 */
  for(let k=0;k<targets.length;k+=10){
   const chunk=targets.slice(k,k+10);
   try{
-   const r=await api("/api/store/geo",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({routeId,items:chunk.map(x=>({text:x.navigation}))})});
+   const r=await api("/api/store/geo",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({routeId,items:chunk.map(x=>({text:navUrlOf(x.navigation)}))})});
    (r.items||[]).forEach((it,j)=>{const s=chunk[j];if(!s)return;
     if(it&&it.ok){s.lat=it.lat;s.lng=it.lng;s.address=it.address||"";ok++}
-    else fail.push(s.name||"未命名门店");
+    else{fail.push(s.name||"未命名门店");bump(it?.reason)}
    });
-  }catch(e){chunk.forEach(s=>fail.push(s.name||"未命名门店"))}
+   /* 接口返回的条数不足时，缺的那些也算失败，别静默当成成功 */
+   if((r.items||[]).length<chunk.length){for(let j=(r.items||[]).length;j<chunk.length;j++){fail.push(chunk[j].name||"未命名门店");bump("REQUEST_FAILED")}}
+  }catch(e){chunk.forEach(s=>fail.push(s.name||"未命名门店"));bump("REQUEST_FAILED")}
   if(onProgress)onProgress(Math.min(k+10,targets.length),targets.length);
   if(k+10<targets.length)await new Promise(r=>setTimeout(r,120));
  }
- return{ok,fail};
+ return{ok,fail,reasons};
 }
 async function shareSavedBase(){
  try{
@@ -437,20 +457,36 @@ async function submitStores(){
   stores.forEach((s,i)=>s.routeOrder=i+1);
   /* 保存即定位：先把「有高德链接但没坐标」的门店补齐，再落库。
      这一步取代了原来的「批量定位」按钮 —— 管理员只粘贴链接，不必记得去点解析。 */
-  const pending=stores.filter(s=>!geoOfStore(s)&&/^https?:\/\//i.test(String(s.navigation||"").trim())).length;
-  let located=0,fail=[];
+  const pending=stores.filter(s=>!geoOfStore(s)&&!!navUrlOf(s.navigation)).length;
+  /* 填了「导航地址」但里面根本没有链接（纯文字地址 / 备注）：这些永远不会被解析，
+     旧版连一句提示都没有，管理员只看到「提交成功」却全部「未定位」。 */
+  const noLink=stores.filter(s=>!geoOfStore(s)&&String(s.navigation||"").trim()&&!navUrlOf(s.navigation)).length;
+  let located=0,fail=[],reasons={};
   if(pending&&canMaintain){
    btn.textContent="定位中…";
    showDataFeedback("success","正在为 "+pending+" 家门店识别位置…");
    const r=await autoLocate(stores,(done,total)=>{if(done<total)showDataFeedback("success","正在识别位置 "+done+"/"+total+"…")});
-   located=r.ok;fail=r.fail;
+   located=r.ok;fail=r.fail;reasons=r.reasons||{};
    if(located)render();
   }
   const d=await api("/api/base",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({routeId,expectedVersion:baseVersion,stores})});
   stores=Array.isArray(d.base?.stores)?d.base.stores:stores;baseVersion=Number(d.base?.version)||baseVersion;dataBaseline=JSON.stringify(stores);render();
   $("summary").innerHTML="<strong>"+stores.length+"家</strong>";
-  /* 反馈要如实说清补了几家、几家没取到 —— 没取到的那几家，导航会停在搜索结果页 */
-  showDataFeedback("success","数据更新成功"+(located?"，已自动定位 "+located+" 家":"")+(fail.length?"；"+fail.length+" 家没取到位置："+fail.slice(0,2).join("、")+(fail.length>2?" 等":""):""));
+  /* 反馈要如实说清补了几家、几家没取到，以及「为什么没取到」。
+     失败原因常驻不自动消失，并提供一键重试 —— 旧版只说「N 家没取到位置」，
+     2.6 秒后消失，管理员完全不知道是链接格式不对、短链失效还是服务异常。 */
+  const detail=Object.keys(reasons).sort((a,b)=>reasons[b]-reasons[a])
+   .map(k=>geoReasonText(k)+(reasons[k]>1?" ×"+reasons[k]:"")).slice(0,3).join("；");
+  const names=fail.slice(0,2).join("、")+(fail.length>2?" 等":"");
+  if(fail.length){
+   showDataFeedback("error","数据更新成功，但 "+fail.length+" 家没能定位（"+names+"）："+(detail||"原因未知")+"。请确认粘贴的是高德「分享」链接，或点右侧重试。","重新识别",()=>submitStores(),true);
+  }else if(pending&&!canMaintain){
+   showDataFeedback("error","有 "+pending+" 家门店填了链接但没有维护权限，未做定位","","",true);
+  }else if(noLink){
+   showDataFeedback("error","数据更新成功，但 "+noLink+" 家「导航地址」里不是链接（是文字地址或备注），无法解析坐标。请在高德地图搜到这家店 → 分享 → 复制链接后粘贴。","","",true);
+  }else{
+   showDataFeedback("success","数据更新成功"+(located?"，已自动定位 "+located+" 家":""));
+  }
  }catch(e){
    if(e.code==="BASE_VERSION_CONFLICT"){
     baseVersionConflict=true;
