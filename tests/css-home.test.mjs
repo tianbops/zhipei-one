@@ -70,9 +70,9 @@ assert.ok(/--zp-card-edge:transparent/.test(baseCss), "浅色卡片描边必须�
 assert.ok(/--zp-block-raised:#F3F3F3/.test(baseCss), "摘要块隆起色缺失：纯数字板块需要一块比白底深一档的底");
 assert.ok(/--zp-block:#161616/.test(themeCss), "深色块色必须与页面底同色（#161616）");
 assert.ok(/--zp-card-edge:transparent/.test(themeCss), "深色卡片描边必须透明（否则同色底上勾出空心框）");
-assert.ok(/--zp-nav-bg:var\(--zp-surface\)/.test(themeCss), "深色浮岛必须取 --zp-surface，不能跟 --zp-block 一起融进背景");
+assert.ok(/--zp-nav-bg:var\(--zp-block-raised\)/.test(themeCss), "深色浮岛必须取 --zp-block-raised（与摘要块同色），不能跟 --zp-block 一起融进背景");
 assert.ok(/--zp-block-raised:#292929/.test(themeCss), "深色摘要块隆起色缺失（应对应浅色 #F3F3F3 的深色一档）");
-assert.ok(bundleCss.includes("--zp-block:#161616") && bundleCss.includes("--zp-nav-bg:var(--zp-surface)"),
+assert.ok(bundleCss.includes("--zp-block:#161616") && bundleCss.includes("--zp-nav-bg:var(--zp-block-raised)") && bundleCss.includes("--zp-nav-bg:var(--zp-block-raised)"),
   "home.bundle.css 未包含最新令牌值，请运行 node scripts/build-home-bundle.mjs");
 assert.ok(bundleCss.lastIndexOf("--zp-block:#FFFFFF") < bundleCss.indexOf("--zp-block:#161616"),
   "浅色块色必须定义在深色覆盖之前（同优先级后者胜）");

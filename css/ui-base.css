@@ -198,9 +198,11 @@
   --zp-logo-plate:#05070A;
   /* 底部一级导航（品牌导航条）令牌组。
      2026-11-04 浮岛化：底栏从贴边条改为悬浮圆角胶囊（见 .zp-nav）。
-     浅色浮岛取 --zp-surface(#FFFFFF) 靠投影浮起；深色纯黑底上投影不可见，
-     故改取 --zp-block(#1D1D1D)，靠「比页面底亮一档」浮起（见 ui-theme.css）。 */
-  --zp-nav-bg:var(--zp-surface);
+     2026-11-06 定稿（用户）：浮岛表面与「日期 / 家数·吨位」摘要块同色 ——
+     两者都是「从页面里浮出来的一层」，同用一个 --zp-block-raised(#F3F3F3)，
+     不再取 --zp-surface(#FFFFFF)。白岛在同白页面底上只能靠 1px 描边撑着，
+     换成浅灰实色后与摘要块同一套语言，深浅两侧也对称（深色见 ui-theme.css）。 */
+  --zp-nav-bg:var(--zp-block-raised);
   --zp-nav-text:#666666;
   --zp-nav-text-active:#000000;
   /* 浮岛表面材质（2026-11-05 五版，用户定稿「A · 纯白不透明」）。
