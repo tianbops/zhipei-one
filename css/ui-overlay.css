@@ -328,9 +328,12 @@ textarea:disabled,
 @media(prefers-reduced-motion:reduce){.zp-mn-bg,.zp-mn-sheet{animation:none}}
 /* 标题居中：左右各留 56px 给关闭按钮，保证省略号两侧对称、不压角标 */
 .zp-mn-sheet:focus{outline:none}
-.zp-mn-head{position:relative;padding:10px 56px;border-bottom:1px solid var(--zp-line);text-align:center}
-.zp-mn-title{color:var(--zp-text);font-size:var(--zp-fs-16);font-weight:var(--zp-fw-bold);line-height:22px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.zp-mn-close{position:absolute;top:10px;right:10px;width:44px;height:44px;border:0;background:none;color:var(--zp-muted);font-size:var(--zp-fs-16);border-radius:var(--zp-r-mini);cursor:pointer;-webkit-appearance:none;appearance:none}
+.zp-mn-head{position:relative;display:flex;align-items:center;justify-content:center;padding:10px 56px;border-bottom:1px solid var(--zp-line);text-align:center}
+.zp-mn-title{flex:1 1 auto;min-width:0;color:var(--zp-text);font-size:var(--zp-fs-16);font-weight:var(--zp-fw-bold);line-height:22px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 关闭按钮与标题同一条水平中线：头高只有 42px（22px 标题 + 上下 10px），
+   原先 top:10px + 44px 热区让图标中心比文字中心低 11px；改为 50% 居中、
+   热区收到 40px，既不压到下方选项行，也保持单排布局不被撑高。 */
+.zp-mn-close{position:absolute;top:50%;right:10px;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:40px;height:40px;line-height:1;border:0;background:none;color:var(--zp-muted);font-size:var(--zp-fs-16);border-radius:var(--zp-r-mini);cursor:pointer;-webkit-appearance:none;appearance:none}
 .zp-mn-close:active{background:var(--zp-surface-2)}
 .zp-mn-list{overflow:auto;-webkit-overflow-scrolling:touch;padding:2px 8px 6px}
 /* 三个选项居中并列：字号统一、行高一致，靠细分割线区分，不再用箭头与说明 */
