@@ -360,8 +360,11 @@
     document.body.appendChild(bg);
     document.body.classList.add("zp-mn-open");
     sheet = bg;
-    var first = list.querySelector(".zp-mn-row");
-    if (first && first.focus) { try { first.focus({ preventScroll: true }); } catch (e) {} }
+    /* 聚焦弹层本身，不聚焦第一个选项：脚本聚焦会让「高德地图」带上
+       focus-visible 描边，看起来像默认选中了它，触摸场景是误导。
+       聚焦 dialog 后读屏仍先读标题，键盘 Tab 依旧能进入选项。 */
+    box.setAttribute("tabindex", "-1");
+    try { box.focus({ preventScroll: true }); } catch (e) {}
     return true;
   }
 

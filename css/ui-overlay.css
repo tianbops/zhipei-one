@@ -327,6 +327,7 @@ textarea:disabled,
 .zp-mn-sheet{position:relative;width:min(100%,560px);max-height:86dvh;display:flex;flex-direction:column;background:var(--zp-surface);border:1px solid var(--zp-line);border-radius:var(--zp-r-sheet) var(--zp-r-sheet) 0 0;box-shadow:0 18px 50px var(--zp-shadow-lg);padding:8px 0 calc(10px + env(safe-area-inset-bottom));animation:zpModalIn .16s ease-out}
 @media(prefers-reduced-motion:reduce){.zp-mn-bg,.zp-mn-sheet{animation:none}}
 /* 标题居中：左右各留 56px 给关闭按钮，保证省略号两侧对称、不压角标 */
+.zp-mn-sheet:focus{outline:none}
 .zp-mn-head{position:relative;padding:10px 56px;border-bottom:1px solid var(--zp-line);text-align:center}
 .zp-mn-title{color:var(--zp-text);font-size:var(--zp-fs-16);font-weight:var(--zp-fw-bold);line-height:22px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* 仅「未绑定坐标」时出现，正常态没有第二行 */
