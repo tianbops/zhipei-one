@@ -9,9 +9,14 @@ overlay.addEventListener("click",e=>{if(e.target===overlay)closeOverlay()});
 confirmBtn.onclick=async()=>{if(!pendingDelete)return;const job=pendingDelete;confirmBtn.disabled=true;confirmBtn.textContent="删除中…";try{if(job.type==="date")await deleteDate(job.key);else await deleteMonth(job.key);closeDialog();toast("已移入回收站，7天内可在回收站恢复");await load()}catch(e){confirmBtn.disabled=false;confirmBtn.textContent="确定";if(e?.offlineQueued){closeDialog();toast(e.message||"已登记，联网后自动删除")}else{dialogText.textContent=e.message||"删除失败，请稍后重试"}}};
 // 回收站
 async function renderTrash(){
-  const r=await zpFetch("/api/history-trash",{credentials:"same-origin",cache:"no-store"});
+  const [r,rs]=await Promise.all([
+    zpFetch("/api/history-trash",{credentials:"same-origin",cache:"no-store"}),
+    zpFetch("/api/history-trash?type=superseded",{credentials:"same-origin",cache:"no-store"}).catch(()=>null),
+  ]);
   const d=await r.json().catch(()=>null);
   if(!r.ok||!d?.success)throw new Error(d?.error||"回收站读取失败");
+  const sup=rs?await rs.json().catch(()=>null):null;
+  const supItems=(sup&&sup.success&&sup.supported&&Array.isArray(sup.items))?sup.items:[];
   const items=Array.isArray(d.items)?d.items:[];
   let html="<strong>回收站</strong><p class='history-overlay-hint'>已删除的历史运单在此保留 7 天，到期自动清除。</p>";
   if(!items.length){
@@ -21,10 +26,20 @@ async function renderTrash(){
       const left=it.ttl>0?Math.max(1,Math.ceil(it.ttl/86400)):0;
       html+="<div class='history-trash-item'><div class='history-trash-meta'><strong>"+esc(it.date||"")+"</strong><span>"+esc(window.zpRouteName?window.zpRouteName(it.routeName||""):(it.routeName||""))+" · "+Number(it.storeCount||0)+"家</span><small>剩余约 "+left+" 天</small></div><div class='history-dialog-actions'><button type='button' class='history-trash-restore' data-id='"+esc(it.id)+"'>恢复</button><button type='button' class='history-trash-purge' data-id='"+esc(it.id)+"'>彻底删除</button></div></div>";
     }
-    html+="<div class='history-dialog-actions'><button type='button' id='historyOverlayClose'>关闭</button></div>";
   }
+  /* 被合并的运单：曾被「同日同车重传」规则隐藏（不在任何索引里，只能从主表查）。
+     2026-11-06 起规则已改为一处不一致即不同运单，这里列出的是历史遗留；恢复后
+     当天变回多单，历史显示「N次」、首页出现切页。 */
+  if(supItems.length){
+    html+="<hr class='history-divider'><strong>被合并的运单</strong><p class='history-overlay-hint'>以下运单曾被当作重复上传合并（已从历史隐藏）。若实际是同一天的两趟，可恢复。</p>";
+    for(const it of supItems){
+      html+="<div class='history-trash-item'><div class='history-trash-meta'><strong>"+esc(it.date||"")+"</strong><span>"+esc(it.vehicle||"未记录车牌")+" · "+Number(it.storeCount||0)+"家 · "+Number(it.totalWeight||0).toFixed(3)+"t</span><small>已合并，如属实际两趟可恢复</small></div><div class='history-dialog-actions'><button type='button' class='history-superseded-restore' data-id='"+esc(it.id)+"'>恢复这张</button></div></div>";
+    }
+  }
+  html+="<div class='history-dialog-actions'><button type='button' id='historyOverlayClose'>关闭</button></div>";
   overlayPanel.innerHTML=html;overlay.hidden=false;
 }
+async function doSupersededRestore(t){const id=t.dataset.id;if(!id)return;if(!(window.zpConfirm?await window.zpConfirm("恢复运单","恢复后这一天将变回两单，家数与重量按两张累加。确定恢复吗？","恢复"):confirm("恢复后这一天将变回两单，确定恢复吗？")))return;t.disabled=true;t.textContent="恢复中…";try{const r=await fetch("/api/history-trash?type=superseded&id="+encodeURIComponent(id),{method:"POST",credentials:"same-origin"});const d=await r.json().catch(()=>null);if(!r.ok||!d?.success)throw new Error(d?.error||"恢复失败");toast(d.message||"已恢复");await renderTrash();await load()}catch(e){t.disabled=false;t.textContent="恢复这张";toast(e.message||"恢复失败")}}
 async function doTrashAction(t){const id=t.dataset.id,restore=t.classList.contains("history-trash-restore");if(!restore&&!await confirmPurge())return;t.disabled=true;try{const r=await fetch("/api/history-trash?id="+encodeURIComponent(id),{method:restore?"POST":"DELETE",credentials:"same-origin"});const d=await r.json().catch(()=>null);if(!r.ok||!d?.success)throw new Error(d?.error||"操作失败");toast(restore?"已恢复":"已彻底删除");await renderTrash();await load()}catch(e){t.disabled=false;toast(e.message||"操作失败")}}
 const confirmPurge=async()=>window.zpConfirm?await window.zpConfirm("彻底删除","彻底删除后将无法找回，确定吗？","彻底删除"):confirm("彻底删除后无法找回，确定吗？");
 // 导出
@@ -34,7 +49,7 @@ async function doExport(t){const fmt=document.getElementById("historyExportForma
 function renderLookup(){let html="<strong>客户快查</strong><p class='history-overlay-hint'>输入手机号、姓名或地址，找回该客户最近一次配送信息。</p><div class='history-lookup-row'><input id='historyLookupInput' type='search' maxlength='80' placeholder='手机号 / 姓名 / 地址' autocomplete='off'><button type='button' id='historyLookupDo'>查</button></div><div id='historyLookupResult' class='history-lookup-result'></div><div class='history-dialog-actions'><button type='button' id='historyOverlayClose'>关闭</button></div>";overlayPanel.innerHTML=html;overlay.hidden=false;const inp=document.getElementById("historyLookupInput");inp?.focus();inp?.addEventListener("keydown",ev=>{if(ev.key==="Enter")document.getElementById("historyLookupDo").click()})}
 async function doLookup(t){const inp=document.getElementById("historyLookupInput");const q=(inp?.value||"").trim();const res=document.getElementById("historyLookupResult");if(!q){res.textContent="请输入查询内容";return}res.textContent="查询中…";try{const r=await zpFetch("/api/history-lookup?q="+encodeURIComponent(q),{credentials:"same-origin",cache:"no-store"});const d=await r.json().catch(()=>null);if(!r.ok||!d?.success)throw new Error(d?.error||"查询失败");if(!d.found){res.innerHTML="<p class='history-overlay-empty'>未找到该客户的历史记录</p>";return}const m=d.match;let html="<div class='history-lookup-card'>";html+="<div class='history-lookup-line'><span>日期</span><b>"+esc(m.date||"")+"</b></div>";html+="<div class='history-lookup-line'><span>线路</span><b>"+esc(window.zpRouteName?window.zpRouteName(m.routeName||""):(m.routeName||""))+"</b></div>";if(m.customerName)html+="<div class='history-lookup-line'><span>客户</span><b>"+esc(m.customerName)+"</b></div>";if(m.phone)html+="<div class='history-lookup-line'><span>电话</span><b>"+esc(m.phone)+"</b></div>";if(m.address)html+="<div class='history-lookup-line'><span>地址</span><b>"+esc(m.address)+"</b></div>";html+="<div class='history-lookup-stores'><strong>门店（"+Number(m.storeCount||0)+"家）</strong>";for(const s of (m.stores||[])){html+="<div class='history-lookup-store'><span>"+esc(s.name||"")+"</span>"+(s.phone?"<small>"+esc(s.phone)+"</small>":"")+(s.address?"<small>"+esc(s.address)+"</small>":"")+"</div>"}html+="</div></div>";if(d.hitCount>1)html+="<p class='history-overlay-hint'>共匹配 "+d.hitCount+" 条，已显示最近一条</p>";res.innerHTML=html}catch(e){res.textContent=e.message||"查询失败"}}
 // 统一浮层点击分发
-overlayPanel.addEventListener("click",async e=>{const t=e.target;if(t.id==="historyOverlayClose"){closeOverlay();return}if(t.id==="historyExportDo")return doExport(t);if(t.id==="historyLookupDo")return doLookup(t);if(t.classList.contains("history-trash-restore")||t.classList.contains("history-trash-purge"))return doTrashAction(t)});
+overlayPanel.addEventListener("click",async e=>{const t=e.target;if(t.id==="historyOverlayClose"){closeOverlay();return}if(t.id==="historyExportDo")return doExport(t);if(t.id==="historyLookupDo")return doLookup(t);if(t.classList.contains("history-trash-restore")||t.classList.contains("history-trash-purge"))return doTrashAction(t);if(t.classList.contains("history-superseded-restore"))return doSupersededRestore(t)});
 document.getElementById("historyTrashBtn")?.addEventListener("click",()=>renderTrash().catch(e=>toast(e.message||"回收站打开失败")));
 document.getElementById("historyExportBtn")?.addEventListener("click",renderExport);
 document.getElementById("historyLookupBtn")?.addEventListener("click",renderLookup);

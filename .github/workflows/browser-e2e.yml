@@ -91,6 +91,10 @@ jobs:
         env:
           CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
         run: node tests/e2e-today-multi-order.cjs
+      - name: Verify merged waybills can be restored from history trash
+        env:
+          CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
+        run: node tests/e2e-history-superseded.cjs
       - name: Verify swiping right never deletes a store
         env:
           CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
