@@ -733,6 +733,12 @@ body {
      故 --zp-card-edge 浅色保留 #E4E4E4（深色取 transparent，见 ui-theme.css）。 */
   --zp-bg:#FFFFFF;
   --zp-block:#FFFFFF;
+  /* 2026-11-06（用户实测）：拍平后的例外出口。内容块默认与页面底同色，
+     但「纯数字摘要块」没有列表行线可依托，拍平后就只剩几行字浮在页面上，
+     读不出这是一个板块（运单详情顶部的「日期 / 22 家 · 1.151 t」）。
+     这类块主动隆起一档，取改前的块色 #F3F3F3；深色见 ui-theme.css #292929。
+     只给摘要类板块用，不要回灌到列表卡上，否则等于把全局拍平撤销。 */
+  --zp-block-raised:#F3F3F3;
   --zp-surface:#FFFFFF;
   --zp-surface-2:#E9E9E9;
   --zp-surface-3:#DFDFDF;
@@ -2129,6 +2135,9 @@ textarea:disabled,
      浅色同一条规则（见 ui-base.css）。 */
   --zp-bg:#161616;
   --zp-block:#161616;
+  /* 拍平后的例外出口，浅色见 ui-base.css（同值 #F3F3F3 的深色对应 = 改前块色）。
+     纯数字摘要块没有行线可依托，必须有自己的一块底才算「一个板块」。 */
+  --zp-block-raised:#292929;
   /* 浮层比块再亮一档：若与块同色，弹窗/下拉压在卡片上会糊成一片。 */
   --zp-surface:#303030;
   --zp-surface-2:#363636;

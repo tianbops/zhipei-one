@@ -9,7 +9,7 @@
  *   - 图片/字体       ：stale-while-revalidate（内容基本不变，秒开优先）
  * 资产缓存键用完整 URL（含 ?v=）精确匹配；页面缓存键用 pathname 规整（忽略 ?from 等查询）。
  */
-const VERSION = "zp-pwa-439";
+const VERSION = "zp-pwa-440";
 const STATIC_CACHE = VERSION + "-static";
 const PAGES_CACHE = VERSION + "-pages";
 const OFFLINE_URL = "/offline";
@@ -47,14 +47,14 @@ const PRECACHE = [
   "/css/history-nav.css?v=5e4af223",
   "/css/history-overlays.css?v=f53ed5ee",
   "/css/history-shell.css?v=756b8f74",
-  "/css/home.bundle.css?v=c54183fd",
+  "/css/home.bundle.css?v=fbe0e383",
   "/css/mobile-ui.css?v=5b4b9894",
   "/css/offline.css?v=3250fc93",
-  "/css/order_detail.css?v=c4babff1",
-  "/css/ui-base.css?v=e6ce4499",
+  "/css/order_detail.css?v=bd175181",
+  "/css/ui-base.css?v=2da4428f",
   "/css/ui-overlay.css?v=4a2d2981",
   "/css/ui-shell.css?v=8537d8fb",
-  "/css/ui-theme.css?v=fa5f7d20",
+  "/css/ui-theme.css?v=ac2809b5",
   "/css/zp-picker.css?v=a9e915c4",
   "/js/account-online-recovery.js?v=73bd8abb",
   "/js/admin/account.js?v=28c05d19",
