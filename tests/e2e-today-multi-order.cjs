@@ -244,9 +244,31 @@ const SNAP = `(()=>{
   })()`);
   console.log('scroll ' + JSON.stringify(scrollInfo));
   check('25 行时名单页内可滚（内容溢出）', scrollInfo && scrollInfo.overflow > 100, scrollInfo && String(scrollInfo.overflow));
-  check('名单内滚后摘要/插画位置不动', scrollInfo && scrollInfo.after.sum === scrollInfo.before.sum, scrollInfo && (scrollInfo.before.sum + ' -> ' + scrollInfo.after.sum));
-  check('名单内滚后多单 tab 位置不动', scrollInfo && scrollInfo.after.tab === scrollInfo.before.tab, scrollInfo && (scrollInfo.before.tab + ' -> ' + scrollInfo.after.tab));
   check('滚动发生在名单页内（scrollTop 生效）', scrollInfo && scrollInfo.after.top > 0, scrollInfo && String(scrollInfo.after.top));
+
+  /* 2026-11-06 定稿：浏览下方内容时浮岛收起（把 150px 让给列表），
+     回看上方时弹出。收起会同步补偿 scrollTop，所以列表内容不会整体上跳。 */
+  const headToggle = await ev(`(async()=>{
+    const main=document.querySelector('main.home-app');
+    const page=document.querySelector('.today-page[data-i="0"]');
+    const list=document.getElementById('todayStoreList');
+    const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
+    /* 先从任意状态复位：显式展开 + 回顶，避免上一条用例留下的收起态干扰 */
+    try{window.zpHeadShow&&window.zpHeadShow()}catch(e){}
+    await wait(320); page.scrollTop=0; await wait(260);
+    const before={hidden:main.classList.contains('is-head-hidden'),listH:Math.round(list.getBoundingClientRect().height)};
+    const y0=page.scrollTop;
+    page.scrollTop=420; await wait(380);
+    const off={hidden:main.classList.contains('is-head-hidden'),listH:Math.round(list.getBoundingClientRect().height),st:Math.round(page.scrollTop)};
+    page.scrollTop=Math.max(0,off.st-90); await wait(380);
+    const on={hidden:main.classList.contains('is-head-hidden'),listH:Math.round(list.getBoundingClientRect().height)};
+    return {before,off,on,y0};
+  })()`);
+  console.log('head ' + JSON.stringify(headToggle));
+  check('向下滚名单收起浮岛', headToggle && headToggle.before.hidden === false && headToggle.off.hidden === true, JSON.stringify(headToggle));
+  check('收起后列表高度增加（把空间让给门店）', headToggle && headToggle.off.listH > headToggle.before.listH + 100, headToggle && (headToggle.before.listH + ' -> ' + headToggle.off.listH));
+  check('向上滚名单弹出浮岛', headToggle && headToggle.on.hidden === false, JSON.stringify(headToggle));
+  check('弹出后列表高度回到原值', headToggle && Math.abs(headToggle.on.listH - headToggle.before.listH) <= 2, headToggle && String(headToggle.on.listH));
 
   /* 2026-11-06 用户录屏「固定没实现」：真手指上滑到名单底部后，滚动链会把
      外层 .zp-scroll 一起带走（实测 226px，摘要 top 从 148 漂到 -78），
@@ -271,7 +293,9 @@ const SNAP = `(()=>{
     return {sum:r(document.querySelector('.task-main')),tab:r(document.getElementById('todayTabs')),
       pageTop:p?Math.round(p.scrollTop):null,pageMax:p?Math.round(p.scrollHeight-p.clientHeight):null,
       outerTop:outer?Math.round(outer.scrollTop):0,outerMax:outer?Math.round(outer.scrollHeight-outer.clientHeight):0,
-      mark:p?p.classList.contains('is-scrollable'):false};
+      mark:p?p.classList.contains('is-scrollable'):false,
+      hidden:document.querySelector('main.home-app').classList.contains('is-head-hidden'),
+      listH:Math.round(document.getElementById('todayStoreList').getBoundingClientRect().height)};
   })()`;
   await sleep(300);   /* 等 MutationObserver 打完 .is-scrollable */
   const headBefore = await ev(HEAD_PROBE);
@@ -281,8 +305,10 @@ const SNAP = `(()=>{
   check('可滚名单被标记 .is-scrollable（滚动链才切断）', headBefore && headBefore.mark === true, headBefore && String(headBefore.mark));
   check('手指连滑 3 次后名单到底', headAfter && headAfter.pageMax > 0 && headAfter.pageTop === headAfter.pageMax, headAfter && (headAfter.pageTop + '/' + headAfter.pageMax));
   check('名单到底后外层不被连带滚动', headAfter && headAfter.outerTop === 0, headAfter && (headAfter.outerTop + '/' + headAfter.outerMax));
-  check('触摸滚动后摘要 top 不动', headBefore && headAfter && headBefore.sum === headAfter.sum, headBefore && (headBefore.sum + ' -> ' + (headAfter && headAfter.sum)));
-  check('触摸滚动后 tab top 不动', headBefore && headAfter && headBefore.tab === headAfter.tab, headBefore && (headBefore.tab + ' -> ' + (headAfter && headAfter.tab)));
+  /* 2026-11-06 定稿：手指连滑 3 次 = 一直在往下看 → 浮岛收起（摘要/tab 随之滑出），
+     把 150px 让给名单；这里钉的是「收起确实发生」，不是「位置不动」。 */
+  check('触摸连滑后浮岛收起', headBefore && headAfter && headBefore.hidden === false && headAfter.hidden === true, headBefore && (headBefore.hidden + ' -> ' + (headAfter && headAfter.hidden)));
+  check('触摸连滑后名单多出约 150px 可视高度', headBefore && headAfter && headAfter.listH - headBefore.listH >= 140, headBefore && (headBefore.listH + ' -> ' + (headAfter && headAfter.listH)));
 
   const shot = await C('Page.captureScreenshot', { format: 'png', clip: { x: 0, y: 0, width: 390, height: 620, scale: 2 } });
   fs.writeFileSync(path.join(OUT_DIR, 'today-multi-order.png'), Buffer.from(shot.data, 'base64'));

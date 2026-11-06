@@ -71,12 +71,48 @@ console.log("首页今日配送一屏内滚契约（基础段 8 条）");
   t("名单区基础段 overflow:hidden（只裁横向相邻页，纵向滚动不在这一层）",
     !!list && /overflow:hidden/.test(list), list);
 
-  /* 四条头是同一个规则组（逗号选择器），单独取某一条拿不到声明，故整组匹配。 */
-  const heads = /\.task-card > \.today-tabs,\s*main\.home-app \.task-card > \.today-metrics\{flex:0 0 auto\}/.test(BASE)
+  /* 三条头是同一个规则组（逗号选择器），单独取某一条拿不到声明，故整组匹配。
+     2026-11-06 定稿：标题/摘要/tab 已从 .task-card 直接子级搬进 .zp-head-island。 */
+  const heads = /main\.home-app \.zp-head-island \.task-title,\s*main\.home-app \.zp-head-island \.task-main,\s*main\.home-app \.zp-head-island \.today-tabs\{flex:0 0 auto\}/.test(BASE)
     ? "flex:0 0 auto" : null;
-  t("固定头（标题/摘要/tab/指标）flex:0 0 auto，不被 flex 压缩",
-    !!heads &&
-    /\.task-card > \.task-title,/.test(BASE) && /\.task-card > \.task-main,/.test(BASE), heads);
+  t("浮岛内三段（标题/摘要/tab）flex:0 0 auto，不被 flex 压缩",
+    !!heads, heads);
+}
+
+console.log("\n浮岛收放契约（9 条）");
+{
+  /* 用户定稿：品牌不入浮岛；数据区独立成浮岛，下滑隐藏、上滑弹出；
+     门店去浮岛（无圆角/无底色，直接铺页面）。 */
+  const wrap = rule(BASE, "main.home-app .zp-head-wrap");
+  t("浮岛外壳高度取 --zp-head-h（JS 量出的自然高，单/多单自动适配）",
+    !!wrap && /height:var\(--zp-head-h/.test(wrap), wrap);
+  t("浮岛外壳高度不加过渡（与 scrollTop 补偿必须同帧，否则列表先跳后回）",
+    !!wrap && !/transition:\s*height/.test(wrap), wrap);
+
+  const offWrap = rule(CSS, "main.home-app.is-head-hidden .zp-head-wrap");
+  t("收起态外壳高度收到 10px（留着放把手线）",
+    !!offWrap && /height:10px/.test(offWrap), offWrap);
+
+  const island = rule(BASE, "main.home-app .zp-head-island");
+  t("浮岛绝对定位 + z-index:2（盖在列表之上，滑出时遮住列表的瞬时上移）",
+    !!island && /position:absolute/.test(island) && /z-index:2/.test(island), island);
+  t("浮岛只在 transform 上做过渡（滑动由它承担）",
+    !!island && /transition:transform/.test(island), island);
+
+  const offIsland = rule(CSS, "main.home-app.is-head-hidden .zp-head-island");
+  t("收起态浮岛 translateY(-100%) 滑出卡片顶边",
+    !!offIsland && /transform:translateY\(-100%\)/.test(offIsland), offIsland);
+
+  const handle = rule(BASE, "main.home-app .zp-head-handle");
+  t("把手线默认透明、收起后可见（提示可上滑唤出）",
+    !!handle && /opacity:0/.test(handle) &&
+    /\.is-head-hidden \.zp-head-handle\{opacity:\.42/.test(CSS), handle);
+
+  const list = rule(BASE, "main.home-app .today-store-list");
+  t("门店区去浮岛：无背景、无描边、无圆角",
+    !!list && !/background:/.test(list) && !/border:/.test(list) && !/border-radius/.test(list), list);
+  t("门店左右缩进放在页内（列表容器 clientWidth 是轨道位移基准，不能带 padding）",
+    !!list && /padding:0;/.test(list) && /\.today-page\{padding:0 12px\}/.test(CSS), list);
 }
 
 console.log("\n名单页内滚动契约（5 条）");
@@ -143,6 +179,20 @@ console.log("\n高度同步 JS 契约（5 条）");
     /zpMarkTodayScrollable\(\);\s*\n\s*if\(todayStoreList\.classList\.contains\("is-empty"\)\)/.test(JS));
   t("行情变化由 MutationObserver 兜住（克隆/换行等不走高度同步路径时也重算）",
     /new MutationObserver\([\s\S]{0,240}?zpMarkTodayScrollable/.test(JS));
+}
+
+console.log("\n浮岛收放 JS 契约（5 条）");
+{
+  t("对外暴露 zpHeadShow（切单/切 tab 时强制弹回）",
+    /window\.zpHeadShow\s*=/.test(JS));
+  t("切单路径调用 zpHeadShow（go 内，切完能看到换成了哪一单）",
+    /zpSetTodaySelId\(list\[i\]\.id\);[\s\S]{0,200}?zpHeadShow/.test(JS));
+  t("收起时补偿 scrollTop（内容原地不动，否则门店整体上跳 150px）",
+    /page\.scrollTop=page\.scrollTop-s/.test(JS));
+  t("补偿后锁方向判定 280ms（否则补偿触发的 scroll 被当成反向手势，来回抖死循环）",
+    /lockUntil=Date\.now\(\)\+280/.test(JS) && /Date\.now\(\)<lockUntil/.test(JS));
+  t("滚动监听用 capture 且只认 .today-page（scroll 不冒泡，必须捕获）",
+    /\{capture:true,passive:true\}/.test(JS) && /classList\.contains\("today-page"\)/.test(JS));
 }
 
 console.log("\nfit.js 契约（3 条）");

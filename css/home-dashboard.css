@@ -121,80 +121,139 @@ main.home-app .task-card{margin-top:0}
 }
 
 
-/* ===== 首页纵向布局：锁一屏，头部常显（2026-11-06 定稿）=====
-   用户要求：「今日配送 + 线路 + 日期 + 汇总 + 小推车 + 多单 tab 在首页常显，
-   不随门店滚动而上滚；下面只有门店名称这一块能滚（横滑切单、竖滚看门店）」。
-   现在：
-     .zp-scroll 不再滚动（overflow:hidden）—— 外层没有滚动量，
-       手指按在头部/摘要/小推车/tab 上也不可能有任何位移，头部从结构上锁死；
-     卡片高 = 一屏（height:100%，父级高度已确定），
-       卡内 flex 列：标题 / 摘要+插画 / tab 固定，名单区 flex 剩余、页内滚动；
-     卡片底边停在浮岛上方（.zp-scroll 的 88px 底 padding 让出来的），名单不会被浮岛遮。
-   为什么从「overflow-y:auto + 内层 contain 截断滚动链」改成锁死：
-     上一版是事后截断，只在内层名单真的溢出时才切断连锁；手指落在头部（不是滚动
-     容器）时手势仍归外层，实测整页滚满 226px、卡片顶 98 → -128，头部被带走。
-     且首帧/切单瞬间标记未打上时会漏一次。锁死外层后不再依赖任何运行时判断。
-   代价（用户已确认）：月度统计卡原位保留、本轮暂不可达（见下方 .trend-card 注释）。
-   降级版面（矮屏/横屏/键盘）仍回退整页滚动，见文件下方 —— 那条路径上月度卡可滚到。 */
+/* ===== 首页纵向布局：品牌独立 + 数据浮岛 + 平面名单（2026-11-06 定稿）=====
+   用户定稿五条：
+     1) 品牌区（智配One / 运单处理·历史查询·路线经验）保持原样，不入浮岛；
+     2) 数据区（今日配送 / 线路 17 / 日期 / 汇总 / 小推车 / 多单 tab）独立成浮岛，
+        浏览下方内容时收起、回看上方时弹出（JS 方向判定，见 js/home/today.js）；
+     3) 门店列表不再是浮岛（无圆角 / 无底色），直接铺在页面上，上下滚、左右切单；
+     4) 月度统计卡 DOM / 尺寸 / 样式一律不动，落在名单之后被裁掉，本轮不可达；
+     5) 底栏浮岛不动。
+   结构：
+     .task-card            透明外壳，只做纵向分配
+       .zp-head-wrap       高度 = 浮岛自然高（--zp-head-h），收起时 10px
+         .zp-head-island   圆角浮岛本体，absolute；收起时 translateY(-100%)
+         .zp-head-handle   收起后露出的把手线
+       #todayStoreList     flex 剩余，行内滚动在 .today-page
+       #todayMetrics       平时为空，不占位
+   ------------------------------------------------------------------ */
 main.home-app .zp-scroll{
   display:flex;
   flex-direction:column;
-  /* overflow:hidden 已经挡掉用户手势；再叠 clip：支持 clip 的浏览器连
-     程序滚动（focus / scrollIntoView 落到被裁掉的月度卡上）也一并禁止，
-     头部不会因为任何原因被带走。不支持的旧 WebView 自动退回 hidden。 */
+  /* 外层没有滚动量：头部不可能是「被滚走」的，收放只由 JS 触发 */
   overflow:hidden;
   overflow:clip;
   overscroll-behavior-y:none;
-  /* 底栏 fixed 覆盖在滚动区之上，必须留出 66px + 呼吸位，否则卡片底边压到浮岛 */
+  /* 品牌区到浮岛的间距：14 → 6，浮岛更贴品牌，收起后品牌与列表之间也不空 */
+  padding-top:6px;
   padding-bottom:calc(88px + env(safe-area-inset-bottom));
 }
 main.home-app .task-card{
-  /* height:100% = 滚动区 content 高度（一屏 - 上下 padding）。
-     业务端没有全局 box-sizing，这里必须显式声明，否则 padding/border 会顶出去。 */
+  position:relative;
+  /* 锁一屏：高度取滚动区一屏（父级高度已确定），不能用 flex:1 ——
+     后面还挂着月度卡，flex 会把卡片高度分给不可达的它。 */
   flex:0 0 auto;
   height:100%;
-  box-sizing:border-box;
   min-height:0;
+  box-sizing:border-box;
   display:flex;
   flex-direction:column;
+  margin:0;
+  padding:0;
+  background:transparent;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
 }
+/* —— 浮岛外壳：高度 = 浮岛本体；收起时只留把手线的 10px —— */
+main.home-app .zp-head-wrap{
+  /* 只占位：高度 = 浮岛高，收起时收到 10px（正好留出把手线）。
+     高度变化不加过渡 —— 与 scrollTop 补偿同帧完成，列表内容才不会先跳后回。 */
+  position:relative;
+  flex:0 0 auto;
+  height:var(--zp-head-h,160px);
+  margin:0 12px 8px;
+}
+main.home-app .zp-head-island{
+  /* 浮岛本体绝对定位在卡片顶部、盖在列表之上：收起时整块滑出卡片顶边，
+     滑出过程正好盖住列表的瞬时上移，用户看不到「跳」，只看到浮岛滑走。 */
+  position:absolute;
+  left:12px;right:12px;top:0;
+  z-index:2;
+  height:var(--zp-head-h,160px);
+  box-sizing:border-box;
+  padding:12px 14px 8px;
+  /* 与底栏浮岛同一支圆角令牌（24px），两块看起来才是一套 */
+  border-radius:var(--zp-r-nav);
+  background:var(--zp-nav-bg);
+  border:1px solid var(--zp-tint);
+  transition:transform .18s cubic-bezier(.22,.61,.36,1);
+  will-change:transform;
+}
+main.home-app.is-head-hidden .zp-head-wrap{height:10px}
+main.home-app.is-head-hidden .zp-head-island{transform:translateY(-100%)}
+/* 把手线：收起后留在品牌下方，提示可上滑唤出 */
+main.home-app .zp-head-handle{
+  position:absolute;
+  left:50%;
+  bottom:3px;
+  width:34px;
+  height:3px;
+  margin-left:-17px;
+  border-radius:var(--zp-r-handle);
+  /* 行线色在深色浮岛底上几乎不可见，改用 muted + 透明度：两套主题都能看清 */
+  background:var(--zp-muted);
+  opacity:0;
+  transition:opacity .16s linear;
+}
+main.home-app.is-head-hidden .zp-head-handle{opacity:.42;transition-delay:.1s}
+/* 浮岛内三段不可收缩：否则 flex 会把 tab 从 44 压到 22px、文字切一半 */
+main.home-app .zp-head-island .task-title,
+main.home-app .zp-head-island .task-main,
+main.home-app .zp-head-island .today-tabs{flex:0 0 auto}
+main.home-app .zp-head-island .task-title{margin-top:0}
+main.home-app .zp-head-island .task-main{margin-top:2px}
+main.home-app .zp-head-island .today-tabs{margin-top:6px}
+/* —— 门店：平面列表，不再是浮岛 —— */
 main.home-app .today-store-list{
-  /* 名单区吃掉卡片里除固定头以外的全部高度，滚动由页内 .today-page 承担。
-     overflow:hidden 只为裁掉横向轨道的相邻页，纵向滚动不在这一层。 */
   flex:1 1 auto;
   min-height:0;
   display:flex;
   flex-direction:column;
-  max-height:none;
+  margin:0;
+  padding:0;
+  border-top:0;
   overflow:hidden;
 }
-/* 固定头一律不参与收缩：卡片变矮时 flex 会先压缩 tab 行（44 → 22px，
-   文字被切一半），tab 是多单的门面，必须钉死高度。 */
-main.home-app .task-card > .task-title,
-main.home-app .task-card > .task-main,
-main.home-app .task-card > .today-tabs,
-main.home-app .task-card > .today-metrics{flex:0 0 auto}
-/* 月度统计卡：DOM / 尺寸 / 样式一律不动（用户「先占位保持不变」）。
-   外层锁一屏后它落在卡片之后、被 .zp-scroll 裁掉 —— 这是「头部常显」的代价，
-   本轮接受；后续若要重新露出，走历史页或底部抽屉，不要把它塞回滚动流里。 */
+/* 左右缩进放在页内而不是列表容器：列表容器的 clientWidth 是横向轨道的位移基准，
+   给它加 padding 会让 track 多移 32px、每页内容被推出左边缘（序号直接看不见）。 */
+main.home-app .today-page{padding:0 12px}
+main.home-app .today-store-list .today-store-row{padding:0}
+main.home-app .today-store-list .today-store-row:first-child{border-top:1px solid var(--zp-tint)}
+/* 月度统计卡：DOM / 尺寸 / 样式一律不动（用户「统计板块保持不变」）。
+   外层锁死后它落在名单之后、被裁掉，本轮不可达；后续走历史页或底部抽屉。 */
 main.home-app .trend-card{flex:0 0 auto}
 
-/* 降级 A：横屏 / 矮屏（分屏、小窗、浏览器地址栏占高）→ 版面回退为块级 + 整页滚动。
-   卡片不再锁一屏高度，名单回到内容高度（页内 overflow 关闭），避免矮屏里卡片被压成一条。
-   用户明确要求：小屏宁可整屏滚，也不压列表。 */
+/* 降级 A：横屏 / 矮屏 → 整页滚动，浮岛不再收放（收放由 JS 一并跳过）。
+   矮屏宁可整屏滚，也不把浮岛和列表挤在一起。 */
 @media (max-height:759px),(orientation:landscape){
   main.home-app .zp-scroll{display:block;overflow-y:auto}
   main.home-app .task-card{display:block;height:auto}
+  main.home-app .zp-head-wrap{height:auto;overflow:visible;margin-bottom:10px;transition:none}
+  main.home-app .zp-head-island{position:static;height:auto;transform:none;transition:none}
+  main.home-app .zp-head-handle{display:none}
   main.home-app .today-store-list{display:block;overflow:visible}
   .today-view{height:auto}
   .today-track{align-items:flex-start;height:auto}
   .today-page{height:auto;overflow:visible}
 }
 
-/* 降级 B：键盘弹起（JS 判定，见 js/home/fit.js）
-   键盘把可视区压矮时若继续用 flex 链，卡片会被压成一条，故同样回退整页滚动。 */
+/* 降级 B：键盘弹起（JS 判定，见 js/home/fit.js）—— 同上回退整页滚动 */
 main.home-app.is-keyboard .zp-scroll{display:block;overflow-y:auto}
 main.home-app.is-keyboard .task-card{display:block;height:auto}
+main.home-app.is-keyboard .zp-head-wrap{height:auto;overflow:visible;transition:none}
+main.home-app.is-keyboard .zp-head-island{position:static;height:auto;transform:none;transition:none}
+main.home-app.is-keyboard .zp-head-handle{display:none}
 main.home-app.is-keyboard .today-store-list{display:block;overflow:visible}
 main.home-app.is-keyboard .today-view{height:auto}
 main.home-app.is-keyboard .today-track{align-items:flex-start;height:auto}

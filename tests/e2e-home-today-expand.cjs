@@ -158,13 +158,18 @@ const LAST_IN_PAGE = `(()=>{
     if (!s || s.err) { check(tag + ' 页面可测量', false, s && s.err); continue; }
     /* 全高竖屏 = 一屏内滚（2026-11-06 契约）；矮屏/横屏 = 降级整页滚动 */
     const locked = h >= 760 && h > w;
-    let last, headMove;
+    let last, headMove, headHidden;
     if (locked) {
+      /* 2026-11-06 定稿：滚名单 → 浮岛收起把高度让给列表（不是「头部原地不动」）。
+         收起会补偿 scrollTop，列表高度随之变化，所以要再滚一次到底。 */
       const before = await ev(HEAD_TOPS);
       await ev(PAGE_BOTTOM);
-      await sleep(280);
+      await sleep(320);
+      headHidden = await ev(`(()=>document.querySelector('main.home-app').classList.contains('is-head-hidden'))()`);
+      await ev(PAGE_BOTTOM);
+      await sleep(260);
       last = await ev(LAST_IN_PAGE);
-      headMove = { before, after: await ev(HEAD_TOPS) };
+      headMove = { before, mid: await ev(HEAD_TOPS), after: await ev(HEAD_TOPS) };
     } else {
       await ev(TO_BOTTOM);
       await sleep(250);
@@ -184,8 +189,9 @@ const LAST_IN_PAGE = `(()=>{
       check(tag + ' 外层锁死：整页滚不动（头部常显）',
         (s.outerOV === 'hidden' || s.outerOV === 'clip') && outerTry === 0,
         'ov ' + s.outerOV + ' / scrollTop ' + outerTry);
-      check(tag + ' 名单滚到底后头部/tab 位置不动',
-        !!headMove && headMove.before.sum === headMove.after.sum && headMove.before.tab === headMove.after.tab && headMove.before.pad === headMove.after.pad,
+      check(tag + ' 滚名单后浮岛收起，把高度让给列表', headHidden === true, String(headHidden));
+      check(tag + ' 收起后浮岛位置稳定（连续两次测量不漂）',
+        !!headMove && headMove.mid.sum === headMove.after.sum && headMove.mid.pad === headMove.after.pad && headMove.mid.tab === headMove.after.tab,
         JSON.stringify(headMove));
       check(tag + ' 名单滚到底最后一家完整可见（页内）', !!last && last.visible === true, JSON.stringify(last));
     } else {

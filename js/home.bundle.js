@@ -1569,6 +1569,8 @@ function zpRenderToday(orders,dayCount,fromCache){
     applySummary(list[i]);
     applyMetrics(list[i]);
     zpSetTodaySelId(list[i].id);
+    /* 切单/切 tab 一律把浮岛弹回来：否则切完看不到「换成了哪一单」 */
+    try{window.zpHeadShow&&window.zpHeadShow()}catch{}
     window.zpSyncTodayHeight();
   }
   zpTodayState.go=go;
@@ -1655,6 +1657,119 @@ function zpBindTodaySwipe(){
     });
   }
 }
+
+/* ===== 顶部浮岛收放（2026-11-06 定稿）=====
+   规则：
+     · 浏览下方内容（名单向下滚 ≥12px）→ 浮岛收起，列表上移接上；
+     · 回看上方（名单向上滚 ≥6px，或滚回顶部）→ 浮岛弹出；
+     · 切单 / 切 tab 强制弹出；矮屏 / 横屏 / 键盘（整页滚动）全程跳过。
+   为什么收起时要改 scrollTop：
+     浮岛占 150px，收起后列表顶部上移 150px。若不动 scrollTop，屏幕上的门店会
+     整体上跳 150px（原来第 6 行变成第 2 行）。补偿后内容原地不动，只有底部多
+     露出 3.5 行 —— 这才是「收起浮岛腾地方」该有的样子。
+   为什么补完要锁 280ms：
+     改 scrollTop 会再触发一次 scroll 事件，方向与手势相反，不锁就会立刻被判成
+     「上滑」而自行弹出，来回抖成死循环。
+   为什么高度不加 CSS 过渡：
+     高度变化与 scrollTop 补偿必须同帧完成，否则列表会「先跳上去再被拉回来」。
+     视觉上的滑动只由浮岛自己的 transform 承担（180ms），滑出过程正好盖住列表
+     的瞬时上移。 */
+(function(){
+  const main=document.querySelector("main.home-app");
+  const island=document.querySelector("main.home-app .zp-head-island");
+  const list=document.getElementById("todayStoreList");
+  if(!main||!island||!list)return;
+
+  const COLLAPSED=10;   // 收起后留给把手线的高度
+  let headH=0,hidden=false,lockUntil=0,lastY=0,downAcc=0,upAcc=0,measureRaf=0;
+
+  function fallback(){
+    try{return typeof zpTodayFallbackLayout==="function"?zpTodayFallbackLayout():false}catch{return false}
+  }
+  function shift(){return Math.max(0,headH-COLLAPSED)}
+
+  /* 量浮岛自然高度：island 高度被 --zp-head-h 钉住，量之前必须临时放开，
+     否则量到的是上次的值 —— 单/多单切换（tab 显隐）时会量不出 54px 的差。 */
+  function measure(){
+    if(fallback())return;
+    const prev=island.style.height;
+    island.style.height="auto";
+    const h=Math.round(island.getBoundingClientRect().height);
+    island.style.height=prev;
+    if(h>0&&h!==headH){
+      headH=h;
+      main.style.setProperty("--zp-head-h",h+"px");
+    }
+  }
+  function scheduleMeasure(){
+    if(measureRaf)return;
+    measureRaf=requestAnimationFrame(function(){measureRaf=0;measure()});
+  }
+
+  function hide(page){
+    if(hidden||fallback())return;
+    const s=shift();
+    // 没滚够就不收：保证补偿后 scrollTop 仍 > 0，不会刚收就被「到顶」弹回来
+    if(s<=0||page.scrollTop<=s+8)return;
+    hidden=true;
+    lockUntil=Date.now()+280;
+    main.classList.add("is-head-hidden");
+    page.scrollTop=page.scrollTop-s;
+    lastY=page.scrollTop;downAcc=0;upAcc=0;
+  }
+  /* compensate=true：当前页内容定位不动（滚动中收/放）；
+     切单时传 false：新页通常没滚过，硬加会把内容顶到中间。 */
+  function show(page,compensate){
+    if(!hidden)return;
+    hidden=false;
+    lockUntil=Date.now()+280;
+    main.classList.remove("is-head-hidden");
+    const s=shift();
+    if(compensate&&page){
+      const max=page.scrollHeight-page.clientHeight;
+      page.scrollTop=Math.max(0,Math.min(max,page.scrollTop+s));
+    }else if(page){
+      /* 切单/切 tab：把其它页的 scrollTop 一并补回，切回去时位置不偏 */
+      const active=Number(zpTodayState&&zpTodayState.idx);
+      Array.prototype.forEach.call(list.querySelectorAll(".today-page"),function(p,i){
+        if(i===active||p===page)return;
+        const max=p.scrollHeight-p.clientHeight;
+        if(max>0&&p.scrollTop>0)p.scrollTop=Math.min(max,p.scrollTop+s);
+      });
+    }
+    lastY=page?page.scrollTop:0;downAcc=0;upAcc=0;
+  }
+  window.zpHeadShow=function(){
+    const page=list.querySelector('.today-page[data-i="'+(zpTodayState.idx||0)+'"]');
+    show(page,false);
+  };
+
+  list.addEventListener("scroll",function(e){
+    const t=e.target;
+    if(!t||!t.classList||!t.classList.contains("today-page"))return;
+    if(fallback()){if(hidden)show(t,false);return}
+    const y=t.scrollTop;
+    if(Date.now()<lockUntil){lastY=y;downAcc=0;upAcc=0;return}
+    const dy=y-lastY;
+    lastY=y;
+    if(dy>0){downAcc+=dy;upAcc=0}
+    else if(dy<0){upAcc-=dy;downAcc=0}
+    if(!hidden){
+      if(downAcc>=12)hide(t);
+    }else if(upAcc>=6||y<=0){
+      show(t,true);
+    }
+  },{capture:true,passive:true});
+
+  window.addEventListener("resize",function(){
+    scheduleMeasure();
+    if(fallback()&&hidden)show(null,false);
+  },{passive:true});
+  if(window.ResizeObserver){
+    try{new ResizeObserver(scheduleMeasure).observe(island)}catch{}
+  }
+  scheduleMeasure();
+})();
 
 let zpHomeInitialLoadFailed=false;
 let zpHomeRecoveryInFlight=false;
