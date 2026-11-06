@@ -1311,7 +1311,9 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
 
     var head = el("div", "zp-mn-head");
     head.appendChild(el("div", "zp-mn-title", "导航到 " + data.name));
-    head.appendChild(el("div", "zp-mn-sub", urls._geo ? "已绑定精确坐标 · 打开门店位置，是否用 App 导航由您选" : "暂无坐标 · 将按门店名搜索门店位置"));
+    /* 正常态不再有副标题：每个选项下面都写一遍「是否用 App 由您选」太啰嗦。
+       只有缺坐标这种异常态才补一行说明，否则用户不知道为什么变成搜索。 */
+    if (!urls._geo) head.appendChild(el("div", "zp-mn-sub", "未绑定坐标 · 按门店名搜索门店位置"));
     var x = el("button", "zp-mn-close", "✕");
     x.type = "button";
     x.setAttribute("aria-label", "关闭");
@@ -1324,11 +1326,10 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
       var row = el("button", "zp-mn-row");
       row.type = "button";
       row.setAttribute("data-provider", p.id);
-      var main = el("span", "zp-mn-row-main");
-      main.appendChild(el("span", "zp-mn-row-label", p.label));
-      main.appendChild(el("span", "zp-mn-row-hint", p.note));
-      row.appendChild(main);
-      row.appendChild(el("span", "zp-mn-arrow", "›"));
+      /* 只留名称、居中：说明文案对三家完全一样，重复三遍没有信息量；
+         语义挪到 aria-label，读屏仍能听到「查看门店位置、是否用 App 由您选」。 */
+      row.setAttribute("aria-label", p.label + "：" + p.note);
+      row.appendChild(el("span", "zp-mn-row-label", p.label));
       row.addEventListener("click", function () {
         var u = urls[p.id];
         closeMenu();

@@ -24,10 +24,12 @@
  * 纯函数用 node:vm 跑，不需要浏览器；静态断言守住两个渲染器与打包顺序。
  */
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { createContext, runInContext } from "node:vm";
 import { fileURLToPath } from "node:url";
 
 const SRC = readFileSync(fileURLToPath(new URL("../js/ui/mapnav.js", import.meta.url)), "utf8");
+const CSS = readFileSync(resolve(fileURLToPath(new URL("../css/ui-overlay.css", import.meta.url))), "utf8");
 const HOME_JS = readFileSync(fileURLToPath(new URL("../js/home/today.js", import.meta.url)), "utf8");
 const RENDER_JS = readFileSync(fileURLToPath(new URL("../js/order_detail/render.js", import.meta.url)), "utf8");
 const CORE_JS = readFileSync(fileURLToPath(new URL("../js/order_detail/core.js", import.meta.url)), "utf8");
@@ -186,8 +188,20 @@ console.log("\n三家 provider 目标（14 条）");
   t("百度 / 腾讯 note 与高德同口径（看位置，App 由用户选）",
     M.PROVIDERS[1].note.includes("查看门店位置") && M.PROVIDERS[2].note.includes("查看门店位置"),
     JSON.stringify([M.PROVIDERS[1].note, M.PROVIDERS[2].note]));
+  /* 2026-11-06 视觉收敛：名称居中、去掉每个选项下的重复说明与箭头，
+     note 只作为 aria-label 保留语义，不再渲染成第三行小字。 */
+  t("选项不再渲染说明小字与箭头",
+    !/zp-mn-row-hint/.test(SRC) && !/zp-mn-arrow/.test(SRC),
+    "mapnav.js 仍包含 hint/arrow 渲染");
+  t("note 转为 aria-label，读屏仍能听到「看位置、App 由您选」",
+    /setAttribute\("aria-label", p\.label \+ "：" \+ p\.note\)/.test(SRC), "缺少 aria-label 兜底");
+  t("菜单标题与选项均居中",
+    /\.zp-mn-head\{[^}]*text-align:center/.test(CSS) && /\.zp-mn-row\{[^}]*justify-content:center/.test(CSS),
+    "标题或选项未居中");
+  t("正常态不再有副标题（仅缺坐标时才补一行）",
+    /if \(!urls\._geo\) head\.appendChild/.test(SRC), "副标题须由 _geo 条件控制");
   t("三家都有 https 目标", ["amap", "baidu", "qq"].every((k) => typeof u[k] === "string" && u[k].startsWith("https://")));
-  t("有坐标时 _geo=true（菜单显示已绑定精确坐标）", u._geo === true);
+  t("有坐标时 _geo=true（菜单不出「按门店名搜索」兜底提示）", u._geo === true);
 
   const amap = new URL(u.amap);
   t("高德走 uri.amap.com/marker 位置标注页（不是 /navigation 路线页）",

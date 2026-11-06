@@ -326,16 +326,17 @@ textarea:disabled,
 .zp-mn-bg{position:fixed;inset:0;z-index:var(--ui-z-modal-stack,1100);display:flex;align-items:flex-end;justify-content:center;background:var(--zp-scrim-dialog);padding:0;animation:zpModalFade .16s ease-out}
 .zp-mn-sheet{position:relative;width:min(100%,560px);max-height:86dvh;display:flex;flex-direction:column;background:var(--zp-surface);border:1px solid var(--zp-line);border-radius:var(--zp-r-sheet) var(--zp-r-sheet) 0 0;box-shadow:0 18px 50px var(--zp-shadow-lg);padding:8px 0 calc(10px + env(safe-area-inset-bottom));animation:zpModalIn .16s ease-out}
 @media(prefers-reduced-motion:reduce){.zp-mn-bg,.zp-mn-sheet{animation:none}}
-.zp-mn-head{position:relative;padding:8px 54px 8px 16px;border-bottom:1px solid var(--zp-line)}
+/* 标题居中：左右各留 56px 给关闭按钮，保证省略号两侧对称、不压角标 */
+.zp-mn-head{position:relative;padding:10px 56px;border-bottom:1px solid var(--zp-line);text-align:center}
 .zp-mn-title{color:var(--zp-text);font-size:var(--zp-fs-16);font-weight:var(--zp-fw-bold);line-height:22px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.zp-mn-sub{color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:18px;margin-top:2px}
+/* 仅「未绑定坐标」时出现，正常态没有第二行 */
+.zp-mn-sub{color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:18px;margin-top:2px;text-align:center}
 .zp-mn-close{position:absolute;top:10px;right:10px;width:44px;height:44px;border:0;background:none;color:var(--zp-muted);font-size:var(--zp-fs-16);border-radius:var(--zp-r-mini);cursor:pointer;-webkit-appearance:none;appearance:none}
 .zp-mn-close:active{background:var(--zp-surface-2)}
-.zp-mn-list{overflow:auto;-webkit-overflow-scrolling:touch;padding:6px 8px}
-.zp-mn-row{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:8px 12px;background:none;border:0;border-radius:var(--zp-r-card);color:var(--zp-text);font-size:var(--zp-fs-16);text-align:left;cursor:pointer;-webkit-appearance:none;appearance:none}
+.zp-mn-list{overflow:auto;-webkit-overflow-scrolling:touch;padding:2px 8px 6px}
+/* 三个选项居中并列：字号统一、行高一致，靠细分割线区分，不再用箭头与说明 */
+.zp-mn-row{display:flex;align-items:center;justify-content:center;width:100%;min-height:54px;padding:8px 12px;background:none;border:0;border-radius:var(--zp-r-card);color:var(--zp-text);font-size:var(--zp-fs-16);font-weight:var(--zp-fw-medium);text-align:center;cursor:pointer;-webkit-appearance:none;appearance:none}
+.zp-mn-row+.zp-mn-row{border-top:1px solid var(--zp-tint)}
 .zp-mn-row:active{background:var(--zp-surface-2)}
 .zp-mn-row:focus-visible{outline:2px solid var(--zp-focus-ring);outline-offset:-2px}
-.zp-mn-row-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.zp-mn-row-label{line-height:22px}
-.zp-mn-row-hint{color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:16px}
-.zp-mn-arrow{flex:none;color:var(--zp-muted);font-size:var(--zp-fs-20);line-height:1}
+.zp-mn-row-label{line-height:24px}

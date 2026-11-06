@@ -221,6 +221,10 @@ const SNAP_DETAIL = `(()=>{
     rows:[...document.querySelectorAll('.zp-mn-row[data-provider]')].map(r=>r.dataset.provider),
     title:(document.querySelector('.zp-mn-title')||{}).textContent||'',
     sub:(document.querySelector('.zp-mn-sub')||{}).textContent||'',
+    hints:document.querySelectorAll('.zp-mn-row-hint').length,
+    arrows:document.querySelectorAll('.zp-mn-arrow').length,
+    titleAlign:document.querySelector('.zp-mn-title')?getComputedStyle(document.querySelector('.zp-mn-title')).textAlign:'',
+    rowAlign:document.querySelector('.zp-mn-row[data-provider]')?getComputedStyle(document.querySelector('.zp-mn-row[data-provider]')).justifyContent:'',
     open:document.body.classList.contains('zp-mn-open')}))()`;
   const clickStore = async (idx) => {
     await ev(`(()=>{const a=[...document.querySelectorAll('#todayStoreList a[data-zp-nav-payload]')][${idx}];
@@ -236,8 +240,9 @@ const SNAP_DETAIL = `(()=>{
   const m1 = await ev(MENU);
   check('点门店名弹出底部菜单', m1 && m1.sheet === true && m1.open === true, JSON.stringify(m1));
   check('菜单固定列高德 / 百度 / 腾讯三家', m1 && m1.rows.join(',') === 'amap,baidu,qq', JSON.stringify(m1 && m1.rows));
-  check('已定位门店菜单标注「已绑定精确坐标」',
-    m1 && /已绑定精确坐标/.test(m1.sub) && /导航到/.test(m1.title), JSON.stringify(m1));
+  check('已定位门店不显示说明副标题', m1 && m1.sub === '' && /导航到/.test(m1.title), JSON.stringify(m1));
+  check('标题与三家名称均居中', m1 && m1.titleAlign === 'center' && m1.rowAlign === 'center', JSON.stringify(m1 && [m1.titleAlign, m1.rowAlign]));
+  check('选项不再带说明小字与箭头', m1 && m1.hints === 0 && m1.arrows === 0, JSON.stringify(m1 && [m1.hints, m1.arrows]));
 
   await pick('amap');
   const out1 = await ev('window.__navOut');
@@ -269,7 +274,7 @@ const SNAP_DETAIL = `(()=>{
 
   await clickStore(1);   /* S2：纯文本 navigation，未定位 */
   const m2 = await ev(MENU);
-  check('未定位门店菜单提示「按门店名搜索」', m2 && /暂无坐标/.test(m2.sub), JSON.stringify(m2));
+  check('未定位门店才补一行「按门店名搜索」', m2 && /未绑定坐标/.test(m2.sub), JSON.stringify(m2));
   await pick('amap');
   const out4 = await ev('window.__navOut');
   check('未定位门店选高德 → 关键词搜索（不拼 0,0）',
