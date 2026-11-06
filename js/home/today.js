@@ -3,86 +3,243 @@
    window.zpHomeMonthlyDataPromise 由 js/home-monthly.js 提供（在 home/*.js 之后加载）。
 
    本地今日快照（2026-10-30 启动显示优化）：渲染成功后缓存
-   {date,dayOrders,waybill} 到 localStorage；下次启动若快照仍是当天，
+   {date,dayCount,orders} 到 localStorage；下次启动若快照仍是当天，
    先用快照立即渲染（等待趋近 0），随后正常三层数据源返回后覆盖渲染——
    数据有变则自然纠偏，当日无单/线路切换则走 setEmptyToday() 收敛为空态。
-   日期不一致自动失效；退出登录时由 home-bundle-glue.frag 清除，防止换账号串数据。 */
-const TODAY_SNAP_KEY="zp_home_today_v1";
+   日期不一致自动失效；退出登录时由 home-bundle-glue.frag 清除，防止换账号串数据。
 
-/* 门店名「单行 + 左滑看全名 + 静置自动回位」
-   ------------------------------------------------------------------
-   行为统一在 js/ui/store-name-scroll.js（首页、运单详情、今日配送独立页共用），
-   这里只负责把渲染结果接上：绑定一次 → 下一帧按实际宽度标记可滑动/已到末尾。
-   2026-11-06 从本文件抽出，避免三处各写一份、行为互相漂移。 */
-function zpPrepareTodayStoreNames(){
-  if(!todayStoreList)return;
-  window.zpRefreshStoreNameScroll(todayStoreList);
-}
-function zpBindTodayStoreNames(){
-  if(!todayStoreList)return;
-  window.zpBindStoreNameScroll(todayStoreList);
-}
+   同日多单（2026-11-06）：一张卡内按单切页（点 tab / 左右滑动）。
+   - 顺序按 uploadedAt 升序（早 → 晚），与 tab、时间轴一致；
+   - 选中单记在 sessionStorage（按 id，不按序号），跨天自动失效；
+   - 切换只换视图、不重新请求：orders 由 /api/waybills/latest 一次带回；
+   - 门店名改为单行省略（简称让名字能一排放下），横向手势让给换单，
+     「左滑看全名」只保留在运单详情 / 今日配送独立页（js/ui/store-name-scroll.js）。 */
+const TODAY_SNAP_KEY="zp_home_today_v2";
+const TODAY_SEL_KEY="zp_home_today_sel";
 
-const zpTodayKey=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+const zpEsc=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const zpAttr=v=>zpEsc(v).replace(/'/g,"&#39;");
+
+function zpTodayKey(){
+  return new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+}
+/* tab 时间取 uploadedAt（与后端「最新一单」排序字段一致）。
+   不能用 OCR 时间或计划时间，否则会出现「tab 顺序与默认单不一致」。 */
+function zpTodayHM(iso){
+  const t=Date.parse(String(iso||""));
+  if(!Number.isFinite(t))return "";
+  try{return new Intl.DateTimeFormat("zh-CN",{timeZone:"Asia/Shanghai",hour:"2-digit",minute:"2-digit",hour12:false}).format(t)}catch{return ""}
+}
+function zpTodaySelId(){
+  try{
+    const s=JSON.parse(sessionStorage.getItem(TODAY_SEL_KEY)||"null");
+    if(s&&s.date===zpTodayKey())return String(s.id||"");
+  }catch{}
+  return "";
+}
+function zpSetTodaySelId(id){
+  try{sessionStorage.setItem(TODAY_SEL_KEY,JSON.stringify({date:zpTodayKey(),id:String(id||"")}))}catch{}
+}
 function zpReadTodaySnap(){
   try{
     const s=JSON.parse(localStorage.getItem(TODAY_SNAP_KEY)||"null");
-    if(s&&s.date===zpTodayKey()&&s.waybill&&s.waybill.routeId)return s;
+    if(s&&s.date===zpTodayKey()&&Array.isArray(s.orders)&&s.orders.length)return s;
   }catch{}
   return null;
 }
 
-/* 今日卡渲染（摘要 + 门店明细 + 质量指标三块）。
-   摘要与门店明细分开容错：stores 异常绝不允许把今日数量/重量卡在“加载中”。
-   fromCache=true（快照渲染）时不回写快照，避免旧数据自我续命。 */
-function zpRenderTodayCard(w,dayOrders,fromCache){
-  const stores=Array.isArray(w.stores)?w.stores:[];
-  const total=Number(w.summary?.finalCount)||Number(w.summary?.total)||stores.length||0;
-  // 渲染辅助函数必须定义在两个渲染块的共享作用域：
-  // 此前 esc 等定义在 if(todayStoreList) 块内，todayMetrics 块引用时
-  // ReferenceError → 被外层 catch 静默吞掉 → 整卡「暂无运单」。
-  // 数量语义已统一：只显示最终门店数及必要的自动恢复数。
+/* 卡片高度跟随「当前页」：多单行数不同，若不锁高，切换时下面的趋势卡会跟着跳。
+   高度瞬时切换、不做动画——高度动画反而会让整页上下移动，观感更乱。 */
+let zpTodayState={orders:[],idx:0,dayCount:0,go:null};
+window.zpSyncTodayHeight=function(){
+  if(!todayStoreList)return;
+  if(todayStoreList.classList.contains("is-empty"))return;
+  const page=todayStoreList.querySelector('.today-page[data-i="'+zpTodayState.idx+'"]');
+  if(!page)return;
+  todayStoreList.style.height=page.offsetHeight+"px";
+};
+window.addEventListener("resize",function(){try{window.zpSyncTodayHeight()}catch(e){}},{passive:true});
+
+/* 今日卡渲染（tab + 单页列表 + 摘要 + 质量指标）。
+   摘要与指标取「当前单」，单量取「全天」——每个数字都能对上，
+   不再出现「2单」是全天、「6家」只来自最后一单的错位。 */
+function zpRenderToday(orders,dayCount,fromCache){
+  const list=(Array.isArray(orders)?orders:[]).filter(o=>o&&typeof o==="object");
+  if(!list.length){setEmptyToday();return}
+  const total=Number(dayCount)||list.length;
+  zpTodayState={orders:list,idx:0,dayCount:total,go:null};
+
   const navTarget=x=>{try{return window.zpMapNav&&window.zpMapNav.linkAttrs?window.zpMapNav.linkAttrs(x):null}catch{return null}};
-  const esc=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-  const attr=v=>esc(v).replace(/'/g,"&#39;");
-  if(todayOrders)todayOrders.textContent=(dayOrders>0?dayOrders:1)+"单";
-  todayCount.textContent=total+"家";
-  // 重量统一 3 位小数（全局口径，见 AGENTS.md「统计口径」）
-  todayWeight.textContent=(Math.round((Number(w.totalWeight)||0)*1000)/1000).toFixed(3)+"t";
-
-  if(todayStoreList){
-    try{
-      todayStoreList.innerHTML=stores.length?stores.map((x,i)=>{
-        /* 显示名优先取基准库投影的简称（displayName），没有简称时回退运单全名 */
-        const rawName=String(x?.displayName||"").trim()||String(x?.name||"").trim()||String(x?.rawName||"").trim()||String(x?.originalName||"").trim()||"未识别门店";
-        const t=navTarget(x);
-        const body='<span class="today-store-index">'+(i+1)+'</span>'+window.zpStoreNameHtml(rawName);
-        if(!t)return '<div class="today-store-row" data-zp-store-row>'+body+'</div>';
-        return '<a class="today-store-row" data-zp-store-row href="'+attr(t.url)+'" target="'+t.target+'"'+(t.rel?' rel="'+t.rel+'"':'')+
-          ' data-zp-nav="'+attr(t.kind)+'" data-zp-nav-name="'+attr(rawName)+'"'+
-          ' data-zp-nav-payload="'+attr(t.payload||'')+'"'+
-          ' aria-label="第'+(i+1)+'家，'+(t.kind==='missing'?'暂无精确定位，请录入':'导航到 '+attr(rawName))+'">'+body+'</a>';
-      }).join(""):'<div class="zp-empty zp-empty--tight">今日暂无配送门店</div>';
-    }catch{
-      todayStoreList.innerHTML='<div class="zp-empty zp-empty--tight">今日门店明细暂不可用</div>';
-    }
-    zpBindTodayStoreNames();
-    zpPrepareTodayStoreNames();
-  }
-
-  if(todayMetrics){
-    const s=w.summary||{},metrics=[];
+  const countOf=o=>{
+    const stores=Array.isArray(o.stores)?o.stores:[];
+    return Number(o.summary?.finalCount)||Number(o.summary?.total)||stores.length||0;
+  };
+  const applySummary=o=>{
+    todayCount.textContent=countOf(o)+"家";
+    // 重量统一 3 位小数（全局口径，见 AGENTS.md「统计口径」）
+    todayWeight.textContent=(Math.round((Number(o.totalWeight)||0)*1000)/1000).toFixed(3)+"t";
+  };
+  const applyMetrics=o=>{
+    if(!todayMetrics)return;
+    const s=o.summary||{},stores=Array.isArray(o.stores)?o.stores:[],metrics=[];
     if(Number(s.recoveredCount)>0)metrics.push("恢复"+s.recoveredCount+"家");
     if(Number(s.correction)>0)metrics.push("更正"+s.correction+"家");
     if(Number(s.merged)>0)metrics.push("合并"+s.merged+"家");
     if(Number(s.newStores)>0)metrics.push("新增"+s.newStores+"家");
     if(stores.some(x=>x?.pending))metrics.push("待定"+stores.filter(x=>x?.pending).length+"家");
-    if(w.quality?.level==="REVIEW")metrics.push("需复核");
-    todayMetrics.innerHTML=metrics.map(x=>'<span>'+esc(x)+'</span>').join("");
+    if(o.quality?.level==="REVIEW")metrics.push("需复核");
+    todayMetrics.innerHTML=metrics.map(x=>"<span>"+zpEsc(x)+"</span>").join("");
+  };
+
+  const pageHtml=(o,pi)=>{
+    const stores=Array.isArray(o.stores)?o.stores:[];
+    if(!stores.length)return '<div class="today-page" data-i="'+pi+'"><div class="zp-empty zp-empty--tight">本单暂无配送门店</div></div>';
+    return '<div class="today-page" data-i="'+pi+'">'+stores.map((x,i)=>{
+      /* 显示名优先取基准库投影的简称（displayName），没有简称时回退运单全名 */
+      const rawName=String(x?.displayName||"").trim()||String(x?.name||"").trim()||String(x?.rawName||"").trim()||String(x?.originalName||"").trim()||"未识别门店";
+      const t=navTarget(x);
+      const body='<span class="today-store-index">'+(i+1)+'</span><span class="zp-store-name">'+zpEsc(rawName)+'</span>';
+      if(!t)return '<div class="today-store-row" data-zp-store-row>'+body+'</div>';
+      return '<a class="today-store-row" data-zp-store-row href="'+zpAttr(t.url)+'" target="'+t.target+'"'+(t.rel?' rel="'+zpAttr(t.rel)+'"':'')+
+        ' data-zp-nav="'+zpAttr(t.kind)+'" data-zp-nav-name="'+zpAttr(rawName)+'"'+
+        ' data-zp-nav-payload="'+zpAttr(t.payload||'')+'"'+
+        ' aria-label="第'+(i+1)+'家，'+(t.kind==='missing'?'暂无精确定位，请录入':'导航到 '+zpAttr(rawName))+'">'+body+'</a>';
+    }).join("")+"</div>";
+  };
+
+  todayOrders.textContent=(total>0?total:1)+"单";
+
+  if(todayStoreList){
+    try{
+      todayStoreList.innerHTML='<div class="today-view"><div class="today-track">'+list.map(pageHtml).join("")+'</div></div>';
+    }catch{
+      todayStoreList.innerHTML='<div class="zp-empty zp-empty--tight">今日门店明细暂不可用</div>';
+    }
   }
 
+  if(todayTabs){
+    todayTabs.innerHTML=list.length>1?list.map((o,i)=>{
+      const hm=zpTodayHM(o.uploadedAt||o.createdAt);
+      return '<button type="button" class="today-tab" role="tab" data-i="'+i+'" aria-selected="false">第'+(i+1)+'单'+(hm?' '+hm:'')+'</button>';
+    }).join(""):"";
+    todayTabs.hidden=list.length<2;
+  }
+
+  /* 默认单：记住本次会话的选择；没有记录（或那一单已不在列表）则回退到最新一单，
+     与「刚上传的新单」这一现实一致——打开首页就能看到新单。 */
+  const saved=zpTodaySelId();
+  let idx=list.length-1;
+  if(saved){
+    const k=list.findIndex(o=>String(o.id)===saved);
+    if(k>=0)idx=k;
+  }
+
+  function go(i,instant){
+    i=Math.max(0,Math.min(list.length-1,i));
+    zpTodayState.idx=i;
+    const track=todayStoreList&&todayStoreList.querySelector(".today-track");
+    if(track){
+      track.style.transition=instant?"none":"transform 260ms cubic-bezier(.22,.61,.36,1)";
+      track.style.transform="translate3d("+(-i*todayStoreList.clientWidth)+"px,0,0)";
+    }
+    if(todayTabs&&todayTabs.children.length){
+      Array.prototype.forEach.call(todayTabs.children,function(b,k){
+        const on=k===i;b.setAttribute("aria-selected",on?"true":"false");b.classList.toggle("is-active",on);
+      });
+      /* ≥4 单时 tab 条会横向溢出：把当前项滚进视野，避免「滑到第 4 单但 tab 停在前面」 */
+      const act=todayTabs.children[i];
+      if(act&&todayTabs.scrollWidth>todayTabs.clientWidth){
+        const left=Math.max(0,act.offsetLeft-(todayTabs.clientWidth-act.offsetWidth)/2);
+        try{todayTabs.scrollTo({left:left,behavior:"smooth"})}catch{todayTabs.scrollLeft=left}
+      }
+    }
+    applySummary(list[i]);
+    applyMetrics(list[i]);
+    zpSetTodaySelId(list[i].id);
+    window.zpSyncTodayHeight();
+  }
+  zpTodayState.go=go;
+  go(idx,true);
+  zpBindTodaySwipe();
+  /* 中文字体晚于脚本到达时，行高会变、锁定高度就偏小（列表底部被裁）。
+     字体就绪后补量一次；窗口尺寸变化由 zpSyncTodayHeight 的 resize 监听兜住。 */
+  try{if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){try{window.zpSyncTodayHeight()}catch(e){}})}catch{}
+
   if(!fromCache){
-    try{localStorage.setItem(TODAY_SNAP_KEY,JSON.stringify({date:zpTodayKey(),dayOrders,waybill:w}))}catch{}
+    try{localStorage.setItem(TODAY_SNAP_KEY,JSON.stringify({date:zpTodayKey(),dayCount:total,orders:list}))}catch{}
+  }
+}
+
+/* 左右滑动换单（2026-11-06）
+   ------------------------------------------------------------------
+   手势资源从「左滑看全名」移交给「换单」：简称让名称能一排放下，
+   门店名改单行省略后，横向手势不再被占。
+   判定：8px 死区 → |dx| > |dy|×1.2 才接管；一旦判为纵向，本次触点不再介入，
+   避免「想滚列表却切了单」。屏幕左缘 24px 留给 iOS 返回手势。
+   位移 > 18% 卡宽才切页，边界阻尼 0.35、不循环；滑动后吞掉一次 click，
+   防止松手时误开导航（门店行是 <a>）。 */
+function zpBindTodaySwipe(){
+  const box=todayStoreList;
+  if(!box||box.dataset.zpSwipe==="1")return;
+  box.dataset.zpSwipe="1";
+  /* is-swiping 挂在卡片上（摘要与列表是兄弟节点），用来在滑动时把摘要压淡 */
+  const card=box.closest(".task-card")||box;
+  let sx=0,sy=0,dx=0,lock=null,down=false;
+  const trackOf=()=>box.querySelector(".today-track");
+  box.addEventListener("pointerdown",function(e){
+    if(!trackOf())return;
+    if(e.pointerType==="mouse"&&e.button!==0)return;
+    if(e.clientX<24)return;
+    down=true;lock=null;dx=0;sx=e.clientX;sy=e.clientY;
+    const t=trackOf();if(t)t.style.transition="none";
+  },{passive:true});
+  box.addEventListener("pointermove",function(e){
+    if(!down)return;
+    const ax=e.clientX-sx,ay=e.clientY-sy;
+    if(!lock){
+      if(Math.abs(ax)<8&&Math.abs(ay)<8)return;
+      lock=Math.abs(ax)>Math.abs(ay)*1.2?"x":"y";
+      if(lock==="x"&&zpTodayState.orders.length>1)card.classList.add("is-swiping");
+    }
+    if(lock!=="x")return;
+    const t=trackOf();if(!t)return;
+    dx=ax;
+    /* 只有 1 单：不产生位移（否则卡片跟着手指滑动再弹回，像「加载失败」），
+       但仍算作横向手势 —— 松手时要吞掉 click，不能因为滑了一下就跳地图。 */
+    if(zpTodayState.orders.length<2)return;
+    const w=box.clientWidth,n=zpTodayState.orders.length;
+    let v=dx;
+    if((zpTodayState.idx===0&&dx>0)||(zpTodayState.idx===n-1&&dx<0))v=dx*0.35;
+    t.style.transform="translate3d("+(-zpTodayState.idx*w+v)+"px,0,0)";
+    if(e.cancelable)e.preventDefault();
+  },{passive:false});
+  function settle(){
+    if(!down)return;
+    down=false;
+    const t=trackOf();if(t)t.style.transition="";
+    if(lock==="x"){
+      card.classList.remove("is-swiping");
+      const w=box.clientWidth,far=Math.abs(dx)>w*0.18,go=zpTodayState.go;
+      if(go&&zpTodayState.orders.length>1)go(zpTodayState.idx+(far?(dx<0?1:-1):0));
+      if(Math.abs(dx)>8)box.dataset.zpSwiped=String(Date.now());
+    }
+    lock=null;dx=0;
+  }
+  box.addEventListener("pointerup",settle);
+  box.addEventListener("pointercancel",settle);
+  /* 只吞一次：吞完立即清零，下一次正常点击照常生效 */
+  window.addEventListener("click",function(e){
+    const at=Number(box.dataset.zpSwiped||0);
+    if(!at)return;
+    if(Date.now()-at>600){box.dataset.zpSwiped="0";return}
+    if(box.contains(e.target)){e.preventDefault();e.stopPropagation();box.dataset.zpSwiped="0"}
+  },true);
+  if(todayTabs){
+    todayTabs.addEventListener("click",function(e){
+      const b=e.target.closest&&e.target.closest(".today-tab");
+      if(!b)return;
+      const go=zpTodayState.go;if(go)go(Number(b.dataset.i)||0);
+    });
   }
 }
 
@@ -95,7 +252,7 @@ async function loadHome(){
   try{
     const snap=zpReadTodaySnap();
     if(snap){
-      zpRenderTodayCard(snap.waybill,Number(snap.dayOrders)||0,true);
+      zpRenderToday(snap.orders,Number(snap.dayCount)||0,true);
       try{window.zpPerfRecord?.("home-today-ready-cache",200,performance.now()-perfReadyStartedAt,null)}catch{}
     }
   }catch{}
@@ -135,6 +292,8 @@ async function loadHome(){
 
     const todayKey=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
     let w=null;
+    // 当天全部有效单（升序），用于单卡切换；w 仍保留「最后一单」语义，供线路校验兜底。
+    let orders=[];
     // 当日该线路的运单数（"X单 X家 Xt" 里的 X）。一个运单覆盖一天一条线路，
     // 但当天可能上午/下午各上传一次，所以它不恒等于 1，必须按数据来。
     let dayOrders=0;
@@ -154,9 +313,12 @@ async function loadHome(){
         const latest=await latestPromise;
         if(latest){
           const {res:lr,data:ld}=latest;
-          if(lr.ok&&ld.success&&ld.waybill&&ld.waybill.routeId===cmpRouteId&&ld.waybill.date===todayKey){
-            w=ld.waybill;
-            dayOrders=Number(ld.dayCount)||0;
+          if(lr.ok&&ld.success){
+            /* orders 是当天全部有效单（升序）；旧接口/旧缓存只有 waybill，退回单页模式。
+               仍按 routeId + date 复校，避免接口版本漂移时把别的线路的单渲染进来。 */
+            const all=Array.isArray(ld.orders)&&ld.orders.length?ld.orders:(ld.waybill?[ld.waybill]:[]);
+            const mine=all.filter(x=>x&&x.routeId===cmpRouteId&&x.date===todayKey);
+            if(mine.length){orders=mine;w=mine[mine.length-1];dayOrders=Number(ld.dayCount)||mine.length}
           }
         }
       }catch{}
@@ -171,7 +333,8 @@ async function loadHome(){
           const serverRoute=String(data.routeId||"").trim();
           if(serverRoute)cmpRouteId=serverRoute;
           const usable=list.filter(x=>x&&x.routeId===cmpRouteId&&x.date===todayKey);
-          usable.sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
+          usable.sort((a,b)=>String(a.uploadedAt||a.createdAt||"").localeCompare(String(b.uploadedAt||b.createdAt||"")));
+          orders=usable;
           w=usable[usable.length-1]||null;
           dayOrders=usable.length;
         }
@@ -203,19 +366,22 @@ async function loadHome(){
           const serverRoute=String(historyData.routeId||"").trim();
           if(serverRoute)cmpRouteId=serverRoute;
           const todayEntry=historyData.history.find(x=>x?.date===todayKey&&Number(x?.count)>0);
+          // 月度索引只给 ID：这里只能补到一张单，降级为单页模式（tab 自动收起）。
           dayOrders=Number(todayEntry?.count)||0;
           const id=Array.isArray(todayEntry?.waybillIds)?todayEntry.waybillIds[todayEntry.waybillIds.length-1]:"";
           if(id){
             const {res:detailRes,data:detail}=await fetchJson("/api/waybills/latest?id="+encodeURIComponent(id),20000);
-            if(detailRes.ok&&detail.success&&detail.waybill&&detail.waybill.routeId===cmpRouteId&&detail.waybill.date===todayKey)w=detail.waybill;
+            if(detailRes.ok&&detail.success&&detail.waybill&&detail.waybill.routeId===cmpRouteId&&detail.waybill.date===todayKey){
+              w=detail.waybill;orders=[detail.waybill];
+            }
           }
         }
       }catch{}
     }
 
-    // 渲染统一走 zpRenderTodayCard（快照/新数据同一渲染路径，杜绝两份实现漂移）
-    if(w&&w.routeId===cmpRouteId){
-      zpRenderTodayCard(w,dayOrders,false);
+    // 渲染统一走 zpRenderToday（快照/新数据同一渲染路径，杜绝两份实现漂移）
+    if(orders.length){
+      zpRenderToday(orders,dayOrders,false);
     }else{
       setEmptyToday();
     }

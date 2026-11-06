@@ -54,7 +54,7 @@ try{localStorage.clear()}catch(e){}
   window.fetch=function(u,o){
     var s=String(u&&u.url||u),m=String((o&&o.method)||'GET').toUpperCase();
     if(s.indexOf('/api/home-bootstrap')>=0)return B(JSON.stringify({success:true,dispatchRoute:{id:'r1',name:'测试线路'},user:{boundRouteId:'r1'}}));
-    if(s.indexOf('/api/waybills/latest')>=0)return B(JSON.stringify({success:true,waybill:wb,dayCount:1}));
+    if(s.indexOf('/api/waybills/latest')>=0)return B(JSON.stringify({success:true,waybill:wb,dayCount:1,orders:[wb]}));
     if(s.indexOf('/api/history')>=0)return B(JSON.stringify({success:true,waybills:[wb],history:[],routeId:'r1'}));
     if(s.indexOf('/api/dispatch')>=0)return B(JSON.stringify({success:true,dispatchRoute:{id:'r1',name:'测试线路'}}));
     if(s.indexOf('/api/base')>=0){
@@ -166,20 +166,29 @@ const SNAP_EDIT = `(()=>{
   check('首页门店名单行（高度 <= 行高×1.6）', home && home.heights[0] <= home.line * 1.6, home && home.heights[0] + '/' + home.line);
   { const shot = await C('Page.captureScreenshot', { format: 'png' }); fs.writeFileSync(path.join(OUT_DIR, 'store-short-name-home.png'), Buffer.from(shot.data, 'base64')); }
   check('导航载荷仍用全名（简称不进入识别链路）', home && home.payloadNames[0] === LONG_NAME, home && home.payloadNames[0]);
-  check('简称行不溢出、不可滑动', home && home.wraps[0] && home.wraps[0].scrollable === false, home && JSON.stringify(home.wraps[0]));
 
-  /* 长名：单行 + 可左滑看全名 */
-  await ev(`(()=>{const r=document.querySelectorAll('#todayStoreList .today-store-row')[1];const w=r.querySelector('.zp-store-name-wrap');window.__w=w;return {sw:w.scrollWidth,cw:w.clientWidth}})()`);
-  await sleep(200);
-  const wide = await ev(`(()=>{const w=window.__w;return {sw:w.scrollWidth,cw:w.clientWidth,scrollable:w.classList.contains('is-scrollable'),atEnd:w.classList.contains('at-end'),h:Math.round(w.getBoundingClientRect().height)}})()`);
-  console.log('wide ' + JSON.stringify(wide));
-  check('长名确实溢出（可滑动）', wide && wide.sw > wide.cw, wide && wide.sw + '/' + wide.cw);
-  check('溢出时右侧渐隐提示出现', wide && wide.scrollable === true && wide.atEnd === false, JSON.stringify(wide));
-  check('滑动容器仍只占一行', wide && wide.h <= 24, wide && String(wide.h));
-  const scrolled = await ev(`(()=>{const w=window.__w;w.scrollLeft=w.scrollWidth;w.dispatchEvent(new Event('scroll'));return {sl:Math.round(w.scrollLeft),atEnd:w.classList.contains('at-end')}})()`);
-  check('滑到末尾能看到全名且渐隐收起', scrolled && scrolled.sl > 0 && scrolled.atEnd === true, JSON.stringify(scrolled));
+  /* 首页 2026-11-06：有简称后名称能一排放下，取消「左滑看全名」，
+     横向手势整块让给「同日多单切页」——这里验证改名后的结构与误触拦截。 */
+  const nameRow = await ev(`(()=>{
+    const rows=[...document.querySelectorAll('#todayStoreList .today-store-row')];
+    const r=rows[1],n=r.querySelector('.zp-store-name'),cs=n?getComputedStyle(n):{};
+    const view=document.querySelector('#todayStoreList .today-view');
+    const tabs=document.getElementById('todayTabs');
+    return {
+      wrap:!!r.querySelector('.zp-store-name-wrap'),
+      ox:cs.textOverflow||'', ws:cs.whiteSpace||'',
+      h:Math.round(n.getBoundingClientRect().height),
+      viewClip:view?getComputedStyle(view).overflowX:'',
+      tabsHidden:!!tabs&&tabs.hidden, tabCount:document.querySelectorAll('#todayTabs .today-tab').length
+    };
+  })()`);
+  console.log('nameRow ' + JSON.stringify(nameRow));
+  check('首页改为单行省略结构（不再有左滑容器）', nameRow && nameRow.wrap===false && nameRow.ox==='ellipsis' && nameRow.ws==='nowrap', JSON.stringify(nameRow));
+  check('名称仍只占一行', nameRow && nameRow.h <= (home.line||24)*1.6, nameRow && (nameRow.h+'/'+(home.line||24)));
+  check('切页容器裁切相邻页（overflow hidden）', nameRow && nameRow.viewClip==='hidden', nameRow && nameRow.viewClip);
+  check('单页时不出现切单 tab', nameRow && nameRow.tabsHidden===true && nameRow.tabCount===0, JSON.stringify(nameRow));
 
-  /* 横向拖动过的手势不得触发导航（否则想看名字会跳出地图） */
+  /* 横向拖动不再用于看全名，但误触拦截必须还在：滑一下不能跳出地图 */
   const dragClick = await ev(`(()=>{
     const link=document.querySelectorAll('#todayStoreList .today-store-row')[1];
     const opt={bubbles:true,cancelable:true,pointerType:'touch'};
@@ -190,7 +199,9 @@ const SNAP_EDIT = `(()=>{
     link.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true}));
     return {before,after:window.__clicks};
   })()`);
-  check('左滑手势不会误触地图导航', dragClick && dragClick.after === dragClick.before, JSON.stringify(dragClick));
+  check('横向拖动不会误触地图导航', dragClick && dragClick.after === dragClick.before, JSON.stringify(dragClick));
+  const dragT = await ev(`(document.querySelector('#todayStoreList .today-track')||{}).style.transform||''`);
+  check('单页时横滑不产生位移（不假装能切页）', dragT === '' || /translate3d\(0px/.test(dragT), dragT);
   const tapClick = await ev(`(()=>{
     const link=document.querySelectorAll('#todayStoreList .today-store-row')[1];
     const opt={bubbles:true,cancelable:true,pointerType:'touch'};
@@ -201,35 +212,6 @@ const SNAP_EDIT = `(()=>{
     return {before,after:window.__clicks};
   })()`);
   check('原地轻点仍正常唤起导航', tapClick && tapClick.after === tapClick.before + 1, JSON.stringify(tapClick));
-
-  /* 自动回位：滑开后静置约 2.4s 自己滑回起点，别让名字永远停在半截 */
-  await ev(`(()=>{const w=window.__w;w.scrollLeft=w.scrollWidth;w.dispatchEvent(new Event('scroll'));return 1})()`);
-  await sleep(700);
-  const beforeReturn = await ev(`(()=>{const w=window.__w;return {sl:Math.round(w.scrollLeft)}})()`);
-  check('滑开后先留足阅读时间，不立刻复位', beforeReturn && beforeReturn.sl > 0, JSON.stringify(beforeReturn));
-  await sleep(2600);
-  const midReturn = await ev(`(()=>{const w=window.__w;return {sl:Math.round(w.scrollLeft)}})()`);
-  check('静置超时后开始滑回（位移已减少）', midReturn && midReturn.sl < (beforeReturn && beforeReturn.sl), JSON.stringify(midReturn));
-  await sleep(900);
-  const afterReturn = await ev(`(()=>{const w=window.__w;return {sl:Math.round(w.scrollLeft),atEnd:w.classList.contains('at-end'),scrollable:w.classList.contains('is-scrollable'),h:Math.round(w.getBoundingClientRect().height)}})()`);
-  check('静置后自动回位到起点', afterReturn && afterReturn.sl === 0, JSON.stringify(afterReturn));
-  check('回位后渐隐恢复、仍是一行', afterReturn && afterReturn.atEnd === false && afterReturn.scrollable === true && afterReturn.h <= 24, JSON.stringify(afterReturn));
-
-  /* 手指再次落下必须打断回位（人还在看就别抢） */
-  const interrupt = await ev(`(async()=>{
-    const w=window.__w;
-    const row=w.closest('.today-store-row');
-    w.scrollLeft=w.scrollWidth;w.dispatchEvent(new Event('scroll'));
-    await new Promise(r=>setTimeout(r,2000));
-    const opt={bubbles:true,cancelable:true,pointerType:'touch'};
-    row.dispatchEvent(new PointerEvent('pointerdown',{...opt,clientX:200,clientY:300}));
-    const atDown=Math.round(w.scrollLeft);
-    await new Promise(r=>setTimeout(r,700));
-    const held=Math.round(w.scrollLeft);
-    row.dispatchEvent(new PointerEvent('pointerup',{...opt,clientX:200,clientY:300}));
-    return {atDown,held};
-  })()`);
-  check('手指落下即打断回位（人还在看就别抢）', interrupt && interrupt.held > 0 && Math.abs(interrupt.held - interrupt.atDown) <= 2, JSON.stringify(interrupt));
 
   /* 2. 运单详情：显示简称，导航仍全名 */
   await C('Page.navigate', { url: BASE + '/pages/order_detail.html?id=w-e2e' });

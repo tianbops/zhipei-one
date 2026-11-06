@@ -87,6 +87,10 @@ jobs:
         env:
           CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
         run: node tests/e2e-store-short-name.cjs
+      - name: Verify same-day multiple waybills switch inside one card
+        env:
+          CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
+        run: node tests/e2e-today-multi-order.cjs
       - name: Verify swiping right never deletes a store
         env:
           CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}

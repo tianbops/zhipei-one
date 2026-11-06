@@ -94,8 +94,10 @@ assert.ok(/is-scrollable:not\(\.at-end\)/.test(baseCss), "右侧渐隐只能出�
 assert.ok(scroll.includes("is-scrollable") && scroll.includes("at-end"), "渲染后须按实际宽度标记可滑动/已到末尾");
 assert.ok(/lastSwipeAt[\s\S]{0,200}stopImmediatePropagation/.test(scroll), "左滑手势须在 window 捕获阶段吞掉导航点击");
 assert.ok(/pointermove[\s\S]{0,220}Math\.abs\(dx\)>8/.test(scroll), "须用位移阈值区分滑动与轻点");
-/* 三处显示窗口必须共用同一份实现，不许各写一套 */
-assert.ok(/zpStoreNameHtml/.test(today) && /zpBindStoreNameScroll/.test(today), "首页须调用共享门店名组件");
+/* 三处显示窗口：运单详情 / 今日配送独立页共用「左滑看全名」；
+   首页 2026-11-06 起改为单行省略 —— 简称让名称能一排放下，横向手势让给「换单」。 */
+assert.ok(/class="zp-store-name"/.test(today) && !/zpBindStoreNameScroll/.test(today), "首页须改为单行省略，不再绑定左滑（手势让给同日多单切页）");
+assert.ok(/\.today-store-row \.zp-store-name\{[\s\S]{0,300}text-overflow:ellipsis/.test(css), "首页门店名须单行省略，长名不撑破一排");
 assert.ok(/zpStoreNameHtml/.test(render) && /zpBindStoreNameScroll/.test(render), "运单详情须调用共享门店名组件");
 assert.ok(/\.order-store-name\{[\s\S]{0,200}display:flex/.test(orderCss), "运单详情名称须改为纵向 flex：名称一行、备注一行");
 assert.ok(/\.order-store-line[\s\S]{0,160}\.zp-store-name-wrap\{flex:1 1 auto\}/.test(orderCss), "运单详情名称须占满序号以外宽度，状态徽标固定");

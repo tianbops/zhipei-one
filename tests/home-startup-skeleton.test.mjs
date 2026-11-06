@@ -55,9 +55,9 @@ const glue = read("scripts/home-bundle-glue.frag");
 const jsBundle = read("js/home.bundle.js");
 
 t("today.js：快照渲染与新数据渲染共用同一函数（防两份实现漂移）",
-  /function zpRenderTodayCard\(/.test(today) &&
-  /zpRenderTodayCard\(w,dayOrders,false\)/.test(today) &&
-  /zpRenderTodayCard\(snap\.waybill,Number\(snap\.dayOrders\)\|\|0,true\)/.test(today));
+  /function zpRenderToday\(orders,dayCount,fromCache\)/.test(today) &&
+  /zpRenderToday\(orders,dayOrders,false\)/.test(today) &&
+  /zpRenderToday\(snap\.orders,Number\(snap\.dayCount\)\|\|0,true\)/.test(today));
 t("today.js：快照限当天（日期不一致自动失效）",
   /s\.date===zpTodayKey\(\)/.test(today));
 t("today.js：快照渲染不回写（fromCache 时禁止旧数据自我续命）",
@@ -81,13 +81,15 @@ t("home-monthly.js：无快照且请求失败回退 hidden（骨架卡不得永�
 t("home-monthly.js：初始化即写当前月份标签（HTML 静态文案会过期）",
   /monthEl\.textContent=label\(cnMonth\(\)\)/.test(monthly));
 
-t("退出登录清除两份快照（防换账号串数据）",
+t("退出登录清除快照与选中单（防换账号串数据）",
   glue.includes('localStorage.removeItem("zp_home_today_v1")') &&
-  glue.includes('localStorage.removeItem("zp_home_hist_v1")'));
+  glue.includes('localStorage.removeItem("zp_home_today_v2")') &&
+  glue.includes('localStorage.removeItem("zp_home_hist_v1")') &&
+  glue.includes('sessionStorage.removeItem("zp_home_today_sel")'));
 
 t("js/home.bundle.js 已包含全部改动",
-  jsBundle.includes("zp_home_today_v1") && jsBundle.includes("zp_home_hist_v1") &&
-  jsBundle.includes("zpRenderTodayCard") && jsBundle.includes('classList.remove("is-skel")'));
+  jsBundle.includes("zp_home_today_v2") && jsBundle.includes("zp_home_hist_v1") &&
+  jsBundle.includes("zpRenderToday") && jsBundle.includes('classList.remove("is-skel")'));
 
 /* ---------- 4. bundle 新鲜度（防改源不重建） ---------- */
 execFileSync("node", [root + "scripts/build-home-bundle.mjs", "--check"], { stdio: "pipe" });

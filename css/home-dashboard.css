@@ -15,6 +15,46 @@ main.home-app .task-card{margin-top:0}
   margin-top:12px;
   border-top:1px solid var(--zp-tint);
 }
+/* 同日多单：tab 行独占一条，只有 1 单时整行 hidden —— 日常使用与旧版像素一致。
+   44px 高是触控下限；tab 条自身可横滑（≥4 单），卡片切页的手势只落在列表区。 */
+.today-tabs{
+  display:flex;
+  gap:6px;
+  margin-top:10px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.today-tabs::-webkit-scrollbar{display:none}
+.today-tabs[hidden]{display:none}
+.today-tab{
+  flex:0 0 auto;
+  min-height:44px;
+  padding:0 12px;
+  border:0;
+  border-radius:var(--zp-r-mini);
+  background:transparent;
+  color:var(--zp-muted);
+  font-family:inherit;
+  font-size:var(--zp-fs-13);
+  font-weight:var(--zp-fw-medium);
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+  cursor:pointer;
+  -webkit-appearance:none;
+  appearance:none;
+  -webkit-tap-highlight-color:transparent;
+}
+.today-tab.is-active{background:var(--zp-tint);color:var(--zp-text);font-weight:var(--zp-fw-bold)}
+.today-tab:active{background:var(--zp-tint)}
+/* 裁切放在 view 层：列表自身保持 overflow 可见，不重演「窗内滚动」那类坑；
+   view 只负责把相邻页挡在外面。 */
+.today-view{height:100%;overflow:hidden;touch-action:pan-y}
+.today-track{display:flex;align-items:flex-start;will-change:transform}
+.today-page{flex:0 0 100%;min-width:0}
+/* 滑动中摘要淡出，避免「数字还是上一单」的错位感 */
+.task-card.is-swiping .today-summary{opacity:.35;transition:opacity .12s}
 .today-store-row{
   min-height:44px;
   display:flex;
@@ -37,14 +77,21 @@ main.home-app .task-card{margin-top:0}
   font-variant-numeric:tabular-nums;
   text-align:right;
 }
-/* 门店名：固定单行、左滑看全名（结构样式在 css/ui-base.css 的 .zp-store-name*）。
-   这里只负责首页的排版与字号：名称占据序号以外的剩余宽度。 */
-.today-store-row .zp-store-name-wrap{flex:1 1 auto}
+/* 门店名：首页固定单行、超出省略。
+   2026-11-06 有简称后名称能一排放下，取消「左滑看全名」，横向手势让给「换单」；
+   运单详情 / 今日配送独立页仍保留左滑（.zp-store-name-wrap 在 css/ui-base.css）。 */
 .today-store-row .zp-store-name{
+  flex:1 1 auto;
+  min-width:0;
   color:var(--zp-text);
   font-size:var(--zp-fs-16);
   line-height:24px;
   font-weight:var(--zp-fw-medium);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  -webkit-user-drag:none;
+  user-select:none;
 }
 /* 首页列表内嵌空态改用 .zp-empty--tight（css/ui-base.css）。 */
 /* 统计版块精简：压缩垂直占用（小标签行高/间距收窄），无统计项时整块不占位。 */
@@ -62,7 +109,7 @@ main.home-app .task-card{margin-top:0}
 @media(max-width:380px){
  .home-app{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
  .today-store-row{min-height:44px}
- .today-store-name{font-size:var(--zp-fs-16)}
+ .today-store-row .zp-store-name{font-size:var(--zp-fs-16)}
 }
 
 

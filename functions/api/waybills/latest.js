@@ -120,6 +120,14 @@ const waybill=list[list.length-1]||null;
 // dayCount：当日该线路的有效运单数。首页今日卡要显示「X单 X家 Xt」，
 // 单量不能由前端假定为 1——同一天上午/下午各上传一次就是 2 单。
 // 这里 list 已经过滤掉无效/无权/跨线路/跨日期的条目，长度即口径。
-return json({success:true,waybill:await withRouteData(waybill),dayCount:list.length});
+//
+// orders（2026-11-06 同日多单）：首页从「只显示最后一单」改为「单卡切换」，
+// 需要当天全部有效单的明细才能本地切页——若切一次拉一次接口，弱网下必有空白。
+// 升序排列（早 → 晚）与 tab 顺序、时间轴一致；waybill 仍返回最后一单，兼容旧调用方。
+// 体积：单店约 250B，2~3 单 12~18 家 ≈ 5KB，可随 latest 一次带回。
+const brief=w=>({id:w.id,uploadedAt:clean(w.uploadedAt)||clean(w.createdAt),createdAt:clean(w.createdAt),date:w.date,routeId:w.routeId,
+ summary:w.summary,totalWeight:w.totalWeight,quality:w.quality,vehicle:w.vehicle,driver:w.driver,stores:w.stores});
+const orders=await Promise.all(list.map(async w=>brief(await withRouteData(w))));
+return json({success:true,waybill:orders[orders.length-1]||null,dayCount:list.length,orders});
 }
 export const onRequestGet=guard(latestGet,"WAYBILL_LATEST_READ_FAILED");

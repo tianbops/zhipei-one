@@ -75,7 +75,7 @@ t("月度统计图表提示 3 位（每日数据点 aria-label）", /x\.weight\.
 t("年度视图 3 位（统一 fmtV 格式化器）", /const fmtV=v=>isW\?v\.toFixed\(3\)\+"t":v\+"单"/.test(MONTHLY) && /\+fmtV\(v\)\+"<\/title><\/rect>"/.test(MONTHLY));
 
 const TODAY = read("js/home/today.js");
-t("今日卡重量 3 位", /Math\.round\(\(Number\(w\.totalWeight\)\|\|0\)\*1000\)\/1000\)\.toFixed\(3\)\+"t"/.test(TODAY));
+t("今日卡重量 3 位", /Math\.round\(\(Number\(o\.totalWeight\)\|\|0\)\*1000\)\/1000\)\.toFixed\(3\)\+"t"/.test(TODAY));
 
 const EXPORT = read("functions/api/history-export.js");
 t("导出 CSV 重量 3 位", /\* 1000\) \/ 1000\)\.toFixed\(3\)/.test(EXPORT));
@@ -88,7 +88,7 @@ t("今日卡有单量元素且在家数之前",
 t("月度统计有家数元素", /<b id="trendStores">0<\/b><i>家<\/i>/.test(HOME_HTML));
 t("月度统计初始重量是 0.000", /<b id="trendWeight">0\.000<\/b>/.test(HOME_HTML));
 
-t("今日卡渲染「N单」", /todayOrders\.textContent=\(dayOrders>0\?dayOrders:1\)\+"单"/.test(TODAY));
+t("今日卡渲染「N单」", /todayOrders\.textContent=\(total>0\?total:1\)\+"单"/.test(TODAY));
 t("今日卡单量有三层来源（latest/当日历史/月度索引）",
   (TODAY.match(/dayOrders=/g) || []).length >= 3,
   String((TODAY.match(/dayOrders=/g) || []).length));
