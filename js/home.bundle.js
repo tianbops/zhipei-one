@@ -1423,11 +1423,21 @@ function zpReadTodaySnap(){
 }
 
 /* 卡片高度跟随「当前页」：多单行数不同，若不锁高，切换时下面的趋势卡会跟着跳。
-   高度瞬时切换、不做动画——高度动画反而会让整页上下移动，观感更乱。 */
+   高度瞬时切换、不做动画——高度动画反而会让整页上下移动，观感更乱。
+   2026-11-06：改为一屏内滚后，正常版面下高度由 flex 链决定（卡片 100% -
+   固定头），这里必须清空内联高度，否则会把卡片顶出屏幕；
+   只有降级版面（矮屏/横屏/键盘 → 整页滚动）才按当前页锁高。 */
 let zpTodayState={orders:[],idx:0,dayCount:0,go:null};
+function zpTodayFallbackLayout(){
+  try{
+    if(window.matchMedia&&window.matchMedia("(max-height:759px),(orientation:landscape)").matches)return true;
+  }catch{}
+  try{return !!document.querySelector("main.home-app.is-keyboard")}catch{return false}
+}
 window.zpSyncTodayHeight=function(){
   if(!todayStoreList)return;
   if(todayStoreList.classList.contains("is-empty"))return;
+  if(!zpTodayFallbackLayout()){todayStoreList.style.height="";return}
   const page=todayStoreList.querySelector('.today-page[data-i="'+zpTodayState.idx+'"]');
   if(!page)return;
   todayStoreList.style.height=page.offsetHeight+"px";

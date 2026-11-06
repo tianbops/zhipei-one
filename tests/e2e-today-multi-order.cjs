@@ -87,6 +87,11 @@ const SNAP = `(()=>{
     rowsByPage:pages.map(p=>p.querySelectorAll('.today-store-row').length),
     idxByPage:pages.map(p=>[...p.querySelectorAll('.today-store-index')].map(s=>s.textContent.trim())),
     height:parseInt(list.style.height||'0',10),
+    /* 2026-11-06 一屏内滚：卡片高度由 flex 决定（非 JS 内联高度），
+       切页时不应跳；名单区高度 = 卡片剩余空间。 */
+    cardH:(document.querySelector('.task-card')||{}).offsetHeight||0,
+    listH:list.offsetHeight||0,
+    viewH:(list.querySelector('.today-view')||{}).offsetHeight||0,
     transform:(list.querySelector('.today-track')||{}).style?list.querySelector('.today-track').style.transform:''
   };
 })()`;
@@ -144,8 +149,9 @@ const SNAP = `(()=>{
   check('摘要跟随切页（6家 / 0.800t）', s && s.count === '6家' && s.weight === '0.800t', s && (s.count + ' ' + s.weight));
   check('第 1 单 6 家、序号连续', s && s.rowsByPage[0] === 6 && s.idxByPage[0].join(',') === '1,2,3,4,5,6', s && JSON.stringify(s.idxByPage[0]));
   check('轨道位移到第 1 页', s && /^translate3d\(0px/.test(s.transform), s && s.transform);
-  check('页高按第 1 单实测锁定', s && s.height > 200, s && String(s.height));
-  const h1 = s.height;
+  check('卡片高度 = 一屏（>500px，由 flex 链决定而非 JS 内联高度）', s && s.cardH > 500, s && String(s.cardH));
+  check('名单区占用卡片剩余高度（小于卡片、大于 0）', s && s.listH > 0 && s.listH < s.cardH, s && (s.listH + '/' + s.cardH));
+  const h1 = s.cardH;
 
   /* 左滑回第 2 单 */
   await ev(`(()=>{
@@ -165,7 +171,7 @@ const SNAP = `(()=>{
   console.log('swipe ' + JSON.stringify(s));
   check('左滑切到下一单（第 2 单）', s && s.active === 1, s && String(s.active));
   check('切页后摘要同步（4家）', s && s.count === '4家', s && s.count);
-  check('不同单的行数不同 → 页高随之变化', s && s.height !== h1, s && (h1 + ' -> ' + s.height));
+  check('切页后卡片高度不变（6 家 / 4 家同一屏，不再随行数跳动）', s && s.cardH === h1, s && (h1 + ' -> ' + s.cardH));
 
   /* 纵向滑动：判为滚动，不得切单 */
   await ev(`(()=>{
@@ -217,6 +223,27 @@ const SNAP = `(()=>{
   s = await ev(SNAP);
   console.log('reload ' + JSON.stringify(s));
   check('刷新后记住上次选择（第 1 单）', s && s.active === 0, s && String(s.active));
+
+  /* 2026-11-06 一屏内滚：把名单补到 25 行，验证「摘要 + 插画 + tab 固定，
+     只有门店名单在自己的区域里滚」。克隆行不影响 state / 手势，只测版面。 */
+  const scrollInfo = await ev(`(()=>{
+    const page=document.querySelector('.today-page[data-i="0"]');
+    const sum=document.querySelector('.task-main');
+    const tabs=document.getElementById('todayTabs');
+    const row=page.querySelector('.today-store-row');
+    for(let i=0;i<24;i++) page.appendChild(row.cloneNode(true));
+    const r=(e)=>Math.round(e.getBoundingClientRect().top);
+    const before={sum:r(sum),tab:r(tabs),card:document.querySelector('.task-card').offsetHeight};
+    const overflow=page.scrollHeight-page.clientHeight;
+    page.scrollTop=300;
+    const after={sum:r(sum),tab:r(tabs),top:page.scrollTop};
+    return {overflow,before,after};
+  })()`);
+  console.log('scroll ' + JSON.stringify(scrollInfo));
+  check('25 行时名单页内可滚（内容溢出）', scrollInfo && scrollInfo.overflow > 100, scrollInfo && String(scrollInfo.overflow));
+  check('名单内滚后摘要/插画位置不动', scrollInfo && scrollInfo.after.sum === scrollInfo.before.sum, scrollInfo && (scrollInfo.before.sum + ' -> ' + scrollInfo.after.sum));
+  check('名单内滚后多单 tab 位置不动', scrollInfo && scrollInfo.after.tab === scrollInfo.before.tab, scrollInfo && (scrollInfo.before.tab + ' -> ' + scrollInfo.after.tab));
+  check('滚动发生在名单页内（scrollTop 生效）', scrollInfo && scrollInfo.after.top > 0, scrollInfo && String(scrollInfo.after.top));
 
   const shot = await C('Page.captureScreenshot', { format: 'png', clip: { x: 0, y: 0, width: 390, height: 620, scale: 2 } });
   fs.writeFileSync(path.join(OUT_DIR, 'today-multi-order.png'), Buffer.from(shot.data, 'base64'));

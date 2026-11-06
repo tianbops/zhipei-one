@@ -2726,11 +2726,13 @@ main.home-app .task-card{margin-top:0}
 }
 .today-tab.is-active{background:var(--zp-tint);color:var(--zp-text);font-weight:var(--zp-fw-bold)}
 .today-tab:active{background:var(--zp-tint)}
-/* 裁切放在 view 层：列表自身保持 overflow 可见，不重演「窗内滚动」那类坑；
-   view 只负责把相邻页挡在外面。 */
-.today-view{height:100%;overflow:hidden;touch-action:pan-y}
-.today-track{display:flex;align-items:flex-start;will-change:transform}
-.today-page{flex:0 0 100%;min-width:0}
+/* 裁切放在 view 层：view 只负责把相邻页挡在外面，纵向滚动交给每一页自己。
+   2026-11-06（用户）：摘要头（单量/吨位 + 小推车）钉住，只有门店名单滚 ——
+   故 view 变成 flex 剩余区，页内 height:100% + overflow-y:auto。
+   横向手势仍由 JS 接管（touch-action:pan-y 允许浏览器做纵向滚动）。 */
+.today-view{flex:1 1 auto;min-height:0;overflow:hidden;touch-action:pan-y}
+.today-track{display:flex;align-items:stretch;height:100%;will-change:transform}
+.today-page{flex:0 0 100%;min-width:0;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:auto}
 /* 滑动中摘要淡出，避免「数字还是上一单」的错位感 */
 .task-card.is-swiping .today-summary{opacity:.35;transition:opacity .12s}
 .today-store-row{
@@ -2791,50 +2793,70 @@ main.home-app .task-card{margin-top:0}
 }
 
 
-/* ===== 首页纵向布局：内容驱动 + 整页滚动 =====
-   规则只有一条链：顶栏 → 今日配送卡（随门店数增高，不封顶）→ 趋势卡 → 由整页滚动承接。
-   门店列表不再「封顶后窗内滚动」：那条旧设计在浏览器地址栏占高时只压高度、没恢复
-   overflow，列表既被裁又被渐隐遮住、还滑不动（2026-11-05 用户录屏：web 端运单未展开，
-   app 端正常）。现在任何可视高度下门店都完整铺开，与 app 内 WebView 全高时一致。
-   字号 / 行高 / 左右边距 / 圆角一律不缩（可读性与跨页一致性红线）。 */
+/* ===== 首页纵向布局：一屏卡 + 名单内部滚动（2026-11-06 改）=====
+   用户要求：「人物小推车部分固定，下方门店名称部分滚动」。
+   旧版是整页滚动，22 家门店时摘要头会跟着滚出屏幕，滑到第 10 行就看不到「22 家 · 1.151t」。
+   现在：
+     卡片高 = 滚动区一屏（height:100%，父级 .zp-scroll 高度已确定）
+     卡片内 flex 列：标题 / 摘要+插画 / tab 固定，名单区 flex 剩余、页内滚动
+     卡片底边停在浮岛上方（.zp-scroll 的 88px 底 padding 让出来的），名单不会被浮岛遮
+   趋势卡仍在卡片之后，整页滚动仍可到达（滚出即卡片上移，属正常文档流）。
+   降级版面（矮屏/横屏/键盘）回退整页滚动，见文件下方。 */
 main.home-app .zp-scroll{
   display:flex;
   flex-direction:column;
-  /* 2026-11-04：由 overflow:hidden（整页锁死、列表内部滚）改为 overflow-y:auto。
-     今日配送卡现随内容增高，超出一屏时由整页滚动承接；空态卡片保持 4 行高度（不撑满整页）。 */
   overflow-y:auto;
   /* 底栏 fixed 覆盖在滚动区之上，必须留出 66px + 呼吸位，否则趋势卡被遮 */
   padding-bottom:calc(88px + env(safe-area-inset-bottom));
 }
 main.home-app .task-card{
-  /* 不撑满整页：空态保持 4 行高度（见 .today-store-list.is-empty），有内容时随门店数增高。
-     首屏即此状态，数据到达后高度稳定，刷新无抖动。 */
+  /* height:100% = 滚动区 content 高度（一屏 - 上下 padding）。
+     业务端没有全局 box-sizing，这里必须显式声明，否则 padding/border 会顶出去。 */
   flex:0 0 auto;
+  height:100%;
+  box-sizing:border-box;
   min-height:0;
   display:flex;
   flex-direction:column;
 }
 main.home-app .today-store-list{
-  /* 内容驱动高度：随门店数自然增高，不封顶。空态由 .is-empty 接管（固定 4 行高度）。 */
-  flex:0 0 auto;
+  /* 名单区吃掉卡片里除固定头以外的全部高度，滚动由页内 .today-page 承担。
+     overflow:hidden 只为裁掉横向轨道的相邻页，纵向滚动不在这一层。 */
+  flex:1 1 auto;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
   max-height:none;
-  overflow:visible;
+  overflow:hidden;
 }
+/* 固定头一律不参与收缩：卡片变矮时 flex 会先压缩 tab 行（44 → 22px，
+   文字被切一半），tab 是多单的门面，必须钉死高度。 */
+main.home-app .task-card > .task-title,
+main.home-app .task-card > .task-main,
+main.home-app .task-card > .today-tabs,
+main.home-app .task-card > .today-metrics{flex:0 0 auto}
 main.home-app .trend-card{flex:0 0 auto}
 
 /* 降级 A：横屏 / 矮屏（分屏、小窗、浏览器地址栏占高）→ 版面回退为块级 + 整页滚动。
-   只切版面，不再给列表加 max-height：列表在两种版面下都是内容高度，
-   所以地址栏伸缩跨过 760px 时也不会出现「列表高度跳变」。
+   卡片不再锁一屏高度，名单回到内容高度（页内 overflow 关闭），避免矮屏里卡片被压成一条。
    用户明确要求：小屏宁可整屏滚，也不压列表。 */
 @media (max-height:759px),(orientation:landscape){
   main.home-app .zp-scroll{display:block;overflow-y:auto}
-  main.home-app .task-card{display:block}
+  main.home-app .task-card{display:block;height:auto}
+  main.home-app .today-store-list{display:block;overflow:visible}
+  .today-view{height:auto}
+  .today-track{align-items:flex-start;height:auto}
+  .today-page{height:auto;overflow:visible}
 }
 
 /* 降级 B：键盘弹起（JS 判定，见 js/home/fit.js）
    键盘把可视区压矮时若继续用 flex 链，卡片会被压成一条，故同样回退整页滚动。 */
 main.home-app.is-keyboard .zp-scroll{display:block;overflow-y:auto}
-main.home-app.is-keyboard .task-card{display:block}
+main.home-app.is-keyboard .task-card{display:block;height:auto}
+main.home-app.is-keyboard .today-store-list{display:block;overflow:visible}
+main.home-app.is-keyboard .today-view{height:auto}
+main.home-app.is-keyboard .today-track{align-items:flex-start;height:auto}
+main.home-app.is-keyboard .today-page{height:auto;overflow:visible}
 
 /* 列表不再有「底部渐隐」：渐隐是为「窗内滚动还有下文」服务的，
    现在门店全部铺开、由整页滚动承接，硬加渐隐反而像被裁断。
