@@ -976,7 +976,7 @@ if w.stage ~= "PLANNED" and w.stage ~= "CONFIRMED" then return 0 end
 w.historyStatus = "SUPERSEDED"
 w.supersededBy = ARGV[2]
 w.supersededAt = ARGV[3]
-w.supersededReason = "REUPLOAD_SAME_DAY"
+w.supersededReason = "REUPLOAD_IDENTICAL"
 redis.call("SET", KEYS[1], cjson.encode(w))
 redis.call("SREM", KEYS[2], ARGV[1])
 if w.dailyDedupeKey and w.dailyDedupeKey ~= "" then
@@ -1004,7 +1004,7 @@ return 1`,
     w.historyStatus = "SUPERSEDED";
     w.supersededBy = args[1];
     w.supersededAt = args[2];
-    w.supersededReason = "REUPLOAD_SAME_DAY";
+    w.supersededReason = "REUPLOAD_IDENTICAL";
     await ctx.set(keys[0], JSON.stringify(w));
     await ctx.srem(keys[1], [args[0]]);
     if (w.dailyDedupeKey && w.dailyDedupeKey !== "") {

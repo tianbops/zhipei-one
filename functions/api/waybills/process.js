@@ -444,7 +444,7 @@ async function saveWaybill(order, requestId, resumed){
     stageStarted=waybillPerfNow();
     const superseded=await supersedeSameDay(env,order,indexKey);
     markSaveStage("saveSupersedeMs",stageStarted);
-    if(superseded.length)emit(99,`已替换当日同车辆旧运单 ${superseded.length} 张`);
+    if(superseded.length)emit(99,`已合并当日重复运单 ${superseded.length} 张（内容完全一致）`);
     stageStarted=waybillPerfNow();
     if(resumed){ try { await appendWaybillEvent(env, order.id, {event:"WAYBILL_RESUMED_SAVE",stage:"SAVED",requestId,id:order.id,qualityLevel:order.quality?.level,qualityFlags:order.quality?.flags||[]}); } catch { /* best-effort */ } }
     else { await recordWaybillLifecycle(env, order, {requestId, rawExtractCount, extractCount:order.summary?.extractCount, recoveredCount:order.summary?.recoveredCount, matched, pending, d}); }

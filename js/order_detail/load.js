@@ -68,7 +68,7 @@ async function load(){
   render();
   bindHistoryGestures();
   // 本次上传自动替换了同日同车辆的旧运单（重传即替换），给一次明确反馈
-  if(supersededN>0){try{window.zpToast?.(`已替换当日同车辆旧运单 ${supersededN} 张，统计已更新`,'success')}catch{}}
+  if(supersededN>0){try{window.zpToast?.(`已合并当日重复运单 ${supersededN} 张（内容完全一致），统计已更新`,'success')}catch{}}
  }catch(e){
   if(e?.name==='AbortError')throw Error('运单读取超时，请重试');
   throw e;

@@ -233,8 +233,10 @@ async function toJson(resp) {
   check("所有索引成员均有主记录（无孤儿索引）", allConsistent);
 
   // ===================================================================
-  console.log("\n【阶段11】同日取代真实生效（MGET 前缀修复后行为回归）— 同车门店超集取代旧单");
-  // B2 与 A 同车同重量，门店为 A 的超集（补拍多了天虹）→ 按「重传即替换」语义取代 A。
+  console.log("\n【阶段11】同日重复上传：只有内容完全一致才合并（超集 = 不同运单）");
+  // B2 与 A 同车同重量，但门店比 A 多一家（天虹）。
+  // 2026-11-06 规则收紧：一处不一致即不同运单，B2 不得取代 A。
+  // 真实依据：同车同日 22 家 1.150887t 与 21 家 1.070565t 被误判重传，第 1 张消失。
   // 注意与阶段5 的 B（粤B88888，不同车，独立单）互不干扰。
   const rawTextB2 = `运输日期 ${TODAY}\n车牌号 粤B12345\n总重量 1.5吨\n谊品生鲜温馨家园南门店 -> 华润万家梅林店 -> 沃尔玛深南店 -> 天虹商场龙华店`;
   const fdB2 = new FormData();
@@ -243,10 +245,10 @@ async function toJson(resp) {
   resp = await processMod.onRequestPost({request: postFormReq("https://app.local/api/waybills/process", TOKEN, fdB2), env});
   let B2 = await toJson(resp);
   check("B2 处理成功", B2.success === true);
-  check("B2 取代了旧单 A（同车门店超集）", Array.isArray(B2.superseded) && B2.superseded.some(s => s.id === idA), "superseded=" + JSON.stringify((B2.superseded || []).map(s => s.id)));
-  check("A 已从当日索引移除", !red.sets.get(indexKey(TODAY))?.has(idA));
+  check("B2 未取代旧单 A（门店多一家 = 不同运单）", Array.isArray(B2.superseded) && B2.superseded.length === 0, "superseded=" + JSON.stringify(B2.superseded || []));
+  check("A 仍在当日索引", red.sets.get(indexKey(TODAY))?.has(idA) === true);
   check("B2 已进入当日索引", red.sets.get(indexKey(TODAY))?.has(B2.waybill?.id));
-  check("当日索引收敛为 3 张（B/E/B2）", red.sets.get(indexKey(TODAY))?.size === 3, "size=" + red.sets.get(indexKey(TODAY))?.size);
+  check("当日索引为 4 张（A/B/E/B2 并存）", red.sets.get(indexKey(TODAY))?.size === 4, "size=" + red.sets.get(indexKey(TODAY))?.size);
 
   // ===================================================================
   console.log(`\n==== 汇总：通过 ${pass} / 失败 ${fail} ====`);
