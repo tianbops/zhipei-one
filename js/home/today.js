@@ -60,8 +60,35 @@ function zpTodayFallbackLayout(){
   }catch{}
   try{return !!document.querySelector("main.home-app.is-keyboard")}catch{return false}
 }
+/* 名单页是否真的能滚：内容溢出才打 .is-scrollable，CSS 据此开
+   overscroll-behavior-y:contain。名单不满一屏时保持可连锁，
+   否则卡片区域彻底滑不动，下方月度统计就翻不到了。 */
+function zpMarkTodayScrollable(){
+  if(!todayStoreList)return;
+  const pages=todayStoreList.querySelectorAll(".today-page");
+  Array.prototype.forEach.call(pages,function(p){
+    p.classList.toggle("is-scrollable",p.scrollHeight-p.clientHeight>2);
+  });
+}
+/* 名单内容变了就重算「能不能滚」：数据渲染、切页、克隆行、字体换行都会改变
+   溢出量。只用 zpSyncTodayHeight 的调用点不够 —— 行情变化（如简称开关、
+   字体就绪后换行）不走那条路径，标记会停在旧值上。 */
+let zpScrollMarkTimer=null;
+function zpObserveTodayList(){
+  if(!todayStoreList||todayStoreList.dataset.zpScrollObs==="1")return;
+  todayStoreList.dataset.zpScrollObs="1";
+  try{
+    new MutationObserver(function(){
+      clearTimeout(zpScrollMarkTimer);
+      zpScrollMarkTimer=setTimeout(function(){try{zpMarkTodayScrollable()}catch(e){}},60);
+    }).observe(todayStoreList,{childList:true,subtree:true});
+  }catch{}
+}
+zpObserveTodayList();
+
 window.zpSyncTodayHeight=function(){
   if(!todayStoreList)return;
+  zpMarkTodayScrollable();
   if(todayStoreList.classList.contains("is-empty"))return;
   if(!zpTodayFallbackLayout()){todayStoreList.style.height="";return}
   const page=todayStoreList.querySelector('.today-page[data-i="'+zpTodayState.idx+'"]');
@@ -128,9 +155,11 @@ function zpRenderToday(orders,dayCount,fromCache){
   }
 
   if(todayTabs){
+    /* 2026-11-06（用户定稿）：tab 只留「第 N 单」，不再带上传时间。
+       两单同屏时时间是干扰项 —— 司机认的是「第几单」，页内顺序就是上传顺序。
+       时间仍可从运单详情看到，不在这里重复。 */
     todayTabs.innerHTML=list.length>1?list.map((o,i)=>{
-      const hm=zpTodayHM(o.uploadedAt||o.createdAt);
-      return '<button type="button" class="today-tab" role="tab" data-i="'+i+'" aria-selected="false">第'+(i+1)+'单'+(hm?' '+hm:'')+'</button>';
+      return '<button type="button" class="today-tab" role="tab" data-i="'+i+'" aria-selected="false">第'+(i+1)+'单</button>';
     }).join(""):"";
     todayTabs.hidden=list.length<2;
   }

@@ -2733,6 +2733,11 @@ main.home-app .task-card{margin-top:0}
 .today-view{flex:1 1 auto;min-height:0;overflow:hidden;touch-action:pan-y}
 .today-track{display:flex;align-items:stretch;height:100%;will-change:transform}
 .today-page{flex:0 0 100%;min-width:0;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:auto}
+/* 页内真的能滚时才切断滚动链（.is-scrollable 由 today.js 按内容溢出量打标）：
+   名单滚到底继续上滑，不会把整张卡顶上去 —— 实测 22 家门店滑到底后外层被连带
+   滚 226px，摘要从 top:148 漂到 -78，「固定」当场失效（2026-11-06 用户录屏）。
+   名单不满一屏时不加：否则卡片区域彻底滑不动，连下方的月度统计都翻不到。 */
+.today-page.is-scrollable{overscroll-behavior-y:contain}
 /* 滑动中摘要淡出，避免「数字还是上一单」的错位感 */
 .task-card.is-swiping .today-summary{opacity:.35;transition:opacity .12s}
 .today-store-row{

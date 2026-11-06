@@ -134,7 +134,10 @@ const SNAP = `(()=>{
   let s = await ev(SNAP);
   console.log('init ' + JSON.stringify(s));
   check('两单都在 DOM 里（pages=2）', s && s.pages === 2, s && String(s.pages));
-  check('tab 按上传时间升序（09:12 → 14:40）', s && s.tabs.length === 2 && /09:12/.test(s.tabs[0]) && /14:40/.test(s.tabs[1]), s && JSON.stringify(s.tabs));
+  /* 2026-11-06 用户定稿：tab 只写「第 N 单」，不再带上传时间。
+     顺序仍按上传时间升序（第 1 单 = 最早上传）。 */
+  check('tab 只写「第1单 / 第2单」，不带时间', s && s.tabs.join('|') === '第1单|第2单', s && JSON.stringify(s.tabs));
+  check('tab 文案里没有时间（无 HH:mm）', s && !s.tabs.some((t) => /\d{1,2}:\d{2}/.test(t)), s && JSON.stringify(s.tabs));
   check('默认停在最新一单（第 2 单）', s && s.active === 1, s && String(s.active));
   check('摘要取当前单（4家）', s && s.count === '4家', s && s.count);
   check('单量取全天（2单）', s && s.orders === '2单', s && s.orders);
@@ -244,6 +247,42 @@ const SNAP = `(()=>{
   check('名单内滚后摘要/插画位置不动', scrollInfo && scrollInfo.after.sum === scrollInfo.before.sum, scrollInfo && (scrollInfo.before.sum + ' -> ' + scrollInfo.after.sum));
   check('名单内滚后多单 tab 位置不动', scrollInfo && scrollInfo.after.tab === scrollInfo.before.tab, scrollInfo && (scrollInfo.before.tab + ' -> ' + scrollInfo.after.tab));
   check('滚动发生在名单页内（scrollTop 生效）', scrollInfo && scrollInfo.after.top > 0, scrollInfo && String(scrollInfo.after.top));
+
+  /* 2026-11-06 用户录屏「固定没实现」：真手指上滑到名单底部后，滚动链会把
+     外层 .zp-scroll 一起带走（实测 226px，摘要 top 从 148 漂到 -78），
+     头部整块滚出屏幕。修法是页内可滚时开 overscroll-behavior-y:contain，
+     这里用 CDP 触摸事件把「到底即停、头部不动」钉死。 */
+  await C('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+  const swipeUp = async () => {
+    const x = 195, y0 = 660, dy = -300;
+    const pt = (y) => [{ x, y, radiusX: 12, radiusY: 12, force: 1, id: 1 }];
+    await C('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: pt(y0) });
+    for (let k = 1; k <= 12; k++) {
+      await C('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: pt(y0 + (dy * k) / 12) });
+      await sleep(16);
+    }
+    await C('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await sleep(700);
+  };
+  const HEAD_PROBE = `(()=>{
+    const r=(e)=>e?Math.round(e.getBoundingClientRect().top):null;
+    const p=document.querySelector('.today-page[data-i="0"]');
+    const outer=document.querySelector('main.home-app .zp-scroll');
+    return {sum:r(document.querySelector('.task-main')),tab:r(document.getElementById('todayTabs')),
+      pageTop:p?Math.round(p.scrollTop):null,pageMax:p?Math.round(p.scrollHeight-p.clientHeight):null,
+      outerTop:outer?Math.round(outer.scrollTop):0,outerMax:outer?Math.round(outer.scrollHeight-outer.clientHeight):0,
+      mark:p?p.classList.contains('is-scrollable'):false};
+  })()`;
+  await sleep(300);   /* 等 MutationObserver 打完 .is-scrollable */
+  const headBefore = await ev(HEAD_PROBE);
+  await swipeUp(); await swipeUp(); await swipeUp();
+  const headAfter = await ev(HEAD_PROBE);
+  console.log('touch ' + JSON.stringify({ headBefore, headAfter }));
+  check('可滚名单被标记 .is-scrollable（滚动链才切断）', headBefore && headBefore.mark === true, headBefore && String(headBefore.mark));
+  check('手指连滑 3 次后名单到底', headAfter && headAfter.pageMax > 0 && headAfter.pageTop === headAfter.pageMax, headAfter && (headAfter.pageTop + '/' + headAfter.pageMax));
+  check('名单到底后外层不被连带滚动', headAfter && headAfter.outerTop === 0, headAfter && (headAfter.outerTop + '/' + headAfter.outerMax));
+  check('触摸滚动后摘要 top 不动', headBefore && headAfter && headBefore.sum === headAfter.sum, headBefore && (headBefore.sum + ' -> ' + (headAfter && headAfter.sum)));
+  check('触摸滚动后 tab top 不动', headBefore && headAfter && headBefore.tab === headAfter.tab, headBefore && (headBefore.tab + ' -> ' + (headAfter && headAfter.tab)));
 
   const shot = await C('Page.captureScreenshot', { format: 'png', clip: { x: 0, y: 0, width: 390, height: 620, scale: 2 } });
   fs.writeFileSync(path.join(OUT_DIR, 'today-multi-order.png'), Buffer.from(shot.data, 'base64'));

@@ -72,7 +72,7 @@ console.log("首页今日配送一屏内滚契约（基础段 8 条）");
     /\.task-card > \.task-title,/.test(BASE) && /\.task-card > \.task-main,/.test(BASE), heads);
 }
 
-console.log("\n名单页内滚动契约（3 条）");
+console.log("\n名单页内滚动契约（5 条）");
 {
   const view = rule(CSS, ".today-view");
   t("view 基础段 flex:1 1 auto + min-height:0",
@@ -82,6 +82,14 @@ console.log("\n名单页内滚动契约（3 条）");
     !!page && /height:100%/.test(page), page);
   t("page overflow-y:auto（纵向滚动落在页内，横向仍归 JS 手势）",
     !!page && /overflow-y:auto/.test(page), page);
+  /* 2026-11-06 用户录屏「固定没实现」：名单滚到底后滚动链把外层带走 226px，
+     摘要从 top:148 漂到 -78。修法是 .is-scrollable 时切断连锁 ——
+     这条必须锁死，回退成 auto 会当场复现「头部被顶走」。 */
+  const pageScrollable = rule(CSS, ".today-page.is-scrollable");
+  t("可滚名单 .is-scrollable 时 overscroll-behavior-y:contain（切断滚动链，头部不被顶走）",
+    !!pageScrollable && /overscroll-behavior-y:contain/.test(pageScrollable), pageScrollable);
+  t("基础 .today-page 仍允许连锁（名单不满一屏时整卡可翻到月度统计）",
+    !!page && /overscroll-behavior-y:auto/.test(page), page);
 }
 
 console.log("\n空态 4 排列契约（2 条）");
@@ -114,12 +122,20 @@ console.log("\n降级段回退整页滚动（4 条）");
     /\.today-page\{height:auto;overflow:visible\}/.test(BJ), BJ.slice(0, 240));
 }
 
-console.log("\n高度同步 JS 契约（2 条）");
+console.log("\n高度同步 JS 契约（5 条）");
 {
   t("zpSyncTodayHeight 只在降级版面锁高，正常版面清空内联高度",
     /zpTodayFallbackLayout/.test(JS) && /style\.height=""/.test(JS));
   t("降级判定同时覆盖矮屏/横屏与键盘（matchMedia + is-keyboard）",
     /max-height:759px/.test(JS) && /is-keyboard/.test(JS));
+  /* 名单能不能滚要按「是否真的溢出」判断：一律 contain 会让短名单的卡片滑不动，
+     滚不到下方月度统计；一律 auto 则长名单到底会把头部顶走。 */
+  t("zpMarkTodayScrollable 按溢出量打标（scrollHeight - clientHeight > 2）",
+    /function zpMarkTodayScrollable/.test(JS) && /scrollHeight-p\.clientHeight>2/.test(JS));
+  t("标记在 zpSyncTodayHeight 里刷新（渲染/切页/resize 都会走到）",
+    /zpMarkTodayScrollable\(\);\s*\n\s*if\(todayStoreList\.classList\.contains\("is-empty"\)\)/.test(JS));
+  t("行情变化由 MutationObserver 兜住（克隆/换行等不走高度同步路径时也重算）",
+    /new MutationObserver\([\s\S]{0,240}?zpMarkTodayScrollable/.test(JS));
 }
 
 console.log("\nfit.js 契约（3 条）");
