@@ -58,7 +58,8 @@ main.home-app .task-card{margin-top:0}
 /* 页内真的能滚时才切断滚动链（.is-scrollable 由 today.js 按内容溢出量打标）：
    名单滚到底继续上滑，不会把整张卡顶上去 —— 实测 22 家门店滑到底后外层被连带
    滚 226px，摘要从 top:148 漂到 -78，「固定」当场失效（2026-11-06 用户录屏）。
-   名单不满一屏时不加：否则卡片区域彻底滑不动，连下方的月度统计都翻不到。 */
+   2026-11-06 定稿后外层已改 overflow:hidden（首页根本没有滚动量），这条降为第二层
+   防护：留着防降级版面/以后误把外层改回可滚时旧病复发。 */
 .today-page.is-scrollable{overscroll-behavior-y:contain}
 /* 滑动中摘要淡出，避免「数字还是上一单」的错位感 */
 .task-card.is-swiping .today-summary{opacity:.35;transition:opacity .12s}
@@ -120,20 +121,31 @@ main.home-app .task-card{margin-top:0}
 }
 
 
-/* ===== 首页纵向布局：一屏卡 + 名单内部滚动（2026-11-06 改）=====
-   用户要求：「人物小推车部分固定，下方门店名称部分滚动」。
-   旧版是整页滚动，22 家门店时摘要头会跟着滚出屏幕，滑到第 10 行就看不到「22 家 · 1.151t」。
+/* ===== 首页纵向布局：锁一屏，头部常显（2026-11-06 定稿）=====
+   用户要求：「今日配送 + 线路 + 日期 + 汇总 + 小推车 + 多单 tab 在首页常显，
+   不随门店滚动而上滚；下面只有门店名称这一块能滚（横滑切单、竖滚看门店）」。
    现在：
-     卡片高 = 滚动区一屏（height:100%，父级 .zp-scroll 高度已确定）
-     卡片内 flex 列：标题 / 摘要+插画 / tab 固定，名单区 flex 剩余、页内滚动
-     卡片底边停在浮岛上方（.zp-scroll 的 88px 底 padding 让出来的），名单不会被浮岛遮
-   趋势卡仍在卡片之后，整页滚动仍可到达（滚出即卡片上移，属正常文档流）。
-   降级版面（矮屏/横屏/键盘）回退整页滚动，见文件下方。 */
+     .zp-scroll 不再滚动（overflow:hidden）—— 外层没有滚动量，
+       手指按在头部/摘要/小推车/tab 上也不可能有任何位移，头部从结构上锁死；
+     卡片高 = 一屏（height:100%，父级高度已确定），
+       卡内 flex 列：标题 / 摘要+插画 / tab 固定，名单区 flex 剩余、页内滚动；
+     卡片底边停在浮岛上方（.zp-scroll 的 88px 底 padding 让出来的），名单不会被浮岛遮。
+   为什么从「overflow-y:auto + 内层 contain 截断滚动链」改成锁死：
+     上一版是事后截断，只在内层名单真的溢出时才切断连锁；手指落在头部（不是滚动
+     容器）时手势仍归外层，实测整页滚满 226px、卡片顶 98 → -128，头部被带走。
+     且首帧/切单瞬间标记未打上时会漏一次。锁死外层后不再依赖任何运行时判断。
+   代价（用户已确认）：月度统计卡原位保留、本轮暂不可达（见下方 .trend-card 注释）。
+   降级版面（矮屏/横屏/键盘）仍回退整页滚动，见文件下方 —— 那条路径上月度卡可滚到。 */
 main.home-app .zp-scroll{
   display:flex;
   flex-direction:column;
-  overflow-y:auto;
-  /* 底栏 fixed 覆盖在滚动区之上，必须留出 66px + 呼吸位，否则趋势卡被遮 */
+  /* overflow:hidden 已经挡掉用户手势；再叠 clip：支持 clip 的浏览器连
+     程序滚动（focus / scrollIntoView 落到被裁掉的月度卡上）也一并禁止，
+     头部不会因为任何原因被带走。不支持的旧 WebView 自动退回 hidden。 */
+  overflow:hidden;
+  overflow:clip;
+  overscroll-behavior-y:none;
+  /* 底栏 fixed 覆盖在滚动区之上，必须留出 66px + 呼吸位，否则卡片底边压到浮岛 */
   padding-bottom:calc(88px + env(safe-area-inset-bottom));
 }
 main.home-app .task-card{
@@ -162,6 +174,9 @@ main.home-app .task-card > .task-title,
 main.home-app .task-card > .task-main,
 main.home-app .task-card > .today-tabs,
 main.home-app .task-card > .today-metrics{flex:0 0 auto}
+/* 月度统计卡：DOM / 尺寸 / 样式一律不动（用户「先占位保持不变」）。
+   外层锁一屏后它落在卡片之后、被 .zp-scroll 裁掉 —— 这是「头部常显」的代价，
+   本轮接受；后续若要重新露出，走历史页或底部抽屉，不要把它塞回滚动流里。 */
 main.home-app .trend-card{flex:0 0 auto}
 
 /* 降级 A：横屏 / 矮屏（分屏、小窗、浏览器地址栏占高）→ 版面回退为块级 + 整页滚动。

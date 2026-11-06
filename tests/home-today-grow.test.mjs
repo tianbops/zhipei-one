@@ -2,10 +2,12 @@
  * 首页「今日配送」高度行为契约（node tests/home-today-grow.test.mjs）
  * ------------------------------------------------------------------
  * 守护需求（2026-11-06 用户改）：
- *   「人物小推车部分固定，下方门店名称部分滚动；多运单 tab 也固定在里面」。
+ *   「人物小推车部分固定，下方门店名称部分滚动；多运单 tab 也固定在里面」，
+ *   以及「头部在首页常显，不随门店滚动而上滚」——后者靠锁死外层滚动实现。
  *
  * 实现要点（易回归，必须锁死）：
- *   1) 基础段（@media 之外）：卡片高度 = 滚动区一屏（height:100% + border-box），
+ *   1) 基础段（@media 之外）：外层 .zp-scroll overflow:hidden（首页没有滚动量，
+ *      头部从结构上锁死）；卡片高度 = 一屏（height:100% + border-box），
  *      卡片内 flex 列，标题 / 摘要+插画 / tab / 底部指标 flex:0 0 auto（不可被压缩，
  *      否则 tab 会被 flex 压成 22px、文字切一半）；
  *   2) 名单区 flex:1 1 auto + min-height:0 + overflow:hidden，纵向滚动落在
@@ -15,6 +17,7 @@
  *   4) 空态高度仍由 .zp-empty--tight 的 176px 定死（44 × 4），不依赖 JS 加类；
  *   5) zpSyncTodayHeight 只在降级版面锁高，正常版面必须清空内联高度，
  *      否则卡片被顶出屏幕。
+ *   月度统计卡（#trendCard）在原位保留但被裁掉，属用户确认的代价，不在此断言。
  * 注意：基础规则与降级规则（@media 内）选择器同名，靠源码顺序层叠，
  *      故此处分别断言两段的取值。
  */
@@ -47,8 +50,12 @@ console.log("首页今日配送一屏内滚契约（基础段 8 条）");
   const scroller = rule(BASE, "main.home-app .zp-scroll");
   t("滚动容器基础段 display:flex（整页竖链）",
     !!scroller && /display:flex/.test(scroller), scroller);
-  t("滚动容器基础段 overflow-y:auto（趋势卡仍在卡片之后，整页可滚达）",
-    !!scroller && /overflow-y:auto/.test(scroller), scroller);
+  t("滚动容器基础段 overflow:hidden（2026-11-06 锁一屏：外层无滚动量，头部常显）",
+    !!scroller && /overflow:hidden/.test(scroller) && !/overflow-y:auto/.test(scroller), scroller);
+  t("滚动容器基础段再叠 overflow:clip（连 focus / scrollIntoView 的程序滚动也禁止）",
+    !!scroller && /overflow:clip/.test(scroller) && scroller.indexOf("overflow:clip") > scroller.indexOf("overflow:hidden"), scroller);
+  t("滚动容器基础段 overscroll-behavior-y:none（不参与任何连锁）",
+    !!scroller && /overscroll-behavior-y:none/.test(scroller), scroller);
 
   const card = rule(BASE, "main.home-app .task-card");
   t("卡片基础段 height:100%（= 滚动区一屏）",
@@ -88,7 +95,7 @@ console.log("\n名单页内滚动契约（5 条）");
   const pageScrollable = rule(CSS, ".today-page.is-scrollable");
   t("可滚名单 .is-scrollable 时 overscroll-behavior-y:contain（切断滚动链，头部不被顶走）",
     !!pageScrollable && /overscroll-behavior-y:contain/.test(pageScrollable), pageScrollable);
-  t("基础 .today-page 仍允许连锁（名单不满一屏时整卡可翻到月度统计）",
+  t("基础 .today-page 默认允许连锁（只在确实溢出时才加 contain，不做无条件拦截）",
     !!page && /overscroll-behavior-y:auto/.test(page), page);
 }
 
