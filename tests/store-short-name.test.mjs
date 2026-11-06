@@ -84,6 +84,12 @@ assert.ok(/shortName:String\(x\.shortName\|\|""\)\.trim\(\)\.slice\(0,16\)/.test
 /* 5. 显示：简称优先，列表单行 */
 assert.ok(/const rawName=String\(x\?\.displayName\|\|""\)\.trim\(\)\|\|String\(x\?\.name/.test(today), "首页今日配送须优先取 displayName");
 assert.ok(/const rawName=String\(x\.displayName\|\|''\)\.trim\(\)\|\|String\(x\.name/.test(render), "运单详情须优先取 displayName");
-assert.ok(/\.today-store-name\{[\s\S]{0,160}-webkit-line-clamp:1;/.test(css), "首页门店名须固定单行（超出省略）");
+assert.ok(/\.today-store-name-wrap\{[\s\S]{0,220}overflow-x:auto/.test(css), "首页门店名须放进横向滚动容器（左滑看全名）");
+assert.ok(/\.today-store-name\{[\s\S]{0,160}white-space:nowrap/.test(css), "首页门店名须强制单行");
+assert.ok(!/\.today-store-name\{[\s\S]{0,120}-webkit-line-clamp/.test(css), "不得再用 line-clamp：它只裁不滚，看不到后半段");
+assert.ok(/is-scrollable:not\(\.at-end\)/.test(css), "右侧渐隐只能出现在真的溢出且未滑到末尾时");
+assert.ok(today.includes("is-scrollable") && today.includes("at-end"), "渲染后须按实际宽度标记可滑动/已到末尾");
+assert.ok(/lastMoveAt>=600[\s\S]{0,400}stopImmediatePropagation/.test(today), "左滑手势须在 window 捕获阶段吞掉导航点击");
+assert.ok(/pointermove[\s\S]{0,220}Math\.abs\(dx\)>8/.test(today), "须用位移阈值区分滑动与轻点");
 
 console.log("store-short-name: all assertions passed");

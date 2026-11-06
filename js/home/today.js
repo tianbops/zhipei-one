@@ -8,6 +8,59 @@
    数据有变则自然纠偏，当日无单/线路切换则走 setEmptyToday() 收敛为空态。
    日期不一致自动失效；退出登录时由 home-bundle-glue.frag 清除，防止换账号串数据。 */
 const TODAY_SNAP_KEY="zp_home_today_v1";
+
+/* 门店名「单行 + 左滑看全名」（2026-11-06）
+   ------------------------------------------------------------------
+   长门店名不再换行（会挤乱整卡节奏），但也不能让人永远看不到后半段：
+   名称放进横向滚动容器，默认只占一行，手指向左滑即可看完整名称。
+   - 用滚动容器而不是 line-clamp：两者不能共存，line-clamp 只裁不给看；
+   - 右侧渐隐只在「确实溢出且未滑到末尾」时出现，短名不会莫名发虚；
+   - 横向拖动过的手势在捕获阶段吞掉 click，避免滑动时误弹地图菜单。 */
+function zpSyncTodayStoreName(el){
+  if(!el||!el.classList)return;
+  const over=el.scrollWidth>el.clientWidth+1;
+  el.classList.toggle("is-scrollable",over);
+  el.classList.toggle("at-end",over&&el.scrollLeft+el.clientWidth>=el.scrollWidth-2);
+}
+function zpPrepareTodayStoreNames(){
+  if(!todayStoreList)return;
+  const wraps=todayStoreList.querySelectorAll(".today-store-name-wrap");
+  for(const el of wraps)zpSyncTodayStoreName(el);
+}
+function zpBindTodayStoreNames(){
+  if(!todayStoreList||todayStoreList.dataset.nameScrollBound==="1")return;
+  todayStoreList.dataset.nameScrollBound="1";
+  /* scroll 不冒泡，用捕获阶段统一接住每个名称容器 */
+  todayStoreList.addEventListener("scroll",e=>{
+    const el=e.target;
+    if(el&&el.classList&&el.classList.contains("today-store-name-wrap"))zpSyncTodayStoreName(el);
+  },true);
+  let startX=0,startY=0,pressing=false,moved=false,lastMoveAt=0;
+  todayStoreList.addEventListener("pointerdown",e=>{
+    if(e.pointerType==="mouse"&&e.button!==0)return;
+    startX=e.clientX;startY=e.clientY;pressing=true;moved=false;
+  },true);
+  todayStoreList.addEventListener("pointermove",e=>{
+    if(!pressing)return;
+    const dx=e.clientX-startX,dy=e.clientY-startY;
+    if(Math.abs(dx)>8&&Math.abs(dx)>Math.abs(dy)){moved=true;lastMoveAt=Date.now()}
+  },{capture:true,passive:true});
+  const endPress=()=>{pressing=false};
+  todayStoreList.addEventListener("pointerup",endPress,true);
+  todayStoreList.addEventListener("pointercancel",endPress,true);
+  /* 滑动过的手势不得弹菜单/跳链接。
+     必须挂在 window 捕获阶段：地图导航的委托在 document 捕获阶段，
+     挂在列表自身会晚于它执行，stopPropagation 已经来不及。 */
+  window.addEventListener("click",e=>{
+    if(!moved||Date.now()-lastMoveAt>=600)return;
+    const row=e.target&&e.target.closest?e.target.closest(".today-store-row"):null;
+    if(!row||!todayStoreList.contains(row))return;
+    e.preventDefault();e.stopImmediatePropagation();moved=false;
+  },true);
+  let raf=0;
+  window.addEventListener("resize",()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(zpPrepareTodayStoreNames)},{passive:true});
+}
+
 const zpTodayKey=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 function zpReadTodaySnap(){
   try{
@@ -41,7 +94,7 @@ function zpRenderTodayCard(w,dayOrders,fromCache){
         /* 显示名优先取基准库投影的简称（displayName），没有简称时回退运单全名 */
         const rawName=String(x?.displayName||"").trim()||String(x?.name||"").trim()||String(x?.rawName||"").trim()||String(x?.originalName||"").trim()||"未识别门店";
         const name=esc(rawName),t=navTarget(x);
-        const body='<span class="today-store-index">'+(i+1)+'</span><span class="today-store-name">'+name+'</span>';
+        const body='<span class="today-store-index">'+(i+1)+'</span><span class="today-store-name-wrap"><span class="today-store-name">'+name+'</span></span>';
         if(!t)return '<div class="today-store-row">'+body+'</div>';
         return '<a class="today-store-row" href="'+attr(t.url)+'" target="'+t.target+'"'+(t.rel?' rel="'+t.rel+'"':'')+
           ' data-zp-nav="'+attr(t.kind)+'" data-zp-nav-name="'+attr(rawName)+'"'+
@@ -51,6 +104,8 @@ function zpRenderTodayCard(w,dayOrders,fromCache){
     }catch{
       todayStoreList.innerHTML='<div class="zp-empty zp-empty--tight">今日门店明细暂不可用</div>';
     }
+    zpBindTodayStoreNames();
+    requestAnimationFrame(zpPrepareTodayStoreNames);
   }
 
   if(todayMetrics){

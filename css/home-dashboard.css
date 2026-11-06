@@ -37,17 +37,29 @@ main.home-app .task-card{margin-top:0}
   font-variant-numeric:tabular-nums;
   text-align:right;
 }
-/* 门店名（15→17px）：固定单行，超出省略。
-   门店全名常带「（临时）」「特渠部…」等前后缀，两行会挤乱整卡节奏（用户 2026-11-06 反馈）；
-   长名请在数据中心设置「门店简称」——简称只影响显示，识别仍走全名 + 学习别名。 */
-.today-store-name{
+/* 门店名：固定单行；超长时放进横向滚动容器，左滑看完整名称（2026-11-06）。
+   不再用 line-clamp —— 它只裁不滚，用户永远看不到后半段；
+   右侧渐隐只在真的溢出且未滑到末尾时出现，短名不会莫名发虚。 */
+.today-store-name-wrap{
   min-width:0;
-  display:-webkit-box;
-  -webkit-box-orient:vertical;
-  -webkit-line-clamp:1;
-  overflow:hidden;
-  white-space:normal;
-  overflow-wrap:anywhere;
+  flex:1 1 auto;
+  overflow-x:auto;
+  overflow-y:hidden;
+  overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  -ms-overflow-style:none;
+}
+.today-store-name-wrap::-webkit-scrollbar{display:none}
+.today-store-name-wrap.is-scrollable:not(.at-end){
+  -webkit-mask-image:linear-gradient(to right,#000 calc(100% - 22px),transparent);
+  mask-image:linear-gradient(to right,#000 calc(100% - 22px),transparent);
+}
+.today-store-name{
+  display:inline-block;
+  white-space:nowrap;
+  overflow-wrap:normal;
+  padding-right:2px;
   color:var(--zp-text);
   font-size:var(--zp-fs-16);
   line-height:24px;

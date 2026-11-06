@@ -31,12 +31,12 @@ const ALIAS = '卫健委临时点';
 
 const BASE_STORES = [
   { storeId: 'S1', originalName: LONG_NAME, name: LONG_NAME, shortName: SHORT_NAME, aliases: [ALIAS], navigation: 'https://surl.amap.com/abc', lat: 29.5631, lng: 106.5512, routeOrder: 1, note: '' },
-  { storeId: 'S2', originalName: '谊品生鲜长安锦绣城店', name: '谊品生鲜长安锦绣城店', shortName: '', aliases: [], navigation: '', lat: null, lng: null, routeOrder: 2, note: '' },
+  { storeId: 'S2', originalName: '谊品生鲜重庆渝北区长安锦绣城旗舰店（含仓储配送中心）', name: '谊品生鲜重庆渝北区长安锦绣城旗舰店（含仓储配送中心）', shortName: '', aliases: [], navigation: '', lat: null, lng: null, routeOrder: 2, note: '' },
 ];
 const WB_STORES = [
   /* 模拟服务端投影：简称由 latest.js 的 withRouteData 从基准库补上 */
   { storeId: 'S1', name: LONG_NAME, displayName: SHORT_NAME, rawName: LONG_NAME, navigation: 'https://surl.amap.com/abc', lat: 29.5631, lng: 106.5512, routeOrder: 1 },
-  { storeId: 'S2', name: '谊品生鲜长安锦绣城店', rawName: '谊品生鲜长安锦绣城店', routeOrder: 2 },
+  { storeId: 'S2', name: '谊品生鲜重庆渝北区长安锦绣城旗舰店（含仓储配送中心）', rawName: '谊品生鲜重庆渝北区长安锦绣城旗舰店（含仓储配送中心）', routeOrder: 2 },
 ];
 
 const STUB = `
@@ -66,11 +66,11 @@ try{localStorage.clear()}catch(e){}
     return real.apply(this,arguments);
   };
 })();
-window.__nav=[];
+window.__nav=[];window.__clicks=0;
 window.open=function(u){window.__nav.push(String(u));return null;};
 document.addEventListener('click',function(e){
   var a=e.target&&e.target.closest?e.target.closest('a[data-zp-nav]'):null;
-  if(a)e.preventDefault();
+  if(a){window.__clicks++;e.preventDefault();}
 },true);`;
 
 const SNAP_HOME = `(()=>{
@@ -81,7 +81,8 @@ const SNAP_HOME = `(()=>{
     heights:rows.map(r=>Math.round((r.querySelector('.today-store-name')||r).getBoundingClientRect().height)),
     line:parseFloat(getComputedStyle(document.querySelector('.today-store-name')).lineHeight)||0,
     navNames:[...document.querySelectorAll('#todayStoreList a[data-zp-nav]')].map(a=>a.dataset.zpNavName||''),
-    payloadNames:[...document.querySelectorAll('#todayStoreList a[data-zp-nav]')].map(a=>{try{return JSON.parse(a.dataset.zpNavPayload||'{}').name||''}catch(e){return ''}})
+    payloadNames:[...document.querySelectorAll('#todayStoreList a[data-zp-nav]')].map(a=>{try{return JSON.parse(a.dataset.zpNavPayload||'{}').name||''}catch(e){return ''}}),
+    wraps:[...document.querySelectorAll('.today-store-name-wrap')].map(w=>({sw:w.scrollWidth,cw:w.clientWidth,sl:Math.round(w.scrollLeft),scrollable:w.classList.contains('is-scrollable'),atEnd:w.classList.contains('at-end')}))
   };
 })()`;
 
@@ -148,10 +149,45 @@ const SNAP_EDIT = `(()=>{
   console.log('home ' + JSON.stringify(home));
   check('首页渲染 2 家门店', home && home.rows === 2, home && String(home.rows));
   check('有简称的门店显示简称', home && home.labels[0] === SHORT_NAME, home && home.labels[0]);
-  check('未设简称的门店回退全名', home && home.labels[1] === '谊品生鲜长安锦绣城店', home && home.labels[1]);
+  check('未设简称的门店回退全名', home && home.labels[1] === '谊品生鲜重庆渝北区长安锦绣城旗舰店（含仓储配送中心）', home && home.labels[1]);
   check('首页门店名单行（高度 <= 行高×1.6）', home && home.heights[0] <= home.line * 1.6, home && home.heights[0] + '/' + home.line);
   { const shot = await C('Page.captureScreenshot', { format: 'png' }); fs.writeFileSync(path.join(OUT_DIR, 'store-short-name-home.png'), Buffer.from(shot.data, 'base64')); }
   check('导航载荷仍用全名（简称不进入识别链路）', home && home.payloadNames[0] === LONG_NAME, home && home.payloadNames[0]);
+  check('简称行不溢出、不可滑动', home && home.wraps[0] && home.wraps[0].scrollable === false, home && JSON.stringify(home.wraps[0]));
+
+  /* 长名：单行 + 可左滑看全名 */
+  await ev(`(()=>{const r=document.querySelectorAll('#todayStoreList .today-store-row')[1];const w=r.querySelector('.today-store-name-wrap');window.__w=w;return {sw:w.scrollWidth,cw:w.clientWidth}})()`);
+  await sleep(200);
+  const wide = await ev(`(()=>{const w=window.__w;return {sw:w.scrollWidth,cw:w.clientWidth,scrollable:w.classList.contains('is-scrollable'),atEnd:w.classList.contains('at-end'),h:Math.round(w.getBoundingClientRect().height)}})()`);
+  console.log('wide ' + JSON.stringify(wide));
+  check('长名确实溢出（可滑动）', wide && wide.sw > wide.cw, wide && wide.sw + '/' + wide.cw);
+  check('溢出时右侧渐隐提示出现', wide && wide.scrollable === true && wide.atEnd === false, JSON.stringify(wide));
+  check('滑动容器仍只占一行', wide && wide.h <= 24, wide && String(wide.h));
+  const scrolled = await ev(`(()=>{const w=window.__w;w.scrollLeft=w.scrollWidth;w.dispatchEvent(new Event('scroll'));return {sl:Math.round(w.scrollLeft),atEnd:w.classList.contains('at-end')}})()`);
+  check('滑到末尾能看到全名且渐隐收起', scrolled && scrolled.sl > 0 && scrolled.atEnd === true, JSON.stringify(scrolled));
+
+  /* 横向拖动过的手势不得触发导航（否则想看名字会跳出地图） */
+  const dragClick = await ev(`(()=>{
+    const link=document.querySelectorAll('#todayStoreList .today-store-row')[1];
+    const opt={bubbles:true,cancelable:true,pointerType:'touch'};
+    link.dispatchEvent(new PointerEvent('pointerdown',{...opt,clientX:320,clientY:300}));
+    link.dispatchEvent(new PointerEvent('pointermove',{...opt,clientX:250,clientY:302}));
+    link.dispatchEvent(new PointerEvent('pointerup',{...opt,clientX:250,clientY:302}));
+    const before=window.__clicks;
+    link.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true}));
+    return {before,after:window.__clicks};
+  })()`);
+  check('左滑手势不会误触地图导航', dragClick && dragClick.after === dragClick.before, JSON.stringify(dragClick));
+  const tapClick = await ev(`(()=>{
+    const link=document.querySelectorAll('#todayStoreList .today-store-row')[1];
+    const opt={bubbles:true,cancelable:true,pointerType:'touch'};
+    link.dispatchEvent(new PointerEvent('pointerdown',{...opt,clientX:200,clientY:300}));
+    link.dispatchEvent(new PointerEvent('pointerup',{...opt,clientX:200,clientY:300}));
+    const before=window.__clicks;
+    link.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true}));
+    return {before,after:window.__clicks};
+  })()`);
+  check('原地轻点仍正常唤起导航', tapClick && tapClick.after === tapClick.before + 1, JSON.stringify(tapClick));
 
   /* 2. 运单详情：显示简称，导航仍全名 */
   await C('Page.navigate', { url: BASE + '/pages/order_detail.html?id=w-e2e' });
