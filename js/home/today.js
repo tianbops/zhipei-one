@@ -49,48 +49,11 @@ function zpReadTodaySnap(){
 }
 
 /* 卡片高度跟随「当前页」：多单行数不同，若不锁高，切换时下面的趋势卡会跟着跳。
-   高度瞬时切换、不做动画——高度动画反而会让整页上下移动，观感更乱。
-   2026-11-06：改为一屏内滚后，正常版面下高度由 flex 链决定（卡片 100% -
-   固定头），这里必须清空内联高度，否则会把卡片顶出屏幕；
-   只有降级版面（矮屏/横屏/键盘 → 整页滚动）才按当前页锁高。 */
+   高度瞬时切换、不做动画——高度动画反而会让整页上下移动，观感更乱。 */
 let zpTodayState={orders:[],idx:0,dayCount:0,go:null};
-function zpTodayFallbackLayout(){
-  try{
-    if(window.matchMedia&&window.matchMedia("(max-height:759px),(orientation:landscape)").matches)return true;
-  }catch{}
-  try{return !!document.querySelector("main.home-app.is-keyboard")}catch{return false}
-}
-/* 名单页是否真的能滚：内容溢出才打 .is-scrollable，CSS 据此开
-   overscroll-behavior-y:contain。名单不满一屏时保持可连锁，
-   否则卡片区域彻底滑不动，下方月度统计就翻不到了。 */
-function zpMarkTodayScrollable(){
-  if(!todayStoreList)return;
-  const pages=todayStoreList.querySelectorAll(".today-page");
-  Array.prototype.forEach.call(pages,function(p){
-    p.classList.toggle("is-scrollable",p.scrollHeight-p.clientHeight>2);
-  });
-}
-/* 名单内容变了就重算「能不能滚」：数据渲染、切页、克隆行、字体换行都会改变
-   溢出量。只用 zpSyncTodayHeight 的调用点不够 —— 行情变化（如简称开关、
-   字体就绪后换行）不走那条路径，标记会停在旧值上。 */
-let zpScrollMarkTimer=null;
-function zpObserveTodayList(){
-  if(!todayStoreList||todayStoreList.dataset.zpScrollObs==="1")return;
-  todayStoreList.dataset.zpScrollObs="1";
-  try{
-    new MutationObserver(function(){
-      clearTimeout(zpScrollMarkTimer);
-      zpScrollMarkTimer=setTimeout(function(){try{zpMarkTodayScrollable()}catch(e){}},60);
-    }).observe(todayStoreList,{childList:true,subtree:true});
-  }catch{}
-}
-zpObserveTodayList();
-
 window.zpSyncTodayHeight=function(){
   if(!todayStoreList)return;
-  zpMarkTodayScrollable();
   if(todayStoreList.classList.contains("is-empty"))return;
-  if(!zpTodayFallbackLayout()){todayStoreList.style.height="";return}
   const page=todayStoreList.querySelector('.today-page[data-i="'+zpTodayState.idx+'"]');
   if(!page)return;
   todayStoreList.style.height=page.offsetHeight+"px";
@@ -155,11 +118,9 @@ function zpRenderToday(orders,dayCount,fromCache){
   }
 
   if(todayTabs){
-    /* 2026-11-06（用户定稿）：tab 只留「第 N 单」，不再带上传时间。
-       两单同屏时时间是干扰项 —— 司机认的是「第几单」，页内顺序就是上传顺序。
-       时间仍可从运单详情看到，不在这里重复。 */
     todayTabs.innerHTML=list.length>1?list.map((o,i)=>{
-      return '<button type="button" class="today-tab" role="tab" data-i="'+i+'" aria-selected="false">第'+(i+1)+'单</button>';
+      const hm=zpTodayHM(o.uploadedAt||o.createdAt);
+      return '<button type="button" class="today-tab" role="tab" data-i="'+i+'" aria-selected="false">第'+(i+1)+'单'+(hm?' '+hm:'')+'</button>';
     }).join(""):"";
     todayTabs.hidden=list.length<2;
   }
@@ -195,8 +156,6 @@ function zpRenderToday(orders,dayCount,fromCache){
     applySummary(list[i]);
     applyMetrics(list[i]);
     zpSetTodaySelId(list[i].id);
-    /* 切单/切 tab 一律把浮岛弹回来：否则切完看不到「换成了哪一单」 */
-    try{window.zpHeadShow&&window.zpHeadShow()}catch{}
     window.zpSyncTodayHeight();
   }
   zpTodayState.go=go;
@@ -283,190 +242,6 @@ function zpBindTodaySwipe(){
     });
   }
 }
-
-/* ===== 顶部浮岛收放（2026-11-07 定稿）=====
-   规则（用户按字面定稿，与上一版方向相反）：
-     · 手指下滑（触点 y 增大）→ 浮岛 + 底栏一起收起；
-     · 手指上滑（触点 y 减小）→ 一起弹出；
-     · 整屏任意位置生效：品牌区 / 浮岛 / tab / 名单 / 统计区都接管，
-       横向手势（左右切单）不介入；矮屏 / 横屏 / 键盘（整页滚动）全程跳过。
-   两个事件源折算成同一口径 delta（>0 下滑 / <0 上滑）：
-     · touch：直接用 clientY 增量，覆盖整屏（名单外的区域不会滚动）；
-     · scroll：scrollTop 增大 = 内容上滚 = 手指上滑，取负号；
-       真触摸手势期间及惯性尾段由 touch 源独占，避免一次手势被重复累计。
-   为什么改 padding-top + scrollTop 而不是改容器高度：
-     浮岛是浮层压在名单上，列表容器从卡片顶部铺到底、位置恒定。展开态给
-     .today-page 一个等于浮岛高的 padding-top，收起态减到 18px；同帧把
-     scrollTop 减去同样的量，屏幕上的门店原地不动、底部多露一截。
-     名单还没滚够（scrollTop < 差值）时不补偿 —— 列表随浮岛一起上移，
-     是「抽屉收起」的自然效果，弹出时靠 padding 对称还原。
-   为什么补完要锁 280ms：
-     改 scrollTop / padding 会再触发 scroll 事件，方向与手势相反，不锁就会被
-     判成反向手势自行弹回，来回抖成死循环。 */
-(function(){
-  const main=document.querySelector("main.home-app");
-  const island=document.querySelector("main.home-app .zp-head-island");
-  const list=document.getElementById("todayStoreList");
-  if(!main||!island||!list)return;
-
-  const COLLAPSED=10;   // 把手线占位；收起态 .today-page 的 padding-top = COLLAPSED + 8
-  let headH=0,hidden=false,lockUntil=0,lastY=0,downAcc=0,upAcc=0,measureRaf=0;
-  let compensatedPages=[]; // 本次收起被扣掉 s 的页，弹出时逐一补回
-  let lastTouchAt=0;       // 真触摸手势时间戳，用来抑制重复判定
-
-  function fallback(){
-    try{return typeof zpTodayFallbackLayout==="function"?zpTodayFallbackLayout():false}catch{return false}
-  }
-  function shift(){return Math.max(0,headH-COLLAPSED)}
-  function curPage(){return list.querySelector('.today-page[data-i="'+(zpTodayState.idx||0)+'"]')}
-  function modalOpen(){
-    try{
-      const o=main.querySelector(".upload-overlay");
-      return !!o&&!o.hasAttribute("hidden");
-    }catch{return false}
-  }
-
-  /* 量浮岛自然高度：island 高度被 --zp-head-h 钉住，量之前必须临时放开，
-     否则量到的是上次的值 —— 单/多单切换（tab 显隐）时会量不出 54px 的差。 */
-  function measure(){
-    if(fallback())return;
-    const prev=island.style.height;
-    island.style.height="auto";
-    const h=Math.round(island.getBoundingClientRect().height);
-    island.style.height=prev;
-    if(h>0&&h!==headH){
-      headH=h;
-      main.style.setProperty("--zp-head-h",h+"px");
-    }
-  }
-  function scheduleMeasure(){
-    if(measureRaf)return;
-    measureRaf=requestAnimationFrame(function(){measureRaf=0;measure()});
-  }
-
-  /* 底栏联动：首页外层不滚，nav.js 的滚动判定收不到名单的 scroll，
-     不显式通知的话底栏会一直待在屏幕上，与收起的顶部浮岛打架。 */
-  function navSync(hide){
-    try{window.zpNavSetHidden&&window.zpNavSetHidden(hide)}catch{}
-  }
-
-  function hide(page){
-    if(hidden||fallback())return;
-    const s=shift();
-    hidden=true;
-    lockUntil=Date.now()+280;
-    main.classList.add("is-head-hidden");
-    navSync(true);
-    /* padding-top 是全局切换（每一页都少了 s），所以每一页都要按自己的滚动
-       位置决定补不补偿：滚够的扣掉 s 保持内容原地；没滚过的随浮岛一起上移
-       （抽屉收起），弹出时 padding 加回、内容自动归位。只补当前页的话，
-       切回另一单会看到位置整整偏了 s。 */
-    compensatedPages=[];
-    Array.prototype.forEach.call(list.querySelectorAll(".today-page"),function(p){
-      const y=p.scrollTop;
-      if(s>0&&y>s+8){p.scrollTop=y-s;compensatedPages.push(p)}
-    });
-    lastY=page?page.scrollTop:0;downAcc=0;upAcc=0;
-  }
-  /* 只对收起时扣过 s 的页补回：padding 加回 s，内容位置保持不变。
-     切单 / 把手线 / 回滑都走同一条还原路径，不会互相错位。 */
-  function show(){
-    if(!hidden)return;
-    hidden=false;
-    lockUntil=Date.now()+280;
-    main.classList.remove("is-head-hidden");
-    navSync(false);
-    const s=shift();
-    Array.prototype.forEach.call(compensatedPages,function(p){
-      /* 用户在收起态把列表滚回顶部附近时不补：此时再 +s 会把第一行顶到浮岛
-         底下（一弹出就跳到第 4 家）。让浮岛盖下来、内容留在顶部才是对的。 */
-      if(p.scrollTop<=s+8)return;
-      const max=p.scrollHeight-p.clientHeight;
-      p.scrollTop=Math.max(0,Math.min(max,p.scrollTop+s));
-    });
-    compensatedPages=[];
-    const p=curPage();
-    lastY=p?p.scrollTop:0;downAcc=0;upAcc=0;
-  }
-  window.zpHeadShow=function(){show()};
-
-  /* 把手线：点一下也能展开。34×3 的线本身太细，热区在 CSS 里放大到 44×24；
-     展开按「用户自己上滑」处理（compensate=true），内容原地、浮岛盖下来。 */
-  const handle=document.querySelector("main.home-app .zp-head-handle");
-  if(handle){
-    handle.setAttribute("role","button");
-    handle.setAttribute("tabindex","0");
-    handle.setAttribute("aria-label","展开今日配送");
-    const openHead=function(){show()};
-    handle.addEventListener("click",openHead);
-    handle.addEventListener("keydown",function(e){
-      if(e.key==="Enter"||e.key===" "){e.preventDefault();openHead()}
-    });
-  }
-
-  /* 统一判定：delta>0 手指下滑（隐藏方向），delta<0 手指上滑（弹出方向） */
-  function push(delta,page){
-    if(Date.now()<lockUntil||fallback())return;
-    if(delta>0){downAcc+=delta;upAcc=0}
-    else if(delta<0){upAcc-=delta;downAcc=0}
-    const p=page||curPage();
-    if(!hidden){
-      if(downAcc>=12)hide(p);
-    }else if(upAcc>=6){
-      show();
-    }
-  }
-
-  /* scroll 源：滚轮 / 键盘 / 程序化滚动，以及触摸惯性尾段之后的原生滚动。 */
-  list.addEventListener("scroll",function(e){
-    const t=e.target;
-    if(!t||!t.classList||!t.classList.contains("today-page"))return;
-    if(fallback()){if(hidden)show();return}
-    const y=t.scrollTop;
-    /* 真触摸手势期间及 350ms 惯性尾段：交给 touch 源，避免重复累计 */
-    if(Date.now()<lockUntil||Date.now()-lastTouchAt<350){lastY=y;downAcc=0;upAcc=0;return}
-    const dy=y-lastY;
-    lastY=y;
-    if(dy)push(-dy,t);
-  },{capture:true,passive:true});
-
-  /* touch 源：绑在整屏容器上，捕获阶段、passive（不吞默认行为，切单手势照常）。
-     8px 死区 + |dx|>|dy|*1.2 判为横向时本次触点不再介入。 */
-  let tActive=false,tAxis=null,tSX=0,tSY=0,tLastY=0;
-  main.addEventListener("touchstart",function(e){
-    if(fallback()||modalOpen()||e.touches.length!==1)return;
-    const t=e.touches[0];
-    tActive=true;tAxis=null;downAcc=0;upAcc=0;
-    tSX=t.clientX;tSY=t.clientY;tLastY=t.clientY;
-    lastTouchAt=Date.now();
-  },{capture:true,passive:true});
-  main.addEventListener("touchmove",function(e){
-    if(!tActive||fallback()||modalOpen())return;
-    const t=e.touches[0];if(!t)return;
-    lastTouchAt=Date.now();
-    const ax=t.clientX-tSX,ay=t.clientY-tSY;
-    if(!tAxis){
-      if(Math.abs(ax)<8&&Math.abs(ay)<8)return;
-      tAxis=Math.abs(ax)>Math.abs(ay)*1.2?"x":"y";
-    }
-    if(tAxis!=="y")return;
-    const dy=t.clientY-tLastY;
-    tLastY=t.clientY;
-    if(dy)push(dy,curPage());
-  },{capture:true,passive:true});
-  function touchEnd(){tActive=false;tAxis=null;lastTouchAt=Date.now()}
-  main.addEventListener("touchend",touchEnd,{capture:true,passive:true});
-  main.addEventListener("touchcancel",touchEnd,{capture:true,passive:true});
-
-  window.addEventListener("resize",function(){
-    scheduleMeasure();
-    if(fallback()&&hidden)show();
-  },{passive:true});
-  if(window.ResizeObserver){
-    try{new ResizeObserver(scheduleMeasure).observe(island)}catch{}
-  }
-  scheduleMeasure();
-})();
 
 let zpHomeInitialLoadFailed=false;
 let zpHomeRecoveryInFlight=false;

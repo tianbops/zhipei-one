@@ -3,7 +3,7 @@
   margin-top:10px;
   touch-action:pan-y;   /* 纵向可滚动，横向手势留给 JS 切月 */
   padding:12px 13px 11px;
-  border:1px solid var(--zp-card-edge);border-radius:var(--zp-r-card);background:var(--zp-card);overflow:hidden;
+  border:1px solid var(--zp-surface-3);border-radius:var(--zp-r-card);background:var(--zp-card);overflow:hidden;
 }
 .trend-card.is-in{animation:trendIn .22s ease-out}
 @keyframes trendIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}

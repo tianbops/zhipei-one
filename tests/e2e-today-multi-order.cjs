@@ -87,11 +87,6 @@ const SNAP = `(()=>{
     rowsByPage:pages.map(p=>p.querySelectorAll('.today-store-row').length),
     idxByPage:pages.map(p=>[...p.querySelectorAll('.today-store-index')].map(s=>s.textContent.trim())),
     height:parseInt(list.style.height||'0',10),
-    /* 2026-11-06 一屏内滚：卡片高度由 flex 决定（非 JS 内联高度），
-       切页时不应跳；名单区高度 = 卡片剩余空间。 */
-    cardH:(document.querySelector('.task-card')||{}).offsetHeight||0,
-    listH:list.offsetHeight||0,
-    viewH:(list.querySelector('.today-view')||{}).offsetHeight||0,
     transform:(list.querySelector('.today-track')||{}).style?list.querySelector('.today-track').style.transform:''
   };
 })()`;
@@ -134,10 +129,7 @@ const SNAP = `(()=>{
   let s = await ev(SNAP);
   console.log('init ' + JSON.stringify(s));
   check('两单都在 DOM 里（pages=2）', s && s.pages === 2, s && String(s.pages));
-  /* 2026-11-06 用户定稿：tab 只写「第 N 单」，不再带上传时间。
-     顺序仍按上传时间升序（第 1 单 = 最早上传）。 */
-  check('tab 只写「第1单 / 第2单」，不带时间', s && s.tabs.join('|') === '第1单|第2单', s && JSON.stringify(s.tabs));
-  check('tab 文案里没有时间（无 HH:mm）', s && !s.tabs.some((t) => /\d{1,2}:\d{2}/.test(t)), s && JSON.stringify(s.tabs));
+  check('tab 按上传时间升序（09:12 → 14:40）', s && s.tabs.length === 2 && /09:12/.test(s.tabs[0]) && /14:40/.test(s.tabs[1]), s && JSON.stringify(s.tabs));
   check('默认停在最新一单（第 2 单）', s && s.active === 1, s && String(s.active));
   check('摘要取当前单（4家）', s && s.count === '4家', s && s.count);
   check('单量取全天（2单）', s && s.orders === '2单', s && s.orders);
@@ -152,9 +144,8 @@ const SNAP = `(()=>{
   check('摘要跟随切页（6家 / 0.800t）', s && s.count === '6家' && s.weight === '0.800t', s && (s.count + ' ' + s.weight));
   check('第 1 单 6 家、序号连续', s && s.rowsByPage[0] === 6 && s.idxByPage[0].join(',') === '1,2,3,4,5,6', s && JSON.stringify(s.idxByPage[0]));
   check('轨道位移到第 1 页', s && /^translate3d\(0px/.test(s.transform), s && s.transform);
-  check('卡片高度 = 一屏（>500px，由 flex 链决定而非 JS 内联高度）', s && s.cardH > 500, s && String(s.cardH));
-  check('名单区铺满整张卡片（浮层方案：浮岛不占位，列表容器与卡片等高）', s && s.listH > 0 && s.listH === s.cardH, s && (s.listH + '/' + s.cardH));
-  const h1 = s.cardH;
+  check('页高按第 1 单实测锁定', s && s.height > 200, s && String(s.height));
+  const h1 = s.height;
 
   /* 左滑回第 2 单 */
   await ev(`(()=>{
@@ -174,7 +165,7 @@ const SNAP = `(()=>{
   console.log('swipe ' + JSON.stringify(s));
   check('左滑切到下一单（第 2 单）', s && s.active === 1, s && String(s.active));
   check('切页后摘要同步（4家）', s && s.count === '4家', s && s.count);
-  check('切页后卡片高度不变（6 家 / 4 家同一屏，不再随行数跳动）', s && s.cardH === h1, s && (h1 + ' -> ' + s.cardH));
+  check('不同单的行数不同 → 页高随之变化', s && s.height !== h1, s && (h1 + ' -> ' + s.height));
 
   /* 纵向滑动：判为滚动，不得切单 */
   await ev(`(()=>{
@@ -226,107 +217,6 @@ const SNAP = `(()=>{
   s = await ev(SNAP);
   console.log('reload ' + JSON.stringify(s));
   check('刷新后记住上次选择（第 1 单）', s && s.active === 0, s && String(s.active));
-
-  /* 2026-11-06 一屏内滚：把名单补到 25 行，验证「摘要 + 插画 + tab 固定，
-     只有门店名单在自己的区域里滚」。克隆行不影响 state / 手势，只测版面。 */
-  const scrollInfo = await ev(`(()=>{
-    const page=document.querySelector('.today-page[data-i="0"]');
-    const sum=document.querySelector('.task-main');
-    const tabs=document.getElementById('todayTabs');
-    const row=page.querySelector('.today-store-row');
-    for(let i=0;i<24;i++) page.appendChild(row.cloneNode(true));
-    const r=(e)=>Math.round(e.getBoundingClientRect().top);
-    const before={sum:r(sum),tab:r(tabs),card:document.querySelector('.task-card').offsetHeight};
-    const overflow=page.scrollHeight-page.clientHeight;
-    page.scrollTop=300;
-    const after={sum:r(sum),tab:r(tabs),top:page.scrollTop};
-    return {overflow,before,after};
-  })()`);
-  console.log('scroll ' + JSON.stringify(scrollInfo));
-  check('25 行时名单页内可滚（内容溢出）', scrollInfo && scrollInfo.overflow > 100, scrollInfo && String(scrollInfo.overflow));
-  check('滚动发生在名单页内（scrollTop 生效）', scrollInfo && scrollInfo.after.top > 0, scrollInfo && String(scrollInfo.after.top));
-
-  /* 2026-11-07 定稿：方向按字面翻转 —— 手指下滑（scrollTop 减小）收起，
-     手指上滑（scrollTop 增大）弹出。浮岛是浮层压在名单上，列表容器高度恒定，
-     收起靠 .today-page 的 padding-top 让位 + 逐页 scrollTop 补偿，门店不跳。 */
-  const headToggle = await ev(`(async()=>{
-    const main=document.querySelector('main.home-app');
-    const page=document.querySelector('.today-page[data-i="0"]');
-    const list=document.getElementById('todayStoreList');
-    const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
-    const pad=()=>getComputedStyle(page).paddingTop;
-    /* 先从任意状态复位：先回顶（回顶本身是「下滑」方向会触发一次收起，等它过去），
-       再显式展开，避免上一条用例留下的收起态干扰。 */
-    page.scrollTop=0; await wait(320);
-    try{window.zpHeadShow&&window.zpHeadShow()}catch(e){}
-    await wait(320);
-    const nav=document.querySelector('.zp-nav');
-    const navHid=()=>nav.classList.contains('is-nav-hidden');
-    const before={hidden:main.classList.contains('is-head-hidden'),pad:pad(),listH:Math.round(list.getBoundingClientRect().height),nav:navHid()};
-    /* 先滚到 420（手指上滑方向，浮岛保持展开），再回滑到 300（手指下滑 → 收起） */
-    page.scrollTop=420; await wait(380);
-    page.scrollTop=300; await wait(380);
-    const off={hidden:main.classList.contains('is-head-hidden'),pad:pad(),listH:Math.round(list.getBoundingClientRect().height),st:Math.round(page.scrollTop),nav:navHid()};
-    /* 再往下滚（手指上滑 → 弹出） */
-    page.scrollTop=Math.min(page.scrollHeight-page.clientHeight,off.st+120); await wait(380);
-    const on={hidden:main.classList.contains('is-head-hidden'),pad:pad(),listH:Math.round(list.getBoundingClientRect().height),nav:navHid()};
-    return {before,off,on};
-  })()`);
-  console.log('head ' + JSON.stringify(headToggle));
-  check('名单回滑（scrollTop 减小）收起浮岛', headToggle && headToggle.before.hidden === false && headToggle.off.hidden === true, JSON.stringify(headToggle));
-  check('收起后名单让位收到 18px（浮岛滑走，列表容器高度恒定）', headToggle && headToggle.off.pad === '18px' && headToggle.off.listH === headToggle.before.listH, headToggle && JSON.stringify(headToggle.off));
-  check('名单继续下滚（scrollTop 增大）弹出浮岛', headToggle && headToggle.on.hidden === false, JSON.stringify(headToggle));
-  check('弹出后让位回到原值', headToggle && headToggle.on.pad === headToggle.before.pad, headToggle && (headToggle.before.pad + ' -> ' + headToggle.on.pad));
-  /* 用户 2026-11-06：「顶部浮岛也是要像底部浮岛一样自动隐藏」。两者必须同进退，
-     否则一收一留看起来像各坏了一半（首页外层不滚，nav.js 自己的判定收不到名单）。 */
-  check('收起顶部浮岛时底栏同步收起', headToggle && headToggle.off.nav === true, JSON.stringify(headToggle));
-  check('弹出顶部浮岛时底栏同步放回', headToggle && headToggle.on.nav === false, JSON.stringify(headToggle));
-
-  /* 2026-11-06 用户录屏「固定没实现」：真手指上滑到名单底部后，滚动链会把
-     外层 .zp-scroll 一起带走（实测 226px，摘要 top 从 148 漂到 -78），
-     头部整块滚出屏幕。修法是页内可滚时开 overscroll-behavior-y:contain，
-     这里用 CDP 触摸事件把「到底即停、头部不动」钉死。 */
-  await C('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
-  const swipe = async (y0, dy) => {
-    const x = 195;
-    const pt = (y) => [{ x, y, radiusX: 12, radiusY: 12, force: 1, id: 1 }];
-    await C('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: pt(y0) });
-    for (let k = 1; k <= 12; k++) {
-      await C('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: pt(y0 + (dy * k) / 12) });
-      await sleep(16);
-    }
-    await C('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-    await sleep(700);
-  };
-  const HEAD_PROBE = `(()=>{
-    const r=(e)=>e?Math.round(e.getBoundingClientRect().top):null;
-    const p=document.querySelector('.today-page[data-i="0"]');
-    const outer=document.querySelector('main.home-app .zp-scroll');
-    return {sum:r(document.querySelector('.task-main')),tab:r(document.getElementById('todayTabs')),
-      pageTop:p?Math.round(p.scrollTop):null,pageMax:p?Math.round(p.scrollHeight-p.clientHeight):null,
-      outerTop:outer?Math.round(outer.scrollTop):0,outerMax:outer?Math.round(outer.scrollHeight-outer.clientHeight):0,
-      mark:p?p.classList.contains('is-scrollable'):false,
-      pad:p?getComputedStyle(p).paddingTop:null,
-      nav:document.querySelector('.zp-nav').classList.contains('is-nav-hidden'),
-      hidden:document.querySelector('main.home-app').classList.contains('is-head-hidden'),
-      listH:Math.round(document.getElementById('todayStoreList').getBoundingClientRect().height)};
-  })()`;
-  await sleep(300);   /* 等 MutationObserver 打完 .is-scrollable */
-  const headBefore = await ev(HEAD_PROBE);
-  /* 手指上滑 3 次：名单滚到底；方向翻转后「上滑 = 弹出」，浮岛应保持展开。 */
-  await swipe(660, -300); await swipe(660, -300); await swipe(660, -300);
-  const headAfter = await ev(HEAD_PROBE);
-  console.log('touch ' + JSON.stringify({ headBefore, headAfter }));
-  check('可滚名单被标记 .is-scrollable（滚动链才切断）', headBefore && headBefore.mark === true, headBefore && String(headBefore.mark));
-  check('手指连滑 3 次后名单到底', headAfter && headAfter.pageMax > 0 && headAfter.pageTop === headAfter.pageMax, headAfter && (headAfter.pageTop + '/' + headAfter.pageMax));
-  check('名单到底后外层不被连带滚动', headAfter && headAfter.outerTop === 0, headAfter && (headAfter.outerTop + '/' + headAfter.outerMax));
-  check('上滑（弹出方向）不隐藏浮岛，方向按字面翻转', headBefore && headAfter && headAfter.hidden === false, JSON.stringify(headAfter));
-  /* 下滑 = 隐藏方向：整屏手势在名单区同样生效，让位收回 18px，底栏同步收起。 */
-  await swipe(400, 300);
-  const headDown = await ev(HEAD_PROBE);
-  console.log('touch-down ' + JSON.stringify(headDown));
-  check('下滑屏幕后浮岛隐藏（整屏手势，名单区也生效）', headDown && headDown.hidden === true && headDown.nav === true, JSON.stringify(headDown));
-  check('收起后名单让位收到 18px、列表容器高度恒定', headDown && headDown.pad === '18px' && headDown.listH === headBefore.listH, headDown && (headDown.pad + ' / ' + headDown.listH));
 
   const shot = await C('Page.captureScreenshot', { format: 'png', clip: { x: 0, y: 0, width: 390, height: 620, scale: 2 } });
   fs.writeFileSync(path.join(OUT_DIR, 'today-multi-order.png'), Buffer.from(shot.data, 'base64'));

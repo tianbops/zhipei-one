@@ -723,23 +723,9 @@ body {
        页面底 #FFFFFF → 内容块 #F3F3F3 → 块内交互态 #E9E9E9。
      因此新增 --zp-block 承载「内容块」，--zp-surface 收窄为「浮层/输入框」
      （弹窗、下拉、sheet 必须比块亮，压在遮罩上才浮得起来）。
-     组件侧无需区分：--zp-card 一律指向 --zp-block，浮层类改用 --zp-surface。
-
-     2026-11-06 二次反转（用户实测）：内容块与页面底同色，回到「白底白块」。
-     起因（深色同款问题）：块色与浮岛同值，22 家运单展开后卡片、列表、底栏
-     糊成一块，没有层次。现在层级只由「底 ─ 浮层」两级承担：
-       白底 #FFFFFF → 白块（无边，靠间距与行线分组）→ 浮岛 #FFFFFF + --zp-nav-edge
-     深浅两侧同一条规则（2026-11-06 三次调整：浅色也去掉 1px 描边，见
-     --zp-card-edge —— 满屏浅灰框会像表格，且与深色观感对不上）。
-     例外只有 --zp-block-raised：纯数字摘要块主动隆起一档。 */
+     组件侧无需区分：--zp-card 一律指向 --zp-block，浮层类改用 --zp-surface。 */
   --zp-bg:#FFFFFF;
-  --zp-block:#FFFFFF;
-  /* 2026-11-06（用户实测）：拍平后的例外出口。内容块默认与页面底同色，
-     但「纯数字摘要块」没有列表行线可依托，拍平后就只剩几行字浮在页面上，
-     读不出这是一个板块（运单详情顶部的「日期 / 22 家 · 1.151 t」）。
-     这类块主动隆起一档，取改前的块色 #F3F3F3；深色见 ui-theme.css #292929。
-     只给摘要类板块用，不要回灌到列表卡上，否则等于把全局拍平撤销。 */
-  --zp-block-raised:#F3F3F3;
+  --zp-block:#F3F3F3;
   --zp-surface:#FFFFFF;
   --zp-surface-2:#E9E9E9;
   --zp-surface-3:#DFDFDF;
@@ -848,14 +834,6 @@ body {
      组件侧统一：一级内容块用 --zp-card（=块色），浮层改用 --zp-surface。 */
   --zp-card:var(--zp-block);
   --zp-card-2:var(--zp-surface-2);
-  /* 卡片描边（2026-11-06 新增）：内容块与页面底同色后，卡片唯一的边界。
-     2026-11-06 二次调整（用户实测）：浅色同样取 transparent，与深色对齐 ——
-     上一版留 #E4E4E4 是怕「白底白块没有边就分不出组」，实机看下来满屏 1px
-     浅灰框反而像一堆表格单元格，深浅两套观感也对不上（深色无框、浅色有框）。
-     现在两侧同一条规则：内容块融进页面底，分组靠间距与行线（--zp-line-inset），
-     唯一需要浮起的是底部导航（浅色靠 --zp-nav-edge，深色靠亮一档的 --zp-nav-bg）。
-     组件侧：所有一级卡片把 border 的颜色改为本令牌，不要再写 --zp-tint。 */
-  --zp-card-edge:transparent;
   /* 列表容器（2026-11-04 新增）：只装「纯行列表」的分组容器（账号分组、线路功能），
      取页面底色，使分组不再是一块可见的卡，而是「小标题 + 若干行 + 行间线」。
      起因：Uber 的列表项直接排在底色上，只有宫格按钮有灰底。我们色值本已与
@@ -894,11 +872,9 @@ body {
   --zp-logo-plate:#05070A;
   /* 底部一级导航（品牌导航条）令牌组。
      2026-11-04 浮岛化：底栏从贴边条改为悬浮圆角胶囊（见 .zp-nav）。
-     2026-11-06 定稿（用户）：浮岛表面与「日期 / 家数·吨位」摘要块同色 ——
-     两者都是「从页面里浮出来的一层」，同用一个 --zp-block-raised(#F3F3F3)，
-     不再取 --zp-surface(#FFFFFF)。白岛在同白页面底上只能靠 1px 描边撑着，
-     换成浅灰实色后与摘要块同一套语言，深浅两侧也对称（深色见 ui-theme.css）。 */
-  --zp-nav-bg:var(--zp-block-raised);
+     浅色浮岛取 --zp-surface(#FFFFFF) 靠投影浮起；深色纯黑底上投影不可见，
+     故改取 --zp-block(#1D1D1D)，靠「比页面底亮一档」浮起（见 ui-theme.css）。 */
+  --zp-nav-bg:var(--zp-surface);
   --zp-nav-text:#666666;
   --zp-nav-text-active:#000000;
   /* 浮岛表面材质（2026-11-05 五版，用户定稿「A · 纯白不透明」）。
@@ -2134,16 +2110,9 @@ textarea:disabled,
      先前用的纯黑 #000000 已在真机复现 OLED 拖影（black smearing）：纯黑像素
      在滚动时驱动响应慢半拍，浅色字会拖出一条余影。Uber 自己也不用纯黑，
      #161616 只比纯黑亮 8.6%，拖影消失且省电收益基本保留。
-     浮层 #303030 / 控件 #363636 由块色按同一亮度步进外推，保持三级可分辨。
-     2026-11-06（用户实测）：块色压到与页面底同值 #161616 —— 原 #292929 与浮岛
-     同值，22 家运单展开后卡片、列表、底栏糊成一块，滚到哪都读不出边界。
-     现在层级只有「底 ─ 浮层」两级：内容块融进 #161616，浮岛/弹窗取 #303030。
-     浅色同一条规则（见 ui-base.css）。 */
+     浮层 #303030 / 控件 #363636 由块色按同一亮度步进外推，保持三级可分辨。 */
   --zp-bg:#161616;
-  --zp-block:#161616;
-  /* 拍平后的例外出口，浅色见 ui-base.css（同值 #F3F3F3 的深色对应 = 改前块色）。
-     纯数字摘要块没有行线可依托，必须有自己的一块底才算「一个板块」。 */
-  --zp-block-raised:#292929;
+  --zp-block:#292929;
   /* 浮层比块再亮一档：若与块同色，弹窗/下拉压在卡片上会糊成一片。 */
   --zp-surface:#303030;
   --zp-surface-2:#363636;
@@ -2212,21 +2181,14 @@ textarea:disabled,
      2026-11-05 五版：与浅色同步下线全部材质效果（玻璃 alpha / 板感渐变 /
      凹槽暗边 / 投影 / 内高光 / 加号三层影），表面就是 --zp-block 的实色。
      深色下这反而是最合适的方案 —— 黑底上任何投影都读不出来，层级本来就靠
-     「亮一档的底色 + 1px 白描边」表达，玻璃只是白付一层合成开销。
-     2026-11-06：块色与页面底同色后，浮岛不能再跟 --zp-block（会一起融进背景、
-     底栏看不见），改取 --zp-block-raised(#292929) —— 与运单详情摘要块同色，
-     「浮起来的一层」统一用这一支，比 --zp-surface(#303030) 暗一档，
-     弹窗/下拉仍留在 #303030，避免浮岛比弹层还亮。 */
-  --zp-nav-bg:var(--zp-block-raised);
+     「亮一档的底色 + 1px 白描边」表达，玻璃只是白付一层合成开销。 */
+  --zp-nav-bg:var(--zp-block);
   --zp-nav-text:#A3A3A3;
   --zp-nav-text-active:#FFFFFF;
   --zp-nav-edge:rgba(255,255,255,.15);
   /* ===== Phase 1 令牌的深色取值 ===== */
   --zp-tint:rgba(255,255,255,.08);
   --zp-tint-strong:rgba(255,255,255,.16);
-  /* 内容块与页面底同色后，1px 白描边会把卡片勾成空心框，取透明；
-     浅色同取 transparent（2026-11-06 三次调整，见 ui-base.css 的 --zp-card-edge）。 */
-  --zp-card-edge:transparent;
   --zp-scrim-dialog:rgba(0,0,0,.62);
   --zp-shadow:0 2px 8px rgba(0,0,0,.25);
   --zp-shadow-sm:0 8px 20px rgba(0,0,0,.45);
@@ -2402,9 +2364,6 @@ main.zp-shell.dispatch-page .zp-scroll{padding-top:0}
 html[data-zp-boot="hop"] .login-shell{display:none!important}
 
 /* 智配One · 首页移动端 UI */
-/* 2026-11-06：首页不再单独覆盖块色 —— 「内容块=页面底」已上收为全局规则
-   （ui-base.css / ui-theme.css 的 --zp-block 与 --zp-card-edge），
-   本文件只管首页自己的排版，卡片描边统一走 --zp-card-edge。 */
 /* 板块宽度对齐全局：与线路页 / 历史页同用 --zp-space-4（16px）。
    原为 14px 历史遗留值，比全局窄 2px，跨页切换时板块宽度会跳。 */
 /* .home-app 只作命名空间：外壳尺寸（宽/高/居中/留白）统一由 main.zp-shell 声明。 */
@@ -2426,7 +2385,7 @@ html[data-zp-boot="hop"] .login-shell{display:none!important}
 .menu-item-icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .menu-divider{height:1px;margin:5px 7px;background:var(--zp-tint)}
 
-.task-card{position:relative;overflow:hidden;margin-top:14px;padding:14px;min-height:0;background:var(--zp-card);border:1px solid var(--zp-card-edge);border-radius:var(--zp-r-card);box-shadow:none}
+.task-card{position:relative;overflow:hidden;margin-top:14px;padding:14px;min-height:0;background:var(--zp-card);border:1px solid var(--zp-tint);border-radius:var(--zp-r-card);box-shadow:0 12px 30px var(--zp-shadow-md)}
 .task-title{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:var(--zp-fs-20);line-height:28px;font-weight:var(--zp-fw-bold)}
 .task-name{display:flex;align-items:center;gap:9px;min-width:0;white-space:nowrap}
 .task-date{margin:0;min-width:112px;text-align:center;white-space:nowrap;color:var(--zp-muted);font-size:var(--zp-fs-15);line-height:23px;font-weight:var(--zp-fw-medium)}
@@ -2593,7 +2552,7 @@ html[data-zp-boot="hop"] .login-shell{display:none!important}
   margin-top:10px;
   touch-action:pan-y;   /* 纵向可滚动，横向手势留给 JS 切月 */
   padding:12px 13px 11px;
-  border:1px solid var(--zp-card-edge);border-radius:var(--zp-r-card);background:var(--zp-card);overflow:hidden;
+  border:1px solid var(--zp-surface-3);border-radius:var(--zp-r-card);background:var(--zp-card);overflow:hidden;
 }
 .trend-card.is-in{animation:trendIn .22s ease-out}
 @keyframes trendIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -2726,19 +2685,11 @@ main.home-app .task-card{margin-top:0}
 }
 .today-tab.is-active{background:var(--zp-tint);color:var(--zp-text);font-weight:var(--zp-fw-bold)}
 .today-tab:active{background:var(--zp-tint)}
-/* 裁切放在 view 层：view 只负责把相邻页挡在外面，纵向滚动交给每一页自己。
-   2026-11-06（用户）：摘要头（单量/吨位 + 小推车）钉住，只有门店名单滚 ——
-   故 view 变成 flex 剩余区，页内 height:100% + overflow-y:auto。
-   横向手势仍由 JS 接管（touch-action:pan-y 允许浏览器做纵向滚动）。 */
-.today-view{flex:1 1 auto;min-height:0;overflow:hidden;touch-action:pan-y}
-.today-track{display:flex;align-items:stretch;height:100%;will-change:transform}
-.today-page{flex:0 0 100%;min-width:0;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:auto}
-/* 页内真的能滚时才切断滚动链（.is-scrollable 由 today.js 按内容溢出量打标）：
-   名单滚到底继续上滑，不会把整张卡顶上去 —— 实测 22 家门店滑到底后外层被连带
-   滚 226px，摘要从 top:148 漂到 -78，「固定」当场失效（2026-11-06 用户录屏）。
-   2026-11-06 定稿后外层已改 overflow:hidden（首页根本没有滚动量），这条降为第二层
-   防护：留着防降级版面/以后误把外层改回可滚时旧病复发。 */
-.today-page.is-scrollable{overscroll-behavior-y:contain}
+/* 裁切放在 view 层：列表自身保持 overflow 可见，不重演「窗内滚动」那类坑；
+   view 只负责把相邻页挡在外面。 */
+.today-view{height:100%;overflow:hidden;touch-action:pan-y}
+.today-track{display:flex;align-items:flex-start;will-change:transform}
+.today-page{flex:0 0 100%;min-width:0}
 /* 滑动中摘要淡出，避免「数字还是上一单」的错位感 */
 .task-card.is-swiping .today-summary{opacity:.35;transition:opacity .12s}
 .today-store-row{
@@ -2799,196 +2750,50 @@ main.home-app .task-card{margin-top:0}
 }
 
 
-/* ===== 首页纵向布局：品牌独立 + 数据浮岛浮层 + 平面名单（2026-11-07 定稿）=====
-   用户按字面定稿三条（与上一版方向相反）：
-     1) 品牌区（智配One / 运单处理·历史查询·路线经验）保持原样，不入浮岛；
-     2) 收放手势整屏生效：品牌区 / 浮岛 / tab / 名单 / 统计区任意位置滑动都触发，
-        手指下滑 → 浮岛与底栏一起隐藏，手指上滑 → 一起弹出（见 js/home/today.js）；
-     3) 浮岛是「浮层」压在名单之上：列表容器从卡片顶部铺到底、位置恒定，内容从
-        浮岛下方穿过；收起时只让浮岛自己滑走，用 padding-top + scrollTop 同帧补偿，
-        屏幕上的门店不跳、底部多露一截。门店列表本身不做浮岛。
-   月度统计卡 DOM / 尺寸 / 样式一律不动；底栏浮岛不动。
-   结构：
-     .task-card            透明外壳，height:100% 撑满一屏
-       .zp-head-wrap       absolute，恒高 10px，只作把手线宿主（不占位）
-       .zp-head-island     absolute 浮岛本体，z-index:2 盖在名单上
-       #todayStoreList     flex:1 铺满整张卡片（top 恒定），行内滚动在 .today-page
-   ------------------------------------------------------------------ */
+/* ===== 首页纵向布局：内容驱动 + 整页滚动 =====
+   规则只有一条链：顶栏 → 今日配送卡（随门店数增高，不封顶）→ 趋势卡 → 由整页滚动承接。
+   门店列表不再「封顶后窗内滚动」：那条旧设计在浏览器地址栏占高时只压高度、没恢复
+   overflow，列表既被裁又被渐隐遮住、还滑不动（2026-11-05 用户录屏：web 端运单未展开，
+   app 端正常）。现在任何可视高度下门店都完整铺开，与 app 内 WebView 全高时一致。
+   字号 / 行高 / 左右边距 / 圆角一律不缩（可读性与跨页一致性红线）。 */
 main.home-app .zp-scroll{
   display:flex;
   flex-direction:column;
-  /* 外层没有滚动量：头部不可能是「被滚走」的，收放只由 JS 触发 */
-  overflow:hidden;
-  overflow:clip;
-  overscroll-behavior-y:none;
-  /* 品牌区到浮岛的间距：14 → 6，浮岛更贴品牌，收起后品牌与列表之间也不空 */
-  padding-top:6px;
-  /* 88 = 底栏浮岛 64 + 8 离底 + 16 呼吸。底栏收起时加号仍留在屏幕底部中央
-     （nav.js 的既有权衡），这块留白照旧归它。 */
+  /* 2026-11-04：由 overflow:hidden（整页锁死、列表内部滚）改为 overflow-y:auto。
+     今日配送卡现随内容增高，超出一屏时由整页滚动承接；空态卡片保持 4 行高度（不撑满整页）。 */
+  overflow-y:auto;
+  /* 底栏 fixed 覆盖在滚动区之上，必须留出 66px + 呼吸位，否则趋势卡被遮 */
   padding-bottom:calc(88px + env(safe-area-inset-bottom));
-  position:relative;
-}
-/* 月度统计卡本轮不可达，但它紧接卡片、正好落在底部 88px 留白里，会露出
-   「月度统计 / 重量 单量 年度」半个卡头（overflow:clip 只裁到 padding box，
-   裁不到 padding 区里的内容）。用一层同色遮挡盖住这段留白。
-   不用 clip-path：Chromium 会把 fixed 的底栏一起裁掉（加号随之消失）。
-   降级版面关掉遮挡 —— 那里要能滚到月度卡。 */
-main.home-app .zp-scroll::after{
-  content:"";
-  position:absolute;
-  left:0;right:0;bottom:0;
-  height:calc(88px + env(safe-area-inset-bottom));
-  background:var(--zp-bg);
-  pointer-events:none;
-  z-index:1;
 }
 main.home-app .task-card{
-  position:relative;
-  /* 锁一屏：高度取滚动区一屏（父级高度已确定），不能用 flex:1 ——
-     后面还挂着月度卡，flex 会把卡片高度分给不可达的它。 */
+  /* 不撑满整页：空态保持 4 行高度（见 .today-store-list.is-empty），有内容时随门店数增高。
+     首屏即此状态，数据到达后高度稳定，刷新无抖动。 */
   flex:0 0 auto;
-  height:100%;
   min-height:0;
-  box-sizing:border-box;
   display:flex;
   flex-direction:column;
-  margin:0;
-  padding:0;
-  background:transparent;
-  border:0;
-  border-radius:0;
-  box-shadow:none;
 }
-/* —— 浮岛外壳：不占位，恒高 10px，只用来放收起后的把手线 —— */
-main.home-app .zp-head-wrap{
-  /* 浮层方案（2026-11-07）：外壳绝对定位、不再占 flex 高度，列表容器才能从
-     卡片顶部铺到底、位置恒定。恒高 10px 刚好容纳把手线；整块不吃指针事件，
-     展开态它压在浮岛上方也不会挡住 tab / 汇总的点击。 */
-  position:absolute;
-  left:12px;right:12px;top:0;
-  height:10px;
-  margin:0;
-  z-index:3;
-  pointer-events:none;
-}
-main.home-app .zp-head-island{
-  /* 浮岛本体作为浮层压在名单之上：列表从卡片顶部起铺，滚动时门店行从浮岛
-     底下穿过被实底盖住；收起时整块 translateY(-100%) 滑出卡片顶边。 */
-  position:absolute;
-  left:12px;right:12px;top:0;
-  z-index:2;
-  height:var(--zp-head-h,160px);
-  box-sizing:border-box;
-  padding:12px 14px 8px;
-  /* 与底栏浮岛同一支圆角令牌（24px），两块看起来才是一套 */
-  border-radius:var(--zp-r-nav);
-  background:var(--zp-nav-bg);
-  border:1px solid var(--zp-tint);
-  transition:transform .18s cubic-bezier(.22,.61,.36,1);
-  will-change:transform;
-}
-main.home-app.is-head-hidden .zp-head-island{transform:translateY(-100%)}
-/* 把手线：收起后留在品牌下方，提示可上滑唤出 */
-main.home-app .zp-head-handle{
-  position:absolute;
-  left:50%;
-  top:3px;
-  width:34px;
-  height:3px;
-  margin-left:-17px;
-  border-radius:var(--zp-r-handle);
-  /* 行线色在深色浮岛底上几乎不可见，改用 muted + 透明度：两套主题都能看清 */
-  background:var(--zp-muted);
-  opacity:0;
-  /* 展开态不吃指针：外壳 z-index 比浮岛高，否则透明热区会挡住浮岛顶部 */
-  pointer-events:none;
-  transition:opacity .16s linear;
-}
-/* 热区：3px 的线点不中，向上左右各放大到 44×24（仍收在浮岛原位置内） */
-main.home-app .zp-head-handle::after{
-  content:"";
-  position:absolute;
-  left:-22px;right:-22px;top:-14px;bottom:-6px;
-}
-main.home-app.is-head-hidden .zp-head-handle{opacity:.42;transition-delay:.1s;cursor:pointer;pointer-events:auto}
-/* —— 名单让位：展开态用 padding-top 给浮岛留出空间，收起态收回 ——
-   与 js/home/today.js 的 scrollTop 补偿同帧切换，门店在屏幕上不跳；
-   box-sizing:border-box 保证 height:100% 的滚动容器不会被 padding 顶出父级。 */
-main.home-app .today-page{
-  padding:calc(var(--zp-head-h,160px) + 8px) 12px 0;
-  box-sizing:border-box;
-}
-main.home-app.is-head-hidden .today-page{padding-top:18px}
-/* 首帧骨架是列表容器的直接子行（数据到达后换成 .today-view 轨道），没有
-   .today-page 那层 padding，会被浮岛盖住 —— 补一个等量上边距。 */
-main.home-app .today-store-list > .today-store-row:first-child{
-  margin-top:calc(var(--zp-head-h,160px) + 8px);
-}
-main.home-app.is-head-hidden .today-store-list > .today-store-row:first-child{margin-top:18px}
-/* 浮岛内三段不可收缩：否则 flex 会把 tab 从 44 压到 22px、文字切一半 */
-main.home-app .zp-head-island .task-title,
-main.home-app .zp-head-island .task-main,
-main.home-app .zp-head-island .today-tabs{flex:0 0 auto}
-main.home-app .zp-head-island .task-title{margin-top:0}
-main.home-app .zp-head-island .task-main{margin-top:2px}
-main.home-app .zp-head-island .today-tabs{margin-top:6px}
-/* —— 门店：平面列表，不再是浮岛 —— */
 main.home-app .today-store-list{
-  flex:1 1 auto;
-  min-height:0;
-  display:flex;
-  flex-direction:column;
-  margin:0;
-  padding:0;
-  border-top:0;
-  overflow:hidden;
+  /* 内容驱动高度：随门店数自然增高，不封顶。空态由 .is-empty 接管（固定 4 行高度）。 */
+  flex:0 0 auto;
+  max-height:none;
+  overflow:visible;
 }
-/* 左右缩进放在页内而不是列表容器：列表容器的 clientWidth 是横向轨道的位移基准，
-   给它加 padding 会让 track 多移 32px、每页内容被推出左边缘（序号直接看不见）。
-   纵向让位同样放在页内（见上方 .today-page 的 padding-top），两条都写在页内，
-   列表容器本身保持 0 padding —— 横向位移基准才不会漂。 */
-main.home-app .today-store-list .today-store-row{padding:0}
-main.home-app .today-store-list .today-store-row:first-child{border-top:1px solid var(--zp-tint)}
-/* 月度统计卡：DOM / 尺寸 / 样式一律不动（用户「统计板块保持不变」）。
-   外层锁死后它落在名单之后、被裁掉，本轮不可达；后续走历史页或底部抽屉。 */
 main.home-app .trend-card{flex:0 0 auto}
 
-/* 降级 A：横屏 / 矮屏 → 整页滚动，浮岛不再收放（收放由 JS 一并跳过）。
-   矮屏宁可整屏滚，也不把浮岛和列表挤在一起。 */
+/* 降级 A：横屏 / 矮屏（分屏、小窗、浏览器地址栏占高）→ 版面回退为块级 + 整页滚动。
+   只切版面，不再给列表加 max-height：列表在两种版面下都是内容高度，
+   所以地址栏伸缩跨过 760px 时也不会出现「列表高度跳变」。
+   用户明确要求：小屏宁可整屏滚，也不压列表。 */
 @media (max-height:759px),(orientation:landscape){
-  /* 降级版面由 nav.js 自己按外层滚动判定收放底栏，底部留白固定回 88 */
   main.home-app .zp-scroll{display:block;overflow-y:auto}
-  main.home-app .task-card{display:block;height:auto}
-  /* 整页滚动版面：浮层规则全部退回文档流，名单的让位 padding 也要清掉，
-     否则浮岛（现在在流内）和名单之间会叠出 160px 空白。 */
-  main.home-app .zp-head-wrap{position:static;height:auto;overflow:visible;margin-bottom:10px;transition:none}
-  main.home-app .zp-head-island{position:static;height:auto;transform:none;transition:none}
-  main.home-app .zp-head-handle{display:none}
-  main.home-app .today-store-list{display:block;overflow:visible}
-  main.home-app .today-page,
-  main.home-app.is-head-hidden .today-page{padding:0 12px}
-  main.home-app .today-store-list > .today-store-row:first-child,
-  main.home-app.is-head-hidden .today-store-list > .today-store-row:first-child{margin-top:0}
-  .today-view{height:auto}
-  .today-track{align-items:flex-start;height:auto}
-  .today-page{height:auto;overflow:visible}
+  main.home-app .task-card{display:block}
 }
 
-/* 降级 B：键盘弹起（JS 判定，见 js/home/fit.js）—— 同上回退整页滚动 */
+/* 降级 B：键盘弹起（JS 判定，见 js/home/fit.js）
+   键盘把可视区压矮时若继续用 flex 链，卡片会被压成一条，故同样回退整页滚动。 */
 main.home-app.is-keyboard .zp-scroll{display:block;overflow-y:auto}
-main.home-app.is-keyboard .zp-scroll::after{display:none}
-main.home-app.is-keyboard .task-card{display:block;height:auto}
-main.home-app.is-keyboard .zp-head-wrap{position:static;height:auto;overflow:visible;transition:none}
-main.home-app.is-keyboard .zp-head-island{position:static;height:auto;transform:none;transition:none}
-main.home-app.is-keyboard .zp-head-handle{display:none}
-main.home-app.is-keyboard .today-store-list{display:block;overflow:visible}
-main.home-app.is-keyboard .today-page,
-main.home-app.is-keyboard.is-head-hidden .today-page{padding:0 12px}
-main.home-app.is-keyboard .today-store-list > .today-store-row:first-child,
-main.home-app.is-keyboard.is-head-hidden .today-store-list > .today-store-row:first-child{margin-top:0}
-main.home-app.is-keyboard .today-view{height:auto}
-main.home-app.is-keyboard .today-track{align-items:flex-start;height:auto}
-main.home-app.is-keyboard .today-page{height:auto;overflow:visible}
+main.home-app.is-keyboard .task-card{display:block}
 
 /* 列表不再有「底部渐隐」：渐隐是为「窗内滚动还有下文」服务的，
    现在门店全部铺开、由整页滚动承接，硬加渐隐反而像被裁断。

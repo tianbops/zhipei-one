@@ -1,7 +1,7 @@
 /* 智配One · 业务页面 2.0 */
 /* .page2 只作命名空间：外壳尺寸统一由 main.zp-shell 声明（2026-10-29 外壳收编）。 */
 .account-page .topbar h1,.route-apply-page .topbar h1{margin:0;text-align:center;font-weight:var(--zp-fw-bold)}
-.page2-card{background:var(--zp-card);border:1px solid var(--zp-card-edge);border-radius:var(--zp-r-card);padding:16px;margin-bottom:10px}
+.page2-card{background:var(--zp-card);border:1px solid var(--zp-tint);border-radius:var(--zp-r-card);padding:16px;margin-bottom:10px}
 .page2-card h2{margin:0 0 8px;font-size:var(--zp-fs-18);line-height:24px}
 .page2-label{display:block;margin-top:13px;color:var(--zp-muted);font-size:var(--zp-fs-13)}
 /* 表单控件只保留布局（宽、高、间距）；底色 / 描边 / 圆角 / 文字色统一由 ui-base 的
@@ -39,7 +39,7 @@
 /* 我的页：与线路申请页统一布局、颜色与密度。 */
 .account-page{background:var(--zp-bg);padding-top:16px /* 页面底色随主题（Phase 4：不再借用 logo 底板） */;padding-bottom:calc(92px + env(safe-area-inset-bottom))}
 .account-page .topbar h1{margin:0;text-align:center;color:var(--zp-text);font-size:var(--zp-fs-20);line-height:26px;font-weight:var(--zp-fw-semibold)}
-.account-page .page2-card{background:var(--zp-card);border:1px solid var(--zp-card-edge);border-radius:var(--zp-r-card);padding:14px;margin-bottom:8px}
+.account-page .page2-card{background:var(--zp-card);border:1px solid var(--zp-tint);border-radius:var(--zp-r-card);padding:14px;margin-bottom:8px;box-shadow:0 12px 30px var(--zp-shadow-md)}
 /* .account-page .page2-card h2 已删：设置页没有 .page2-card 结构，规则零作用，
    且用 !important 把卡片标题压到 15px（与全站 18px 不一）。 */
 .account-page .page2-soft{margin:4px 0 0;color:var(--zp-muted);font-size:var(--zp-fs-13);line-height:20px}
@@ -91,7 +91,7 @@
 /* 两个分组之间用 22px 留白分层，不再靠线或卡片边界。 */
 .dispatch-section + .dispatch-section{margin-top:22px}
 .dispatch-section-title{margin:0 0 10px;font-size:var(--zp-fs-14);line-height:20px;color:var(--zp-text);font-weight:var(--zp-fw-semibold)}
-.dispatch-current{background:var(--zp-card);border:1px solid var(--zp-card-edge);border-radius:var(--zp-r-card);padding:14px 16px}
+.dispatch-current{background:var(--zp-card);border:1px solid var(--zp-tint);border-radius:var(--zp-r-card);padding:14px 16px;box-shadow:0 12px 30px var(--zp-shadow-md)}
 .dispatch-current-row{display:flex;align-items:center;gap:var(--zp-seg-btn-gap)}
 /* 2026-11-04 文字布局优化：线路名与匹配状态改为上下两行。
    原来 22px 名称与 12px 状态挤在同一条基线上，「已匹配 43家门店」读起来像名称的尾巴。

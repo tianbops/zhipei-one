@@ -11,7 +11,7 @@
  *      深色模式下出现「白底黑字的滚动条」之类穿透（历史教训）；
  *   C. 设计令牌：浅色默认 :root 块持用户 spec 全套取值（#FFFFFF/#F3F3F3/#000000/
  *      #666666/#999999/#EEEEEE/#1677FF/#00B42A/#FF7D00/#F53F3F/阴影 .06），
- *      深色块持深色 spec（#161616/#161616/#FFFFFF/#A3A3A3/#717171/#3D3D3D/
+ *      深色块持深色 spec（#161616/#292929/#FFFFFF/#A3A3A3/#717171/#3D3D3D/
  *      #3B82F6/#22C55E/#FB923C/#EF4444/阴影 .25），logo 底板令牌 --zp-logo-plate 在册；
  *   D. 按钮体系：危险操作按钮 = 中性底 + 红字（var(--zp-secondary-bg) +
  *      var(--zp-error)，用户 2026-10 明确决策），旧「灰底灰字中性化」字面量必须绝迹；
@@ -112,7 +112,7 @@ for (const b of lightBlocks) {
 
 // C. 设计令牌：用户 spec 的浅色默认 + 深色覆盖（token 名沿用现有 --zp-* 体系）
 const LIGHT_TOKENS = [
-  ["--zp-bg", "#FFFFFF"], ["--zp-block", "#FFFFFF"], ["--zp-surface", "#FFFFFF"],
+  ["--zp-bg", "#FFFFFF"], ["--zp-block", "#F3F3F3"], ["--zp-surface", "#FFFFFF"],
   ["--zp-text", "#000000"],
   ["--zp-muted", "#666666"], ["--zp-soft", "#999999"], ["--zp-line", "#E4E4E4"],
   ["--zp-line-inset", "#E8E8E8"], ["--zp-divider", "#E2E2E2"], ["--zp-tint", "rgba(0,0,0,.06)"],
@@ -122,7 +122,7 @@ const LIGHT_TOKENS = [
   ["--zp-shadow", "0 2px 8px rgba(0,0,0,.06)"],
 ];
 const DARK_TOKENS = [
-  ["--zp-bg", "#161616"], ["--zp-block", "#161616"], ["--zp-surface", "#303030"],
+  ["--zp-bg", "#161616"], ["--zp-block", "#292929"], ["--zp-surface", "#303030"],
   ["--zp-text", "#FFFFFF"],
   ["--zp-muted", "#A3A3A3"], ["--zp-soft", "#717171"], ["--zp-line", "#3D3D3D"],
   ["--zp-primary", "#2C6CE2"], ["--zp-success", "#22C55E"], ["--zp-warning", "#FB923C"],

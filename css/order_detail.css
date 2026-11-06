@@ -5,13 +5,7 @@
 .order-icon-btn svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .order-icon-btn:active{background:var(--zp-primary);color:var(--zp-on-primary);transform:scale(.97)}
 .order-dialog[hidden]{display:none}
-.order-summary-card,.order-route-card{border-radius:var(--zp-r-card);box-shadow:none}
-/* 摘要块（日期 / 家数 · 吨位）是纯数字板块：没有列表行线可依托，
-   内容块全局拍平后它就只剩几行字浮在页面上，读不出「这是一块」。
-   故单独隆起一档，深浅同取 --zp-block-raised（= 改前块色）+ --zp-tint 描边。
-   线路/门店那张仍跟随 --zp-card 拍平，靠行线分组。 */
-.order-summary-card{background:var(--zp-block-raised);border:1px solid var(--zp-tint)}
-.order-route-card{background:var(--zp-card);border:1px solid var(--zp-card-edge)}
+.order-summary-card,.order-route-card{background:var(--zp-card);border:1px solid var(--zp-tint);border-radius:var(--zp-r-card);box-shadow:none}
 .order-summary-card{padding:14px 15px 13px;flex:0 0 auto;margin-bottom:10px}
 .order-date{text-align:center;font-size:var(--zp-fs-14);line-height:22px;color:var(--zp-text);font-weight:var(--zp-fw-semibold)}
 .order-summary-main{display:flex;align-items:baseline;justify-content:center;gap:3px;margin-top:5px;font-size:var(--zp-fs-22);line-height:30px;font-weight:var(--zp-fw-bold);letter-spacing:.1px}
@@ -208,7 +202,7 @@
    新体系里「内容块 = 灰块」是唯一定义，故改取 --zp-card，与摘要卡同色。 */
 .order-route-card{
   background:var(--zp-card);
-  border-color:var(--zp-card-edge);
+  border-color:var(--zp-tint);
   border-radius:var(--zp-r-card);
   padding-left:4px;
   padding-right:4px;
@@ -288,7 +282,7 @@
   padding:15px 16px 14px;
   margin-bottom:12px;
   border-radius:var(--zp-r-card);
-  background:var(--zp-block-raised);
+  background:var(--zp-card);
   border:1px solid var(--zp-tint);
 }
 .order-date{

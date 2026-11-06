@@ -1,7 +1,4 @@
 /* 智配One · 首页移动端 UI */
-/* 2026-11-06：首页不再单独覆盖块色 —— 「内容块=页面底」已上收为全局规则
-   （ui-base.css / ui-theme.css 的 --zp-block 与 --zp-card-edge），
-   本文件只管首页自己的排版，卡片描边统一走 --zp-card-edge。 */
 /* 板块宽度对齐全局：与线路页 / 历史页同用 --zp-space-4（16px）。
    原为 14px 历史遗留值，比全局窄 2px，跨页切换时板块宽度会跳。 */
 /* .home-app 只作命名空间：外壳尺寸（宽/高/居中/留白）统一由 main.zp-shell 声明。 */
@@ -23,7 +20,7 @@
 .menu-item-icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .menu-divider{height:1px;margin:5px 7px;background:var(--zp-tint)}
 
-.task-card{position:relative;overflow:hidden;margin-top:14px;padding:14px;min-height:0;background:var(--zp-card);border:1px solid var(--zp-card-edge);border-radius:var(--zp-r-card);box-shadow:none}
+.task-card{position:relative;overflow:hidden;margin-top:14px;padding:14px;min-height:0;background:var(--zp-card);border:1px solid var(--zp-tint);border-radius:var(--zp-r-card);box-shadow:0 12px 30px var(--zp-shadow-md)}
 .task-title{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:var(--zp-fs-20);line-height:28px;font-weight:var(--zp-fw-bold)}
 .task-name{display:flex;align-items:center;gap:9px;min-width:0;white-space:nowrap}
 .task-date{margin:0;min-width:112px;text-align:center;white-space:nowrap;color:var(--zp-muted);font-size:var(--zp-fs-15);line-height:23px;font-weight:var(--zp-fw-medium)}
