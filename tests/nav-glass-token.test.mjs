@@ -128,8 +128,10 @@ console.log("\n三、描边与配色 (6 条)");
     ea >= 0.12 && ea <= 0.2, "alpha=" + ea);
   t("浅色表面 = --zp-surface（导航底色仍是那支白）",
     pickVar(LIGHT, "zp-nav-bg") === "--zp-surface");
-  t("深色表面 = --zp-block（比页面底亮一档）",
-    pickVar(DARK, "zp-nav-bg") === "--zp-block");
+  /* 2026-11-06：深色块色与页面底同值后，浮岛改取 --zp-surface ——
+     再跟 --zp-block 会一起融进背景，底栏直接消失。 */
+  t("深色表面 = --zp-surface（块色已与页面底同色，浮岛不能跟随）",
+    pickVar(DARK, "zp-nav-bg") === "--zp-surface");
   const navText = pickHex(DARK, "zp-nav-text") + "/" + pickHex(DARK, "zp-nav-text-active");
   t("导航文字与选中态零改动（#666/#000 · #A3A3A3/#FFF · 主色 #2C6CE2）",
     pickHex(LIGHT, "zp-nav-text") === "#666666" && pickHex(LIGHT, "zp-nav-text-active") === "#000000" &&

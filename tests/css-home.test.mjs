@@ -57,16 +57,20 @@ try {
 }
 assert.ok(parsed, "home 四组件顺序拼接必须是合法 CSS（拆分无语法裂痕）");
 
-// 5) 2026-11-06 深色首页：内容块压到与页面底同色，浮岛改取浮层色
-//    只覆盖首页：其余页面不加载 home.bundle.css，仍保留全局 --zp-card=--zp-block。
-//    覆盖必须排在全局定义之后（bundle 顺序 app → ui-base → ui-theme → home-base），
-//    否则同优先级下先出现者胜，深色卡片会退回 #292929。
-const baseCss = readFileSync(`${root}css/home-base.css`, "utf8");
-const darkBlock = /:root\[data-zp-theme="dark"\]\s*\{[^}]*--zp-block:var\(--zp-bg\)[^}]*--zp-nav-bg:var\(--zp-surface\)[^}]*\}/s.test(baseCss);
-assert.ok(darkBlock, "首页深色覆盖缺失：应把 --zp-block 指向 --zp-bg、--zp-nav-bg 指向 --zp-surface");
+// 5) 2026-11-06 内容块=页面底（全局）：首页 bundle 里必须是最终值
+//    首页不再单独覆盖，直接消费 ui-base / ui-theme 的令牌；这里做一次端到端确认，
+//    防止「源文件改了但 bundle 没重建」或覆盖顺序被调乱后静默失效。
 const bundleCss = readFileSync(`${root}css/home.bundle.css`, "utf8");
-assert.ok(bundleCss.indexOf("--zp-block:#292929") > -1 &&
-  bundleCss.indexOf("--zp-block:#292929") < bundleCss.indexOf("--zp-block:var(--zp-bg)"),
-  "首页深色覆盖必须位于全局 --zp-block:#292929 之后，否则层叠不生效");
+const baseCss = readFileSync(`${root}css/ui-base.css`, "utf8");
+const themeCss = readFileSync(`${root}css/ui-theme.css`, "utf8");
+assert.ok(/--zp-block:#FFFFFF/.test(baseCss), "浅色块色必须与页面底同色（#FFFFFF）");
+assert.ok(/--zp-card-edge:#E4E4E4/.test(baseCss), "浅色卡片描边必须是 #E4E4E4（白底白块的唯一分组线）");
+assert.ok(/--zp-block:#161616/.test(themeCss), "深色块色必须与页面底同色（#161616）");
+assert.ok(/--zp-card-edge:transparent/.test(themeCss), "深色卡片描边必须透明（否则同色底上勾出空心框）");
+assert.ok(/--zp-nav-bg:var\(--zp-surface\)/.test(themeCss), "深色浮岛必须取 --zp-surface，不能跟 --zp-block 一起融进背景");
+assert.ok(bundleCss.includes("--zp-block:#161616") && bundleCss.includes("--zp-nav-bg:var(--zp-surface)"),
+  "home.bundle.css 未包含最新令牌值，请运行 node scripts/build-home-bundle.mjs");
+assert.ok(bundleCss.lastIndexOf("--zp-block:#FFFFFF") < bundleCss.indexOf("--zp-block:#161616"),
+  "浅色块色必须定义在深色覆盖之前（同优先级后者胜）");
 
-console.log("home CSS 组件化守卫：通过（4 组件 / 页面顺序 / 关键选择器齐全 / PostCSS 解析无误 / 深色同色覆盖生效）");
+console.log("home CSS 组件化守卫：通过（4 组件 / 页面顺序 / 关键选择器齐全 / PostCSS 解析无误 / 块色=页面底令牌生效）");

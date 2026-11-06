@@ -361,3 +361,9 @@ html[data-zp-theme="light"] select,html[data-zp-theme="light"] input[type="date"
 /* 管理页纯图标按钮与业务页统一：无外围框/底板，保留原有触控区域。 */
 .menu-btn,.add{border:0;border-radius:0;background:transparent;box-shadow:none}
 .menu-btn:active,.add:active{background:transparent;opacity:.65}
+/* 2026-11-06：用户端「内容块=页面底」不适用于管理端。
+   管理端是桌面密集表格/列表，块边界承担分组功能，去掉后行与行、卡与卡会连成
+   一片（用户端页面是竖向滚动，靠间距与浮岛即可分层）。
+   本文件在 ui-theme.css 之后加载，这里把块色按原值钉回去。 */
+:root{--zp-block:#F3F3F3}
+:root[data-zp-theme="dark"]{--zp-block:#292929}
