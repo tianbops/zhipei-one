@@ -29,6 +29,9 @@ const dataHtml = read("pages/data.html");
 const today = read("js/home/today.js");
 const render = read("js/order_detail/render.js");
 const css = read("css/home-dashboard.css");
+const baseCss = read("css/ui-base.css");
+const scroll = read("js/ui/store-name-scroll.js");
+const orderCss = read("css/order_detail.css");
 
 /* 直接用生产实现跑逻辑：函数文件为 ESM，但项目 package.json 无 type:module，
    这里剥掉 export 后用 Function 求值，测的仍是同一份源码，不做二次实现。 */
@@ -84,22 +87,31 @@ assert.ok(/shortName:String\(x\.shortName\|\|""\)\.trim\(\)\.slice\(0,16\)/.test
 /* 5. 显示：简称优先，列表单行 */
 assert.ok(/const rawName=String\(x\?\.displayName\|\|""\)\.trim\(\)\|\|String\(x\?\.name/.test(today), "首页今日配送须优先取 displayName");
 assert.ok(/const rawName=String\(x\.displayName\|\|''\)\.trim\(\)\|\|String\(x\.name/.test(render), "运单详情须优先取 displayName");
-assert.ok(/\.today-store-name-wrap\{[\s\S]{0,220}overflow-x:auto/.test(css), "首页门店名须放进横向滚动容器（左滑看全名）");
-assert.ok(/\.today-store-name\{[\s\S]{0,160}white-space:nowrap/.test(css), "首页门店名须强制单行");
-assert.ok(!/\.today-store-name\{[\s\S]{0,120}-webkit-line-clamp/.test(css), "不得再用 line-clamp：它只裁不滚，看不到后半段");
-assert.ok(/is-scrollable:not\(\.at-end\)/.test(css), "右侧渐隐只能出现在真的溢出且未滑到末尾时");
-assert.ok(today.includes("is-scrollable") && today.includes("at-end"), "渲染后须按实际宽度标记可滑动/已到末尾");
-assert.ok(/lastMoveAt>=600[\s\S]{0,400}stopImmediatePropagation/.test(today), "左滑手势须在 window 捕获阶段吞掉导航点击");
-assert.ok(/pointermove[\s\S]{0,220}Math\.abs\(dx\)>8/.test(today), "须用位移阈值区分滑动与轻点");
+assert.ok(/\.zp-store-name-wrap\{[\s\S]{0,240}overflow-x:auto/.test(baseCss), "门店名须放进横向滚动容器（左滑看全名）");
+assert.ok(/\.zp-store-name\{[\s\S]{0,160}white-space:nowrap/.test(baseCss), "门店名须强制单行");
+assert.ok(!/\.zp-store-name\{[\s\S]{0,120}-webkit-line-clamp/.test(baseCss), "不得用 line-clamp：它只裁不滚，看不到后半段");
+assert.ok(/is-scrollable:not\(\.at-end\)/.test(baseCss), "右侧渐隐只能出现在真的溢出且未滑到末尾时");
+assert.ok(scroll.includes("is-scrollable") && scroll.includes("at-end"), "渲染后须按实际宽度标记可滑动/已到末尾");
+assert.ok(/lastSwipeAt[\s\S]{0,200}stopImmediatePropagation/.test(scroll), "左滑手势须在 window 捕获阶段吞掉导航点击");
+assert.ok(/pointermove[\s\S]{0,220}Math\.abs\(dx\)>8/.test(scroll), "须用位移阈值区分滑动与轻点");
+/* 三处显示窗口必须共用同一份实现，不许各写一套 */
+assert.ok(/zpStoreNameHtml/.test(today) && /zpBindStoreNameScroll/.test(today), "首页须调用共享门店名组件");
+assert.ok(/zpStoreNameHtml/.test(render) && /zpBindStoreNameScroll/.test(render), "运单详情须调用共享门店名组件");
+assert.ok(/\.order-store-name\{[\s\S]{0,200}display:flex/.test(orderCss), "运单详情名称须改为纵向 flex：名称一行、备注一行");
+assert.ok(/\.order-store-line[\s\S]{0,160}\.zp-store-name-wrap\{flex:1 1 auto\}/.test(orderCss), "运单详情名称须占满序号以外宽度，状态徽标固定");
+assert.ok(/\.order-store-line \{?[\s\S]{0,80}order-store-status\{margin-left:0;flex:0 0 auto\}/.test(orderCss), "状态徽标不得随名称滑动、不得挤压名称");
+assert.ok(/\.order-store-note\{[\s\S]{0,220}text-overflow:ellipsis/.test(orderCss), "备注须单行省略，不折行挤压名称");
+assert.ok(/const lineHtml='<span class="order-store-line">'\+window\.zpStoreNameHtml\(rawName\)\+status\+'<\/span>'\+noteHtml/.test(render), "备注必须在名称行之外单独成行，不能挤在名称后面");
+assert.ok(/data-zp-store-row/.test(render) && /data-zp-store-row/.test(today), "行容器须带 data-zp-store-row（整行判定滑动/轻点）");
 
 /* 6. 滑开后自动回位 */
-assert.ok(/ZP_NAME_RETURN_DELAY=2400/.test(today), "须有静置回位时长（2.4s，给足阅读时间）");
-assert.ok(/function zpScheduleNameReturn\(el\)\{[\s\S]{0,260}setTimeout\(/.test(today), "离开起点后须排一次静置回位计时");
-assert.ok(/function zpReturnTodayStoreName\(el,instant\)\{[\s\S]{0,900}requestAnimationFrame\(step\)/.test(today), "回位须平滑动画，不能瞬跳");
-assert.ok(/el\.scrollLeft=0;zpSyncTodayStoreName\(el\);/.test(today), "回位结束须落在起点并刷新渐隐状态");
-assert.ok(/zpNameReturning\)return;/.test(today), "回位动画自身触发的 scroll 不得再排期（否则死循环）");
-assert.ok(/pointerdown[\s\S]{0,420}zpCancelNameReturn\(\)/.test(today), "手指落下须取消回位（人还在看就别抢）");
-assert.ok(/prefers-reduced-motion: reduce/.test(today), "减弱动效时须直接复位，不做动画");
-assert.ok(/visibilitychange[\s\S]{0,240}zpReturnTodayStoreName\(el,true\)/.test(today), "切到后台须立即复位，回来不看到半截名字");
+assert.ok(/DELAY=2400/.test(scroll), "须有静置回位时长（2.4s，给足阅读时间）");
+assert.ok(/function schedule\(el\)\{[\s\S]{0,200}setTimeout\(/.test(scroll), "离开起点后须排一次静置回位计时");
+assert.ok(/function back\(el,instant\)\{[\s\S]{0,900}requestAnimationFrame\(step\)/.test(scroll), "回位须平滑动画，不能瞬跳");
+assert.ok(/el\.scrollLeft=0;sync\(el\);/.test(scroll), "回位结束须落在起点并刷新渐隐状态");
+assert.ok(/if\(returning\)return;/.test(scroll), "回位动画自身触发的 scroll 不得再排期（否则死循环）");
+assert.ok(/pointerdown[\s\S]{0,420}cancel\(\)/.test(scroll), "手指落下须取消回位（人还在看就别抢）");
+assert.ok(/prefers-reduced-motion: reduce/.test(scroll), "减弱动效时须直接复位，不做动画");
+assert.ok(/visibilitychange[\s\S]{0,260}back\(list\[i\],true\)/.test(scroll), "切到后台须立即复位，回来不看到半截名字");
 
 console.log("store-short-name: all assertions passed");

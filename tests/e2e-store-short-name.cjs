@@ -77,12 +77,12 @@ const SNAP_HOME = `(()=>{
   const rows=[...document.querySelectorAll('#todayStoreList .today-store-row')];
   return {
     rows:rows.length,
-    labels:rows.map(r=>(r.querySelector('.today-store-name')||{}).textContent||''),
-    heights:rows.map(r=>Math.round((r.querySelector('.today-store-name')||r).getBoundingClientRect().height)),
-    line:parseFloat(getComputedStyle(document.querySelector('.today-store-name')).lineHeight)||0,
+    labels:rows.map(r=>(r.querySelector('.zp-store-name')||{}).textContent||''),
+    heights:rows.map(r=>Math.round((r.querySelector('.zp-store-name')||r).getBoundingClientRect().height)),
+    line:parseFloat(getComputedStyle(document.querySelector('.zp-store-name')).lineHeight)||0,
     navNames:[...document.querySelectorAll('#todayStoreList a[data-zp-nav]')].map(a=>a.dataset.zpNavName||''),
     payloadNames:[...document.querySelectorAll('#todayStoreList a[data-zp-nav]')].map(a=>{try{return JSON.parse(a.dataset.zpNavPayload||'{}').name||''}catch(e){return ''}}),
-    wraps:[...document.querySelectorAll('.today-store-name-wrap')].map(w=>({sw:w.scrollWidth,cw:w.clientWidth,sl:Math.round(w.scrollLeft),scrollable:w.classList.contains('is-scrollable'),atEnd:w.classList.contains('at-end')}))
+    wraps:[...document.querySelectorAll('.zp-store-name-wrap')].map(w=>({sw:w.scrollWidth,cw:w.clientWidth,sl:Math.round(w.scrollLeft),scrollable:w.classList.contains('is-scrollable'),atEnd:w.classList.contains('at-end')}))
   };
 })()`;
 
@@ -156,7 +156,7 @@ const SNAP_EDIT = `(()=>{
   check('简称行不溢出、不可滑动', home && home.wraps[0] && home.wraps[0].scrollable === false, home && JSON.stringify(home.wraps[0]));
 
   /* 长名：单行 + 可左滑看全名 */
-  await ev(`(()=>{const r=document.querySelectorAll('#todayStoreList .today-store-row')[1];const w=r.querySelector('.today-store-name-wrap');window.__w=w;return {sw:w.scrollWidth,cw:w.clientWidth}})()`);
+  await ev(`(()=>{const r=document.querySelectorAll('#todayStoreList .today-store-row')[1];const w=r.querySelector('.zp-store-name-wrap');window.__w=w;return {sw:w.scrollWidth,cw:w.clientWidth}})()`);
   await sleep(200);
   const wide = await ev(`(()=>{const w=window.__w;return {sw:w.scrollWidth,cw:w.clientWidth,scrollable:w.classList.contains('is-scrollable'),atEnd:w.classList.contains('at-end'),h:Math.round(w.getBoundingClientRect().height)}})()`);
   console.log('wide ' + JSON.stringify(wide));
@@ -225,6 +225,24 @@ const SNAP_EDIT = `(()=>{
   console.log('detail ' + JSON.stringify(detail));
   check('运单详情显示简称', detail && detail.labels[0] === SHORT_NAME, detail && detail.labels[0]);
   check('运单详情导航载荷仍是全名', detail && detail.payloadNames[0] === LONG_NAME, detail && detail.payloadNames[0]);
+
+  /* 运单详情：门店名同样是「单行 + 左滑 + 静置回位」 */
+  const detailScroll = await ev(`(async()=>{
+    const items=[...document.querySelectorAll('.order-store-item')];
+    const w=items[1].querySelector('.zp-store-name-wrap');
+    const h=Math.round(w.getBoundingClientRect().height);
+    const sw=w.scrollWidth,cw=w.clientWidth;
+    w.scrollLeft=w.scrollWidth;w.dispatchEvent(new Event('scroll'));
+    await new Promise(r=>setTimeout(r,400));
+    const end={sl:Math.round(w.scrollLeft),atEnd:w.classList.contains('at-end')};
+    await new Promise(r=>setTimeout(r,3000));
+    const back={sl:Math.round(w.scrollLeft),atEnd:w.classList.contains('at-end'),scrollable:w.classList.contains('is-scrollable')};
+    return {h,sw,cw,end,back};
+  })()`);
+  console.log('detailScroll ' + JSON.stringify(detailScroll));
+  check('运单详情名称只占一行', detailScroll && detailScroll.h <= 26, detailScroll && String(detailScroll.h));
+  check('运单详情长名可左滑看全', detailScroll && detailScroll.sw > detailScroll.cw && detailScroll.end.atEnd === true, JSON.stringify(detailScroll && detailScroll.end));
+  check('运单详情同样静置自动回位', detailScroll && detailScroll.back.sl === 0 && detailScroll.back.atEnd === false && detailScroll.back.scrollable === true, JSON.stringify(detailScroll && detailScroll.back));
 
   /* 3. 数据中心：编辑面板只有简称 */
   await C('Page.navigate', { url: BASE + '/pages/data.html' });

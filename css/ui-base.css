@@ -1027,3 +1027,28 @@ body.zp-has-nav{padding-bottom:calc(88px + env(safe-area-inset-bottom))}
 /* 首页上传弹层打开时，底栏浮于遮罩之上，使「上传」按钮可再次点击将其关闭。
    用层级令牌递进而非硬编码 1001，叠放秩序仍由 --ui-z-* 一处决定。 */
 body.sheet-open .zp-nav{z-index:calc(var(--ui-z-modal) + 1)}
+
+/* 门店名「单行 + 左滑看全名」（2026-11-06）
+   首页今日配送、运单详情、今日配送独立页共用：长名不再折行挤乱列表，
+   但仍能左滑看全；溢出且未到末尾时右侧渐隐提示，短名不发虚。
+   JS 见 js/ui/store-name-scroll.js（滑动判定 / 自动回位 / 误触拦截）。 */
+.zp-store-name-wrap{
+  min-width:0;
+  overflow-x:auto;
+  overflow-y:hidden;
+  overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  -ms-overflow-style:none;
+}
+.zp-store-name-wrap::-webkit-scrollbar{display:none}
+.zp-store-name-wrap.is-scrollable:not(.at-end){
+  -webkit-mask-image:linear-gradient(to right,#000 calc(100% - 22px),transparent);
+  mask-image:linear-gradient(to right,#000 calc(100% - 22px),transparent);
+}
+.zp-store-name{
+  display:inline-block;
+  white-space:nowrap;
+  overflow-wrap:normal;
+  padding-right:2px;
+}

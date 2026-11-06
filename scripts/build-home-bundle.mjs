@@ -38,6 +38,8 @@ const JS_SOURCES = [
   /* 必须早于 home/today.js：today.js 结尾立即 loadHome()，同日快照会在首个 await
      之前同步渲染门店行，晚一行首帧就点不动（要等网络数据回来才恢复）。 */
   "js/ui/mapnav.js",
+  /* 门店名「单行 + 左滑看全名」共享实现：必须早于 home/today.js 与渲染调用 */
+  "js/ui/store-name-scroll.js",
   "js/home/today.js",
   "js/home/back.js",
   "js/home-monthly.js",

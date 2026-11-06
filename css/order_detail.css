@@ -26,15 +26,31 @@
 .order-store-list{min-height:0;flex:1 1 auto;overflow-y:auto;padding:0 2px calc(88px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
 .order-store-item{display:grid;grid-template-columns:34px minmax(0,1fr);gap:6px;padding:10px 3px;border-bottom:1px solid var(--zp-divider);min-height:56px}
 .order-store-item:last-child{border-bottom:0}.order-store-index{color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:22px;font-weight:var(--zp-fw-semibold)}
-.order-store-main{min-width:0}.order-store-name{font-size:var(--zp-fs-15);line-height:22px;color:var(--zp-text);font-weight:var(--zp-fw-semibold);word-break:break-all}
+.order-store-main{min-width:0}
+/* 门店名：单行 + 左滑看全名（结构样式在 css/ui-base.css 的 .zp-store-name*）。
+   2026-11-06 起与首页今日配送同一套交互：长名不再折成两三行，
+   名称占满序号以外的宽度，状态徽标固定在右侧不随滑动移动。
+   备注（仅待确认门店有）另起一行小字单行省略，不再挤在名称后面把名字压没。 */
+.order-store-name{
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  font-size:var(--zp-fs-15);
+  line-height:22px;
+  color:var(--zp-text);
+  font-weight:var(--zp-fw-semibold);
+}
+.order-store-line{display:flex;align-items:center;gap:6px;min-width:0}
+.order-store-line .zp-store-name-wrap{flex:1 1 auto}
+.order-store-line .zp-store-name{font-weight:inherit}
+.order-store-line .order-store-status{margin-left:0;flex:0 0 auto}
 /* 移动端可达性（2026-10-20 巡检）：行内门店名链接原为 display:inline，
    垂直 padding 不计入命中框 → 点击区仅约 22px。改为 inline-block 后
    padding:11px 0 真实撑开命中区到 44px，margin:-11px 0 抵消视觉位移，
    行高/行距不变；.order-store-item 有 min-height:56px 兜底不会压行。 */
-.order-store-name.nav{display:inline-block;color:var(--zp-text)!important;text-decoration:none!important;-webkit-text-decoration:none!important;cursor:pointer;padding:11px 0;margin:-11px 0}
+.order-store-name.nav{display:flex;color:var(--zp-text)!important;text-decoration:none!important;-webkit-text-decoration:none!important;cursor:pointer;padding:11px 0;margin:-11px 0}
 .order-store-name.nav:visited{color:var(--zp-text)!important;text-decoration:none!important}.order-store-name.nav:active{opacity:.65}
-.order-store-note-inline{margin-left:5px;color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:20px;font-weight:var(--zp-fw-medium);white-space:normal}
-.order-store-note{margin-top:3px;color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.order-store-note{margin-top:2px;color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:17px;font-weight:var(--zp-fw-medium);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .order-store-status{display:inline-flex;margin-left:6px;padding:1px 5px;border-radius:var(--zp-r-chip);background:var(--zp-line);color:var(--zp-muted);font-size:var(--zp-fs-11);line-height:16px;vertical-align:2px;font-weight:var(--zp-fw-semibold)}
 .order-store-status.pending{background:var(--zp-warning-soft);color:var(--zp-warning)}
 /* 空态统一走 css/ui-base.css 的 .zp-empty（本文件不再定义）。 */
@@ -226,7 +242,6 @@
 .order-route-name,.order-vehicle{font-size:var(--zp-fs-16);line-height:22px}
 .order-store-index{font-size:var(--zp-fs-14);line-height:22px}
 .order-store-name{font-size:var(--zp-fs-16);line-height:23px}
-.order-store-note-inline{font-size:var(--zp-fs-13);line-height:20px}
 .order-store-note{font-size:var(--zp-fs-13);line-height:19px}
 .order-store-status{font-size:var(--zp-fs-11);line-height:16px}
 .order-dialog-head strong{font-size:var(--zp-fs-18);line-height:24px}

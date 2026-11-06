@@ -37,29 +37,10 @@ main.home-app .task-card{margin-top:0}
   font-variant-numeric:tabular-nums;
   text-align:right;
 }
-/* 门店名：固定单行；超长时放进横向滚动容器，左滑看完整名称（2026-11-06）。
-   不再用 line-clamp —— 它只裁不滚，用户永远看不到后半段；
-   右侧渐隐只在真的溢出且未滑到末尾时出现，短名不会莫名发虚。 */
-.today-store-name-wrap{
-  min-width:0;
-  flex:1 1 auto;
-  overflow-x:auto;
-  overflow-y:hidden;
-  overscroll-behavior-x:contain;
-  -webkit-overflow-scrolling:touch;
-  scrollbar-width:none;
-  -ms-overflow-style:none;
-}
-.today-store-name-wrap::-webkit-scrollbar{display:none}
-.today-store-name-wrap.is-scrollable:not(.at-end){
-  -webkit-mask-image:linear-gradient(to right,#000 calc(100% - 22px),transparent);
-  mask-image:linear-gradient(to right,#000 calc(100% - 22px),transparent);
-}
-.today-store-name{
-  display:inline-block;
-  white-space:nowrap;
-  overflow-wrap:normal;
-  padding-right:2px;
+/* 门店名：固定单行、左滑看全名（结构样式在 css/ui-base.css 的 .zp-store-name*）。
+   这里只负责首页的排版与字号：名称占据序号以外的剩余宽度。 */
+.today-store-row .zp-store-name-wrap{flex:1 1 auto}
+.today-store-row .zp-store-name{
   color:var(--zp-text);
   font-size:var(--zp-fs-16);
   line-height:24px;

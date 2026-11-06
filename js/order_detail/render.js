@@ -91,7 +91,7 @@ function render(){
  $('routeList').innerHTML=stores.length?stores.map((x,i)=>{
    /* 显示名优先取基准库投影的简称（displayName），没有简称时回退运单全名 */
    const rawName=String(x.displayName||'').trim()||String(x.name||'').trim()||String(x.rawName||'').trim()||String(x.originalName||'').trim()||'未识别门店';
-   const name=esc(rawName), nav=navTarget(x);
+   const nav=navTarget(x);
    const status=x.pending?'<span class="order-store-status pending">待确认</span>':(x.matchMethod==='confirmed-new'||x.isNew?'<span class="order-store-status">新增</span>':'');
    // 待定门店：优先展示候选建议及置信度，并说明未自动匹配的原因，便于用户快速判断。
    const REASON_TEXT={no_candidate:'基准库中无相近门店',below_threshold:'相似度不足，请确认',ambiguous:'存在多个相近门店，请选择'};
@@ -108,10 +108,17 @@ function render(){
    }else{
      note=x.note||x.remark||'';
    }
-   const noteHtml=note?'<span class="order-store-note-inline">（'+esc(note)+'）</span>':'';
-   const nameHtmlWithNote=nav?'<a class="order-store-name nav" href="'+attr(nav.url)+'" target="'+nav.target+'"'+(nav.rel?' rel="'+nav.rel+'"':'')+' data-zp-nav="'+attr(nav.kind)+'" data-zp-nav-name="'+attr(rawName)+'" data-zp-nav-payload="'+attr(nav.payload||'')+'">'+name+noteHtml+status+'</a>':'<div class="order-store-name">'+name+noteHtml+status+'</div>';
-   return '<div class="order-store-item"><span class="order-store-index">'+String(i+1).padStart(2,'0')+'</span><div class="order-store-main">'+nameHtmlWithNote+'</div></div>';
+   /* 名称走「单行 + 左滑看全名」：结构样式与交互见 css/ui-base.css、js/ui/store-name-scroll.js。
+      状态徽标固定在右侧不随滑动移动；备注（仅待确认）另起一行小字，不挤占名称宽度。 */
+   const noteHtml=note?'<span class="order-store-note">'+esc(note)+'</span>':'';
+   const lineHtml='<span class="order-store-line">'+window.zpStoreNameHtml(rawName)+status+'</span>'+noteHtml;
+   const nameHtmlWithNote=nav?'<a class="order-store-name nav" href="'+attr(nav.url)+'" target="'+nav.target+'"'+(nav.rel?' rel="'+nav.rel+'"':'')+' data-zp-nav="'+attr(nav.kind)+'" data-zp-nav-name="'+attr(rawName)+'" data-zp-nav-payload="'+attr(nav.payload||'')+'">'+lineHtml+'</a>':'<div class="order-store-name">'+lineHtml+'</div>';
+   return '<div class="order-store-item" data-zp-store-row><span class="order-store-index">'+String(i+1).padStart(2,'0')+'</span><div class="order-store-main">'+nameHtmlWithNote+'</div></div>';
  }).join(''):'<div class="zp-empty">当日暂无配送数据</div>';
+ /* 名称容器每次渲染都是新 DOM：绑定只做一次，标记按实际宽度重算 */
+ const storeListEl=$('routeList');
+ window.zpBindStoreNameScroll(storeListEl);
+ window.zpRefreshStoreNameScroll(storeListEl);
  const old=$('confirmPendingBtn');if(old)old.remove();
  if(pending.length){const b=document.createElement('button');b.id='confirmPendingBtn';b.type='button';b.className='order-pending-fab';b.dataset.zpHaptic='medium';b.textContent='待确认'+pending.length+'家';b.onclick=openConfirm;const slot=$('pendingBtnSlot');slot?slot.appendChild(b):document.body.appendChild(b)}
 }

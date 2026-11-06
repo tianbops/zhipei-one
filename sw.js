@@ -9,7 +9,7 @@
  *   - 图片/字体       ：stale-while-revalidate（内容基本不变，秒开优先）
  * 资产缓存键用完整 URL（含 ?v=）精确匹配；页面缓存键用 pathname 规整（忽略 ?from 等查询）。
  */
-const VERSION = "zp-pwa-424";
+const VERSION = "zp-pwa-425";
 const STATIC_CACHE = VERSION + "-static";
 const PAGES_CACHE = VERSION + "-pages";
 const OFFLINE_URL = "/offline";
@@ -47,11 +47,11 @@ const PRECACHE = [
   "/css/history-nav.css?v=5e4af223",
   "/css/history-overlays.css?v=f9622b8a",
   "/css/history-shell.css?v=756b8f74",
-  "/css/home.bundle.css?v=841349d3",
+  "/css/home.bundle.css?v=20ac411b",
   "/css/mobile-ui.css?v=26b52400",
   "/css/offline.css?v=23f7eed1",
-  "/css/order_detail.css?v=c4fea7c0",
-  "/css/ui-base.css?v=b2030d73",
+  "/css/order_detail.css?v=8f8c40ec",
+  "/css/ui-base.css?v=6e89c281",
   "/css/ui-overlay.css?v=947b024f",
   "/css/ui-shell.css?v=8537d8fb",
   "/css/ui-theme.css?v=eb09ffcc",
@@ -76,7 +76,7 @@ const PRECACHE = [
   "/js/history/data.js?v=9cf1ad84",
   "/js/history/overlay.js?v=65a2aeb7",
   "/js/history/render.js?v=59fe703f",
-  "/js/home.bundle.js?v=e2a11097",
+  "/js/home.bundle.js?v=800f308f",
   "/js/login-session-retry.js?v=0c436693",
   "/js/login.js?v=5392495d",
   "/js/offline-queue.js?v=c255ca1f",
@@ -85,7 +85,7 @@ const PRECACHE = [
   "/js/order_detail/core.js?v=4ead8aef",
   "/js/order_detail/load.js?v=9c1cf438",
   "/js/order_detail/nav-menu.js?v=04d58fdb",
-  "/js/order_detail/render.js?v=cd1fc473",
+  "/js/order_detail/render.js?v=1bf1acf0",
   "/js/perf-diagnostics.js?v=260b5b37",
   "/js/pwa.js?v=68dbac73",
   "/js/register.js?v=f1e25f2e",
@@ -100,6 +100,7 @@ const PRECACHE = [
   "/js/ui/nav-prefetch.js?v=968d1e0b",
   "/js/ui/nav.js?v=c43aa872",
   "/js/ui/share.js?v=f2e4bdb6",
+  "/js/ui/store-name-scroll.js?v=ef3eda5e",
   "/js/ui/zp-picker.js?v=1cdf0a93",
 ];
 /* PRECACHE-END */

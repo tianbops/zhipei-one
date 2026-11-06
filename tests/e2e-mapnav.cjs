@@ -178,7 +178,7 @@ const SNAP_DETAIL = `(()=>{
   check('门店名里的 <img onerror> 被转义，未执行', home && home.injectedImg === false && home.xss === false);
 
   /* 点店铺名（不是点链接边缘）：确实落在 <a> 上并被记录 */
-  await ev(`(()=>{const a=[...document.querySelectorAll('#todayStoreList a[data-zp-nav]')][1];const n=a.querySelector('.today-store-name');n.click();return window.__nav.length})()`);
+  await ev(`(()=>{const a=[...document.querySelectorAll('#todayStoreList a[data-zp-nav]')][1];const n=a.querySelector('.zp-store-name');n.click();return window.__nav.length})()`);
   const clicks = await ev('window.__nav');
   check('点门店名会触发导航链接', Array.isArray(clicks) && clicks.length === 1 && clicks[0].kind === 'keyword', JSON.stringify(clicks));
   check('点击目标与渲染出的 href 一致', Array.isArray(clicks) && clicks[0] && clicks[0].href === s2.href, JSON.stringify(clicks && clicks[0]));
@@ -224,7 +224,7 @@ const SNAP_DETAIL = `(()=>{
     open:document.body.classList.contains('zp-mn-open')}))()`;
   const clickStore = async (idx) => {
     await ev(`(()=>{const a=[...document.querySelectorAll('#todayStoreList a[data-zp-nav-payload]')][${idx}];
-      const n=a&&a.querySelector('.today-store-name');if(n)n.click();return 1})()`);
+      const n=a&&a.querySelector('.zp-store-name');if(n)n.click();return 1})()`);
     await sleep(140);
   };
   const pick = async (id) => {
@@ -301,7 +301,7 @@ const SNAP_DETAIL = `(()=>{
   const suppress = await ev(`(()=>{
     window.__menuMode=false;
     const a=[...document.querySelectorAll('#todayStoreList a[data-zp-nav-payload]')][5];
-    const n=a&&a.querySelector('.today-store-name');if(!n)return 'no-anchor';
+    const n=a&&a.querySelector('.zp-store-name');if(!n)return 'no-anchor';
     const guard=e=>e.preventDefault();
     document.addEventListener('click',guard,{capture:true,once:true});
     n.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,button:0}));
