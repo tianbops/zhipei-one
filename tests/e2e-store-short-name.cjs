@@ -147,6 +147,17 @@ const SNAP_EDIT = `(()=>{
   /* 1. 首页今日配送：简称优先、单行 */
   await C('Page.navigate', { url: BASE + '/home.html' });
   await sleep(2200);
+
+  /* 字体守卫：下面「长名必须溢出、可左滑」的断言依赖汉字真实字宽（16px/字）。
+     环境缺 CJK 字体时汉字退化成 8px 宽的方块，长名不再溢出，会连锁误报 9 条。
+     先量 6 个汉字：正常 >=96px，缺字体约 48px —— 直接点名环境问题，别让它伪装成布局回归。 */
+  const cjkWidth = await ev(`(()=>{const s=document.createElement('span');s.textContent='门店名称测试';s.style.cssText='position:fixed;left:-9999px;top:0;font-size:16px;line-height:22px;white-space:nowrap';document.body.appendChild(s);const w=Math.round(s.getBoundingClientRect().width);s.remove();return w})()`);
+  if (typeof cjkWidth !== 'number' || cjkWidth < 96) {
+    console.error('环境缺少中文字体：16px 下 6 个汉字只有 ' + cjkWidth + 'px（应 >=96）。CI 请安装 fonts-noto-cjk 后重跑。');
+    process.exit(1);
+  }
+  check('渲染环境具备中文字体（长名宽度可信）', cjkWidth >= 96, cjkWidth + 'px/6字');
+
   const home = await ev(SNAP_HOME);
   console.log('home ' + JSON.stringify(home));
   check('首页渲染 3 家门店', home && home.rows === 3, home && String(home.rows));

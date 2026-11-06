@@ -32,6 +32,11 @@ jobs:
         run: npm run verify:css-deadcode
       - name: Verify light/dark popup and native picker contracts
         run: npm run test:theme-popups
+      # runner 默认不带 CJK 字体：汉字会退化成 8px 宽的 .notdef 方块，
+      # 「长门店名必须溢出、可左滑」这类按真实文字宽度断言的用例会整片误报
+      # （2026-11-06 main 首发即因此 29/38）。真机有系统中文字体，CI 必须补齐。
+      - name: Install CJK fonts
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq fonts-noto-cjk fonts-noto-cjk-extra
       - name: Install Chrome for Testing
         id: chrome
         uses: browser-actions/setup-chrome@v2
