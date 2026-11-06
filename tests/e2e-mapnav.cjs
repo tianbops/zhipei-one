@@ -63,12 +63,15 @@ try{localStorage.clear()}catch(e){}
    菜单模式（window.__menuMode）下捕获阶段只计数、不 preventDefault，
    让 mapnav.js 的冒泡委托能弹出选择菜单；菜单自身会阻止默认跳转。
    window.open 被覆盖成只记录，避免三家 provider 真的打开外链。 */
-window.__nav=[];window.__navOut=[];window.__menuClicks=0;
+window.__nav=[];window.__navOut=[];window.__menuClicks=0;window.__miss=0;
 window.open=function(u){window.__navOut.push(String(u));return null;};
 document.addEventListener('click',function(e){
   var a=e.target&&e.target.closest?e.target.closest('a[data-zp-nav]'):null;
   if(!a)return;
   if(window.__menuMode){window.__menuClicks++;return}
+  /* 无坐标项：只记录「点过」，不拦默认行为 —— 交给 mapnav 提示并 preventDefault；
+     这里若拦掉，就等于替被测代码把事做了，验证不到「到底有没有提示」。 */
+  if(a.dataset.zpNav==='missing'){window.__miss=(window.__miss||0)+1;return}
   e.preventDefault();
   window.__nav.push({href:a.getAttribute('href'),abs:a.href,target:a.target,kind:a.dataset.zpNav,name:a.dataset.zpNavName,text:(a.textContent||'').trim().slice(0,12)});
 },true);`;
@@ -147,25 +150,26 @@ const SNAP_DETAIL = `(()=>{
   console.log('home ' + JSON.stringify(home));
   check('首页 6 家门店全部渲染', home && home.rows === 6, home && String(home.rows));
   check('6 家全部可点（无导航链接的门店也不留死行）', home && home.links === 6 && home.plainRows === 0, home && `${home.links}/${home.plainRows}`);
-  check('没有站内相对路径（旧 bug：纯文本被当成站内链接）',
-    home && home.items.every((x) => /^https:\/\//.test(x.abs) && !x.abs.startsWith(BASE)), home && JSON.stringify(home.items.map((x) => x.abs)));
+  check('有坐标项全是外链、无坐标项只给 #（不回落到站内路径）',
+    home && home.items.every((x) => x.kind === 'geo' ? /^https:\/\//.test(x.abs) && !x.abs.startsWith(BASE) : x.href === '#'),
+    home && JSON.stringify(home.items.map((x) => [x.kind, x.href])));
   check('没有 javascript: / data: 伪协议', home && home.items.every((x) => !/^(javascript|data):/i.test(x.href)));
 
   const byName = (n) => (home.items || []).find((x) => (x.name || '').indexOf(n) > -1) || {};
   const s1 = byName('谊品生鲜');
-  check('高德短链不透传，改走门店名网页版搜索',
-    s1.kind === 'keyword' && (() => { try { const u = new URL(s1.abs); return u.hostname === 'uri.amap.com' && u.pathname === '/search' && !/surl\.amap\.com|callnative/.test(s1.abs); } catch { return false; } })(), JSON.stringify(s1));
+  check('高德短链不透传、也不换搜索页（href=#）',
+    s1.kind === 'missing' && s1.href === '#' && !/surl\.amap\.com|callnative/.test(s1.href), JSON.stringify(s1));
   const s2 = byName('渝北中景隆');
-  check('纯文本 navigation 降级为高德关键词搜索',
-    s2.kind === 'keyword' && new URL(s2.abs).hostname === 'uri.amap.com' &&
-    new URL(s2.abs).searchParams.get('keyword') === '渝北中景隆(重庆)贸易有限公司', JSON.stringify(s2));
+  check('纯文本 navigation 不被解析成站内路径（href=#）',
+    s2.kind === 'missing' && s2.href === '#' && !/A%E6%A0%8BB1/.test(s2.abs), JSON.stringify(s2));
   const s3 = byName('江北重庆三峡');
-  check('非地图域名不透传，改用门店名搜索',
-    s3.kind === 'keyword' && new URL(s3.abs).hostname === 'uri.amap.com' && !/evil\.com/.test(s3.abs), JSON.stringify(s3));
+  check('非地图域名不透传（href=#）',
+    s3.kind === 'missing' && s3.href === '#' && !/evil\.com/.test(s3.href), JSON.stringify(s3));
   const s4 = byName('到家主城');
-  check('无 navigation 用门店名搜索', s4.kind === 'keyword' && new URL(s4.abs).searchParams.get('keyword') === '到家主城-江北区加州客服中心', JSON.stringify(s4));
-  check('关键词链接不带 callnative、带 src=zhipei（真机避免下载引导页）',
-    !!s4.abs && new URL(s4.abs).searchParams.get('callnative') === null && new URL(s4.abs).searchParams.get('src') === 'zhipei');
+  check('无 navigation 也是 #（不构造关键词搜索）', s4.kind === 'missing' && s4.href === '#', JSON.stringify(s4));
+  check('无坐标项一律不出站、不带任何地图参数',
+    [s1, s2, s3, s4].every((x) => x.href === '#' && !/callnative|src=|keyword=/.test(x.href)),
+    JSON.stringify([s1, s2, s3, s4].map((x) => x.href)));
   const s6 = byName('已定位门店');
   check('有坐标 → /marker 位置标注「看位置」页（不是 /navigation 驾车路线页）',
     s6.kind === 'geo' && new URL(s6.abs).pathname === '/marker' && new URL(s6.abs).searchParams.get('mode') === null, JSON.stringify(s6));
@@ -174,14 +178,23 @@ const SNAP_DETAIL = `(()=>{
   check('位置页带 name=门店名、不带 callnative（不主动拉起 App）',
     s6.abs && new URL(s6.abs).searchParams.get('name') === '已定位门店' && new URL(s6.abs).searchParams.get('callnative') === null, s6.abs);
   check('普通环境 target=_self', home.items.every((x) => x.target === '_self'));
-  check('aria-label 说明「导航到 门店名」', !!s1.label && /导航到/.test(s1.label), s1.label);
+  check('无坐标项 aria-label 说明「暂无精确定位」', !!s1.label && /暂无精确定位/.test(s1.label), s1.label);
+  check('有坐标项 aria-label 仍说明「导航到 门店名」', !!s6.label && /导航到/.test(s6.label), s6.label);
   check('门店名里的 <img onerror> 被转义，未执行', home && home.injectedImg === false && home.xss === false);
 
-  /* 点店铺名（不是点链接边缘）：确实落在 <a> 上并被记录 */
-  await ev(`(()=>{const a=[...document.querySelectorAll('#todayStoreList a[data-zp-nav]')][1];const n=a.querySelector('.zp-store-name');n.click();return window.__nav.length})()`);
+  /* 无坐标门店：点了只提示，不产生任何导航地址 */
+  await ev(`(()=>{const a=[...document.querySelectorAll('#todayStoreList a[data-zp-nav]')][1];const n=a.querySelector('.zp-store-name');n.click();return 1})()`);
+  await sleep(120);
+  const miss = await ev(`(()=>{const t=document.querySelector('#zpToast');return {nav:window.__nav.length,miss:window.__miss||0,toast:t?t.textContent:'',shown:!!(t&&/\\bshow\\b/.test(t.className))}})()`);
+  check('点无坐标门店只提示「暂无精确定位，请录入」',
+    miss && miss.miss === 1 && miss.nav === 0 && miss.toast === '暂无精确定位，请录入' && miss.shown === true, JSON.stringify(miss));
+
+  /* 有坐标门店：点击仍然正常产生导航地址 */
+  await ev(`(()=>{const a=[...document.querySelectorAll('#todayStoreList a[data-zp-nav]')][5];const n=a.querySelector('.zp-store-name');n.click();return 1})()`);
+  await sleep(120);
   const clicks = await ev('window.__nav');
-  check('点门店名会触发导航链接', Array.isArray(clicks) && clicks.length === 1 && clicks[0].kind === 'keyword', JSON.stringify(clicks));
-  check('点击目标与渲染出的 href 一致', Array.isArray(clicks) && clicks[0] && clicks[0].href === s2.href, JSON.stringify(clicks && clicks[0]));
+  check('有坐标门店点击仍产生导航地址', Array.isArray(clicks) && clicks.length === 1 && clicks[0].kind === 'geo', JSON.stringify(clicks));
+  check('点击目标与渲染出的 href 一致', Array.isArray(clicks) && clicks[0] && clicks[0].href === s6.href, JSON.stringify(clicks && clicks[0]));
 
   /* 详情页：同一个 render.js，必须同样可点且热区 ≥44 */
   await C('Page.navigate', { url: BASE + '/pages/order_detail.html?id=w-e2e' });
@@ -189,9 +202,14 @@ const SNAP_DETAIL = `(()=>{
   const detail = await ev(SNAP_DETAIL);
   console.log('detail ' + JSON.stringify(detail));
   check('详情页门店名可点（6 个链接）', detail && detail.links === 6, detail && String(detail.links));
-  check('详情页高德短链同样不透传（全表无 surl.amap.com）',
-    detail && detail.items.every((x) => !/surl\.amap\.com|callnative|callAPP/.test(x.abs)) &&
-    detail.items.some((x) => x.kind === 'keyword' && /uri\.amap\.com\/search/.test(x.abs)),
+  check('详情页无坐标项全部 href=#（不出站、不搜索）',
+    detail &&
+    detail.items.filter((x) => x.kind === 'missing').length === 5 &&
+    detail.items.filter((x) => x.kind === 'missing').every((x) => x.href === '#') &&
+    detail.items.every((x) => !/surl\.amap\.com|callnative|callAPP|uri\.amap\.com\/search/.test(x.href)),
+    JSON.stringify(detail && detail.items.map((x) => [x.kind, x.href])));
+  check('详情页有坐标项仍走 /marker 位置页',
+    detail && detail.items.some((x) => x.kind === 'geo' && /uri\.amap\.com\/marker/.test(x.abs)),
     JSON.stringify(detail && detail.items.map((x) => x.abs)));
   check('详情页触控热区 ≥44px', detail && detail.items.every((x) => x.box >= 44), detail && JSON.stringify(detail.items.map((x) => x.box)));
   check('详情页门店名注入被转义', detail && detail.injectedImg === false && detail.xss === false);
@@ -272,23 +290,25 @@ const SNAP_DETAIL = `(()=>{
   check('选腾讯 → 不再落到 map.qq.com/?what= 首页',
     Array.isArray(out3) && out3.length === 3 && !/map\.qq\.com\/\?/.test(out3[2]), JSON.stringify(out3));
 
+  /* 无坐标门店：不弹三家菜单，只提示「暂无精确定位，请录入」，不产生任何外链 */
+  const beforeMiss = await ev('window.__navOut.length');
   await clickStore(1);   /* S2：纯文本 navigation，未定位 */
   const m2 = await ev(MENU);
-  check('未定位门店才补一行「按门店名搜索」', m2 && /未绑定坐标/.test(m2.sub), JSON.stringify(m2));
-  await pick('amap');
+  const miss2 = await ev(`(()=>{const t=document.querySelector('#zpToast');return {toast:t?t.textContent:'',shown:!!(t&&/\\bshow\\b/.test(t.className)),rows:document.querySelectorAll('.zp-mn-row').length}})()`);
+  check('无坐标门店不弹三家菜单', m2 && m2.sheet === false && m2.rows.length === 0, JSON.stringify(m2));
+  check('无坐标门店只提示「暂无精确定位，请录入」',
+    miss2 && miss2.toast === '暂无精确定位，请录入' && miss2.shown === true, JSON.stringify(miss2));
+  await pick('amap');   /* 没有行可点，确认不会误触 */
   const out4 = await ev('window.__navOut');
-  check('未定位门店选高德 → 关键词搜索（不拼 0,0）',
-    Array.isArray(out4) && out4.length === 4 && (() => { try { const u = new URL(out4[3]); return u.pathname === '/search' && u.searchParams.get('keyword') === '渝北中景隆(重庆)贸易有限公司'; } catch { return false; } })(),
-    JSON.stringify(out4));
+  check('无坐标门店不会产生任何地图链接',
+    Array.isArray(out4) && out4.length === beforeMiss, JSON.stringify(out4));
 
-  /* 真机回归：门店存了高德短链但没解析出坐标时，选高德也不能把短链交出去，
-     否则 m.amap.com/callAPP 中转页会在未装 App 时整页跳「立即下载高德」。 */
+  /* 门店存了高德短链但没解析出坐标：同样只提示，绝不能把短链交出去 */
   await clickStore(0);   /* S1：带高德短链、未定位 */
   await pick('amap');
   const out5 = await ev('window.__navOut');
-  check('有高德短链但未定位 → 选高德仍走网页版搜索（下载引导页回归）',
-    Array.isArray(out5) && out5.length === 5 && (() => { try { const u = new URL(out5[4]); return u.pathname === '/search' && !/surl\.amap|callnative|callAPP|ap\.amap|wap\.amap/.test(out5[4]); } catch { return false; } })(),
-    JSON.stringify(out5));
+  check('有高德短链但未定位 → 同样不调用任何地图',
+    Array.isArray(out5) && out5.length === beforeMiss, JSON.stringify(out5));
 
   await clickStore(5);
   await ev(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}))`);

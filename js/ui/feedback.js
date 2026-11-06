@@ -117,7 +117,10 @@
   window.zpToast=function(message,type="success"){
     const root=ensure(),toast=root.querySelector("#zpToast");
     toast.textContent=message||"";
-    toast.className="ui-toast "+(type||"")+" show";
+    /* 底部有 tabbar（.zp-nav）时上抬：默认 bottom 24px 会压在加号按钮上，
+       文案被挡一半。没有 tabbar 的页面（运单详情等）保持原位。 */
+    const lift=document.querySelector(".zp-nav")?" above-nav":"";
+    toast.className="ui-toast "+(type||"")+lift+" show";
     clearTimeout(window.zpToast._timer);
     window.zpToast._timer=setTimeout(()=>toast.classList.remove("show"),2200);
   };

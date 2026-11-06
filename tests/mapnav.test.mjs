@@ -9,13 +9,14 @@
  *      搜索页在真机上不跳下载页；uri.amap.com/navigation 驾车路线页一进去
  *      就要开始导航，未装 App 时高德整页引到 ap.amap.com / wap-org.amap.com
  *      「立即下载」—— 416/417 都跳、正式版不跳，根因就在这里。
- *   2) 所以高德一律送「看位置」页：有坐标 → uri.amap.com/marker（位置标注页，
- *      落 m.amap.com/share/index）；无坐标 → uri.amap.com/search（门店名搜索页，
- *      落 m.amap.com/search/view）。**绝不用 /navigation，绝不带 callnative=1，
+ *   2) 所以高德只在有坐标时送「看位置」页：uri.amap.com/marker（位置标注页，
+ *      落 m.amap.com/share/index）。**绝不用 /navigation，绝不带 callnative=1，
  *      绝不透传 surl.amap.com 短链**（callAPP 中转页未装 App 时超时兜底跳下载页）。
  *   3) 无坐标（含空 / 纯文本 / 非地图 URL / javascript: / data: / 地图短链）
- *      → 门店名走高德关键词，且**绝不允许**回到旧实现 new URL(v, location.origin)
- *      —— 那会把 "A栋B1" 解析成站内路径，点一下 404，返回键都救不回来；
+ *      → 不调用任何地图：href 用 # 占位，点击只提示「暂无精确定位，请录入」。
+ *      搜索页要用户自己从结果里挑门店，挑错就导到别家，不再作为兜底。
+ *      **绝不允许**回到旧实现 new URL(v, location.origin) —— 那会把 "A栋B1"
+ *      解析成站内路径，点一下 404，返回键都救不回来；
  *   4) 白名单按「等于或以 .域名 结尾」匹配，防 amap.com.evil.com / amap.com@evil.com；
  *      navigation 链接仍进 payload.link，但只供百度分支判断，不生成高德 URL；
  *   5) 一律 https 官方链接，不用自建 scheme、不做安装探测；
@@ -61,13 +62,7 @@ function load(opts = {}) {
 
 const { api: M, first: FIRST, win: WIN } = load();
 
-const q = (url) => new URL(url).searchParams.get("keyword");
-const isAmapSearch = (url) => {
-  try { return new URL(url).hostname === "uri.amap.com" && new URL(url).pathname === "/search"; }
-  catch { return false; }
-};
-
-console.log("高德链接一律不透传（5 条）");
+console.log("无坐标一律不出站（5 条）");
 {
   const cases = [
     ["高德短链", "https://surl.amap.com/abc"],
@@ -77,15 +72,14 @@ console.log("高德链接一律不透传（5 条）");
   ];
   for (const [label, nav] of cases) {
     const r = M.resolve({ name: "谊品生鲜", navigation: nav });
-    t(label + " 不透传、改走网页版关键词搜索",
-      !!r && r.kind === "keyword" && isAmapSearch(r.url) &&
-      !r.url.includes(nav) && !/surl\.amap|wb\.amap|callAPP/.test(r.url), JSON.stringify(r));
+    t(label + " 不透传、也不换搜索页（href=# 等提示）",
+      !!r && r.kind === "missing" && r.url === "#", JSON.stringify(r));
   }
   const d = M.resolve({ nav: "  https://uri.amap.com/marker?position=106.5,29.5  " });
   t("只有链接、没有门店名 → 不生成链接（不再靠链接硬凑可点行）", d === null, JSON.stringify(d));
 }
 
-console.log("\n非法 navigation 一律降级关键词（8 条）");
+console.log("\n非法 navigation 也不出站（8 条）");
 {
   const cases = [
     ["纯文本楼层", { name: "谊品生鲜", navigation: "A栋B1" }],
@@ -98,11 +92,11 @@ console.log("\n非法 navigation 一律降级关键词（8 条）");
   ];
   for (const [label, store] of cases) {
     const r = M.resolve(store);
-    t(label + " → 关键词搜索", !!r && r.kind === "keyword" && isAmapSearch(r.url), JSON.stringify(r));
+    t(label + " → 只给 # 占位", !!r && r.kind === "missing" && r.url === "#", JSON.stringify(r));
   }
   const r = M.resolve({ name: "谊品生鲜", navigation: "A栋B1" });
   t("纯文本不会变成站内路径（不含站点 origin / 编码后的路径）",
-    !!r && !/\/A%E6%A0%8BB1/.test(r.url) && q(r.url) === "谊品生鲜", r && r.url);
+    !!r && r.url === "#" && !/\/A%E6%A0%8BB1/.test(r.url), r && r.url);
 }
 
 console.log("\n白名单防伪装（4 条）");
@@ -115,33 +109,23 @@ console.log("\n白名单防伪装（4 条）");
   ];
   for (const nav of bad) {
     const r = M.resolve({ name: "谊品生鲜", navigation: nav });
-    t("伪装域名拒绝：" + nav, !!r && r.kind === "keyword" && isAmapSearch(r.url), JSON.stringify(r));
+    t("伪装域名拒绝：" + nav, !!r && r.kind === "missing" && r.url === "#", JSON.stringify(r));
   }
   t("isMapHost 直接判定：amap.com / 子域 / 伪装",
     M.isMapHost("amap.com") && M.isMapHost("surl.amap.com") && M.isMapHost("AMAP.COM.") &&
     !M.isMapHost("amap.com.evil.com") && !M.isMapHost("evilamap.com") && !M.isMapHost(""));
 }
 
-console.log("\n关键词链接构造 = 门店名搜索「看位置」页（5 条）");
+console.log("\n名称回退与空值（5 条）");
 {
-  const r = M.resolve({ name: "渝北中景隆(重庆)贸易有限公司" });
-  t("中文门店名正确编码，keyword 可还原",
-    q(r.url) === "渝北中景隆(重庆)贸易有限公司", r.url);
-  t("落地是 /search 门店名搜索页（不是 /navigation 路线页）",
-    new URL(r.url).pathname === "/search" && !/\/navigation/.test(r.url), r.url);
-  t("一律不带 callnative（不主动拉起 App，选择权留给司机）",
-    new URL(r.url).searchParams.get("callnative") === null, r.url);
-  t("带来源标识 src=zhipei", new URL(r.url).searchParams.get("src") === "zhipei");
+  const a = JSON.parse(M.navPayload({ name: "  ", rawName: "备用名", navigation: null }));
+  t("name 为空白时回退 rawName", a.name === "备用名", a.name);
+  const b = JSON.parse(M.navPayload({ rawName: "", originalName: "OCR 原名" }));
+  t("rawName 为空时回退 originalName", b.name === "OCR 原名", b.name);
+  const c = M.resolve({ name: "渝北中景隆(重庆)贸易有限公司" });
+  t("无坐标 URL 一律是 #（不再构造关键词搜索）", !!c && c.url === "#" && c.kind === "missing", JSON.stringify(c));
   const desktop = load({ ua: DESKTOP_UA }).api.resolve({ name: "渝北中景隆(重庆)贸易有限公司" });
-  t("桌面端与移动端 URL 完全一致（不再按 UA 分支）", desktop.url === r.url, desktop.url);
-}
-
-console.log("\n名称回退与空值（3 条）");
-{
-  const a = M.resolve({ name: "  ", rawName: "备用名", navigation: null });
-  t("name 为空白时回退 rawName", a && a.kind === "keyword" && q(a.url) === "备用名");
-  const b = M.resolve({ rawName: "", originalName: "OCR 原名" });
-  t("rawName 为空时回退 originalName", b && q(b.url) === "OCR 原名");
+  t("桌面端与移动端一致（不再按 UA 分支）", desktop.url === c.url, desktop.url);
   t("全空门店返回 null（渲染层据此退化为不可点行）",
     M.resolve({}) === null && M.resolve(null) === null && M.resolve({ name: " ", navigation: "" }) === null);
 }
@@ -160,7 +144,7 @@ console.log("\n坐标优先 = 位置标注「看位置」页（7 条）");
   t("位置页 URL 一律不带 callnative（不主动拉起 App）",
     u.searchParams.get("callnative") === null, g.url);
   const zero = M.resolve({ name: "谊品生鲜", lat: 0, lng: 0 });
-  t("0,0 视为无效坐标，退回关键词搜索", !!zero && zero.kind === "keyword", JSON.stringify(zero));
+  t("0,0 视为无效坐标，只给 # 占位", !!zero && zero.kind === "missing" && zero.url === "#", JSON.stringify(zero));
   const str = M.resolve({ name: "谊品生鲜", lat: "29.5631", lng: "106.5512" });
   t("字符串坐标也认（运单快照里的数值可能被序列化成字符串）", !!str && str.kind === "geo");
 }
@@ -198,8 +182,13 @@ console.log("\n三家 provider 目标（14 条）");
   t("菜单标题与选项均居中",
     /\.zp-mn-head\{[^}]*text-align:center/.test(CSS) && /\.zp-mn-row\{[^}]*justify-content:center/.test(CSS),
     "标题或选项未居中");
-  t("正常态不再有副标题（仅缺坐标时才补一行）",
-    /if \(!urls\._geo\) head\.appendChild/.test(SRC), "副标题须由 _geo 条件控制");
+  /* 2026-11-06：无坐标不再进菜单（搜索兜底要人自己挑门店，挑错就导到别家），
+     改为只提示「暂无精确定位，请录入」。 */
+  t("无坐标不进菜单：openMenu 提前提示并消费点击",
+    /if \(!urls\._geo\) \{\s*notifyMissingGeo\(\);\s*return true;/.test(SRC), "缺少无坐标短路");
+  t("提示文案固定为「暂无精确定位，请录入」",
+    SRC.includes('"暂无精确定位，请录入"'));
+  t("菜单不再有「未绑定坐标」副标题", !/zp-mn-sub/.test(SRC) && !/\.zp-mn-sub\{/.test(CSS));
   t("三家都有 https 目标", ["amap", "baidu", "qq"].every((k) => typeof u[k] === "string" && u[k].startsWith("https://")));
   t("有坐标时 _geo=true（菜单不出「按门店名搜索」兜底提示）", u._geo === true);
 
@@ -239,23 +228,19 @@ console.log("\n三家 provider 目标（14 条）");
     !u.qq.includes("map.qq.com/?") && qq.searchParams.get("what") === null, u.qq);
 }
 
-console.log("\n无坐标时三家各自降级（6 条）");
+console.log("\n无坐标不调用导航（6 条）");
 {
-  const n = encodeURIComponent("谊品生鲜");
   const amapLink = "https://surl.amap.com/abc";
   const u = M.providerUrls({ name: "谊品生鲜", navigation: amapLink });
-  t("有高德链接但无坐标 → 高德按门店名网页版搜索（绝不透传短链）",
-    isAmapSearch(u.amap) && !u.amap.includes(amapLink) &&
-    !/surl\.amap|callAPP|ap\.amap|callnative/.test(u.amap), u.amap);
-  t("有高德链接但无坐标 → 百度按门店名走移动端搜索页",
-    u.baidu === "https://map.baidu.com/mobile/webapp/search/search/qt=s&wd=" + n, u.baidu);
-  t("有高德链接但无坐标 → 腾讯走 URI 搜索结果页（落 locationCluster）",
-    u.qq.startsWith("https://apis.map.qq.com/uri/v1/search?keyword=" + n) &&
-    u.qq.includes("referer="), u.qq);
-  t("无坐标时 _geo=false", u._geo === false);
-  const b = M.providerUrls({ name: "谊品生鲜", navigation: "https://j.map.baidu.com/xyz" });
-  t("百度短链原样透传给百度", b.baidu === "https://j.map.baidu.com/xyz", b.baidu);
-  t("百度短链不误当高德导航（走关键词搜索）", new URL(b.amap).pathname === "/search", b.amap);
+  t("无坐标 → providerUrls 不构造任何地址", Object.keys(u).join(",") === "_geo" && u._geo === false, JSON.stringify(u));
+  t("无坐标 → resolve 给 # 占位（可点、不出站）",
+    (() => { const r = M.resolve({ name: "谊品生鲜" }); return r && r.url === "#" && r.kind === "missing"; })());
+  t("无坐标门店仍有 linkAttrs（点击交给提示层处理）",
+    (() => { const a = M.linkAttrs({ name: "谊品生鲜" }); return !!a && a.url === "#" && a.kind === "missing"; })());
+  t("空门店（无名无坐标）仍返回 null", M.linkAttrs({}) === null && M.resolve({}) === null);
+  t("源码不再构造三家搜索页", !/uri\.amap\.com\/search|mobile\/webapp\/search|apis\.map\.qq\.com\/uri\/v1\/search/.test(SRC));
+  t("源码不再有 keywordUrl / baiduSearchUrl / qqSearchUrl",
+    !/function keywordUrl|function baiduSearchUrl|function qqSearchUrl/.test(SRC));
 }
 
 console.log("\n真机回归：只送「看位置」页、不触发下载引导页（10 条）");
@@ -274,19 +259,19 @@ console.log("\n真机回归：只送「看位置」页、不触发下载引导�
     /["']https:\/\/uri\.amap\.com\/marker\?position=/.test(SRC));
   const stores = [
     { label: "有坐标 + 高德短链", s: { name: "谊品生鲜", lat: 29.5631, lng: 106.5512, navigation: "https://surl.amap.com/abc" } },
-    { label: "无坐标 + 高德短链", s: { name: "谊品生鲜", navigation: "https://surl.amap.com/abc" } },
-    { label: "无任何链接", s: { name: "谊品生鲜" } },
+    { label: "有坐标 + 纯文字备注", s: { name: "谊品生鲜", lat: 29.5631, lng: 106.5512, navigation: "A栋B1" } },
   ];
   for (const { label, s } of stores) {
-    const urls = [M.resolve(s).url, M.providerUrls(s).amap, M.keywordUrl(s.name),
+    const urls = [M.resolve(s).url, M.providerUrls(s).amap,
       M.markerUrl({ lat: 29.5631, lng: 106.5512 }, s.name)];
-    t(label + " → 四条高德 URL 都是 /marker 或 /search「看位置」页，且无下载域名/参数",
+    t(label + " → 三条高德 URL 都是 /marker 位置页，且无下载域名/参数",
       urls.every((u) => {
         if (typeof u !== "string" || forbidden.test(u)) return false;
-        const p = new URL(u).pathname;
-        return (p === "/marker" || p === "/search") && !/\/navigation/.test(u);
+        return new URL(u).pathname === "/marker" && !/\/navigation/.test(u);
       }), JSON.stringify(urls));
   }
+  t("无坐标 + 短链 → resolve 只给 #，不生成搜索页",
+    M.resolve({ name: "谊品生鲜", navigation: "https://surl.amap.com/abc" }).url === "#");
   t("源码不再写「未装用网页版」（已被真机证伪）", !/未装用网页版/.test(SRC));
 }
 

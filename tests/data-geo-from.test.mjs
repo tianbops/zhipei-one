@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------
  * 用户决策（同批做，2026-11-05）：
  *   1) 接受新增 geoFrom 一个字段：换地址链接提交后必须重新解析并关联门店；
- *   2) 保留腾讯占位，用网页版搜索兜底；
+ *   2) 保留腾讯占位；无坐标不再搜索兜底，只提示录入（2026-11-06 调整）；
  *   3) 同批做数据层清理：只存坐标，不再记录/回补名称与地址文本；
  *   4) 修复安卓手势返回数据中心不回线路维护页。
  *
@@ -130,14 +130,14 @@ t("学习确认新增门店写 geoFrom 而非 address",
 t("PROVIDERS 固定高德/百度/腾讯三家",
   ['{ id: "amap"', '{ id: "baidu"', '{ id: "qq"'].every((s) => mapnav.includes(s)));
 t("providerUrls 覆盖三家出口",
-  ["out.amap", "out.baidu", "out.qq"].every((s) => mapnav.includes(s)));
-/* 腾讯：有坐标走 mapComponents 的 locationMarker 位置页（免 key）；无坐标才用
-   apis.map.qq.com/uri/v1/search 的搜索结果页。旧实现 map.qq.com/?what= 在移动端
-   只给地图首页，真机录屏复现，不许回退。 */
+  [/amap: markerUrl\(/, /baidu: baiduMarkerUrl\(/, /qq: qqMarkerUrl\(/].every((re) => re.test(mapnav)));
+/* 腾讯：有坐标走 mapComponents 的 locationMarker 位置页（免 key）。
+   旧实现 map.qq.com/?what= 在移动端只给地图首页，真机录屏复现，不许回退。
+   无坐标（2026-11-06）不再退化成搜索结果页：只提示「暂无精确定位，请录入」。 */
 t("腾讯有坐标走 locationMarker 位置页（不是地图首页）",
   mapnav.includes("mapComponents/locationMarker") && !mapnav.includes('map.qq.com/?what=" '));
-t("腾讯无坐标兜底用 URI 搜索结果页（落 locationCluster）",
-  mapnav.includes("apis.map.qq.com/uri/v1/search"));
+t("无坐标不再构造任何搜索页（含腾讯 URI search）",
+  !/apis\.map\.qq\.com\/uri\/v1\/search|uri\.amap\.com\/search|mobile\/webapp\/search/.test(mapnav));
 t("零自建 scheme（不弹 iOS 未装错误框）",
   !/["'](?:qqmap|baidumap|amapuri):\/\//.test(mapnav));
 t("零「已安装」探测（不做 visibilitychange + 超时双跳）",

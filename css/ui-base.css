@@ -629,6 +629,9 @@ textarea:-webkit-autofill{
   transition:opacity .18s ease,transform .18s ease;
 }
 .ui-toast.show{opacity:1;transform:translate(-50%,0)}
+/* 有底部浮岛导航的页面（首页 / 历史 / 派单 / 我的）：上抬到导航之上。
+   浮岛 bottom 8 + 高 64 = 顶在 72px，这里留 12px 间隙。 */
+.ui-toast.above-nav{bottom:calc(84px + env(safe-area-inset-bottom))}
 .ui-toast.success{background:var(--zp-success-surface)}
 .ui-toast.error{background:var(--zp-error-surface);border-color:var(--zp-error-surface-strong)}
 

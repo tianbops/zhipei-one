@@ -20,10 +20,12 @@
      · callnative=1 由高德自动判定并拉起 App，同样把选择权从用户手里拿走；
      · 透传 surl.amap.com 短链会经 m.amap.com/callAPP 中转，未装 App 时
        超时兜底跳下载页，且落地页随出口漂移，不可依赖。
-   所以高德一律用 uri.amap.com/marker（有坐标 → 位置标注页，落 m.amap.com/
-   share/index）或 /search（无坐标 → 门店名搜索页，落 m.amap.com/search/view），
-   两者都是「看位置」页、零下载页特征，也不带 callnative；这正是正式版 407
-   （POI 详情 / 搜索页）在真机上不跳下载页的原因。
+   所以高德有坐标时一律用 uri.amap.com/marker（位置标注页，落 m.amap.com/
+   share/index）：零下载页特征、不带 callnative，这正是正式版 407（POI 详情 /
+   搜索页）在真机上不跳下载页的原因。
+   无坐标时（2026-11-06 起）不再退化成「按门店名搜索」——搜索页要用户自己从
+   结果里挑门店，挑错就等于导到别家；改为不调用任何地图，只提示「暂无精确定位，
+   请录入」。坐标在数据中心录入，一次录入全局可用。
    百度 / 腾讯同范式（2026-11 真机复核，三家必须一致）：
      · 百度 api.map.baidu.com/marker → 落 map.baidu.com/mobile/.../place/marker，
        自带门店名、地址、「导航 / 打车 / 到这去」；
@@ -123,23 +125,10 @@
     return encodeURIComponent(v);
   }
 
-  function hostIs(link, re) {
-    try {
-      return re.test(new URL(link).hostname.toLowerCase().replace(/\.$/, ""));
-    } catch (e) {
-      return false;
-    }
-  }
-
   /* 全程不带 callnative：不主动拉起 App，也不显式置 0（正式版 407 的
-     keywordUrl 带 callnative=1 却不跳下载页，说明决定因素是落地页类型，
+     搜索入口带 callnative=1 却不跳下载页，说明决定因素是落地页类型，
      不是这个参数；多带一个参数只是多一个不确定变量）。
      「是否用 App」由落地页自带的「打开高德APP」按钮交给司机自己点。 */
-
-  /* 门店名搜索页（302 落 m.amap.com/search/view）：无坐标时的「看位置」入口。 */
-  function keywordUrl(name) {
-    return "https://uri.amap.com/search?keyword=" + enc(name) + "&src=" + SRC;
-  }
 
   /* 位置标注页（302 落 m.amap.com/share/index）：position 是「经度,纬度」，
      纬度在前会导到几百公里外。用门店自己的坐标标一个点，页面里自带
@@ -163,12 +152,6 @@
     return url;
   }
 
-  /* 百度无坐标兜底：移动端搜索页（落 map.baidu.com/mobile/.../search/search）。
-     旧写法 map.baidu.com/search/名称/ 在移动端会被重定向回地图首页。 */
-  function baiduSearchUrl(name) {
-    return "https://map.baidu.com/mobile/webapp/search/search/qt=s&wd=" + enc(name);
-  }
-
   /* 腾讯的位置页（mapComponents 的 locationMarker 组件）。落点是 mapapi.qq.com
      的轻量地图页：红色标记 + 门店名 + 逆地理地址 + 「去这里」，同样不拉起 App。
      marker 整串要整体编码 —— 内含 : , ; 三个分隔符，逐个拼编码会拼错。
@@ -179,56 +162,25 @@
     return "https://mapapi.qq.com/web/mapComponents/locationMarker/v/index.html?marker=" + enc(m);
   }
 
-  /* 腾讯无坐标兜底：URI 搜索，落 locationCluster 结果页（地图 + 列表 + 去这里）。 */
-  function qqSearchUrl(name) {
-    return "https://apis.map.qq.com/uri/v1/search?keyword=" + enc(name) +
-      "&region=" + enc("全国") + "&referer=" + SRC;
-  }
-
   /* ===== 三家适配器：一张表收口差异 =====
-     返回 {amap, baidu, qq, _geo}，_geo 供菜单显示「已绑定精确坐标」。 */
+     只在有精确坐标时构造 URL；无坐标直接返回 {_geo:false}，三家一个地址都不给，
+     调用方据此只提示「暂无精确定位，请录入」。
+
+     三家都只送「看位置」页，绝不走驾车路线页 / 短链中转页：
+       · 高德 uri.amap.com/marker（经度在前）
+       · 百度 api.map.baidu.com/marker（纬度在前，coord_type=gcj02 交给百度转）
+       · 腾讯 mapapi.qq.com/web/mapComponents/locationMarker
+     页面里自带「打开高德APP」「去这里」等入口，是否用 App 由司机自己点。 */
   function providerUrls(store) {
     var geo = geoOf(store);
+    if (!geo) return { _geo: false };
     var name = pickName(store);
-    var link = linkOf(store);
-    var n = enc(name);
-    var out = {};
-
-    /* 高德：一律送到「看位置」页 —— 有坐标走位置标注页（marker），没坐标按
-       门店名搜索（search）。绝不用 uri.amap.com/navigation 驾车路线页（真机会
-       引导下载），也绝不透传 navigation 里的 surl.amap.com 短链（那条经
-       m.amap.com/callAPP，未装 App 时超时兜底整页跳「立即下载高德」）。
-       页面里自带「打开高德APP」按钮，是否用 App 由司机自己点。
-       link 只参与下面的百度分支判断，不参与高德 URL。 */
-    out.amap = geo ? markerUrl(geo, name) : keywordUrl(name);
-
-    /* 百度：有坐标走位置页（marker），无坐标按门店名走移动端搜索页。
-       绝不走 /direction 驾车路线页 —— 移动端会先落「终点为空」的路线搜索，
-       再退回地图首页，位置根本没带过去（2026-11 真机录屏复现）。 */
-    if (geo) {
-      out.baidu = baiduMarkerUrl(geo, name);
-    } else if (link && hostIs(link, /(^|\.)(map\.baidu\.com|j\.map\.baidu\.com)$/)) {
-      out.baidu = link;
-    } else if (name) {
-      out.baidu = baiduSearchUrl(name);
-    } else {
-      out.baidu = "https://map.baidu.com/";
-    }
-
-    /* 腾讯：有坐标走位置页（locationMarker 组件），无坐标走 URI 搜索结果页。
-       绝不走 map.qq.com/?what= —— 移动端会忽略 what / center，只给地图首页。 */
-    if (geo) {
-      out.qq = qqMarkerUrl(geo, name);
-    } else if (link && hostIs(link, /(^|\.)qq\.com$/)) {
-      out.qq = link;
-    } else if (name) {
-      out.qq = qqSearchUrl(name);
-    } else {
-      out.qq = "https://map.qq.com/m/";
-    }
-
-    out._geo = !!geo;
-    return out;
+    return {
+      amap: markerUrl(geo, name),
+      baidu: baiduMarkerUrl(geo, name),
+      qq: qqMarkerUrl(geo, name),
+      _geo: true,
+    };
   }
 
   /* 载荷：渲染层塞进 data-zp-nav-payload，菜单点击时还原，
@@ -243,15 +195,15 @@
     });
   }
 
-  /* 返回 {url, kind:"geo"|"keyword"}；门店无任何可用信息时返回 null。
-     url 仍是高德默认「看位置」链接 —— 菜单脚本没加载时点门店名也能用
-     （渐进增强）。这里同样只用 marker/search，绝不透传短链、绝不用驾车
-     路线页，否则渐进增强路径会绕过上面的约束。 */
+  /* 返回 {url, kind:"geo"|"missing"}；门店无名也无坐标时返回 null。
+     有坐标 → 高德「看位置」链接（菜单脚本没加载时点门店名也能用，渐进增强）。
+     无坐标 → href 用 # 占位：门店名仍可点（点了由菜单委托给出「请录入」提示），
+     但绝不把司机带到按名称搜索的结果页 —— 搜索结果要人自己挑，挑错就导到别家。 */
   function resolve(store) {
     var geo = geoOf(store);
     var name = pickName(store);
     if (geo) return { url: markerUrl(geo, name), kind: "geo" };
-    return name ? { url: keywordUrl(name), kind: "keyword" } : null;
+    return name ? { url: "#", kind: "missing" } : null;
   }
 
   function linkAttrs(store) {
@@ -300,6 +252,17 @@
     }
   }
 
+  /* 无坐标提示：统一走全局 toast（首页 bundle、运单详情、今日配送、数据中心
+     都加载了 feedback.js）。组件缺失时退回 alert —— 宁可粗糙也不静默，
+     静默会让人以为是「点了没反应」。 */
+  function notifyMissingGeo() {
+    var msg = "暂无精确定位，请录入";
+    try {
+      if (typeof window.zpToast === "function") { window.zpToast(msg, "error"); return; }
+    } catch (e) {}
+    try { window.alert(msg); } catch (e) {}
+  }
+
   function openMenu(anchor, payload) {
     closeMenu();
     var data;
@@ -312,6 +275,13 @@
       lng: data.lng,
       navigation: data.link,
     });
+    /* 无精确定位：不弹三家、不进任何地图页，只提示去数据中心录入。
+       门店名仍是可点元素（模板里 href="#"），这里返回 true 表示「已处理」，
+       委托层据此 preventDefault，避免 # 把页面滚回顶部。 */
+    if (!urls._geo) {
+      notifyMissingGeo();
+      return true;
+    }
     /* 数据中心等页面把门店名做成 target=_blank 的预览链接；继承它，
        避免管理员点一下就被 _self 带离维护页面。 */
     var blank = standalone() || anchor.getAttribute("target") === "_blank";
@@ -325,9 +295,6 @@
 
     var head = el("div", "zp-mn-head");
     head.appendChild(el("div", "zp-mn-title", "导航到 " + data.name));
-    /* 正常态不再有副标题：每个选项下面都写一遍「是否用 App 由您选」太啰嗦。
-       只有缺坐标这种异常态才补一行说明，否则用户不知道为什么变成搜索。 */
-    if (!urls._geo) head.appendChild(el("div", "zp-mn-sub", "未绑定坐标 · 按门店名搜索门店位置"));
     var x = el("button", "zp-mn-close", "✕");
     x.type = "button";
     x.setAttribute("aria-label", "关闭");
@@ -402,12 +369,9 @@
   window.zpMapNav = {
     resolve: resolve,
     linkAttrs: linkAttrs,
-    keywordUrl: keywordUrl,
     markerUrl: markerUrl,
     baiduMarkerUrl: baiduMarkerUrl,
-    baiduSearchUrl: baiduSearchUrl,
     qqMarkerUrl: qqMarkerUrl,
-    qqSearchUrl: qqSearchUrl,
     providerUrls: providerUrls,
     navPayload: navPayload,
     isMapHost: isMapHost,

@@ -1325,6 +1325,9 @@ textarea:-webkit-autofill{
   transition:opacity .18s ease,transform .18s ease;
 }
 .ui-toast.show{opacity:1;transform:translate(-50%,0)}
+/* 有底部浮岛导航的页面（首页 / 历史 / 派单 / 我的）：上抬到导航之上。
+   浮岛 bottom 8 + 高 64 = 顶在 72px，这里留 12px 间隙。 */
+.ui-toast.above-nav{bottom:calc(84px + env(safe-area-inset-bottom))}
 .ui-toast.success{background:var(--zp-success-surface)}
 .ui-toast.error{background:var(--zp-error-surface);border-color:var(--zp-error-surface-strong)}
 
@@ -2081,8 +2084,6 @@ textarea:disabled,
 .zp-mn-sheet:focus{outline:none}
 .zp-mn-head{position:relative;padding:10px 56px;border-bottom:1px solid var(--zp-line);text-align:center}
 .zp-mn-title{color:var(--zp-text);font-size:var(--zp-fs-16);font-weight:var(--zp-fw-bold);line-height:22px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* 仅「未绑定坐标」时出现，正常态没有第二行 */
-.zp-mn-sub{color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:18px;margin-top:2px;text-align:center}
 .zp-mn-close{position:absolute;top:10px;right:10px;width:44px;height:44px;border:0;background:none;color:var(--zp-muted);font-size:var(--zp-fs-16);border-radius:var(--zp-r-mini);cursor:pointer;-webkit-appearance:none;appearance:none}
 .zp-mn-close:active{background:var(--zp-surface-2)}
 .zp-mn-list{overflow:auto;-webkit-overflow-scrolling:touch;padding:2px 8px 6px}
