@@ -251,16 +251,21 @@ const SNAP_DETAIL = `(()=>{
   await clickStore(5);
   await pick('baidu');
   const out2 = await ev('window.__navOut');
-  check('选百度 → latlng 纬度在前 + coord_type=gcj02',
-    Array.isArray(out2) && out2.length === 2 && (() => { try { const u = new URL(out2[1]); const d = u.searchParams.get('destination') || ''; return u.hostname === 'api.map.baidu.com' && d.startsWith('latlng:29.563100,106.551200') && u.searchParams.get('coord_type') === 'gcj02'; } catch { return false; } })(),
+  check('选百度 → api.map.baidu.com/marker 位置页（不再是 /direction 路线页）',
+    Array.isArray(out2) && out2.length === 2 && (() => { try { const u = new URL(out2[1]); return u.hostname === 'api.map.baidu.com' && u.pathname === '/marker' && (u.searchParams.get('location') || '').startsWith('29.563100,106.551200'); } catch { return false; } })(),
+    JSON.stringify(out2));
+  check('选百度 → 带门店名与 coord_type=gcj02，且不含 /direction 驾车参数',
+    Array.isArray(out2) && out2.length === 2 && (() => { try { const u = new URL(out2[1]); return u.searchParams.get('title') === '已定位门店' && u.searchParams.get('coord_type') === 'gcj02' && !/\/direction|mode=driving/.test(out2[1]); } catch { return false; } })(),
     JSON.stringify(out2));
 
   await clickStore(5);
   await pick('qq');
   const out3 = await ev('window.__navOut');
-  check('选腾讯 → map.qq.com 网页版搜索（免开发者 key）',
-    Array.isArray(out3) && out3.length === 3 && (() => { try { const u = new URL(out3[2]); return u.hostname === 'map.qq.com' && u.searchParams.get('what') === '已定位门店' && u.searchParams.get('center') === '29.563100,106.551200' && !out3[2].includes('apis.map.qq.com'); } catch { return false; } })(),
+  check('选腾讯 → mapapi.qq.com 的 locationMarker 位置页（不再是地图首页）',
+    Array.isArray(out3) && out3.length === 3 && (() => { try { const u = new URL(out3[2]); return u.hostname === 'mapapi.qq.com' && u.pathname === '/web/mapComponents/locationMarker/v/index.html' && (u.searchParams.get('marker') || '').startsWith('coord:29.563100,106.551200;title:已定位门店'); } catch { return false; } })(),
     JSON.stringify(out3));
+  check('选腾讯 → 不再落到 map.qq.com/?what= 首页',
+    Array.isArray(out3) && out3.length === 3 && !/map\.qq\.com\/\?/.test(out3[2]), JSON.stringify(out3));
 
   await clickStore(1);   /* S2：纯文本 navigation，未定位 */
   const m2 = await ev(MENU);

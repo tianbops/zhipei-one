@@ -183,7 +183,9 @@ console.log("\n三家 provider 目标（14 条）");
   t("高德 note 说明「查看门店位置」且把是否用 App 交给用户选",
     M.PROVIDERS[0].note.includes("查看门店位置") && /由您选|自己选/.test(M.PROVIDERS[0].note),
     M.PROVIDERS[0].note);
-  t("腾讯 note 标明网页版（不承诺拉起 App）", M.PROVIDERS[2].note.includes("网页版"));
+  t("百度 / 腾讯 note 与高德同口径（看位置，App 由用户选）",
+    M.PROVIDERS[1].note.includes("查看门店位置") && M.PROVIDERS[2].note.includes("查看门店位置"),
+    JSON.stringify([M.PROVIDERS[1].note, M.PROVIDERS[2].note]));
   t("三家都有 https 目标", ["amap", "baidu", "qq"].every((k) => typeof u[k] === "string" && u[k].startsWith("https://")));
   t("有坐标时 _geo=true（菜单显示已绑定精确坐标）", u._geo === true);
 
@@ -196,22 +198,31 @@ console.log("\n三家 provider 目标（14 条）");
     amap.searchParams.get("name") === GEO.name &&
     amap.searchParams.get("mode") === null && amap.searchParams.get("callnative") === null, u.amap);
 
+  /* 百度：位置页（marker）。曾经的 /direction 驾车路线页在移动端会先落
+     「终点为空」的路线搜索、再退回地图首页 —— 真机录屏复现，必须锁死不许回退。 */
   const baidu = new URL(u.baidu);
-  const dest = baidu.searchParams.get("destination") || "";
-  t("百度走 api.map.baidu.com/direction", baidu.hostname === "api.map.baidu.com" && baidu.pathname === "/direction", u.baidu);
-  t("百度 destination 带 latlng: 且纬度在前（与高德相反）",
-    dest.startsWith("latlng:29.563100,106.551200"), dest);
-  t("百度 destination 带 |name: 标注", dest.includes("|name:"));
-  t("百度 coord_type=gcj02（百度自己转 BD-09，不存两套坐标）",
-    baidu.searchParams.get("coord_type") === "gcj02");
-  t("百度 mode=driving + output=html（未装时用网页版兜底）",
-    baidu.searchParams.get("mode") === "driving" && baidu.searchParams.get("output") === "html");
+  t("百度走 api.map.baidu.com/marker 位置页（不是 /direction 路线页）",
+    baidu.hostname === "api.map.baidu.com" && baidu.pathname === "/marker", u.baidu);
+  t("百度 location = 纬度,经度（与高德相反）",
+    (baidu.searchParams.get("location") || "").startsWith("29.563100,106.551200"),
+    baidu.searchParams.get("location"));
+  t("百度带 title=门店名（位置页标题与底部卡片显示店名）",
+    baidu.searchParams.get("title") === GEO.name, baidu.searchParams.get("title"));
+  t("百度 content 传空格占位（不传会渲染字面的「内容」）",
+    baidu.searchParams.get("content") === " ", JSON.stringify(baidu.searchParams.get("content")));
+  t("百度 coord_type=gcj02 + output=html（百度自己转 BD-09，网页版兜底）",
+    baidu.searchParams.get("coord_type") === "gcj02" && baidu.searchParams.get("output") === "html");
+  t("百度不再带 /direction 的 mode=driving", baidu.searchParams.get("mode") === null, u.baidu);
 
+  /* 腾讯：位置页（locationMarker 组件）。曾经 map.qq.com/?what= 在移动端只给
+     地图首页，what/center 被忽略 —— 同样锁死不许回退。 */
   const qq = new URL(u.qq);
-  t("腾讯走 map.qq.com 网页版搜索（what=门店名）",
-    qq.hostname === "map.qq.com" && qq.searchParams.get("what") === GEO.name, u.qq);
-  t("腾讯 center = 纬度,经度，且不用需开发者 key 的 URI API",
-    qq.searchParams.get("center") === "29.563100,106.551200" && !u.qq.includes("apis.map.qq.com/uri"));
+  t("腾讯走 mapapi.qq.com 的 locationMarker 位置页",
+    qq.hostname === "mapapi.qq.com" && qq.pathname === "/web/mapComponents/locationMarker/v/index.html", u.qq);
+  const mk = qq.searchParams.get("marker") || "";
+  t("腾讯 marker = coord:纬度,经度;title:门店名", mk.startsWith("coord:29.563100,106.551200;title:" + GEO.name), mk);
+  t("腾讯不再走 map.qq.com/?what= 的首页兜底",
+    !u.qq.includes("map.qq.com/?") && qq.searchParams.get("what") === null, u.qq);
 }
 
 console.log("\n无坐标时三家各自降级（6 条）");
@@ -222,8 +233,11 @@ console.log("\n无坐标时三家各自降级（6 条）");
   t("有高德链接但无坐标 → 高德按门店名网页版搜索（绝不透传短链）",
     isAmapSearch(u.amap) && !u.amap.includes(amapLink) &&
     !/surl\.amap|callAPP|ap\.amap|callnative/.test(u.amap), u.amap);
-  t("有高德链接但无坐标 → 百度按门店名搜索", u.baidu === "https://map.baidu.com/search/" + n + "/", u.baidu);
-  t("腾讯始终网页版搜索且不带 center", u.qq === "https://map.qq.com/?what=" + n, u.qq);
+  t("有高德链接但无坐标 → 百度按门店名走移动端搜索页",
+    u.baidu === "https://map.baidu.com/mobile/webapp/search/search/qt=s&wd=" + n, u.baidu);
+  t("有高德链接但无坐标 → 腾讯走 URI 搜索结果页（落 locationCluster）",
+    u.qq.startsWith("https://apis.map.qq.com/uri/v1/search?keyword=" + n) &&
+    u.qq.includes("referer="), u.qq);
   t("无坐标时 _geo=false", u._geo === false);
   const b = M.providerUrls({ name: "谊品生鲜", navigation: "https://j.map.baidu.com/xyz" });
   t("百度短链原样透传给百度", b.baidu === "https://j.map.baidu.com/xyz", b.baidu);

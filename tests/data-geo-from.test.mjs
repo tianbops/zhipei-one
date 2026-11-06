@@ -131,8 +131,13 @@ t("PROVIDERS 固定高德/百度/腾讯三家",
   ['{ id: "amap"', '{ id: "baidu"', '{ id: "qq"'].every((s) => mapnav.includes(s)));
 t("providerUrls 覆盖三家出口",
   ["out.amap", "out.baidu", "out.qq"].every((s) => mapnav.includes(s)));
-t("腾讯用免 key 网页版搜索占位，不用需 referer 的 URI API",
-  mapnav.includes("https://map.qq.com/?what=") && !mapnav.includes("apis.map.qq.com/uri"));
+/* 腾讯：有坐标走 mapComponents 的 locationMarker 位置页（免 key）；无坐标才用
+   apis.map.qq.com/uri/v1/search 的搜索结果页。旧实现 map.qq.com/?what= 在移动端
+   只给地图首页，真机录屏复现，不许回退。 */
+t("腾讯有坐标走 locationMarker 位置页（不是地图首页）",
+  mapnav.includes("mapComponents/locationMarker") && !mapnav.includes('map.qq.com/?what=" '));
+t("腾讯无坐标兜底用 URI 搜索结果页（落 locationCluster）",
+  mapnav.includes("apis.map.qq.com/uri/v1/search"));
 t("零自建 scheme（不弹 iOS 未装错误框）",
   !/["'](?:qqmap|baidumap|amapuri):\/\//.test(mapnav));
 t("零「已安装」探测（不做 visibilitychange + 超时双跳）",

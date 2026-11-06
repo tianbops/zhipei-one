@@ -1010,10 +1010,17 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
    share/index）或 /search（无坐标 → 门店名搜索页，落 m.amap.com/search/view），
    两者都是「看位置」页、零下载页特征，也不带 callnative；这正是正式版 407
    （POI 详情 / 搜索页）在真机上不跳下载页的原因。
-   百度 URI API v2.0 免费免 ak、支持 coord_type=gcj02；腾讯不申请开发者 key，
-   用 map.qq.com 网页版搜索占位。自建 baidumap:// / qqmap:// 在 iOS 未装会弹
-   系统错误框、WebView 与微信普遍拦截，visibilitychange + 超时探测还会双跳，
-   一律不做。起点不传：各家移动端默认用本机 GPS，比浏览器 geolocation 更准。
+   百度 / 腾讯同范式（2026-11 真机复核，三家必须一致）：
+     · 百度 api.map.baidu.com/marker → 落 map.baidu.com/mobile/.../place/marker，
+       自带门店名、地址、「导航 / 打车 / 到这去」；
+       旧实现用 /direction 驾车路线页，移动端先落「路线搜索」（终点为空）再退回
+       地图首页，等于没把位置带过去。
+     · 腾讯 mapapi.qq.com/web/mapComponents/locationMarker → 轻量位置页，
+       红色标记 + 门店名 + 逆地理地址 + 「去这里」；
+       旧实现 map.qq.com/?what=…&center=… 在移动端被忽略，只给地图首页。
+     两条都免开发者 key、都不自动拉起 App；自建 baidumap:// / qqmap:// 在 iOS
+     未装会弹系统错误框、WebView 与微信普遍拦截，一律不做。起点不传：各家移动端
+     默认用本机 GPS，比浏览器 geolocation 更准。
 
    坐标系：库里只存一组 GCJ-02（火星坐标）。高德 / 腾讯原生就是 GCJ-02；
    百度是 BD-09，但 URI 支持 coord_type=gcj02 让百度自己转，不存两套坐标。
@@ -1032,8 +1039,8 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
 
   var PROVIDERS = [
     { id: "amap", label: "高德地图", note: "查看门店位置，是否用 App 导航由您选" },
-    { id: "baidu", label: "百度地图", note: "免 key，坐标由百度自动转换" },
-    { id: "qq", label: "腾讯地图", note: "网页版搜索（无需开发者 key）" },
+    { id: "baidu", label: "百度地图", note: "查看门店位置，是否用 App 导航由您选" },
+    { id: "qq", label: "腾讯地图", note: "查看门店位置，是否用 App 导航由您选" },
   ];
 
   function text(v) {
@@ -1130,6 +1137,40 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
     return url + "&src=" + SRC;
   }
 
+  /* 百度的位置页（URI API marker）。落点是 map.baidu.com 的移动端 place/marker，
+     页面自带门店名、地址与「导航 / 打车 / 到这去」，与高德位置页同范式。
+     location 是「纬度,经度」—— 与高德相反；coord_type=gcj02 让百度自己转 BD-09。
+     content 传一个空格：不传时百度会把字面的「内容」渲染成副标题占位。 */
+  function baiduMarkerUrl(geo, name) {
+    var url = "https://api.map.baidu.com/marker?location=" +
+      geo.lat.toFixed(6) + "," + geo.lng.toFixed(6) +
+      "&output=html&coord_type=gcj02&src=" + SRC;
+    if (name) url += "&title=" + enc(name) + "&content=%20";
+    return url;
+  }
+
+  /* 百度无坐标兜底：移动端搜索页（落 map.baidu.com/mobile/.../search/search）。
+     旧写法 map.baidu.com/search/名称/ 在移动端会被重定向回地图首页。 */
+  function baiduSearchUrl(name) {
+    return "https://map.baidu.com/mobile/webapp/search/search/qt=s&wd=" + enc(name);
+  }
+
+  /* 腾讯的位置页（mapComponents 的 locationMarker 组件）。落点是 mapapi.qq.com
+     的轻量地图页：红色标记 + 门店名 + 逆地理地址 + 「去这里」，同样不拉起 App。
+     marker 整串要整体编码 —— 内含 : , ; 三个分隔符，逐个拼编码会拼错。
+     不用 apis.map.qq.com/uri/v1/marker 中转：那条会先尝试 qqmap:// 拉起 App。 */
+  function qqMarkerUrl(geo, name) {
+    var m = "coord:" + geo.lat.toFixed(6) + "," + geo.lng.toFixed(6);
+    if (name) m += ";title:" + name;
+    return "https://mapapi.qq.com/web/mapComponents/locationMarker/v/index.html?marker=" + enc(m);
+  }
+
+  /* 腾讯无坐标兜底：URI 搜索，落 locationCluster 结果页（地图 + 列表 + 去这里）。 */
+  function qqSearchUrl(name) {
+    return "https://apis.map.qq.com/uri/v1/search?keyword=" + enc(name) +
+      "&region=" + enc("全国") + "&referer=" + SRC;
+  }
+
   /* ===== 三家适配器：一张表收口差异 =====
      返回 {amap, baidu, qq, _geo}，_geo 供菜单显示「已绑定精确坐标」。 */
   function providerUrls(store) {
@@ -1147,27 +1188,30 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
        link 只参与下面的百度分支判断，不参与高德 URL。 */
     out.amap = geo ? markerUrl(geo, name) : keywordUrl(name);
 
-    /* 百度：destination 必须带 latlng: 前缀（纬度在前），|name: 后缀是可选标注。
-       coord_type=gcj02 让百度自己把 GCJ-02 转成 BD-09；output=html 是网页版兜底。
-       不传 origin，百度移动端默认用当前定位。 */
+    /* 百度：有坐标走位置页（marker），无坐标按门店名走移动端搜索页。
+       绝不走 /direction 驾车路线页 —— 移动端会先落「终点为空」的路线搜索，
+       再退回地图首页，位置根本没带过去（2026-11 真机录屏复现）。 */
     if (geo) {
-      out.baidu =
-        "https://api.map.baidu.com/direction?destination=" +
-        "latlng:" + geo.lat.toFixed(6) + "," + geo.lng.toFixed(6) +
-        (name ? "|name:" + n : "") +
-        "&mode=driving&coord_type=gcj02&output=html&src=" + SRC;
-    } else if (link && hostIs(link, /(^|\.)map\.baidu\.com$/)) {
+      out.baidu = baiduMarkerUrl(geo, name);
+    } else if (link && hostIs(link, /(^|\.)(map\.baidu\.com|j\.map\.baidu\.com)$/)) {
       out.baidu = link;
+    } else if (name) {
+      out.baidu = baiduSearchUrl(name);
     } else {
-      out.baidu = "https://map.baidu.com/search/" + n + "/";
+      out.baidu = "https://map.baidu.com/";
     }
 
-    /* 腾讯：不申请开发者 key（URI API 的 referer 必填且要开发者标识），
-       用 map.qq.com 官方网页版搜索占位。有坐标时附带 center 让网页版尽量贴近
-       精确位置；最终落点以腾讯页面行为为准，不做唤起 App 的承诺。 */
-    out.qq =
-      "https://map.qq.com/?what=" + n +
-      (geo ? "&center=" + geo.lat.toFixed(6) + "," + geo.lng.toFixed(6) : "");
+    /* 腾讯：有坐标走位置页（locationMarker 组件），无坐标走 URI 搜索结果页。
+       绝不走 map.qq.com/?what= —— 移动端会忽略 what / center，只给地图首页。 */
+    if (geo) {
+      out.qq = qqMarkerUrl(geo, name);
+    } else if (link && hostIs(link, /(^|\.)qq\.com$/)) {
+      out.qq = link;
+    } else if (name) {
+      out.qq = qqSearchUrl(name);
+    } else {
+      out.qq = "https://map.qq.com/m/";
+    }
 
     out._geo = !!geo;
     return out;
@@ -1342,6 +1386,10 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
     linkAttrs: linkAttrs,
     keywordUrl: keywordUrl,
     markerUrl: markerUrl,
+    baiduMarkerUrl: baiduMarkerUrl,
+    baiduSearchUrl: baiduSearchUrl,
+    qqMarkerUrl: qqMarkerUrl,
+    qqSearchUrl: qqSearchUrl,
     providerUrls: providerUrls,
     navPayload: navPayload,
     isMapHost: isMapHost,
