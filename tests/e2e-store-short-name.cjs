@@ -37,6 +37,8 @@ const WB_STORES = [
   /* 模拟服务端投影：简称由 latest.js 的 withRouteData 从基准库补上 */
   { storeId: 'S1', name: LONG_NAME, displayName: SHORT_NAME, rawName: LONG_NAME, navigation: 'https://surl.amap.com/abc', lat: 29.5631, lng: 106.5512, routeOrder: 1 },
   { storeId: 'S2', name: '谊品生鲜重庆渝北区长安锦绣城旗舰店（含仓储配送中心）', rawName: '谊品生鲜重庆渝北区长安锦绣城旗舰店（含仓储配送中心）', routeOrder: 2 },
+  /* 待确认门店：名称 + 状态徽标 + 备注（建议匹配）三者的行内关系必须锁死 */
+  { storeId: 'S3', name: '重庆两江新区某某食品经营部', rawName: '重庆两江新区某某食品经营部', pending: true, candidates: [{ storeId: 'S1', name: LONG_NAME, score: 0.72 }], matchDiagnostics: { reason: 'below_threshold' }, routeOrder: 3 },
 ];
 
 const STUB = `
@@ -45,7 +47,7 @@ try{localStorage.clear()}catch(e){}
 (function(){
   var base=${JSON.stringify(BASE_STORES)};
   var today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-  var wb={id:'w-e2e',routeId:'r1',date:today,stage:'CONFIRMED',schemaVersion:'2',stores:${JSON.stringify(WB_STORES)},summary:{finalCount:2,total:2},totalWeight:1.331};
+  var wb={id:'w-e2e',routeId:'r1',date:today,stage:'CONFIRMED',schemaVersion:'2',stores:${JSON.stringify(WB_STORES)},summary:{finalCount:3,total:3},totalWeight:1.331};
   window.__puts=[];
   var real=window.fetch;
   var B=function(t){var r={ok:true,status:200,headers:{get:function(){return null},has:function(){return false}}};r.json=function(){return Promise.resolve(JSON.parse(t))};r.text=function(){return Promise.resolve(t)};r.clone=function(){return B(t)};return Promise.resolve(r)};
@@ -147,7 +149,7 @@ const SNAP_EDIT = `(()=>{
   await sleep(2200);
   const home = await ev(SNAP_HOME);
   console.log('home ' + JSON.stringify(home));
-  check('首页渲染 2 家门店', home && home.rows === 2, home && String(home.rows));
+  check('首页渲染 3 家门店', home && home.rows === 3, home && String(home.rows));
   check('有简称的门店显示简称', home && home.labels[0] === SHORT_NAME, home && home.labels[0]);
   check('未设简称的门店回退全名', home && home.labels[1] === '谊品生鲜重庆渝北区长安锦绣城旗舰店（含仓储配送中心）', home && home.labels[1]);
   check('首页门店名单行（高度 <= 行高×1.6）', home && home.heights[0] <= home.line * 1.6, home && home.heights[0] + '/' + home.line);
@@ -243,6 +245,26 @@ const SNAP_EDIT = `(()=>{
   check('运单详情名称只占一行', detailScroll && detailScroll.h <= 26, detailScroll && String(detailScroll.h));
   check('运单详情长名可左滑看全', detailScroll && detailScroll.sw > detailScroll.cw && detailScroll.end.atEnd === true, JSON.stringify(detailScroll && detailScroll.end));
   check('运单详情同样静置自动回位', detailScroll && detailScroll.back.sl === 0 && detailScroll.back.atEnd === false && detailScroll.back.scrollable === true, JSON.stringify(detailScroll && detailScroll.back));
+
+  /* 待确认门店：名称一行（可滑）+ 状态徽标固定，备注另起一行小字，不得挤在名称后面 */
+  const pendingRow = await ev(`(()=>{
+    const r=[...document.querySelectorAll('.order-store-item')][2];
+    const w=r.querySelector('.zp-store-name-wrap');
+    const n=r.querySelector('.zp-store-name');
+    const status=r.querySelector('.order-store-status');
+    const note=r.querySelector('.order-store-note');
+    const box=o=>o?Math.round(o.getBoundingClientRect().top):null;
+    return {text:(n&&n.textContent)||'',h:w?Math.round(w.getBoundingClientRect().height):null,
+      statusText:(status&&status.textContent)||'',hasNote:!!note,noteText:(note&&note.textContent)||'',
+      nameTop:box(w),noteTop:box(note),statusInLine:!!(status&&status.closest('.order-store-line')),
+      noteInLine:!!(note&&note.closest('.order-store-line')),rowH:Math.round(r.getBoundingClientRect().height)};
+  })()`);
+  console.log('pendingRow ' + JSON.stringify(pendingRow));
+  check('待确认门店名称仍单行', pendingRow && pendingRow.h <= 26, pendingRow && String(pendingRow.h));
+  check('待确认徽标固定在名称行内', pendingRow && pendingRow.statusInLine === true && pendingRow.statusText.indexOf('待确认') >= 0, pendingRow && pendingRow.statusText);
+  check('备注不在名称行内（不挤占名称宽度）', pendingRow && pendingRow.hasNote === true && pendingRow.noteInLine === false, JSON.stringify(pendingRow));
+  check('备注排在名称下方', pendingRow && pendingRow.noteTop > pendingRow.nameTop, pendingRow && pendingRow.nameTop + '->' + pendingRow.noteTop);
+  { const shot = await C('Page.captureScreenshot', { format: 'png' }); fs.writeFileSync(path.join(OUT_DIR, 'store-name-order-detail.png'), Buffer.from(shot.data, 'base64')); }
 
   /* 3. 数据中心：编辑面板只有简称 */
   await C('Page.navigate', { url: BASE + '/pages/data.html' });
