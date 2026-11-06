@@ -2799,21 +2799,20 @@ main.home-app .task-card{margin-top:0}
 }
 
 
-/* ===== 首页纵向布局：品牌独立 + 数据浮岛 + 平面名单（2026-11-06 定稿）=====
-   用户定稿五条：
+/* ===== 首页纵向布局：品牌独立 + 数据浮岛浮层 + 平面名单（2026-11-07 定稿）=====
+   用户按字面定稿三条（与上一版方向相反）：
      1) 品牌区（智配One / 运单处理·历史查询·路线经验）保持原样，不入浮岛；
-     2) 数据区（今日配送 / 线路 17 / 日期 / 汇总 / 小推车 / 多单 tab）独立成浮岛，
-        浏览下方内容时收起、回看上方时弹出（JS 方向判定，见 js/home/today.js）；
-     3) 门店列表不再是浮岛（无圆角 / 无底色），直接铺在页面上，上下滚、左右切单；
-     4) 月度统计卡 DOM / 尺寸 / 样式一律不动，落在名单之后被裁掉，本轮不可达；
-     5) 底栏浮岛不动。
+     2) 收放手势整屏生效：品牌区 / 浮岛 / tab / 名单 / 统计区任意位置滑动都触发，
+        手指下滑 → 浮岛与底栏一起隐藏，手指上滑 → 一起弹出（见 js/home/today.js）；
+     3) 浮岛是「浮层」压在名单之上：列表容器从卡片顶部铺到底、位置恒定，内容从
+        浮岛下方穿过；收起时只让浮岛自己滑走，用 padding-top + scrollTop 同帧补偿，
+        屏幕上的门店不跳、底部多露一截。门店列表本身不做浮岛。
+   月度统计卡 DOM / 尺寸 / 样式一律不动；底栏浮岛不动。
    结构：
-     .task-card            透明外壳，只做纵向分配
-       .zp-head-wrap       高度 = 浮岛自然高（--zp-head-h），收起时 10px
-         .zp-head-island   圆角浮岛本体，absolute；收起时 translateY(-100%)
-         .zp-head-handle   收起后露出的把手线
-       #todayStoreList     flex 剩余，行内滚动在 .today-page
-       #todayMetrics       平时为空，不占位
+     .task-card            透明外壳，height:100% 撑满一屏
+       .zp-head-wrap       absolute，恒高 10px，只作把手线宿主（不占位）
+       .zp-head-island     absolute 浮岛本体，z-index:2 盖在名单上
+       #todayStoreList     flex:1 铺满整张卡片（top 恒定），行内滚动在 .today-page
    ------------------------------------------------------------------ */
 main.home-app .zp-scroll{
   display:flex;
@@ -2860,18 +2859,21 @@ main.home-app .task-card{
   border-radius:0;
   box-shadow:none;
 }
-/* —— 浮岛外壳：高度 = 浮岛本体；收起时只留把手线的 10px —— */
+/* —— 浮岛外壳：不占位，恒高 10px，只用来放收起后的把手线 —— */
 main.home-app .zp-head-wrap{
-  /* 只占位：高度 = 浮岛高，收起时收到 10px（正好留出把手线）。
-     高度变化不加过渡 —— 与 scrollTop 补偿同帧完成，列表内容才不会先跳后回。 */
-  position:relative;
-  flex:0 0 auto;
-  height:var(--zp-head-h,160px);
-  margin:0 12px 8px;
+  /* 浮层方案（2026-11-07）：外壳绝对定位、不再占 flex 高度，列表容器才能从
+     卡片顶部铺到底、位置恒定。恒高 10px 刚好容纳把手线；整块不吃指针事件，
+     展开态它压在浮岛上方也不会挡住 tab / 汇总的点击。 */
+  position:absolute;
+  left:12px;right:12px;top:0;
+  height:10px;
+  margin:0;
+  z-index:3;
+  pointer-events:none;
 }
 main.home-app .zp-head-island{
-  /* 浮岛本体绝对定位在卡片顶部、盖在列表之上：收起时整块滑出卡片顶边，
-     滑出过程正好盖住列表的瞬时上移，用户看不到「跳」，只看到浮岛滑走。 */
+  /* 浮岛本体作为浮层压在名单之上：列表从卡片顶部起铺，滚动时门店行从浮岛
+     底下穿过被实底盖住；收起时整块 translateY(-100%) 滑出卡片顶边。 */
   position:absolute;
   left:12px;right:12px;top:0;
   z-index:2;
@@ -2885,13 +2887,12 @@ main.home-app .zp-head-island{
   transition:transform .18s cubic-bezier(.22,.61,.36,1);
   will-change:transform;
 }
-main.home-app.is-head-hidden .zp-head-wrap{height:10px}
 main.home-app.is-head-hidden .zp-head-island{transform:translateY(-100%)}
 /* 把手线：收起后留在品牌下方，提示可上滑唤出 */
 main.home-app .zp-head-handle{
   position:absolute;
   left:50%;
-  bottom:3px;
+  top:3px;
   width:34px;
   height:3px;
   margin-left:-17px;
@@ -2899,6 +2900,8 @@ main.home-app .zp-head-handle{
   /* 行线色在深色浮岛底上几乎不可见，改用 muted + 透明度：两套主题都能看清 */
   background:var(--zp-muted);
   opacity:0;
+  /* 展开态不吃指针：外壳 z-index 比浮岛高，否则透明热区会挡住浮岛顶部 */
+  pointer-events:none;
   transition:opacity .16s linear;
 }
 /* 热区：3px 的线点不中，向上左右各放大到 44×24（仍收在浮岛原位置内） */
@@ -2907,7 +2910,21 @@ main.home-app .zp-head-handle::after{
   position:absolute;
   left:-22px;right:-22px;top:-14px;bottom:-6px;
 }
-main.home-app.is-head-hidden .zp-head-handle{opacity:.42;transition-delay:.1s;cursor:pointer}
+main.home-app.is-head-hidden .zp-head-handle{opacity:.42;transition-delay:.1s;cursor:pointer;pointer-events:auto}
+/* —— 名单让位：展开态用 padding-top 给浮岛留出空间，收起态收回 ——
+   与 js/home/today.js 的 scrollTop 补偿同帧切换，门店在屏幕上不跳；
+   box-sizing:border-box 保证 height:100% 的滚动容器不会被 padding 顶出父级。 */
+main.home-app .today-page{
+  padding:calc(var(--zp-head-h,160px) + 8px) 12px 0;
+  box-sizing:border-box;
+}
+main.home-app.is-head-hidden .today-page{padding-top:18px}
+/* 首帧骨架是列表容器的直接子行（数据到达后换成 .today-view 轨道），没有
+   .today-page 那层 padding，会被浮岛盖住 —— 补一个等量上边距。 */
+main.home-app .today-store-list > .today-store-row:first-child{
+  margin-top:calc(var(--zp-head-h,160px) + 8px);
+}
+main.home-app.is-head-hidden .today-store-list > .today-store-row:first-child{margin-top:18px}
 /* 浮岛内三段不可收缩：否则 flex 会把 tab 从 44 压到 22px、文字切一半 */
 main.home-app .zp-head-island .task-title,
 main.home-app .zp-head-island .task-main,
@@ -2927,8 +2944,9 @@ main.home-app .today-store-list{
   overflow:hidden;
 }
 /* 左右缩进放在页内而不是列表容器：列表容器的 clientWidth 是横向轨道的位移基准，
-   给它加 padding 会让 track 多移 32px、每页内容被推出左边缘（序号直接看不见）。 */
-main.home-app .today-page{padding:0 12px}
+   给它加 padding 会让 track 多移 32px、每页内容被推出左边缘（序号直接看不见）。
+   纵向让位同样放在页内（见上方 .today-page 的 padding-top），两条都写在页内，
+   列表容器本身保持 0 padding —— 横向位移基准才不会漂。 */
 main.home-app .today-store-list .today-store-row{padding:0}
 main.home-app .today-store-list .today-store-row:first-child{border-top:1px solid var(--zp-tint)}
 /* 月度统计卡：DOM / 尺寸 / 样式一律不动（用户「统计板块保持不变」）。
@@ -2941,10 +2959,16 @@ main.home-app .trend-card{flex:0 0 auto}
   /* 降级版面由 nav.js 自己按外层滚动判定收放底栏，底部留白固定回 88 */
   main.home-app .zp-scroll{display:block;overflow-y:auto}
   main.home-app .task-card{display:block;height:auto}
-  main.home-app .zp-head-wrap{height:auto;overflow:visible;margin-bottom:10px;transition:none}
+  /* 整页滚动版面：浮层规则全部退回文档流，名单的让位 padding 也要清掉，
+     否则浮岛（现在在流内）和名单之间会叠出 160px 空白。 */
+  main.home-app .zp-head-wrap{position:static;height:auto;overflow:visible;margin-bottom:10px;transition:none}
   main.home-app .zp-head-island{position:static;height:auto;transform:none;transition:none}
   main.home-app .zp-head-handle{display:none}
   main.home-app .today-store-list{display:block;overflow:visible}
+  main.home-app .today-page,
+  main.home-app.is-head-hidden .today-page{padding:0 12px}
+  main.home-app .today-store-list > .today-store-row:first-child,
+  main.home-app.is-head-hidden .today-store-list > .today-store-row:first-child{margin-top:0}
   .today-view{height:auto}
   .today-track{align-items:flex-start;height:auto}
   .today-page{height:auto;overflow:visible}
@@ -2954,10 +2978,14 @@ main.home-app .trend-card{flex:0 0 auto}
 main.home-app.is-keyboard .zp-scroll{display:block;overflow-y:auto}
 main.home-app.is-keyboard .zp-scroll::after{display:none}
 main.home-app.is-keyboard .task-card{display:block;height:auto}
-main.home-app.is-keyboard .zp-head-wrap{height:auto;overflow:visible;transition:none}
+main.home-app.is-keyboard .zp-head-wrap{position:static;height:auto;overflow:visible;transition:none}
 main.home-app.is-keyboard .zp-head-island{position:static;height:auto;transform:none;transition:none}
 main.home-app.is-keyboard .zp-head-handle{display:none}
 main.home-app.is-keyboard .today-store-list{display:block;overflow:visible}
+main.home-app.is-keyboard .today-page,
+main.home-app.is-keyboard.is-head-hidden .today-page{padding:0 12px}
+main.home-app.is-keyboard .today-store-list > .today-store-row:first-child,
+main.home-app.is-keyboard.is-head-hidden .today-store-list > .today-store-row:first-child{margin-top:0}
 main.home-app.is-keyboard .today-view{height:auto}
 main.home-app.is-keyboard .today-track{align-items:flex-start;height:auto}
 main.home-app.is-keyboard .today-page{height:auto;overflow:visible}

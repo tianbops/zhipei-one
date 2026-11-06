@@ -80,22 +80,25 @@ console.log("首页今日配送一屏内滚契约（基础段 8 条）");
     !!heads, heads);
 }
 
-console.log("\n浮岛收放契约（9 条）");
+console.log("\n浮岛收放契约（11 条）");
 {
-  /* 用户定稿：品牌不入浮岛；数据区独立成浮岛，下滑隐藏、上滑弹出；
-     门店去浮岛（无圆角/无底色，直接铺页面）。 */
+  /* 用户定稿：品牌不入浮岛；数据区作为浮层压在名单之上，整屏下滑隐藏、
+     上滑弹出；门店去浮岛（无圆角/无底色，直接铺页面）。 */
   const wrap = rule(BASE, "main.home-app .zp-head-wrap");
-  t("浮岛外壳高度取 --zp-head-h（JS 量出的自然高，单/多单自动适配）",
-    !!wrap && /height:var\(--zp-head-h/.test(wrap), wrap);
+  t("浮岛外壳不占位（absolute 恒高 10px，列表容器才能从卡片顶部铺到底）",
+    !!wrap && /position:absolute/.test(wrap) && /height:10px/.test(wrap) && /pointer-events:none/.test(wrap), wrap);
   t("浮岛外壳高度不加过渡（与 scrollTop 补偿必须同帧，否则列表先跳后回）",
     !!wrap && !/transition:\s*height/.test(wrap), wrap);
 
-  const offWrap = rule(CSS, "main.home-app.is-head-hidden .zp-head-wrap");
-  t("收起态外壳高度收到 10px（留着放把手线）",
-    !!offWrap && /height:10px/.test(offWrap), offWrap);
+  const pagePad = rule(BASE, "main.home-app .today-page");
+  t("展开态名单用 padding-top 给浮岛让位（浮岛是浮层，列表容器位置恒定）",
+    !!pagePad && /padding:calc\(var\(--zp-head-h/.test(pagePad) && /box-sizing:border-box/.test(pagePad), pagePad);
+  const offPage = rule(CSS, "main.home-app.is-head-hidden .today-page");
+  t("收起态名单让位收回 18px（只让浮岛滑走，列表容器位置不动）",
+    !!offPage && /padding-top:18px/.test(offPage), offPage);
 
   const island = rule(BASE, "main.home-app .zp-head-island");
-  t("浮岛绝对定位 + z-index:2（盖在列表之上，滑出时遮住列表的瞬时上移）",
+  t("浮岛绝对定位 + z-index:2（作为浮层压在名单之上）",
     !!island && /position:absolute/.test(island) && /z-index:2/.test(island), island);
   t("浮岛只在 transform 上做过渡（滑动由它承担）",
     !!island && /transition:transform/.test(island), island);
@@ -113,7 +116,7 @@ console.log("\n浮岛收放契约（9 条）");
   t("门店区去浮岛：无背景、无描边、无圆角",
     !!list && !/background:/.test(list) && !/border:/.test(list) && !/border-radius/.test(list), list);
   t("门店左右缩进放在页内（列表容器 clientWidth 是轨道位移基准，不能带 padding）",
-    !!list && /padding:0;/.test(list) && /\.today-page\{padding:0 12px\}/.test(CSS), list);
+    !!list && /padding:0;/.test(list) && /padding:calc\(var\(--zp-head-h/.test(CSS), list);
 }
 
 console.log("\n名单页内滚动契约（5 条）");
@@ -182,18 +185,30 @@ console.log("\n高度同步 JS 契约（5 条）");
     /new MutationObserver\([\s\S]{0,240}?zpMarkTodayScrollable/.test(JS));
 }
 
-console.log("\n浮岛收放 JS 契约（5 条）");
+console.log("\n浮岛收放 JS 契约（11 条）");
 {
   t("对外暴露 zpHeadShow（切单/切 tab 时强制弹回）",
     /window\.zpHeadShow\s*=/.test(JS));
   t("切单路径调用 zpHeadShow（go 内，切完能看到换成了哪一单）",
     /zpSetTodaySelId\(list\[i\]\.id\);[\s\S]{0,200}?zpHeadShow/.test(JS));
-  t("收起时补偿 scrollTop（内容原地不动，否则门店整体上跳 150px）",
-    /page\.scrollTop=page\.scrollTop-s/.test(JS));
+  t("收起时按页补偿 scrollTop（padding 全局切换，每一页都不跳）",
+    /\{p\.scrollTop=y-s;compensatedPages\.push\(p\)\}/.test(JS));
+  t("弹出时逐一补回被扣过的页（切单/把手线/回滑同一条还原路径，不错位）",
+    /Array\.prototype\.forEach\.call\(compensatedPages/.test(JS) && /compensatedPages=\[\]/.test(JS));
+  t("收起态滚回顶部后弹出不再补 s（否则第一行被浮岛盖住、一弹出就跳到第 4 家）",
+    /if\(p\.scrollTop<=s\+8\)return/.test(JS));
   t("补偿后锁方向判定 280ms（否则补偿触发的 scroll 被当成反向手势，来回抖死循环）",
     /lockUntil=Date\.now\(\)\+280/.test(JS) && /Date\.now\(\)<lockUntil/.test(JS));
   t("滚动监听用 capture 且只认 .today-page（scroll 不冒泡，必须捕获）",
     /\{capture:true,passive:true\}/.test(JS) && /classList\.contains\("today-page"\)/.test(JS));
+  t("整屏手势绑在 main.home-app 上（品牌区/浮岛/tab/统计区都能触发）",
+    /main\.addEventListener\("touchstart"/.test(JS) && /main\.addEventListener\("touchmove"/.test(JS));
+  t("方向按字面翻转：touch 用 clientY 增量，scroll 取负号（下滑隐藏/上滑弹出）",
+    /push\(dy,curPage\(\)\)/.test(JS) && /push\(-dy,t\)/.test(JS));
+  t("横向手势（切单）不介入收放：|dx|>|dy|*1.2 判为 x 后本次触点不判定",
+    /tAxis=Math\.abs\(ax\)>Math\.abs\(ay\)\*1\.2\?"x":"y"/.test(JS) && /if\(tAxis!=="y"\)return/.test(JS));
+  t("触摸惯性尾段由 touch 源独占（350ms 内 scroll 不重复累计）",
+    /Date\.now\(\)-lastTouchAt<350/.test(JS));
 }
 
 console.log("\n顶底浮岛联动契约（5 条）");

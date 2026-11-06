@@ -160,12 +160,19 @@ const LAST_IN_PAGE = `(()=>{
     const locked = h >= 760 && h > w;
     let last, headMove, headHidden;
     if (locked) {
-      /* 2026-11-06 定稿：滚名单 → 浮岛收起把高度让给列表（不是「头部原地不动」）。
-         收起会补偿 scrollTop，列表高度随之变化，所以要再滚一次到底。 */
+      /* 2026-11-07 定稿：方向按字面翻转 —— 手指下滑（scrollTop 减小）才隐藏浮岛。
+         先把名单滚到底（上滑方向，浮岛保持展开），再回滑 120px 触发收起；
+         收起会按页补偿 scrollTop，最后再滚到底验证最后一家完整可见。 */
       const before = await ev(HEAD_TOPS);
       await ev(PAGE_BOTTOM);
       await sleep(320);
+      await ev(`(()=>{const p=document.querySelector('.today-page');p.scrollTop=Math.max(0,p.scrollTop-120);return p.scrollTop})()`);
+      await sleep(320);
       headHidden = await ev(`(()=>document.querySelector('main.home-app').classList.contains('is-head-hidden'))()`);
+      await ev(PAGE_BOTTOM);
+      await sleep(260);
+      /* 回滑收起后再滚到底会弹回浮岛，padding 加回 150px 让可滚上限变大，
+         scrollTop 需要再推一次才能真正到底，最后一家才完整可见。 */
       await ev(PAGE_BOTTOM);
       await sleep(260);
       last = await ev(LAST_IN_PAGE);
@@ -189,7 +196,7 @@ const LAST_IN_PAGE = `(()=>{
       check(tag + ' 外层锁死：整页滚不动（头部常显）',
         (s.outerOV === 'hidden' || s.outerOV === 'clip') && outerTry === 0,
         'ov ' + s.outerOV + ' / scrollTop ' + outerTry);
-      check(tag + ' 滚名单后浮岛收起，把高度让给列表', headHidden === true, String(headHidden));
+      check(tag + ' 名单回滑后浮岛收起（下滑隐藏，方向按字面翻转）', headHidden === true, String(headHidden));
       check(tag + ' 收起后浮岛位置稳定（连续两次测量不漂）',
         !!headMove && headMove.mid.sum === headMove.after.sum && headMove.mid.pad === headMove.after.pad && headMove.mid.tab === headMove.after.tab,
         JSON.stringify(headMove));

@@ -31,7 +31,7 @@
 <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#161616" media="(prefers-color-scheme: dark)"><meta name="theme-color" content="#FFFFFF">
 <title>智配One</title>
 <link rel="manifest" href="/manifest.json">
-<link rel="stylesheet" href="/css/home.bundle.css?v=bbbe5d37">
+<link rel="stylesheet" href="/css/home.bundle.css?v=eecd487c">
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png?v=25f1ad28">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -52,10 +52,10 @@
 
   <div class="zp-scroll">
 <section class="task-card" aria-labelledby="todayTitle">
-  <!-- 2026-11-06（用户定稿）：品牌区保持原样、不入浮岛；数据区（标题/汇总/插画/tab）
-       独立成浮岛，滚动时下隐藏、上弹出；门店列表不再是浮岛，直接铺在页面上。
-       浮岛高度由 js/home/today.js 量出写进 --zp-head-h，收起时外壳高度收到 10px，
-       剩下那 10px 就是把手线。 -->
+  <!-- 2026-11-07（用户定稿）：品牌区保持原样、不入浮岛；数据区（标题/汇总/插画/tab）
+       作为浮层压在名单之上，整屏任意位置手指下滑隐藏、上滑弹出，与底栏同进退。
+       浮岛高度由 js/home/today.js 量出写进 --zp-head-h，名单用 padding-top 让位；
+       收起时浮岛自己滑走，外壳恒 10px 只留把手线。 -->
   <div class="zp-head-wrap" id="todayHeadWrap">
     <div class="zp-head-handle" aria-hidden="true"></div>
   </div>
@@ -192,7 +192,7 @@
 </div>
 </main>
 
-<script defer src="/js/home.bundle.js?v=e61aa43d"></script>
+<script defer src="/js/home.bundle.js?v=ac67bcc3"></script>
 <script defer src="/js/boot-ready.js?v=4e3f49ea"></script>
 </body>
 </html>
