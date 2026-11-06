@@ -64,10 +64,14 @@ const bundleCss = readFileSync(`${root}css/home.bundle.css`, "utf8");
 const baseCss = readFileSync(`${root}css/ui-base.css`, "utf8");
 const themeCss = readFileSync(`${root}css/ui-theme.css`, "utf8");
 assert.ok(/--zp-block:#FFFFFF/.test(baseCss), "浅色块色必须与页面底同色（#FFFFFF）");
-assert.ok(/--zp-card-edge:#E4E4E4/.test(baseCss), "浅色卡片描边必须是 #E4E4E4（白底白块的唯一分组线）");
+/* 2026-11-06 三次调整：浅色与深色同一条规则 —— 内容块融进页面底、描边透明。
+   上一版浅色留 #E4E4E4 会在满屏勾出表格感，深浅观感也对不上。 */
+assert.ok(/--zp-card-edge:transparent/.test(baseCss), "浅色卡片描边必须也是 transparent（与深色一致，只靠间距与行线分组）");
+assert.ok(/--zp-block-raised:#F3F3F3/.test(baseCss), "摘要块隆起色缺失：纯数字板块需要一块比白底深一档的底");
 assert.ok(/--zp-block:#161616/.test(themeCss), "深色块色必须与页面底同色（#161616）");
 assert.ok(/--zp-card-edge:transparent/.test(themeCss), "深色卡片描边必须透明（否则同色底上勾出空心框）");
 assert.ok(/--zp-nav-bg:var\(--zp-surface\)/.test(themeCss), "深色浮岛必须取 --zp-surface，不能跟 --zp-block 一起融进背景");
+assert.ok(/--zp-block-raised:#292929/.test(themeCss), "深色摘要块隆起色缺失（应对应浅色 #F3F3F3 的深色一档）");
 assert.ok(bundleCss.includes("--zp-block:#161616") && bundleCss.includes("--zp-nav-bg:var(--zp-surface)"),
   "home.bundle.css 未包含最新令牌值，请运行 node scripts/build-home-bundle.mjs");
 assert.ok(bundleCss.lastIndexOf("--zp-block:#FFFFFF") < bundleCss.indexOf("--zp-block:#161616"),

@@ -728,9 +728,10 @@ body {
      2026-11-06 二次反转（用户实测）：内容块与页面底同色，回到「白底白块」。
      起因（深色同款问题）：块色与浮岛同值，22 家运单展开后卡片、列表、底栏
      糊成一块，没有层次。现在层级只由「底 ─ 浮层」两级承担：
-       白底 #FFFFFF → 白块（靠 --zp-card-edge 1px 边分组）→ 浮岛/弹窗 #FFFFFF + 边
-     浅色不能像深色那样把边框也去掉：白底白块若连边都没有，分组彻底消失，
-     故 --zp-card-edge 浅色保留 #E4E4E4（深色取 transparent，见 ui-theme.css）。 */
+       白底 #FFFFFF → 白块（无边，靠间距与行线分组）→ 浮岛 #FFFFFF + --zp-nav-edge
+     深浅两侧同一条规则（2026-11-06 三次调整：浅色也去掉 1px 描边，见
+     --zp-card-edge —— 满屏浅灰框会像表格，且与深色观感对不上）。
+     例外只有 --zp-block-raised：纯数字摘要块主动隆起一档。 */
   --zp-bg:#FFFFFF;
   --zp-block:#FFFFFF;
   /* 2026-11-06（用户实测）：拍平后的例外出口。内容块默认与页面底同色，
@@ -848,10 +849,13 @@ body {
   --zp-card:var(--zp-block);
   --zp-card-2:var(--zp-surface-2);
   /* 卡片描边（2026-11-06 新增）：内容块与页面底同色后，卡片唯一的边界。
-     浅色必须留着 —— 白底白块去掉边就彻底分不出组；深色取 transparent
-     （#161616 上 1px 白线会勾成空心框，层次交给 --zp-nav-bg 的浮岛）。
+     2026-11-06 二次调整（用户实测）：浅色同样取 transparent，与深色对齐 ——
+     上一版留 #E4E4E4 是怕「白底白块没有边就分不出组」，实机看下来满屏 1px
+     浅灰框反而像一堆表格单元格，深浅两套观感也对不上（深色无框、浅色有框）。
+     现在两侧同一条规则：内容块融进页面底，分组靠间距与行线（--zp-line-inset），
+     唯一需要浮起的是底部导航（浅色靠 --zp-nav-edge，深色靠亮一档的 --zp-nav-bg）。
      组件侧：所有一级卡片把 border 的颜色改为本令牌，不要再写 --zp-tint。 */
-  --zp-card-edge:#E4E4E4;
+  --zp-card-edge:transparent;
   /* 列表容器（2026-11-04 新增）：只装「纯行列表」的分组容器（账号分组、线路功能），
      取页面底色，使分组不再是一块可见的卡，而是「小标题 + 若干行 + 行间线」。
      起因：Uber 的列表项直接排在底色上，只有宫格按钮有灰底。我们色值本已与
@@ -2216,8 +2220,8 @@ textarea:disabled,
   /* ===== Phase 1 令牌的深色取值 ===== */
   --zp-tint:rgba(255,255,255,.08);
   --zp-tint-strong:rgba(255,255,255,.16);
-  /* 内容块与页面底同色后，1px 白描边会把卡片勾成空心框，深色取透明；
-     浅色必须有边（白底白块），见 ui-base.css 的 --zp-card-edge。 */
+  /* 内容块与页面底同色后，1px 白描边会把卡片勾成空心框，取透明；
+     浅色同取 transparent（2026-11-06 三次调整，见 ui-base.css 的 --zp-card-edge）。 */
   --zp-card-edge:transparent;
   --zp-scrim-dialog:rgba(0,0,0,.62);
   --zp-shadow:0 2px 8px rgba(0,0,0,.25);
@@ -2418,7 +2422,7 @@ html[data-zp-boot="hop"] .login-shell{display:none!important}
 .menu-item-icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .menu-divider{height:1px;margin:5px 7px;background:var(--zp-tint)}
 
-.task-card{position:relative;overflow:hidden;margin-top:14px;padding:14px;min-height:0;background:var(--zp-card);border:1px solid var(--zp-card-edge);border-radius:var(--zp-r-card);box-shadow:0 12px 30px var(--zp-shadow-md)}
+.task-card{position:relative;overflow:hidden;margin-top:14px;padding:14px;min-height:0;background:var(--zp-card);border:1px solid var(--zp-card-edge);border-radius:var(--zp-r-card);box-shadow:none}
 .task-title{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:var(--zp-fs-20);line-height:28px;font-weight:var(--zp-fw-bold)}
 .task-name{display:flex;align-items:center;gap:9px;min-width:0;white-space:nowrap}
 .task-date{margin:0;min-width:112px;text-align:center;white-space:nowrap;color:var(--zp-muted);font-size:var(--zp-fs-15);line-height:23px;font-weight:var(--zp-fw-medium)}

@@ -99,8 +99,8 @@
   /* ===== Phase 1 令牌的深色取值 ===== */
   --zp-tint:rgba(255,255,255,.08);
   --zp-tint-strong:rgba(255,255,255,.16);
-  /* 内容块与页面底同色后，1px 白描边会把卡片勾成空心框，深色取透明；
-     浅色必须有边（白底白块），见 ui-base.css 的 --zp-card-edge。 */
+  /* 内容块与页面底同色后，1px 白描边会把卡片勾成空心框，取透明；
+     浅色同取 transparent（2026-11-06 三次调整，见 ui-base.css 的 --zp-card-edge）。 */
   --zp-card-edge:transparent;
   --zp-scrim-dialog:rgba(0,0,0,.62);
   --zp-shadow:0 2px 8px rgba(0,0,0,.25);
