@@ -89,7 +89,8 @@ function render(){
  if(order.quality?.level==='REVIEW')metrics.push('需复核');
  $('metrics').innerHTML=metrics.map(x=>'<span>'+esc(x)+'</span>').join('');
  $('routeList').innerHTML=stores.length?stores.map((x,i)=>{
-   const rawName=String(x.name||'').trim()||String(x.rawName||'').trim()||String(x.originalName||'').trim()||'未识别门店';
+   /* 显示名优先取基准库投影的简称（displayName），没有简称时回退运单全名 */
+   const rawName=String(x.displayName||'').trim()||String(x.name||'').trim()||String(x.rawName||'').trim()||String(x.originalName||'').trim()||'未识别门店';
    const name=esc(rawName), nav=navTarget(x);
    const status=x.pending?'<span class="order-store-status pending">待确认</span>':(x.matchMethod==='confirmed-new'||x.isNew?'<span class="order-store-status">新增</span>':'');
    // 待定门店：优先展示候选建议及置信度，并说明未自动匹配的原因，便于用户快速判断。

@@ -2643,14 +2643,14 @@ main.home-app .task-card{margin-top:0}
   font-variant-numeric:tabular-nums;
   text-align:right;
 }
-/* 门店名（15→17px）：长名最多 2 行 + 省略号。
-   原先「横向可滑动、隐藏滚动条」没有视觉提示，看起来像被切断（用户反馈像 bug），
-   且与运单详情/数据页的换行表现不一致；改为换行更易读。 */
+/* 门店名（15→17px）：固定单行，超出省略。
+   门店全名常带「（临时）」「特渠部…」等前后缀，两行会挤乱整卡节奏（用户 2026-11-06 反馈）；
+   长名请在数据中心设置「门店简称」——简称只影响显示，识别仍走全名 + 学习别名。 */
 .today-store-name{
   min-width:0;
   display:-webkit-box;
   -webkit-box-orient:vertical;
-  -webkit-line-clamp:2;
+  -webkit-line-clamp:1;
   overflow:hidden;
   white-space:normal;
   overflow-wrap:anywhere;

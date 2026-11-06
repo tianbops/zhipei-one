@@ -6,6 +6,7 @@ import {canReadWaybill} from "../_waybill-acl.js";
 import {getRoute} from "../_route.js";
 import {guard} from "../_safe.js";
 import {degraded} from "../_degrade.js";
+import {displayNameOf} from "../_store-display.js";
 
 const clean=v=>String(v??"").trim();
 /* 基准库里的坐标（GCJ-02）。范围外的值当作没有，避免拼出「0,0」这种导航。 */
@@ -56,9 +57,13 @@ async function latestGet({request,env}){
     /* 坐标同样用基准库回补：运单快照里可能没有（老运单、或补坐标之前生成的），
        但导航要的是「这家店在哪」，而不是「这份快照当时存了什么」。 */
     const geo=geoOf(baseStore);
+    /* 门店简称只影响显示：快照不存简称，读取时按基准库实时投影，
+       改完简称历史运单立刻跟随；name 本身绝不改写（它还承担去重与排序身份）。 */
+    const displayName=displayNameOf(s,baseStore);
+    const useDisplay=!!displayName&&displayName!==clean(s?.name);
     /* 基准库不再回补 address：运单门店的 address 是收货地址（OCR/线路原文），
        高德分享里的位置描述曾把它覆盖掉，还会被历史检索读到。只回补坐标。 */
-    return navigation||note||geo?{...s,...(navigation?{navigation}:{}),...(note?{note}:{}),...(geo||{})}:s;
+    return navigation||note||geo||useDisplay?{...s,...(navigation?{navigation}:{}),...(note?{note}:{}),...(geo||{}),...(useDisplay?{displayName}:{})}:s;
    });
   }catch{}
   // 响应瘦身：与 history.js 同理，剥离前端不消费的调试字段 sourceLine，降低弱网传输体积。

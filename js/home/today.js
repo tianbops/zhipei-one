@@ -38,7 +38,8 @@ function zpRenderTodayCard(w,dayOrders,fromCache){
   if(todayStoreList){
     try{
       todayStoreList.innerHTML=stores.length?stores.map((x,i)=>{
-        const rawName=String(x?.name||"").trim()||String(x?.rawName||"").trim()||String(x?.originalName||"").trim()||"未识别门店";
+        /* 显示名优先取基准库投影的简称（displayName），没有简称时回退运单全名 */
+        const rawName=String(x?.displayName||"").trim()||String(x?.name||"").trim()||String(x?.rawName||"").trim()||String(x?.originalName||"").trim()||"未识别门店";
         const name=esc(rawName),t=navTarget(x);
         const body='<span class="today-store-index">'+(i+1)+'</span><span class="today-store-name">'+name+'</span>';
         if(!t)return '<div class="today-store-row">'+body+'</div>';

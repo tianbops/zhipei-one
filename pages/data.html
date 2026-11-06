@@ -52,7 +52,7 @@
 </div>
 <div class="zp-scroll">
 <section class="page2-card data-list-card"><div class="data-list-head"><span class="data-list-title">门店资料</span><span class="data-list-tools"><span id="storeCount" class="data-list-count"></span></span></div><div id="stores" class="data-store-list">加载中…</div></section>
-<div id="editBox" class="data-import data-editor" style="display:none"><div class="data-import-panel data-editor-panel"><div class="data-import-head"><h3 id="editTitle">编辑门店</h3><button id="editClose" class="data-import-close" type="button" aria-label="关闭">×</button></div><label class="data-field"><span>排列序号</span><input id="editOrder" class="data-input" type="number" min="1" step="1" inputmode="numeric" placeholder="例如 1"><small id="editOrderHint" class="data-field-hint"></small></label><label class="data-field"><span>门店名称</span><input id="editName" class="data-input" type="text" maxlength="120"></label><label class="data-field"><span>导航地址</span><input id="editNavigation" class="data-input" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="粘贴高德 / 百度 / 腾讯分享链接，或经纬度"><small id="editGeoHint" class="data-field-hint">在任一家地图找到这家店 → 分享 / 发送位置 → 复制链接 → 粘贴到这里，保存即自动定位</small></label><label class="data-field"><span>备注</span><textarea id="editNote" rows="1" class="data-textarea data-note" placeholder="可选"></textarea></label><label class="data-field"><span>别名（学习自动添加，可手动删除或追加）</span><div id="editAliases" class="data-aliases"></div><div class="data-alias-add"><input id="editAliasInput" class="data-input data-alias-input" type="text" maxlength="120" placeholder="输入别名后点“添加”"><button id="editAliasAdd" type="button" class="data-action-btn">添加</button></div></label><div id="editError" class="data-help data-preview"></div><div class="data-import-actions"><button id="editCancel" type="button">取消</button><button id="editSave" type="button">保存</button></div></div></div>
+<div id="editBox" class="data-import data-editor" style="display:none"><div class="data-import-panel data-editor-panel"><div class="data-import-head"><h3 id="editTitle">编辑门店</h3><button id="editClose" class="data-import-close" type="button" aria-label="关闭">×</button></div><label class="data-field"><span>排列序号</span><input id="editOrder" class="data-input" type="number" min="1" step="1" inputmode="numeric" placeholder="例如 1"><small id="editOrderHint" class="data-field-hint"></small></label><label class="data-field"><span>门店名称</span><input id="editName" class="data-input" type="text" maxlength="120"></label><label class="data-field"><span>导航地址</span><input id="editNavigation" class="data-input" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="粘贴高德 / 百度 / 腾讯分享链接，或经纬度"><small id="editGeoHint" class="data-field-hint">在任一家地图找到这家店 → 分享 / 发送位置 → 复制链接 → 粘贴到这里，保存即自动定位</small></label><label class="data-field"><span>备注</span><textarea id="editNote" rows="1" class="data-textarea data-note" placeholder="可选"></textarea></label><label class="data-field"><span>门店简称（仅用于运单显示）</span><input id="editShortName" class="data-input" type="text" maxlength="16" autocomplete="off" spellcheck="false" placeholder="留空则显示门店名称"><small class="data-field-hint">只改运单上的显示名称，不影响识别与匹配，建议 8 个字以内</small></label><div id="editError" class="data-help data-preview"></div><div class="data-import-actions"><button id="editCancel" type="button">取消</button><button id="editSave" type="button">保存</button></div></div></div>
 <div id="replaceBox" class="data-import" style="display:none"><div class="data-import-panel">
 <div class="data-import-head"><h3>批量替换</h3><button id="replaceClose" class="data-import-close" type="button" aria-label="关闭">×</button></div>
 <p class="data-help">用新的完整门店资料替换当前线路显示的资料。确认提交前，不会修改服务器中的正式数据。</p>
@@ -97,7 +97,7 @@ var dataBaseline="";// 门店资料基线：用于判断是否存在「暂存但
 })();
 async function api(u,o={}){const r=await zpFetch(u,{credentials:"same-origin",...o});const d=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(d.error||d.message||"请求失败");e.code=d.code||"HTTP_"+r.status;e.detail=d.detail||"";throw e}return d}
 function err(e){return(e.code?"["+e.code+"] ":"")+e.message+(e.detail?" · "+e.detail:"")}
-let routeId="",canMaintain=false,stores=[],baseVersion=1,saving=false,baseVersionConflict=false,editingIndex=-1,confirming=false,dragIndex=-1,editAliases=[],editGeo=null;
+let routeId="",canMaintain=false,stores=[],baseVersion=1,saving=false,baseVersionConflict=false,editingIndex=-1,confirming=false,dragIndex=-1,editGeo=null;
 
 function cleanName(v){return String(v||"").trim().replace(/^[、.．)）\\-\s]+|[、.．\\-\s]+$/g,"").trim()}
 function parseImport(text){
@@ -105,7 +105,7 @@ function parseImport(text){
  if(raw.startsWith("[")||raw.startsWith("{")){
   try{
    const j=JSON.parse(raw),a=Array.isArray(j)?j:(Array.isArray(j.stores)?j.stores:(Array.isArray(j.data)?j.data:[]));
-   if(a.length)return a.map((x,i)=>({storeId:String(x.storeId||"").trim(),originalName:String(x.originalName||x.name||x.displayName||"").trim(),name:String(x.name||x.displayName||x.originalName||"").trim(),aliases:Array.isArray(x.aliases)?x.aliases:[],businessStoreCode:String(x.businessStoreCode||"").trim(),navigation:String(x.navigation||"").trim(),routeOrder:Number(x.routeOrder)||i+1,note:String(x.note||"").trim()})).filter(x=>x.name);
+   if(a.length)return a.map((x,i)=>({storeId:String(x.storeId||"").trim(),originalName:String(x.originalName||x.name||"").trim(),name:String(x.name||x.originalName||"").trim(),shortName:String(x.shortName||"").trim().slice(0,16),aliases:Array.isArray(x.aliases)?x.aliases:[],businessStoreCode:String(x.businessStoreCode||"").trim(),navigation:String(x.navigation||"").trim(),routeOrder:Number(x.routeOrder)||i+1,note:String(x.note||"").trim()})).filter(x=>x.name);
   }catch{}
  }
  const lines=String(text||"").replace(/\r/g,"").split("\n").map(x=>x.trim()).filter(Boolean),out=[];let cur=null;
@@ -152,7 +152,6 @@ function render(){
   const s=entry.s,index=entry.index;
   const name=esc(s.name||s.originalName||"未命名门店");
   const meta=[];
-  if(s.aliases?.length)meta.push('<span><b class="data-store-meta-label">别名</b>'+esc(s.aliases.join("、").replace(/\\n/g," "))+'</span>');
   if(s.note)meta.push('<span><b class="data-store-meta-label">备注</b>'+esc(s.note)+'</span>');
   const nav=navUrl(s.navigation);
   /* 未定位角标：只标缺失的，已有坐标的不占视觉。保存后自动补齐，剩下的就是没链接的。 */
@@ -261,11 +260,12 @@ async function resolveGeo(text){
 }
 function openEditor(index=-1){
  editingIndex=index;
- const s=index>=0?stores[index]:{name:"",originalName:"",navigation:"",note:"",aliases:[]};
+ const s=index>=0?stores[index]:{name:"",originalName:"",navigation:"",note:"",aliases:[],shortName:""};
  $("editTitle").textContent=index>=0?"编辑门店":"新增门店";
  $("editOrder").value=index>=0?(s.routeOrder||index+1):stores.length+1;
  updateOrderHint();
  $("editName").value=s.name||s.originalName||"";
+ $("editShortName").value=s.shortName||"";
  $("editNavigation").value=s.navigation||"";
  editGeo=geoOfStore(s);
  /* 已有坐标的门店：把「已解析的输入原文」记成当前链接，
@@ -273,7 +273,6 @@ function openEditor(index=-1){
  geoResolvedFor=editGeo?String(s.navigation||"").trim():"";
  setGeoHint();
  $("editNote").value=s.note||"";autoGrow($("editNote"));
- editAliases=Array.isArray(s.aliases)?s.aliases.map(x=>String(x).trim()).filter(Boolean):[];renderEditAliases();
  $("editError").textContent="";
  showPanel("editBox");
  setTimeout(()=>$("editName").focus(),0)
@@ -292,28 +291,8 @@ function showPanel(id){
  $(id).style.display="flex";syncPanelScrollLock()
 }
 function hidePanel(id){$(id).style.display="none";syncPanelScrollLock()}
-function closeEditor(){hidePanel("editBox");editingIndex=-1;editAliases=[];const box=$("editAliases");if(box)box.replaceChildren()}
-function renderEditAliases(){
- const box=$("editAliases");if(!box)return;
- box.replaceChildren();
- if(!editAliases.length){const hint=document.createElement("div");hint.className="data-aliases-empty";hint.textContent="暂无别名，学习确认后会自动补充，也可在下方手动添加";box.appendChild(hint)}
- editAliases.forEach((a,i)=>{
-  const chip=document.createElement("span");chip.className="data-alias-chip";
-  const txt=document.createElement("span");txt.textContent=a;chip.appendChild(txt);
-  const del=document.createElement("button");del.type="button";del.className="data-alias-del";del.dataset.aliasIndex=i;del.setAttribute("aria-label","删除别名 "+a);del.textContent="×";chip.appendChild(del);
-  box.appendChild(chip);
- });
-}
-function addEditAlias(){
- const v=$("editAliasInput").value.trim();
- if(!v)return;
- if(editAliases.some(x=>String(x).trim()===v)){$("editAliasInput").value="";return}
- editAliases.push(v);$("editAliasInput").value="";renderEditAliases();
-}
+function closeEditor(){hidePanel("editBox");editingIndex=-1}
 function autoGrow(el){if(!el)return;el.style.height="0px";const b=el.offsetHeight-el.clientHeight,mh=parseFloat(getComputedStyle(el).minHeight)||0;el.style.height=Math.max(el.scrollHeight+b,mh)+"px"}
-$("editAliases").addEventListener("click",e=>{const del=e.target.closest("[data-alias-index]");if(del){const i=Number(del.dataset.aliasIndex);if(Number.isInteger(i)&&i>=0&&i<editAliases.length){editAliases.splice(i,1);renderEditAliases()}}});
-$("editAliasAdd").onclick=addEditAlias;
-$("editAliasInput").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();addEditAlias()}});
 $("editNote").addEventListener("input",e=>autoGrow(e.target));
 /* 粘贴即定位：不等保存。450ms 防抖，避免长按粘贴分几次触发时重复打外网。 */
 let geoInputTimer=0;
@@ -359,7 +338,7 @@ $("editSave").onclick=async()=>{
  }
  /* 带文案的分享文本只留纯链接存（否则整段文案会变成一个打不开的「导航」链接） */
  const link=navUrlOf(navText);
- let item=editingIndex>=0?stores[editingIndex]:{storeId:"",originalName:"",aliases:[],businessStoreCode:"",routeOrder:stores.length+1};
+ let item=editingIndex>=0?stores[editingIndex]:{storeId:"",originalName:"",aliases:[],shortName:"",businessStoreCode:"",routeOrder:stores.length+1};
  item.name=name;if(!item.originalName)item.originalName=name;
  /* 坐标文本不当链接存（否则列表里会渲染出一条打不开的「导航」）；
     纯文字备注原样保留，历史数据里 navigation 可能就是门牌描述 */
@@ -367,7 +346,9 @@ $("editSave").onclick=async()=>{
  item.note=$("editNote").value.trim();
  /* 链接换了但解析失败（editGeo 为 null）：同步清掉旧坐标，绝不能让新地址继续绑着上一家店的位置 */
  item.lat=editGeo?editGeo.lat:null;item.lng=editGeo?editGeo.lng:null;item.geoFrom=editGeo?(editGeo.geoFrom||""):"";
- item.aliases=editAliases;
+ item.shortName=$("editShortName").value.trim().slice(0,16);
+ /* 学习别名不显示、也不在这里改写：保持原数组原样落库，
+    避免一次编辑把后台自动积累的识别别名清空。 */
  if(editingIndex<0){stores.push(item);editingIndex=stores.length-1}
  const from=editingIndex;applyOrder(from,order);closeEditor();render()
 };

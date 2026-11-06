@@ -15,6 +15,7 @@ import {getRoute} from "./_route.js";
 import {dayMetaKey,parseMeta} from "./waybills/_waybill-meta.js";
 import {Budget,scanKeysBudgeted,mgetBatchMap,throwBudgetExceeded,SUBREQUEST_BUDGET_EXCEEDED} from "./_redis-budget.js";
 import {clean,historyReadable,waybillIndexKey,validDate,inRange} from "./_history-range.js";
+import {displayNameOf} from "./_store-display.js";
 
 /* 基准库坐标（GCJ-02）：范围内才算数，避免拼出 0,0 这类无效导航 */
 const geoOf=x=>{const lat=Number(x?.lat),lng=Number(x?.lng);return Number.isFinite(lat)&&Number.isFinite(lng)&&lat>=18&&lat<=54&&lng>=73&&lng<=136?{lat,lng}:null};
@@ -190,7 +191,7 @@ export async function enrichFactory(env,routeId){
    for(const bs of baseStores)for(const field of [bs?.name,bs?.originalName,...(Array.isArray(bs?.aliases)?bs.aliases:[])]){const key=baseKey(field);if(key&&!byName.has(key))byName.set(key,bs)}
    /* 只回补坐标，不回补 address：运单门店的收货地址来自 OCR/线路原文，
       不能被基准库里高德分享的描述文字覆盖（同 latest.js）。 */
-   out.stores=out.stores.map(s=>{const baseStore=byId.get(clean(s?.storeId))||byName.get(baseKey(s?.name||s?.rawName));if(!baseStore)return s;const navigation=clean(baseStore.navigation)||clean(s?.navigation),note=clean(baseStore.note||baseStore.remark)||clean(s?.note||s?.remark),geo=geoOf(baseStore);return navigation||note||geo?{...s,...(navigation?{navigation}:{}),...(note?{note}:{}),...(geo||{})}:s});
+   out.stores=out.stores.map(s=>{const baseStore=byId.get(clean(s?.storeId))||byName.get(baseKey(s?.name||s?.rawName));if(!baseStore)return s;const navigation=clean(baseStore.navigation)||clean(s?.navigation),note=clean(baseStore.note||baseStore.remark)||clean(s?.note||s?.remark),geo=geoOf(baseStore);/* 简称同 latest.js：只投影显示名，不改写 name，历史运单实时跟随基准库 */const displayName=displayNameOf(s,baseStore),useDisplay=!!displayName&&displayName!==clean(s?.name);return navigation||note||geo||useDisplay?{...s,...(navigation?{navigation}:{}),...(note?{note}:{}),...(geo||{}),...(useDisplay?{displayName}:{})}:s});
   }catch{}
   // 响应瘦身：sourceLine 是处理阶段的调试字段（整条原始线路文本，逐门店重复），
   // 前端（home/order_detail/history）均不消费；25 家门店时它会把单日响应撑大数十 KB，

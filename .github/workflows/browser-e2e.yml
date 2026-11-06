@@ -78,6 +78,10 @@ jobs:
         env:
           CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
         run: node tests/e2e-data-geo-providers.cjs
+      - name: Verify store short name only changes waybill display
+        env:
+          CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}
+        run: node tests/e2e-store-short-name.cjs
       - name: Verify swiping right never deletes a store
         env:
           CHROMIUM: ${{ steps.chrome.outputs.chrome-path }}

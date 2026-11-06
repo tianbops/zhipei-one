@@ -3,9 +3,10 @@ import {clientMessage,logServerError} from "./_errors.js";
 import {currentUser} from "./_auth.js";
 import {get,set,newId,command} from "./_redis.js";
 import {canMaintainRoute,requireBusinessUser} from "./_permissions.js";
+import {normalizeShortName} from "./_store-display.js";
 async function load(env,id){const raw=await get(env,"route:"+id);if(!raw)return null;try{return typeof raw==="string"?JSON.parse(raw):raw}catch{return null}}
 function stableStoreId(s){const code=String(s.businessStoreCode||"").trim();const seed=code||[s.name,s.originalName,...(Array.isArray(s.aliases)?s.aliases:[])].map(v=>String(v||"").trim()).filter(Boolean).join("|");const key=seed.replace(/[\\u3000\\s]+/g,"").replace(/[（）()【】\\[\\]{}<>《》“”"\\x27‘’]/g,"").replace(/[·•、,，。；;:：!！?？\\-_—]/g,"").replace(/Ⅱl|Il|II|ⅱ/gi,"II").toLowerCase();let h=2166136261;for(let i=0;i<key.length;i++){h^=key.charCodeAt(i);h=Math.imul(h,16777619)}return "store_"+(h>>>0).toString(16).padStart(8,"0")}
-function normalizeStore(s,i){return {storeId:String(s.storeId||"").trim()||stableStoreId(s),originalName:String(s.originalName??s.name??"").trim(),name:String(s.name??s.displayName??"").trim(),aliases:Array.isArray(s.aliases)?s.aliases.map(x=>String(x).trim()).filter(Boolean):[],businessStoreCode:String(s.businessStoreCode||"").trim(),navigation:s.navigation||null,lat:numOrNull(s.lat,"lat"),lng:numOrNull(s.lng,"lng"),geoFrom:fingerprint(s.geoFrom),routeOrder:Number.isFinite(Number(s.routeOrder))?Number(s.routeOrder):i+1,note:String(s.note||"").trim()}}
+function normalizeStore(s,i){return {storeId:String(s.storeId||"").trim()||stableStoreId(s),originalName:String(s.originalName??s.name??"").trim(),name:String(s.name??s.displayName??"").trim(),/* 简称只做运单显示：不参与 stableStoreId、不参与身份冲突校验、不写入学习库 */shortName:normalizeShortName(s.shortName),aliases:Array.isArray(s.aliases)?s.aliases.map(x=>String(x).trim()).filter(Boolean):[],businessStoreCode:String(s.businessStoreCode||"").trim(),navigation:s.navigation||null,lat:numOrNull(s.lat,"lat"),lng:numOrNull(s.lng,"lng"),geoFrom:fingerprint(s.geoFrom),routeOrder:Number.isFinite(Number(s.routeOrder))?Number(s.routeOrder):i+1,note:String(s.note||"").trim()}}
 /* geoFrom 是「这组坐标由哪条链接解出」的短指纹，仅用于判断链接是否变更，
    不存名称/地址文本。放宽到 32 位十六进制，越界或非法字符一律归零，
    避免把任意长文本塞进基准库。 */

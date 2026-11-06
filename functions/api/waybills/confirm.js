@@ -136,7 +136,7 @@ export async function onRequestPost({request,env}){
         await releaseLock(env,requestLock);requestLock=null;
         return json({success:false,code:"STORE_ALREADY_EXISTS",error:"该门店已存在于线路数据资料，不能重复新增",storeId:clean(duplicate.storeId),storeName:clean(duplicate.name||duplicate.originalName)},409);
       }
-      target={storeId:newId(),originalName:rawName,name:rawName,aliases:[],navigation:null,routeOrder:base.stores.length+1,note:""};
+      target={storeId:newId(),originalName:rawName,name:rawName,aliases:[],shortName:"",navigation:null,routeOrder:base.stores.length+1,note:""};
       base.stores.push(target);
     }
     if(!target&&!isTempRoute(order.routeId)){
@@ -145,12 +145,12 @@ export async function onRequestPost({request,env}){
       if(globalTarget){
         target=base.stores.find(s=>clean(s.storeId)===clean(globalTarget.storeId))||null;
         if(!target){
-          target={storeId:clean(globalTarget.storeId),originalName:clean(globalTarget.originalName)||rawName,name:clean(globalTarget.name)||standardName,aliases:Array.isArray(globalTarget.aliases)?globalTarget.aliases:[],navigation:globalTarget.navigation||null,lat:geoNum(globalTarget.lat,"lat"),lng:geoNum(globalTarget.lng,"lng"),geoFrom:"",routeOrder:base.stores.length+1,note:""};
+          target={storeId:clean(globalTarget.storeId),originalName:clean(globalTarget.originalName)||rawName,name:clean(globalTarget.name)||standardName,aliases:Array.isArray(globalTarget.aliases)?globalTarget.aliases:[],shortName:"",navigation:globalTarget.navigation||null,lat:geoNum(globalTarget.lat,"lat"),lng:geoNum(globalTarget.lng,"lng"),geoFrom:"",routeOrder:base.stores.length+1,note:""};
           base.stores.push(target);
         }
 
       }else{
-        target={storeId:newId(),originalName:rawName,name:standardName,aliases:[],navigation:null,routeOrder:base.stores.length+1,note:""};
+        target={storeId:newId(),originalName:rawName,name:standardName,aliases:[],shortName:"",navigation:null,routeOrder:base.stores.length+1,note:""};
         base.stores.push(target);
       }
     }
