@@ -1,9 +1,10 @@
-/** 高德分享链接 / 坐标文本 → GCJ-02 经纬度；只回传 {lat,lng,kind}，不回传名称或地址文本；单次上限 10 条。 */
-/* /api/store/geo —— 把「高德分享链接 / 坐标文本」解析成经纬度
+/** 高德/百度/腾讯分享链接 / 坐标文本 → GCJ-02 经纬度；只回传 {lat,lng,kind}，不回传名称或地址文本；单次上限 10 条。 */
+/* /api/store/geo —— 把「三家地图分享链接 / 坐标文本」解析成经纬度
    ------------------------------------------------------------
    为什么必须放服务端：
-   surl.amap.com 是一次 302，浏览器 fetch 读不到 location（amap 不返回 CORS 头），
-   页面上也没有任何 JS 能拿到跳转目标。只有 Worker 代取才能读到。
+   surl.amap.com / mmapgwh.map.qq.com / j.map.baidu.com 都是 302 短链，
+   浏览器 fetch 读不到 location（地图厂商不返回 CORS 头），页面上也没有任何
+   JS 能拿到跳转目标。只有 Worker 代取才能读到。
    所以「在数据中心粘贴一个链接就自动填好坐标」这件事，纯前端做不到。
 
    解析规则见 ./_geo-parse.js（纯函数，可单测）。这里只负责：
@@ -26,9 +27,11 @@ const CACHE_TTL = 60 * 60 * 24 * 30;
 
 const text = (v) => (v == null ? "" : String(v).trim());
 
-/* 只把坐标交给前端。高德分享链接里的 POI 名称 / 位置描述是外部文案，
+/* 只把坐标交给前端。三家分享链接里的 POI 名称 / 位置描述都是外部文案，
    一旦随门店入库就会覆盖运单的收货地址（见 latest.js / _history-read.js）。
-   响应与 30 天缓存都做同一份字段投影，避免历史缓存把文本带回来。 */
+   响应与 30 天缓存都做同一份字段投影，避免历史缓存把文本带回来。
+   坐标系在 _geo-parse.js 里已统一成 GCJ-02（百度 BD-09 / WGS-84 换算后再投影），
+   库里仍只存一组坐标，数据层与导航出口都不用改。 */
 const project = (g) => ({ lat: g.lat, lng: g.lng, kind: text(g.kind) });
 
 function hash(s) {
@@ -44,9 +47,10 @@ async function resolveOne(env, raw) {
   const input = text(raw);
   if (!input) return { ok: false, reason: "EMPTY" };
 
-  /* 高德 App 分享到微信/剪贴板常带文案前缀（【高德地图】… / 我在这里…），
-     整段不是 URL。先从文本里取出链接，取不到才按坐标文本解析。
-     仍不能把 "A栋B1" 这类备注误读成经纬度（fromText 只认两个合规小数）。 */
+  /* 三家 App 分享到微信/剪贴板都可能带文案前缀（【高德地图】… /
+     【百度地图】… / 我在这里…），整段不是 URL。先从文本里取出链接，
+     取不到才按坐标文本解析。仍不能把 "A栋B1" 这类备注误读成经纬度
+     （fromText 只认两个合规小数）。 */
   let candidate = input;
   if (!/^(https?:)?\/\//i.test(candidate)) {
     const direct = fromText(candidate);

@@ -52,7 +52,7 @@
 </div>
 <div class="zp-scroll">
 <section class="page2-card data-list-card"><div class="data-list-head"><span class="data-list-title">门店资料</span><span class="data-list-tools"><span id="storeCount" class="data-list-count"></span></span></div><div id="stores" class="data-store-list">加载中…</div></section>
-<div id="editBox" class="data-import data-editor" style="display:none"><div class="data-import-panel data-editor-panel"><div class="data-import-head"><h3 id="editTitle">编辑门店</h3><button id="editClose" class="data-import-close" type="button" aria-label="关闭">×</button></div><label class="data-field"><span>排列序号</span><input id="editOrder" class="data-input" type="number" min="1" step="1" inputmode="numeric" placeholder="例如 1"><small id="editOrderHint" class="data-field-hint"></small></label><label class="data-field"><span>门店名称</span><input id="editName" class="data-input" type="text" maxlength="120"></label><label class="data-field"><span>导航地址</span><input id="editNavigation" class="data-input" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="粘贴高德分享链接"><small id="editGeoHint" class="data-field-hint">在高德地图找到这家店 → 分享 → 复制链接 → 粘贴到这里，保存即自动定位</small></label><label class="data-field"><span>备注</span><textarea id="editNote" rows="1" class="data-textarea data-note" placeholder="可选"></textarea></label><label class="data-field"><span>别名（学习自动添加，可手动删除或追加）</span><div id="editAliases" class="data-aliases"></div><div class="data-alias-add"><input id="editAliasInput" class="data-input data-alias-input" type="text" maxlength="120" placeholder="输入别名后点“添加”"><button id="editAliasAdd" type="button" class="data-action-btn">添加</button></div></label><div id="editError" class="data-help data-preview"></div><div class="data-import-actions"><button id="editCancel" type="button">取消</button><button id="editSave" type="button">保存</button></div></div></div>
+<div id="editBox" class="data-import data-editor" style="display:none"><div class="data-import-panel data-editor-panel"><div class="data-import-head"><h3 id="editTitle">编辑门店</h3><button id="editClose" class="data-import-close" type="button" aria-label="关闭">×</button></div><label class="data-field"><span>排列序号</span><input id="editOrder" class="data-input" type="number" min="1" step="1" inputmode="numeric" placeholder="例如 1"><small id="editOrderHint" class="data-field-hint"></small></label><label class="data-field"><span>门店名称</span><input id="editName" class="data-input" type="text" maxlength="120"></label><label class="data-field"><span>导航地址</span><input id="editNavigation" class="data-input" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="粘贴高德 / 百度 / 腾讯分享链接，或经纬度"><small id="editGeoHint" class="data-field-hint">在任一家地图找到这家店 → 分享 / 发送位置 → 复制链接 → 粘贴到这里，保存即自动定位</small></label><label class="data-field"><span>备注</span><textarea id="editNote" rows="1" class="data-textarea data-note" placeholder="可选"></textarea></label><label class="data-field"><span>别名（学习自动添加，可手动删除或追加）</span><div id="editAliases" class="data-aliases"></div><div class="data-alias-add"><input id="editAliasInput" class="data-input data-alias-input" type="text" maxlength="120" placeholder="输入别名后点“添加”"><button id="editAliasAdd" type="button" class="data-action-btn">添加</button></div></label><div id="editError" class="data-help data-preview"></div><div class="data-import-actions"><button id="editCancel" type="button">取消</button><button id="editSave" type="button">保存</button></div></div></div>
 <div id="replaceBox" class="data-import" style="display:none"><div class="data-import-panel">
 <div class="data-import-head"><h3>批量替换</h3><button id="replaceClose" class="data-import-close" type="button" aria-label="关闭">×</button></div>
 <p class="data-help">用新的完整门店资料替换当前线路显示的资料。确认提交前，不会修改服务器中的正式数据。</p>
@@ -69,7 +69,7 @@
 <div class="data-import-head"><h3>单独追加</h3><button id="appendClose" class="data-import-close" type="button" aria-label="关闭">×</button></div>
 <p class="data-help">新增一家门店到当前资料的末尾。追加内容先保存在页面，确认无误后再提交更新。</p>
 <label class="data-field"><span>排列序号</span><input id="appendOrder" class="data-input" type="number" min="1" step="1" inputmode="numeric" placeholder="例如 1"><small id="appendOrderHint" class="data-field-hint"></small></label><label class="data-field"><span>门店名称</span><input id="appendName" class="data-input" type="text" maxlength="120"></label>
-<label class="data-field"><span>导航地址</span><input id="appendNavigation" class="data-input" type="url" placeholder="https://..."></label>
+<label class="data-field"><span>导航地址</span><input id="appendNavigation" class="data-input" type="url" placeholder="粘贴高德 / 百度 / 腾讯分享链接或经纬度"></label>
 <label class="data-field"><span>备注</span><textarea id="appendNote" rows="1" class="data-textarea data-note" placeholder="可选"></textarea></label>
 <div id="appendError" class="data-help data-preview"></div>
 <div class="data-import-actions"><button id="appendCancel" type="button">取消</button><button id="appendApply" type="button">追加</button></div>
@@ -173,9 +173,11 @@ function render(){
  }).join("");
 }
 /* ===== 位置（坐标）=====
-   门店的坐标不由人填：把高德「分享」出来的链接粘进「导航地址」，
-   粘贴后 0.5 秒（以及保存时）由服务端代取 302 落点，从中取出 GCJ-02 坐标。
-   管理员不需要知道有「解析」这个动作，也不需要懂经纬度。
+   门店的坐标不由人填：把高德 / 百度 / 腾讯「分享」出来的链接粘进「导航地址」，
+   粘贴后 0.5 秒（以及保存时）由服务端代取 302 落点，从中取出坐标并统一成 GCJ-02。
+   三家链接解析出的坐标都可直接给三家导航入口用，管理员不需要懂坐标系；
+   百度 POI 短链（j.map.baidu.com）由服务端按移动端 UA 展开，从详情页读坐标；
+   墨卡托坐标统一换算成 GCJ-02。三家链接都无需管理员手工填经纬度。
    坐标存在 store 上（lat/lng/geoFrom），提交仍走原来的 /api/base。
    geoFrom 是「这组坐标由哪条链接解出」的短指纹：链接换了就必须重新解析，
    否则新链接会继续绑着旧坐标，司机导航到的是上一家店的位置。 */
@@ -205,21 +207,25 @@ function needsGeo(s){
  const g=geoOfStore(s);
  return !g||g.geoFrom!==geoFingerprint(link);
 }
-const GEO_REASON={EMPTY:"先粘贴链接或坐标",INVALID_URL:"链接不完整，请检查是否复制全",UNSUPPORTED_HOST:"只认高德链接；百度/腾讯请在高德里搜到这家店后再分享",TIMEOUT:"网络超时，请重试",FETCH_FAILED:"链接打不开，可能已失效",NO_COORD:"这个链接里没有坐标，请用高德的「分享」重新复制",REQUEST_FAILED:"定位服务连接失败"};
-/* 高德 App「分享」到微信/剪贴板常带文案前缀（【高德地图】… / 我在这里…）。
+const GEO_REASON={EMPTY:"先粘贴链接或坐标",INVALID_URL:"链接不完整，请检查是否复制全",UNSUPPORTED_HOST:"只支持高德 / 百度 / 腾讯地图的链接（或经纬度）",TIMEOUT:"网络超时，请重试",FETCH_FAILED:"链接打不开，可能已失效",NO_COORD:"这个链接里没有坐标，请用地图 App 的「分享 / 发送位置」重新复制，或直接粘贴经纬度",BAIDU_POI_SHORTLINK:"百度链接暂时没取到坐标（网络波动或百度页面改版），请重试，或改用高德/腾讯分享链接、直接粘贴经纬度",REQUEST_FAILED:"定位服务连接失败"};
+/* 三家 App「分享」到微信/剪贴板都可能带文案前缀（【高德地图】… / 我在这里…）。
    只认「整段以 http 开头」会让这类粘贴被静默跳过 —— 提交时不发请求也不报错，
-   43 家门店全部停在「未定位」。这里统一从任意文本里取出第一个链接。 */
+   43 家门店全部停在「未定位」。这里统一从任意文本里取出第一个链接。
+   英文逗号必须放行：百度 /@lng,lat,z、?location=lat,lng、腾讯 coord=lng,lat
+   都靠逗号带坐标，当成截断符会把长链砍成半截、永远解析不出坐标。
+   只排除中文逗号「，」与分号（文案分隔用），末尾再清掉误吞的半角标点。 */
 function navUrlOf(v){
  const s=String(v||"").trim();
- if(/^https?:\/\//i.test(s))return s.match(/^https?:\/\/[^\s<>"'`）)】\]，,；;]+/i)?.[0]||s;
- const m=s.match(/https?:\/\/[^\s<>"'`）)】\]，,；;]+/i);return m?m[0]:"";
+ const cut=x=>x?x.replace(/[,;]+$/,""):"";
+ if(/^https?:\/\//i.test(s))return cut(s.match(/^https?:\/\/[^\s<>"'`）)】\]，；;]+/i)?.[0])||s;
+ const m=s.match(/https?:\/\/[^\s<>"'`）)】\]，；;]+/i);return cut(m?m[0]:"");
 }
 function geoReasonText(r){return GEO_REASON[r]||("解析失败（"+String(r||"未知原因")+"）")}
 function setGeoHint(msg,kind){
  const el=$("editGeoHint");if(!el)return;
  if(msg){el.textContent=msg;el.className="data-field-hint"+(kind?" "+kind:"");return}
  if(editGeo){el.textContent="已定位 "+geoText(editGeo)+"，保存后司机点门店名可选用地图导航";el.className="data-field-hint ok";return}
- el.textContent="在高德地图找到这家店 → 分享 → 复制链接 → 粘贴到这里，保存即自动定位";el.className="data-field-hint";
+ el.textContent="在高德 / 百度 / 腾讯地图找到这家店 → 分享 / 发送位置 → 复制链接 → 粘贴到这里，保存即自动定位";el.className="data-field-hint";
 }
 /* 只有「能从文本里取到链接」或「两个小数」才值得发请求；
    "A栋B1" 这类备注不发外网。带文案的分享文本现在也算可解析。 */
@@ -505,11 +511,11 @@ async function submitStores(){
    .map(k=>geoReasonText(k)+(reasons[k]>1?" ×"+reasons[k]:"")).slice(0,3).join("；");
   const names=fail.slice(0,2).join("、")+(fail.length>2?" 等":"");
   if(fail.length){
-   showDataFeedback("error","数据更新成功，但 "+fail.length+" 家没能定位（"+names+"）："+(detail||"原因未知")+"。请确认粘贴的是高德「分享」链接，或点右侧重试。","重新识别",()=>submitStores(),true);
+   showDataFeedback("error","数据更新成功，但 "+fail.length+" 家没能定位（"+names+"）："+(detail||"原因未知")+"。请确认粘贴的是三家地图的「分享 / 发送位置」链接或经纬度，或点右侧重试。","重新识别",()=>submitStores(),true);
   }else if(pending&&!canMaintain){
    showDataFeedback("error","有 "+pending+" 家门店填了链接但没有维护权限，未做定位","","",true);
   }else if(noLink){
-   showDataFeedback("error","数据更新成功，但 "+noLink+" 家「导航地址」里不是链接（是文字地址或备注），无法解析坐标。请在高德地图搜到这家店 → 分享 → 复制链接后粘贴。","","",true);
+   showDataFeedback("error","数据更新成功，但 "+noLink+" 家「导航地址」里不是链接（是文字地址或备注），无法解析坐标。请在任一家地图搜到这家店 → 分享 → 复制链接后粘贴，或直接填经纬度。","","",true);
   }else{
    showDataFeedback("success","数据更新成功"+(located?"，已自动定位 "+located+" 家":""));
   }

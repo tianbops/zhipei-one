@@ -54,6 +54,25 @@ assert.ok(parse.includes("coordFromUrl(next)"), "每一跳的 Location 都要尝
 assert.ok(parse.includes("needFollow"), "opaque redirect 须有 follow 兜底");
 assert.ok(!/if \(sawOpaque \|\| true\)/.test(parse), "不得无条件重复打外网（subrequest 配额）");
 
+/* 4b. 前端：录入适配三家地图链接（防止「只认高德」悄悄回归）
+   数据中心「导航地址」接受高德 / 百度 / 腾讯任意一家的分享链接，
+   百度 POI 短链也能解析，只在偶发反爬时给兜底提示。 */
+assert.ok(!/只认高德链接/.test(html), "不得再宣称只认高德链接");
+assert.ok(/高德 \/ 百度 \/ 腾讯/.test(html), "录入位须明示三家地图");
+assert.ok(/BAIDU_POI_SHORTLINK/.test(html), "须保留百度短链兜底错误码");
+assert.ok(/百度链接暂时没取到坐标/.test(html), "百度兜底提示须可执行");
+assert.ok(!/请在高德地图搜到这家店/.test(html), "失败指引不得再只指向高德");
+assert.ok(/baiduHtmlToCoord|bd09mcToBd09/.test(parse), "服务端须支持百度移动端落地页解析");
+assert.ok(/MOBILE_UA|MAX_HTML_BAIDU/.test(parse), "百度短链须用移动端 UA 且放宽读取上限");
+assert.ok(/coord_type|BD-09|GCJ-02/.test(parse) || /toGcj02/.test(parse), "服务端须做坐标系归一（百度 BD-09 → GCJ-02）");
+/* 链接提取不得把英文逗号当分隔符：百度 /@lng,lat,z、?location=lat,lng、
+   腾讯 coord=lng,lat 都靠逗号带坐标，截断后长链永远解析不出坐标。
+   直接看两个正则的排除字符类里是否还含「，,」这一对。 */
+const navBody = html.match(/function navUrlOf\(v\)\{[\s\S]*?\n\}/);
+const extBody = parse.match(/export function extractUrl\(raw\)[\s\S]*?\n\}/);
+assert.ok(navBody && !navBody[0].includes("，,；;"), "前端链接提取正则不得排除英文逗号（百度/腾讯坐标含逗号）");
+assert.ok(extBody && !extBody[0].includes("，,；;"), "服务端 extractUrl 正则不得排除英文逗号（百度/腾讯坐标含逗号）");
+
 /* 5. 服务端：callAPP 中转页三种形态 + 中转 HTML 的 lat/lon */
 assert.ok(parse.includes('q.get("q")'), "fromCallApp 须认 q= 位置分享");
 assert.ok(/q\.get\("lat"\)[\s\S]{0,200}q\.get\("lon"\)/.test(parse), "fromCallApp 须认 lat/lon");

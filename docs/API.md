@@ -33,7 +33,7 @@
 | POST | `/api/route-binding` | — |
 | GET / POST | `/api/route-requests` | 线路申请：GET 列本人申请，POST 提交；可选填申请人姓名 / 手机号（仅供管理员审核与联系，空值不落库）。 |
 | POST | `/api/route-unbind` | — |
-| POST | `/api/store/geo` | 高德分享链接 / 坐标文本 → GCJ-02 经纬度；只回传 {lat,lng,kind}，不回传名称或地址文本；单次上限 10 条。 |
+| POST | `/api/store/geo` | 高德/百度/腾讯分享链接 / 坐标文本 → GCJ-02 经纬度；只回传 {lat,lng,kind}，不回传名称或地址文本；单次上限 10 条。 |
 | POST | `/api/waybills/cancel` | — |
 | POST | `/api/waybills/confirm` | 指纹漂移回收（2026-10-07 生产实测发现）。 businessFingerprint 的入参包含每个门店的 pending / routeOrde… |
 | POST | `/api/waybills/extract` | — |
