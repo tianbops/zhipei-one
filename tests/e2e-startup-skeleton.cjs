@@ -81,7 +81,11 @@ window.__netDone=false;
  if(s.indexOf('/api/home-bootstrap')===0)return out(${JSON.stringify(JSON.stringify(BOOTSTRAP))});
  if(s.indexOf('/api/waybills/latest')===0){
    if(sessionStorage.getItem('__FAILHIST'))return out('{"error":"boom"}',false);
-   return out(${JSON.stringify(JSON.stringify({ success: true, waybill: WAYBILL, dayCount: 1 }))});
+   return out(${JSON.stringify(JSON.stringify({
+     success: true, waybill: WAYBILL, dayCount: 1,
+     orders: [{ id: WAYBILL.id, uploadedAt: today + 'T08:00:00.000Z', createdAt: today + 'T08:00:00.000Z',
+       date: today, routeId: 'r1', summary: WAYBILL.summary, totalWeight: 1.5055, stores: WAYBILL.stores }],
+   }))});
  }
  if(s.indexOf('/api/')===0)return out('{"success":true,"waybills":[],"history":[],"days":[],"routes":[],"stats":{}}');
  return real(u,o)};})();`;
@@ -179,7 +183,7 @@ const check = (name, ok, detail) => {
     check('趋势卡可见且已渲染', (await ev("document.getElementById('trendCard').hidden")) === false &&
       (await ev("document.querySelectorAll('#trendPoints circle').length")) > 0);
     check('数据态下骨架条已隐藏（computed display:none）', (await ev("getComputedStyle(document.querySelector('#trendCard .skel-chart')).display")) === 'none');
-    check('今日快照已落盘（含当天日期）', (await ev("JSON.parse(localStorage.getItem('zp_home_today_v1')).date")) === today);
+    check('今日快照已落盘（v2 结构含当天日期与 orders）', (await ev("(()=>{const s=JSON.parse(localStorage.getItem('zp_home_today_v2')||'null');return s&&s.date==='" + today + "'&&Array.isArray(s.orders)&&s.orders.length===1})()")) === true);
     check('历史快照已落盘（13 个月窗口）', (await ev("JSON.parse(localStorage.getItem('zp_home_hist_v1')).d.history.length")) === HISTORY.length);
 
     /* ---------- 阶段 B：慢网络重访——快照秒开，网络未回数据已在屏 ---------- */
