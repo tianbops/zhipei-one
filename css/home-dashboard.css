@@ -146,7 +146,24 @@ main.home-app .zp-scroll{
   overscroll-behavior-y:none;
   /* 品牌区到浮岛的间距：14 → 6，浮岛更贴品牌，收起后品牌与列表之间也不空 */
   padding-top:6px;
+  /* 88 = 底栏浮岛 64 + 8 离底 + 16 呼吸。底栏收起时加号仍留在屏幕底部中央
+     （nav.js 的既有权衡），这块留白照旧归它。 */
   padding-bottom:calc(88px + env(safe-area-inset-bottom));
+  position:relative;
+}
+/* 月度统计卡本轮不可达，但它紧接卡片、正好落在底部 88px 留白里，会露出
+   「月度统计 / 重量 单量 年度」半个卡头（overflow:clip 只裁到 padding box，
+   裁不到 padding 区里的内容）。用一层同色遮挡盖住这段留白。
+   不用 clip-path：Chromium 会把 fixed 的底栏一起裁掉（加号随之消失）。
+   降级版面关掉遮挡 —— 那里要能滚到月度卡。 */
+main.home-app .zp-scroll::after{
+  content:"";
+  position:absolute;
+  left:0;right:0;bottom:0;
+  height:calc(88px + env(safe-area-inset-bottom));
+  background:var(--zp-bg);
+  pointer-events:none;
+  z-index:1;
 }
 main.home-app .task-card{
   position:relative;
@@ -206,7 +223,13 @@ main.home-app .zp-head-handle{
   opacity:0;
   transition:opacity .16s linear;
 }
-main.home-app.is-head-hidden .zp-head-handle{opacity:.42;transition-delay:.1s}
+/* 热区：3px 的线点不中，向上左右各放大到 44×24（仍收在浮岛原位置内） */
+main.home-app .zp-head-handle::after{
+  content:"";
+  position:absolute;
+  left:-22px;right:-22px;top:-14px;bottom:-6px;
+}
+main.home-app.is-head-hidden .zp-head-handle{opacity:.42;transition-delay:.1s;cursor:pointer}
 /* 浮岛内三段不可收缩：否则 flex 会把 tab 从 44 压到 22px、文字切一半 */
 main.home-app .zp-head-island .task-title,
 main.home-app .zp-head-island .task-main,
@@ -237,6 +260,7 @@ main.home-app .trend-card{flex:0 0 auto}
 /* 降级 A：横屏 / 矮屏 → 整页滚动，浮岛不再收放（收放由 JS 一并跳过）。
    矮屏宁可整屏滚，也不把浮岛和列表挤在一起。 */
 @media (max-height:759px),(orientation:landscape){
+  /* 降级版面由 nav.js 自己按外层滚动判定收放底栏，底部留白固定回 88 */
   main.home-app .zp-scroll{display:block;overflow-y:auto}
   main.home-app .task-card{display:block;height:auto}
   main.home-app .zp-head-wrap{height:auto;overflow:visible;margin-bottom:10px;transition:none}
@@ -250,6 +274,7 @@ main.home-app .trend-card{flex:0 0 auto}
 
 /* 降级 B：键盘弹起（JS 判定，见 js/home/fit.js）—— 同上回退整页滚动 */
 main.home-app.is-keyboard .zp-scroll{display:block;overflow-y:auto}
+main.home-app.is-keyboard .zp-scroll::after{display:none}
 main.home-app.is-keyboard .task-card{display:block;height:auto}
 main.home-app.is-keyboard .zp-head-wrap{height:auto;overflow:visible;transition:none}
 main.home-app.is-keyboard .zp-head-island{position:static;height:auto;transform:none;transition:none}

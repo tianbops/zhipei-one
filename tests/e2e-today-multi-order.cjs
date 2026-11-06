@@ -256,12 +256,14 @@ const SNAP = `(()=>{
     /* 先从任意状态复位：显式展开 + 回顶，避免上一条用例留下的收起态干扰 */
     try{window.zpHeadShow&&window.zpHeadShow()}catch(e){}
     await wait(320); page.scrollTop=0; await wait(260);
-    const before={hidden:main.classList.contains('is-head-hidden'),listH:Math.round(list.getBoundingClientRect().height)};
+    const nav=document.querySelector('.zp-nav');
+    const navHid=()=>nav.classList.contains('is-nav-hidden');
+    const before={hidden:main.classList.contains('is-head-hidden'),listH:Math.round(list.getBoundingClientRect().height),nav:navHid()};
     const y0=page.scrollTop;
     page.scrollTop=420; await wait(380);
-    const off={hidden:main.classList.contains('is-head-hidden'),listH:Math.round(list.getBoundingClientRect().height),st:Math.round(page.scrollTop)};
+    const off={hidden:main.classList.contains('is-head-hidden'),listH:Math.round(list.getBoundingClientRect().height),st:Math.round(page.scrollTop),nav:navHid()};
     page.scrollTop=Math.max(0,off.st-90); await wait(380);
-    const on={hidden:main.classList.contains('is-head-hidden'),listH:Math.round(list.getBoundingClientRect().height)};
+    const on={hidden:main.classList.contains('is-head-hidden'),listH:Math.round(list.getBoundingClientRect().height),nav:navHid()};
     return {before,off,on,y0};
   })()`);
   console.log('head ' + JSON.stringify(headToggle));
@@ -269,6 +271,10 @@ const SNAP = `(()=>{
   check('收起后列表高度增加（把空间让给门店）', headToggle && headToggle.off.listH > headToggle.before.listH + 100, headToggle && (headToggle.before.listH + ' -> ' + headToggle.off.listH));
   check('向上滚名单弹出浮岛', headToggle && headToggle.on.hidden === false, JSON.stringify(headToggle));
   check('弹出后列表高度回到原值', headToggle && Math.abs(headToggle.on.listH - headToggle.before.listH) <= 2, headToggle && String(headToggle.on.listH));
+  /* 用户 2026-11-06：「顶部浮岛也是要像底部浮岛一样自动隐藏」。两者必须同进退，
+     否则一收一留看起来像各坏了一半（首页外层不滚，nav.js 自己的判定收不到名单）。 */
+  check('收起顶部浮岛时底栏同步收起', headToggle && headToggle.off.nav === true, JSON.stringify(headToggle));
+  check('弹出顶部浮岛时底栏同步放回', headToggle && headToggle.on.nav === false, JSON.stringify(headToggle));
 
   /* 2026-11-06 用户录屏「固定没实现」：真手指上滑到名单底部后，滚动链会把
      外层 .zp-scroll 一起带走（实测 226px，摘要 top 从 148 漂到 -78），

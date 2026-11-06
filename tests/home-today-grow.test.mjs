@@ -27,6 +27,7 @@ import { fileURLToPath } from "node:url";
 const CSS = readFileSync(fileURLToPath(new URL("../css/home-dashboard.css", import.meta.url)), "utf8");
 const JS = readFileSync(fileURLToPath(new URL("../js/home/today.js", import.meta.url)), "utf8");
 const FIT = readFileSync(fileURLToPath(new URL("../js/home/fit.js", import.meta.url)), "utf8");
+const NAV = readFileSync(fileURLToPath(new URL("../js/ui/nav.js", import.meta.url)), "utf8");
 
 let pass = 0, fail = 0;
 const failures = [];
@@ -193,6 +194,25 @@ console.log("\n浮岛收放 JS 契约（5 条）");
     /lockUntil=Date\.now\(\)\+280/.test(JS) && /Date\.now\(\)<lockUntil/.test(JS));
   t("滚动监听用 capture 且只认 .today-page（scroll 不冒泡，必须捕获）",
     /\{capture:true,passive:true\}/.test(JS) && /classList\.contains\("today-page"\)/.test(JS));
+}
+
+console.log("\n顶底浮岛联动契约（5 条）");
+{
+  /* 用户 2026-11-06：「顶部浮岛也是要像底部浮岛一样自动隐藏功能」。
+     首页锁一屏后名单在 .today-page 内滚，nav.js 的滚动判定收不到，
+     底栏不会动 —— 必须由 today.js 在收/放顶部浮岛时显式通知。 */
+  t("nav.js 对外暴露 zpNavSetHidden（内部走 navApply，状态与类名不脱节）",
+    /window\.zpNavSetHidden=function\(hide\)\{navApply\(!!hide\)\}/.test(NAV));
+  t("today.js 收起顶部浮岛时同步收起底栏", /navSync\(true\)/.test(JS));
+  t("today.js 弹出顶部浮岛时同步放回底栏", /navSync\(false\)/.test(JS));
+  t("底栏通知包在 try 里（nav.js 未加载时首页照常工作）",
+    /try\{window\.zpNavSetHidden&&window\.zpNavSetHidden\(hide\)\}catch\{\}/.test(JS));
+  /* 月卡紧接卡片、落在底部 88px 留白里会露出半个卡头。用同色遮挡盖住，
+     不能用 clip-path：Chromium 会把 fixed 的底栏一起裁掉（加号随之消失）。 */
+  const mask = CSS.slice(CSS.indexOf("main.home-app .zp-scroll::after"));
+  t("底部留白用同色遮挡盖住月度卡露头（background 取 --zp-bg，不另造色）",
+    /main\.home-app \.zp-scroll::after\{[\s\S]{0,240}?background:var\(--zp-bg\)/.test(CSS) &&
+    /position:absolute/.test(mask) && /pointer-events:none/.test(mask));
 }
 
 console.log("\nfit.js 契约（3 条）");

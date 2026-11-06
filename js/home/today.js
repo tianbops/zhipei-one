@@ -332,6 +332,12 @@ function zpBindTodaySwipe(){
     measureRaf=requestAnimationFrame(function(){measureRaf=0;measure()});
   }
 
+  /* 底栏联动：首页外层不滚，nav.js 的滚动判定收不到名单的 scroll，
+     不显式通知的话底栏会一直待在屏幕上，与收起的顶部浮岛打架。 */
+  function navSync(hide){
+    try{window.zpNavSetHidden&&window.zpNavSetHidden(hide)}catch{}
+  }
+
   function hide(page){
     if(hidden||fallback())return;
     const s=shift();
@@ -340,6 +346,7 @@ function zpBindTodaySwipe(){
     hidden=true;
     lockUntil=Date.now()+280;
     main.classList.add("is-head-hidden");
+    navSync(true);
     page.scrollTop=page.scrollTop-s;
     lastY=page.scrollTop;downAcc=0;upAcc=0;
   }
@@ -350,6 +357,7 @@ function zpBindTodaySwipe(){
     hidden=false;
     lockUntil=Date.now()+280;
     main.classList.remove("is-head-hidden");
+    navSync(false);
     const s=shift();
     if(compensate&&page){
       const max=page.scrollHeight-page.clientHeight;
@@ -369,6 +377,23 @@ function zpBindTodaySwipe(){
     const page=list.querySelector('.today-page[data-i="'+(zpTodayState.idx||0)+'"]');
     show(page,false);
   };
+
+  /* 把手线：点一下也能展开。34×3 的线本身太细，热区在 CSS 里放大到 44×24；
+     展开按「用户自己上滑」处理（compensate=true），内容原地、浮岛盖下来。 */
+  const handle=document.querySelector("main.home-app .zp-head-handle");
+  if(handle){
+    handle.setAttribute("role","button");
+    handle.setAttribute("tabindex","0");
+    handle.setAttribute("aria-label","展开今日配送");
+    const openHead=function(){
+      const page=list.querySelector('.today-page[data-i="'+(zpTodayState.idx||0)+'"]');
+      show(page,true);
+    };
+    handle.addEventListener("click",openHead);
+    handle.addEventListener("keydown",function(e){
+      if(e.key==="Enter"||e.key===" "){e.preventDefault();openHead()}
+    });
+  }
 
   list.addEventListener("scroll",function(e){
     const t=e.target;

@@ -134,6 +134,15 @@
       else{items[i].removeAttribute("tabindex");items[i].removeAttribute("aria-hidden");}
     }
   }
+  /* ===== 供页面内嵌滚动容器联动（2026-11-06） =====
+     首页锁一屏后，门店名单是在 .today-page 里滚的，不滚 .zp-scroll，
+     navOnScroll 收不到任何事件 —— 底栏于是永远不动，而上方的顶部浮岛却会随名单
+     收起，两块浮岛一收一留，看起来像各坏了一半。
+     由页面在收/放顶部浮岛时同步调用本接口，两块同进退。
+     内部仍走 navApply：navHidden 状态与类名不会脱节，自带滚动判定也不会被带偏。 */
+  window.zpNavSetHidden=function(hide){navApply(!!hide)};
+  window.zpNavIsHidden=function(){return navHidden};
+
   function navOnScroll(e){
     var el=navScrollTarget(e);
     if(!el||navTicking)return;

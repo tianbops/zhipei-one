@@ -1706,6 +1706,12 @@ function zpBindTodaySwipe(){
     measureRaf=requestAnimationFrame(function(){measureRaf=0;measure()});
   }
 
+  /* 底栏联动：首页外层不滚，nav.js 的滚动判定收不到名单的 scroll，
+     不显式通知的话底栏会一直待在屏幕上，与收起的顶部浮岛打架。 */
+  function navSync(hide){
+    try{window.zpNavSetHidden&&window.zpNavSetHidden(hide)}catch{}
+  }
+
   function hide(page){
     if(hidden||fallback())return;
     const s=shift();
@@ -1714,6 +1720,7 @@ function zpBindTodaySwipe(){
     hidden=true;
     lockUntil=Date.now()+280;
     main.classList.add("is-head-hidden");
+    navSync(true);
     page.scrollTop=page.scrollTop-s;
     lastY=page.scrollTop;downAcc=0;upAcc=0;
   }
@@ -1724,6 +1731,7 @@ function zpBindTodaySwipe(){
     hidden=false;
     lockUntil=Date.now()+280;
     main.classList.remove("is-head-hidden");
+    navSync(false);
     const s=shift();
     if(compensate&&page){
       const max=page.scrollHeight-page.clientHeight;
@@ -1743,6 +1751,23 @@ function zpBindTodaySwipe(){
     const page=list.querySelector('.today-page[data-i="'+(zpTodayState.idx||0)+'"]');
     show(page,false);
   };
+
+  /* 把手线：点一下也能展开。34×3 的线本身太细，热区在 CSS 里放大到 44×24；
+     展开按「用户自己上滑」处理（compensate=true），内容原地、浮岛盖下来。 */
+  const handle=document.querySelector("main.home-app .zp-head-handle");
+  if(handle){
+    handle.setAttribute("role","button");
+    handle.setAttribute("tabindex","0");
+    handle.setAttribute("aria-label","展开今日配送");
+    const openHead=function(){
+      const page=list.querySelector('.today-page[data-i="'+(zpTodayState.idx||0)+'"]');
+      show(page,true);
+    };
+    handle.addEventListener("click",openHead);
+    handle.addEventListener("keydown",function(e){
+      if(e.key==="Enter"||e.key===" "){e.preventDefault();openHead()}
+    });
+  }
 
   list.addEventListener("scroll",function(e){
     const t=e.target;
@@ -2959,6 +2984,15 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
       else{items[i].removeAttribute("tabindex");items[i].removeAttribute("aria-hidden");}
     }
   }
+  /* ===== 供页面内嵌滚动容器联动（2026-11-06） =====
+     首页锁一屏后，门店名单是在 .today-page 里滚的，不滚 .zp-scroll，
+     navOnScroll 收不到任何事件 —— 底栏于是永远不动，而上方的顶部浮岛却会随名单
+     收起，两块浮岛一收一留，看起来像各坏了一半。
+     由页面在收/放顶部浮岛时同步调用本接口，两块同进退。
+     内部仍走 navApply：navHidden 状态与类名不会脱节，自带滚动判定也不会被带偏。 */
+  window.zpNavSetHidden=function(hide){navApply(!!hide)};
+  window.zpNavIsHidden=function(){return navHidden};
+
   function navOnScroll(e){
     var el=navScrollTarget(e);
     if(!el||navTicking)return;
