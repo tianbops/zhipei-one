@@ -57,4 +57,16 @@ try {
 }
 assert.ok(parsed, "home 四组件顺序拼接必须是合法 CSS（拆分无语法裂痕）");
 
-console.log("home CSS 组件化守卫：通过（4 组件 / 页面顺序 / 关键选择器齐全 / PostCSS 解析无误）");
+// 5) 2026-11-06 深色首页：内容块压到与页面底同色，浮岛改取浮层色
+//    只覆盖首页：其余页面不加载 home.bundle.css，仍保留全局 --zp-card=--zp-block。
+//    覆盖必须排在全局定义之后（bundle 顺序 app → ui-base → ui-theme → home-base），
+//    否则同优先级下先出现者胜，深色卡片会退回 #292929。
+const baseCss = readFileSync(`${root}css/home-base.css`, "utf8");
+const darkBlock = /:root\[data-zp-theme="dark"\]\s*\{[^}]*--zp-block:var\(--zp-bg\)[^}]*--zp-nav-bg:var\(--zp-surface\)[^}]*\}/s.test(baseCss);
+assert.ok(darkBlock, "首页深色覆盖缺失：应把 --zp-block 指向 --zp-bg、--zp-nav-bg 指向 --zp-surface");
+const bundleCss = readFileSync(`${root}css/home.bundle.css`, "utf8");
+assert.ok(bundleCss.indexOf("--zp-block:#292929") > -1 &&
+  bundleCss.indexOf("--zp-block:#292929") < bundleCss.indexOf("--zp-block:var(--zp-bg)"),
+  "首页深色覆盖必须位于全局 --zp-block:#292929 之后，否则层叠不生效");
+
+console.log("home CSS 组件化守卫：通过（4 组件 / 页面顺序 / 关键选择器齐全 / PostCSS 解析无误 / 深色同色覆盖生效）");

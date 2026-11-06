@@ -1,4 +1,17 @@
 /* 智配One · 首页移动端 UI */
+/* 2026-11-06（用户实测反馈）：首页深色下内容块与页面底同色。
+   起因：块色 #292929 与浮岛同值，22 家运单展开后整屏只有「一块灰」——
+   卡片、列表、底栏糊在同一层，滚到哪都读不出边界。
+   只在首页覆盖 --zp-block（本文件在 home.bundle.css 中位于 ui-theme.css 之后），
+   其他页面/管理端仍保留全局 #292929，避免波及未验证的版面。
+   不重定义 --zp-card：它继续指向 --zp-block，覆盖块色即可全站契约不变。
+   层级改由「底 ─ 浮层」两级承载：内容块融进页面底，浮岛取 --zp-surface
+   (#303030) 亮一档浮起，卡片内部靠 --zp-line-inset 行线分组。
+   浅色不动（白底 + #F3F3F3 灰块仍成立）。 */
+:root[data-zp-theme="dark"]{
+  --zp-block:var(--zp-bg);
+  --zp-nav-bg:var(--zp-surface);
+}
 /* 板块宽度对齐全局：与线路页 / 历史页同用 --zp-space-4（16px）。
    原为 14px 历史遗留值，比全局窄 2px，跨页切换时板块宽度会跳。 */
 /* .home-app 只作命名空间：外壳尺寸（宽/高/居中/留白）统一由 main.zp-shell 声明。 */
@@ -21,6 +34,12 @@
 .menu-divider{height:1px;margin:5px 7px;background:var(--zp-tint)}
 
 .task-card{position:relative;overflow:hidden;margin-top:14px;padding:14px;min-height:0;background:var(--zp-card);border:1px solid var(--zp-tint);border-radius:var(--zp-r-card);box-shadow:0 12px 30px var(--zp-shadow-md)}
+/* 2026-11-06：深色下块色已与页面底同色（--zp-block=--zp-bg），
+   此时卡片描边会把「同色」重新勾成一个空心框，阴影在 #161616 上又几乎不可见，
+   观感是「透明卡套」而不是「板块融进页面」。故深色下去掉这两层，只留间距与标题；
+   浅色仍是白底灰块，描边是块色的边界，保留。 */
+:root[data-zp-theme="dark"] .task-card,
+:root[data-zp-theme="dark"] .trend-card{border-color:transparent;box-shadow:none}
 .task-title{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:var(--zp-fs-20);line-height:28px;font-weight:var(--zp-fw-bold)}
 .task-name{display:flex;align-items:center;gap:9px;min-width:0;white-space:nowrap}
 .task-date{margin:0;min-width:112px;text-align:center;white-space:nowrap;color:var(--zp-muted);font-size:var(--zp-fs-15);line-height:23px;font-weight:var(--zp-fw-medium)}
