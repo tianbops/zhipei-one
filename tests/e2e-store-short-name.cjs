@@ -189,6 +189,35 @@ const SNAP_EDIT = `(()=>{
   })()`);
   check('原地轻点仍正常唤起导航', tapClick && tapClick.after === tapClick.before + 1, JSON.stringify(tapClick));
 
+  /* 自动回位：滑开后静置约 2.4s 自己滑回起点，别让名字永远停在半截 */
+  await ev(`(()=>{const w=window.__w;w.scrollLeft=w.scrollWidth;w.dispatchEvent(new Event('scroll'));return 1})()`);
+  await sleep(700);
+  const beforeReturn = await ev(`(()=>{const w=window.__w;return {sl:Math.round(w.scrollLeft)}})()`);
+  check('滑开后先留足阅读时间，不立刻复位', beforeReturn && beforeReturn.sl > 0, JSON.stringify(beforeReturn));
+  await sleep(2600);
+  const midReturn = await ev(`(()=>{const w=window.__w;return {sl:Math.round(w.scrollLeft)}})()`);
+  check('静置超时后开始滑回（位移已减少）', midReturn && midReturn.sl < (beforeReturn && beforeReturn.sl), JSON.stringify(midReturn));
+  await sleep(900);
+  const afterReturn = await ev(`(()=>{const w=window.__w;return {sl:Math.round(w.scrollLeft),atEnd:w.classList.contains('at-end'),scrollable:w.classList.contains('is-scrollable'),h:Math.round(w.getBoundingClientRect().height)}})()`);
+  check('静置后自动回位到起点', afterReturn && afterReturn.sl === 0, JSON.stringify(afterReturn));
+  check('回位后渐隐恢复、仍是一行', afterReturn && afterReturn.atEnd === false && afterReturn.scrollable === true && afterReturn.h <= 24, JSON.stringify(afterReturn));
+
+  /* 手指再次落下必须打断回位（人还在看就别抢） */
+  const interrupt = await ev(`(async()=>{
+    const w=window.__w;
+    const row=w.closest('.today-store-row');
+    w.scrollLeft=w.scrollWidth;w.dispatchEvent(new Event('scroll'));
+    await new Promise(r=>setTimeout(r,2000));
+    const opt={bubbles:true,cancelable:true,pointerType:'touch'};
+    row.dispatchEvent(new PointerEvent('pointerdown',{...opt,clientX:200,clientY:300}));
+    const atDown=Math.round(w.scrollLeft);
+    await new Promise(r=>setTimeout(r,700));
+    const held=Math.round(w.scrollLeft);
+    row.dispatchEvent(new PointerEvent('pointerup',{...opt,clientX:200,clientY:300}));
+    return {atDown,held};
+  })()`);
+  check('手指落下即打断回位（人还在看就别抢）', interrupt && interrupt.held > 0 && Math.abs(interrupt.held - interrupt.atDown) <= 2, JSON.stringify(interrupt));
+
   /* 2. 运单详情：显示简称，导航仍全名 */
   await C('Page.navigate', { url: BASE + '/pages/order_detail.html?id=w-e2e' });
   await sleep(2200);

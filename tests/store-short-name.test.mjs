@@ -92,4 +92,14 @@ assert.ok(today.includes("is-scrollable") && today.includes("at-end"), "渲染�
 assert.ok(/lastMoveAt>=600[\s\S]{0,400}stopImmediatePropagation/.test(today), "左滑手势须在 window 捕获阶段吞掉导航点击");
 assert.ok(/pointermove[\s\S]{0,220}Math\.abs\(dx\)>8/.test(today), "须用位移阈值区分滑动与轻点");
 
+/* 6. 滑开后自动回位 */
+assert.ok(/ZP_NAME_RETURN_DELAY=2400/.test(today), "须有静置回位时长（2.4s，给足阅读时间）");
+assert.ok(/function zpScheduleNameReturn\(el\)\{[\s\S]{0,260}setTimeout\(/.test(today), "离开起点后须排一次静置回位计时");
+assert.ok(/function zpReturnTodayStoreName\(el,instant\)\{[\s\S]{0,900}requestAnimationFrame\(step\)/.test(today), "回位须平滑动画，不能瞬跳");
+assert.ok(/el\.scrollLeft=0;zpSyncTodayStoreName\(el\);/.test(today), "回位结束须落在起点并刷新渐隐状态");
+assert.ok(/zpNameReturning\)return;/.test(today), "回位动画自身触发的 scroll 不得再排期（否则死循环）");
+assert.ok(/pointerdown[\s\S]{0,420}zpCancelNameReturn\(\)/.test(today), "手指落下须取消回位（人还在看就别抢）");
+assert.ok(/prefers-reduced-motion: reduce/.test(today), "减弱动效时须直接复位，不做动画");
+assert.ok(/visibilitychange[\s\S]{0,240}zpReturnTodayStoreName\(el,true\)/.test(today), "切到后台须立即复位，回来不看到半截名字");
+
 console.log("store-short-name: all assertions passed");

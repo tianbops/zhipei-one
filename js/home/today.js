@@ -15,7 +15,16 @@ const TODAY_SNAP_KEY="zp_home_today_v1";
    名称放进横向滚动容器，默认只占一行，手指向左滑即可看完整名称。
    - 用滚动容器而不是 line-clamp：两者不能共存，line-clamp 只裁不给看；
    - 右侧渐隐只在「确实溢出且未滑到末尾」时出现，短名不会莫名发虚；
-   - 横向拖动过的手势在捕获阶段吞掉 click，避免滑动时误弹地图菜单。 */
+   - 横向拖动过的手势在捕获阶段吞掉 click，避免滑动时误弹地图菜单。
+
+   看完自动回位（2026-11-06 追加）
+   ------------------------------------------------------------------
+   滑开后若一直停在半截名字上，下一眼的起点就是错位的，右侧渐隐也一直挂着；
+   门店行本身是导航入口，停在中途容易让人误判「名字就这么长」。
+   所以松手后静止 2.4s 自动平滑滑回起点：先给足阅读时间，再无声复位。
+   新的触摸/焦点会立刻取消回位（人还在看就别抢），正在回位时也不会重复排期。 */
+const ZP_NAME_RETURN_DELAY=2400,ZP_NAME_RETURN_MS=320;
+let zpNameReturnTimer=0,zpNameReturnRaf=0,zpNameReturning=false;
 function zpSyncTodayStoreName(el){
   if(!el||!el.classList)return;
   const over=el.scrollWidth>el.clientWidth+1;
@@ -27,25 +36,87 @@ function zpPrepareTodayStoreNames(){
   const wraps=todayStoreList.querySelectorAll(".today-store-name-wrap");
   for(const el of wraps)zpSyncTodayStoreName(el);
 }
+function zpCancelNameReturn(){
+  if(zpNameReturnTimer){clearTimeout(zpNameReturnTimer);zpNameReturnTimer=0}
+  if(zpNameReturnRaf){cancelAnimationFrame(zpNameReturnRaf);zpNameReturnRaf=0}
+  zpNameReturning=false;
+}
+/* instant=true 用于「滑开另一行」等需要立刻让位、不播放动画的场合 */
+function zpReturnTodayStoreName(el,instant){
+  if(!el)return;
+  zpCancelNameReturn();
+  const from=el.scrollLeft;
+  if(from<=0){zpSyncTodayStoreName(el);return}
+  const reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if(instant||reduce){el.scrollLeft=0;zpSyncTodayStoreName(el);return}
+  const t0=performance.now();
+  zpNameReturning=true;
+  const step=now=>{
+    if(!el.isConnected){zpNameReturnRaf=0;zpNameReturning=false;return}
+    const p=Math.min(1,(now-t0)/ZP_NAME_RETURN_MS);
+    el.scrollLeft=Math.max(0,Math.round(from*(1-Math.pow(1-p,3))));
+    if(p<1){zpNameReturnRaf=requestAnimationFrame(step);return}
+    zpNameReturnRaf=0;zpNameReturning=false;
+    el.scrollLeft=0;zpSyncTodayStoreName(el);
+  };
+  zpNameReturnRaf=requestAnimationFrame(step);
+}
+function zpScheduleNameReturn(el){
+  if(zpNameReturnRaf||!el)return;           /* 正在回位：让它走完，不重排 */
+  if(zpNameReturnTimer)clearTimeout(zpNameReturnTimer);
+  zpNameReturnTimer=setTimeout(()=>{
+    zpNameReturnTimer=0;
+    zpReturnTodayStoreName(el);
+  },ZP_NAME_RETURN_DELAY);
+}
 function zpBindTodayStoreNames(){
   if(!todayStoreList||todayStoreList.dataset.nameScrollBound==="1")return;
   todayStoreList.dataset.nameScrollBound="1";
-  /* scroll 不冒泡，用捕获阶段统一接住每个名称容器 */
+  /* scroll 不冒泡，用捕获阶段统一接住每个名称容器。
+     每次滚动（拖拽、惯性、回位动画）都刷新同一行状态；只要不在回位动画里
+     且真的离开了起点，就重排 2.4s 的静默计时。 */
   todayStoreList.addEventListener("scroll",e=>{
     const el=e.target;
-    if(el&&el.classList&&el.classList.contains("today-store-name-wrap"))zpSyncTodayStoreName(el);
+    if(!el||!el.classList||!el.classList.contains("today-store-name-wrap"))return;
+    zpSyncTodayStoreName(el);
+    if(zpNameReturning)return;
+    if(el.scrollLeft>0)zpScheduleNameReturn(el);
+    else if(zpNameReturnTimer){clearTimeout(zpNameReturnTimer);zpNameReturnTimer=0}
   },true);
   let startX=0,startY=0,pressing=false,moved=false,lastMoveAt=0;
   todayStoreList.addEventListener("pointerdown",e=>{
     if(e.pointerType==="mouse"&&e.button!==0)return;
     startX=e.clientX;startY=e.clientY;pressing=true;moved=false;
+    /* 手又落下来了：取消回位，并把其它还滑开着的行立刻归零（同时只留一行） */
+    zpCancelNameReturn();
+    const row=e.target&&e.target.closest?e.target.closest(".today-store-row"):null;
+    if(row)for(const other of todayStoreList.querySelectorAll(".today-store-name-wrap")){
+      if(!row.contains(other)&&other.scrollLeft>0)zpReturnTodayStoreName(other,true);
+    }
   },true);
+  /* 键盘/读屏把焦点移到某行时不要回位：人正在读 */
+  todayStoreList.addEventListener("focusin",()=>{
+    if(zpNameReturnTimer){clearTimeout(zpNameReturnTimer);zpNameReturnTimer=0}
+  },true);
+  /* 切到后台或离开首页时立即复位，回来不会看到半截名字 */
+  document.addEventListener("visibilitychange",()=>{
+    if(document.visibilityState!=="hidden")return;
+    for(const el of todayStoreList.querySelectorAll(".today-store-name-wrap")){
+      if(el.scrollLeft>0)zpReturnTodayStoreName(el,true);
+    }
+  });
   todayStoreList.addEventListener("pointermove",e=>{
     if(!pressing)return;
     const dx=e.clientX-startX,dy=e.clientY-startY;
     if(Math.abs(dx)>8&&Math.abs(dx)>Math.abs(dy)){moved=true;lastMoveAt=Date.now()}
   },{capture:true,passive:true});
-  const endPress=()=>{pressing=false};
+  /* 松手后再排一次：点一下不动（不产生 scroll）时也能把 2.4s 计时接上 */
+  const endPress=e=>{
+    pressing=false;
+    const row=e.target&&e.target.closest?e.target.closest(".today-store-row"):null;
+    const el=row&&row.querySelector(".today-store-name-wrap");
+    if(el&&el.scrollLeft>0)zpScheduleNameReturn(el);
+  };
   todayStoreList.addEventListener("pointerup",endPress,true);
   todayStoreList.addEventListener("pointercancel",endPress,true);
   /* 滑动过的手势不得弹菜单/跳链接。
@@ -104,6 +175,7 @@ function zpRenderTodayCard(w,dayOrders,fromCache){
     }catch{
       todayStoreList.innerHTML='<div class="zp-empty zp-empty--tight">今日门店明细暂不可用</div>';
     }
+    zpCancelNameReturn();
     zpBindTodayStoreNames();
     requestAnimationFrame(zpPrepareTodayStoreNames);
   }
