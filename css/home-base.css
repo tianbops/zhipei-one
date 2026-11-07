@@ -8,7 +8,17 @@
 /* 2026-11-04：顶栏标题全站居中（历史/线路/我的已改，首页跟上）。
    首页顶栏是品牌区两行（20px 主标 + 11px 副标），内容居中由 .home-brand 的
    align-items 控制，不是 text-align —— 两行是块级子项，居中对齐要作用于交叉轴。 */
-.home-app .topbar{display:flex;justify-content:center;align-items:center;margin-bottom:12px}
+/* 2026-11-07：用户反馈「运单处理文字下方、边框交接点太紧」。
+   实测副标行盒底 = 浮层横条顶（y=72 完全重合，行盒 16px 里字只有 11px，
+   视觉上只剩 2–3px 空白），因为 head-float.js 的 ceiling 取 topbar.bottom，
+   12px 的 margin-bottom 不进 ceiling，浮层直接压在文字行盒下沿。
+   这里补 6px 下内边距：topbar 由 72 → 78，ceiling 同步 +6，浮层整体下移，
+   副标→横条从 0 变 6px（连同行盒余白约 9px 视觉呼吸位）。
+   不动 margin-bottom：滚动区起点随 topbar 一起下移，spacer 的 need 由
+   head-float.js 重算，首行仍落在浮层下沿之外 10px，遮不住。
+   不动品牌两行：padding 加在内容之后，flex 内容盒起点仍是 --zp-safe-top，
+   主标/副标绝对位置一格未动（只向下让出浮层那 6px）。 */
+.home-app .topbar{display:flex;justify-content:center;align-items:center;margin-bottom:12px;padding-bottom:6px}
 /* padding-left 抵消副标 letter-spacing:1.5px 的行尾留白（末字后也加一份间距，
    居中时整块会右偏 0.75px）；加了之后两行的视觉中线才真正重合。 */
 .home-brand{display:flex;flex-direction:column;align-items:center;text-align:center;line-height:1.2;padding-left:1.5px}

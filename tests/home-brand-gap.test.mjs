@@ -13,7 +13,10 @@
  *   2) 首页专属 .home-app .topbar{margin-bottom:12px} 只作用于首页；
  *   3) 全局 main > .topbar 的 6px 口径保持不变（内页零影响）；
  *   4) 源 CSS 与 css/home.bundle.css 同步、?v 引用一致（首页只加载 bundle）；
- *   5) 主标不得加 margin-top（否则在 50px 顶栏里会被垂直居中推上去贴状态栏）。
+ *   5) 主标不得加 margin-top（否则在 50px 顶栏里会被垂直居中推上去贴状态栏）；
+ *   6) topbar 下内边距 6px —— 2026-11-07 用户反馈「运单处理文字下方太紧」，
+ *      ceiling 取 topbar.bottom 不吃 margin，只有 padding 能让浮层真正让开。
+ *      实测副标行盒底=浮层顶 y=72（重合），补 6px 后间隙 6px、视觉约 9px。
  */
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -37,7 +40,7 @@ const spanBlocks = [...SRC.matchAll(brandSpan)].map((m) => m[1]);
 const homeTopbar = (/\.home-app\s+\.topbar\s*\{([^}]*)\}/.exec(SRC) || [])[1] || "";
 const globalTopbar = (/main\s*>\s*\.topbar\s*\{([^}]*)\}/.exec(SHELL) || [])[1] || "";
 
-console.log("首页品牌区留白契约（12 条）");
+console.log("首页品牌区留白契约（13 条）");
 {
   t("副标 margin-top:8px（主标↔副标拉开到 8px）",
     spanBlocks.some((b) => /margin-top:8px/.test(b)), spanBlocks.join(" | ").slice(0, 160));
@@ -47,6 +50,12 @@ console.log("首页品牌区留白契约（12 条）");
 
   t("首页顶栏下边距 12px（副标→今日配送 14+12=26px）",
     /margin-bottom:12px/.test(homeTopbar), homeTopbar);
+
+  t("首页顶栏下内边距 6px（副标→浮层横条留出呼吸位）",
+    /padding-bottom:6px/.test(homeTopbar), homeTopbar);
+
+  t("浮层让位只靠 padding，不得改成 margin（ceiling 不吃 margin）",
+    /padding-bottom:6px/.test(homeTopbar) && /margin-bottom:12px/.test(homeTopbar));
 
   t("首页顶栏仍保持 flex 居中（间距调整不得破坏居中）",
     /display:flex/.test(homeTopbar) && /align-items:center/.test(homeTopbar));
@@ -72,7 +81,8 @@ console.log("首页品牌区留白契约（12 条）");
 
   t("bundle 含新间距且与源同步（首页只加载 home.bundle.css）",
     /\.home-brand span\{margin-top:8px/.test(BUNDLE) &&
-    /\.home-app \.topbar\{[^}]*margin-bottom:12px/.test(BUNDLE));
+    /\.home-app \.topbar\{[^}]*margin-bottom:12px/.test(BUNDLE) &&
+    /\.home-app \.topbar\{[^}]*padding-bottom:6px/.test(BUNDLE));
 
   const hv = (s) => (/home\.bundle\.css\?v=([0-9a-f]+)/.exec(s) || [])[1];
   t("home.html 与 sw.js 的 home.bundle.css?v 一致（缓存能刷新）",
