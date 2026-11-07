@@ -56,6 +56,19 @@ console.log('二·补、标签列宽统一（右列「车辆/送货员」等宽 
   t('标签不换行（white-space:nowrap）', /white-space:nowrap/.test(META_LABEL), META_LABEL);
 }
 
+console.log('二·补2、右列贴右（车辆/送货员 整组推到列右端，重心回正）');
+{
+  const RIGHT_ROW = CSS.match(/\.order-meta-main>\.order-meta-row:nth-child\(even\)\{[^}]*\}/)?.[0] || '';
+  const RIGHT_VAL = CSS.match(/\.order-meta-main>\.order-meta-row:nth-child\(even\)>\.order-vehicle\{[^}]*\}/)?.[0] || '';
+  t('存在「偶数行贴右」规则（第 2、4 行 = 车辆/送货员）', !!RIGHT_ROW, RIGHT_ROW);
+  t('偶数行 justify-content:flex-end', /justify-content:flex-end/.test(RIGHT_ROW), RIGHT_ROW);
+  t('存在「右列值不拉伸」规则', !!RIGHT_VAL, RIGHT_VAL);
+  t('右列值 flex:0 1 auto（不再占满剩余宽度）', /flex:0 1 auto/.test(RIGHT_VAL), RIGHT_VAL);
+  t('基础规则仍为 flex:1 1 auto（左列值保持贴标签）', /flex:1 1 auto/.test(ROW_VALUE), ROW_VALUE);
+  t('未对奇数行/全体行加 flex-end（左列不受影响）',
+    !/nth-child\(odd\)/.test(CSS) && !/\.order-meta-row\{[^}]*justify-content:flex-end/.test(CSS));
+}
+
 console.log('三、HTML 字段顺序（决定两行两列的排列）');
 {
   const labels = [...HTML.matchAll(/<span class="order-meta-label">([^<]+)<\/span>/g)].map(m => m[1].trim());
