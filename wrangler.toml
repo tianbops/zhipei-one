@@ -12,3 +12,13 @@ bucket_name = "zhipei-one-files"
 binding = "DB"
 database_name = "zhipei-one"
 database_id = "1f54575a-c467-4b8e-be0a-e5437ed79464"
+
+# Preview-only storage: Pages preview deployments must never touch production data.
+[[env.preview.r2_buckets]]
+binding = "WAYBILL_FILES"
+bucket_name = "zhipei-one-files-test"
+
+[[env.preview.d1_databases]]
+binding = "DB"
+database_name = "zhipei-one-test-20261108"
+database_id = "3b05311e-d97c-4f85-bc29-9374673c37ab"

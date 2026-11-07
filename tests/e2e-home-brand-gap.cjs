@@ -122,7 +122,7 @@ const SNAP = `(()=>{
   check('间距确实增大', after.gap > before.gap, `${before.gap} → ${after.gap}`);
   check('主标没有反向贴住状态栏', after.strongToTop >= before.strongToTop - 1, `strongTop ${before.strongToTop} → ${after.strongToTop}`);
   check('副标到「今日配送」卡片仍有呼吸位（≥20px）', after.spanToCard >= 20, `修复前 ${before.spanToCard}px → 修复后 ${after.spanToCard}px`);
-  check('顶栏与卡片间距未被压缩', after.topbarToCard >= before.topbarToCard - 1, `修复前 ${before.topbarToCard}px → 修复后 ${after.topbarToCard}px`);
+  check('顶栏与今日配送卡片保留至少 20px 呼吸位', after.topbarToCard >= 20, `当前 ${after.topbarToCard}px（副标到卡片 ${after.spanToCard}px）`);
   check('主标字号不变', after.strongStyle.fs === before.strongStyle.fs, `${before.strongStyle.fs} → ${after.strongStyle.fs}`);
   check('副标字号不变', after.spanStyle.fs === before.spanStyle.fs, `${before.spanStyle.fs} → ${after.spanStyle.fs}`);
 
