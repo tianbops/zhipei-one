@@ -86,6 +86,19 @@
   width:100%;min-height:48px;padding:0 16px;
   font-size:var(--zp-fs-15);line-height:20px;font-weight:var(--zp-fw-semibold);
   cursor:pointer;-webkit-tap-highlight-color:transparent;
+  /* 2026-11-07：日期入口升为本页唯一主行动（用户要求「主题蓝色」）。
+     改前与上方三个操作钮同为 --zp-surface-2 灰底次级，页面上没有视觉落点；
+     现取主题蓝实心 + --zp-on-primary 白字，日历图标走 stroke:currentColor 自动转白。
+     深浅两套 --zp-primary 已统一为 #2C6CE2（白字 4.83 达标），无需第二套色。 */
+  background:var(--zp-primary);
+  border-color:var(--zp-primary);
+  color:var(--zp-on-primary);
+}
+/* 必须显式覆盖 .zp-btn:active 的灰底（0,2,0 同权重，靠本文件后加载取胜）。 */
+.history-date-button:active{
+  background-color:var(--zp-primary-active);
+  border-color:var(--zp-primary-active);
+  color:var(--zp-on-primary);
 }
 .history-date-button svg{width:20px;height:20px;flex:none}
 
