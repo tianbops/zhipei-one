@@ -1067,3 +1067,14 @@ body.sheet-open .zp-nav{z-index:calc(var(--ui-z-modal) + 1)}
   overflow-wrap:normal;
   padding-right:2px;
 }
+
+/* 减少动态效果：底栏（含加号图标）瞬时到位。
+   运动时长/曲线只由 --zp-island-* 一对令牌表达，这里不回写第二套数值，
+   只把「一次位移」的时长压到 1ms —— 结构仍在，动效消失。
+   顶部浮层的同款覆盖在 home-dashboard.css（需 .home-app 作用域才压得过基础规则）。 */
+@media (prefers-reduced-motion: reduce){
+  .zp-nav,
+  .zp-nav .zp-nav-plus .zp-nav-icon{
+    transition-duration:1ms;
+  }
+}

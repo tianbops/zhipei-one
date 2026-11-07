@@ -7,14 +7,9 @@
    等于叠成 28px，加上顶栏 8px，首页顶部到卡片之间空出 36px —— 用户反馈「页面顶高，
    矮点」。去掉这层重复，只保留一层 14px 间距（降级为整页滚动时同样只有一层）。 */
 main.home-app .task-card{margin-top:0}
-/* 列表高度一律内容驱动（不再封顶 264px、不再内部滚动）：门店有几家就铺几家，
-   超出一屏由整页滚动承接。2026-11-05 移除旧的「窗内滚动」兜底 —— 它在浏览器
-   地址栏占高（可视高度 < 760px）时只压高度、没恢复 overflow，列表既被裁又被
-   渐隐遮住、还滑不动，用户看到的就是「运单数据未展开」。 */
-.today-store-list{
-  margin-top:12px;
-  border-top:1px solid var(--zp-divider);
-}
+/* 名单直接接在卡片下沿：没有上边距、没有上边线 —— 分隔由卡片自身边界承担，
+   再画一条只会出现「双线」。列表高度一律内容驱动（不再封顶 264px、不再内部
+   滚动），超出一屏由整页滚动承接。 */
 /* 同日多单：tab 行独占一条，只有 1 单时整行 hidden —— 日常使用与旧版像素一致。
    44px 高是触控下限；tab 条自身可横滑（≥4 单），卡片切页的手势只落在列表区。 */
 .today-tabs{
@@ -208,10 +203,12 @@ main.home-app > .topbar{
 }
 
 /* 浮层容器：绝对定位，顶部贴品牌区底部（--zp-ceiling-h 由 head-float.js 实测写入）。
+   fallback 只在 bundle 执行前生效一帧：品牌区 = 安全区 + 48 内容 + 6 下内边距，
+   与实测值一致（390×844 实测 78），避免首帧比真实位置高 14px 再跳下来。
    隐藏态整块上移自身高度，藏进天花板背后；pointer-events 交给两个子层恢复。 */
 .home-app .zp-head-float{
   position:absolute;
-  top:var(--zp-ceiling-h,64px);
+  top:var(--zp-ceiling-h,calc(var(--zp-safe-top, 24px) + 54px));
   left:var(--zp-gutter);
   right:var(--zp-gutter);
   z-index:20;
@@ -230,6 +227,11 @@ main.home-app > .topbar{
 /* 瞬时态：只在「首帧定态」「尺寸重算」「探针摆放基线」时加，避免看到浮岛滑进来。
    日常弹/收一律走上面的 --zp-island-* 过渡，滚动帧不写它。 */
 .home-app .zp-head-float.is-scrolling{transition:none}
+
+/* 减少动态效果：顶部浮层瞬时到位（与底栏同一条无障碍规则，见 ui-base.css）。 */
+@media (prefers-reduced-motion: reduce){
+  .home-app .zp-head-float{transition-duration:1ms}
+}
 
 /* 横条：浮层顶段，取 block 令牌与白卡片拉开层次（沿用 .task-title 的 flex 排版与字号令牌）
    2026-11-07 二次压缩：内边距 7→6（横条 36→34），文字行高与字号不动。 */
@@ -281,11 +283,6 @@ main.home-app > .topbar{
 .home-app .zp-head-card .delivery-man{height:36px}
 .home-app .zp-head-card .today-tabs{margin-top:4px}
 
-/* 顶部两块移出后，名单成为卡片首块：去掉原本为「标题下方」准备的留白与分隔线 */
-main.home-app .task-card > .today-store-list:first-child{
-  margin-top:0;
-  border-top:0;
-}
 
 /* ===== 门店列表 / 月度统计「去卡片化」：铺满页面底色（2026-11-07）=====
    参照 Shadowrocket 节点列表：列表与统计不再是带 1px 外框 + 圆角 + 阴影 +
@@ -306,16 +303,11 @@ main.home-app .trend-card{
   box-shadow:none;
 }
 
-/* 门店列表：去掉卡片左右内缩，行间细线横贯内容区 */
+/* 门店列表：去掉卡片左右内缩，行间细线横贯内容区（行线令牌由基础规则给出） */
 main.home-app .task-card{
   padding-left:0;
   padding-right:0;
 }
-main.home-app .today-store-list{
-  margin-top:0;
-  border-top:0;
-}
-/* 行线颜色由上面的基础规则给出（--zp-divider），这里只改左右内缩。 */
 main.home-app .today-store-row{
   padding-left:0;
   padding-right:0;

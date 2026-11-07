@@ -67,7 +67,6 @@ console.log("\n二、列表行细线统一到 --zp-divider");
     return i < 0 ? "" : src.slice(i + sel.length + 1, src.indexOf("}", i));
   };
   const checks = [
-    ["首页门店列表上边", ruleOf(HOME, ".today-store-list"), /border-top:1px solid var\(--zp-divider\)/],
     ["首页门店行下边", ruleOf(HOME, ".today-store-row"), /border-bottom:1px solid var\(--zp-divider\)/],
     ["首页统计区上边", ruleOf(HOME, ".today-metrics"), /border-top:1px solid var\(--zp-divider\)/],
     ["运单详情门店行", ruleOf(rd("css/order_detail.css"), ".order-store-item"), /border-bottom:1px solid var\(--zp-divider\)/],
@@ -78,6 +77,8 @@ console.log("\n二、列表行细线统一到 --zp-divider");
   for (const [label, body, re] of checks) t(label + " = --zp-divider", !!body && re.test(body), body.slice(0, 80));
   t("首页列表区不再用 --zp-tint 画行线（tint 只做按压底 / 容器描边）",
     !/\.today-store-row\{[^}]*border-bottom:1px solid var\(--zp-tint\)/.test(HOME));
+  t("名单不画上边线（接卡片下沿，避免双线）",
+    !/\.today-store-list\{[^}]*border-top/.test(HOME) && !/\.today-store-list:first-child\{[^}]*border-top/.test(HOME));
 }
 
 console.log("\n三、已删除的结构不得回流");
