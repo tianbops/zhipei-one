@@ -2117,16 +2117,16 @@ textarea:disabled,
   display:flex;flex-direction:column;
   background:linear-gradient(180deg,#FFFFFF 0%,#F5F8FE 100%);
   border:1px solid var(--mn-line);
-  border-radius:28px;
-  box-shadow:0 24px 64px rgba(15,23,42,.20),0 8px 24px rgba(15,98,230,.10);
+  border-radius:var(--zp-r-nav);
+  box-shadow:var(--zp-shadow-lg),0 8px 24px rgba(15,98,230,.10);
   padding:8px 14px calc(14px + env(safe-area-inset-bottom));
   animation:zpModalIn .2s ease-out;
   overflow:hidden;
 }
 :root[data-zp-theme="dark"] .zp-mn-sheet{
   --mn-line:rgba(122,170,255,.16);
-  --mn-item:rgba(255,255,255,.055);
-  --mn-item-2:rgba(255,255,255,.10);
+  --mn-item:var(--zp-tint);
+  --mn-item-2:var(--zp-tint-strong);
   --mn-primary-bg:linear-gradient(100deg,rgba(58,120,255,.34),rgba(58,120,255,.08));
   --mn-primary-line:rgba(110,168,254,.62);
   --mn-primary-glow:0 10px 26px rgba(40,110,255,.28);
@@ -2134,12 +2134,12 @@ textarea:disabled,
      滚动条、焦点环、点击高亮也走深色，不会在暗底上闪一块白。 */
   color-scheme:dark;
   background:linear-gradient(180deg,#1C2537 0%,#111823 100%);
-  box-shadow:0 24px 64px rgba(0,0,0,.55),0 0 0 1px rgba(110,168,254,.06),0 18px 60px rgba(46,110,255,.16);
+  box-shadow:var(--zp-shadow-lg),0 0 0 1px rgba(110,168,254,.06),0 18px 60px rgba(46,110,255,.16);
 }
 @media(prefers-reduced-motion:reduce){.zp-mn-bg,.zp-mn-sheet{animation:none}}
 .zp-mn-sheet:focus{outline:none}
 /* 把手：与底部 nav 的手柄同语言，提示「这是一张浮起的卡片」 */
-.zp-mn-grabber{flex:0 0 auto;width:44px;height:4px;margin:2px auto 8px;border-radius:2px;background:var(--zp-tint-strong)}
+.zp-mn-grabber{flex:0 0 auto;width:44px;height:4px;margin:2px auto 8px;border-radius:var(--zp-r-handle);background:var(--zp-tint-strong)}
 /* 头部：大图标 + 两行文案；右侧 44px 留给圆形关闭按钮 */
 .zp-mn-head{position:relative;display:flex;align-items:center;gap:12px;margin:0 -14px 12px;padding:2px 58px 13px 16px;text-align:left;border-bottom:1px solid var(--mn-line)}
 .zp-mn-hero{flex:0 0 auto;width:56px;height:56px;display:flex;align-items:center;justify-content:center}
@@ -2158,7 +2158,7 @@ textarea:disabled,
 /* 选项：三张独立卡片，首项（高德）为推荐态 —— 描边 + 渐变 + 冷光 */
 .zp-mn-list{display:flex;flex-direction:column;gap:10px;flex:0 1 auto;min-height:0;padding:0 0 12px;overflow:auto;-webkit-overflow-scrolling:touch}
 .zp-mn-row{display:flex;align-items:center;gap:12px;width:100%;min-height:64px;padding:10px 12px;
-  background:var(--mn-item);border:1px solid transparent;border-radius:18px;
+  background:var(--mn-item);border:1px solid transparent;border-radius:var(--zp-r-dialog);
   color:var(--zp-text);text-align:left;cursor:pointer;-webkit-appearance:none;appearance:none;
   transition:transform .12s ease,background .12s ease}
 .zp-mn-row.is-primary{background:var(--mn-primary-bg);border-color:var(--mn-primary-line);box-shadow:var(--mn-primary-glow)}
@@ -2167,8 +2167,8 @@ textarea:disabled,
 /* 品牌图标统一坐在白色圆角方块上：三家 logo 自身配色差异大，白底能把
    深色主题里的「彩色贴纸」收成一致的一列 */
 .zp-mn-icon{flex:0 0 auto;display:flex;align-items:center;justify-content:center;
-  width:44px;height:44px;border-radius:13px;background:#FFFFFF;
-  box-shadow:0 2px 8px rgba(15,23,42,.14)}
+  width:44px;height:44px;border-radius:var(--zp-r-control);background:#FFFFFF;
+  box-shadow:var(--zp-shadow-sm)}
 .zp-mn-icon svg{width:30px;height:30px;display:block}
 .zp-mn-row-copy{flex:1 1 auto;min-width:0;display:flex;flex-direction:column}
 .zp-mn-row-label{color:var(--zp-text);font-size:var(--zp-fs-16);line-height:21px;font-weight:var(--zp-fw-semibold)}
@@ -2177,7 +2177,7 @@ textarea:disabled,
 .zp-mn-chev{flex:0 0 auto;display:flex;align-items:center;color:var(--zp-muted);opacity:.75}
 .zp-mn-chev svg{width:16px;height:16px;display:block}
 /* 取消：与选项同宽的胶囊，弱于选项、可随手点掉 */
-.zp-mn-cancel{flex:0 0 auto;width:100%;height:48px;border:1px solid var(--mn-line);border-radius:16px;
+.zp-mn-cancel{flex:0 0 auto;width:100%;height:48px;border:1px solid var(--mn-line);border-radius:var(--zp-r-card);
   background:var(--mn-item);color:var(--zp-text);font-size:var(--zp-fs-16);font-weight:var(--zp-fw-medium);
   cursor:pointer;-webkit-appearance:none;appearance:none;transition:background .12s ease}
 .zp-mn-cancel:active{background:var(--mn-item-2)}
