@@ -215,9 +215,11 @@ main.home-app > .topbar{
   right:var(--zp-gutter);
   z-index:20;
   transform:translateY(-100%);
-  /* .18s：对齐 Shadowrocket 视频逐帧实测的二态吸附（1–2 帧 ≈ 0.1–0.2s），
-     松手后快速落定，不在中间态停留。 */
-  transition:transform .18s cubic-bezier(.22,.8,.3,1);
+  /* 2026-11-07：与底栏共用 --zp-island-dur / --zp-island-ease（.18s + (.32,.72,0,1)）。
+     原 .18s + (.22,.8,.3,1) 与底栏 .24s 不同步，松手后一个先停一个还在滑；
+     统一后顶部吸附与底栏让位同一帧起步、同一帧停住，视觉上是一件联动的事。
+     曲线去掉了尾部那点「软」，收得更利索，也不加回弹 —— Shadowrocket 无过冲。 */
+  transition:transform var(--zp-island-dur) var(--zp-island-ease);
   will-change:transform;
   pointer-events:none;
 }
@@ -279,7 +281,8 @@ main.home-app > .topbar{
 .home-app .zp-head-spacer{
   flex:0 0 auto;
   height:0;
-  transition:height .18s cubic-bezier(.22,.8,.3,1);
+  /* 让位块与浮层同一套时长/曲线：随吸附一起落定，不另起节奏（上下呼应）。 */
+  transition:height var(--zp-island-dur) var(--zp-island-ease);
 }
 .home-app .zp-head-spacer.is-dragging{transition:none}
 

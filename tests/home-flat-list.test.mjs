@@ -13,7 +13,8 @@
  *  2) 抗抖动：让位块高度不再逐帧跟手写入 render()，而是抽成 commitSpacer()，
  *     仅在「松手二态吸附」(animate=true) 时提交；跟手阶段布局冻结、列表位置
  *     恒定。measure() 在浮层尺寸变化时按新 need 重提交，但跟手中跳过。
- *  3) Shadowrocket 二态吸附时长 .18s（视频 1–2 帧 ≈ 0.1–0.2s）。
+ *  3) Shadowrocket 二态吸附时长 .18s（视频 1–2 帧 ≈ 0.1–0.2s），
+ *     2026-11-07 起由 --zp-island-dur/.ease 统一表达，与底栏同刻起停。
  *  4) 只作用于 main.home-app，内页复用的 .task-card / .trend-card 不受影响。
  */
 import { readFileSync } from "node:fs";
@@ -102,13 +103,13 @@ console.log("\n三、抗抖动：跟手冻结布局 + 松手二态提交（7 条
 
 console.log("\n四、Shadowrocket 二态吸附时长 + 产物同步（4 条）");
 {
-  t("浮层 transform 过渡收紧到 .18s（视频 1–2 帧二态吸附）",
-    /\.zp-head-float\{[\s\S]*?transition:transform \.18s/.test(CSS));
-  t("让位块 height 过渡同步 .18s",
-    /\.zp-head-spacer\{[\s\S]*?transition:height \.18s/.test(CSS));
-  t("bundle CSS 已同步（含去卡片化规则 + .18s 过渡）",
+  t("浮层 transform 过渡 .18s（经 --zp-island-* 令牌，与底栏同一套）",
+    /\.zp-head-float\{[\s\S]*?transition:transform var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(CSS));
+  t("让位块 height 过渡同步同一对令牌",
+    /\.zp-head-spacer\{[\s\S]*?transition:height var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(CSS));
+  t("bundle CSS 已同步（含去卡片化规则 + 统一过渡令牌）",
     BUNDLE_CSS.includes("main.home-app .task-card,\nmain.home-app .trend-card{") &&
-    BUNDLE_CSS.includes("transition:transform .18s"));
+    BUNDLE_CSS.includes("transition:transform var(--zp-island-dur) var(--zp-island-ease)"));
   t("bundle JS 已同步（含 commitSpacer / 仅吸附提交）",
     BUNDLE_JS.includes("function commitSpacer(){") &&
     BUNDLE_JS.includes("if(animate)commitSpacer()") &&

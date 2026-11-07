@@ -3668,7 +3668,6 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
   }
   function render(){
     float.style.transform="translateY("+(-(1-p)*100)+"%)";
-    navHide(p>=.5);
   }
   /* 让位块只在「二态吸附」时提交（p>=.5 → need，否则 0），配 .18s 过渡。
      跟手阶段不调用：spacer 高度冻结 → 门店列表位置恒定、跟手全程零重排。
@@ -3680,6 +3679,11 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
   }
   function setP(v,animate){
     p=Math.max(0,Math.min(1,v));
+    /* 2026-11-07：底栏不再跟着 p>=.5 走 —— 跟手中一旦跨过一半就切换，
+       用户来回拖时它会提前滑走/滑回（.24s 过渡还在跑又反向），看着「不跟手」。
+       现在只在「松手吸附」这一刻切：顶部吸附与底栏让位同一帧起步，
+       两者共用 --zp-island-dur/.ease，同刻停住 —— 这就是上下呼应。 */
+    if(animate)navHide(p>=.5);
     float.classList.toggle("is-dragging",!animate);
     /* 投影只随浮层露出时出现：p=0 隐藏态去掉阴影，避免它溢出到品牌区下沿
        形成一条渐变虚化带（隐藏态浮层本就该「完全消失、不留痕迹」）。
@@ -3719,7 +3723,9 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
       lock="y";
     }
     /* 用「起点绝对位移」而非逐帧增量算 p：不怕丢帧，也不怕 H 在滚动中变化 */
-    setP(pStart-ay/(Math.max(1,H)*0.85),false);
+    /* 跟手 1:1：手指走多少、浮层走多少。原 0.85 是放大系数（拖 117px 就全开），
+       手感「滑」且与底栏的位移速率对不上；改回 1:1 后拖动更实，松手吸附更快。 */
+    setP(pStart-ay/Math.max(1,H),false);
   }
 
   /* touch 全程 passive：不 preventDefault，门店名单仍由 .zp-scroll 原生滚动承接，

@@ -11,7 +11,7 @@
  *  2) 紧凑只作用于 .home-app .zp-head-bar / .zp-head-card 作用域，
  *     只收垂直 padding / 上间距 / 插画高度；
  *  3) 红线不动：字号、行高、左右边距、圆角、tab 44px 触控下限、
- *     门店列表行高、月度统计、让位块逻辑、.18s 二态吸附时长；
+ *     门店列表行高、月度统计、让位块逻辑、.18s 二态吸附时长（经 --zp-island-* 令牌）；
  *  4) bundle 产物与源文件同步。
  */
 import { readFileSync } from "node:fs";
@@ -91,9 +91,9 @@ console.log("\n三、可读性红线不动（7 条）");
   t("圆角仍用 --zp-r-card 令牌（横条 / 白卡片不写死像素）",
     /border-radius:var\(--zp-r-card\)/.test(CSS) &&
     /border-bottom-left-radius:var\(--zp-r-card\)/.test(CSS));
-  t("浮层仍是 .18s 二态吸附（紧凑不改交互时长）",
-    !!float && /transition:transform \.18s/.test(float) &&
-    !!spacer && /transition:height \.18s/.test(spacer));
+  t("浮层仍是 .18s 二态吸附（紧凑不改交互时长，改由统一令牌表达）",
+    !!float && /transition:transform var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(float) &&
+    !!spacer && /transition:height var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(spacer));
   t("字号 / 行高基线仍由 home-base.css 令牌提供（未被紧凑规则覆写）",
     /\.today-summary strong\{font-size:var\(--zp-fs-20\);line-height:27px\}/.test(BASE_CSS) &&
     !/\.home-app \.zp-head-card[^\n]*font-size:/.test(CSS));

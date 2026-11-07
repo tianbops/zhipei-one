@@ -79,6 +79,16 @@
      页面内这 24px 是纯呼吸位，与状态栏不重叠；压到 24 不会顶到状态栏，只是把整块标题
      上提 8px。仅在 env() 返回 0 的环境生效；iOS PWA / 新壳拿到真实 inset 时仍取 env 值。 */
   --zp-safe-top: max(env(safe-area-inset-top, 0px), 24px);
+  /* ===== 浮岛运动（顶部浮层 + 底部导航共用，保证「上下呼应」）=====
+     2026-11-07：用户「让浮岛弹出和收回更利索些，如 Shadowrocket；上下浮岛保持呼应」。
+     此前顶部 .18s / 底部 .24s 且曲线不同（.22,.8,.3,1 vs .32,.72,0,1），
+     松手后顶部队先落定、底部队还在路上，看起来是两件事。
+     现统一：时长 .18s（138px 行程 ≈ 767px/s，与 iOS 通知横幅/Shadowrocket 同档，
+     60fps 下约 11 帧，肉眼是「一下就位」而不是「滑过去」）；
+     曲线 cubic-bezier(.32,.72,0,1)：起步即高速、尾部收干净，无过冲、不回弹。
+     两处必须引用同一对 token，禁止各自写死 —— 这是「呼应」的唯一真相源。 */
+  --zp-island-dur:.18s;
+  --zp-island-ease:cubic-bezier(.32,.72,0,1);
   /* 骨架微光条（加载占位）双外观 token：order_detail / home / data 三处
      页面级骨架共用同一取值。浅色外观为浅灰微光；深色外观在 ui-theme.css 的
      :root[data-zp-theme="dark"] 覆盖为 slate 族微光。 */
@@ -880,7 +890,7 @@ html[data-zp-e2e="1"] body::after{
   box-shadow:none;
   /* 收起/回来是滑动，不是瞬移。过渡写在本块而不是另起一条只写 transition 的规则 ——
      同一选择器拆成两处时，改其中一处很容易漏掉另一处（本文件历史上就出现过）。 */
-  transition:transform .24s cubic-bezier(.32,.72,0,1);
+  transition:transform var(--zp-island-dur) var(--zp-island-ease);
 }
 /* 浮岛表面层（实色板）。为什么不在 .zp-nav 上直接画：
    加号是「独立」的 —— 浮岛顶边绕着它凹进去，加号四周留一圈页面色，
@@ -1013,8 +1023,9 @@ body.zp-has-nav{padding-bottom:calc(88px + env(safe-area-inset-bottom))}
   color:var(--zp-on-primary);
   transform:translateY(-32px);
   box-shadow:none;
-  /* 与浮岛同一条缓动：收起时父层下滑、自身反向补偿，两者叠加才不会一跳一跳。 */
-  transition:transform .24s cubic-bezier(.32,.72,0,1);
+  /* 与浮岛同一条缓动：收起时父层下滑、自身反向补偿，两者叠加才不会一跳一跳。
+     时长/曲线引用 --zp-island-*，与顶部浮层同一套，上下同刻起、同刻停。 */
+  transition:transform var(--zp-island-dur) var(--zp-island-ease);
 }
 .zp-nav-plus .zp-nav-icon svg{width:24px;height:24px;stroke-width:2.2}
 /* 五版：按下不加背景块、不加亮度滤镜（用户：「按钮区域不要高亮」）。
