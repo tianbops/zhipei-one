@@ -94,17 +94,19 @@ console.log("\n二、CSS：天花板裁切 + 隐藏态完全消失 + 令牌配�
     !/zp-head-handle|head-handle/.test(CSS) && !/zp-head-handle|head-handle/.test(HTML));
 }
 
-console.log("\n三、驱动方式：二态弹收（跨阈值整块弹/收，不做比例跟随）（11 条）");
+console.log("\n三、驱动方式：方向驱动二态弹收（一动就反应，不做比例跟随）（12 条）");
 {
   t("只有 1/0 两个稳定态：apply(show) 一次写到底（p=show?1:0）",
     /function apply\(show,animate\)\{/.test(FLOAT_JS) && /p=show\?1:0;/.test(FLOAT_JS));
-  t("触发只看滚动位置且带滞回：回到顶部 <=8 弹出、离开 >48 收回",
-    /SHOW_AT=8/.test(FLOAT_JS) && /HIDE_AT=48/.test(FLOAT_JS) &&
-    /shown&&st>HIDE_AT/.test(FLOAT_JS) && /!shown&&st<=SHOW_AT/.test(FLOAT_JS));
+  t("方向驱动、几乎零死区：上移 ≥6px 收回、下移 ≥6px 弹出、回到顶部 6px 内必弹",
+    /var TOP_AT=6, MOVE=6;/.test(FLOAT_JS) && /st<=TOP_AT/.test(FLOAT_JS) &&
+    /acc>=MOVE/.test(FLOAT_JS) && /acc<=-MOVE/.test(FLOAT_JS));
   t("不做比例跟随：没有 scrollTop 线性映射（mapP / (st-base)/range 全部移除）",
     !/mapP|mapP\(/.test(FLOAT_JS) && !/\(st-base\)\/range/.test(FLOAT_JS));
-  t("滚动帧只在跨阈值时改一次状态，其余帧只读 scrollTop",
-    /function frame\(\)\{[\s\S]*?apply\(false\)[\s\S]*?apply\(true\)[\s\S]*?\n  \}/.test(FLOAT_JS) &&
+  t("只累计同向位移，方向一反转立即清零（惯性回弹/手抖不来回闪）",
+    /\(\(acc>0\)!==\(d>0\)\)acc=0;/.test(FLOAT_JS) && /var lastSt=0, acc=0;/.test(FLOAT_JS));
+  t("滚动帧只在跨方向时改一次状态，其余帧只读 scrollTop",
+    /function frame\(\)\{[\s\S]*?if\(shown\)apply\(false\)[\s\S]*?if\(!shown\)apply\(true\)[\s\S]*?\n  \}/.test(FLOAT_JS) &&
     !/frame\(\)\{[\s\S]*float\.style\.transform/.test(FLOAT_JS));
   t("状态切换一律走 --zp-island-* 过渡（不常驻 .is-scrolling 关过渡）",
     /\.zp-head-float\{[\s\S]*?transition:transform var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(CSS) &&

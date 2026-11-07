@@ -3605,23 +3605,25 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
 })();
 
 ;
-/* js/home/head-float.js —— 首页顶部两层浮层的显隐（二态弹收）
+/* js/home/head-float.js —— 首页顶部两层浮层的显隐（方向驱动二态弹收）
    ------------------------------------------------------------------
    p∈[0,1]：顶部浮层展开进度。p=1 完整展开、p=0 整块钻到品牌区天花板背后。
 
-   2026-11-07 第五轮（用户：「恢复到以前，现在浮岛的问题是不弹出和收回，只是随着
-   屏幕滚动了」）：第四轮把 p 和 scrollTop 做成了严格 1:1，浮岛等于挂在内容上一起
-   滑 —— 手指滚多少它挪多少，没有「弹出来 / 收回去」这个动作。用户要的是二态：
-   跨过阈值就整块弹开、再跨回去整块收回，中间不做比例跟随。
+   2026-11-07 第六轮（用户：「允许遮挡，屏幕移动就反应」）：
+   上一轮是位置阈值（离开 48px 才收、回到 8px 才弹），前 48px 完全没反应，
+   手感是「滚了一会儿它才动」。这一轮改成方向驱动、几乎零死区：
+     · 内容往上走（scrollTop 变大，手指上推）→ 浮岛立刻收回；
+     · 内容往下走（scrollTop 变小，手指下拉）→ 浮岛立刻弹出；
+     · 回到顶部（scrollTop ≤ 6）→ 必定弹出，不管方向累计。
+   同向位移累计 6px 即切换（一帧都不到），方向一反转就把累计清零 ——
+   惯性回弹、手抖不会让浮岛来回闪。
 
-   现在的模型（回到 460 的二态弹收，去掉跟手与吸附）：
-     · 只有两个稳定态 p=1 / p=0，切换一律走 --zp-island-dur/.ease（.14s 同曲线），
+   其余不变：
+     · 只有两个稳定态 p=1 / p=0，切换走 --zp-island-dur/.ease（.14s 同曲线），
        与底栏同帧起步同帧停住 —— 这就是「上下呼应」；
-     · 触发只看滚动位置，带滞回：离开顶部（scrollTop>48）收回到 0，
-       回到顶部（scrollTop<=8）弹出到 1。8/48 的间距是为了慢滚时不来回闪；
-     · 滚动过程中不逐帧写 p，只在跨阈值那一帧写一次 → 不存在「跟着屏幕滑」；
-     · 纯 overlay：不写任何文档流高度（spacer 恒 0），列表的 scrollTop 与行位置
-       在弹收全程一格不动 —— 「浮岛运动会推动门店列表」的红线继续守住。
+     · 滚动帧只在跨方向/到顶时写一次 p，不做比例跟随 → 没有「挂在内容上滑」；
+     · 允许遮挡：纯 overlay，不写任何文档流高度（spacer 恒 0），列表的 scrollTop
+       与行位置在弹收全程一格不动 —— 「浮岛运动会推动门店列表」的红线继续守住。
    底栏：浮岛弹出 → 底栏沉下；浮岛收回 → 底栏升起。两者共用同一对运动令牌。 */
 (function(){
   var main=document.querySelector("main.home-app");
@@ -3640,9 +3642,10 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
   var shown=true;          /* 二态真值：true=弹出、false=收回 */
   var rafId=0, navHidden=null, booted=false;
 
-  /* 阈值：回到几乎顶部才弹、离开 48px 才收。单点会在慢滚/抖动时反复穿越，
-     两个值拉开距离就只为「确实回顶部了」弹一次。 */
-  var SHOW_AT=8, HIDE_AT=48;
+  /* 阈值：TOP_AT=回到这么近才算「在顶部」；MOVE=同向累计位移多少即切换。
+     6px 基本等于「屏幕一动就反应」，而方向反转清零让回弹不误触。 */
+  var TOP_AT=6, MOVE=6;
+  var lastSt=0, acc=0;
 
   function clamp(v,a,b){return v<a?a:(v>b?b:v)}
   function navHide(hide){
@@ -3671,13 +3674,31 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
     syncNav();
   }
 
+  /* 方向驱动：屏幕一动就给反应。
+     d>0 = 内容上移（手指往上推）→ 收；d<0 = 内容下移 → 弹。
+     只累计与当前方向相同的位移，反向立刻清零（惯性回弹不误触）。 */
   function frame(){
     rafId=0;
     var st=scroller.scrollTop;
-    if(shown&&st>HIDE_AT)apply(false);        /* 离开顶部 → 收回 */
-    else if(!shown&&st<=SHOW_AT)apply(true);  /* 回到顶部 → 弹出 */
+    var d=st-lastSt;
+    lastSt=st;
+    if(!d)return;
+    if((acc>0)!==(d>0))acc=0;
+    acc+=d;
+    if(st<=TOP_AT){                       /* 回到顶部：一律弹出 */
+      acc=0;
+      if(!shown)apply(true);
+      return;
+    }
+    if(acc>=MOVE){                        /* 往上一动 → 收回 */
+      acc=0;
+      if(shown)apply(false);
+    }else if(acc<=-MOVE){                 /* 往下一动 → 弹出 */
+      acc=0;
+      if(!shown)apply(true);
+    }
   }
-  /* 只在跨阈值那一帧真正改状态；其余滚动帧只是读一次 scrollTop。 */
+  /* 滚动帧只在跨方向时真正改状态；其余帧只是读一次 scrollTop。 */
   function onScroll(){
     if(!rafId)rafId=requestAnimationFrame(frame);
   }
@@ -3691,8 +3712,10 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
     var first=!booted;
     if(first){
       booted=true;
-      shown=scroller.scrollTop>HIDE_AT?false:true;
+      shown=scroller.scrollTop>TOP_AT?false:true;
       p=shown?1:0;
+      lastSt=scroller.scrollTop;
+      acc=0;
       float.classList.add("is-scrolling");
       /* 首帧底栏也要瞬间到位：弹出态底栏本来就该沉下，若带 .14s，
          进首页会看到底部自己滑一下。掐掉过渡，下一帧恢复。 */
@@ -3717,6 +3740,8 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
     v=clamp(v,0,1);
     shown=v>=.5;
     p=v;
+    lastSt=scroller.scrollTop;
+    acc=0;
     if(animate===false)float.classList.add("is-scrolling");
     else float.classList.remove("is-scrolling");
     write();

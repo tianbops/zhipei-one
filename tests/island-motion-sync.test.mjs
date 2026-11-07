@@ -15,7 +15,8 @@
  *      不得写死时长或曲线（写死就会出现第二个节奏）；让位块已恒 0、无过渡；
  *   3) 底栏显隐由 syncNav() 跟随浮岛二态切换（p=1 弹出→沉下 / p=0 收回→升起），
  *      与浮岛同一次状态切换里完成，不能等松手、也不能单点反复穿越；
- *   4) 浮岛是二态弹收：跨阈值（回顶部 ≤8 弹 / 离开 >48 收）整块切一次，
+ *   4) 浮岛是二态弹收、方向驱动（2026-11-07 第六轮「屏幕移动就反应」）：
+ *      内容上移 ≥6px 即收、下移 ≥6px 即弹、回到顶部 6px 内必弹，整块切一次；
  *      不做 scrollTop 比例跟随、不靠 touch 手势（会被 touchcancel 截断）。
  */
 import { readFileSync } from "node:fs";
@@ -65,7 +66,7 @@ t("全站不再残留 cubic-bezier(.22,.8,.3,1) 作为浮岛节奏",
   !/cubic-bezier\(\.22,\.8,\.3,1\)/.test(HOME) && !/cubic-bezier\(\.22,\.8,\.3,1\)/.test(UI));
 
 /* 四、联动时机与跟手（滚动驱动） */
-t("底栏切换在 syncNav() 里按滞回阈值（p≥.65 沉下 / p<.35 升起），滚动中即可同步",
+t("底栏切换在 syncNav() 里跟随浮岛二态（p=1 沉下 / p=0 升起），同一次切换内同步",
   /function syncNav\(\)/.test(JS) && /var want=p>=\.5;/.test(JS) && /navHide\(navHidden\)/.test(JS),
   (JS.match(/navHide\([^)]*\)/g) || []).join(" | "));
 t("write() 内只写 transform 与 is-open，不切底栏（避免一帧多写）",
@@ -80,8 +81,8 @@ t("首帧用 .is-scrolling 关过渡（避免进首页时浮岛滑一下）",
 /* 五、产物同步（首页只加载 bundle） */
 t("home.bundle.css 含统一 transition（源→产物同步）",
   /transition:transform var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(BUNDLE_CSS));
-t("home.bundle.js 含二态弹收 + 阈值联动 + 无让位写入",
-  /p=show\?1:0/.test(BUNDLE_JS) && /HIDE_AT=48/.test(BUNDLE_JS) &&
+t("home.bundle.js 含二态弹收 + 方向驱动 + 无让位写入",
+  /p=show\?1:0/.test(BUNDLE_JS) && /TOP_AT=6, MOVE=6/.test(BUNDLE_JS) &&
   /navHide\(navHidden\)/.test(BUNDLE_JS) && !/spacer\.style\.height/.test(BUNDLE_JS));
 
 function finish() {
