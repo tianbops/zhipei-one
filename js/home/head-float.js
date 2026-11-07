@@ -74,6 +74,10 @@
   function setP(v,animate){
     p=Math.max(0,Math.min(1,v));
     float.classList.toggle("is-dragging",!animate);
+    /* 投影只随浮层露出时出现：p=0 隐藏态去掉阴影，避免它溢出到品牌区下沿
+       形成一条渐变虚化带（隐藏态浮层本就该「完全消失、不留痕迹」）。
+       阈值与底栏反向、二态吸附同用 .5，保持一套语义。 */
+    float.classList.toggle("is-open",p>=.5);
     spacer.classList.toggle("is-dragging",!animate);
     render();
     if(animate)commitSpacer();   /* 仅吸附时提交让位；跟手时冻结布局 */

@@ -46,8 +46,14 @@ main.home-app .task-card{margin-top:0}
   appearance:none;
   -webkit-tap-highlight-color:transparent;
 }
-.today-tab.is-active{background:var(--zp-tint);color:var(--zp-text);font-weight:var(--zp-fw-bold)}
-.today-tab:active{background:var(--zp-tint)}
+/* 2026-11-07：选中态不再套 --zp-tint 灰圆角块（用户反馈「选中文字带边框、
+   块感重」），改为「无底块 + 主题蓝文字」。蓝色取 --zp-accent —— 全站激活态
+   文字专用令牌（.zp-nav-item.is-active / .appearance-theme-option.is-selected
+   同款），深浅自适应：浅 #0958D9 / 深 #6EA8FE，深色 surface 卡片上也清晰；
+   不用 --zp-primary（那是按钮底色，项目文字对比度契约禁止直接当文字色）。
+   按下态只降透明度，不再叠一层灰块。 */
+.today-tab.is-active{background:transparent;color:var(--zp-accent);font-weight:var(--zp-fw-bold)}
+.today-tab:active{opacity:.6}
 /* 裁切放在 view 层：列表自身保持 overflow 可见，不重演「窗内滚动」那类坑；
    view 只负责把相邻页挡在外面。 */
 .today-view{height:100%;overflow:hidden;touch-action:pan-y}
@@ -225,7 +231,13 @@ main.home-app > .topbar{
   pointer-events:auto;
 }
 
-/* 白卡片：比天花板亮一档，作为卡片身段，下沿圆角 */
+/* 白卡片：比天花板亮一档，作为卡片身段，下沿圆角。
+   2026-11-07：阴影不再常驻 —— 隐藏态浮层整块 translateY(-100%) 藏进天花板，
+   但 box-shadow 会向下溢出浮层底边约 40px，正好落在「品牌区下沿 → 门店首行」
+   这段纯 --zp-bg 区域，形成一条渐变暗带（真机像素实测亮度 22→16→22，
+   用户看到的就是「品牌区与下方背景色不一致 + 衔接处虚化」）。
+   背景色其实完全一致（html/body/shell/topbar/task 均 rgb(22,22,22)），
+   是阴影造成的错觉。现在阴影只随浮层露出时出现，隐藏态衔接带是干净底色。 */
 .home-app .zp-head-card{
   padding:8px 14px 9px;
   background:var(--zp-surface);
@@ -233,9 +245,13 @@ main.home-app > .topbar{
   border-top:0;
   border-bottom-left-radius:var(--zp-r-card);
   border-bottom-right-radius:var(--zp-r-card);
-  box-shadow:var(--zp-shadow-md);
+  box-shadow:none;
   pointer-events:auto;
 }
+/* 仅在浮层展开（或跟手露出过半）时给白卡片投影；隐藏态完全无投影、无虚化。
+   is-open 由 js/home/head-float.js 的 setP() 按 p>=.5 切换，与底栏反向、
+   二态吸附同阈值，保持一套语义。 */
+.home-app .zp-head-float.is-open .zp-head-card{box-shadow:var(--zp-shadow-md)}
 
 /* ===== 顶部浮层「高度紧凑」（2026-11-07）=====
    用户反馈白卡片垂直留白偏大，同时要求 tab 去掉时间只留「第X单」。
