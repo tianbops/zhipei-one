@@ -8,8 +8,10 @@
  *  3) CSS：品牌区取页面底色 --zp-bg 与整页融合、仍作不透明天花板压过浮层、
  *     隐藏态 translateY(-100%) 完全消失、横条 block / 白卡片 surface 两层分层、
  *     spacer 隐藏态 0（不留把手线 / 不占位）；
- *  4) 显隐由「滚动位置」驱动（2026-11-07 第三轮）：p = 1 - clamp((scrollTop-base)/H)，
- *     滚动中禁过渡做 1:1 跟手、停稳吸附到端点并平移 base；不再用 touch 手势驱动
+ *  4) 显隐由「滚动位置」驱动（2026-11-07 第三、四轮）：p = 1 - clamp((scrollTop-base)/range)，
+ *     滚动中禁过渡做 1:1 跟手；让位块高度由 measure() 静态写入 --zp-head-inset（浮层高 −
+ *     首行自然偏移），滚动全程不动 → 列表零推动、首行不被压、行不被切；取消停手吸附
+ *     （吸附会让浮层脱离内容跳一下，正是用户说的「改坏了」）；不再用 touch 手势驱动
  *     （passive 监听必被 touchcancel 截断，跟手只走十几像素就跳变）；
  *     顶底互斥反向、底栏阈值带滞回；
  *  5) nav.js 暴露受控接口并在浮层启用时让位；构建链含新模块且置于末尾。
@@ -87,31 +89,35 @@ console.log("\n二、CSS：天花板裁切 + 隐藏态完全消失 + 令牌配�
   t("两层配色零字面量（无 #hex / rgb 硬编码）",
     !!bar && !!card && !/#[0-9a-fA-F]{3,8}|rgba?\(/.test(bar + card + (float || "")));
   const spacer = rule(CSS, ".home-app .zp-head-spacer");
-  t("让位块隐藏态 height:0（不占位）", !!spacer && /height:0/.test(spacer));
+  t("让位块高度取 --zp-head-inset（静态让位，首行永远在浮层下沿下方）",
+    !!spacer && /height:var\(--zp-head-inset/.test(spacer) && !/transition/.test(spacer));
   t("新增浮层不留任何把手线节点",
     !/zp-head-handle|head-handle/.test(CSS) && !/zp-head-handle|head-handle/.test(HTML));
 }
 
-console.log("\n三、驱动方式：滚动位置驱动、1:1 跟手、停稳吸附（10 条）");
+console.log("\n三、驱动方式：滚动位置驱动、1:1 跟手、静态让位、不吸附（11 条）");
 {
-  t("p 由 scrollTop 线性映射：p = 1 - clamp((st-base)/H, 0, 1)",
+  t("p 由 scrollTop 线性映射：p = 1 - clamp((st-base)/range, 0, 1)",
     /return 1-clamp\(\(st-base\)\/range,0,1\)/.test(FLOAT_JS));
   t("监听 .zp-scroll 的 scroll（passive，不干预原生滚动与惯性）",
     /scroller\.addEventListener\("scroll",onScroll,\{passive:true\}\)/.test(FLOAT_JS));
   t("滚动中直接写 transform、禁过渡（.is-scrolling），严格 1:1 无滞后",
     /float\.classList\.add\("is-scrolling"\)/.test(FLOAT_JS) &&
     /\.zp-head-float\.is-scrolling\{transition:none\}/.test(CSS));
-  t("停稳 150ms 后按「是否还在顶部」吸附（st≤40 展开 / 否则收起，不留半开）",
-    /setTimeout\(settle,150\)/.test(FLOAT_JS) && /var to=st<=40\?1:0/.test(FLOAT_JS));
-  t("吸附时平移 base，避免下一帧 scroll 把 p 拉回半开（回弹）",
-    /base=to\?clamp\(st,0,range\):clamp\(st-range,0,range\)/.test(FLOAT_JS));
+  t("取消停手吸附：不存在 settle / 按 p 就近吸端点（浮层不会脱离内容跳一下）",
+    !/function settle\(/.test(FLOAT_JS) && !/st<=40\?1:0/.test(FLOAT_JS) &&
+    !/setTimeout\(settle/.test(FLOAT_JS));
+  t("静态让位：measure() 用实测首行偏移算让位高度（H − natural）",
+    /--zp-head-inset/.test(FLOAT_JS) && /Math\.max\(0,H-natural\)/.test(FLOAT_JS));
+  t("让位只在 measure 写一次（wantInset 不变则不写），滚动中零写入",
+    /wantInset!==inset/.test(FLOAT_JS) && /main\.style\.setProperty\("--zp-head-inset"/.test(FLOAT_JS));
   t("不再用 touch 驱动显隐（touchstart/move 监听已移除）",
     !/addEventListener\("touch/.test(FLOAT_JS) && !/accDy=ay/.test(FLOAT_JS));
   t("初始 p=1（scrollTop=0 时浮层展开，与页面首帧一致）",
     /var p=1;/.test(FLOAT_JS) && /measure\(\);\s*\n\}\)\(\);/.test(FLOAT_JS));
   t("顶底互斥反向：浮层展开（p≥.65）则底栏沉下、收起（p<.35）则升起（滞回不闪）",
     /p>=\.65/.test(FLOAT_JS) && /p<\.35/.test(FLOAT_JS) && /navHide\(want\)/.test(FLOAT_JS));
-  t("只写 transform，绝不改文档流高度（列表零推动）",
+  t("只写 transform 与让位变量，不写行内 height（列表零推动）",
     /float\.style\.transform=/.test(FLOAT_JS) && !/style\.height/.test(FLOAT_JS));
   t("ResizeObserver 按浮层实测高度重算天花板与行程 H",
     /new ResizeObserver/.test(FLOAT_JS) && /--zp-ceiling-h/.test(FLOAT_JS) && /H=h/.test(FLOAT_JS));

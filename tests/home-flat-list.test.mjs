@@ -86,8 +86,8 @@ console.log("\n三、列表稳定：浮层纯 overlay，不推动列表（7 条�
     /function write\(\)\{\s*float\.style\.transform=/.test(FLOAT_JS));
   t("measure() 只写天花板变量与 H，不碰 spacer（变量已移除）",
     /--zp-ceiling-h/.test(FLOAT_JS) && !/var spacer|spacer\./.test(FLOAT_JS));
-  t("抗抖动根因注释保留（纯 overlay / 不碰文档流）",
-    /纯 overlay|不碰文档流/.test(FLOAT_JS) && /文档流/.test(FLOAT_JS));
+  t("抗抖动根因注释保留（静态让位 / 滚动中零写入）",
+    /静态让位/.test(FLOAT_JS) && /滚动过程中一格不动|列表零推动/.test(FLOAT_JS));
   /* 滚动驱动：无 touch 监听 → 不存在 preventDefault，也不存在 touchcancel 截断 */
   t("彻底不接管 touch（无 touch 监听、无 preventDefault，原生滚动与惯性完整）",
     !/addEventListener\("touch/.test(FLOAT_JS) && !/\.preventDefault\(/.test(FLOAT_JS));
@@ -98,8 +98,8 @@ console.log("\n四、Shadowrocket 二态吸附时长 + 产物同步（4 条）")
   t("浮层吸附过渡经 --zp-island-* 令牌（与底栏同一套），滚动中由 .is-scrolling 关闭",
     /\.zp-head-float\{[\s\S]*?transition:transform var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(CSS) &&
     /\.zp-head-float\.is-scrolling\{transition:none\}/.test(CSS));
-  t("让位块恒 0 且无过渡（不再参与布局，也就没有第二个节奏）",
-    /\.zp-head-spacer\{[\s\S]*?height:0/.test(CSS) && !/\.zp-head-spacer\{[^}]*transition/.test(CSS));
+  t("让位块取静态 --zp-head-inset 且无过渡（静态让位，不产生第二个节奏）",
+    /\.zp-head-spacer\{[\s\S]*?height:var\(--zp-head-inset/.test(CSS) && !/\.zp-head-spacer\{[^}]*transition/.test(CSS));
   t("bundle CSS 已同步（含去卡片化规则 + 统一过渡令牌）",
     BUNDLE_CSS.includes("main.home-app .task-card,\nmain.home-app .trend-card{") &&
     BUNDLE_CSS.includes("transition:transform var(--zp-island-dur) var(--zp-island-ease)"));

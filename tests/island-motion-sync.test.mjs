@@ -53,8 +53,8 @@ t("曲线不含过冲（y 控制点均 ≤ 1，无回弹）", /cubic-bezier\(\.3
 /* 二、四处引用同一对 token */
 t("顶部浮层 transition 引用 --zp-island-dur/.ease",
   /transition:transform var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(floatRule), floatRule.trim().slice(0, 120));
-t("让位块恒 0 且无过渡（列表不被文档流推动，也就无第二个节奏）",
-  /height:0/.test(spacerRule) && !/transition/.test(spacerRule), spacerRule.trim().slice(0, 120));
+t("让位块取静态 --zp-head-inset 且无过渡（列表不被文档流推动，也就无第二个节奏）",
+  /height:var\(--zp-head-inset/.test(spacerRule) && !/transition/.test(spacerRule), spacerRule.trim().slice(0, 120));
 t("底栏本体 transition 引用同一对 token",
   /transition:transform var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(navBlock), navBlock.trim().slice(-120));
 t("底栏加号图标 transition 引用同一对 token",
