@@ -101,8 +101,8 @@ console.log("\n三、驱动方式：滚动位置驱动、1:1 跟手、停稳吸�
   t("滚动中直接写 transform、禁过渡（.is-scrolling），严格 1:1 无滞后",
     /float\.classList\.add\("is-scrolling"\)/.test(FLOAT_JS) &&
     /\.zp-head-float\.is-scrolling\{transition:none\}/.test(CSS));
-  t("停稳 150ms 后吸附最近端点（半开位不留）",
-    /setTimeout\(settle,150\)/.test(FLOAT_JS) && /var to=p>=\.5\?1:0/.test(FLOAT_JS));
+  t("停稳 150ms 后按「是否还在顶部」吸附（st≤40 展开 / 否则收起，不留半开）",
+    /setTimeout\(settle,150\)/.test(FLOAT_JS) && /var to=st<=40\?1:0/.test(FLOAT_JS));
   t("吸附时平移 base，避免下一帧 scroll 把 p 拉回半开（回弹）",
     /base=to\?clamp\(st,0,range\):clamp\(st-range,0,range\)/.test(FLOAT_JS));
   t("不再用 touch 驱动显隐（touchstart/move 监听已移除）",

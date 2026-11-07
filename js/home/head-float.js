@@ -84,9 +84,12 @@
      否则下一帧 scroll 会按旧基准把 p 拉回半开（回弹抖动）。 */
   function settle(){
     settleT=0;
-    var to=p>=.5?1:0;
+    /* 吸附方向按「是否还在顶部」判，不按 p 就近：滚 30px 时 p 还有 0.78，
+       若按就近会吸回展开 —— 用户明明是想看内容，浮层却又盖回来。
+       只要离开顶部（>40px）就收到 0，回到顶部才展开，与「滚离顶部即隐藏」同义。 */
+    var st=scroller.scrollTop;
+    var to=st<=40?1:0;
     if(p>0.02&&p<0.98){
-      var st=scroller.scrollTop;
       base=to?clamp(st,0,range):clamp(st-range,0,range);
       float.classList.remove("is-scrolling");   /* 恢复 --zp-island-* 过渡 */
       requestAnimationFrame(function(){p=to;write();syncNav()});
@@ -112,7 +115,19 @@
     if(first){booted=true;float.classList.add("is-scrolling")}
     p=mapP(scroller.scrollTop);
     write();
-    if(first)requestAnimationFrame(function(){float.classList.remove("is-scrolling")});
+    /* 首帧就要把底栏摆到正确位置：初始 p=1（展开）→ 底栏沉下只留加号。
+       否则要等第一次滚动才联动，首屏会看到「浮层展开 + 底栏还在」。 */
+    if(first){
+      /* 首帧联动也要「瞬间到位」：底栏从显示滑到沉下若带 .14s，进首页会看到
+         底部自己滑一下。这里先掐掉过渡，下一帧恢复（之后所有联动照常动画）。 */
+      var nv=document.querySelector(".zp-nav");
+      if(nv)nv.style.transition="none";
+      syncNav();
+      requestAnimationFrame(function(){
+        float.classList.remove("is-scrolling");
+        if(nv)nv.style.transition="";
+      });
+    }
   }
 
   scroller.addEventListener("scroll",onScroll,{passive:true});
