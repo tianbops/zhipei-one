@@ -16,10 +16,11 @@
 .order-metrics span{white-space:nowrap}
 .order-route-card{min-height:0;flex:1 1 auto;display:flex;flex-direction:column;padding:13px 12px 0;overflow:hidden}
 .order-route-head{display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:5px;flex:0 0 auto;padding:0 2px 9px}
-/* 行不自行成网格，而是融进 .order-meta-main 的网格（display:contents），
-   这样 4 行共用同一列宽、标签列按最宽标签自适应，且标签不换行——字号放大后
-   “送货员”不会再被拆成两排。 */
-.order-meta-row{display:contents}
+/* 两对字段左右并排：每个 .order-meta-row 用 flex 把“标签+值”横排，
+   再由 .order-meta-main 的 2 列网格把“线路/车辆”“司机/送货员”排成上下两排，
+   实现“线路 17号线 与 车辆 渝DK7692 一排左→右，司机 田波 与 送货员 陈兴亚 一排左→右”。 */
+.order-meta-row{display:flex;align-items:baseline;gap:6px;min-width:0;flex:1 1 auto}
+.order-meta-row>.order-route-name,.order-meta-row>.order-vehicle{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .order-meta-label{font-size:var(--zp-fs-12);line-height:20px;color:var(--zp-muted);font-weight:var(--zp-fw-medium);white-space:nowrap}
 .order-route-name{font-size:var(--zp-fs-15);font-weight:var(--zp-fw-semibold);line-height:20px;color:var(--zp-text)}
 .order-vehicle{font-size:var(--zp-fs-15);line-height:20px;color:var(--zp-text);font-weight:var(--zp-fw-semibold);white-space:nowrap}
@@ -361,11 +362,11 @@
   gap:10px;
 }
 .order-meta-main{
-  /* 父容器统一网格：标签列 max-content（按最宽标签“送货员”自适应，随字号缩放），
-     值列占据剩余宽度。行用 display:contents 融入本网格，保证 4 行左右对齐。 */
+  /* 2 列网格：第 1 列放“线路/车辆”一对，第 2 列放“司机/送货员”一对；
+     每列内部再由 .order-meta-row 的 flex 把“标签+值”横排，实现组内左→右。 */
   display:grid;
-  grid-template-columns:max-content minmax(0,1fr);
-  column-gap:8px;
+  grid-template-columns:1fr 1fr;
+  column-gap:14px;
   row-gap:5px;
   align-items:center;
   min-width:0;
