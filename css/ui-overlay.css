@@ -331,7 +331,12 @@ textarea:disabled,
   position:fixed;inset:0;z-index:var(--ui-z-modal-stack,1100);
   display:flex;align-items:flex-end;justify-content:center;
   padding:12px 12px calc(12px + env(safe-area-inset-bottom));
-  background:var(--zp-scrim-dialog);
+  /* 遮罩用「压暗 + 中心上方的柔和暗角」，不用 backdrop-filter：全站禁令
+     （不透明底上模糊无产出，移动端白付合成开销），玻璃感交回卡片自己的
+     半透明渐变 + 描边 + 内高光。 */
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(6,12,26,.10), rgba(6,12,26,.34) 60%, rgba(6,12,26,.46) 100%),
+    var(--zp-scrim-dialog);
   animation:zpModalFade .18s ease-out;
 }
 .zp-mn-sheet{
@@ -359,6 +364,9 @@ textarea:disabled,
   --mn-primary-bg:linear-gradient(100deg,rgba(58,120,255,.34),rgba(58,120,255,.08));
   --mn-primary-line:rgba(110,168,254,.62);
   --mn-primary-glow:0 10px 26px rgba(40,110,255,.28);
+  /* 卡片里有 button（选项/取消/关闭）：显式 color-scheme 让 WebView 的原生
+     滚动条、焦点环、点击高亮也走深色，不会在暗底上闪一块白。 */
+  color-scheme:dark;
   background:linear-gradient(180deg,#1C2537 0%,#111823 100%);
   box-shadow:0 24px 64px rgba(0,0,0,.55),0 0 0 1px rgba(110,168,254,.06),0 18px 60px rgba(46,110,255,.16);
 }

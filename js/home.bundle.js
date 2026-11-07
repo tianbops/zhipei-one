@@ -1057,7 +1057,7 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
   var HERO_ICON = '<svg viewBox="0 0 64 64" fill="none" aria-hidden="true">' +
     '<defs>' +
     '<radialGradient id="zpMnGlow" cx="32" cy="30" r="30" gradientUnits="userSpaceOnUse">' +
-    '<stop stop-color="#2F6BFF" stop-opacity=".38"/><stop offset="1" stop-color="#2F6BFF" stop-opacity="0"/>' +
+    '<stop stop-color="#2F6BFF" stop-opacity=".5"/><stop offset="1" stop-color="#2F6BFF" stop-opacity="0"/>' +
     '</radialGradient>' +
     '<linearGradient id="zpMnPin" x1="20" y1="8" x2="46" y2="46" gradientUnits="userSpaceOnUse">' +
     '<stop stop-color="#5C9BFF"/><stop offset="1" stop-color="#1E5BE0"/>' +
