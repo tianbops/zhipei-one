@@ -89,9 +89,11 @@ console.log("\n三、手势：隐藏态起步 / 顶底互斥反向 / 原生滚�
 {
   t("p=0 隐藏态起步（打开时浮层收起、底栏出现，第一下上滑即可弹出）",
     /var H=1,need=0,p=0/.test(FLOAT_JS));
-  t("手指向上滑 → p 增大（顶部弹出），下滑 → p 减小（隐藏）",
-    /setP\(p\s*-\s*dy\//.test(FLOAT_JS));
-  t("松手就近吸附到 0/1 端点", /p>=\.5\?1:0/.test(FLOAT_JS));
+  t("跟手 p 用「起点绝对位移」计算（上滑→p 增大弹出 / 下滑→p 减小隐藏，不怕丢帧）",
+    /setP\(pStart-ay\/\(Math\.max\(1,H\)\*0\.85\)/.test(FLOAT_JS));
+  t("松手按累计位移方向定端点（上滑→p=1 / 下滑→p=0），抗浏览器提前 touchcancel",
+    /accDy<0\?1:0/.test(FLOAT_JS) && /addEventListener\("touchcancel",end/.test(FLOAT_JS));
+  t("位移过小时仍就近吸附到 0/1 端点", /p>=\.5\?1:0/.test(FLOAT_JS));
   t("横向手势不接管（让给多单切页 / 门店点击）",
     /Math\.abs\(ay\)<=Math\.abs\(ax\)\*1\.2/.test(FLOAT_JS));
   t("顶底互斥反向：顶部出现则底栏隐藏", /navHide\(p>=\.5\)/.test(FLOAT_JS));

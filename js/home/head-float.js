@@ -8,7 +8,13 @@
      · 手指上滑（往下读）→ 顶部弹出；下滑（回看上方）→ 顶部完全隐藏。
    整屏任意位置生效；横向手势（多单切页 / 门店行点击）不介入；上传弹层内不拦截。
    不注入、不改写任何业务数据。
-   依赖 UI 层 nav.js 暴露的 zpNavSetHidden，故置于 home.bundle.js 末尾执行。 */
+   依赖 UI 层 nav.js 暴露的 zpNavSetHidden，故置于 home.bundle.js 末尾执行。
+
+   稳定性要点（2026-11-07 真机 CDP 复测）：touch 全程 passive、不 preventDefault，
+   门店名单仍由 .zp-scroll 原生滚动承接；但浏览器一旦接管滚动就会提前派发
+   touchcancel，逐帧累加的 p 往往只走到很小便被截断。故逐帧只用「起点绝对位移」
+   算 p 做跟手过渡，松手统一按「本次累计位移方向」定端点：上滑→p=1、下滑→p=0，
+   即使只剩一两个 touchmove 也能可靠弹出/隐藏，不出现「上滑没弹出」。 */
 (function(){
   var main=document.querySelector("main.home-app");
   if(!main)return;
@@ -22,7 +28,7 @@
      否则两套逻辑会互相覆盖 .is-nav-hidden。 */
   window.__zpHeadFloatActive=true;
 
-  var H=1,need=0,p=0,dragging=false,lastY=0,sx=0,sy=0,lock=null;
+  var H=1,need=0,p=0,dragging=false,sx=0,sy=0,pStart=0,lastY=0,accDy=0,lock=null;
 
   function measure(){
     var mr=main.getBoundingClientRect(),br=topbar.getBoundingClientRect();
@@ -54,30 +60,42 @@
     spacer.classList.toggle("is-dragging",!animate);
     render();
   }
-  /* 松手就近吸附：慢速小幅滑动也有确定落点，不会出现「上滑没弹出」。 */
-  function snap(){setP(p>=.5?1:0,true)}
+  /* 结束手势：按「本次累计位移方向」定端点，而不是按最后一帧的进度吸附。
+     passive + 原生滚动下浏览器可能提前 touchcancel，逐帧 p 会停在很小的值；
+     用起点→终点方向兜底，慢速小幅滑动、只剩一两个 touchmove 都有确定落点。 */
+  function end(){
+    if(!dragging)return;
+    dragging=false;
+    var wasY=(lock==="y");
+    lock=null;
+    if(!wasY)return;                              /* 横向手势：浮层保持原态 */
+    if(Math.abs(accDy)>=12)setP(accDy<0?1:0,true); /* 上滑→弹出 / 下滑→隐藏 */
+    else setP(p>=.5?1:0,true);                    /* 位移过小：就近吸附 */
+  }
 
   function ignore(e){
     var t=e.target;
     return !!(t&&t.closest&&t.closest("#uploadArea,[role=dialog],[aria-modal=true]"));
   }
-  function down(x,y){dragging=true;lock=null;sx=x;sy=y;lastY=y}
+  function down(x,y){dragging=true;lock=null;sx=x;sy=y;lastY=y;pStart=p;accDy=0}
   function move(x,y){
     if(!dragging)return;
-    var dy=y-lastY;lastY=y;
+    lastY=y;
+    var ax=x-sx,ay=y-sy;
+    accDy=ay;                                   /* 任何移动都记录累计位移，供 end 判方向 */
     if(!lock){
-      var ax=x-sx,ay=y-sy;
       if(Math.abs(ax)<8&&Math.abs(ay)<8)return;
       /* 只有明确纵向才接管；横向手势完全让给多单切页与门店行点击 */
       if(Math.abs(ay)<=Math.abs(ax)*1.2){dragging=false;return}
       lock="y";
     }
-    if(Math.abs(dy)>0.5)setP(p-dy/(Math.max(1,H)*0.85),false);
+    /* 用「起点绝对位移」而非逐帧增量算 p：不怕丢帧，也不怕 H 在滚动中变化 */
+    setP(pStart-ay/(Math.max(1,H)*0.85),false);
   }
-  function up(){if(!dragging)return;dragging=false;lock=null;snap()}
 
   /* touch 全程 passive：不 preventDefault，门店名单仍由 .zp-scroll 原生滚动承接，
-     既能整页滚到统计卡，又让浮层跟手滑入滑出（列表从浮层下方穿过）。 */
+     既能整页滚到统计卡，又让浮层跟手滑入滑出（列表从浮层下方穿过）。
+     touchcancel 与 touchend 共用 end()，浏览器接管滚动提前取消时方向依然确定。 */
   main.addEventListener("touchstart",function(e){
     if(ignore(e))return;
     var t=e.touches[0];if(t)down(t.clientX,t.clientY);
@@ -86,8 +104,8 @@
     if(!dragging||ignore(e))return;
     var t=e.touches[0];if(t)move(t.clientX,t.clientY);
   },{passive:true});
-  main.addEventListener("touchend",up,{passive:true});
-  main.addEventListener("touchcancel",up,{passive:true});
+  main.addEventListener("touchend",end,{passive:true});
+  main.addEventListener("touchcancel",end,{passive:true});
 
   /* 桌面 / 自动化验证：鼠标拖拽与滚轮走同一套 p */
   var mouseDown=false;
@@ -99,7 +117,7 @@
     if(!mouseDown)return;move(e.clientX,e.clientY);
   });
   window.addEventListener("mouseup",function(){
-    if(!mouseDown)return;mouseDown=false;up();
+    if(!mouseDown)return;mouseDown=false;end();
   });
   var lastWheel=0;
   main.addEventListener("wheel",function(e){
