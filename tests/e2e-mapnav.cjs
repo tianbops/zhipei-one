@@ -242,7 +242,7 @@ const SNAP_DETAIL = `(()=>{
     hints:document.querySelectorAll('.zp-mn-row-hint').length,
     arrows:document.querySelectorAll('.zp-mn-arrow').length,
     titleAlign:document.querySelector('.zp-mn-title')?getComputedStyle(document.querySelector('.zp-mn-title')).textAlign:'',
-    rowAlign:document.querySelector('.zp-mn-row[data-provider]')?getComputedStyle(document.querySelector('.zp-mn-row[data-provider]')).justifyContent:'',
+    rowAlign:document.querySelector('.zp-mn-row[data-provider]')?getComputedStyle(document.querySelector('.zp-mn-row[data-provider]')).textAlign:'',
     open:document.body.classList.contains('zp-mn-open')}))()`;
   const clickStore = async (idx) => {
     await ev(`(()=>{const a=[...document.querySelectorAll('#todayStoreList a[data-zp-nav-payload]')][${idx}];
@@ -259,7 +259,7 @@ const SNAP_DETAIL = `(()=>{
   check('点门店名弹出底部菜单', m1 && m1.sheet === true && m1.open === true, JSON.stringify(m1));
   check('菜单固定列高德 / 百度 / 腾讯三家', m1 && m1.rows.join(',') === 'amap,baidu,qq', JSON.stringify(m1 && m1.rows));
   check('标题、副标题分别显示导航标题与门店名称', m1 && m1.sub === '已定位门店' && m1.title === '导航到', JSON.stringify(m1));
-  check('三家入口采用卡片式左对齐布局', m1 && m1.rowAlign === 'flex-start', JSON.stringify(m1 && m1.rowAlign));
+  check('三家入口采用卡片式左对齐布局', m1 && m1.rowAlign === 'left', JSON.stringify(m1 && m1.rowAlign));
   check('三个入口均显示说明与箭头', m1 && m1.hints === 3 && m1.arrows === 3, JSON.stringify(m1 && [m1.hints, m1.arrows]));
 
   await pick('amap');
