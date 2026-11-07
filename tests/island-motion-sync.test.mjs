@@ -80,9 +80,9 @@ t("首帧用 .is-scrolling 关过渡（避免进首页时浮岛滑一下）",
 /* 五、产物同步（首页只加载 bundle） */
 t("home.bundle.css 含统一 transition（源→产物同步）",
   /transition:transform var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(BUNDLE_CSS));
-t("home.bundle.js 含滚动映射 + 滞回联动 + 无让位写入",
-  /1-clamp\(\(st-base\)\/range,0,1\)/.test(BUNDLE_JS) &&
-  /navHide\(want\)/.test(BUNDLE_JS) && !/spacer\.style\.height/.test(BUNDLE_JS));
+t("home.bundle.js 含二态弹收 + 阈值联动 + 无让位写入",
+  /p=show\?1:0/.test(BUNDLE_JS) && /HIDE_AT=48/.test(BUNDLE_JS) &&
+  /navHide\(navHidden\)/.test(BUNDLE_JS) && !/spacer\.style\.height/.test(BUNDLE_JS));
 
 function finish() {
   console.log(`\n${fail === 0 ? "✅" : "❌"} 通过 ${pass} 项，失败 ${fail} 项`);
