@@ -172,36 +172,23 @@ console.log("\n三家 provider 目标（14 条）");
   t("百度 / 腾讯 note 与高德同口径（看位置，App 由用户选）",
     M.PROVIDERS[1].note.includes("查看门店位置") && M.PROVIDERS[2].note.includes("查看门店位置"),
     JSON.stringify([M.PROVIDERS[1].note, M.PROVIDERS[2].note]));
-  /* 2026-11-07 视觉重做（用户：「导航入口弹窗 UI，按图二视觉效果设计」）：
-     由「居中纯文字列表」改为「卡片式选项：品牌图标 + 名称 + 说明 + 箭头」，
-     说明文字重新回到选项里（三家各自不同，不再是重复信息）。 */
-  t("选项渲染品牌图标 + 名称 + 说明 + 箭头",
-    /zp-mn-icon/.test(SRC) && /zp-mn-row-desc/.test(SRC) && /zp-mn-chev/.test(SRC) && /MAP_ICONS/.test(SRC),
-    "缺少图标/说明/箭头渲染");
-  t("三家图标都是行内 SVG（离线可用、CSP 不新增域名）",
-    /amap:\s*'<svg/.test(SRC) && /baidu:\s*'<svg/.test(SRC) && /qq:\s*'<svg/.test(SRC) &&
-    !/<img[^>]+src=/.test(SRC));
+  /* 2026-11-06 视觉收敛：名称居中、去掉每个选项下的重复说明与箭头，
+     note 只作为 aria-label 保留语义，不再渲染成第三行小字。 */
+  t("选项不再渲染说明小字与箭头",
+    !/zp-mn-row-hint/.test(SRC) && !/zp-mn-arrow/.test(SRC),
+    "mapnav.js 仍包含 hint/arrow 渲染");
   t("note 转为 aria-label，读屏仍能听到「看位置、App 由您选」",
     /setAttribute\("aria-label", p\.label \+ "：" \+ p\.note\)/.test(SRC), "缺少 aria-label 兜底");
-  t("头部改为左图标 + 左对齐文案（不再居中长标题）",
-    /\.zp-mn-head\{[^}]*text-align:left/.test(CSS) && /\.zp-mn-hero\{/.test(CSS) &&
-    /\.zp-mn-row\{[^}]*align-items:center/.test(CSS),
-    "头部或选项未按图二排版");
-  t("门店名放副标题、标题固定「导航到」（长店名可折两行不被省略号切掉）",
-    /"zp-mn-title", "导航到"/.test(SRC) && /"zp-mn-sub", data\.name/.test(SRC) && /\.zp-mn-sub\{/.test(CSS));
-  t("首项（高德）为推荐态：is-primary 走描边 + 渐变高亮",
-    /p\.id === "amap" \? " is-primary"/.test(SRC) && /\.zp-mn-row\.is-primary\{/.test(CSS));
-  t("底部有取消按钮、右上为圆形关闭按钮、顶部有把手",
-    /"zp-mn-cancel"/.test(SRC) && /"zp-mn-close"/.test(SRC) && /"zp-mn-grabber"/.test(SRC) &&
-    /\.zp-mn-cancel\{/.test(CSS) && /\.zp-mn-close\{[^}]*border-radius:var\(--zp-r-pill\)/.test(CSS));
+  t("菜单标题与选项均居中",
+    /\.zp-mn-head\{[^}]*text-align:center/.test(CSS) && /\.zp-mn-row\{[^}]*justify-content:center/.test(CSS),
+    "标题或选项未居中");
   /* 2026-11-06：无坐标不再进菜单（搜索兜底要人自己挑门店，挑错就导到别家），
      改为只提示「暂无精确定位，请录入」。 */
   t("无坐标不进菜单：openMenu 提前提示并消费点击",
     /if \(!urls\._geo\) \{\s*notifyMissingGeo\(\);\s*return true;/.test(SRC), "缺少无坐标短路");
   t("提示文案固定为「暂无精确定位，请录入」",
     SRC.includes('"暂无精确定位，请录入"'));
-  t("副标题只承载门店名，不再有「未绑定坐标」之类提示文案",
-    !/未绑定坐标/.test(SRC) && /"zp-mn-sub", data\.name/.test(SRC));
+  t("菜单不再有「未绑定坐标」副标题", !/zp-mn-sub/.test(SRC) && !/\.zp-mn-sub\{/.test(CSS));
   t("三家都有 https 目标", ["amap", "baidu", "qq"].every((k) => typeof u[k] === "string" && u[k].startsWith("https://")));
   t("有坐标时 _geo=true（菜单不出「按门店名搜索」兜底提示）", u._geo === true);
 
