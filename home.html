@@ -31,7 +31,7 @@
 <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#161616" media="(prefers-color-scheme: dark)"><meta name="theme-color" content="#FFFFFF">
 <title>智配One</title>
 <link rel="manifest" href="/manifest.json">
-<link rel="stylesheet" href="/css/home.bundle.css?v=2a73fb5f">
+<link rel="stylesheet" href="/css/home.bundle.css?v=b45e3d57">
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png?v=25f1ad28">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -50,22 +50,33 @@
     </div>
   </header>
 
-  <div class="zp-scroll">
-<section class="task-card" aria-labelledby="todayTitle">
-    <div class="task-title">
+  <!-- 顶部两层浮层：横条（今日配送 / 日期）+ 白卡片（数据 / 插画 / 多单 tab）。
+       作为 zp-shell 的 absolute overlay 盖在门店名单之上；上滑收起时钻到品牌区
+       （更高 z-index 的同色天花板）背后完全消失，不留把手线、不占位。 -->
+  <div class="zp-head-float" id="zpHeadFloat">
+    <div class="task-title zp-head-bar">
       <div class="task-name">
         <span id="todayTitle">今日配送</span>
         <span class="status-dot" id="statusDot" aria-label="当前线路" hidden></span>
       </div>
       <div id="todayDate" class="today-date task-date">今日</div>
     </div>
-    <div class="task-main">
-      <div class="task-info">
-        <div class="today-summary"><strong id="todayOrders"></strong><strong id="todayCount">加载中…</strong><span id="todayWeight"></span><span id="substituteBadge" class="sub-badge" hidden>代班</span></div>
+    <div class="zp-head-card">
+      <div class="task-main">
+        <div class="task-info">
+          <div class="today-summary"><strong id="todayOrders"></strong><strong id="todayCount">加载中…</strong><span id="todayWeight"></span><span id="substituteBadge" class="sub-badge" hidden>代班</span></div>
+        </div>
+        <div class="delivery-man" aria-hidden="true"><img class="delivery-img-dark" src="/assets/delivery-route.webp?v=b872c885" width="336" height="220" decoding="async" alt=""><img class="delivery-img-light" src="/assets/delivery-route-light.webp?v=984a9455" width="336" height="220" decoding="async" alt="" loading="lazy"></div>
       </div>
-      <div class="delivery-man" aria-hidden="true"><img class="delivery-img-dark" src="/assets/delivery-route.webp?v=b872c885" width="336" height="220" decoding="async" alt=""><img class="delivery-img-light" src="/assets/delivery-route-light.webp?v=984a9455" width="336" height="220" decoding="async" alt="" loading="lazy"></div>
+      <div class="today-tabs" id="todayTabs" role="tablist" aria-label="今日运单" hidden></div>
     </div>
-    <div class="today-tabs" id="todayTabs" role="tablist" aria-label="今日运单" hidden></div>
+  </div>
+
+  <div class="zp-scroll">
+    <!-- 浮层让位块：隐藏态 0（完全不占位），展开态撑到浮层下沿，避免门店首行被切半。
+         高度由 js/home/head-float.js 按实测浮层高度写入。 -->
+    <div class="zp-head-spacer" id="zpHeadSpacer" aria-hidden="true"></div>
+<section class="task-card" aria-labelledby="todayTitle">
     <div class="today-store-list" id="todayStoreList" aria-label="今日门店"><!-- 首帧骨架：数据到达后被今日渲染整体替换（见 js/home/today.js） --><div class="today-store-row" aria-hidden="true"><span class="skel-bar skel-idx"></span><span class="skel-bar skel-name"></span></div><div class="today-store-row" aria-hidden="true"><span class="skel-bar skel-idx"></span><span class="skel-bar skel-name skel-name--short"></span></div><div class="today-store-row" aria-hidden="true"><span class="skel-bar skel-idx"></span><span class="skel-bar skel-name"></span></div><div class="today-store-row" aria-hidden="true"><span class="skel-bar skel-idx"></span><span class="skel-bar skel-name skel-name--short"></span></div></div>
     <div class="today-metrics" id="todayMetrics" aria-label="今日统计"></div>
   </section>
@@ -183,7 +194,7 @@
 </div>
 </main>
 
-<script defer src="/js/home.bundle.js?v=f8b2cccc"></script>
+<script defer src="/js/home.bundle.js?v=532cd8e6"></script>
 <script defer src="/js/boot-ready.js?v=4e3f49ea"></script>
 </body>
 </html>

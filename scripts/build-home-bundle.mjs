@@ -51,6 +51,8 @@ const JS_SOURCES = [
   "js/ui/back.js",
   "js/ui/nav-prefetch.js",
   "js/pwa.js",
+  /* 首页顶部浮层手势：依赖 nav.js 暴露的 zpNavSetHidden，必须置于末尾执行 */
+  "js/home/head-float.js",
 ];
 
 const CSS_SOURCES = [

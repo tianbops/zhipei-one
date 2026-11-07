@@ -180,3 +180,70 @@ main.home-app .today-store-list.is-empty{
   align-items:flex-start;
   justify-content:center;
 }
+
+/* ===== 首页顶部两层浮层（Shadowrocket 式 overlay）=====
+   品牌区 = 固定天花板：同色实底铺满外壳、z-index 压过浮层；浮层整块
+   translateY(-100%) 上滑时钻到天花板背后，由外壳 overflow 裁掉 —— 完全消失、
+   不留把手线、不占位。浮层两层：横条与天花板同色，白卡片取 surface 令牌，
+   拼成一张内缩圆角卡；门店名单留在文档流里，由 spacer 让到白卡片下沿。
+   取值全部走全局令牌，深浅两套外观自适应。 */
+
+/* 天花板：铺满外壳宽度（抵消左右 --zp-gutter），层级 25 > 浮层 20 */
+main.home-app > .topbar{
+  position:relative;
+  z-index:25;
+  background:var(--zp-block);
+  margin-left:calc(-1 * var(--zp-gutter));
+  margin-right:calc(-1 * var(--zp-gutter));
+  padding-left:var(--zp-gutter);
+  padding-right:var(--zp-gutter);
+}
+
+/* 浮层容器：绝对定位，顶部贴品牌区底部（--zp-ceiling-h 由 head-float.js 实测写入）。
+   隐藏态整块上移自身高度，藏进天花板背后；pointer-events 交给两个子层恢复。 */
+.home-app .zp-head-float{
+  position:absolute;
+  top:var(--zp-ceiling-h,64px);
+  left:var(--zp-gutter);
+  right:var(--zp-gutter);
+  z-index:20;
+  transform:translateY(-100%);
+  transition:transform .3s cubic-bezier(.22,.8,.3,1);
+  will-change:transform;
+  pointer-events:none;
+}
+.home-app .zp-head-float.is-dragging{transition:none}
+
+/* 横条：与天花板同色，作为卡片顶段（沿用 .task-title 的 flex 排版与字号令牌） */
+.home-app .zp-head-bar{
+  padding:10px 14px;
+  background:var(--zp-block);
+  border-radius:var(--zp-r-card) var(--zp-r-card) 0 0;
+  pointer-events:auto;
+}
+
+/* 白卡片：比天花板亮一档，作为卡片身段，下沿圆角 */
+.home-app .zp-head-card{
+  padding:12px 14px 14px;
+  background:var(--zp-surface);
+  border:1px solid var(--zp-line);
+  border-top:0;
+  border-bottom-left-radius:var(--zp-r-card);
+  border-bottom-right-radius:var(--zp-r-card);
+  box-shadow:var(--zp-shadow-md);
+  pointer-events:auto;
+}
+
+/* 让位块：隐藏态 0（完全不占位），展开态由 JS 按实测浮层高度写入 */
+.home-app .zp-head-spacer{
+  flex:0 0 auto;
+  height:0;
+  transition:height .3s cubic-bezier(.22,.8,.3,1);
+}
+.home-app .zp-head-spacer.is-dragging{transition:none}
+
+/* 顶部两块移出后，名单成为卡片首块：去掉原本为「标题下方」准备的留白与分隔线 */
+main.home-app .task-card > .today-store-list:first-child{
+  margin-top:0;
+  border-top:0;
+}

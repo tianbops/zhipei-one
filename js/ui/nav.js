@@ -134,7 +134,12 @@
       else{items[i].removeAttribute("tabindex");items[i].removeAttribute("aria-hidden");}
     }
   }
+  /* 首页顶部浮层启用时，底栏显隐由 js/home/head-float.js 统一接管（顶底互斥反向），
+     这里必须让位，否则两套逻辑会互相覆盖 .is-nav-hidden。其余页面行为不变。 */
+  window.zpNavSetHidden=function(hide){navApply(hide)};
+
   function navOnScroll(e){
+    if(window.__zpHeadFloatActive)return;
     var el=navScrollTarget(e);
     if(!el||navTicking)return;
     navTicking=true;
