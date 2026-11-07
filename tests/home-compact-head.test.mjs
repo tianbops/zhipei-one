@@ -60,22 +60,22 @@ console.log("\n二、浮层紧凑化：只收垂直留白（7 条）");
   const main = rule(CSS, ".home-app .zp-head-card .task-main");
   const man = rule(CSS, ".home-app .zp-head-card .delivery-man");
   const tabs = rule(CSS, ".home-app .zp-head-card .today-tabs");
-  t("横条上下 padding 10→7（左右仍 14px）",
-    !!bar && /padding:7px 14px/.test(bar));
-  t("白卡片 padding 12/14→8/9（左右仍 14px）",
-    !!card && /padding:8px 14px 9px/.test(card));
-  t("task-main 上间距 9→5", !!main && /margin-top:5px/.test(main));
-  t("插画高度 60→46（与窄屏既有值对齐，不再撑高整行）",
-    !!man && /height:46px/.test(man));
-  t("tabs 上间距 10→6", !!tabs && /margin-top:6px/.test(tabs));
+  t("横条上下 padding 已收紧到 6px（左右仍 14px）",
+    !!bar && /padding:6px 14px/.test(bar));
+  t("白卡片 padding 已收紧到 6px（上下对称，左右仍 14px）",
+    !!card && /padding:6px 14px/.test(card));
+  t("task-main 上间距 5→3", !!main && /margin-top:3px/.test(main));
+  t("插画高度 46→36（等比缩放，仍在可辨识区间）",
+    !!man && /height:36px/.test(man));
+  t("tabs 上间距 6→4", !!tabs && /margin-top:4px/.test(tabs));
   t("紧凑规则全部限定在 .zp-head-card 作用域（不碰内页复用组件）",
     !!main && !!man && !!tabs &&
     /\.home-app \.zp-head-card \.task-main\{/.test(CSS) &&
     /\.home-app \.zp-head-card \.delivery-man\{/.test(CSS) &&
     /\.home-app \.zp-head-card \.today-tabs\{/.test(CSS));
-  t("bundle CSS 已同步紧凑规则（含插画 46px 与 tabs 6px）",
-    BUNDLE_CSS.includes(".home-app .zp-head-card .delivery-man{height:46px}") &&
-    BUNDLE_CSS.includes(".home-app .zp-head-card .today-tabs{margin-top:6px}"));
+  t("bundle CSS 已同步紧凑规则（含插画 36px 与 tabs 4px）",
+    BUNDLE_CSS.includes(".home-app .zp-head-card .delivery-man{height:36px}") &&
+    BUNDLE_CSS.includes(".home-app .zp-head-card .today-tabs{margin-top:4px}"));
 }
 
 console.log("\n三、可读性红线不动（7 条）");

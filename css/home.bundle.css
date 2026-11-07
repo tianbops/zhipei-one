@@ -2860,9 +2860,10 @@ main.home-app > .topbar{
 }
 .home-app .zp-head-float.is-dragging{transition:none}
 
-/* 横条：浮层顶段，取 block 令牌与白卡片拉开层次（沿用 .task-title 的 flex 排版与字号令牌） */
+/* 横条：浮层顶段，取 block 令牌与白卡片拉开层次（沿用 .task-title 的 flex 排版与字号令牌）
+   2026-11-07 二次压缩：内边距 7→6（横条 36→34），文字行高与字号不动。 */
 .home-app .zp-head-bar{
-  padding:7px 14px;
+  padding:6px 14px;
   background:var(--zp-block);
   border-radius:var(--zp-r-card) var(--zp-r-card) 0 0;
   pointer-events:auto;
@@ -2876,7 +2877,7 @@ main.home-app > .topbar{
    背景色其实完全一致（html/body/shell/topbar/task 均 rgb(22,22,22)），
    是阴影造成的错觉。现在阴影只随浮层露出时出现，隐藏态衔接带是干净底色。 */
 .home-app .zp-head-card{
-  padding:8px 14px 9px;
+  padding:6px 14px;
   background:var(--zp-surface);
   border:1px solid var(--zp-line);
   border-top:0;
@@ -2890,22 +2891,24 @@ main.home-app > .topbar{
    二态吸附同阈值，保持一套语义。 */
 .home-app .zp-head-float.is-open .zp-head-card{box-shadow:var(--zp-shadow-md)}
 
-/* ===== 顶部浮层「高度紧凑」（2026-11-07）=====
-   用户反馈白卡片垂直留白偏大，同时要求 tab 去掉时间只留「第X单」。
-   真机基线（390×844 浅色，展开态）：浮层 196px = 横条 46 + 白卡片 150；
-   白卡片里数据行文字仅 27px，却被 60px 插画撑起整行，另有上下内边距 12/14、
-   task-main 上间距 9、tabs 上间距 10。这里只收「垂直留白」：
-     横条 padding 10→7、白卡片 12/14→8/9、task-main 9→5、插画 60→46、tabs 10→6。
-   插画取 46px 而非更小：与 home-base.css 窄屏(≤380px)既有 .delivery-man{height:46px}
-   对齐，避免限定作用域的高优先级规则把窄屏反而撑高，也保留插画可辨识度。
-   明确不动的红线：字号 / 行高 / 左右边距 / 圆角 / tab 44px 触控下限
-   （见本文件「首页纵向布局」段与 today-tab 的 min-height:44px 注释），
-   也不碰门店列表行高、月度统计与让位块逻辑（浮层变矮后 need 由 measure() 自动重算）。
-   全部限定在 .home-app .zp-head-card 作用域：内页复用的 .task-card / .trend-card
-   与首页去卡片化后的门店列表不受影响；取值无字面量颜色，深浅两套自适应。 */
-.home-app .zp-head-card .task-main{margin-top:5px}
-.home-app .zp-head-card .delivery-man{height:46px}
-.home-app .zp-head-card .today-tabs{margin-top:6px}
+/* ===== 顶部浮层「高度紧凑」（2026-11-07，两轮）=====
+   第一轮（用户：留白偏大 + tab 去时间）：浮层 196 → 155（390×844 实测，
+   = 横条 36 + 白卡片 119）。只收垂直留白，不动字号/左右边距/圆角。
+   第二轮（用户：再压一点，落在合理区间）：155 → 134（-21，-13.5%）。
+     横条 padding 7→6（-2）；白卡片 8/9→6/6（-5）；task-main 上距 5→3（-2）；
+     插画 46→36（-10，数据行高度由插画决定，这是最大的一块）；
+     tabs 上距 6→4（-2）。
+   两轮都守住的红线：
+     ① tab 行 min-height 44px 不动 —— 触控下限，压它只省 8px 却让点按变难；
+     ② 字号（16 数据 / 13 tab / 15-16 横条）与行高不动，只调间距；
+     ③ 插画只缩高度、等比缩放，不断言其宽度（delivery-man 内 img 为 object-fit:contain）。
+   插画 36px 的依据：336×220 原图等比后宽约 55px，仍在「一眼能认出人+推车+三个定位点」
+   的可辨识区间；小于 32px 时定位点会糊成噪点，故 36 是这一轮的下限。
+   全部限定在 .home-app 作用域：内页复用的 .task-card / .trend-card 不受影响；
+   取值无字面量颜色，深浅两套自适应。浮层变矮后 need 由 head-float.js 的 measure() 自动重算。 */
+.home-app .zp-head-card .task-main{margin-top:3px}
+.home-app .zp-head-card .delivery-man{height:36px}
+.home-app .zp-head-card .today-tabs{margin-top:4px}
 
 /* 让位块：隐藏态 0（完全不占位），展开态由 JS 在「松手吸附」时一次性写入。
    跟手阶段高度冻结（spacer 不变、列表位置恒定、零重排），故这里不再需要
