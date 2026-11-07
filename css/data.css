@@ -207,3 +207,20 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 .data-alias-input{flex:1 1 auto;min-width:0;width:auto}
 .data-alias-add .data-action-btn{width:auto;height:var(--zp-control-height);border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-2);color:var(--zp-text);font-size:var(--zp-fs-14);padding:0 16px;flex:0 0 auto}
 .data-aliases-empty{color:var(--zp-muted);font-size:var(--zp-fs-12);padding:2px 0}
+
+/* UI 2.7：数据资料「去卡片化」——仅「当前调度线路」保留卡片，
+   批量操作区与门店资料列表改为页面底色去边框，与首页 / 运单详情统一。
+   仅作用于 .data-tools-card（套 .card）/ .data-list-card（套 .page2-card），
+   不动 .data-route-card（当前调度线路），也不动页面其它卡片。 */
+.data-tools-card{
+  background:var(--zp-bg);
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+}
+.data-list-card{
+  background:var(--zp-bg);
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+}

@@ -471,3 +471,20 @@
   padding-left:0;
   padding-right:0;
 }
+
+/* UI 2.7：同日多运单列表「去卡片化」——日期板块保持卡片不变，
+   下方运单卡（.order-history-choice）改为页面底色去边框，与单运单路线卡统一。
+   外层 .order-route-card 已在 UI 2.6 去卡片化；此处只抹掉运单卡自身的卡片样式。
+   仅作用于 history-multi（运单卡只在该模式下出现），不污染单运单布局。 */
+.order-shell.history-multi .order-history-swipe-row{
+  border-radius:0;
+}
+.order-shell.history-multi .order-history-choice{
+  background:var(--zp-bg);
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+}
+.order-shell.history-multi .history-choice-delete{
+  border-radius:0;
+}
