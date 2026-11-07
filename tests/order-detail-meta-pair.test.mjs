@@ -28,10 +28,14 @@ const t = (name, cond, extra) => {
 
 console.log('一、.order-meta-main 为两列网格（两对并排的基础）');
 {
-  t('grid-template-columns 为 1fr 1fr（两列等宽）',
-    /grid-template-columns:1fr 1fr/.test(META_MAIN), META_MAIN);
-  t('不再使用「标签列+值列」的 max-content minmax(0,1fr) 单列网格',
-    !/grid-template-columns:max-content/.test(META_MAIN), META_MAIN);
+  t('grid-template-columns 为「按内容收缩」两列 minmax(0,max-content) ×2',
+    /grid-template-columns:minmax\(0,max-content\) minmax\(0,max-content\)/.test(META_MAIN), META_MAIN);
+  t('不再使用 1fr 1fr（1fr 会吃满，space-between 失效、右列贴不到边）',
+    !/grid-template-columns:1fr 1fr/.test(META_MAIN), META_MAIN);
+  t('不再使用无下限的 max-content（超长文本无法收缩）',
+    !/grid-template-columns:max-content max-content/.test(META_MAIN), META_MAIN);
+  t('justify-content:space-between（左列贴左、右列整组贴右）',
+    /justify-content:space-between/.test(META_MAIN), META_MAIN);
   t('保留 display:grid', /display:grid/.test(META_MAIN), META_MAIN);
   t('保留 column-gap 间距', /column-gap:\s*\d+px/.test(META_MAIN), META_MAIN);
   t('保留 row-gap 行距', /row-gap:\s*\d+px/.test(META_MAIN), META_MAIN);
@@ -56,17 +60,16 @@ console.log('二·补、标签列宽统一（右列「车辆/送货员」等宽 
   t('标签不换行（white-space:nowrap）', /white-space:nowrap/.test(META_LABEL), META_LABEL);
 }
 
-console.log('二·补2、右列贴右（车辆/送货员 整组推到列右端，重心回正）');
+console.log('二·补2、右列「整组贴右」而非「值贴右」（否则两个标签会错开）');
 {
-  const RIGHT_ROW = CSS.match(/\.order-meta-main>\.order-meta-row:nth-child\(even\)\{[^}]*\}/)?.[0] || '';
-  const RIGHT_VAL = CSS.match(/\.order-meta-main>\.order-meta-row:nth-child\(even\)>\.order-vehicle\{[^}]*\}/)?.[0] || '';
-  t('存在「偶数行贴右」规则（第 2、4 行 = 车辆/送货员）', !!RIGHT_ROW, RIGHT_ROW);
-  t('偶数行 justify-content:flex-end', /justify-content:flex-end/.test(RIGHT_ROW), RIGHT_ROW);
-  t('存在「右列值不拉伸」规则', !!RIGHT_VAL, RIGHT_VAL);
-  t('右列值 flex:0 1 auto（不再占满剩余宽度）', /flex:0 1 auto/.test(RIGHT_VAL), RIGHT_VAL);
-  t('基础规则仍为 flex:1 1 auto（左列值保持贴标签）', /flex:1 1 auto/.test(ROW_VALUE), ROW_VALUE);
-  t('未对奇数行/全体行加 flex-end（左列不受影响）',
-    !/nth-child\(odd\)/.test(CSS) && !/\.order-meta-row\{[^}]*justify-content:flex-end/.test(CSS));
+  t('不再有 nth-child(even) 的 flex-end 覆盖（该写法会让右列标签各自贴右、互相错开）',
+    !/nth-child\(even\)/.test(CSS));
+  t('不再有右列值 flex:0 1 auto 的覆盖（值不拉伸会把标签推歪）',
+    !/\.order-meta-row:nth-child\(even\)[^{]*\{[^}]*flex:0 1 auto/.test(CSS));
+  t('基础规则仍为 flex:1 1 auto（列内值填满列宽，标签与值保持 6px 间距）',
+    /flex:1 1 auto/.test(ROW_VALUE), ROW_VALUE);
+  t('右列贴右由 space-between 承担（不靠逐行 flex-end）',
+    /justify-content:space-between/.test(META_MAIN) && !/nth-child\(even\)/.test(CSS), META_MAIN);
 }
 
 console.log('三、HTML 字段顺序（决定两行两列的排列）');
