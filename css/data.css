@@ -87,7 +87,9 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
 /* 2.0 数据资料维护交互 */
 .data-tools-card{padding:12px 14px}
 .data-maintenance{display:grid;gap:9px}
-.data-maintenance-group{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+/* 原 2×2 布局的 .data-maintenance-group{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+   已由文件末尾 UI 3.0 的 display:contents 取代（分组不再生成盒子，四按钮直升一行），
+   此处不再保留两列网格声明，避免死规则与行数回退。 */
 .data-action-btn{width:100%;min-height:var(--zp-control-height);margin:0;padding:0 16px;border:1px solid var(--zp-line);border-radius:var(--zp-r-control);background:var(--zp-card-2);color:var(--zp-text);font-size:var(--zp-fs-14);font-weight:var(--zp-fw-medium)}
 .data-action-btn:active{background:var(--zp-primary);color:var(--zp-on-primary)}
 .data-action-primary{background:var(--zp-primary);border-color:var(--zp-primary);color:var(--zp-on-primary);font-weight:var(--zp-fw-bold)}
@@ -223,4 +225,25 @@ body.data-panel-open{overflow:hidden;overscroll-behavior:none}
   border:0;
   border-radius:0;
   box-shadow:none;
+}
+
+/* UI 3.0：批量操作四按钮由「2×2 两行」整合为「一行四等分」——
+   两个 .data-maintenance-group 用 display:contents 拆掉，四个按钮直接成为
+   .data-maintenance 的 4 个网格子项，天然等宽等高、一键一排。
+   · 间隙 8px（原 9px，一行后略收紧更透气）；四列右端与门店列表内容区对齐。
+   · 高度 44px：一行 4 个若沿用 48 会显得笨重；44 仍满足最小可点区域。
+   · 字号 clamp(12,3.4vw,14)：375 屏 ≈12.8px、320 小屏 12px，保证「批量替换」
+     4 个字不换行、不截断；padding 收到 4px 把宽度让给文字。
+   · 保留「提交更新」蓝色主按钮作唯一强调，其余三个次要按钮不抢视觉。 */
+.data-maintenance{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.data-maintenance-group{display:contents}
+.data-maintenance .data-action-btn{
+  width:100%;
+  min-width:0;
+  min-height:44px;
+  padding:0 4px;
+  font-size:clamp(12px,3.4vw,var(--zp-fs-14));
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
