@@ -94,19 +94,23 @@ console.log("\n二、CSS：天花板裁切 + 隐藏态完全消失 + 令牌配�
     !/zp-head-handle|head-handle/.test(CSS) && !/zp-head-handle|head-handle/.test(HTML));
 }
 
-console.log("\n三、驱动方式：方向驱动二态弹收（一动就反应，不做比例跟随）（12 条）");
+console.log("\n三、驱动方式：方向驱动二态弹收（上滑顶出/下滑顶隐，一动就反应）（13 条）");
 {
   t("只有 1/0 两个稳定态：apply(show) 一次写到底（p=show?1:0）",
     /function apply\(show,animate\)\{/.test(FLOAT_JS) && /p=show\?1:0;/.test(FLOAT_JS));
-  t("方向驱动、几乎零死区：上移 ≥6px 收回、下移 ≥6px 弹出、回到顶部 6px 内必弹",
-    /var TOP_AT=6, MOVE=6;/.test(FLOAT_JS) && /st<=TOP_AT/.test(FLOAT_JS) &&
-    /acc>=MOVE/.test(FLOAT_JS) && /acc<=-MOVE/.test(FLOAT_JS));
+  t("方向对调（2026-11-07 第七轮）：上滑 ≥6px 上方弹出、下滑 ≥6px 上方隐藏",
+    /var TOP_AT=6, MOVE=6;/.test(FLOAT_JS) &&
+    /if\(acc>=MOVE\)\{[\s\S]{0,120}?if\(!shown\)apply\(true\)/.test(FLOAT_JS) &&
+    /if\(acc<=-MOVE\)\{[\s\S]{0,120}?if\(shown\)apply\(false\)/.test(FLOAT_JS));
+  t("取消「回顶部必弹」的位置例外：顶部只用于首帧定态，之后完全由方向决定",
+    !/if\(st<=TOP_AT\)\{[\s\S]{0,80}?apply\(true\)/.test(FLOAT_JS) &&
+    /shown=scroller\.scrollTop>TOP_AT\?false:true/.test(FLOAT_JS));
   t("不做比例跟随：没有 scrollTop 线性映射（mapP / (st-base)/range 全部移除）",
     !/mapP|mapP\(/.test(FLOAT_JS) && !/\(st-base\)\/range/.test(FLOAT_JS));
   t("只累计同向位移，方向一反转立即清零（惯性回弹/手抖不来回闪）",
     /\(\(acc>0\)!==\(d>0\)\)acc=0;/.test(FLOAT_JS) && /var lastSt=0, acc=0;/.test(FLOAT_JS));
   t("滚动帧只在跨方向时改一次状态，其余帧只读 scrollTop",
-    /function frame\(\)\{[\s\S]*?if\(shown\)apply\(false\)[\s\S]*?if\(!shown\)apply\(true\)[\s\S]*?\n  \}/.test(FLOAT_JS) &&
+    /function frame\(\)\{[\s\S]*?if\(!shown\)apply\(true\)[\s\S]*?if\(shown\)apply\(false\)[\s\S]*?\n  \}/.test(FLOAT_JS) &&
     !/frame\(\)\{[\s\S]*float\.style\.transform/.test(FLOAT_JS));
   t("状态切换一律走 --zp-island-* 过渡（不常驻 .is-scrolling 关过渡）",
     /\.zp-head-float\{[\s\S]*?transition:transform var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(CSS) &&
