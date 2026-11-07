@@ -776,14 +776,15 @@ body {
      上提 8px。仅在 env() 返回 0 的环境生效；iOS PWA / 新壳拿到真实 inset 时仍取 env 值。 */
   --zp-safe-top: max(env(safe-area-inset-top, 0px), 24px);
   /* ===== 浮岛运动（顶部浮层 + 底部导航共用，保证「上下呼应」）=====
-     2026-11-07：用户「让浮岛弹出和收回更利索些，如 Shadowrocket；上下浮岛保持呼应」。
+     2026-11-07 第一轮：用户「让浮岛弹出和收回更利索些，如 Shadowrocket；上下浮岛保持呼应」。
      此前顶部 .18s / 底部 .24s 且曲线不同（.22,.8,.3,1 vs .32,.72,0,1），
      松手后顶部队先落定、底部队还在路上，看起来是两件事。
-     现统一：时长 .18s（138px 行程 ≈ 767px/s，与 iOS 通知横幅/Shadowrocket 同档，
-     60fps 下约 11 帧，肉眼是「一下就位」而不是「滑过去」）；
+     第二轮（同日，用户「加快上下浮岛上下速度」）：.18s → .14s。
+     138px 行程 ≈ 986px/s，60fps 下约 8 帧 —— 松手到停住几乎一眨眼，
+     比原来底栏 .24s 快 42%，顶底仍同帧起停。
      曲线 cubic-bezier(.32,.72,0,1)：起步即高速、尾部收干净，无过冲、不回弹。
      两处必须引用同一对 token，禁止各自写死 —— 这是「呼应」的唯一真相源。 */
-  --zp-island-dur:.18s;
+  --zp-island-dur:.14s;
   --zp-island-ease:cubic-bezier(.32,.72,0,1);
   /* 骨架微光条（加载占位）双外观 token：order_detail / home / data 三处
      页面级骨架共用同一取值。浅色外观为浅灰微光；深色外观在 ui-theme.css 的
@@ -2873,10 +2874,11 @@ main.home-app > .topbar{
   right:var(--zp-gutter);
   z-index:20;
   transform:translateY(-100%);
-  /* 2026-11-07：与底栏共用 --zp-island-dur / --zp-island-ease（.18s + (.32,.72,0,1)）。
+  /* 2026-11-07：与底栏共用 --zp-island-dur / --zp-island-ease（现 .14s + (.32,.72,0,1)）。
      原 .18s + (.22,.8,.3,1) 与底栏 .24s 不同步，松手后一个先停一个还在滑；
      统一后顶部吸附与底栏让位同一帧起步、同一帧停住，视觉上是一件联动的事。
-     曲线去掉了尾部那点「软」，收得更利索，也不加回弹 —— Shadowrocket 无过冲。 */
+     曲线去掉了尾部那点「软」，收得更利索，也不加回弹 —— Shadowrocket 无过冲。
+     2026-11-07 第二轮再提速：令牌 .18s → .14s（用户「加快上下浮岛上下速度」）。 */
   transition:transform var(--zp-island-dur) var(--zp-island-ease);
   will-change:transform;
   pointer-events:none;
@@ -2933,16 +2935,17 @@ main.home-app > .topbar{
 .home-app .zp-head-card .delivery-man{height:36px}
 .home-app .zp-head-card .today-tabs{margin-top:4px}
 
-/* 让位块：隐藏态 0（完全不占位），展开态由 JS 在「松手吸附」时一次性写入。
-   跟手阶段高度冻结（spacer 不变、列表位置恒定、零重排），故这里不再需要
-   逐帧 transition；吸附时的一次性高度提交用 .18s 平滑落定，与浮层同步。 */
+/* 让位块：高度恒为 0 —— 保留节点只为兼容旧 DOM 与「列表从卡片首块开始」的
+   margin-top:0 选择器链，不再参与任何布局计算。
+   2026-11-07 第二轮（用户：「门店列表滚动要保持稳定，浮岛运动会推动门店列表」）：
+   此前吸附时把 spacer 从 0 撑到 122px，列表被推下 122px（有过渡 = 滑下去，
+   无过渡 = 跳一下），两种都算「推动」。现在彻底不写高度：浮层是纯 overlay，
+   列表的 scrollTop 与首行 y 在弹收全程一格不动，展开时上半部被浮层盖住、
+   滚动时内容从浮层下沿穿过。没有 transition 也就不存在第二个节奏。 */
 .home-app .zp-head-spacer{
   flex:0 0 auto;
   height:0;
-  /* 让位块与浮层同一套时长/曲线：随吸附一起落定，不另起节奏（上下呼应）。 */
-  transition:height var(--zp-island-dur) var(--zp-island-ease);
 }
-.home-app .zp-head-spacer.is-dragging{transition:none}
 
 /* 顶部两块移出后，名单成为卡片首块：去掉原本为「标题下方」准备的留白与分隔线 */
 main.home-app .task-card > .today-store-list:first-child{

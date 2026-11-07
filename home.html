@@ -31,7 +31,7 @@
 <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#161616" media="(prefers-color-scheme: dark)"><meta name="theme-color" content="#FFFFFF">
 <title>智配One</title>
 <link rel="manifest" href="/manifest.json">
-<link rel="stylesheet" href="/css/home.bundle.css?v=1c3fd338">
+<link rel="stylesheet" href="/css/home.bundle.css?v=39c1d6e3">
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png?v=25f1ad28">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -73,8 +73,8 @@
   </div>
 
   <div class="zp-scroll">
-    <!-- 浮层让位块：隐藏态 0（完全不占位），展开态撑到浮层下沿，避免门店首行被切半。
-         高度由 js/home/head-float.js 按实测浮层高度写入。 -->
+    <!-- 浮层让位块：高度恒 0，不再被 JS 写入（2026-11-07 起浮层是纯 overlay）。
+         保留节点只为兼容「首块 margin-top:0」选择器链与旧 DOM 结构。 -->
     <div class="zp-head-spacer" id="zpHeadSpacer" aria-hidden="true"></div>
 <section class="task-card" aria-labelledby="todayTitle">
     <div class="today-store-list" id="todayStoreList" aria-label="今日门店"><!-- 首帧骨架：数据到达后被今日渲染整体替换（见 js/home/today.js） --><div class="today-store-row" aria-hidden="true"><span class="skel-bar skel-idx"></span><span class="skel-bar skel-name"></span></div><div class="today-store-row" aria-hidden="true"><span class="skel-bar skel-idx"></span><span class="skel-bar skel-name skel-name--short"></span></div><div class="today-store-row" aria-hidden="true"><span class="skel-bar skel-idx"></span><span class="skel-bar skel-name"></span></div><div class="today-store-row" aria-hidden="true"><span class="skel-bar skel-idx"></span><span class="skel-bar skel-name skel-name--short"></span></div></div>
@@ -194,7 +194,7 @@
 </div>
 </main>
 
-<script defer src="/js/home.bundle.js?v=c3638df6"></script>
+<script defer src="/js/home.bundle.js?v=bfced8bf"></script>
 <script defer src="/js/boot-ready.js?v=4e3f49ea"></script>
 </body>
 </html>

@@ -92,7 +92,7 @@ console.log("\n二、CSS：天花板裁切 + 隐藏态完全消失 + 令牌配�
 console.log("\n三、手势：隐藏态起步 / 顶底互斥反向 / 原生滚动共存（8 条）");
 {
   t("p=0 隐藏态起步（打开时浮层收起、底栏出现，第一下上滑即可弹出）",
-    /var H=1,need=0,p=0/.test(FLOAT_JS));
+    /var H=1,p=0/.test(FLOAT_JS));
   t("跟手 p 用「起点绝对位移」计算，且 1:1（手指位移=浮层位移，不怕丢帧）",
     /setP\(pStart-ay\/Math\.max\(1,H\),false\)/.test(FLOAT_JS));
   t("松手按累计位移方向定端点（上滑→p=1 / 下滑→p=0），抗浏览器提前 touchcancel",
@@ -106,8 +106,8 @@ console.log("\n三、手势：隐藏态起步 / 顶底互斥反向 / 原生滚�
     touchAdds.length >= 4 && !/\.preventDefault\(/.test(FLOAT_JS));
   t("启用时通知 nav.js 让位（避免两套逻辑互相覆盖底栏类）",
     /window\.__zpHeadFloatActive=true/.test(FLOAT_JS));
-  t("ResizeObserver 按浮层实测高度重算让位（tab 显隐 / 字体 / 主题变化都跟随）",
-    /new ResizeObserver/.test(FLOAT_JS));
+  t("ResizeObserver 按浮层实测高度重算天花板与跟手基准（tab 显隐 / 字体 / 主题变化都跟随）",
+    /new ResizeObserver/.test(FLOAT_JS) && /main\.style\.setProperty\("--zp-ceiling-h"/.test(FLOAT_JS));
 }
 
 console.log("\n四、联动与构建链：nav 受控接口 + bundle 同步（5 条）");

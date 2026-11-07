@@ -91,9 +91,9 @@ console.log("\n三、可读性红线不动（7 条）");
   t("圆角仍用 --zp-r-card 令牌（横条 / 白卡片不写死像素）",
     /border-radius:var\(--zp-r-card\)/.test(CSS) &&
     /border-bottom-left-radius:var\(--zp-r-card\)/.test(CSS));
-  t("浮层仍是 .18s 二态吸附（紧凑不改交互时长，改由统一令牌表达）",
+  t("浮层仍是二态吸附（时长由 --zp-island-* 统一表达，紧凑不改交互）",
     !!float && /transition:transform var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(float) &&
-    !!spacer && /transition:height var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(spacer));
+    !!spacer && /height:0/.test(spacer));
   t("字号 / 行高基线仍由 home-base.css 令牌提供（未被紧凑规则覆写）",
     /\.today-summary strong\{font-size:var\(--zp-fs-20\);line-height:27px\}/.test(BASE_CSS) &&
     !/\.home-app \.zp-head-card[^\n]*font-size:/.test(CSS));

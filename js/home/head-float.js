@@ -19,40 +19,35 @@
    抗抖动（2026-11-07，采用 Shadowrocket 滑动参数）：视频逐帧实测其「列表位置恒定、
    浮层纯 overlay、二态快速吸附（约 0.1–0.2s）」。原先 render() 每帧按 p 改
    .zp-head-spacer 的文档流高度，跟手 24 帧把门店列表往下顶 180px，与 .zp-scroll
-   原生滚动叠加成抖动（真机残差极差 180px / 标准差 59.9）。现改为：跟手阶段只改
-   浮层 transform（合成层，不占文档流），让位块高度冻结、列表位置恒定；仅松手二态
-   吸附时一次性提交 0/need，配 .18s 过渡。列表只在吸附瞬间平滑让位一次，滑动全程零抖动。 */
+   原生滚动叠加成抖动（真机残差极差 180px / 标准差 59.9）。第一轮改为「吸附时一次性
+   提交让位」，但松手瞬间仍有 122px 的文档流位移，用户反馈「浮岛运动推动门店列表」。
+
+   第二轮（2026-11-07，用户：「门店列表滚动要保持稳定，整改浮岛运动会推动门店列表」）：
+   彻底取消让位 —— spacer 高度恒为 0，浮层回归纯 overlay。列表内容的文档流位置
+   从头到尾不动（滚动位置、首行 y 都不变），浮层展开时盖住列表上半部，滚动时内容
+   从浮层下沿穿过；收起后自然露出。这是 Shadowrocket 的做法，也是「稳定」的唯一解：
+   只要还改文档流高度，无论有没有过渡，列表都会被推动。 */
 (function(){
   var main=document.querySelector("main.home-app");
   if(!main)return;
   var float=document.getElementById("zpHeadFloat");
-  var spacer=document.getElementById("zpHeadSpacer");
   var topbar=main.querySelector(":scope > .topbar");
-  var scroller=main.querySelector(":scope > .zp-scroll");
-  if(!float||!spacer||!topbar||!scroller)return;
+  if(!float||!topbar)return;
 
   /* 通知 nav.js：首页底栏显隐由本模块接管（互斥反向），停用其滚动自隐藏，
      否则两套逻辑会互相覆盖 .is-nav-hidden。 */
   window.__zpHeadFloatActive=true;
 
-  var H=1,need=0,p=0,dragging=false,sx=0,sy=0,pStart=0,lastY=0,accDy=0,lock=null;
+  var H=1,p=0,dragging=false,sx=0,sy=0,pStart=0,lastY=0,accDy=0,lock=null;
 
   function measure(){
     var mr=main.getBoundingClientRect(),br=topbar.getBoundingClientRect();
     var ceiling=Math.max(0,br.bottom-mr.top);
     main.style.setProperty("--zp-ceiling-h",ceiling+"px");
     H=Math.round(float.getBoundingClientRect().height)||1;
-    /* 让位高度：使门店首行落在浮层下沿之外，避免被白卡片切半。
-       名单首行相对外壳 = 滚动区顶 + 上内边距 + spacer；
-       浮层下沿相对外壳 = 天花板底 + H。 */
-    var sr=scroller.getBoundingClientRect();
-    var padTop=parseFloat(getComputedStyle(scroller).paddingTop)||0;
-    var gap=10;
-    need=Math.max(0,Math.ceil(H+gap-(sr.top-br.bottom)-padTop));
+    /* 只更新天花板高度与跟手基准 H，不碰文档流：列表位置自始至终由 .zp-scroll
+       自己决定，浮岛的任何显隐/尺寸变化都不会推动它。 */
     render();
-    /* 浮层尺寸变化（tab 显隐 / 字体 / 主题）时按新 need 重提交让位；
-       跟手过程中跳过，保持布局冻结、列表位置恒定。 */
-    if(!dragging&&p>=.5)commitSpacer();
   }
 
   function navHide(hide){
@@ -61,14 +56,6 @@
   }
   function render(){
     float.style.transform="translateY("+(-(1-p)*100)+"%)";
-  }
-  /* 让位块只在「二态吸附」时提交（p>=.5 → need，否则 0），配 .18s 过渡。
-     跟手阶段不调用：spacer 高度冻结 → 门店列表位置恒定、跟手全程零重排。
-     这是 Shadowrocket「列表位置恒定 + 浮层纯 overlay + 二态快速吸附」的落地，
-     消除原先逐帧改文档流高度（跟手 24 帧顶动 180px）与原生滚动叠加造成的抖动；
-     列表只在松手吸附时平滑让位一次，是预期的吸附动画，不再与滚动打架。 */
-  function commitSpacer(){
-    spacer.style.height=(p>=.5?Math.round(need):0)+"px";
   }
   function setP(v,animate){
     p=Math.max(0,Math.min(1,v));
@@ -82,9 +69,7 @@
        形成一条渐变虚化带（隐藏态浮层本就该「完全消失、不留痕迹」）。
        阈值与底栏反向、二态吸附同用 .5，保持一套语义。 */
     float.classList.toggle("is-open",p>=.5);
-    spacer.classList.toggle("is-dragging",!animate);
     render();
-    if(animate)commitSpacer();   /* 仅吸附时提交让位；跟手时冻结布局 */
   }
   /* 结束手势：按「本次累计位移方向」定端点，而不是按最后一帧的进度吸附。
      passive + 原生滚动下浏览器可能提前 touchcancel，逐帧 p 会停在很小的值；

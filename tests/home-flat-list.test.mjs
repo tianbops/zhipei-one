@@ -76,24 +76,18 @@ console.log("\n二、月度统计同样处理（2 条）");
     FLAT_SEG.length > 100 && !/#[0-9a-fA-F]{3,8}|rgba?\(/.test(FLAT_SEG));
 }
 
-console.log("\n三、抗抖动：跟手冻结布局 + 松手二态提交（7 条）");
+console.log("\n三、列表稳定：浮层纯 overlay，不推动列表（7 条）");
 {
-  /* render() 内不得再逐帧写 spacer 高度 */
-  const renderStart = FLOAT_JS.indexOf("function render(){");
-  const renderEnd = FLOAT_JS.indexOf("function commitSpacer(){");
-  const renderBody = renderStart >= 0 && renderEnd > renderStart
-    ? FLOAT_JS.slice(renderStart, renderEnd) : "";
-  t("render() 只更新浮层 transform + 底栏（不含 spacer 高度写入）",
-    /function render\(\)\{/.test(renderBody) && !/spacer\.style\.height/.test(renderBody));
-  t("让位块高度抽成 commitSpacer()", /function commitSpacer\(\)\{/.test(FLOAT_JS));
-  t("commitSpacer 二态提交（p>=.5 → need / 否则 0）",
-    /spacer\.style\.height=\(p>=\.5\?Math\.round\(need\):0\)\+"px"/.test(FLOAT_JS));
-  t("setP 仅在吸附 animate=true 时提交让位（跟手冻结布局）",
-    /if\(animate\)commitSpacer\(\)/.test(FLOAT_JS));
-  t("measure 在浮层尺寸变化时重提交，但跟手中跳过",
-    /if\(!dragging&&p>=\.5\)commitSpacer\(\)/.test(FLOAT_JS));
-  t("抗抖动注释固化根因（逐帧顶动 180px / 列表位置恒定）",
-    /顶动 180px/.test(FLOAT_JS) && /列表位置恒定/.test(FLOAT_JS));
+  /* 2026-11-07 第二轮：让位彻底取消 —— 只要还写文档流高度，列表就会被推动 */
+  t("head-float 不再计算让位高度 need", !/need/.test(FLOAT_JS));
+  t("head-float 不再有 commitSpacer（无文档流写入点）", !/commitSpacer/.test(FLOAT_JS));
+  t("head-float 从不写 spacer 高度", !/spacer\.style\.height/.test(FLOAT_JS));
+  t("render() 只更新浮层 transform（无布局副作用）",
+    /function render\(\)\{\s*float\.style\.transform=/.test(FLOAT_JS));
+  t("measure() 只写天花板变量与 H，不碰 spacer（变量已移除）",
+    /--zp-ceiling-h/.test(FLOAT_JS) && !/var spacer|spacer\./.test(FLOAT_JS));
+  t("抗抖动根因注释保留（逐帧顶动 180px / 纯 overlay / 文档流位置不动）",
+    /顶 180px/.test(FLOAT_JS) && /纯 overlay/.test(FLOAT_JS) && /文档流位置/.test(FLOAT_JS));
   /* 手势本体不回归：方向吸附、touchcancel、原生滚动共存 */
   t("原生滚动 / 二态吸附 / touchcancel 机制保留",
     /accDy<0\?1:0/.test(FLOAT_JS) &&
@@ -105,14 +99,14 @@ console.log("\n四、Shadowrocket 二态吸附时长 + 产物同步（4 条）")
 {
   t("浮层 transform 过渡 .18s（经 --zp-island-* 令牌，与底栏同一套）",
     /\.zp-head-float\{[\s\S]*?transition:transform var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(CSS));
-  t("让位块 height 过渡同步同一对令牌",
-    /\.zp-head-spacer\{[\s\S]*?transition:height var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(CSS));
+  t("让位块恒 0 且无过渡（不再参与布局，也就没有第二个节奏）",
+    /\.zp-head-spacer\{[\s\S]*?height:0/.test(CSS) && !/\.zp-head-spacer\{[^}]*transition/.test(CSS));
   t("bundle CSS 已同步（含去卡片化规则 + 统一过渡令牌）",
     BUNDLE_CSS.includes("main.home-app .task-card,\nmain.home-app .trend-card{") &&
     BUNDLE_CSS.includes("transition:transform var(--zp-island-dur) var(--zp-island-ease)"));
-  t("bundle JS 已同步（含 commitSpacer / 仅吸附提交）",
-    BUNDLE_JS.includes("function commitSpacer(){") &&
-    BUNDLE_JS.includes("if(animate)commitSpacer()") &&
+  t("bundle JS 已同步（不含 commitSpacer / 不写文档流高度）",
+    !BUNDLE_JS.includes("function commitSpacer(){") &&
+    !/spacer\.style\.height/.test(BUNDLE_JS) &&
     BUILD.includes('"js/home/head-float.js"'));
 }
 

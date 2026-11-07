@@ -11,8 +11,8 @@
  * 本契约锁死的四件事（任何一条回归都会让「呼应」失效）：
  *   1) 唯一真相源：--zp-island-dur / --zp-island-ease 定义在 ui-base.css :root，
  *      取值 .18s + cubic-bezier(.32,.72,0,1)（起步即高速、尾部收干净、无过冲）；
- *   2) 顶部浮层、让位块、底栏本体、底栏加号图标 —— 四处transition 全部引用这对 token，
- *      不得写死时长或曲线（写死就会出现第二个节奏）；
+ *   2) 顶部浮层、底栏本体、底栏加号图标 —— 三处 transition 全部引用这对 token，
+ *      不得写死时长或曲线（写死就会出现第二个节奏）；让位块已恒 0、无过渡；
  *   3) 底栏显隐只在「松手吸附」时切换（setP 的 animate 分支），不得在 render()
  *      里按 p>=.5 跟手切换 —— 那会让底栏在拖到一半时提前滑走；
  *   4) 跟手 1:1（分母是 H，不带 0.85 放大系数），手指位移 = 浮层位移。
@@ -34,7 +34,7 @@ function t(name, cond, extra) {
   else { fail++; failures.push(name + (extra ? " → " + extra : "")); }
 }
 
-const tokenDur = /--zp-island-dur\s*:\s*\.18s/.test(UI);
+const tokenDur = /--zp-island-dur\s*:\s*\.14s/.test(UI);
 const tokenEase = /--zp-island-ease\s*:\s*cubic-bezier\(\.32,\.72,0,1\)/.test(UI);
 const floatRule = (/\.home-app\s+\.zp-head-float\s*\{([^}]*)\}/.exec(HOME) || [])[1] || "";
 const spacerRule = (/\.home-app\s+\.zp-head-spacer\s*\{([^}]*)\}/.exec(HOME) || [])[1] || "";
@@ -44,15 +44,15 @@ const plusIcon = (/\n\.zp-nav-plus\s+\.zp-nav-icon\{([^}]*)\}/.exec(UI) || [])[1
 console.log("浮岛运动 · 上下呼应契约（14 条）");
 
 /* 一、令牌 */
-t("ui-base 定义 --zp-island-dur:.18s", tokenDur);
+t("ui-base 定义 --zp-island-dur:.14s（第二轮提速）", tokenDur);
 t("ui-base 定义 --zp-island-ease:cubic-bezier(.32,.72,0,1)", tokenEase);
 t("曲线不含过冲（y 控制点均 ≤ 1，无回弹）", /cubic-bezier\(\.32,\.72,0,1\)/.test(UI));
 
 /* 二、四处引用同一对 token */
 t("顶部浮层 transition 引用 --zp-island-dur/.ease",
   /transition:transform var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(floatRule), floatRule.trim().slice(0, 120));
-t("让位块 height 过渡引用同一对 token（与浮层同刻落定）",
-  /transition:height var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(spacerRule), spacerRule.trim().slice(0, 120));
+t("让位块恒 0 且无过渡（列表不被文档流推动，也就无第二个节奏）",
+  /height:0/.test(spacerRule) && !/transition/.test(spacerRule), spacerRule.trim().slice(0, 120));
 t("底栏本体 transition 引用同一对 token",
   /transition:transform var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(navBlock), navBlock.trim().slice(-120));
 t("底栏加号图标 transition 引用同一对 token",
@@ -74,11 +74,10 @@ t("跟手 1:1（分母为 Math.max(1,H)，不带 0.85 放大系数）",
 
 /* 五、产物同步（首页只加载 bundle） */
 t("home.bundle.css 含统一 transition（源→产物同步）",
-  /transition:transform var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(BUNDLE_CSS) &&
-  /transition:height var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(BUNDLE_CSS));
-t("home.bundle.js 含吸附时联动 + 1:1 跟手",
+  /transition:transform var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(BUNDLE_CSS));
+t("home.bundle.js 含吸附时联动 + 1:1 跟手 + 无让位写入",
   /if\(animate\)navHide\(p>=\.5\)/.test(BUNDLE_JS) &&
-  !/\*0\.85/.test(BUNDLE_JS));
+  !/\*0\.85/.test(BUNDLE_JS) && !/spacer\.style\.height/.test(BUNDLE_JS));
 
 function finish() {
   console.log(`\n${fail === 0 ? "✅" : "❌"} 通过 ${pass} 项，失败 ${fail} 项`);
