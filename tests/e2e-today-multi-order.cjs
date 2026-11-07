@@ -129,7 +129,7 @@ const SNAP = `(()=>{
   let s = await ev(SNAP);
   console.log('init ' + JSON.stringify(s));
   check('两单都在 DOM 里（pages=2）', s && s.pages === 2, s && String(s.pages));
-  check('tab 按上传时间升序（09:12 → 14:40）', s && s.tabs.length === 2 && /09:12/.test(s.tabs[0]) && /14:40/.test(s.tabs[1]), s && JSON.stringify(s.tabs));
+  check('tab 只显示序号「第1单 / 第2单」且不含时间', s && s.tabs.length === 2 && s.tabs[0] === '第1单' && s.tabs[1] === '第2单' && !/\d{1,2}:\d{2}/.test(s.tabs.join(' ')), s && JSON.stringify(s.tabs));
   check('默认停在最新一单（第 2 单）', s && s.active === 1, s && String(s.active));
   check('摘要取当前单（4家）', s && s.count === '4家', s && s.count);
   check('单量取全天（2单）', s && s.orders === '2单', s && s.orders);

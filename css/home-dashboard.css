@@ -219,7 +219,7 @@ main.home-app > .topbar{
 
 /* 横条：浮层顶段，取 block 令牌与白卡片拉开层次（沿用 .task-title 的 flex 排版与字号令牌） */
 .home-app .zp-head-bar{
-  padding:10px 14px;
+  padding:7px 14px;
   background:var(--zp-block);
   border-radius:var(--zp-r-card) var(--zp-r-card) 0 0;
   pointer-events:auto;
@@ -227,7 +227,7 @@ main.home-app > .topbar{
 
 /* 白卡片：比天花板亮一档，作为卡片身段，下沿圆角 */
 .home-app .zp-head-card{
-  padding:12px 14px 14px;
+  padding:8px 14px 9px;
   background:var(--zp-surface);
   border:1px solid var(--zp-line);
   border-top:0;
@@ -236,6 +236,23 @@ main.home-app > .topbar{
   box-shadow:var(--zp-shadow-md);
   pointer-events:auto;
 }
+
+/* ===== 顶部浮层「高度紧凑」（2026-11-07）=====
+   用户反馈白卡片垂直留白偏大，同时要求 tab 去掉时间只留「第X单」。
+   真机基线（390×844 浅色，展开态）：浮层 196px = 横条 46 + 白卡片 150；
+   白卡片里数据行文字仅 27px，却被 60px 插画撑起整行，另有上下内边距 12/14、
+   task-main 上间距 9、tabs 上间距 10。这里只收「垂直留白」：
+     横条 padding 10→7、白卡片 12/14→8/9、task-main 9→5、插画 60→46、tabs 10→6。
+   插画取 46px 而非更小：与 home-base.css 窄屏(≤380px)既有 .delivery-man{height:46px}
+   对齐，避免限定作用域的高优先级规则把窄屏反而撑高，也保留插画可辨识度。
+   明确不动的红线：字号 / 行高 / 左右边距 / 圆角 / tab 44px 触控下限
+   （见本文件「首页纵向布局」段与 today-tab 的 min-height:44px 注释），
+   也不碰门店列表行高、月度统计与让位块逻辑（浮层变矮后 need 由 measure() 自动重算）。
+   全部限定在 .home-app .zp-head-card 作用域：内页复用的 .task-card / .trend-card
+   与首页去卡片化后的门店列表不受影响；取值无字面量颜色，深浅两套自适应。 */
+.home-app .zp-head-card .task-main{margin-top:5px}
+.home-app .zp-head-card .delivery-man{height:46px}
+.home-app .zp-head-card .today-tabs{margin-top:6px}
 
 /* 让位块：隐藏态 0（完全不占位），展开态由 JS 在「松手吸附」时一次性写入。
    跟手阶段高度冻结（spacer 不变、列表位置恒定、零重排），故这里不再需要

@@ -9,7 +9,8 @@
    日期不一致自动失效；退出登录时由 home-bundle-glue.frag 清除，防止换账号串数据。
 
    同日多单（2026-11-06）：一张卡内按单切页（点 tab / 左右滑动）。
-   - 顺序按 uploadedAt 升序（早 → 晚），与 tab、时间轴一致；
+   - 顺序按 uploadedAt 升序（早 → 晚）；tab 只显示「第X单」序号，不显示时间
+     （2026-11-07 用户要求：去掉 tab 里的时间，浮层更简洁紧凑）；
    - 选中单记在 sessionStorage（按 id，不按序号），跨天自动失效；
    - 切换只换视图、不重新请求：orders 由 /api/waybills/latest 一次带回；
    - 门店名改为单行省略（简称让名字能一排放下），横向手势让给换单，
@@ -23,13 +24,9 @@ const zpAttr=v=>zpEsc(v).replace(/'/g,"&#39;");
 function zpTodayKey(){
   return new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 }
-/* tab 时间取 uploadedAt（与后端「最新一单」排序字段一致）。
-   不能用 OCR 时间或计划时间，否则会出现「tab 顺序与默认单不一致」。 */
-function zpTodayHM(iso){
-  const t=Date.parse(String(iso||""));
-  if(!Number.isFinite(t))return "";
-  try{return new Intl.DateTimeFormat("zh-CN",{timeZone:"Asia/Shanghai",hour:"2-digit",minute:"2-digit",hour12:false}).format(t)}catch{return ""}
-}
+/* 2026-11-07：tab 不再显示上传时间，只保留「第X单」序号。
+   排序仍按 uploadedAt（见下方当日历史降级路径），只是不再把时间渲染到 tab 上；
+   原先专用于 tab 的「北京时间格式化函数」随之整体移除，不留无人调用的死代码。 */
 function zpTodaySelId(){
   try{
     const s=JSON.parse(sessionStorage.getItem(TODAY_SEL_KEY)||"null");
@@ -118,10 +115,11 @@ function zpRenderToday(orders,dayCount,fromCache){
   }
 
   if(todayTabs){
-    todayTabs.innerHTML=list.length>1?list.map((o,i)=>{
-      const hm=zpTodayHM(o.uploadedAt||o.createdAt);
-      return '<button type="button" class="today-tab" role="tab" data-i="'+i+'" aria-selected="false">第'+(i+1)+'单'+(hm?' '+hm:'')+'</button>';
-    }).join(""):"";
+    /* tab 只显示「第X单」：不带上传时间，去掉时间后按钮更短、浮层更紧凑。
+       顺序仍由 orders 的 uploadedAt 升序保证（左旧右新），与默认停在最新一单一致。 */
+    todayTabs.innerHTML=list.length>1?list.map((_,i)=>
+      '<button type="button" class="today-tab" role="tab" data-i="'+i+'" aria-selected="false">第'+(i+1)+'单</button>'
+    ).join(""):"";
     todayTabs.hidden=list.length<2;
   }
 

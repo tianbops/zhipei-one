@@ -37,6 +37,10 @@ ok(!/brief=\(w\)[\s\S]{0,300}sourceLine/.test(latest), 'orders 不得带调试�
 ok(/id="todayTabs"/.test(html) && /role="tablist"/.test(html), '今日卡须有 tab 容器');
 ok(/class="today-tab"[\s\S]{0,120}aria-selected/.test(today), 'tab 须带 aria-selected（读屏可感知当前单）');
 ok(/todayTabs\.hidden=list\.length<2/.test(today), '只有 1 单时 tab 整行隐藏（日常与旧版一致）');
+/* 2026-11-07 用户要求：tab 只留「第X单」序号，不显示上传时间（浮层更简洁紧凑）。
+   排序仍按 uploadedAt，只是不再把时间渲染到按钮上。 */
+ok(!/zpTodayHM/.test(today), '不得再保留 zpTodayHM 时间格式化死代码');
+ok(/第'\+\(i\+1\)\+'单<\/button>/.test(today) && !/\+hm|zpTodayHM\(/.test(today), 'tab 文本须只有「第X单」，不得拼接时间');
 ok(/class="today-view"><div class="today-track"/.test(today), '列表须包在 view / track 两层内（view 负责裁切相邻页）');
 ok(/class="today-page" data-i=/.test(today), '每单渲染成一个 page，序号在页内从 1 重排');
 ok(/zpRenderToday\(orders,dayOrders,false\)/.test(today), '三层数据源须汇总成 orders 后统一渲染');
