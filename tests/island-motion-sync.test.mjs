@@ -13,11 +13,10 @@
  *      取值 .18s + cubic-bezier(.32,.72,0,1)（起步即高速、尾部收干净、无过冲）；
  *   2) 顶部浮层、底栏本体、底栏加号图标 —— 三处 transition 全部引用这对 token，
  *      不得写死时长或曲线（写死就会出现第二个节奏）；让位块已恒 0、无过渡；
- *   3) 底栏显隐由 syncNav() 按滞回阈值切换（p<.35 收、p>.65 出），不得写成
- *      单点 p>=.5 —— 单点在快速滚动时会来回闪，且滚动中就要同步，不能等松手；
- *   4) 跟手 1:1 由「滚动位置」保证：p = 1 - (scrollTop-base)/H，滚动中 .is-scrolling
- *      关闭过渡（严格同帧），不带任何放大系数、不靠 touch 手势（会被 touchcancel
- *      截断，只走十几像素就跳变）。
+ *   3) 底栏显隐由 syncNav() 跟随浮岛二态切换（p=1 弹出→沉下 / p=0 收回→升起），
+ *      与浮岛同一次状态切换里完成，不能等松手、也不能单点反复穿越；
+ *   4) 浮岛是二态弹收：跨阈值（回顶部 ≤8 弹 / 离开 >48 收）整块切一次，
+ *      不做 scrollTop 比例跟随、不靠 touch 手势（会被 touchcancel 截断）。
  */
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -53,8 +52,8 @@ t("曲线不含过冲（y 控制点均 ≤ 1，无回弹）", /cubic-bezier\(\.3
 /* 二、四处引用同一对 token */
 t("顶部浮层 transition 引用 --zp-island-dur/.ease",
   /transition:transform var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(floatRule), floatRule.trim().slice(0, 120));
-t("让位块取静态 --zp-head-inset 且无过渡（列表不被文档流推动，也就无第二个节奏）",
-  /height:var\(--zp-head-inset/.test(spacerRule) && !/transition/.test(spacerRule), spacerRule.trim().slice(0, 120));
+t("让位块恒 0 且无过渡（列表不被文档流推动，也就无第二个节奏）",
+  /height:0/.test(spacerRule) && !/transition/.test(spacerRule), spacerRule.trim().slice(0, 120));
 t("底栏本体 transition 引用同一对 token",
   /transition:transform var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(navBlock), navBlock.trim().slice(-120));
 t("底栏加号图标 transition 引用同一对 token",
@@ -67,14 +66,15 @@ t("全站不再残留 cubic-bezier(.22,.8,.3,1) 作为浮岛节奏",
 
 /* 四、联动时机与跟手（滚动驱动） */
 t("底栏切换在 syncNav() 里按滞回阈值（p≥.65 沉下 / p<.35 升起），滚动中即可同步",
-  /function syncNav\(\)/.test(JS) && /p>=\.65/.test(JS) && /p<\.35/.test(JS) && /navHide\(want\)/.test(JS),
+  /function syncNav\(\)/.test(JS) && /var want=p>=\.5;/.test(JS) && /navHide\(navHidden\)/.test(JS),
   (JS.match(/navHide\([^)]*\)/g) || []).join(" | "));
 t("write() 内只写 transform 与 is-open，不切底栏（避免一帧多写）",
   /function write\(\)\{[\s\S]{0,220}?\}/.test(JS) &&
   !/function write\(\)\{[\s\S]{0,180}?navHide/.test(JS));
-t("跟手 1:1 由滚动位置映射保证（p = 1 - clamp((st-base)/H)），无放大系数",
-  /return 1-clamp\(\(st-base\)\/range,0,1\)/.test(JS) && !/\*0\.85/.test(JS) && !/pStart/.test(JS));
-t("滚动中关闭过渡（.is-scrolling → transition:none），同帧跟手不滞后",
+t("二态弹收：跨阈值只切一次（apply(show) 写 p=show?1:0），无比例跟随/放大系数",
+  /function apply\(show,animate\)\{/.test(JS) && /p=show\?1:0;/.test(JS) &&
+  !/mapP/.test(JS) && !/\*0\.85/.test(JS) && !/pStart/.test(JS));
+t("首帧用 .is-scrolling 关过渡（避免进首页时浮岛滑一下）",
   /\.is-scrolling\)\{transition:none\}|\.is-scrolling\{transition:none\}/.test(HOME));
 
 /* 五、产物同步（首页只加载 bundle） */

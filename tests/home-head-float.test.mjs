@@ -8,12 +8,11 @@
  *  3) CSS：品牌区取页面底色 --zp-bg 与整页融合、仍作不透明天花板压过浮层、
  *     隐藏态 translateY(-100%) 完全消失、横条 block / 白卡片 surface 两层分层、
  *     spacer 隐藏态 0（不留把手线 / 不占位）；
- *  4) 显隐由「滚动位置」驱动（2026-11-07 第三、四轮）：p = 1 - clamp((scrollTop-base)/range)，
- *     滚动中禁过渡做 1:1 跟手；让位块高度由 measure() 静态写入 --zp-head-inset（浮层高 −
- *     首行自然偏移），滚动全程不动 → 列表零推动、首行不被压、行不被切；取消停手吸附
- *     （吸附会让浮层脱离内容跳一下，正是用户说的「改坏了」）；不再用 touch 手势驱动
- *     （passive 监听必被 touchcancel 截断，跟手只走十几像素就跳变）；
- *     顶底互斥反向、底栏阈值带滞回；
+ *  4) 显隐是「二态弹收」（2026-11-07 第五轮）：只有 p=1/p=0 两个稳定态，跨阈值
+ *     （回顶部 ≤8 弹出 / 离开 >48 收回）整块切一次，走 --zp-island-* 过渡；
+ *     不做 scrollTop 比例跟随（用户：「不弹出和收回，只是随着屏幕滚动了」）；
+ *     纯 overlay、不写任何文档流高度（列表零推动）；不用 touch 手势驱动；
+ *     顶底互斥反向、与底栏同帧起步停住；
  *  5) nav.js 暴露受控接口并在浮层启用时让位；构建链含新模块且置于末尾。
  */
 import { readFileSync } from "node:fs";
@@ -89,38 +88,40 @@ console.log("\n二、CSS：天花板裁切 + 隐藏态完全消失 + 令牌配�
   t("两层配色零字面量（无 #hex / rgb 硬编码）",
     !!bar && !!card && !/#[0-9a-fA-F]{3,8}|rgba?\(/.test(bar + card + (float || "")));
   const spacer = rule(CSS, ".home-app .zp-head-spacer");
-  t("让位块高度取 --zp-head-inset（静态让位，首行永远在浮层下沿下方）",
-    !!spacer && /height:var\(--zp-head-inset/.test(spacer) && !/transition/.test(spacer));
+  t("让位块 height:0（二态弹收下浮岛纯 overlay，不占位）",
+    !!spacer && /height:0/.test(spacer) && !/transition/.test(spacer));
   t("新增浮层不留任何把手线节点",
     !/zp-head-handle|head-handle/.test(CSS) && !/zp-head-handle|head-handle/.test(HTML));
 }
 
-console.log("\n三、驱动方式：滚动位置驱动、1:1 跟手、静态让位、不吸附（11 条）");
+console.log("\n三、驱动方式：二态弹收（跨阈值整块弹/收，不做比例跟随）（11 条）");
 {
-  t("p 由 scrollTop 线性映射：p = 1 - clamp((st-base)/range, 0, 1)",
-    /return 1-clamp\(\(st-base\)\/range,0,1\)/.test(FLOAT_JS));
+  t("只有 1/0 两个稳定态：apply(show) 一次写到底（p=show?1:0）",
+    /function apply\(show,animate\)\{/.test(FLOAT_JS) && /p=show\?1:0;/.test(FLOAT_JS));
+  t("触发只看滚动位置且带滞回：回到顶部 <=8 弹出、离开 >48 收回",
+    /SHOW_AT=8/.test(FLOAT_JS) && /HIDE_AT=48/.test(FLOAT_JS) &&
+    /shown&&st>HIDE_AT/.test(FLOAT_JS) && /!shown&&st<=SHOW_AT/.test(FLOAT_JS));
+  t("不做比例跟随：没有 scrollTop 线性映射（mapP / (st-base)/range 全部移除）",
+    !/mapP|mapP\(/.test(FLOAT_JS) && !/\(st-base\)\/range/.test(FLOAT_JS));
+  t("滚动帧只在跨阈值时改一次状态，其余帧只读 scrollTop",
+    /function frame\(\)\{[\s\S]*?apply\(false\)[\s\S]*?apply\(true\)[\s\S]*?\n  \}/.test(FLOAT_JS) &&
+    !/frame\(\)\{[\s\S]*float\.style\.transform/.test(FLOAT_JS));
+  t("状态切换一律走 --zp-island-* 过渡（不常驻 .is-scrolling 关过渡）",
+    /\.zp-head-float\{[\s\S]*?transition:transform var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(CSS) &&
+    /\.zp-head-float\.is-scrolling\{transition:none\}/.test(CSS) &&
+    /apply\(false\)/.test(FLOAT_JS) === /apply\(false\)/.test(FLOAT_JS));
   t("监听 .zp-scroll 的 scroll（passive，不干预原生滚动与惯性）",
     /scroller\.addEventListener\("scroll",onScroll,\{passive:true\}\)/.test(FLOAT_JS));
-  t("滚动中直接写 transform、禁过渡（.is-scrolling），严格 1:1 无滞后",
-    /float\.classList\.add\("is-scrolling"\)/.test(FLOAT_JS) &&
-    /\.zp-head-float\.is-scrolling\{transition:none\}/.test(CSS));
-  t("取消停手吸附：不存在 settle / 按 p 就近吸端点（浮层不会脱离内容跳一下）",
-    !/function settle\(/.test(FLOAT_JS) && !/st<=40\?1:0/.test(FLOAT_JS) &&
-    !/setTimeout\(settle/.test(FLOAT_JS));
-  t("静态让位：measure() 用实测首行偏移算让位高度（H − natural）",
-    /--zp-head-inset/.test(FLOAT_JS) && /Math\.max\(0,H-natural\)/.test(FLOAT_JS));
-  t("让位只在 measure 写一次（wantInset 不变则不写），滚动中零写入",
-    /wantInset!==inset/.test(FLOAT_JS) && /main\.style\.setProperty\("--zp-head-inset"/.test(FLOAT_JS));
-  t("不再用 touch 驱动显隐（touchstart/move 监听已移除）",
-    !/addEventListener\("touch/.test(FLOAT_JS) && !/accDy=ay/.test(FLOAT_JS));
-  t("初始 p=1（scrollTop=0 时浮层展开，与页面首帧一致）",
+  t("彻底不接管 touch（无 touch 监听、无 preventDefault）",
+    !/addEventListener\("touch/.test(FLOAT_JS) && !/\.preventDefault\(/.test(FLOAT_JS));
+  t("初始 p=1（scrollTop=0 时浮岛展开，与页面首帧一致）",
     /var p=1;/.test(FLOAT_JS) && /measure\(\);\s*\n\}\)\(\);/.test(FLOAT_JS));
-  t("顶底互斥反向：浮层展开（p≥.65）则底栏沉下、收起（p<.35）则升起（滞回不闪）",
-    /p>=\.65/.test(FLOAT_JS) && /p<\.35/.test(FLOAT_JS) && /navHide\(want\)/.test(FLOAT_JS));
-  t("只写 transform 与让位变量，不写行内 height（列表零推动）",
+  t("顶底呼应：底栏跟同一次状态切换走，同一帧起步停住",
+    /function syncNav\(\)\{\s*\n\s*var want=p>=\.5;/.test(FLOAT_JS) && /syncNav\(\);/.test(FLOAT_JS));
+  t("只写 transform，绝不写文档流高度（列表零推动）",
     /float\.style\.transform=/.test(FLOAT_JS) && !/style\.height/.test(FLOAT_JS));
-  t("ResizeObserver 按浮层实测高度重算天花板与行程 H",
-    /new ResizeObserver/.test(FLOAT_JS) && /--zp-ceiling-h/.test(FLOAT_JS) && /H=h/.test(FLOAT_JS));
+  t("ResizeObserver 按浮层实测高度重算天花板与 H",
+    /new ResizeObserver/.test(FLOAT_JS) && /--zp-ceiling-h/.test(FLOAT_JS) && /H=Math\.round/.test(FLOAT_JS));
 }
 
 console.log("\n四、联动与构建链：nav 受控接口 + bundle 同步（5 条）");
