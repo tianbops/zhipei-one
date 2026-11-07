@@ -1045,10 +1045,54 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
   var SRC = "zhipei";
 
   var PROVIDERS = [
-    { id: "amap", label: "高德地图", note: "查看门店位置，是否用 App 导航由您选" },
-    { id: "baidu", label: "百度地图", note: "查看门店位置，是否用 App 导航由您选" },
-    { id: "qq", label: "腾讯地图", note: "查看门店位置，是否用 App 导航由您选" },
+    { id: "amap", label: "高德地图", desc: "精准导航，出行无忧", note: "查看门店位置，是否用 App 导航由您选" },
+    { id: "baidu", label: "百度地图", desc: "智能规划，精准到达", note: "查看门店位置，是否用 App 导航由您选" },
+    { id: "qq", label: "腾讯地图", desc: "实时路况，出行更顺畅", note: "查看门店位置，是否用 App 导航由您选" },
   ];
+
+  /* ===== 行内图标（2026-11-07 视觉重做）=====
+     全部自绘、无外部资源：PWA 离线可用，CSP 也不需要新增域名。
+     品牌 logo 只取「一眼认出」的特征（高德纸飞机 / 百度红水滴 / 腾讯双色指针），
+     不做像素级复刻；白色圆角底由 CSS 提供，这里只画图形本身。 */
+  var HERO_ICON = '<svg viewBox="0 0 64 64" fill="none" aria-hidden="true">' +
+    '<defs>' +
+    '<radialGradient id="zpMnGlow" cx="32" cy="30" r="30" gradientUnits="userSpaceOnUse">' +
+    '<stop stop-color="#2F6BFF" stop-opacity=".38"/><stop offset="1" stop-color="#2F6BFF" stop-opacity="0"/>' +
+    '</radialGradient>' +
+    '<linearGradient id="zpMnPin" x1="20" y1="8" x2="46" y2="46" gradientUnits="userSpaceOnUse">' +
+    '<stop stop-color="#5C9BFF"/><stop offset="1" stop-color="#1E5BE0"/>' +
+    '</linearGradient>' +
+    '</defs>' +
+    '<circle cx="32" cy="30" r="30" fill="url(#zpMnGlow)"/>' +
+    '<ellipse cx="32" cy="46" rx="20" ry="7" stroke="#3B82F6" stroke-opacity=".55" stroke-width="2"/>' +
+    '<path d="M32 10c-7.7 0-14 6-14 13.4C18 33.6 32 48 32 48s14-14.4 14-24.6C46 16 39.7 10 32 10z" fill="url(#zpMnPin)"/>' +
+    '<circle cx="32" cy="23.5" r="5.2" fill="#FFFFFF"/></svg>';
+
+  var MAP_ICONS = {
+    amap: '<svg viewBox="0 0 48 48" aria-hidden="true">' +
+      '<path d="M8 40 40 8 30 41l-6.4-10.6z" fill="#1E88E5"/>' +
+      '<path d="M23.6 30.4 30 41 40 8z" fill="#1565C0"/></svg>',
+    baidu: '<svg viewBox="0 0 48 48" aria-hidden="true">' +
+      '<path d="M24 6c-7 0-12.5 5.6-12.5 12.5C11.5 27.4 24 42 24 42s12.5-14.6 12.5-23.5C36.5 11.6 31 6 24 6z" fill="#E53935"/>' +
+      '<text x="24" y="23" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="700" fill="#FFFFFF">du</text></svg>',
+    qq: '<svg viewBox="0 0 48 48" aria-hidden="true">' +
+      '<circle cx="24" cy="24" r="17" fill="#EAF2FF"/>' +
+      '<path d="M24 9l5.6 13.4L24 20l-5.6 2.4z" fill="#2F80ED"/>' +
+      '<path d="M24 39l-5.6-13.4L24 28l5.6-2.4z" fill="#F2994A"/></svg>',
+  };
+
+  var CHEV_ICON = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
+    '<path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  var CLOSE_ICON = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
+    '<path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+
+  /* 字符串 → 节点：template 解析不执行脚本，也不会把 SVG 放进 HTML 命名空间之外 */
+  function svgOf(markup) {
+    var t = document.createElement("template");
+    t.innerHTML = markup;
+    return t.content.firstChild;
+  }
 
   function text(v) {
     return v == null ? "" : String(v).trim();
@@ -1284,24 +1328,51 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
     box.setAttribute("aria-modal", "true");
     box.setAttribute("aria-label", "选择导航软件");
 
+    /* 把手：视觉上说明「这是一张浮起的卡片」，不承担拖拽（拖拽会与
+       页面滚动争手势，且本弹层点遮罩即可关闭）。 */
+    box.appendChild(el("div", "zp-mn-grabber"));
+
     var head = el("div", "zp-mn-head");
-    head.appendChild(el("div", "zp-mn-title", "导航到 " + data.name));
-    var x = el("button", "zp-mn-close", "✕");
+    var hero = el("div", "zp-mn-hero");
+    hero.appendChild(svgOf(HERO_ICON));
+    head.appendChild(hero);
+
+    var copy = el("div", "zp-mn-copy");
+    copy.appendChild(el("div", "zp-mn-title", "导航到"));
+    /* 门店名放副标题而不是标题：完整店名常有 15~25 字，做标题必然被省略号切掉；
+       放副标题可折两行，司机能确认「导的是哪一家」。 */
+    copy.appendChild(el("div", "zp-mn-sub", data.name));
+    head.appendChild(copy);
+
+    var x = el("button", "zp-mn-close");
     x.type = "button";
     x.setAttribute("aria-label", "关闭");
+    x.appendChild(svgOf(CLOSE_ICON));
     x.addEventListener("click", closeMenu);
     head.appendChild(x);
     box.appendChild(head);
 
     var list = el("div", "zp-mn-list");
     PROVIDERS.forEach(function (p) {
-      var row = el("button", "zp-mn-row");
+      var row = el("button", "zp-mn-row" + (p.id === "amap" ? " is-primary" : ""));
       row.type = "button";
       row.setAttribute("data-provider", p.id);
-      /* 只留名称、居中：说明文案对三家完全一样，重复三遍没有信息量；
-         语义挪到 aria-label，读屏仍能听到「查看门店位置、是否用 App 由您选」。 */
+      /* 读屏用：App 名 + 说明；视觉上的第三行小字（desc）只是同一信息的呈现 */
       row.setAttribute("aria-label", p.label + "：" + p.note);
-      row.appendChild(el("span", "zp-mn-row-label", p.label));
+
+      var icon = el("span", "zp-mn-icon");
+      icon.appendChild(svgOf(MAP_ICONS[p.id]));
+      row.appendChild(icon);
+
+      var rowCopy = el("span", "zp-mn-row-copy");
+      rowCopy.appendChild(el("span", "zp-mn-row-label", p.label));
+      rowCopy.appendChild(el("span", "zp-mn-row-desc", p.desc));
+      row.appendChild(rowCopy);
+
+      var chev = el("span", "zp-mn-chev");
+      chev.appendChild(svgOf(CHEV_ICON));
+      row.appendChild(chev);
+
       row.addEventListener("click", function () {
         var u = urls[p.id];
         closeMenu();
@@ -1310,6 +1381,12 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
       list.appendChild(row);
     });
     box.appendChild(list);
+
+    var cancel = el("button", "zp-mn-cancel", "取消");
+    cancel.type = "button";
+    cancel.addEventListener("click", closeMenu);
+    box.appendChild(cancel);
+
     bg.appendChild(box);
     bg.addEventListener("click", function (e) {
       if (e.target === bg) closeMenu();

@@ -321,24 +321,90 @@ textarea:disabled,
    遗留的 .zp-business-nav-page 类仍由 nav.js 添加，仅作「本页是业务页」的标记。 */
 
 /* ===== 门店导航选择菜单（js/ui/mapnav.js）=====
-   点门店名弹出，列出高德 / 百度 / 腾讯。复用 zp-picker 已验证过的
-   底部弹层原语与 --zp-* 主题令牌，双主题/字号缩放自动继承。 */
-.zp-mn-bg{position:fixed;inset:0;z-index:var(--ui-z-modal-stack,1100);display:flex;align-items:flex-end;justify-content:center;background:var(--zp-scrim-dialog);padding:0;animation:zpModalFade .16s ease-out}
-.zp-mn-sheet{position:relative;width:min(100%,560px);max-height:86dvh;display:flex;flex-direction:column;background:var(--zp-surface);border:1px solid var(--zp-line);border-radius:var(--zp-r-sheet) var(--zp-r-sheet) 0 0;box-shadow:0 18px 50px var(--zp-shadow-lg);padding:8px 0 calc(10px + env(safe-area-inset-bottom));animation:zpModalIn .16s ease-out}
+   2026-11-07 视觉重做（用户：「导航入口弹窗 UI，按图二视觉效果设计」）：
+   由「贴底白色列表」改为「浮起玻璃卡片 + 品牌图标 + 推荐项高亮 + 取消按钮」。
+   结构：把手 → 头部（大图标 + 标题 + 门店名）→ 三个选项（图标/名称/说明/箭头）
+        → 取消。
+   深浅两套只靠 .zp-mn-sheet 上的局部变量切换，组件层不写第二份布局；
+   图标是行内 SVG（无外部资源、离线可用、CSP 无新增域名）。 */
+.zp-mn-bg{
+  position:fixed;inset:0;z-index:var(--ui-z-modal-stack,1100);
+  display:flex;align-items:flex-end;justify-content:center;
+  padding:12px 12px calc(12px + env(safe-area-inset-bottom));
+  background:var(--zp-scrim-dialog);
+  animation:zpModalFade .18s ease-out;
+}
+.zp-mn-sheet{
+  /* 局部视觉变量：浅色为「白玻璃 + 淡蓝」，深色为「蓝黑玻璃 + 冷光」 */
+  --mn-line:rgba(15,98,230,.12);
+  --mn-item:rgba(15,98,230,.05);
+  --mn-item-2:rgba(15,98,230,.10);
+  --mn-primary-bg:linear-gradient(100deg,rgba(15,98,230,.15),rgba(15,98,230,.04));
+  --mn-primary-line:rgba(15,98,230,.42);
+  --mn-primary-glow:0 8px 22px rgba(15,98,230,.16);
+  position:relative;width:min(100%,560px);max-height:86dvh;
+  display:flex;flex-direction:column;
+  background:linear-gradient(180deg,#FFFFFF 0%,#F5F8FE 100%);
+  border:1px solid var(--mn-line);
+  border-radius:28px;
+  box-shadow:0 24px 64px rgba(15,23,42,.20),0 8px 24px rgba(15,98,230,.10);
+  padding:8px 14px calc(14px + env(safe-area-inset-bottom));
+  animation:zpModalIn .2s ease-out;
+  overflow:hidden;
+}
+:root[data-zp-theme="dark"] .zp-mn-sheet{
+  --mn-line:rgba(122,170,255,.16);
+  --mn-item:rgba(255,255,255,.055);
+  --mn-item-2:rgba(255,255,255,.10);
+  --mn-primary-bg:linear-gradient(100deg,rgba(58,120,255,.34),rgba(58,120,255,.08));
+  --mn-primary-line:rgba(110,168,254,.62);
+  --mn-primary-glow:0 10px 26px rgba(40,110,255,.28);
+  background:linear-gradient(180deg,#1C2537 0%,#111823 100%);
+  box-shadow:0 24px 64px rgba(0,0,0,.55),0 0 0 1px rgba(110,168,254,.06),0 18px 60px rgba(46,110,255,.16);
+}
 @media(prefers-reduced-motion:reduce){.zp-mn-bg,.zp-mn-sheet{animation:none}}
-/* 标题居中：左右各留 56px 给关闭按钮，保证省略号两侧对称、不压角标 */
 .zp-mn-sheet:focus{outline:none}
-.zp-mn-head{position:relative;display:flex;align-items:center;justify-content:center;padding:10px 56px;border-bottom:1px solid var(--zp-line);text-align:center}
-.zp-mn-title{flex:1 1 auto;min-width:0;color:var(--zp-text);font-size:var(--zp-fs-16);font-weight:var(--zp-fw-bold);line-height:22px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* 关闭按钮与标题同一条水平中线：头高只有 42px（22px 标题 + 上下 10px），
-   原先 top:10px + 44px 热区让图标中心比文字中心低 11px；改为 50% 居中、
-   热区收到 40px，既不压到下方选项行，也保持单排布局不被撑高。 */
-.zp-mn-close{position:absolute;top:50%;right:10px;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:40px;height:40px;line-height:1;border:0;background:none;color:var(--zp-muted);font-size:var(--zp-fs-16);border-radius:var(--zp-r-mini);cursor:pointer;-webkit-appearance:none;appearance:none}
-.zp-mn-close:active{background:var(--zp-surface-2)}
-.zp-mn-list{overflow:auto;-webkit-overflow-scrolling:touch;padding:2px 8px 6px}
-/* 三个选项居中并列：字号统一、行高一致，靠细分割线区分，不再用箭头与说明 */
-.zp-mn-row{display:flex;align-items:center;justify-content:center;width:100%;min-height:54px;padding:8px 12px;background:none;border:0;border-radius:var(--zp-r-card);color:var(--zp-text);font-size:var(--zp-fs-16);font-weight:var(--zp-fw-medium);text-align:center;cursor:pointer;-webkit-appearance:none;appearance:none}
-.zp-mn-row+.zp-mn-row{border-top:1px solid var(--zp-tint)}
-.zp-mn-row:active{background:var(--zp-surface-2)}
-.zp-mn-row:focus-visible{outline:2px solid var(--zp-focus-ring);outline-offset:-2px}
-.zp-mn-row-label{line-height:24px}
+/* 把手：与底部 nav 的手柄同语言，提示「这是一张浮起的卡片」 */
+.zp-mn-grabber{flex:0 0 auto;width:44px;height:4px;margin:2px auto 8px;border-radius:2px;background:var(--zp-tint-strong)}
+/* 头部：大图标 + 两行文案；右侧 44px 留给圆形关闭按钮 */
+.zp-mn-head{position:relative;display:flex;align-items:center;gap:12px;padding:2px 46px 14px 2px;text-align:left}
+.zp-mn-hero{flex:0 0 auto;width:54px;height:54px;display:flex;align-items:center;justify-content:center}
+.zp-mn-hero svg{width:54px;height:54px;display:block}
+.zp-mn-copy{flex:1 1 auto;min-width:0}
+.zp-mn-title{color:var(--zp-text);font-size:var(--zp-fs-20);line-height:26px;font-weight:var(--zp-fw-bold);letter-spacing:.2px}
+.zp-mn-sub{margin-top:2px;color:var(--zp-muted);font-size:var(--zp-fs-13);line-height:18px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.zp-mn-close{position:absolute;top:0;right:0;display:flex;align-items:center;justify-content:center;
+  width:38px;height:38px;padding:0;border:1px solid var(--mn-line);border-radius:var(--zp-r-pill);
+  background:var(--mn-item);color:var(--zp-muted);cursor:pointer;-webkit-appearance:none;appearance:none;
+  transition:background .12s ease}
+.zp-mn-close svg{width:16px;height:16px;display:block}
+.zp-mn-close:active{background:var(--mn-item-2)}
+.zp-mn-close:focus-visible{outline:2px solid var(--zp-focus-ring);outline-offset:2px}
+/* 选项：三张独立卡片，首项（高德）为推荐态 —— 描边 + 渐变 + 冷光 */
+.zp-mn-list{display:flex;flex-direction:column;gap:10px;flex:0 1 auto;min-height:0;padding:0 0 12px;overflow:auto;-webkit-overflow-scrolling:touch}
+.zp-mn-row{display:flex;align-items:center;gap:12px;width:100%;min-height:64px;padding:10px 12px;
+  background:var(--mn-item);border:1px solid transparent;border-radius:18px;
+  color:var(--zp-text);text-align:left;cursor:pointer;-webkit-appearance:none;appearance:none;
+  transition:transform .12s ease,background .12s ease}
+.zp-mn-row.is-primary{background:var(--mn-primary-bg);border-color:var(--mn-primary-line);box-shadow:var(--mn-primary-glow)}
+.zp-mn-row:active{transform:scale(.985);background:var(--mn-item-2)}
+.zp-mn-row:focus-visible{outline:2px solid var(--zp-focus-ring);outline-offset:2px}
+/* 品牌图标统一坐在白色圆角方块上：三家 logo 自身配色差异大，白底能把
+   深色主题里的「彩色贴纸」收成一致的一列 */
+.zp-mn-icon{flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+  width:42px;height:42px;border-radius:12px;background:#FFFFFF;
+  box-shadow:0 2px 8px rgba(15,23,42,.14)}
+.zp-mn-icon svg{width:28px;height:28px;display:block}
+.zp-mn-row-copy{flex:1 1 auto;min-width:0;display:flex;flex-direction:column}
+.zp-mn-row-label{color:var(--zp-text);font-size:var(--zp-fs-16);line-height:21px;font-weight:var(--zp-fw-semibold)}
+.zp-mn-row-desc{margin-top:2px;color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:16px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.zp-mn-chev{flex:0 0 auto;display:flex;align-items:center;color:var(--zp-muted);opacity:.75}
+.zp-mn-chev svg{width:16px;height:16px;display:block}
+/* 取消：与选项同宽的胶囊，弱于选项、可随手点掉 */
+.zp-mn-cancel{flex:0 0 auto;width:100%;height:48px;border:1px solid var(--mn-line);border-radius:16px;
+  background:var(--mn-item);color:var(--zp-text);font-size:var(--zp-fs-16);font-weight:var(--zp-fw-medium);
+  cursor:pointer;-webkit-appearance:none;appearance:none;transition:background .12s ease}
+.zp-mn-cancel:active{background:var(--mn-item-2)}
+.zp-mn-cancel:focus-visible{outline:2px solid var(--zp-focus-ring);outline-offset:2px}
