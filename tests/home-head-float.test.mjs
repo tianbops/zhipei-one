@@ -8,8 +8,10 @@
  *  3) CSS：品牌区取页面底色 --zp-bg 与整页融合、仍作不透明天花板压过浮层、
  *     隐藏态 translateY(-100%) 完全消失、横条 block / 白卡片 surface 两层分层、
  *     spacer 隐藏态 0（不留把手线 / 不占位）；
- *  4) 手势：p=0 隐藏态起步、上滑弹出 / 下滑隐藏、松手吸附、横向不接管、
- *     顶底互斥反向、仍交给 .zp-scroll 原生滚动（不 preventDefault）；
+ *  4) 显隐由「滚动位置」驱动（2026-11-07 第三轮）：p = 1 - clamp((scrollTop-base)/H)，
+ *     滚动中禁过渡做 1:1 跟手、停稳吸附到端点并平移 base；不再用 touch 手势驱动
+ *     （passive 监听必被 touchcancel 截断，跟手只走十几像素就跳变）；
+ *     顶底互斥反向、底栏阈值带滞回；
  *  5) nav.js 暴露受控接口并在浮层启用时让位；构建链含新模块且置于末尾。
  */
 import { readFileSync } from "node:fs";
@@ -72,8 +74,9 @@ console.log("\n二、CSS：天花板裁切 + 隐藏态完全消失 + 令牌配�
   t("浮层 absolute 定位、贴品牌区底部、层级低于天花板",
     !!float && /position:absolute/.test(float) &&
     /top:var\(--zp-ceiling-h/.test(float) && /z-index:20/.test(float));
-  t("隐藏态整块 translateY(-100%)（完全消失、不留把手线）",
-    !!float && /transform:translateY\(-100%\)/.test(float));
+  t("初始按展开态渲染（translateY(0)，JS 就位前不会先闪一下隐藏）",
+    !!float && /transform:translateY\(0\)/.test(float) &&
+    /\(-\(1-p\)\*100\)/.test(FLOAT_JS));
   const bar = rule(CSS, ".home-app .zp-head-bar");
   const card = rule(CSS, ".home-app .zp-head-card");
   t("横条浮层顶段取 block 令牌（与白卡片分层）", !!bar && /background:var\(--zp-block\)/.test(bar));
@@ -89,25 +92,29 @@ console.log("\n二、CSS：天花板裁切 + 隐藏态完全消失 + 令牌配�
     !/zp-head-handle|head-handle/.test(CSS) && !/zp-head-handle|head-handle/.test(HTML));
 }
 
-console.log("\n三、手势：隐藏态起步 / 顶底互斥反向 / 原生滚动共存（8 条）");
+console.log("\n三、驱动方式：滚动位置驱动、1:1 跟手、停稳吸附（10 条）");
 {
-  t("p=0 隐藏态起步（打开时浮层收起、底栏出现，第一下上滑即可弹出）",
-    /var H=1,p=0/.test(FLOAT_JS));
-  t("跟手 p 用「起点绝对位移」计算，且 1:1（手指位移=浮层位移，不怕丢帧）",
-    /setP\(pStart-ay\/Math\.max\(1,H\),false\)/.test(FLOAT_JS));
-  t("松手按累计位移方向定端点（上滑→p=1 / 下滑→p=0），抗浏览器提前 touchcancel",
-    /accDy<0\?1:0/.test(FLOAT_JS) && /addEventListener\("touchcancel",end/.test(FLOAT_JS));
-  t("位移过小时仍就近吸附到 0/1 端点", /p>=\.5\?1:0/.test(FLOAT_JS));
-  t("横向手势不接管（让给多单切页 / 门店点击）",
-    /Math\.abs\(ay\)<=Math\.abs\(ax\)\*1\.2/.test(FLOAT_JS));
-  t("顶底互斥反向：顶部出现则底栏隐藏", /navHide\(p>=\.5\)/.test(FLOAT_JS));
-  const touchAdds = FLOAT_JS.match(/addEventListener\("touch(?:start|move|end|cancel)"[\s\S]*?\{passive:true\}\)/g) || [];
-  t("touch 四个监听全部 passive、无 .preventDefault() 调用（门店名单仍由 .zp-scroll 原生滚动，统计卡可达）",
-    touchAdds.length >= 4 && !/\.preventDefault\(/.test(FLOAT_JS));
-  t("启用时通知 nav.js 让位（避免两套逻辑互相覆盖底栏类）",
-    /window\.__zpHeadFloatActive=true/.test(FLOAT_JS));
-  t("ResizeObserver 按浮层实测高度重算天花板与跟手基准（tab 显隐 / 字体 / 主题变化都跟随）",
-    /new ResizeObserver/.test(FLOAT_JS) && /main\.style\.setProperty\("--zp-ceiling-h"/.test(FLOAT_JS));
+  t("p 由 scrollTop 线性映射：p = 1 - clamp((st-base)/H, 0, 1)",
+    /return 1-clamp\(\(st-base\)\/range,0,1\)/.test(FLOAT_JS));
+  t("监听 .zp-scroll 的 scroll（passive，不干预原生滚动与惯性）",
+    /scroller\.addEventListener\("scroll",onScroll,\{passive:true\}\)/.test(FLOAT_JS));
+  t("滚动中直接写 transform、禁过渡（.is-scrolling），严格 1:1 无滞后",
+    /float\.classList\.add\("is-scrolling"\)/.test(FLOAT_JS) &&
+    /\.zp-head-float\.is-scrolling\{transition:none\}/.test(CSS));
+  t("停稳 150ms 后吸附最近端点（半开位不留）",
+    /setTimeout\(settle,150\)/.test(FLOAT_JS) && /var to=p>=\.5\?1:0/.test(FLOAT_JS));
+  t("吸附时平移 base，避免下一帧 scroll 把 p 拉回半开（回弹）",
+    /base=to\?clamp\(st,0,range\):clamp\(st-range,0,range\)/.test(FLOAT_JS));
+  t("不再用 touch 驱动显隐（touchstart/move 监听已移除）",
+    !/addEventListener\("touch/.test(FLOAT_JS) && !/accDy=ay/.test(FLOAT_JS));
+  t("初始 p=1（scrollTop=0 时浮层展开，与页面首帧一致）",
+    /var p=1;/.test(FLOAT_JS) && /measure\(\);\s*\n\}\)\(\);/.test(FLOAT_JS));
+  t("顶底互斥反向：浮层展开（p≥.65）则底栏沉下、收起（p<.35）则升起（滞回不闪）",
+    /p>=\.65/.test(FLOAT_JS) && /p<\.35/.test(FLOAT_JS) && /navHide\(want\)/.test(FLOAT_JS));
+  t("只写 transform，绝不改文档流高度（列表零推动）",
+    /float\.style\.transform=/.test(FLOAT_JS) && !/style\.height/.test(FLOAT_JS));
+  t("ResizeObserver 按浮层实测高度重算天花板与行程 H",
+    /new ResizeObserver/.test(FLOAT_JS) && /--zp-ceiling-h/.test(FLOAT_JS) && /H=h/.test(FLOAT_JS));
 }
 
 console.log("\n四、联动与构建链：nav 受控接口 + bundle 同步（5 条）");

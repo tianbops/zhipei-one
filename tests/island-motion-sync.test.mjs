@@ -13,9 +13,11 @@
  *      取值 .18s + cubic-bezier(.32,.72,0,1)（起步即高速、尾部收干净、无过冲）；
  *   2) 顶部浮层、底栏本体、底栏加号图标 —— 三处 transition 全部引用这对 token，
  *      不得写死时长或曲线（写死就会出现第二个节奏）；让位块已恒 0、无过渡；
- *   3) 底栏显隐只在「松手吸附」时切换（setP 的 animate 分支），不得在 render()
- *      里按 p>=.5 跟手切换 —— 那会让底栏在拖到一半时提前滑走；
- *   4) 跟手 1:1（分母是 H，不带 0.85 放大系数），手指位移 = 浮层位移。
+ *   3) 底栏显隐由 syncNav() 按滞回阈值切换（p<.35 收、p>.65 出），不得写成
+ *      单点 p>=.5 —— 单点在快速滚动时会来回闪，且滚动中就要同步，不能等松手；
+ *   4) 跟手 1:1 由「滚动位置」保证：p = 1 - (scrollTop-base)/H，滚动中 .is-scrolling
+ *      关闭过渡（严格同帧），不带任何放大系数、不靠 touch 手势（会被 touchcancel
+ *      截断，只走十几像素就跳变）。
  */
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -41,7 +43,7 @@ const spacerRule = (/\.home-app\s+\.zp-head-spacer\s*\{([^}]*)\}/.exec(HOME) || 
 const navBlock = (/^\.zp-nav\{([\s\S]*?)\n\}/m.exec(UI) || [])[1] || "";
 const plusIcon = (/\n\.zp-nav-plus\s+\.zp-nav-icon\{([^}]*)\}/.exec(UI) || [])[1] || "";
 
-console.log("浮岛运动 · 上下呼应契约（14 条）");
+console.log("浮岛运动 · 上下呼应契约（15 条）");
 
 /* 一、令牌 */
 t("ui-base 定义 --zp-island-dur:.14s（第二轮提速）", tokenDur);
@@ -63,21 +65,24 @@ t("底栏不再残留 .24s 写死时长", !/transform\s+\.24s/.test(UI));
 t("全站不再残留 cubic-bezier(.22,.8,.3,1) 作为浮岛节奏",
   !/cubic-bezier\(\.22,\.8,\.3,1\)/.test(HOME) && !/cubic-bezier\(\.22,\.8,\.3,1\)/.test(UI));
 
-/* 四、联动时机与跟手 */
-t("底栏切换只在吸附分支（setP 的 if(animate) navHide）",
-  /if\(animate\)\s*navHide\(p>=\.5\)/.test(JS), (JS.match(/navHide\([^)]*\)/g) || []).join(" | "));
-t("render() 内不再按 p 切换底栏（跟手中途不闪）",
-  /function render\(\)\{[\s\S]{0,200}?\}/.test(JS) &&
-  !/function render\(\)\{[\s\S]{0,160}?navHide/.test(JS));
-t("跟手 1:1（分母为 Math.max(1,H)，不带 0.85 放大系数）",
-  /setP\(pStart-ay\/Math\.max\(1,H\),false\)/.test(JS) && !/\*0\.85/.test(JS));
+/* 四、联动时机与跟手（滚动驱动） */
+t("底栏切换在 syncNav() 里按滞回阈值（p≥.65 沉下 / p<.35 升起），滚动中即可同步",
+  /function syncNav\(\)/.test(JS) && /p>=\.65/.test(JS) && /p<\.35/.test(JS) && /navHide\(want\)/.test(JS),
+  (JS.match(/navHide\([^)]*\)/g) || []).join(" | "));
+t("write() 内只写 transform 与 is-open，不切底栏（避免一帧多写）",
+  /function write\(\)\{[\s\S]{0,220}?\}/.test(JS) &&
+  !/function write\(\)\{[\s\S]{0,180}?navHide/.test(JS));
+t("跟手 1:1 由滚动位置映射保证（p = 1 - clamp((st-base)/H)），无放大系数",
+  /return 1-clamp\(\(st-base\)\/range,0,1\)/.test(JS) && !/\*0\.85/.test(JS) && !/pStart/.test(JS));
+t("滚动中关闭过渡（.is-scrolling → transition:none），同帧跟手不滞后",
+  /\.is-scrolling\)\{transition:none\}|\.is-scrolling\{transition:none\}/.test(HOME));
 
 /* 五、产物同步（首页只加载 bundle） */
 t("home.bundle.css 含统一 transition（源→产物同步）",
   /transition:transform var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(BUNDLE_CSS));
-t("home.bundle.js 含吸附时联动 + 1:1 跟手 + 无让位写入",
-  /if\(animate\)navHide\(p>=\.5\)/.test(BUNDLE_JS) &&
-  !/\*0\.85/.test(BUNDLE_JS) && !/spacer\.style\.height/.test(BUNDLE_JS));
+t("home.bundle.js 含滚动映射 + 滞回联动 + 无让位写入",
+  /1-clamp\(\(st-base\)\/range,0,1\)/.test(BUNDLE_JS) &&
+  /navHide\(want\)/.test(BUNDLE_JS) && !/spacer\.style\.height/.test(BUNDLE_JS));
 
 function finish() {
   console.log(`\n${fail === 0 ? "✅" : "❌"} 通过 ${pass} 项，失败 ${fail} 项`);

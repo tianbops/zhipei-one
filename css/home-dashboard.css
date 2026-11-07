@@ -214,7 +214,9 @@ main.home-app > .topbar{
   left:var(--zp-gutter);
   right:var(--zp-gutter);
   z-index:20;
-  transform:translateY(-100%);
+  /* 初始（JS 就位前）按展开态渲染：p 由滚动位置决定，scrollTop=0 即展开。
+     若这里留 -100%，bundle 执行前会先看到隐藏、再「滑进来」一下。 */
+  transform:translateY(0);
   /* 2026-11-07：与底栏共用 --zp-island-dur / --zp-island-ease（现 .14s + (.32,.72,0,1)）。
      原 .18s + (.22,.8,.3,1) 与底栏 .24s 不同步，松手后一个先停一个还在滑；
      统一后顶部吸附与底栏让位同一帧起步、同一帧停住，视觉上是一件联动的事。
@@ -224,7 +226,10 @@ main.home-app > .topbar{
   will-change:transform;
   pointer-events:none;
 }
-.home-app .zp-head-float.is-dragging{transition:none}
+/* 滚动进行中禁用过渡：p 由 scrollTop 逐帧驱动，若还带 .14s 过渡会出现「追不上
+   手指」的滞后（每帧都在往新目标补 14% 的距离，观感发黏）。去掉过渡后是严格的
+   1:1 跟手 —— 内容走到哪，浮层到哪；停稳吸附时才恢复 --zp-island-* 过渡。 */
+.home-app .zp-head-float.is-scrolling{transition:none}
 
 /* 横条：浮层顶段，取 block 令牌与白卡片拉开层次（沿用 .task-title 的 flex 排版与字号令牌）
    2026-11-07 二次压缩：内边距 7→6（横条 36→34），文字行高与字号不动。 */

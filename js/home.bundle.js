@@ -3605,151 +3605,138 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
 })();
 
 ;
-/* js/home/head-float.js —— 首页顶部两层浮层的显隐手势
+/* js/home/head-float.js —— 首页顶部两层浮层的显隐（滚动驱动）
    ------------------------------------------------------------------
-   忠实落地已通过真触摸验证的交互原型（home-island-prototype.html）：
-     · p∈[0,1] 表示顶部浮层展开进度，p=0 完全隐藏、p=1 完整展开；
-     · 隐藏态整块 translateY(-100%) 钻到品牌区天花板背后，不留把手线、不占位；
-     · 门店名单让位块随 p 撑开，保证首行不被白卡片切成半截；
-     · 底栏与顶部互斥反向：顶部出现 → 底栏隐藏，顶部隐藏 → 底栏出现；
-     · 手指上滑（往下读）→ 顶部弹出；下滑（回看上方）→ 顶部完全隐藏。
-   整屏任意位置生效；横向手势（多单切页 / 门店行点击）不介入；上传弹层内不拦截。
-   不注入、不改写任何业务数据。
-   依赖 UI 层 nav.js 暴露的 zpNavSetHidden，故置于 home.bundle.js 末尾执行。
+   p∈[0,1]：顶部浮层展开进度。p=1 完整展开、p=0 整块钻到品牌区天花板背后。
 
-   稳定性要点（2026-11-07 真机 CDP 复测）：touch 全程 passive、不 preventDefault，
-   门店名单仍由 .zp-scroll 原生滚动承接；但浏览器一旦接管滚动就会提前派发
-   touchcancel，逐帧累加的 p 往往只走到很小便被截断。故逐帧只用「起点绝对位移」
-   算 p 做跟手过渡，松手统一按「本次累计位移方向」定端点：上滑→p=1、下滑→p=0，
-   即使只剩一两个 touchmove 也能可靠弹出/隐藏，不出现「上滑没弹出」。
+   2026-11-07 第三轮（用户：「按住屏幕不放上下滑动，上下浮岛运动优化，参照 Shadowrocket」）：
+   根因是「手势驱动」这条路本身走不通 —— touchstart/touchmove 必须 passive（否则列表
+   滚不动），而浏览器一旦接管滚动就派发 touchcancel，逐帧的 touchmove 只来一两帧就断，
+   浮层跟手 10–20px 就冻结，直到松手才按 accDy 一次性跳到端点。用户看到的是
+   「拖的时候不动、松手啪一下」，而且松手方向判定偶尔与内容方向相反（上滑阅读时浮层
+   反而弹出来遮住列表）。
 
-   抗抖动（2026-11-07，采用 Shadowrocket 滑动参数）：视频逐帧实测其「列表位置恒定、
-   浮层纯 overlay、二态快速吸附（约 0.1–0.2s）」。原先 render() 每帧按 p 改
-   .zp-head-spacer 的文档流高度，跟手 24 帧把门店列表往下顶 180px，与 .zp-scroll
-   原生滚动叠加成抖动（真机残差极差 180px / 标准差 59.9）。第一轮改为「吸附时一次性
-   提交让位」，但松手瞬间仍有 122px 的文档流位移，用户反馈「浮岛运动推动门店列表」。
+   现在改为「滚动位置驱动」，与 Shadowrocket 同构：浮层不是被手指拖着走，而是被内容
+   推着走 —— 列表滚多少，浮层就收多少，一像素不多一像素不少：
+     p = 1 - clamp((scrollTop - base) / H, 0, 1)
+   · 跟手自然发生：滚动是连续的，p 也连续，中间没有任何「松手才动」的断档；
+   · 惯性滚动继续带着浮层走，甩一下就能收干净（比任何固定时长动画都干脆）；
+   · 方向永远正确：上滑=内容上移=浮层收起，下滑=回看=浮层出现；
+   · 完全不碰文档流：只写 transform，列表 scrollTop 与行位置不受任何影响（第二轮
+     已取消让位块，这里继续保持）。
 
-   第二轮（2026-11-07，用户：「门店列表滚动要保持稳定，整改浮岛运动会推动门店列表」）：
-   彻底取消让位 —— spacer 高度恒为 0，浮层回归纯 overlay。列表内容的文档流位置
-   从头到尾不动（滚动位置、首行 y 都不变），浮层展开时盖住列表上半部，滚动时内容
-   从浮层下沿穿过；收起后自然露出。这是 Shadowrocket 的做法，也是「稳定」的唯一解：
-   只要还改文档流高度，无论有没有过渡，列表都会被推动。 */
+   滚动停止后若浮层停在半开位（卡片切一半最难看），150ms 后吸附到最近端点，并把
+   映射基准 base 平移到当前位置 —— 这样吸附后不会出现「刚吸过去又被下一帧 scroll
+   拉回半开」的回弹。吸附与底部让位共用 --zp-island-dur/.ease，同帧起停（上下呼应）。
+
+   底部导航：p 跨滞回阈值时切换（<.35 收、>.65 出），滚动中即可同步，不需要等松手；
+   阈值远离 .5，快速滚动来回时不会闪。 */
 (function(){
   var main=document.querySelector("main.home-app");
   if(!main)return;
   var float=document.getElementById("zpHeadFloat");
+  var scroller=main.querySelector(":scope > .zp-scroll");
   var topbar=main.querySelector(":scope > .topbar");
-  if(!float||!topbar)return;
+  if(!float||!scroller||!topbar)return;
 
   /* 通知 nav.js：首页底栏显隐由本模块接管（互斥反向），停用其滚动自隐藏，
      否则两套逻辑会互相覆盖 .is-nav-hidden。 */
   window.__zpHeadFloatActive=true;
 
-  var H=1,p=0,dragging=false,sx=0,sy=0,pStart=0,lastY=0,accDy=0,lock=null;
+  var H=1;            /* 浮层高度 = 位移行程（transform 的 -100%） */
+  var range=1;        /* 映射行程：浮层收完所需的滚动距离 = min(H, 可滚动余量) */
+  var base=0;         /* 映射基准：scrollTop=base 时 p=1 */
+  var p=1;
+  var rafId=0, settleT=0, navHidden=null, booted=false;
 
-  function measure(){
-    var mr=main.getBoundingClientRect(),br=topbar.getBoundingClientRect();
-    var ceiling=Math.max(0,br.bottom-mr.top);
-    main.style.setProperty("--zp-ceiling-h",ceiling+"px");
-    H=Math.round(float.getBoundingClientRect().height)||1;
-    /* 只更新天花板高度与跟手基准 H，不碰文档流：列表位置自始至终由 .zp-scroll
-       自己决定，浮岛的任何显隐/尺寸变化都不会推动它。 */
-    render();
-  }
-
+  function clamp(v,a,b){return v<a?a:(v>b?b:v)}
   function navHide(hide){
     if(window.zpNavSetHidden)window.zpNavSetHidden(hide);
     else{var n=document.querySelector(".zp-nav");if(n)n.classList.toggle("is-nav-hidden",hide)}
   }
-  function render(){
+  function mapP(st){return 1-clamp((st-base)/range,0,1)}
+
+  /* 顶底互斥反向：浮层展开（p 高）→ 底栏沉下；浮层收起（p 低）→ 底栏升起。
+     阈值 .65/.35 而非 .5：单点在快速滚动时会在中途反复穿越、底栏来回闪。 */
+  function syncNav(){
+    var want=navHidden;
+    if(want===null)want=p>=.5;
+    else if(!want&&p>=.65)want=true;     /* 浮层露到 65% 以上才沉 */
+    else if(want&&p<.35)want=false;      /* 收到 35% 以下才升 */
+    if(want!==navHidden){navHidden=want;navHide(want)}
+  }
+  function write(){
     float.style.transform="translateY("+(-(1-p)*100)+"%)";
-  }
-  function setP(v,animate){
-    p=Math.max(0,Math.min(1,v));
-    /* 2026-11-07：底栏不再跟着 p>=.5 走 —— 跟手中一旦跨过一半就切换，
-       用户来回拖时它会提前滑走/滑回（.24s 过渡还在跑又反向），看着「不跟手」。
-       现在只在「松手吸附」这一刻切：顶部吸附与底栏让位同一帧起步，
-       两者共用 --zp-island-dur/.ease，同刻停住 —— 这就是上下呼应。 */
-    if(animate)navHide(p>=.5);
-    float.classList.toggle("is-dragging",!animate);
-    /* 投影只随浮层露出时出现：p=0 隐藏态去掉阴影，避免它溢出到品牌区下沿
-       形成一条渐变虚化带（隐藏态浮层本就该「完全消失、不留痕迹」）。
-       阈值与底栏反向、二态吸附同用 .5，保持一套语义。 */
+    /* 投影只在露出过半时出现，隐藏态保持干净底色（避免阴影溢出到品牌区下沿） */
     float.classList.toggle("is-open",p>=.5);
-    render();
-  }
-  /* 结束手势：按「本次累计位移方向」定端点，而不是按最后一帧的进度吸附。
-     passive + 原生滚动下浏览器可能提前 touchcancel，逐帧 p 会停在很小的值；
-     用起点→终点方向兜底，慢速小幅滑动、只剩一两个 touchmove 都有确定落点。 */
-  function end(){
-    if(!dragging)return;
-    dragging=false;
-    var wasY=(lock==="y");
-    lock=null;
-    if(!wasY)return;                              /* 横向手势：浮层保持原态 */
-    if(Math.abs(accDy)>=12)setP(accDy<0?1:0,true); /* 上滑→弹出 / 下滑→隐藏 */
-    else setP(p>=.5?1:0,true);                    /* 位移过小：就近吸附 */
   }
 
-  function ignore(e){
-    var t=e.target;
-    return !!(t&&t.closest&&t.closest("#uploadArea,[role=dialog],[aria-modal=true]"));
+  /* 滚动中：直接写 transform（.is-scrolling 禁过渡），p 与 scrollTop 严格 1:1，
+     不引入任何动画时长 —— 跟手就是「内容走到哪，浮层到哪」。 */
+  function frame(){
+    rafId=0;
+    var v=mapP(scroller.scrollTop);
+    if(Math.abs(v-p)<0.0005)return;
+    p=v;
+    float.classList.add("is-scrolling");
+    write();
+    syncNav();
   }
-  function down(x,y){dragging=true;lock=null;sx=x;sy=y;lastY=y;pStart=p;accDy=0}
-  function move(x,y){
-    if(!dragging)return;
-    lastY=y;
-    var ax=x-sx,ay=y-sy;
-    accDy=ay;                                   /* 任何移动都记录累计位移，供 end 判方向 */
-    if(!lock){
-      if(Math.abs(ax)<8&&Math.abs(ay)<8)return;
-      /* 只有明确纵向才接管；横向手势完全让给多单切页与门店行点击 */
-      if(Math.abs(ay)<=Math.abs(ax)*1.2){dragging=false;return}
-      lock="y";
+  function onScroll(){
+    if(!rafId)rafId=requestAnimationFrame(frame);
+    if(settleT)clearTimeout(settleT);
+    settleT=setTimeout(settle,150);
+  }
+  /* 停稳后吸附：半开位切一半最难看，吸到最近端点。base 一起平移，
+     否则下一帧 scroll 会按旧基准把 p 拉回半开（回弹抖动）。 */
+  function settle(){
+    settleT=0;
+    var to=p>=.5?1:0;
+    if(p>0.02&&p<0.98){
+      var st=scroller.scrollTop;
+      base=to?clamp(st,0,range):clamp(st-range,0,range);
+      float.classList.remove("is-scrolling");   /* 恢复 --zp-island-* 过渡 */
+      requestAnimationFrame(function(){p=to;write();syncNav()});
+    }else{
+      float.classList.remove("is-scrolling");
+      syncNav();
     }
-    /* 用「起点绝对位移」而非逐帧增量算 p：不怕丢帧，也不怕 H 在滚动中变化 */
-    /* 跟手 1:1：手指走多少、浮层走多少。原 0.85 是放大系数（拖 117px 就全开），
-       手感「滑」且与底栏的位移速率对不上；改回 1:1 后拖动更实，松手吸附更快。 */
-    setP(pStart-ay/Math.max(1,H),false);
   }
 
-  /* touch 全程 passive：不 preventDefault，门店名单仍由 .zp-scroll 原生滚动承接，
-     既能整页滚到统计卡，又让浮层跟手滑入滑出（列表从浮层下方穿过）。
-     touchcancel 与 touchend 共用 end()，浏览器接管滚动提前取消时方向依然确定。 */
-  main.addEventListener("touchstart",function(e){
-    if(ignore(e))return;
-    var t=e.touches[0];if(t)down(t.clientX,t.clientY);
-  },{passive:true});
-  main.addEventListener("touchmove",function(e){
-    if(!dragging||ignore(e))return;
-    var t=e.touches[0];if(t)move(t.clientX,t.clientY);
-  },{passive:true});
-  main.addEventListener("touchend",end,{passive:true});
-  main.addEventListener("touchcancel",end,{passive:true});
+  function measure(){
+    var mr=main.getBoundingClientRect(),br=topbar.getBoundingClientRect();
+    main.style.setProperty("--zp-ceiling-h",Math.max(0,br.bottom-mr.top)+"px");
+    var h=Math.round(float.getBoundingClientRect().height)||1;
+    /* 短列表兜底：可滚动余量不足浮层高度时，把映射行程压到余量，
+       否则滚到底也收不满（永远半开、底栏也不让位）。 */
+    var maxSt=Math.max(0,(scroller.scrollHeight||0)-(scroller.clientHeight||0));
+    var rg=Math.max(1,Math.min(h,maxSt>0?maxSt:h));
+    if(h!==H||rg!==range){H=h;range=rg;base=clamp(base,0,range)}
+    /* 首帧必须无过渡：CSS 初始是展开态（避免 JS 到位前先闪一下 -100%），
+       若此时按当前 scrollTop 修正还带 .14s，就会看到浮层「滑进来」一下。
+       只在第一次 measure 关过渡，之后（切主题/字体/tab 显隐）都正常过渡。 */
+    var first=!booted;
+    if(first){booted=true;float.classList.add("is-scrolling")}
+    p=mapP(scroller.scrollTop);
+    write();
+    if(first)requestAnimationFrame(function(){float.classList.remove("is-scrolling")});
+  }
 
-  /* 桌面 / 自动化验证：鼠标拖拽与滚轮走同一套 p */
-  var mouseDown=false;
-  main.addEventListener("mousedown",function(e){
-    if(ignore(e)||e.button!==0)return;
-    mouseDown=true;down(e.clientX,e.clientY);
-  });
-  window.addEventListener("mousemove",function(e){
-    if(!mouseDown)return;move(e.clientX,e.clientY);
-  });
-  window.addEventListener("mouseup",function(){
-    if(!mouseDown)return;mouseDown=false;end();
-  });
-  var lastWheel=0;
-  main.addEventListener("wheel",function(e){
-    if(ignore(e))return;
-    var now=Date.now();
-    if(now-lastWheel<400)return;   /* 抑制惯性滚轮连发导致浮层反复横跳 */
-    lastWheel=now;
-    setP(e.deltaY>0?1:0,true);
-  },{passive:true});
+  scroller.addEventListener("scroll",onScroll,{passive:true});
 
-  /* 浮层高度会随多单 tab 显隐 / 字体就绪 / 主题切换变化：实测重算让位高度。
-     只观察浮层自身，不介入 zpSyncTodayHeight 的列表锁高。 */
+  /* 显式切换（供线上探针与桌面调试使用）。animate=false 时禁过渡，用于摆放基线。 */
+  function setP(v,animate){
+    v=clamp(v,0,1);
+    var st=scroller.scrollTop;
+    if(v>=1)base=clamp(st,0,range);
+    else if(v<=0)base=clamp(st-range,0,range);
+    p=v;
+    if(animate===false)float.classList.add("is-scrolling");
+    else float.classList.remove("is-scrolling");
+    write();
+    syncNav();
+  }
+
   if(window.ResizeObserver){
     new ResizeObserver(function(){measure()}).observe(float);
   }else{
@@ -3758,7 +3745,6 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
   window.addEventListener("load",measure);
   try{if(document.fonts&&document.fonts.ready)document.fonts.ready.then(measure)}catch(e){}
 
-  /* 只读状态 + 显式切换，供线上真触摸探针断言（不注入任何业务数据） */
   window.__zpHeadFloat={
     getP:function(){return p},
     getH:function(){return H},
