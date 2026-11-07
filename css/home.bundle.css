@@ -2846,7 +2846,9 @@ main.home-app > .topbar{
   right:var(--zp-gutter);
   z-index:20;
   transform:translateY(-100%);
-  transition:transform .3s cubic-bezier(.22,.8,.3,1);
+  /* .18s：对齐 Shadowrocket 视频逐帧实测的二态吸附（1–2 帧 ≈ 0.1–0.2s），
+     松手后快速落定，不在中间态停留。 */
+  transition:transform .18s cubic-bezier(.22,.8,.3,1);
   will-change:transform;
   pointer-events:none;
 }
@@ -2872,11 +2874,13 @@ main.home-app > .topbar{
   pointer-events:auto;
 }
 
-/* 让位块：隐藏态 0（完全不占位），展开态由 JS 按实测浮层高度写入 */
+/* 让位块：隐藏态 0（完全不占位），展开态由 JS 在「松手吸附」时一次性写入。
+   跟手阶段高度冻结（spacer 不变、列表位置恒定、零重排），故这里不再需要
+   逐帧 transition；吸附时的一次性高度提交用 .18s 平滑落定，与浮层同步。 */
 .home-app .zp-head-spacer{
   flex:0 0 auto;
   height:0;
-  transition:height .3s cubic-bezier(.22,.8,.3,1);
+  transition:height .18s cubic-bezier(.22,.8,.3,1);
 }
 .home-app .zp-head-spacer.is-dragging{transition:none}
 
@@ -2884,6 +2888,51 @@ main.home-app > .topbar{
 main.home-app .task-card > .today-store-list:first-child{
   margin-top:0;
   border-top:0;
+}
+
+/* ===== 门店列表 / 月度统计「去卡片化」：铺满页面底色（2026-11-07）=====
+   参照 Shadowrocket 节点列表：列表与统计不再是带 1px 外框 + 圆角 + 阴影 +
+   --zp-card 灰块底 + 四边内缩的「浮起卡片」，而是直接铺在 --zp-bg 页面底色上，
+   去掉卡片自身左右内边距，让行间细线横贯整个内容区；文字起点与品牌区、浮层
+   同落在 --zp-gutter 上（外壳已留出 gutter，故不再叠加第二层内缩）。
+   不用负 margin 通栏：.zp-scroll 是 overflow-y:auto，其 overflow-x 会被计算成
+   auto，负 margin 撑出内容盒的部分会被裁切或触发横向滚动条。
+   只作用于首页 main.home-app，内页复用的 .task-card / .trend-card 不受影响；
+   取值全部走全局令牌，深浅两套自适应。 */
+
+/* 去外框 / 圆角 / 阴影 / 灰块底，改页面底色 */
+main.home-app .task-card,
+main.home-app .trend-card{
+  background:var(--zp-bg);
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+}
+
+/* 门店列表：去掉卡片左右内缩，行间细线横贯内容区 */
+main.home-app .task-card{
+  padding-left:0;
+  padding-right:0;
+}
+main.home-app .today-store-list{
+  margin-top:0;
+  border-top:0;
+}
+main.home-app .today-store-row{
+  padding-left:0;
+  padding-right:0;
+  border-bottom:1px solid var(--zp-tint);
+}
+main.home-app .today-metrics{
+  padding-left:0;
+  padding-right:0;
+  border-top:1px solid var(--zp-tint);
+}
+
+/* 月度统计：同色铺底，去掉左右内缩，标题 / 控件 / 图表与列表同一左右基准 */
+main.home-app .trend-card{
+  padding-left:0;
+  padding-right:0;
 }
 
 /* 浅色外观适配：首页固定导航与菜单交互

@@ -3623,7 +3623,14 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
    门店名单仍由 .zp-scroll 原生滚动承接；但浏览器一旦接管滚动就会提前派发
    touchcancel，逐帧累加的 p 往往只走到很小便被截断。故逐帧只用「起点绝对位移」
    算 p 做跟手过渡，松手统一按「本次累计位移方向」定端点：上滑→p=1、下滑→p=0，
-   即使只剩一两个 touchmove 也能可靠弹出/隐藏，不出现「上滑没弹出」。 */
+   即使只剩一两个 touchmove 也能可靠弹出/隐藏，不出现「上滑没弹出」。
+
+   抗抖动（2026-11-07，采用 Shadowrocket 滑动参数）：视频逐帧实测其「列表位置恒定、
+   浮层纯 overlay、二态快速吸附（约 0.1–0.2s）」。原先 render() 每帧按 p 改
+   .zp-head-spacer 的文档流高度，跟手 24 帧把门店列表往下顶 180px，与 .zp-scroll
+   原生滚动叠加成抖动（真机残差极差 180px / 标准差 59.9）。现改为：跟手阶段只改
+   浮层 transform（合成层，不占文档流），让位块高度冻结、列表位置恒定；仅松手二态
+   吸附时一次性提交 0/need，配 .18s 过渡。列表只在吸附瞬间平滑让位一次，滑动全程零抖动。 */
 (function(){
   var main=document.querySelector("main.home-app");
   if(!main)return;
@@ -3652,6 +3659,9 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
     var gap=10;
     need=Math.max(0,Math.ceil(H+gap-(sr.top-br.bottom)-padTop));
     render();
+    /* 浮层尺寸变化（tab 显隐 / 字体 / 主题）时按新 need 重提交让位；
+       跟手过程中跳过，保持布局冻结、列表位置恒定。 */
+    if(!dragging&&p>=.5)commitSpacer();
   }
 
   function navHide(hide){
@@ -3660,14 +3670,22 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
   }
   function render(){
     float.style.transform="translateY("+(-(1-p)*100)+"%)";
-    spacer.style.height=Math.round(need*p)+"px";
     navHide(p>=.5);
+  }
+  /* 让位块只在「二态吸附」时提交（p>=.5 → need，否则 0），配 .18s 过渡。
+     跟手阶段不调用：spacer 高度冻结 → 门店列表位置恒定、跟手全程零重排。
+     这是 Shadowrocket「列表位置恒定 + 浮层纯 overlay + 二态快速吸附」的落地，
+     消除原先逐帧改文档流高度（跟手 24 帧顶动 180px）与原生滚动叠加造成的抖动；
+     列表只在松手吸附时平滑让位一次，是预期的吸附动画，不再与滚动打架。 */
+  function commitSpacer(){
+    spacer.style.height=(p>=.5?Math.round(need):0)+"px";
   }
   function setP(v,animate){
     p=Math.max(0,Math.min(1,v));
     float.classList.toggle("is-dragging",!animate);
     spacer.classList.toggle("is-dragging",!animate);
     render();
+    if(animate)commitSpacer();   /* 仅吸附时提交让位；跟手时冻结布局 */
   }
   /* 结束手势：按「本次累计位移方向」定端点，而不是按最后一帧的进度吸附。
      passive + 原生滚动下浏览器可能提前 touchcancel，逐帧 p 会停在很小的值；
