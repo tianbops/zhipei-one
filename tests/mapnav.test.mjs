@@ -172,23 +172,23 @@ console.log("\n三家 provider 目标（14 条）");
   t("百度 / 腾讯 note 与高德同口径（看位置，App 由用户选）",
     M.PROVIDERS[1].note.includes("查看门店位置") && M.PROVIDERS[2].note.includes("查看门店位置"),
     JSON.stringify([M.PROVIDERS[1].note, M.PROVIDERS[2].note]));
-  /* 2026-11-06 视觉收敛：名称居中、去掉每个选项下的重复说明与箭头，
-     note 只作为 aria-label 保留语义，不再渲染成第三行小字。 */
-  t("选项不再渲染说明小字与箭头",
-    !/zp-mn-row-hint/.test(SRC) && !/zp-mn-arrow/.test(SRC),
-    "mapnav.js 仍包含 hint/arrow 渲染");
+  /* 2026-11-07：导航弹层采用卡片式入口，保留读屏语义与关闭方式。 */
+  t("三家入口均渲染图标、名称、副说明与箭头",
+    /zp-mn-icon/.test(SRC) && /zp-mn-row-hint/.test(SRC) && /zp-mn-arrow/.test(SRC));
   t("note 转为 aria-label，读屏仍能听到「看位置、App 由您选」",
     /setAttribute\("aria-label", p\.label \+ "：" \+ p\.note\)/.test(SRC), "缺少 aria-label 兜底");
-  t("菜单标题与选项均居中",
-    /\.zp-mn-head\{[^}]*text-align:center/.test(CSS) && /\.zp-mn-row\{[^}]*justify-content:center/.test(CSS),
-    "标题或选项未居中");
+  t("弹层包含拖动条、门店名、取消按钮",
+    /zp-mn-handle/.test(SRC) && /zp-mn-sub/.test(SRC) && /zp-mn-cancel/.test(SRC));
+  t("菜单标题与入口卡片采用左对齐布局",
+    /\.zp-mn-head\{[^}]*text-align:center/.test(CSS) && /\.zp-mn-row\{[^}]*text-align:left/.test(CSS),
+    "标题或选项布局未按设计更新");
   /* 2026-11-06：无坐标不再进菜单（搜索兜底要人自己挑门店，挑错就导到别家），
      改为只提示「暂无精确定位，请录入」。 */
   t("无坐标不进菜单：openMenu 提前提示并消费点击",
     /if \(!urls\._geo\) \{\s*notifyMissingGeo\(\);\s*return true;/.test(SRC), "缺少无坐标短路");
   t("提示文案固定为「暂无精确定位，请录入」",
     SRC.includes('"暂无精确定位，请录入"'));
-  t("菜单不再有「未绑定坐标」副标题", !/zp-mn-sub/.test(SRC) && !/\.zp-mn-sub\{/.test(CSS));
+  t("门店名称显示在导航标题下方", /zp-mn-sub/.test(SRC) && /\.zp-mn-sub\{/.test(CSS));
   t("三家都有 https 目标", ["amap", "baidu", "qq"].every((k) => typeof u[k] === "string" && u[k].startsWith("https://")));
   t("有坐标时 _geo=true（菜单不出「按门店名搜索」兜底提示）", u._geo === true);
 
