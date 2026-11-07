@@ -2819,17 +2819,18 @@ main.home-app .today-store-list.is-empty{
 }
 
 /* ===== 首页顶部两层浮层（Shadowrocket 式 overlay）=====
-   品牌区 = 固定天花板：同色实底铺满外壳、z-index 压过浮层；浮层整块
-   translateY(-100%) 上滑时钻到天花板背后，由外壳 overflow 裁掉 —— 完全消失、
-   不留把手线、不占位。浮层两层：横条与天花板同色，白卡片取 surface 令牌，
-   拼成一张内缩圆角卡；门店名单留在文档流里，由 spacer 让到白卡片下沿。
+   品牌区 = 固定天花板：取页面底色 --zp-bg 铺满外壳，与整页背景融为一体（无独立
+   色带），但仍是不透明实底、z-index 压过浮层；浮层整块 translateY(-100%) 上滑时
+   钻到天花板背后，由外壳 overflow 裁掉 —— 完全消失、不留把手线、不占位。
+   浮层两层：横条取 --zp-block 与白卡片拉开层次，白卡片取 surface 令牌，拼成一张
+   内缩圆角卡；门店名单留在文档流里，由 spacer 让到白卡片下沿。
    取值全部走全局令牌，深浅两套外观自适应。 */
 
 /* 天花板：铺满外壳宽度（抵消左右 --zp-gutter），层级 25 > 浮层 20 */
 main.home-app > .topbar{
   position:relative;
   z-index:25;
-  background:var(--zp-block);
+  background:var(--zp-bg);
   margin-left:calc(-1 * var(--zp-gutter));
   margin-right:calc(-1 * var(--zp-gutter));
   padding-left:var(--zp-gutter);
@@ -2851,7 +2852,7 @@ main.home-app > .topbar{
 }
 .home-app .zp-head-float.is-dragging{transition:none}
 
-/* 横条：与天花板同色，作为卡片顶段（沿用 .task-title 的 flex 排版与字号令牌） */
+/* 横条：浮层顶段，取 block 令牌与白卡片拉开层次（沿用 .task-title 的 flex 排版与字号令牌） */
 .home-app .zp-head-bar{
   padding:10px 14px;
   background:var(--zp-block);

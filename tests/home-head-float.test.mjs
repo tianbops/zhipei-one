@@ -5,8 +5,9 @@
  *  1) 品牌区固定、内容不变；两层浮层是 main 直接子元素的 absolute overlay，
  *     不在 .zp-scroll 文档流内；横条=今日配送/日期，白卡片=数据/插画/多单 tab；
  *  2) 门店列表与统计卡留在 .task-card 文档流，趋势卡在更下方（整页可滚到）；
- *  3) CSS：天花板层级压过浮层、隐藏态 translateY(-100%) 完全消失、
- *     两层用全局令牌、spacer 隐藏态 0（不留把手线 / 不占位）；
+ *  3) CSS：品牌区取页面底色 --zp-bg 与整页融合、仍作不透明天花板压过浮层、
+ *     隐藏态 translateY(-100%) 完全消失、横条 block / 白卡片 surface 两层分层、
+ *     spacer 隐藏态 0（不留把手线 / 不占位）；
  *  4) 手势：p=0 隐藏态起步、上滑弹出 / 下滑隐藏、松手吸附、横向不接管、
  *     顶底互斥反向、仍交给 .zp-scroll 原生滚动（不 preventDefault）；
  *  5) nav.js 暴露受控接口并在浮层启用时让位；构建链含新模块且置于末尾。
@@ -61,11 +62,11 @@ console.log("一、DOM 结构：品牌区固定 + 两层浮层 overlay + 名单/
     iTrend > iCard && HTML.indexOf('id="todayStoreList"') < iTrend);
 }
 
-console.log("\n二、CSS：天花板裁切 + 隐藏态完全消失 + 令牌配色 + 补位（7 条）");
+console.log("\n二、CSS：天花板裁切 + 隐藏态完全消失 + 令牌配色 + 补位（9 条）");
 {
   const ceiling = rule(CSS, "main.home-app > .topbar");
-  t("品牌区作天花板：同色底 + relative + 更高层级",
-    !!ceiling && /background:var\(--zp-block\)/.test(ceiling) &&
+  t("品牌区作天花板：页面底色 --zp-bg 实底 + relative + 更高层级",
+    !!ceiling && /background:var\(--zp-bg\)/.test(ceiling) &&
     /position:relative/.test(ceiling) && /z-index:25/.test(ceiling));
   const float = rule(CSS, ".home-app .zp-head-float");
   t("浮层 absolute 定位、贴品牌区底部、层级低于天花板",
@@ -75,7 +76,10 @@ console.log("\n二、CSS：天花板裁切 + 隐藏态完全消失 + 令牌配�
     !!float && /transform:translateY\(-100%\)/.test(float));
   const bar = rule(CSS, ".home-app .zp-head-bar");
   const card = rule(CSS, ".home-app .zp-head-card");
-  t("横条与天花板同色（--zp-block）", !!bar && /background:var\(--zp-block\)/.test(bar));
+  t("横条浮层顶段取 block 令牌（与白卡片分层）", !!bar && /background:var\(--zp-block\)/.test(bar));
+  t("品牌区=页面底色、横条=block 刻意分层（浅色下两层不融成全白）",
+    !!ceiling && !!bar && /background:var\(--zp-bg\)/.test(ceiling) &&
+    /background:var\(--zp-block\)/.test(bar));
   t("白卡片取 surface 令牌（深浅双主题自适应）", !!card && /background:var\(--zp-surface\)/.test(card));
   t("两层配色零字面量（无 #hex / rgb 硬编码）",
     !!bar && !!card && !/#[0-9a-fA-F]{3,8}|rgba?\(/.test(bar + card + (float || "")));
