@@ -40,7 +40,6 @@ function t(name, cond, extra) {
 const tokenDur = /--zp-island-dur\s*:\s*\.14s/.test(UI);
 const tokenEase = /--zp-island-ease\s*:\s*cubic-bezier\(\.32,\.72,0,1\)/.test(UI);
 const floatRule = (/\.home-app\s+\.zp-head-float\s*\{([^}]*)\}/.exec(HOME) || [])[1] || "";
-const spacerRule = (/\.home-app\s+\.zp-head-spacer\s*\{([^}]*)\}/.exec(HOME) || [])[1] || "";
 const navBlock = (/^\.zp-nav\{([\s\S]*?)\n\}/m.exec(UI) || [])[1] || "";
 const plusIcon = (/\n\.zp-nav-plus\s+\.zp-nav-icon\{([^}]*)\}/.exec(UI) || [])[1] || "";
 
@@ -54,8 +53,8 @@ t("曲线不含过冲（y 控制点均 ≤ 1，无回弹）", /cubic-bezier\(\.3
 /* 二、四处引用同一对 token */
 t("顶部浮层 transition 引用 --zp-island-dur/.ease",
   /transition:transform var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(floatRule), floatRule.trim().slice(0, 120));
-t("让位块恒 0 且无过渡（列表不被文档流推动，也就无第二个节奏）",
-  /height:0/.test(spacerRule) && !/transition/.test(spacerRule), spacerRule.trim().slice(0, 120));
+t("没有让位块（浮岛只做 transform，列表不被文档流推动，也就无第二个节奏）",
+  !/\.zp-head-spacer/.test(HOME), "仍存在 .zp-head-spacer 规则");
 t("底栏本体 transition 引用同一对 token",
   /transition:transform var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(navBlock), navBlock.trim().slice(-120));
 t("底栏加号图标 transition 引用同一对 token",
@@ -74,7 +73,7 @@ t("write() 内只写 transform 与 is-open，不切底栏（避免一帧多写�
   /function write\(\)\{[\s\S]{0,220}?\}/.test(JS) &&
   !/function write\(\)\{[\s\S]{0,180}?navHide/.test(JS));
 t("二态弹收：跨阈值只切一次（apply(show) 写 p=show?1:0），无比例跟随/放大系数",
-  /function apply\(show,animate\)\{/.test(JS) && /p=show\?1:0;/.test(JS) &&
+  /function apply\(show\)\{/.test(JS) && /p=show\?1:0;/.test(JS) &&
   !/mapP/.test(JS) && !/\*0\.85/.test(JS) && !/pStart/.test(JS));
 t("首帧用 .is-scrolling 关过渡（避免进首页时浮岛滑一下）",
   /\.is-scrolling\)\{transition:none\}|\.is-scrolling\{transition:none\}/.test(HOME));

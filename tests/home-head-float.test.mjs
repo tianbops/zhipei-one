@@ -57,8 +57,8 @@ console.log("一、DOM 结构：品牌区固定 + 两层浮层 overlay + 名单/
   t("横条承载今日配送与日期，白卡片承载数据/插画/多单 tab",
     /zp-head-bar[\s\S]*?id="todayTitle"[\s\S]*?id="todayDate"[\s\S]*?zp-head-card/.test(HTML) &&
     /zp-head-card[\s\S]*?id="todayTabs"/.test(HTML));
-  t("让位块 #zpHeadSpacer 在 .task-card 之前、文档流内",
-    iSpacer > iScroll && iSpacer < iCard);
+  t("不再有让位块节点（纯 overlay：名单直接从卡片首块开始）",
+    iSpacer < 0 && !/zp-head-spacer/.test(HTML));
   t("门店列表与今日统计留在 .task-card 内",
     /class="task-card"[\s\S]*?id="todayStoreList"[\s\S]*?id="todayMetrics"[\s\S]*?<\/section>/.test(HTML));
   t("月度趋势卡在门店列表下方（整页可滚到统计卡）",
@@ -87,9 +87,8 @@ console.log("\n二、CSS：天花板裁切 + 隐藏态完全消失 + 令牌配�
   t("白卡片取 surface 令牌（深浅双主题自适应）", !!card && /background:var\(--zp-surface\)/.test(card));
   t("两层配色零字面量（无 #hex / rgb 硬编码）",
     !!bar && !!card && !/#[0-9a-fA-F]{3,8}|rgba?\(/.test(bar + card + (float || "")));
-  const spacer = rule(CSS, ".home-app .zp-head-spacer");
-  t("让位块 height:0（二态弹收下浮岛纯 overlay，不占位）",
-    !!spacer && /height:0/.test(spacer) && !/transition/.test(spacer));
+  t("样式表里也没有 .zp-head-spacer 残条（结构 / 样式同步删干净）",
+    !/\.zp-head-spacer/.test(CSS));
   t("新增浮层不留任何把手线节点",
     !/zp-head-handle|head-handle/.test(CSS) && !/zp-head-handle|head-handle/.test(HTML));
 }
@@ -97,7 +96,7 @@ console.log("\n二、CSS：天花板裁切 + 隐藏态完全消失 + 令牌配�
 console.log("\n三、驱动方式：方向驱动二态弹收（上滑顶出/下滑顶隐，一动就反应）（13 条）");
 {
   t("只有 1/0 两个稳定态：apply(show) 一次写到底（p=show?1:0）",
-    /function apply\(show,animate\)\{/.test(FLOAT_JS) && /p=show\?1:0;/.test(FLOAT_JS));
+    /function apply\(show\)\{/.test(FLOAT_JS) && /p=show\?1:0;/.test(FLOAT_JS));
   t("方向对调（2026-11-07 第七轮）：上滑 ≥6px 上方弹出、下滑 ≥6px 上方隐藏",
     /var TOP_AT=6, MOVE=6;/.test(FLOAT_JS) &&
     /if\(acc>=MOVE\)\{[\s\S]{0,120}?if\(!shown\)apply\(true\)/.test(FLOAT_JS) &&
@@ -112,10 +111,11 @@ console.log("\n三、驱动方式：方向驱动二态弹收（上滑顶出/下�
   t("滚动帧只在跨方向时改一次状态，其余帧只读 scrollTop",
     /function frame\(\)\{[\s\S]*?if\(!shown\)apply\(true\)[\s\S]*?if\(shown\)apply\(false\)[\s\S]*?\n  \}/.test(FLOAT_JS) &&
     !/frame\(\)\{[\s\S]*float\.style\.transform/.test(FLOAT_JS));
-  t("状态切换一律走 --zp-island-* 过渡（不常驻 .is-scrolling 关过渡）",
+  const applyBody = (/function apply\(show\)\{([\s\S]*?)\n  \}/.exec(FLOAT_JS) || [])[1] || "";
+  t("状态切换一律走 --zp-island-* 过渡（apply 内不关过渡，瞬时态只留给首帧 / 探针）",
     /\.zp-head-float\{[\s\S]*?transition:transform var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(CSS) &&
     /\.zp-head-float\.is-scrolling\{transition:none\}/.test(CSS) &&
-    /apply\(false\)/.test(FLOAT_JS) === /apply\(false\)/.test(FLOAT_JS));
+    applyBody.length > 20 && !/is-scrolling/.test(applyBody), applyBody.trim().slice(0, 80));
   t("监听 .zp-scroll 的 scroll（passive，不干预原生滚动与惯性）",
     /scroller\.addEventListener\("scroll",onScroll,\{passive:true\}\)/.test(FLOAT_JS));
   t("彻底不接管 touch（无 touch 监听、无 preventDefault）",
@@ -126,8 +126,8 @@ console.log("\n三、驱动方式：方向驱动二态弹收（上滑顶出/下�
     /function syncNav\(\)\{\s*\n\s*var want=p>=\.5;/.test(FLOAT_JS) && /syncNav\(\);/.test(FLOAT_JS));
   t("只写 transform，绝不写文档流高度（列表零推动）",
     /float\.style\.transform=/.test(FLOAT_JS) && !/style\.height/.test(FLOAT_JS));
-  t("ResizeObserver 按浮层实测高度重算天花板与 H",
-    /new ResizeObserver/.test(FLOAT_JS) && /--zp-ceiling-h/.test(FLOAT_JS) && /H=Math\.round/.test(FLOAT_JS));
+  t("ResizeObserver 重算天花板高度（--zp-ceiling-h）",
+    /new ResizeObserver/.test(FLOAT_JS) && /--zp-ceiling-h/.test(FLOAT_JS) && /topbar\.getBoundingClientRect/.test(FLOAT_JS));
 }
 
 console.log("\n四、联动与构建链：nav 受控接口 + bundle 同步（5 条）");

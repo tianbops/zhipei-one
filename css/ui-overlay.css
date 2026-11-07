@@ -40,7 +40,7 @@
 }
 
 /* --- 菜单浮层：非模态，低于一切弹窗 --- */
-.data-page-menu, .order-menu{
+.data-page-menu{
   z-index:var(--ui-z-menu)!important;
 }
 

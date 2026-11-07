@@ -13,7 +13,7 @@ main.home-app .task-card{margin-top:0}
    渐隐遮住、还滑不动，用户看到的就是「运单数据未展开」。 */
 .today-store-list{
   margin-top:12px;
-  border-top:1px solid var(--zp-tint);
+  border-top:1px solid var(--zp-divider);
 }
 /* 同日多单：tab 行独占一条，只有 1 单时整行 hidden —— 日常使用与旧版像素一致。
    44px 高是触控下限；tab 条自身可横滑（≥4 单），卡片切页的手势只落在列表区。 */
@@ -68,7 +68,7 @@ main.home-app .task-card{margin-top:0}
   gap:10px;
   /* 整体左移：去掉左侧留白（原 4px），门店名起点更靠左，可多显示约半个字 */
   padding:0 4px 0 0;
-  border-bottom:1px solid var(--zp-tint);
+  border-bottom:1px solid var(--zp-divider);
   color:var(--zp-text);
   text-decoration:none;
   -webkit-tap-highlight-color:transparent;
@@ -107,7 +107,7 @@ main.home-app .task-card{margin-top:0}
   gap:4px 10px;
   margin-top:6px;
   padding-top:6px;
-  border-top:1px solid var(--zp-tint);
+  border-top:1px solid var(--zp-divider);
 }
 .today-metrics:empty{display:none}
 .today-metrics span{color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:18px}
@@ -192,7 +192,8 @@ main.home-app .today-store-list.is-empty{
    色带），但仍是不透明实底、z-index 压过浮层；浮层整块 translateY(-100%) 上滑时
    钻到天花板背后，由外壳 overflow 裁掉 —— 完全消失、不留把手线、不占位。
    浮层两层：横条取 --zp-block 与白卡片拉开层次，白卡片取 surface 令牌，拼成一张
-   内缩圆角卡；门店名单留在文档流里，由 spacer 让到白卡片下沿。
+   内缩圆角卡。名单在浮层下方独立滚动，浮层只做 transform —— 弹/收都是整块位移，
+   不参与文档流，也不推动名单（没有任何让位块）。
    取值全部走全局令牌，深浅两套外观自适应。 */
 
 /* 天花板：铺满外壳宽度（抵消左右 --zp-gutter），层级 25 > 浮层 20 */
@@ -226,9 +227,8 @@ main.home-app > .topbar{
   will-change:transform;
   pointer-events:none;
 }
-/* 滚动进行中禁用过渡：p 由 scrollTop 逐帧驱动，若还带 .14s 过渡会出现「追不上
-   手指」的滞后（每帧都在往新目标补 14% 的距离，观感发黏）。去掉过渡后是严格的
-   1:1 跟手 —— 内容走到哪，浮层到哪；停稳吸附时才恢复 --zp-island-* 过渡。 */
+/* 瞬时态：只在「首帧定态」「尺寸重算」「探针摆放基线」时加，避免看到浮岛滑进来。
+   日常弹/收一律走上面的 --zp-island-* 过渡，滚动帧不写它。 */
 .home-app .zp-head-float.is-scrolling{transition:none}
 
 /* 横条：浮层顶段，取 block 令牌与白卡片拉开层次（沿用 .task-title 的 flex 排版与字号令牌）
@@ -257,9 +257,9 @@ main.home-app > .topbar{
   box-shadow:none;
   pointer-events:auto;
 }
-/* 仅在浮层展开（或跟手露出过半）时给白卡片投影；隐藏态完全无投影、无虚化。
-   is-open 由 js/home/head-float.js 的 setP() 按 p>=.5 切换，与底栏反向、
-   二态吸附同阈值，保持一套语义。 */
+/* 投影只随展开态出现；收回态保持干净底色，避免阴影溢出到品牌区下沿。
+   .is-open 由 head-float.js 的 write() 每次状态落定时统一 toggle（p>=.5），
+   与底栏的显隐取自同一个 p，保持一套语义。 */
 .home-app .zp-head-float.is-open .zp-head-card{box-shadow:var(--zp-shadow-md)}
 
 /* ===== 顶部浮层「高度紧凑」（2026-11-07，两轮）=====
@@ -280,17 +280,6 @@ main.home-app > .topbar{
 .home-app .zp-head-card .task-main{margin-top:3px}
 .home-app .zp-head-card .delivery-man{height:36px}
 .home-app .zp-head-card .today-tabs{margin-top:4px}
-
-/* 让位块：高度恒为 0（2026-11-07 第六轮，用户：「允许遮挡，屏幕移动就反应」）。
-   浮岛是纯 overlay：弹/收各是一次 .14s 的整块位移，盖住列表前一两行是允许的，
-   列表的文档流位置从头到尾不动 —— 守住「浮岛运动不推动门店列表」的红线。
-   第三轮写死 0、第四轮改成静态让位变量、第五轮回 0，本轮继续为 0：
-   既然允许遮挡，就不需要让位块参与布局，遮挡与「一动就反应」可以同时成立。
-   保留节点只为兼容「列表从卡片首块开始」的 margin-top:0 选择器链。 */
-.home-app .zp-head-spacer{
-  flex:0 0 auto;
-  height:0;
-}
 
 /* 顶部两块移出后，名单成为卡片首块：去掉原本为「标题下方」准备的留白与分隔线 */
 main.home-app .task-card > .today-store-list:first-child{
@@ -326,15 +315,14 @@ main.home-app .today-store-list{
   margin-top:0;
   border-top:0;
 }
+/* 行线颜色由上面的基础规则给出（--zp-divider），这里只改左右内缩。 */
 main.home-app .today-store-row{
   padding-left:0;
   padding-right:0;
-  border-bottom:1px solid var(--zp-tint);
 }
 main.home-app .today-metrics{
   padding-left:0;
   padding-right:0;
-  border-top:1px solid var(--zp-tint);
 }
 
 /* 月度统计：同色铺底，去掉左右内缩，标题 / 控件 / 图表与列表同一左右基准 */

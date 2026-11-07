@@ -31,7 +31,7 @@
 <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#161616" media="(prefers-color-scheme: dark)"><meta name="theme-color" content="#FFFFFF">
 <title>智配One</title>
 <link rel="manifest" href="/manifest.json">
-<link rel="stylesheet" href="/css/home.bundle.css?v=162464a3">
+<link rel="stylesheet" href="/css/home.bundle.css?v=64daf4a0">
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png?v=25f1ad28">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -73,10 +73,9 @@
   </div>
 
   <div class="zp-scroll">
-    <!-- 浮层让位块：高度恒 0（浮岛是纯 overlay，弹/收各一次 .14s 整块位移，
-         列表文档流位置全程不动）。保留节点只为兼容「首块 margin-top:0」选择器链。 -->
-    <div class="zp-head-spacer" id="zpHeadSpacer" aria-hidden="true"></div>
-<section class="task-card" aria-labelledby="todayTitle">
+    <!-- 浮岛是纯 overlay：只有 transform，不占文档流。这里不再有让位块 ——
+         名单直接从卡片首块开始，滚动全程零推动。 -->
+    <section class="task-card" aria-labelledby="todayTitle">
     <div class="today-store-list" id="todayStoreList" aria-label="今日门店"><!-- 首帧骨架：数据到达后被今日渲染整体替换（见 js/home/today.js） --><div class="today-store-row" aria-hidden="true"><span class="skel-bar skel-idx"></span><span class="skel-bar skel-name"></span></div><div class="today-store-row" aria-hidden="true"><span class="skel-bar skel-idx"></span><span class="skel-bar skel-name skel-name--short"></span></div><div class="today-store-row" aria-hidden="true"><span class="skel-bar skel-idx"></span><span class="skel-bar skel-name"></span></div><div class="today-store-row" aria-hidden="true"><span class="skel-bar skel-idx"></span><span class="skel-bar skel-name skel-name--short"></span></div></div>
     <div class="today-metrics" id="todayMetrics" aria-label="今日统计"></div>
   </section>
@@ -194,7 +193,7 @@
 </div>
 </main>
 
-<script defer src="/js/home.bundle.js?v=c84531c7"></script>
+<script defer src="/js/home.bundle.js?v=ad50d579"></script>
 <script defer src="/js/boot-ready.js?v=4e3f49ea"></script>
 </body>
 </html>

@@ -83,7 +83,6 @@ console.log("\n三、可读性红线不动（7 条）");
   const tab = rule(CSS, ".today-tab");
   const row = rule(CSS, ".today-store-row");
   const float = rule(CSS, ".home-app .zp-head-float");
-  const spacer = rule(CSS, ".home-app .zp-head-spacer");
   t("tab 44px 触控下限保留", !!tab && /min-height:44px/.test(tab));
   t("tab 左右 padding 12px 保留（不改左右边距）", !!tab && /padding:0 12px/.test(tab));
   t("tab 字号仍走全局令牌 --zp-fs-13", !!tab && /font-size:var\(--zp-fs-13\)/.test(tab));
@@ -93,7 +92,7 @@ console.log("\n三、可读性红线不动（7 条）");
     /border-bottom-left-radius:var\(--zp-r-card\)/.test(CSS));
   t("浮层过渡仍走 --zp-island-* 令牌、让位恒 0（紧凑不改二态弹收）",
     !!float && /transition:transform var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(float) &&
-    !!spacer && /height:0/.test(spacer));
+    !/\.zp-head-spacer/.test(CSS));
   t("字号 / 行高基线仍由 home-base.css 令牌提供（未被紧凑规则覆写）",
     /\.today-summary strong\{font-size:var\(--zp-fs-20\);line-height:27px\}/.test(BASE_CSS) &&
     !/\.home-app \.zp-head-card[^\n]*font-size:/.test(CSS));

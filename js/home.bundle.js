@@ -3620,28 +3620,27 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
 })();
 
 ;
-/* js/home/head-float.js —— 首页顶部两层浮层的显隐（方向驱动二态弹收）
+/* js/home/head-float.js —— 首页上下两层浮岛的显隐（方向驱动 · 二态弹收）
    ------------------------------------------------------------------
-   p∈[0,1]：顶部浮层展开进度。p=1 完整展开、p=0 整块钻到品牌区天花板背后。
+   行为规格（唯一的真相源，改行为先改这里）
+   1) 两个稳定态：p=1 展开 / p=0 收回。p 是顶部浮层的展开进度，只用 translateY
+      表达：0% ↔ -100%，差值 100% 由浮层自身高度决定，不写死像素。
+   2) 手势方向：
+        · 上滑（内容上移，scrollTop 变大）→ 上方浮岛弹出、下方底栏隐藏；
+        · 下滑（内容下移，scrollTop 变小）→ 上方浮岛隐藏、下方底栏弹出。
+      同向位移累计 6px 即切换（屏幕一动就反应）；方向一反转立即清零，
+      惯性回弹与手抖不会让浮岛来回闪。
+   3) 底栏是互斥反向的一对：取同一个 p（p>=.5 → 沉下），共用同一对
+      --zp-island-dur / --zp-island-ease，所以同帧起步、同帧停住。
+   4) 浮岛是纯 overlay：只写 transform，不写任何文档流高度；名单的 scrollTop
+      与行位置在弹收全程一格不动（「浮岛运动不推动门店列表」的红线）。
+   5) 首帧按当前 scrollTop 定态，并临时关掉过渡，避免进首页时看到浮岛滑进来。
 
-   2026-11-07 第七轮（用户：「上滑屏幕下方浮岛隐藏、上方浮岛弹出；下滑屏幕下方浮岛
-   弹出、上方浮岛隐藏。目前刚好反了，请修正」）：
-   把方向映射对调 —— 上一轮是「上滑 → 上方收回、底栏升起」，正好相反。
-   现在：
-     · 上滑（内容上移，scrollTop 变大）→ 上方浮岛弹出 + 下方浮岛隐藏；
-     · 下滑（内容下移，scrollTop 变小）→ 上方浮岛隐藏 + 下方浮岛弹出；
-     · 只累计同向位移 6px 即切换（屏幕一动就反应），方向反转立刻清零
-       （惯性回弹、手抖不会来回闪）；
-     · 不再有「回到顶部必弹」的位置例外：回顶是一次下滑，按下滑规则走。
-
-   其余不变：
-     · 只有两个稳定态 p=1 / p=0，切换走 --zp-island-dur/.ease（.14s 同曲线），
-       与底栏同帧起步同帧停住 —— 这就是「上下呼应」；
-     · 滚动帧只在跨方向时写一次 p，不做比例跟随 → 没有「挂在内容上滑」；
-     · 允许遮挡：纯 overlay，不写任何文档流高度（spacer 恒 0），列表的 scrollTop
-       与行位置在弹收全程一格不动 —— 「浮岛运动会推动门店列表」的红线继续守住。
-   底栏：上方浮岛弹出 → 下方浮岛沉下；上方浮岛隐藏 → 下方浮岛升起。
-   两者是互斥反向的一对，共用同一对运动令牌，所以同帧起步、同帧停住。 */
+   实现要点
+   · 滚动监听是 passive 的：滚动本身交给浏览器，本模块只在跨方向时改一次状态，
+     其余帧只读一次 scrollTop —— 不逐帧写样式，也就不存在「挂在内容上滑」。
+   · 不用 touch 事件：passive touchmove 会被浏览器接管滚动后的 touchcancel 截断，
+     手势只能走十几像素就失效（历史问题）。方向由 scrollTop 差值判断，天然跟手。 */
 (function(){
   var main=document.querySelector("main.home-app");
   if(!main)return;
@@ -3654,8 +3653,7 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
      否则两套逻辑会互相覆盖 .is-nav-hidden。 */
   window.__zpHeadFloatActive=true;
 
-  var H=1;                 /* 浮层高度（= transform 的 100% 行程） */
-  var p=1;                 /* 当前展开进度，二态：只会是 1 或 0（探针 setP 例外） */
+  var p=1;                 /* 展开进度：二态，只会是 1 或 0（探针 setP 例外） */
   var shown=true;          /* 二态真值：true=弹出、false=收回 */
   var rafId=0, navHidden=null, booted=false;
 
@@ -3670,8 +3668,7 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
     if(window.zpNavSetHidden)window.zpNavSetHidden(hide);
     else{var n=document.querySelector(".zp-nav");if(n)n.classList.toggle("is-nav-hidden",hide)}
   }
-  /* 顶底互斥反向：浮岛弹出（p=1）→ 底栏沉下；收回（p=0）→ 底栏升起。
-     与浮岛同一次状态切换、同一对运动令牌，所以同帧起步、同帧停住。 */
+  /* 顶底互斥反向：浮岛弹出（p=1）→ 底栏沉下；收回（p=0）→ 底栏升起。 */
   function syncNav(){
     var want=p>=.5;
     if(want!==navHidden){navHidden=want;navHide(want)}
@@ -3683,19 +3680,17 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
   }
   /* 二态切换：一次写到底，交给 CSS 的 .14s 过渡去弹/收。
      不逐帧写 —— 这正是「不跟着屏幕滑」与「弹出/收回」的分界。 */
-  function apply(show,animate){
+  function apply(show){
     if(show===shown)return;
     shown=show;
     p=show?1:0;
-    float.classList.toggle("is-scrolling",animate===false);
     write();
     syncNav();
   }
 
   /* 方向驱动：屏幕一动就给反应。
      d>0 = 内容上移（手指往上推）→ 上方浮岛弹出、下方浮岛隐藏；
-     d<0 = 内容下移（手指往下拉）→ 上方浮岛隐藏、下方浮岛弹出。
-     只累计与当前方向相同的位移，反向立刻清零（惯性回弹不误触）。 */
+     d<0 = 内容下移（手指往下拉）→ 上方浮岛隐藏、下方浮岛弹出。 */
   function frame(){
     rafId=0;
     var st=scroller.scrollTop;
@@ -3719,51 +3714,50 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
 
   function measure(){
     var mr=main.getBoundingClientRect(),br=topbar.getBoundingClientRect();
+    /* 天花板高度写进 CSS 变量：浮层 top 取它，品牌区多高浮层就贴多高 */
     main.style.setProperty("--zp-ceiling-h",Math.max(0,br.bottom-mr.top)+"px");
-    H=Math.round(float.getBoundingClientRect().height)||1;
     /* 首帧必须无过渡：CSS 初始是展开态（避免 JS 到位前先闪一下 -100%），
        首帧按当前 scrollTop 定态时若带 .14s，会看到浮岛「滑进来」一下。 */
-    var first=!booted;
-    if(first){
-      booted=true;
-      shown=scroller.scrollTop>TOP_AT?false:true;
-      p=shown?1:0;
-      lastSt=scroller.scrollTop;
-      acc=0;
-      float.classList.add("is-scrolling");
-      /* 首帧底栏也要瞬间到位：弹出态底栏本来就该沉下，若带 .14s，
-         进首页会看到底部自己滑一下。掐掉过渡，下一帧恢复。 */
-      var nv=document.querySelector(".zp-nav");
-      if(nv)nv.style.transition="none";
-      navHidden=p>=.5;
-      navHide(navHidden);
-      write();
-      requestAnimationFrame(function(){
-        float.classList.remove("is-scrolling");
-        if(nv)nv.style.transition="";
-      });
-    }else{
-      write();
-    }
+    if(booted)return;
+    booted=true;
+    shown=scroller.scrollTop>TOP_AT?false:true;
+    p=shown?1:0;
+    lastSt=scroller.scrollTop;
+    acc=0;
+    float.classList.add("is-scrolling");
+    /* 首帧底栏也要瞬间到位：弹出态底栏本来就该沉下，若带 .14s，
+       进首页会看到底部自己滑一下。掐掉过渡，下一帧恢复。 */
+    var nv=document.querySelector(".zp-nav");
+    if(nv)nv.style.transition="none";
+    navHidden=p>=.5;
+    navHide(navHidden);
+    write();
+    requestAnimationFrame(function(){
+      float.classList.remove("is-scrolling");
+      if(nv)nv.style.transition="";
+    });
   }
 
   scroller.addEventListener("scroll",onScroll,{passive:true});
 
-  /* 显式切换（供线上探针与桌面调试使用）。animate=false 时禁过渡，用于摆放基线。 */
+  /* 线上探针：只给验证脚本读状态 / 摆基线用，不参与产品逻辑。 */
   function setP(v,animate){
     v=clamp(v,0,1);
     shown=v>=.5;
     p=v;
     lastSt=scroller.scrollTop;
     acc=0;
-    if(animate===false)float.classList.add("is-scrolling");
-    else float.classList.remove("is-scrolling");
+    float.classList.toggle("is-scrolling",animate===false);
     write();
     syncNav();
   }
 
+  /* 同时观察浮层与品牌区：浮层换行 / 品牌区增减状态点都会改变天花板高度，
+     只观察其中一个会漏掉另一种尺寸变化。 */
   if(window.ResizeObserver){
-    new ResizeObserver(function(){measure()}).observe(float);
+    var ro=new ResizeObserver(function(){measure()});
+    ro.observe(float);
+    ro.observe(topbar);
   }else{
     window.addEventListener("resize",measure,{passive:true});
   }
@@ -3772,11 +3766,8 @@ document.getElementById("logout")?.addEventListener("click",async()=>{const ok=w
 
   window.__zpHeadFloat={
     getP:function(){return p},
-    getH:function(){return H},
     isShown:function(){return shown},
-    setP:setP,
-    show:function(){setP(1,true)},
-    hide:function(){setP(0,true)}
+    setP:setP
   };
   measure();
 })();

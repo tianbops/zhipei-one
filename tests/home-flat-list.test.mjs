@@ -9,12 +9,11 @@
  *  1) 去卡片化：两块改 --zp-bg 页面底色、去 border / 圆角 / 阴影 / 左右内缩；
  *     只用「去内缩」铺满内容区，不用负 margin 通栏（.zp-scroll 是
  *     overflow-y:auto，负 margin 会被计算成 auto 的 overflow-x 裁切/横向滚动）；
- *     门店行保留极淡行间细线 --zp-tint（Shadowrocket 节点列表同样有细线）。
- *  2) 抗抖动：让位块高度不再逐帧跟手写入 render()，而是抽成 commitSpacer()，
- *     仅在「松手二态吸附」(animate=true) 时提交；跟手阶段布局冻结、列表位置
- *     恒定。measure() 在浮层尺寸变化时按新 need 重提交，但跟手中跳过。
- *  3) Shadowrocket 二态吸附时长 .18s（视频 1–2 帧 ≈ 0.1–0.2s），
- *     2026-11-07 起由 --zp-island-dur/.ease 统一表达，与底栏同刻起停。
+ *     门店行保留极淡行间细线 --zp-divider（与历史 / 数据 / 运单详情同一支令牌）。
+ *  2) 抗抖动：浮岛是纯 overlay，只做 transform，不写任何文档流高度；项目里
+ *     没有让位块，列表的 scrollTop 与行位置在弹收全程一格不动。
+ *  3) 弹收时长由 --zp-island-dur/.ease 统一表达（现 .14s 同曲线），
+ *     与底栏同刻起停；滚动帧不逐帧写样式。
  *  4) 只作用于 main.home-app，内页复用的 .task-card / .trend-card 不受影响。
  */
 import { readFileSync } from "node:fs";
@@ -23,6 +22,7 @@ const rd = (p) => readFileSync(fileURLToPath(new URL(p, import.meta.url)), "utf8
 
 const CSS = rd("../css/home-dashboard.css");
 const FLOAT_JS = rd("../js/home/head-float.js");
+const HTML = rd("../home.html");
 const BUNDLE_CSS = rd("../css/home.bundle.css");
 const BUNDLE_JS = rd("../js/home.bundle.js");
 const BUILD = rd("../scripts/build-home-bundle.mjs");
@@ -60,9 +60,9 @@ console.log("一、去卡片化：页面底色 + 铺满 + 去边框（8 条）")
   const card = rule(FLAT_SEG, "main.home-app .task-card");
   t("门店列表去掉左右内缩 padding-left/right:0（直接铺满内容区）",
     !!card && /padding-left:0/.test(card) && /padding-right:0/.test(card));
-  const row = rule(FLAT_SEG, "main.home-app .today-store-row");
-  t("门店行保留极淡行间细线 --zp-tint（Shadowrocket 节点列表同款）",
-    !!row && /border-bottom:1px solid var\(--zp-tint\)/.test(row));
+  const rowBase = rule(CSS, ".today-store-row");
+  t("门店行保留极淡行间细线 --zp-divider（与历史 / 数据 / 运单详情同一支令牌）",
+    !!rowBase && /border-bottom:1px solid var\(--zp-divider\)/.test(rowBase));
 }
 
 console.log("\n二、月度统计同样处理（2 条）");
@@ -98,8 +98,8 @@ console.log("\n四、Shadowrocket 二态吸附时长 + 产物同步（4 条）")
   t("浮层吸附过渡经 --zp-island-* 令牌（与底栏同一套），滚动中由 .is-scrolling 关闭",
     /\.zp-head-float\{[\s\S]*?transition:transform var\(--zp-island-dur\) var\(--zp-island-ease\)/.test(CSS) &&
     /\.zp-head-float\.is-scrolling\{transition:none\}/.test(CSS));
-  t("让位块恒 0 且无过渡（浮岛纯 overlay，列表不被文档流推动）",
-    /\.zp-head-spacer\{[\s\S]*?height:0/.test(CSS) && !/\.zp-head-spacer\{[^}]*transition/.test(CSS));
+  t("没有让位块样式残留（结构 / 样式都已删除，浮岛纯 overlay）",
+    !/\.zp-head-spacer/.test(CSS) && !/zp-head-spacer/.test(HTML));
   t("bundle CSS 已同步（含去卡片化规则 + 统一过渡令牌）",
     BUNDLE_CSS.includes("main.home-app .task-card,\nmain.home-app .trend-card{") &&
     BUNDLE_CSS.includes("transition:transform var(--zp-island-dur) var(--zp-island-ease)"));
