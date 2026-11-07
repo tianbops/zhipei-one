@@ -442,3 +442,32 @@
 }
 /* 行内门店名链接热区扩展已在上方 .order-store-name.nav 基础规则中统一处理
    （inline-block + padding:11px 0 + margin:-11px 0），此处不再重复声明。 */
+
+/* UI 2.6：运单详情「去卡片化」——与首页门店列表 / 月度统计同一套背景色去边框。
+   目标：仅作用于运单内容区（线路信息 + 门店列表），日期板块 order-summary-card
+   保持原样不变。门店行仍保留极淡分隔线（--zp-divider，与首页 --zp-tint 同款细线），
+   不删除行线；不改变字号 / 行高 / 圆角（圆角随卡片一并去除）/ 44px 触控下限。
+   历史同日多单：外层容器同样去边框（内部可滑动运单卡保留自身边框，属交互项）。 */
+.order-route-card{
+  background:var(--zp-bg);
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+  padding-left:0;
+  padding-right:0;
+}
+.order-route-head{
+  padding-left:0;
+  padding-right:0;
+}
+.order-store-list{
+  padding-left:0;
+  padding-right:0;
+}
+.order-shell.history-multi .order-route-card{
+  background:var(--zp-bg);
+  border:0;
+  border-radius:0;
+  padding-left:0;
+  padding-right:0;
+}
