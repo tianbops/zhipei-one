@@ -1045,9 +1045,9 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
   var SRC = "zhipei";
 
   var PROVIDERS = [
-    { id: "amap", label: "高德地图", note: "查看门店位置，是否用 App 导航由您选" },
-    { id: "baidu", label: "百度地图", note: "查看门店位置，是否用 App 导航由您选" },
-    { id: "qq", label: "腾讯地图", note: "查看门店位置，是否用 App 导航由您选" },
+    { id: "amap", label: "高德地图", hint: "打开门店位置", note: "查看门店位置，是否用 App 导航由您选" },
+    { id: "baidu", label: "百度地图", hint: "查看位置与路线", note: "查看门店位置，是否用 App 导航由您选" },
+    { id: "qq", label: "腾讯地图", hint: "查看地图位置", note: "查看门店位置，是否用 App 导航由您选" },
   ];
 
   function text(v) {
@@ -1284,9 +1284,14 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
     box.setAttribute("aria-modal", "true");
     box.setAttribute("aria-label", "选择导航软件");
 
+    box.appendChild(el("div", "zp-mn-handle", ""));
     var head = el("div", "zp-mn-head");
-    head.appendChild(el("div", "zp-mn-title", "导航到 " + data.name));
-    var x = el("button", "zp-mn-close", "✕");
+    var headCopy = el("div", "zp-mn-head-copy");
+    headCopy.appendChild(el("div", "zp-mn-title", "导航到"));
+    headCopy.appendChild(el("div", "zp-mn-sub", data.name));
+    headCopy.appendChild(el("div", "zp-mn-caption", "选择地图应用，打开门店位置"));
+    head.appendChild(headCopy);
+    var x = el("button", "zp-mn-close", "×");
     x.type = "button";
     x.setAttribute("aria-label", "关闭");
     x.addEventListener("click", closeMenu);
@@ -1295,13 +1300,19 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
 
     var list = el("div", "zp-mn-list");
     PROVIDERS.forEach(function (p) {
-      var row = el("button", "zp-mn-row");
+      var row = el("button", "zp-mn-row zp-mn-row--" + p.id);
       row.type = "button";
       row.setAttribute("data-provider", p.id);
-      /* 只留名称、居中：说明文案对三家完全一样，重复三遍没有信息量；
-         语义挪到 aria-label，读屏仍能听到「查看门店位置、是否用 App 由您选」。 */
       row.setAttribute("aria-label", p.label + "：" + p.note);
-      row.appendChild(el("span", "zp-mn-row-label", p.label));
+      var icon = el("span", "zp-mn-icon zp-mn-icon--" + p.id);
+      icon.setAttribute("aria-hidden", "true");
+      icon.appendChild(el("span", "zp-mn-icon-mark", p.id === "amap" ? "↗" : p.id === "baidu" ? "du" : "⌖"));
+      var copy = el("span", "zp-mn-row-copy");
+      copy.appendChild(el("span", "zp-mn-row-label", p.label));
+      copy.appendChild(el("span", "zp-mn-row-hint", p.hint));
+      row.appendChild(icon);
+      row.appendChild(copy);
+      row.appendChild(el("span", "zp-mn-arrow", "›"));
       row.addEventListener("click", function () {
         var u = urls[p.id];
         closeMenu();
@@ -1310,6 +1321,10 @@ async function processWaybill({files=[],rawText="",resumeRequestId=null}={}){
       list.appendChild(row);
     });
     box.appendChild(list);
+    var cancel = el("button", "zp-mn-cancel", "取消");
+    cancel.type = "button";
+    cancel.addEventListener("click", closeMenu);
+    box.appendChild(cancel);
     bg.appendChild(box);
     bg.addEventListener("click", function (e) {
       if (e.target === bg) closeMenu();

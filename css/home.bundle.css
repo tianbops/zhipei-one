@@ -2074,28 +2074,39 @@ textarea:disabled,
    业务页与首页共用同一份，无需任何页面级前缀或 !important。
    遗留的 .zp-business-nav-page 类仍由 nav.js 添加，仅作「本页是业务页」的标记。 */
 
-/* ===== 门店导航选择菜单（js/ui/mapnav.js）=====
-   点门店名弹出，列出高德 / 百度 / 腾讯。复用 zp-picker 已验证过的
-   底部弹层原语与 --zp-* 主题令牌，双主题/字号缩放自动继承。 */
-.zp-mn-bg{position:fixed;inset:0;z-index:var(--ui-z-modal-stack,1100);display:flex;align-items:flex-end;justify-content:center;background:var(--zp-scrim-dialog);padding:0;animation:zpModalFade .16s ease-out}
-.zp-mn-sheet{position:relative;width:min(100%,560px);max-height:86dvh;display:flex;flex-direction:column;background:var(--zp-surface);border:1px solid var(--zp-line);border-radius:var(--zp-r-sheet) var(--zp-r-sheet) 0 0;box-shadow:0 18px 50px var(--zp-shadow-lg);padding:8px 0 calc(10px + env(safe-area-inset-bottom));animation:zpModalIn .16s ease-out}
-@media(prefers-reduced-motion:reduce){.zp-mn-bg,.zp-mn-sheet{animation:none}}
-/* 标题居中：左右各留 56px 给关闭按钮，保证省略号两侧对称、不压角标 */
+/* ===== 门店导航选择菜单：智配One 卡片式地图选择面板 =====
+   保留原导航业务逻辑与主题令牌；只更新弹层视觉和触控布局。 */
+.zp-mn-bg{position:fixed;inset:0;z-index:var(--ui-z-modal-stack,1100);display:flex;align-items:flex-end;justify-content:center;padding:0;background:var(--zp-scrim-dialog);animation:zpModalFade .16s ease-out}
+.zp-mn-sheet{position:relative;display:flex;flex-direction:column;width:min(100%,560px);max-height:min(88dvh,720px);overflow:auto;padding:10px 14px calc(18px + env(safe-area-inset-bottom));background:var(--zp-surface);border:1px solid var(--zp-line);border-radius:var(--zp-r-sheet) var(--zp-r-sheet) 0 0;box-shadow:0 18px 50px var(--zp-shadow-lg);animation:zpModalIn .18s ease-out}
 .zp-mn-sheet:focus{outline:none}
-.zp-mn-head{position:relative;display:flex;align-items:center;justify-content:center;padding:10px 56px;border-bottom:1px solid var(--zp-line);text-align:center}
-.zp-mn-title{flex:1 1 auto;min-width:0;color:var(--zp-text);font-size:var(--zp-fs-16);font-weight:var(--zp-fw-bold);line-height:22px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* 关闭按钮与标题同一条水平中线：头高只有 42px（22px 标题 + 上下 10px），
-   原先 top:10px + 44px 热区让图标中心比文字中心低 11px；改为 50% 居中、
-   热区收到 40px，既不压到下方选项行，也保持单排布局不被撑高。 */
-.zp-mn-close{position:absolute;top:50%;right:10px;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:40px;height:40px;line-height:1;border:0;background:none;color:var(--zp-muted);font-size:var(--zp-fs-16);border-radius:var(--zp-r-mini);cursor:pointer;-webkit-appearance:none;appearance:none}
-.zp-mn-close:active{background:var(--zp-surface-2)}
-.zp-mn-list{overflow:auto;-webkit-overflow-scrolling:touch;padding:2px 8px 6px}
-/* 三个选项居中并列：字号统一、行高一致，靠细分割线区分，不再用箭头与说明 */
-.zp-mn-row{display:flex;align-items:center;justify-content:center;width:100%;min-height:54px;padding:8px 12px;background:none;border:0;border-radius:var(--zp-r-card);color:var(--zp-text);font-size:var(--zp-fs-16);font-weight:var(--zp-fw-medium);text-align:center;cursor:pointer;-webkit-appearance:none;appearance:none}
-.zp-mn-row+.zp-mn-row{border-top:1px solid var(--zp-tint)}
-.zp-mn-row:active{background:var(--zp-surface-2)}
-.zp-mn-row:focus-visible{outline:2px solid var(--zp-focus-ring);outline-offset:-2px}
-.zp-mn-row-label{line-height:24px}
+ .zp-mn-handle{align-self:center;flex:0 0 auto;width:42px;height:4px;margin:2px 0 14px;border-radius:var(--zp-r-handle);background:var(--zp-muted);opacity:.55}
+.zp-mn-head{position:relative;display:flex;align-items:center;justify-content:center;min-height:76px;padding:4px 48px 16px;text-align:center;border-bottom:1px solid var(--zp-line)}
+.zp-mn-head-copy{display:flex;flex-direction:column;align-items:center;min-width:0;gap:3px}
+.zp-mn-title{color:var(--zp-text);font-size:var(--zp-fs-20);font-weight:var(--zp-fw-bold);line-height:1.35}
+.zp-mn-sub{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--zp-text);font-size:var(--zp-fs-15);font-weight:var(--zp-fw-medium);line-height:1.45}
+.zp-mn-caption{color:var(--zp-muted);font-size:var(--zp-fs-12);line-height:1.4}
+.zp-mn-close{position:absolute;top:50%;right:0;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:40px;height:40px;border:1px solid var(--zp-line);border-radius:50%;background:var(--zp-surface-2);color:var(--zp-muted);font-size:var(--zp-fs-20);line-height:1;cursor:pointer;-webkit-appearance:none;appearance:none}
+.zp-mn-close:active{background:var(--zp-surface-3)}
+.zp-mn-list{display:flex;flex-direction:column;gap:10px;overflow:auto;-webkit-overflow-scrolling:touch;padding:14px 0 4px}
+.zp-mn-row{display:flex;align-items:center;gap:14px;width:100%;min-height:76px;padding:12px 14px;border:1px solid var(--zp-line);border-radius:var(--zp-r-card);background:var(--zp-surface-2);color:var(--zp-text);text-align:left;cursor:pointer;-webkit-appearance:none;appearance:none;transition:border-color .15s ease,background .15s ease,transform .12s ease}
+.zp-mn-row:active{background:var(--zp-surface-3);transform:scale(.99)}
+.zp-mn-row--amap{border-color:var(--zp-info)}
+.zp-mn-icon{display:flex;align-items:center;justify-content:center;flex:0 0 48px;width:48px;height:48px;border-radius:var(--zp-r-card);background:var(--zp-info-soft);color:var(--zp-info);font-size:var(--zp-fs-20);font-weight:var(--zp-fw-bold)}
+.zp-mn-icon--baidu{background:var(--zp-error-soft);color:var(--zp-danger)}
+.zp-mn-icon--qq{background:var(--zp-success-soft);color:var(--zp-success)}
+.zp-mn-icon-mark{display:block;line-height:1}
+.zp-mn-icon--baidu .zp-mn-icon-mark{font-size:var(--zp-fs-16);font-weight:var(--zp-fw-bold)}
+.zp-mn-row-copy{display:flex;flex:1 1 auto;flex-direction:column;align-items:flex-start;min-width:0;gap:3px}
+.zp-mn-row-label{color:var(--zp-text);font-size:var(--zp-fs-16);font-weight:var(--zp-fw-semibold);line-height:1.4}
+.zp-mn-row-hint{color:var(--zp-muted);font-size:var(--zp-fs-13);line-height:1.4}
+.zp-mn-arrow{flex:0 0 auto;color:var(--zp-muted);font-size:var(--zp-fs-20);font-weight:var(--zp-fw-medium);line-height:1}
+.zp-mn-cancel{display:flex;align-items:center;justify-content:center;width:100%;min-height:48px;margin-top:10px;padding:10px 16px;border:1px solid var(--zp-line);border-radius:var(--zp-r-pill);background:var(--zp-surface-2);color:var(--zp-text);font-size:var(--zp-fs-16);font-weight:var(--zp-fw-medium);cursor:pointer;-webkit-appearance:none;appearance:none}
+.zp-mn-cancel:active{background:var(--zp-surface-3)}
+.zp-mn-row:focus-visible,.zp-mn-cancel:focus-visible,.zp-mn-close:focus-visible{outline:2px solid var(--zp-focus-ring);outline-offset:2px}
+body.zp-mn-open{overflow:hidden}
+@media(max-width:380px){.zp-mn-sheet{padding-left:12px;padding-right:12px}.zp-mn-row{gap:11px;min-height:70px;padding:10px 12px}.zp-mn-icon{flex-basis:44px;width:44px;height:44px}}
+@media(prefers-reduced-motion:reduce){.zp-mn-bg,.zp-mn-sheet,.zp-mn-row{animation:none;transition:none}}
+
 
 /* ===== 用户外观偏好：深色主题 · 全局令牌覆盖 =====
    Phase 4（2026-10-23 基底反转）：浅色为用户 spec 默认值，全部令牌住在
