@@ -48,6 +48,14 @@ console.log('二、.order-meta-row 为 flex 横排（组内 标签+值 左→右
     /overflow:hidden/.test(ROW_VALUE) && /text-overflow:ellipsis/.test(ROW_VALUE), ROW_VALUE);
 }
 
+console.log('二·补、标签列宽统一（右列「车辆/送货员」等宽 → 值左边缘对齐、左右对称）');
+{
+  const META_LABEL = CSS.match(/\.order-meta-label\{[^}]*flex:0 0 [^}]*\}/)?.[0] || '';
+  t('存在带固定 flex-basis 的 .order-meta-label 规则', !!META_LABEL, META_LABEL);
+  t('标签固定宽度为 3.4em（容纳「送货员」3 字并随字号缩放）', /flex:0 0 3\.4em/.test(META_LABEL), META_LABEL);
+  t('标签不换行（white-space:nowrap）', /white-space:nowrap/.test(META_LABEL), META_LABEL);
+}
+
 console.log('三、HTML 字段顺序（决定两行两列的排列）');
 {
   const labels = [...HTML.matchAll(/<span class="order-meta-label">([^<]+)<\/span>/g)].map(m => m[1].trim());
